@@ -1,0 +1,26 @@
+{
+  "name": "srs-maker-agent-service",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "Server.js",
+  "scripts": {
+    "start": "nodemon Server.js",
+    "dev": "nodemon Server.js"
+  },
+  "dependencies": {
+    "axios": "*",
+    "cors": "*",
+    "csv-parse": "*",
+    "dotenv": "*",
+    "express": "*",
+    "express-rate-limit": "*",
+    "helmet": "*",
+    "multer": "*",
+    "pdf-parse": "*",
+    "socket.io": "*",
+    "uuid": "*"
+  },
+  "devDependencies": {
+    "nodemon": "*"
+  }
+}

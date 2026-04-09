@@ -1,0 +1,425 @@
+{
+  "document_type": "Software Requirements Specification",
+  "standard": "IEEE SRS",
+  "source_note": "Structured from the uploaded IEEE SRS template for machine-readable use.",
+  "training_purpose": "LLM/NLP model training, requirement extraction, requirement generation, validation, and downstream agent handoff",
+  "metadata": {
+    "project_name": "My to do",
+    "project_id": "TODO-APP-2024-001",
+    "domain": "Task Management",
+    "application_type": "Web application",
+    "version": "1.0",
+    "status": "draft",
+    "author": "SRS Generator AI",
+    "organization": "Development Team",
+    "date_created": "2024-07-19",
+    "last_updated": "2024-07-19",
+    "language": "en",
+    "intended_use": [
+      "requirements engineering"
+    ]
+  },
+  "revision_history": [
+    {
+      "revision_id": "REV-001",
+      "name": "SRS Generator AI",
+      "date": "2024-07-19",
+      "reason_for_changes": "Initial draft",
+      "version": "0.1"
+    }
+  ],
+  "sections": {
+    "introduction": {
+      "purpose": "This document specifies the requirements for the 'My to do' web application, a task management tool for the general public. It serves as a complete description of the system's behavior and constraints.",
+      "document_conventions": "Requirements are written in natural language with 'shall' indicating mandatory conditions. Priority levels are: High, Medium, Low.",
+      "intended_audience_and_reading_suggestions": [
+        "Developers",
+        "Project Managers",
+        "Quality Assurance Teams"
+      ],
+      "product_scope": {
+        "summary": "The 'My to do' application allows users to create, manage, and track personal tasks through a web interface, with user authentication and data persistence.",
+        "goals": [
+          "Deliver the primary My to do. user workflow through a web application.",
+          "Support scalable growth with modular MERN microservices."
+        ],
+        "business_objectives": [
+          "Improve operational visibility.",
+          "Reduce manual effort in the primary business process."
+        ],
+        "benefits": [
+          "Faster user task completion.",
+          "More reliable tracking and reporting."
+        ]
+      },
+      "references": [
+        "IEEE Std 830-1998",
+        "MongoDB Documentation",
+        "React Documentation",
+        "Node.js Documentation"
+      ]
+    },
+    "overall_description": {
+      "product_perspective": {
+        "system_context": "The application is a standalone web-based task management system designed for individual use, with a React frontend and Node.js/Express backend microservices using MongoDB for data storage.",
+        "product_origin": "New system"
+      },
+      "product_functions": [
+        "User authentication",
+        "Task creation",
+        "Task editing",
+        "Task deletion",
+        "Task completion tracking",
+        "Task list viewing",
+        "User session management"
+      ],
+      "user_classes_and_characteristics": [
+        {
+          "class": "End User",
+          "characteristics": "General public users with basic web literacy, needing to manage personal tasks efficiently."
+        }
+      ],
+      "operating_environment": "Web browsers (Chrome, Firefox, Safari, Edge) on desktop and mobile devices; backend hosted on cloud servers (e.g., AWS, Heroku).",
+      "design_and_implementation_constraints": [
+        "Must use React for frontend",
+        "Must use Node.js and Express for backend microservices",
+        "Must use MongoDB for database",
+        "Must support email/password authentication",
+        "Must achieve <2 seconds response time"
+      ],
+      "user_documentation": [
+        "Online user guide",
+        "In-app help tooltips"
+      ],
+      "assumptions_and_dependencies": "Assumes users have stable internet access; depends on MongoDB cloud service availability and modern web browser compatibility."
+    },
+    "external_interface_requirements": {
+      "user_interfaces": [
+        {
+          "name": "Web Interface",
+          "description": "Responsive React-based UI with forms for task management and authentication, following modern design principles."
+        }
+      ],
+      "hardware_interfaces": [
+        "None required beyond standard web server and client hardware"
+      ],
+      "software_interfaces": [
+        {
+          "name": "MongoDB Database",
+          "description": "NoSQL database for storing user accounts and task data."
+        }
+      ],
+      "communications_interfaces": [
+        "RESTful APIs over HTTPS for frontend-backend communication"
+      ]
+    },
+    "system_features": [
+      {
+        "feature_id": "F001",
+        "feature_name": "User Authentication",
+        "description_and_priority": {
+          "description": "My to do. shall support user authentication.",
+          "priority": "High"
+        },
+        "functional_requirements": [
+          {
+            "requirement_id": "REQ1-001",
+            "title": "User Authentication workflow 1",
+            "description": "The system shall support user authentication for authorized users.",
+            "priority": "Medium",
+            "status": "draft"
+          },
+          {
+            "requirement_id": "REQ1-002",
+            "title": "User Authentication workflow 2",
+            "description": "The system shall support user authentication for authorized users.",
+            "priority": "Medium",
+            "status": "draft"
+          }
+        ]
+      },
+      {
+        "feature_id": "F002",
+        "feature_name": "Task Creation",
+        "description_and_priority": {
+          "description": "My to do. shall support task creation.",
+          "priority": "Medium"
+        },
+        "functional_requirements": [
+          {
+            "requirement_id": "REQ2-001",
+            "title": "Task Creation workflow 1",
+            "description": "The system shall support task creation for authorized users.",
+            "priority": "Medium",
+            "status": "draft"
+          },
+          {
+            "requirement_id": "REQ2-002",
+            "title": "Task Creation workflow 2",
+            "description": "The system shall support task creation for authorized users.",
+            "priority": "Medium",
+            "status": "draft"
+          }
+        ]
+      },
+      {
+        "feature_id": "F003",
+        "feature_name": "Task Management",
+        "description_and_priority": {
+          "description": "My to do. shall support task management.",
+          "priority": "Medium"
+        },
+        "functional_requirements": [
+          {
+            "requirement_id": "REQ3-001",
+            "title": "Task Management workflow 1",
+            "description": "The system shall support task management for authorized users.",
+            "priority": "Medium",
+            "status": "draft"
+          },
+          {
+            "requirement_id": "REQ3-002",
+            "title": "Task Management workflow 2",
+            "description": "The system shall support task management for authorized users.",
+            "priority": "Medium",
+            "status": "draft"
+          }
+        ]
+      },
+      {
+        "feature_id": "F004",
+        "feature_name": "Task Completion Tracking",
+        "description_and_priority": {
+          "description": "My to do. shall support task completion tracking.",
+          "priority": "Medium"
+        },
+        "functional_requirements": [
+          {
+            "requirement_id": "REQ4-001",
+            "title": "Task Completion Tracking workflow 1",
+            "description": "The system shall support task completion tracking for authorized users.",
+            "priority": "Medium",
+            "status": "draft"
+          },
+          {
+            "requirement_id": "REQ4-002",
+            "title": "Task Completion Tracking workflow 2",
+            "description": "The system shall support task completion tracking for authorized users.",
+            "priority": "Medium",
+            "status": "draft"
+          }
+        ]
+      },
+      {
+        "feature_id": "F005",
+        "feature_name": "User Profile Management",
+        "description_and_priority": {
+          "description": "My to do. shall support user profile management.",
+          "priority": "Medium"
+        },
+        "functional_requirements": [
+          {
+            "requirement_id": "REQ5-001",
+            "title": "User Profile Management workflow 1",
+            "description": "The system shall support user profile management for authorized users.",
+            "priority": "Medium",
+            "status": "draft"
+          },
+          {
+            "requirement_id": "REQ5-002",
+            "title": "User Profile Management workflow 2",
+            "description": "The system shall support user profile management for authorized users.",
+            "priority": "Medium",
+            "status": "draft"
+          }
+        ]
+      }
+    ],
+    "other_nonfunctional_requirements": {
+      "performance_requirements": [
+        "All API responses must be delivered within 2 seconds under normal load conditions."
+      ],
+      "safety_requirements": [
+        "None beyond general software safety best practices"
+      ],
+      "security_requirements": [
+        "User passwords must be hashed and salted before storage.",
+        "API endpoints must validate user authentication tokens."
+      ],
+      "software_quality_attributes": [
+        "Usability: Intuitive UI for non-technical users",
+        "Reliability: 99.9% uptime",
+        "Maintainability: Modular microservices architecture"
+      ],
+      "business_rules": [
+        "Each user can only access their own tasks.",
+        "Tasks must have a non-empty title."
+      ]
+    },
+    "other_requirements": {
+      "database_requirements": [
+        "Use MongoDB with collections for users and tasks.",
+        "Implement indexes on user_id for efficient task queries."
+      ],
+      "internationalization_requirements": [
+        "Support English language only initially"
+      ],
+      "legal_requirements": [
+        "Comply with basic data protection principles; store minimal personal data (email)."
+      ],
+      "reuse_objectives": [
+        "Microservices designed for potential reuse in other applications"
+      ],
+      "additional_requirements": [
+        "None at this time"
+      ]
+    }
+  },
+  "appendices": {
+    "glossary": [
+      {
+        "term": "Task",
+        "definition": "A user-created item representing something to be done, with a title and optional description."
+      }
+    ],
+    "analysis_models": [
+      {
+        "type": "Use Case Diagram",
+        "description": "Diagram showing user interactions: Register, Login, Create Task, Edit Task, Delete Task, Mark Complete."
+      }
+    ],
+    "to_be_determined_list": [
+      {
+        "item": "Specific error handling messages for user feedback",
+        "reason": "Requires further user experience design input"
+      }
+    ]
+  },
+  "training_annotations": {
+    "record_type": "template",
+    "recommended_ml_tasks": [
+      "requirement classification"
+    ],
+    "labels": {
+      "functional_requirement_labels": [
+        "authentication",
+        "task management",
+        "data persistence"
+      ],
+      "nonfunctional_requirement_labels": [
+        "performance",
+        "security",
+        "usability"
+      ],
+      "priority_labels": [
+        "High",
+        "Medium",
+        "Low"
+      ],
+      "status_labels": [
+        "implemented",
+        "pending",
+        "rejected"
+      ]
+    },
+    "annotation_guidelines": [
+      "Each requirement should be atomic and testable."
+    ]
+  },
+  "services": [
+    {
+      "name": "auth-service",
+      "port": 3001,
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/api/v1/register",
+          "description": "Register a new user with email and password",
+          "entities": [
+            "User"
+          ],
+          "dependencies": [
+            "MongoDB"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/login",
+          "description": "Authenticate user and return session token",
+          "entities": [
+            "User"
+          ],
+          "dependencies": [
+            "MongoDB"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "task-service",
+      "port": 3002,
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/v1/tasks",
+          "description": "Retrieve all tasks for the authenticated user",
+          "entities": [
+            "Task"
+          ],
+          "dependencies": [
+            "MongoDB",
+            "auth-service"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/tasks",
+          "description": "Create a new task for the authenticated user",
+          "entities": [
+            "Task"
+          ],
+          "dependencies": [
+            "MongoDB",
+            "auth-service"
+          ]
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/tasks/:id",
+          "description": "Update an existing task",
+          "entities": [
+            "Task"
+          ],
+          "dependencies": [
+            "MongoDB",
+            "auth-service"
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/tasks/:id",
+          "description": "Delete a task",
+          "entities": [
+            "Task"
+          ],
+          "dependencies": [
+            "MongoDB",
+            "auth-service"
+          ]
+        }
+      ]
+    }
+  ],
+  "quality_check": {
+    "session_id": "8fef0cb4-ccd6-40a1-b7a4-91b33f41a719",
+    "checked_at": "2026-04-09T18:07:01.991Z",
+    "template_source": "root\nroot.document_type: Software Requirements Specification\nroot.standard: IEEE SRS\nroot.source_note: Structured from the uploaded IEEE SRS template for machine-readable use.\nroot.training_purpose: L...",
+    "repair_attempted": false,
+    "status": "passed",
+    "completeness_score": 1,
+    "issue_count": 0,
+    "issues": [],
+    "pdf_ready": true,
+    "json_ready": true
+  }
+}
