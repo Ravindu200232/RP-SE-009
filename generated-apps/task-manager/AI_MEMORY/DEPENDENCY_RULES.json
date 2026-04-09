@@ -1,0 +1,67 @@
+{
+  "auth-service": {
+    "packageDependencies": [
+      "express",
+      "mongoose",
+      "cors",
+      "dotenv",
+      "helmet",
+      "express-rate-limit",
+      "body-parser",
+      "jsonwebtoken",
+      "bcryptjs",
+      "axios",
+      "swagger-jsdoc",
+      "swagger-ui-express"
+    ],
+    "devDependencies": [
+      "nodemon"
+    ],
+    "forbiddenPackages": []
+  },
+  "task-service": {
+    "packageDependencies": [
+      "express",
+      "mongoose",
+      "cors",
+      "dotenv",
+      "helmet",
+      "express-rate-limit",
+      "body-parser",
+      "jsonwebtoken",
+      "bcryptjs",
+      "axios",
+      "swagger-jsdoc",
+      "swagger-ui-express"
+    ],
+    "devDependencies": [
+      "nodemon"
+    ],
+    "forbiddenPackages": [
+      "auth-service"
+    ]
+  },
+  "dashboard-service": {
+    "packageDependencies": [
+      "express",
+      "mongoose",
+      "cors",
+      "dotenv",
+      "helmet",
+      "express-rate-limit",
+      "body-parser",
+      "jsonwebtoken",
+      "bcryptjs",
+      "axios",
+      "swagger-jsdoc",
+      "swagger-ui-express"
+    ],
+    "devDependencies": [
+      "nodemon"
+    ],
+    "forbiddenPackages": [
+      "auth-service",
+      "task-service"
+    ]
+  }
+}
