@@ -1,0 +1,5 @@
+# Terminal 1 — backend
+cd server && npm run dev
+
+# Terminal 2 — frontend  
+npm run dev
