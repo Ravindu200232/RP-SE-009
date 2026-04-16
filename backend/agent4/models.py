@@ -49,7 +49,7 @@ class PackageRequest:
     github_branch: str = "main"
     commit_message: str = "Add packaged deployment output"
     architecture_manifest_path: str = ""
-    target_profile: str = "docker-ecs-actions"
+    target_profile: str = "docker-actions"
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "PackageRequest":
@@ -64,7 +64,7 @@ class PackageRequest:
             github_branch=str(payload.get("github_branch", "main")),
             commit_message=str(payload.get("commit_message", "Add packaged deployment output")),
             architecture_manifest_path=str(payload.get("architecture_manifest_path", "")),
-            target_profile=str(payload.get("target_profile", "docker-ecs-actions")),
+            target_profile=str(payload.get("target_profile", "docker-actions")),
         )
         return request
 
@@ -157,4 +157,3 @@ def to_pretty_json(data: Any) -> str:
 
 def resolve_path(value: str) -> Path:
     return Path(value).expanduser().resolve()
-
