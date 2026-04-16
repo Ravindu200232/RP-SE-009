@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
 import json
+import os
 
 from .architecture import ArchitectureDetector
 from .generator import ArtifactGenerator
@@ -149,10 +151,31 @@ class Agent4Service:
                 return child
         return None
 
+    def list_input_candidates(self) -> dict:
+        root = self._input_root()
+        candidates: list[dict] = []
+
+        if not root.exists() or not root.is_dir():
+            return {"root": str(root), "items": []}
+
+        for job_dir in sorted((path for path in root.iterdir() if path.is_dir()), key=lambda path: path.name.lower()):
+            scan_targets = [job_dir]
+            scan_targets.extend(path for path in job_dir.iterdir() if path.is_dir())
+
+            for target in scan_targets:
+                candidate = self._build_candidate(job_dir, target)
+                if candidate:
+                    candidates.append(candidate)
+
+        candidates.sort(key=lambda item: item.get("updated_at", ""), reverse=True)
+        return {"root": str(root), "items": candidates}
+
     def _review_gate(self, review_report_path: str) -> str:
+        if not review_report_path:
+            return ""
         path = Path(review_report_path)
         if not path.exists():
-            return "Review report path does not exist."
+            return ""
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
@@ -165,4 +188,81 @@ class Agent4Service:
         if payload.get("overallScore") is not None and float(payload["overallScore"]) < 85:
             return "Review score is below the deployment threshold."
         return ""
+
+    def _input_root(self) -> Path:
+        configured = os.getenv("AGENT4_INPUT_DIR")
+        if configured:
+            return Path(configured).expanduser().resolve()
+        data_root = os.getenv("AGENT4_DATA_DIR") or "./data"
+        return (Path(data_root).expanduser().resolve() / "jobs").resolve()
+
+    def _build_candidate(self, job_dir: Path, target: Path) -> dict | None:
+        if not self._looks_like_source_dir(target):
+            return None
+
+        srs_path = self._first_existing_file(
+            [target, job_dir],
+            [
+                "srs.json",
+                "*_srs.json",
+                "*srs*.json",
+            ],
+        )
+        review_path = self._first_existing_file(
+            [target, job_dir],
+            [
+                "review_report.json",
+                "*review_report*.json",
+                "*review*.json",
+            ],
+        )
+
+        missing: list[str] = []
+        if not srs_path:
+            missing.append("srs_path")
+        if not review_path:
+            missing.append("review_report_path")
+
+        return {
+            "id": f"{job_dir.name}:{target.name}",
+            "job_folder": job_dir.name,
+            "name": target.name,
+            "display_name": f"{job_dir.name} / {target.name}",
+            "source_path": str(target),
+            "review_report_path": str(review_path) if review_path else "",
+            "srs_path": str(srs_path) if srs_path else "",
+            "ready": not missing,
+            "missing": missing,
+            "updated_at": self._iso_mtime(target),
+        }
+
+    def _looks_like_source_dir(self, path: Path) -> bool:
+        markers = [
+            path / "server",
+            path / "client",
+            path / "frontend",
+            path / "docker-compose.yml",
+            path / "analysis.json",
+            path / "package.json",
+            path / "pyproject.toml",
+            path / "requirements.txt",
+            path / "pom.xml",
+        ]
+        return any(marker.exists() for marker in markers)
+
+    def _first_existing_file(self, roots: list[Path], patterns: list[str]) -> Path | None:
+        seen: set[Path] = set()
+        for root in roots:
+            if root in seen or not root.exists() or not root.is_dir():
+                continue
+            seen.add(root)
+
+            for pattern in patterns:
+                matches = sorted(path for path in root.glob(pattern) if path.is_file())
+                if matches:
+                    return matches[0]
+        return None
+
+    def _iso_mtime(self, path: Path) -> str:
+        return datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc).isoformat()
 

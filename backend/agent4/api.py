@@ -37,6 +37,13 @@ def create_app():
         except Exception as exc:  # pragma: no cover - defensive endpoint guard
             raise HTTPException(status_code=500, detail=str(exc)) from exc
 
+    @app.get("/inputs")
+    def inputs():
+        try:
+            return service.list_input_candidates()
+        except Exception as exc:  # pragma: no cover - defensive endpoint guard
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+
     @app.get("/jobs/{job_id}")
     def job(job_id: str):
         result = service.get_job(job_id)
