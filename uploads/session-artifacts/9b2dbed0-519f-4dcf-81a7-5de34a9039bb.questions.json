@@ -1,0 +1,142 @@
+{
+  "sessionId": "9b2dbed0-519f-4dcf-81a7-5de34a9039bb",
+  "createdAt": "2026-04-16T08:54:27.188Z",
+  "planner": "deepseek-template-interview",
+  "skills": [
+    "human-srs-interviewer",
+    "ieee-srs-writer"
+  ],
+  "projectDescription": "create todo app",
+  "summary": "You're building a simple todo app for general use, focusing on task management without sensitive data handling. Let's clarify a few key details to ensure we capture all your needs.",
+  "knownInfo": {
+    "domain": "Tasks & Projects",
+    "application_type": "Web",
+    "database_type": "MongoDB",
+    "performance_target": "< 2 seconds",
+    "project_name": null,
+    "target_users": [
+      "General Public (anyone)"
+    ],
+    "core_features": "create todo app",
+    "auth_method": null,
+    "compliance": [
+      "No sensitive data - it's a normal app"
+    ],
+    "integrations": null,
+    "reports_and_notifications": null
+  },
+  "templateSummary": "root\nroot.document_type: Software Requirements Specification\nroot.standard: IEEE SRS\nroot.source_note: Structured from the uploaded IEEE SRS template for machine-readable use.\nroot.training_purpose: LLM/NLP model training, requirement extraction, requirement generation, validation, and downstream agent handoff\nroot.metadata\nroot.metadata.project_name: <Project Name>\nroot.metadata.project_id: <Project ID>\nroot.metadata.domain: <Domain>\nroot.metadata.application_type: <Web|Mobile|Desktop|Hybrid|Enterprise>\nroot.metadata.version: 1.0\nroot.metadata.status: draft\nroot.metadata.author: <Author Name>\nroot.metadata.organization: <Organization>\nroot.metadata.date_created: <YYYY-MM-DD>\nroot.metadata.last_updated: <YYYY-MM-DD>\nroot.metadata.language: en\nroot.metadata.intended_use[]\nroot.metadata.intended_use[0]: requirements engineering\nroot.revision_history[]\nroot.revision_history[0]\nroot.revision_history[0].revision_id: REV-001\nroot.revision_history[0].name: <Author/Editor>\nroot.revision_history[0].date: <YYYY-MM-DD>\nroot.revision_history[0].reason_for_changes: <Initial draft / updates>\nroot.revision_history[0].version: 0.1\nroot.sections\nroot.sections.introduction\nroot.sections.introduction.purpose: <Purpose of the software and this SRS document>\nroot.sections.introduction.document_conventions\nroot.sections.introduction.intended_audience_and_reading_suggestions[]\nroot.sections.introduction.product_scope\nroot.sections.introduction.references[]\nroot.sections.overall_description\nroot.sections.overall_description.product_perspective\nroot.sections.overall_description.product_functions[]\n...",
+  "questions": [
+    {
+      "key": "project_name",
+      "order": 1,
+      "section": "basics",
+      "question": "What do you want to call your todo app?",
+      "inputType": "text",
+      "placeholder": "e.g., MyTodo, TaskMaster",
+      "options": [],
+      "template_paths": [
+        "metadata.project_name"
+      ],
+      "importance": "high"
+    },
+    {
+      "key": "auth_method",
+      "order": 2,
+      "section": "accounts",
+      "question": "How should users log in to save their tasks?",
+      "inputType": "select",
+      "placeholder": "Select an option",
+      "options": [
+        "Email & password (most common)",
+        "Sign in with Google or Facebook",
+        "Email & password + Google login",
+        "No login needed - everyone can see it"
+      ],
+      "template_paths": [
+        "sections.overall_description.user_classes_and_characteristics",
+        "sections.external_interface_requirements.user_interfaces"
+      ],
+      "importance": "high"
+    },
+    {
+      "key": "core_features_details",
+      "order": 3,
+      "section": "features",
+      "question": "What basic actions should users be able to do with their tasks, like adding, editing, or deleting?",
+      "inputType": "textarea",
+      "placeholder": "e.g., add tasks, mark as complete, set due dates",
+      "options": [],
+      "template_paths": [
+        "sections.overall_description.product_functions",
+        "sections.system_features"
+      ],
+      "importance": "high"
+    },
+    {
+      "key": "notifications",
+      "order": 4,
+      "section": "operations",
+      "question": "Should the app send reminders or notifications for due tasks?",
+      "inputType": "select",
+      "placeholder": "Select yes or no",
+      "options": [
+        "Yes",
+        "No"
+      ],
+      "template_paths": [
+        "sections.other_nonfunctional_requirements.performance_requirements",
+        "sections.system_features"
+      ],
+      "importance": "medium"
+    },
+    {
+      "key": "device_access",
+      "order": 5,
+      "section": "technical",
+      "question": "Will users access this on mobile, web, or both?",
+      "inputType": "select",
+      "placeholder": "Select an option",
+      "options": [
+        "Web only",
+        "Mobile only",
+        "Both web and mobile"
+      ],
+      "template_paths": [
+        "metadata.application_type",
+        "sections.overall_description.operating_environment"
+      ],
+      "importance": "medium"
+    },
+    {
+      "key": "data_persistence",
+      "order": 6,
+      "section": "technical",
+      "question": "Should tasks be saved only on the user's device or synced across devices with an account?",
+      "inputType": "select",
+      "placeholder": "Select an option",
+      "options": [
+        "Saved on device only",
+        "Synced across devices with login"
+      ],
+      "template_paths": [
+        "sections.overall_description.design_and_implementation_constraints",
+        "sections.other_requirements.database_requirements"
+      ],
+      "importance": "medium"
+    }
+  ],
+  "selectedQuestionKeys": [
+    "project_name",
+    "auth_method",
+    "core_features_details",
+    "notifications",
+    "device_access",
+    "data_persistence"
+  ],
+  "selectedAnswers": [],
+  "completedAt": "2026-04-16T08:55:40.846Z",
+  "srsJsonPath": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\final_research_agentic\\uploads\\session-artifacts\\9b2dbed0-519f-4dcf-81a7-5de34a9039bb.srs.json",
+  "validationReportPath": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\final_research_agentic\\uploads\\session-artifacts\\9b2dbed0-519f-4dcf-81a7-5de34a9039bb.validation.json",
+  "validationStatus": "passed"
+}

@@ -1,0 +1,12 @@
+{
+  "session_id": "9b2dbed0-519f-4dcf-81a7-5de34a9039bb",
+  "checked_at": "2026-04-16T08:55:40.844Z",
+  "template_source": "root\nroot.document_type: Software Requirements Specification\nroot.standard: IEEE SRS\nroot.source_note: Structured from the uploaded IEEE SRS template for machine-readable use.\nroot.training_purpose: L...",
+  "repair_attempted": false,
+  "status": "passed",
+  "completeness_score": 1,
+  "issue_count": 0,
+  "issues": [],
+  "pdf_ready": true,
+  "json_ready": true
+}
