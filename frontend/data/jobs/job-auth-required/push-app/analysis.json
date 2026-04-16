@@ -1,0 +1,58 @@
+{
+  "declared_architecture": "microservices",
+  "scanned_architecture": "microservices",
+  "final_architecture": "microservices",
+  "confidence": 0.95,
+  "conflict": false,
+  "project_name": "Push App",
+  "selected_stack": "",
+  "services": [
+    {
+      "name": "order-service",
+      "service_key": "order_service",
+      "relative_path": "server/order-service",
+      "runtime": "node",
+      "kind": "backend",
+      "port": 3001,
+      "has_health_endpoint": true,
+      "entrypoint": "Server.js",
+      "dependencies": [
+        "user_service"
+      ],
+      "env_vars": [
+        "PORT",
+        "USER_SERVICE_URL"
+      ],
+      "inferred_from": [
+        "/Users/malith_bandara/Documents/Playground/.pytest_tmp/github-5511496c98e54f27854cebbac2e1b808/source/server/order-service"
+      ]
+    },
+    {
+      "name": "user-service",
+      "service_key": "user_service",
+      "relative_path": "server/user-service",
+      "runtime": "node",
+      "kind": "backend",
+      "port": 3000,
+      "has_health_endpoint": true,
+      "entrypoint": "Server.js",
+      "dependencies": [],
+      "env_vars": [
+        "PORT"
+      ],
+      "inferred_from": [
+        "/Users/malith_bandara/Documents/Playground/.pytest_tmp/github-5511496c98e54f27854cebbac2e1b808/source/server/user-service"
+      ]
+    }
+  ],
+  "infrastructure": {
+    "mongo": false,
+    "postgres": false,
+    "redis": false,
+    "rabbitmq": false
+  },
+  "evidence": [
+    "Detected 2 backend services with independent manifests.",
+    "Declared architecture 'microservices' matched repository scan."
+  ]
+}

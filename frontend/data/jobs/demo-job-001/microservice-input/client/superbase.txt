@@ -1,0 +1,7 @@
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZpdGh0c2dlenJnb2JkeWxvbGRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk5NTUzMzAsImV4cCI6MjA1NTUzMTMzMH0.NbKShjJ6vuO_1kaZ2nOYa1t1R3dUeN5msPpqKe2vRSE
+https://vithtsgezrgobdyloldb.supabase.co
+
+
+client id --> 93119756985-3cvvkvdu7epn3h2k0i53pg5i17o9b3ji.apps.googleusercontent.com
+
+client secret--> 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

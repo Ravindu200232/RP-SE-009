@@ -1,0 +1,72 @@
+{
+  "job_id": "job-packaged",
+  "architecture": "microservices",
+  "confidence": 0.95,
+  "strategy": {
+    "architecture": "microservices",
+    "deployment_profile": "docker-compose + github-actions",
+    "packaging_supported": true,
+    "release_strategy": "manual-promote",
+    "monitoring": [
+      "/health endpoints",
+      "container health checks",
+      "GitHub Actions run status"
+    ],
+    "notes": [
+      "Generate Dockerfiles, docker-compose, GitHub Actions workflows, and deployment evidence.",
+      "Cloud deployment targets are intentionally deferred until a later milestone."
+    ]
+  },
+  "validation": {
+    "success": true,
+    "checks": [
+      {
+        "name": "docker-compose.yml exists",
+        "success": true,
+        "details": "/Users/malith_bandara/Documents/Playground/data/jobs/job-packaged/food-app/docker-compose.yml exists."
+      },
+      {
+        "name": "docker-compose.yml parses",
+        "success": true,
+        "details": "YAML parsed successfully."
+      },
+      {
+        "name": "client.yml parses",
+        "success": true,
+        "details": "Workflow YAML parsed successfully."
+      },
+      {
+        "name": "order_service.yml parses",
+        "success": true,
+        "details": "Workflow YAML parsed successfully."
+      },
+      {
+        "name": "user_service.yml parses",
+        "success": true,
+        "details": "Workflow YAML parsed successfully."
+      }
+    ]
+  },
+  "push_result": {
+    "state": "SKIPPED",
+    "message": "GitHub push not requested.",
+    "branch": "",
+    "commit_sha": ""
+  },
+  "artifacts": [
+    "server/order-service/Dockerfile",
+    "server/user-service/Dockerfile",
+    "client/Dockerfile",
+    "docker-compose.yml",
+    ".env.example",
+    "setup.sh",
+    "README.md",
+    ".github/workflows/order_service.yml",
+    ".github/workflows/user_service.yml",
+    ".github/workflows/client.yml",
+    "analysis.json",
+    "strategy.json",
+    "deployment_evidence.json",
+    "food-app_generated_20260414.zip"
+  ]
+}

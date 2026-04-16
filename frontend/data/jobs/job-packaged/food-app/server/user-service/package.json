@@ -1,0 +1,1 @@
+{"name": "user-service", "main": "Server.js", "scripts": {"test": "jest"}}

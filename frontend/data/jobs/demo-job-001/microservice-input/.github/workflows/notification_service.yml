@@ -1,0 +1,91 @@
+name: notification_service CI/CD
+'on':
+  push:
+    branches:
+    - main
+    paths:
+    - server/notification-server/**
+    - .github/workflows/notification_service.yml
+    - aws/notification-service-task-definition.json
+  pull_request:
+    branches:
+    - main
+    paths:
+    - server/notification-server/**
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  id-token: write
+env:
+  AWS_REGION: ap-southeast-1
+  ECR_REPOSITORY: food-ordering/notification-service
+  ECS_CLUSTER: food-ordering-cluster
+  ECS_SERVICE: notification-service
+  ECS_TASK_DEFINITION_FILE: aws/notification-service-task-definition.json
+  CONTAINER_NAME: notification-service
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    - name: Install dependencies
+      working-directory: ./server/notification-server
+      run: npm ci || npm install --legacy-peer-deps
+    - name: Run tests
+      working-directory: ./server/notification-server
+      run: npm test -- --runInBand
+      continue-on-error: true
+  build-and-push:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.build-image.outputs.image }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
+    - id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+    - name: Build and push image
+      id: build-image
+      working-directory: ./server/notification-server
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: 'docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+        echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT'
+  deploy:
+    needs: build-and-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
+    - id: task-def
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: ${{ env.ECS_TASK_DEFINITION_FILE }}
+        container-name: ${{ env.CONTAINER_NAME }}
+        image: ${{ needs.build-and-push.outputs.image }}
+    - uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        service: ${{ env.ECS_SERVICE }}
+        cluster: ${{ env.ECS_CLUSTER }}
+        wait-for-service-stability: false

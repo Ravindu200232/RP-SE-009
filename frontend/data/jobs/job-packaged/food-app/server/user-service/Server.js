@@ -1,0 +1,1 @@
+const PORT = process.env.PORT || 3000; app.get('/health', () => {}); process.env.SEKRET_KEY; process.env.MONGO_URL;

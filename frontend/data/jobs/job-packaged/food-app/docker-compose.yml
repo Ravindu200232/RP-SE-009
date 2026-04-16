@@ -1,0 +1,82 @@
+version: '3.9'
+services:
+  mongo:
+    image: mongo:latest
+    container_name: mongo_container
+    volumes:
+    - mongo_data:/data/db
+    ports:
+    - 27017:27017
+    healthcheck:
+      test:
+      - CMD
+      - mongosh
+      - --eval
+      - db.adminCommand('ping')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  order_service:
+    build: ./server/order-service
+    container_name: order_service_container
+    ports:
+    - 3001:3001
+    environment:
+    - PORT=3001
+    - SERVER_URL=${ORDER_SERVICE_URL:-http://localhost:3001}
+    - MONGO_URL=${MONGO_URL}
+    - USER_SERVICE_URL=http://user_service_container:3000
+    depends_on:
+      mongo:
+        condition: service_healthy
+      user_service:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -qO-
+      - http://localhost:3001/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  user_service:
+    build: ./server/user-service
+    container_name: user_service_container
+    ports:
+    - 3000:3000
+    environment:
+    - PORT=3000
+    - SERVER_URL=${USER_SERVICE_URL:-http://localhost:3000}
+    - MONGO_URL=${MONGO_URL}
+    - SEKRET_KEY=${SEKRET_KEY}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -qO-
+      - http://localhost:3000/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  frontend:
+    build: ./client
+    container_name: frontend_container
+    ports:
+    - 5173:5173
+    environment:
+    - PORT=5173
+    - VITE_ORDER_SERVICE_URL=http://localhost:3001
+    - VITE_USER_SERVICE_URL=http://localhost:3000
+    depends_on:
+      order_service:
+        condition: service_started
+      user_service:
+        condition: service_started
+    stdin_open: true
+    tty: true
+volumes:
+  mongo_data: null
