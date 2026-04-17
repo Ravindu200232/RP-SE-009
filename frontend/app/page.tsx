@@ -42,8 +42,6 @@ type InputCandidate = {
     name: string;
     display_name: string;
     source_path: string;
-    review_report_path: string;
-    srs_path: string;
     ready: boolean;
     missing: string[];
     updated_at: string;
@@ -82,34 +80,48 @@ export default function HomePage() {
         setMessages((previous) => [...previous, { id: `${Date.now()}-${previous.length}`, role, text }]);
     }
 
+    async function loadInputs(active: boolean) {
+        const response = await fetch(`${apiBase}/inputs`, { cache: "no-store" });
+        const payload = await response.json();
+        if (!response.ok) {
+            throw new Error(payload.detail ?? "Failed to load input candidates.");
+        }
+
+        const items = (payload.items ?? []) as InputCandidate[];
+        if (!active) {
+            return;
+        }
+
+        setInputCandidates(items);
+        setError("");
+
+        if (!items.length) {
+            setStage((currentStage) => (currentStage === "blocked" ? currentStage : "blocked"));
+            return;
+        }
+
+        setStage((currentStage) => {
+            if (currentStage === "chooseInput" || currentStage === "askDocker" || currentStage === "askGithub" || currentStage === "askRepo" || currentStage === "askBranch" || currentStage === "askCommit" || currentStage === "confirm" || currentStage === "submitting") {
+                return currentStage;
+            }
+            return "chooseInput";
+        });
+
+        setMessages((previous) => {
+            const alreadyAnnounced = previous.some((message) => message.role === "assistant" && message.text.includes("candidate input packages"));
+            if (alreadyAnnounced) {
+                return previous;
+            }
+            return [...previous, { id: `${Date.now()}-${previous.length}`, role: "assistant", text: `Found ${items.length} candidate input packages. Select one to continue.` }];
+        });
+    }
+
     useEffect(() => {
         let active = true;
 
-        async function loadInputs() {
+        async function refreshInputs() {
             try {
-                const response = await fetch(`${apiBase}/inputs`, { cache: "no-store" });
-                const payload = await response.json();
-                if (!response.ok) {
-                    throw new Error(payload.detail ?? "Failed to load input candidates.");
-                }
-
-                const items = (payload.items ?? []) as InputCandidate[];
-                if (!active) {
-                    return;
-                }
-
-                setInputCandidates(items);
-                if (!items.length) {
-                    setStage("blocked");
-                    addMessage(
-                        "assistant",
-                        "No input candidates were found. Upload Agent 3 output with SRS and review JSON inside the Agent 4 input folder, then refresh.",
-                    );
-                    return;
-                }
-
-                setStage("chooseInput");
-                addMessage("assistant", `Found ${items.length} candidate input packages. Select one to continue.`);
+                await loadInputs(active);
             } catch (caught) {
                 if (!active) {
                     return;
@@ -121,9 +133,11 @@ export default function HomePage() {
             }
         }
 
-        loadInputs();
+        refreshInputs();
+        const interval = window.setInterval(refreshInputs, 5000);
         return () => {
             active = false;
+            window.clearInterval(interval);
         };
     }, []);
 
@@ -142,8 +156,6 @@ export default function HomePage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     source_path: selectedInput.source_path,
-                    review_report_path: selectedInput.review_report_path,
-                    srs_path: selectedInput.srs_path,
                     docker_enabled: dockerEnabled,
                     github_push_enabled: githubEnabled,
                     github_repo_url: githubEnabled ? githubRepoUrl : "",
@@ -263,8 +275,6 @@ export default function HomePage() {
         if (selectedInput) {
             lines.push(`Input: ${selectedInput.display_name}`);
             lines.push(`Source: ${selectedInput.source_path}`);
-            lines.push(`Review: ${selectedInput.review_report_path}`);
-            lines.push(`SRS: ${selectedInput.srs_path}`);
         }
         lines.push(`Docker validation: ${dockerEnabled ? "enabled" : "disabled"}`);
         lines.push(`GitHub push: ${githubEnabled ? "enabled" : "disabled"}`);
