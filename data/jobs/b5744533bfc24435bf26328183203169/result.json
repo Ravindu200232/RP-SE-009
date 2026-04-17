@@ -1,0 +1,38 @@
+{
+  "job_id": "b5744533bfc24435bf26328183203169",
+  "state": "NEEDS_REVIEW",
+  "architecture": "event_driven",
+  "confidence": 0.84,
+  "strategy": {
+    "architecture": "event_driven",
+    "deployment_profile": "strategy-only",
+    "packaging_supported": false,
+    "release_strategy": "manual-review",
+    "monitoring": [
+      "deployment evidence only"
+    ],
+    "notes": [
+      "Prefer queue-aware deployment with broker provisioning and consumer health checks."
+    ]
+  },
+  "validation": {
+    "success": false,
+    "checks": []
+  },
+  "push_result": {
+    "state": "SKIPPED",
+    "message": "GitHub push not requested.",
+    "branch": "",
+    "commit_sha": ""
+  },
+  "artifacts": [
+    "analysis.json",
+    "strategy.json"
+  ],
+  "download_path": "",
+  "package_dir": "/Users/malith_bandara/Desktop/final_research_agentic/data/jobs/b5744533bfc24435bf26328183203169",
+  "evidence_path": "/Users/malith_bandara/Desktop/final_research_agentic/data/jobs/b5744533bfc24435bf26328183203169/strategy.json",
+  "created_at": "2026-04-17T17:29:38.224632+00:00",
+  "updated_at": "2026-04-17T17:29:38.224642+00:00",
+  "message": "Architecture detected successfully, but full packaging is not implemented for this style in v1."
+}
