@@ -40,8 +40,8 @@ def slugify(value: str) -> str:
 @dataclass
 class PackageRequest:
     source_path: str
-    review_report_path: str
-    srs_path: str
+    review_report_path: str = ""
+    srs_path: str = ""
     job_id: str = field(default_factory=lambda: uuid.uuid4().hex)
     docker_enabled: bool = False
     github_push_enabled: bool = False
@@ -56,8 +56,8 @@ class PackageRequest:
         request = cls(
             job_id=str(payload.get("job_id") or uuid.uuid4().hex),
             source_path=str(payload["source_path"]),
-            review_report_path=str(payload["review_report_path"]),
-            srs_path=str(payload["srs_path"]),
+            review_report_path=str(payload.get("review_report_path", "")),
+            srs_path=str(payload.get("srs_path", "")),
             docker_enabled=bool(payload.get("docker_enabled", False)),
             github_push_enabled=bool(payload.get("github_push_enabled", False)),
             github_repo_url=str(payload.get("github_repo_url", "")),

@@ -26,11 +26,11 @@ class ArchitectureDetector:
     def analyze(
         self,
         source_path: str,
-        srs_path: str,
+        srs_path: str = "",
         architecture_manifest_path: str = "",
     ) -> ArchitectureAnalysis:
         source_root = resolve_path(source_path)
-        srs_payload = self._read_json(resolve_path(srs_path))
+        srs_payload = self._read_json(resolve_path(srs_path)) if srs_path else {}
         manifest_payload = self._read_json(resolve_path(architecture_manifest_path)) if architecture_manifest_path else {}
 
         declared_architecture = self._declared_architecture(srs_payload, manifest_payload)

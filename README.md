@@ -4,7 +4,7 @@ Architecture-aware deployment and packaging agent for the multi-agent SDLC resea
 
 ## What it does
 
-- Accepts Agent 3 approved code plus SRS and review metadata
+- Accepts Agent 3 output and gathers deployment intent through conversation
 - Detects and verifies architecture across six styles
 - Fully packages microservice projects for Docker and GitHub Actions
 - Optionally validates Docker artifacts locally
@@ -40,10 +40,7 @@ npm run dev
 
 ```json
 {
-  "job_id": "demo-job-001",
   "source_path": "/absolute/path/to/agent3/output",
-  "review_report_path": "/absolute/path/to/review_report.json",
-  "srs_path": "/absolute/path/to/srs.json",
   "docker_enabled": true,
   "github_push_enabled": true,
   "github_repo_url": "git@github.com:owner/repo.git",
@@ -54,6 +51,7 @@ npm run dev
 
 ## Notes
 
+- Agent 4 input discovery is fixed to `/Users/malith_bandara/Desktop/AGENT4_Research/Microservice_input`.
 - Microservices are the only fully packaged architecture in v1.
 - Other detected architectures return strategy and evidence output with `NEEDS_REVIEW`.
 - GitHub push uses machine-level Git authentication only. No secrets are collected in the UI.

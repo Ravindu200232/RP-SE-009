@@ -21,6 +21,9 @@ from .strategy import StrategySelector
 from .validators import Validator
 
 
+AGENT4_FIXED_INPUT_ROOT = Path("/Users/malith_bandara/Desktop/AGENT4_Research/Microservice_input")
+
+
 class Agent4Service:
     def __init__(
         self,
@@ -40,7 +43,7 @@ class Agent4Service:
 
     def process(self, request: PackageRequest) -> JobResult:
         job_dir = self.store.job_dir(request.job_id)
-        review_gate_message = self._review_gate(request.review_report_path)
+        review_gate_message = self._review_gate(request.review_report_path) if request.review_report_path else ""
         analysis = self.detector.analyze(request.source_path, request.srs_path, request.architecture_manifest_path)
         strategy = self.selector.select(analysis)
 
@@ -158,6 +161,14 @@ class Agent4Service:
         if not root.exists() or not root.is_dir():
             return {"root": str(root), "items": []}
 
+        # If the configured input root is itself an application package,
+        # use it as the only candidate input for Agent 4.
+        if self._looks_like_source_dir(root):
+            candidate = self._build_candidate(root, root)
+            if candidate:
+                candidates.append(candidate)
+            return {"root": str(root), "items": candidates}
+
         for job_dir in sorted((path for path in root.iterdir() if path.is_dir()), key=lambda path: path.name.lower()):
             scan_targets = [job_dir]
             scan_targets.extend(path for path in job_dir.iterdir() if path.is_dir())
@@ -171,11 +182,9 @@ class Agent4Service:
         return {"root": str(root), "items": candidates}
 
     def _review_gate(self, review_report_path: str) -> str:
-        if not review_report_path:
-            return ""
         path = Path(review_report_path)
         if not path.exists():
-            return ""
+            return "Review report path does not exist."
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
@@ -190,38 +199,11 @@ class Agent4Service:
         return ""
 
     def _input_root(self) -> Path:
-        configured = os.getenv("AGENT4_INPUT_DIR")
-        if configured:
-            return Path(configured).expanduser().resolve()
-        data_root = os.getenv("AGENT4_DATA_DIR") or "./data"
-        return (Path(data_root).expanduser().resolve() / "jobs").resolve()
+        return AGENT4_FIXED_INPUT_ROOT.expanduser().resolve()
 
     def _build_candidate(self, job_dir: Path, target: Path) -> dict | None:
         if not self._looks_like_source_dir(target):
             return None
-
-        srs_path = self._first_existing_file(
-            [target, job_dir],
-            [
-                "srs.json",
-                "*_srs.json",
-                "*srs*.json",
-            ],
-        )
-        review_path = self._first_existing_file(
-            [target, job_dir],
-            [
-                "review_report.json",
-                "*review_report*.json",
-                "*review*.json",
-            ],
-        )
-
-        missing: list[str] = []
-        if not srs_path:
-            missing.append("srs_path")
-        if not review_path:
-            missing.append("review_report_path")
 
         return {
             "id": f"{job_dir.name}:{target.name}",
@@ -229,10 +211,8 @@ class Agent4Service:
             "name": target.name,
             "display_name": f"{job_dir.name} / {target.name}",
             "source_path": str(target),
-            "review_report_path": str(review_path) if review_path else "",
-            "srs_path": str(srs_path) if srs_path else "",
-            "ready": not missing,
-            "missing": missing,
+            "ready": True,
+            "missing": [],
             "updated_at": self._iso_mtime(target),
         }
 
