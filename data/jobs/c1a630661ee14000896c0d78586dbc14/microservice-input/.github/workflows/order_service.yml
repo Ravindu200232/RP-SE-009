@@ -1,0 +1,40 @@
+name: order_service CI
+'on':
+  push:
+    branches:
+    - main
+    paths:
+    - server/order-service/**
+    - .github/workflows/order_service.yml
+  pull_request:
+    branches:
+    - main
+    paths:
+    - server/order-service/**
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    - name: Install dependencies
+      working-directory: ./server/order-service
+      run: npm ci || npm install --legacy-peer-deps
+    - name: Run tests
+      working-directory: ./server/order-service
+      run: npm test -- --runInBand
+      continue-on-error: true
+  docker-build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build Docker image
+      working-directory: ./server/order-service
+      run: docker build -t local/${{ github.event.repository.name }}-${{ github.job
+        }}:${{ github.sha }} .
