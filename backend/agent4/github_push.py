@@ -9,6 +9,10 @@ from .models import GitHubPushResult
 
 class GitHubPushClient:
     def push(self, package_dir: Path, repo_url: str, branch: str, commit_message: str) -> GitHubPushResult:
+        repo_error = self._validate_repo_url(repo_url)
+        if repo_error:
+            return GitHubPushResult(state="ERROR", message=repo_error, branch=branch)
+
         remote_check = self._run_git(["git", "ls-remote", "--heads", repo_url, branch], cwd=package_dir)
         if remote_check.returncode != 0:
             stderr = (remote_check.stderr or "").lower()
@@ -70,4 +74,31 @@ class GitHubPushClient:
 
     def _run_git(self, command: list[str], cwd: Path):
         return subprocess.run(command, cwd=cwd, capture_output=True, text=True, check=False)
+
+    def _validate_repo_url(self, repo_url: str) -> str:
+        value = (repo_url or "").strip()
+        if not value:
+            return "GitHub push is enabled, but repository URL is empty. Provide a valid GitHub repository URL."
+
+        # Accept common remote formats.
+        if value.startswith("git@") or value.startswith("https://") or value.startswith("ssh://"):
+            return ""
+
+        # If a local path is supplied, make the failure message explicit.
+        if value.startswith("/") or value.startswith("./") or value.startswith("../") or value.startswith("~"):
+            local_path = Path(value).expanduser().resolve()
+            if (local_path / ".git").exists():
+                return (
+                    "GitHub repository URL appears to be a local repository path. "
+                    "Use a remote URL like git@github.com:owner/repo.git or https://github.com/owner/repo.git."
+                )
+            return (
+                f"'{local_path}' is a local folder, not a GitHub remote URL. "
+                "Use a remote URL like git@github.com:owner/repo.git or https://github.com/owner/repo.git."
+            )
+
+        return (
+            "Unsupported repository URL format. "
+            "Use git@github.com:owner/repo.git or https://github.com/owner/repo.git."
+        )
 
