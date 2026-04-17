@@ -1,0 +1,137 @@
+{
+  "job_id": "07899012734741de9664e56f8c788ca2",
+  "state": "PACKAGED",
+  "architecture": "microservices",
+  "confidence": 0.88,
+  "strategy": {
+    "architecture": "microservices",
+    "deployment_profile": "docker-compose + github-actions",
+    "packaging_supported": true,
+    "release_strategy": "manual-promote",
+    "monitoring": [
+      "/health endpoints",
+      "container health checks",
+      "GitHub Actions run status"
+    ],
+    "notes": [
+      "Generate Dockerfiles, docker-compose, GitHub Actions workflows, and deployment evidence.",
+      "Cloud deployment targets are intentionally deferred until a later milestone."
+    ]
+  },
+  "validation": {
+    "success": true,
+    "checks": [
+      {
+        "name": "docker-compose.yml exists",
+        "success": true,
+        "details": "/Users/malith_bandara/Desktop/final_research_agentic/data/jobs/07899012734741de9664e56f8c788ca2/microservice-input/docker-compose.yml exists."
+      },
+      {
+        "name": "docker-compose.yml parses",
+        "success": true,
+        "details": "YAML parsed successfully."
+      },
+      {
+        "name": "client.yml parses",
+        "success": true,
+        "details": "Workflow YAML parsed successfully."
+      },
+      {
+        "name": "deliver-service.yml parses",
+        "success": true,
+        "details": "Workflow YAML parsed successfully."
+      },
+      {
+        "name": "deliver_service.yml parses",
+        "success": true,
+        "details": "Workflow YAML parsed successfully."
+      },
+      {
+        "name": "notification-service.yml parses",
+        "success": true,
+        "details": "Workflow YAML parsed successfully."
+      },
+      {
+        "name": "notification_service.yml parses",
+        "success": true,
+        "details": "Workflow YAML parsed successfully."
+      },
+      {
+        "name": "order-service.yml parses",
+        "success": true,
+        "details": "Workflow YAML parsed successfully."
+      },
+      {
+        "name": "order_service.yml parses",
+        "success": true,
+        "details": "Workflow YAML parsed successfully."
+      },
+      {
+        "name": "payment-service.yml parses",
+        "success": true,
+        "details": "Workflow YAML parsed successfully."
+      },
+      {
+        "name": "payment_service.yml parses",
+        "success": true,
+        "details": "Workflow YAML parsed successfully."
+      },
+      {
+        "name": "restaurant-service.yml parses",
+        "success": true,
+        "details": "Workflow YAML parsed successfully."
+      },
+      {
+        "name": "restaurant_service.yml parses",
+        "success": true,
+        "details": "Workflow YAML parsed successfully."
+      },
+      {
+        "name": "user-service.yml parses",
+        "success": true,
+        "details": "Workflow YAML parsed successfully."
+      },
+      {
+        "name": "user_service.yml parses",
+        "success": true,
+        "details": "Workflow YAML parsed successfully."
+      }
+    ]
+  },
+  "push_result": {
+    "state": "ERROR",
+    "message": "remote: error: GH013: Repository rule violations found for refs/heads/main.        \nremote: \nremote: - GITHUB PUSH PROTECTION        \nremote:   \u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014        \nremote:     Resolve the following violations before pushing again        \nremote: \nremote:     - Push cannot contain secrets        \nremote: \nremote:             \nremote:      (?) Learn how to resolve a blocked push        \nremote:      https://docs.github.com/code-security/secret-scanning/working-with-secret-scanning-and-push-protection/working-with-push-protection-from-the-command-line#resolving-a-blocked-push        \nremote:             \nremote:             \nremote:       \u2014\u2014 Google OAuth Client ID \u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014        \nremote:        locations:        \nremote:          - commit: fa3180ac1c9cc6f1e1bfac0391a7f344a913db21        \nremote:            path: client/superbase.txt:5        \nremote:             \nremote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.        \nremote:        https://github.com/it22249166/Test_agent4/security/secret-scanning/unblock-secret/3CUlbcB3gLceFx0Tq7ew7OS9NbB        \nremote:             \nremote:             \nremote:       \u2014\u2014 Google OAuth Client Secret \u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014        \nremote:        locations:        \nremote:          - commit: fa3180ac1c9cc6f1e1bfac0391a7f344a913db21        \nremote:            path: client/superbase.txt:7        \nremote:             \nremote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.        \nremote:        https://github.com/it22249166/Test_agent4/security/secret-scanning/unblock-secret/3CUlbd02iSFJPszUYnQkxk1AI7Q        \nremote:             \nremote: \nremote: \nTo https://github.com/it22249166/Test_agent4.git\n ! [remote rejected] HEAD -> main (push declined due to repository rule violations)\nerror: failed to push some refs to 'https://github.com/it22249166/Test_agent4.git'",
+    "branch": "main",
+    "commit_sha": ""
+  },
+  "artifacts": [
+    "server/Restaurant-service/Dockerfile",
+    "server/deliver-service/Dockerfile",
+    "server/notification-server/Dockerfile",
+    "server/order-service/Dockerfile",
+    "server/payment-service/Dockerfile",
+    "server/user-service/Dockerfile",
+    "client/Dockerfile",
+    "docker-compose.yml",
+    ".env.example",
+    "setup.sh",
+    "README.md",
+    ".github/workflows/restaurant_service.yml",
+    ".github/workflows/deliver_service.yml",
+    ".github/workflows/notification_service.yml",
+    ".github/workflows/order_service.yml",
+    ".github/workflows/payment_service.yml",
+    ".github/workflows/user_service.yml",
+    ".github/workflows/client.yml",
+    "analysis.json",
+    "strategy.json",
+    "deployment_evidence.json",
+    "microservice-input_generated_20260417.zip"
+  ],
+  "download_path": "/download/07899012734741de9664e56f8c788ca2",
+  "package_dir": "/Users/malith_bandara/Desktop/final_research_agentic/data/jobs/07899012734741de9664e56f8c788ca2/microservice-input",
+  "evidence_path": "/Users/malith_bandara/Desktop/final_research_agentic/data/jobs/07899012734741de9664e56f8c788ca2/microservice-input/deployment_evidence.json",
+  "created_at": "2026-04-17T18:02:11.861115+00:00",
+  "updated_at": "2026-04-17T18:02:11.861127+00:00",
+  "message": "Packaging completed."
+}
