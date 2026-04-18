@@ -48,6 +48,8 @@ export default function JobPage() {
   const [expandedCheckpoint, setExpandedCheckpoint] = useState("detect");
   const [diffQuery, setDiffQuery] = useState("");
   const [copiedDiff, setCopiedDiff] = useState(false);
+  const [artifactQuery, setArtifactQuery] = useState("");
+  const [copiedArtifacts, setCopiedArtifacts] = useState(false);
 
   useEffect(() => {
     if (!jobId) {
@@ -304,6 +306,89 @@ export default function JobPage() {
     };
   }, [filteredDiffEntries]);
 
+  const artifactEntries = useMemo(() => {
+    if (!payload) {
+      return [] as Array<{
+        path: string;
+        kind: "workflow" | "container" | "api" | "evidence" | "script" | "source";
+        label: string;
+      }>;
+    }
+
+    return payload.artifacts.map((artifact) => {
+      const lower = artifact.toLowerCase();
+
+      if (lower.startsWith(".github/workflows/")) {
+        return { path: artifact, kind: "workflow" as const, label: "Workflow" };
+      }
+      if (lower.includes("docker") || lower.includes("compose")) {
+        return { path: artifact, kind: "container" as const, label: "Container" };
+      }
+      if (lower.includes("postman") || lower.endsWith(".http")) {
+        return { path: artifact, kind: "api" as const, label: "API" };
+      }
+      if (
+        lower.includes("evidence") ||
+        lower.includes("analysis") ||
+        lower.endsWith("strategy.json") ||
+        lower.endsWith("result.json")
+      ) {
+        return { path: artifact, kind: "evidence" as const, label: "Evidence" };
+      }
+      if (lower.endsWith(".sh") || lower.endsWith("readme.md") || lower.endsWith(".md")) {
+        return { path: artifact, kind: "script" as const, label: "Docs/Script" };
+      }
+
+      return { path: artifact, kind: "source" as const, label: "Source" };
+    });
+  }, [payload]);
+
+  const filteredArtifactEntries = useMemo(() => {
+    const query = artifactQuery.trim().toLowerCase();
+    if (!query) {
+      return artifactEntries;
+    }
+
+    return artifactEntries.filter((entry) => `${entry.path} ${entry.label} ${entry.kind}`.toLowerCase().includes(query));
+  }, [artifactEntries, artifactQuery]);
+
+  const visibleArtifactEntries = useMemo(
+    () => filteredArtifactEntries.filter((entry) => entry.kind !== "workflow" && entry.kind !== "container"),
+    [filteredArtifactEntries],
+  );
+
+  const artifactStats = useMemo(() => {
+    const api = visibleArtifactEntries.filter((entry) => entry.kind === "api").length;
+    const evidence = visibleArtifactEntries.filter((entry) => entry.kind === "evidence").length;
+    const docs = visibleArtifactEntries.filter((entry) => entry.kind === "script").length;
+    const source = visibleArtifactEntries.filter((entry) => entry.kind === "source").length;
+
+    return {
+      total: visibleArtifactEntries.length,
+      api,
+      evidence,
+      docs,
+      source,
+    };
+  }, [visibleArtifactEntries]);
+
+  const artifactBuckets = useMemo(() => {
+    const byKind: Record<string, { title: string; tone: "pass" | "warn" | "fail"; items: string[] }> = {
+      api: { title: "API collections", tone: "warn", items: [] },
+      evidence: { title: "Evidence and analysis", tone: "warn", items: [] },
+      script: { title: "Scripts and docs", tone: "warn", items: [] },
+      source: { title: "Source artifacts", tone: "pass", items: [] },
+    };
+
+    visibleArtifactEntries.forEach((entry) => {
+      byKind[entry.kind].items.push(entry.path);
+    });
+
+    return Object.entries(byKind)
+      .filter(([, bucket]) => bucket.items.length > 0)
+      .map(([id, bucket]) => ({ id, ...bucket }));
+  }, [visibleArtifactEntries]);
+
   async function copyVisibleDiff() {
     const text = filteredDiffEntries
       .map((entry) => `[${entry.sectionTitle}] ${entry.text}`)
@@ -315,6 +400,18 @@ export default function JobPage() {
       window.setTimeout(() => setCopiedDiff(false), 1200);
     } catch {
       setCopiedDiff(false);
+    }
+  }
+
+  async function copyVisibleArtifacts() {
+    const text = visibleArtifactEntries.map((entry) => entry.path).join("\n");
+
+    try {
+      await navigator.clipboard.writeText(text || "No visible artifacts.");
+      setCopiedArtifacts(true);
+      window.setTimeout(() => setCopiedArtifacts(false), 1200);
+    } catch {
+      setCopiedArtifacts(false);
     }
   }
 
@@ -568,18 +665,82 @@ export default function JobPage() {
             </section>
           ) : null}
 
-          <section className="section-grid">
-            <div className="panel">
+          <section className="panel">
               <p className="section-kicker">Artifacts</p>
               <h2 className="section-title" style={{ fontSize: "1.4rem" }}>
-                Deliverables and evidence
+                What will be packaged
               </h2>
-              <div className="artifacts-row" style={{ margin: "1rem 0" }}>
-                {payload.artifacts.map((artifact) => (
-                  <span className="pill mono artifact-pill" key={artifact}>
-                    {artifact}
-                  </span>
-                ))}
+              <p className="section-subtitle">
+                Review generated deliverables before download and push.
+              </p>
+
+              <div className="diff-toolbar" style={{ marginTop: "1rem" }}>
+                <label className="artifact-search" htmlFor="artifact-search-input">
+                  <span>Filter artifacts</span>
+                  <input
+                    id="artifact-search-input"
+                    value={artifactQuery}
+                    onChange={(event) => setArtifactQuery(event.target.value)}
+                    placeholder="Search by path, type, or filename"
+                  />
+                </label>
+                <button type="button" className="secondary-button" onClick={copyVisibleArtifacts}>
+                  {copiedArtifacts ? "Copied" : "Copy visible artifacts"}
+                </button>
+              </div>
+
+              <div className="diff-metrics" style={{ marginTop: "0.85rem" }}>
+                <span className="pill">Total {artifactStats.total}</span>
+                <span className="pill">API {artifactStats.api}</span>
+                <span className="pill">Evidence {artifactStats.evidence}</span>
+                <span className="pill">Docs {artifactStats.docs}</span>
+                <span className="pill">Source {artifactStats.source}</span>
+              </div>
+
+              <div className="artifact-landscape-lane" style={{ marginTop: "1rem" }}>
+                {artifactBuckets.length ? (
+                  artifactBuckets.map((bucket) => (
+                    <article className={`commit-preview-card tone-${bucket.tone}`} key={bucket.id}>
+                      <div className="commit-preview-head">
+                        <strong>{bucket.title}</strong>
+                        <span className={`badge badge-${bucket.tone}`}>{bucket.tone.toUpperCase()}</span>
+                      </div>
+                      <div className="commit-preview-items">
+                        {bucket.items.map((item) => (
+                          <span className="pill mono commit-preview-pill" key={`${bucket.id}-${item}`}>
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    </article>
+                  ))
+                ) : (
+                  <div className="empty-state" style={{ padding: "0.85rem" }}>
+                    <strong>No matching artifacts</strong>
+                    <span>Try a different keyword to locate a generated file.</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="diff-console" style={{ marginTop: "1rem" }}>
+                {visibleArtifactEntries.length ? (
+                  <ul className="diff-list">
+                    {visibleArtifactEntries.map((entry) => (
+                      <li className={`diff-row diff-${entry.kind === "evidence" ? "redacted" : "note"}`} key={entry.path}>
+                        <span className="diff-mark" aria-hidden="true">
+                          {entry.kind === "evidence" ? "~" : "·"}
+                        </span>
+                        <span className="diff-path mono">{entry.path}</span>
+                        <span className="pill">{entry.label}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="empty-state" style={{ padding: "0.8rem" }}>
+                    <strong>No matching artifacts</strong>
+                    <span>Adjust the search query to inspect other files.</span>
+                  </div>
+                )}
               </div>
 
               <div className="button-stack">
@@ -596,7 +757,6 @@ export default function JobPage() {
               <p className="section-subtitle evidence-line" style={{ marginTop: "1rem" }}>
                 Evidence file: <span className="mono path-value">{payload.evidence_path}</span>
               </p>
-            </div>
           </section>
         </>
       ) : null}
