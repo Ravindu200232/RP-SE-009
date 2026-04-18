@@ -1,0 +1,43 @@
+{
+  "entries": [
+    {
+      "id": "fix-1776515590091-13x5o4",
+      "bugText": "/course-service/routes/courses.js: route shadowing — '/' defined after parameterized '/:id'; move literal routes before /:param routes\n/learning-service/routes/lessons.js: route shadowing — '/' defined after parameterized '/:id'; move literal routes before /:param routes",
+      "embedding": [],
+      "meta": {
+        "method": "standard",
+        "outcome": "success",
+        "phase": "backend-fix",
+        "round": "1",
+        "timestamp": "2026-04-18T12:33:10.091Z",
+        "fixSummary": "Partial fix: resolved 1 of 2 issues"
+      }
+    },
+    {
+      "id": "fix-1776515616666-iw61w1",
+      "bugText": "/learning-service/routes/lessons.js: route shadowing — '/course/:id' defined after parameterized '/:id'; move literal routes before /:param routes",
+      "embedding": [],
+      "meta": {
+        "method": "root-cause",
+        "outcome": "fail",
+        "phase": "backend-fix",
+        "round": "2",
+        "timestamp": "2026-04-18T12:33:36.666Z",
+        "fixSummary": "No improvement: /learning-service/routes/lessons.js: route shadowing — '/' defined after parameterized '/:id'; move literal routes before /:param routes"
+      }
+    },
+    {
+      "id": "fix-1776515636876-b2pigv",
+      "bugText": "/learning-service/routes/lessons.js: route shadowing — '/course/:id' defined after parameterized '/:id'; move literal routes before /:param routes",
+      "embedding": [],
+      "meta": {
+        "method": "service-isolation",
+        "outcome": "fail",
+        "phase": "backend-fix",
+        "round": "3",
+        "timestamp": "2026-04-18T12:33:56.876Z",
+        "fixSummary": "No improvement: /learning-service/routes/lessons.js: route shadowing — '/' defined after parameterized '/:id'; move literal routes before /:param routes"
+      }
+    }
+  ]
+}

@@ -18,6 +18,8 @@ Use this local project skill when the generator is fixing backend bugs, startup 
 2. Align gateway and service contracts.
    - Match proxy prefixes to route file resource names.
    - Keep `/api/tasks`, `/api/users`, `/api/boards`, and similar resources consistent across gateway, services, and frontend.
+   - Keep local runtime ports deterministic: frontend `3004`, gateway `3005`, and services from `3006` upward.
+   - If a required local port is occupied, free it before starting the next validation run.
 3. Fix write-path reliability.
    - Ensure `cors()` and `express.json()` exist.
    - Add `fixRequestBody`, proxy timeouts, and JSON `502` downstream failure responses in the gateway.
@@ -29,6 +31,8 @@ Use this local project skill when the generator is fixing backend bugs, startup 
    - Validate IDs before database access.
    - Put literal routes like `/health`, `/status`, `/search`, and `/stats` before parameterized routes such as `/:id`.
    - Avoid cross-service `populate()` chains; return raw IDs if the related model belongs to another microservice.
+   - Validate route files, controllers, models, local `require()` paths, and `package.json` files before claiming success.
+   - Treat missing structured-spec services or endpoints as real backend bugs, not optional omissions.
 5. Run live validation.
    - Install dependencies.
    - Start services and gateway.
@@ -43,8 +47,8 @@ Use this local project skill when the generator is fixing backend bugs, startup 
    - Skip live requests that still depend on unresolved IDs or tokens rather than forcing fake placeholders.
    - Confirm MongoDB-backed CRUD behavior before frontend generation.
 6. Recover from repeated failures.
-   - If the same failure signature appears twice, stop extra loops and surface the exact remaining blocker.
-   - Only hard-block frontend generation when the remaining backend bug count meets the configured blocking threshold.
+   - If the same failure signature appears repeatedly, switch to full-file rewrites and stronger focused context instead of stopping early.
+   - Hard-block frontend generation until backend validation is clean and live route checks are clean.
    - If Windows install/startup throws `spawn EINVAL` or `ENOENT`, retry with a shell-backed launch for install commands.
 
 ## Inspirations used in this project

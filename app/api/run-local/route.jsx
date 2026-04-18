@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import { mkdir, writeFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 
-const FRONTEND_PORT = 3010;
+const FRONTEND_PORT = 3004;
 const GATEWAY_PORT = 3005;
 const DEFAULT_SERVICE_PORT = 3006;
 
@@ -245,6 +245,33 @@ function openBrowser(url, cwd) {
     }).unref();
 }
 
+function runShellCommand(command, cwd) {
+    return new Promise((resolve) => {
+        let stdout = '';
+        let stderr = '';
+        const child = spawn('cmd.exe', ['/c', command], {
+            cwd,
+            windowsHide: true,
+            shell: false,
+        });
+        child.stdout?.on('data', (chunk) => { stdout += chunk.toString(); });
+        child.stderr?.on('data', (chunk) => { stderr += chunk.toString(); });
+        child.once('close', (code) => resolve({ code, stdout, stderr }));
+        child.once('error', (error) => resolve({ code: 1, stdout, stderr: error.message }));
+    });
+}
+
+async function ensurePortAvailable(port) {
+    const netstat = await runShellCommand('netstat -ano -p tcp', process.cwd());
+    const text = `${netstat.stdout || ''}\n${netstat.stderr || ''}`;
+    const matches = [...text.matchAll(new RegExp(`^\\s*TCP\\s+[^\\s]+:${port}\\s+[^\\s]+\\s+LISTENING\\s+(\\d+)\\s*$`, 'gim'))];
+    const pids = [...new Set(matches.map((match) => Number(match[1])).filter((pid) => Number.isFinite(pid) && pid > 0 && pid !== process.pid))];
+
+    for (const pid of pids) {
+        await runShellCommand(`taskkill /PID ${pid} /T /F`, process.cwd());
+    }
+}
+
 export async function POST(request) {
     try {
         const { workspaceId, projectTitle, frontendFiles, backendFiles } = await request.json();
@@ -255,6 +282,8 @@ export async function POST(request) {
         const runSlug = slugify(projectTitle || workspaceId || 'generated-app');
         const rootDir = path.join(process.cwd(), 'local-runs', runSlug);
         await mkdir(path.dirname(rootDir), { recursive: true });
+        await ensurePortAvailable(FRONTEND_PORT);
+        await ensurePortAvailable(GATEWAY_PORT);
 
         const { frontendDir, backendDir, mongoUri, topology } = await writeGeneratedWorkspace({
             rootDir,
@@ -262,6 +291,11 @@ export async function POST(request) {
             frontendFiles,
             backendFiles: backendFiles || {},
         });
+
+        for (const dirName of topology.serviceDirs) {
+            const servicePort = topology.serviceConfigs[dirName]?.port || DEFAULT_SERVICE_PORT;
+            await ensurePortAvailable(servicePort);
+        }
 
         topology.packageDirs.forEach((dirName) => {
             const serviceDir = path.join(backendDir, dirName);

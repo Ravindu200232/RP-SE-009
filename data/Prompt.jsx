@@ -12,6 +12,7 @@ export default {
 You are an expert full-stack developer. Generate a complete, production-quality full-stack web app.
 If the user provides a structured JSON spec, IEEE SRS, service catalog, endpoint list, entity list, or requirements document, treat it as the main source of truth.
 Cover every listed feature, actor workflow, service route family, and required page or dashboard in the generated frontend.
+If the user provides a LOCAL REFERENCE BLUEPRINT block, use it as implementation guidance for architecture quality, runtime behavior, recovery strategy, preview UX, and codebase polish without overriding the user's requested product scope.
 
 Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
 OUTPUT FORMAT Ã¢â‚¬â€ FOLLOW EXACTLY
@@ -253,6 +254,7 @@ You are an expert Node.js + Express + MongoDB developer.
 Generate ONLY the backend microservices Ã¢â‚¬â€ no frontend code.
 If the user provides a structured JSON spec, IEEE SRS, service catalog, endpoint list, entity list, or requirements document, treat it as HARD REQUIREMENTS.
 That structured contract overrides the simple example architecture below. Generate every listed service, endpoint, entity, auth rule, and dependency unless the user explicitly asks to simplify.
+If a LOCAL REFERENCE BLUEPRINT block is present, apply it as implementation-quality guidance for service boundaries, deterministic runtime behavior, observability, repair resilience, and workflow orchestration.
 
 Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
 OUTPUT FORMAT Ã¢â‚¬â€ FOLLOW EXACTLY
@@ -324,6 +326,45 @@ SERVICES:
   Every service must expose GET /health returning { success: true, data: { status: 'ok', service: '[name]-service' } }
   Every resource router file must also expose GET /health so gateway checks like /api/tasks/health and /api/analytics/health work.
 
+AUTH MIDDLEWARE (mandatory when the app has authentication):
+  If any service uses JWT auth, generate /[auth-or-user]-service/middleware/auth.js:
+    const jwt = require('jsonwebtoken');
+    const SECRET = process.env.JWT_SECRET || process.env.SECRET_KEY || process.env.SEKRET_KEY || 'dev-secret';
+    module.exports = (req, res, next) => {
+      const header = req.headers['authorization'] || '';
+      const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+      if (!token) return res.status(401).json({ success: false, error: 'No token provided' });
+      try { req.user = jwt.verify(token, SECRET); next(); }
+      catch (_) { res.status(401).json({ success: false, error: 'Invalid or expired token' }); }
+    };
+  Protected route files require this middleware: const auth = require('../middleware/auth');
+  router.get('/me', auth, async (req, res) => { ... });
+  The middleware file MUST exist whenever any route uses it as a require.
+
+SERVICE-WISE COMPLETENESS (required for every service):
+  Each service MUST have index.js + models/ + routes/ + package.json.
+  index.js mounts every route file: app.use('/api/[resource]', require('./routes/[name]'))
+  Model fields MUST declare explicit types: { type: String|Number|Boolean|Date }
+  Route POST/PUT handlers MUST validate required fields match model schema types before persistence.
+
+ROUTE ORDERING (critical — prevents MongoDB CastError at runtime):
+  In every routes file, literal-path routes MUST come BEFORE parameterized routes.
+  CORRECT order:
+    router.get('/my', auth, handler);          // literal first
+    router.get('/search', handler);             // literal first
+    router.get('/course/:courseId', handler);   // literal segment first
+    router.get('/:id', handler);               // param last
+  WRONG order (causes CastError when Express tries to cast 'my' as ObjectId):
+    router.get('/:id', handler);               // param first — WRONG
+    router.get('/my', auth, handler);          // shadows /:id — WRONG
+
+DUAL-PREFIX GATEWAY (when one service handles multiple API prefixes):
+  If a single backend service handles endpoints under more than one /api/* path prefix,
+  generate TWO separate createProxyMiddleware rules in the gateway, both pointing to the same port.
+  Example — Learning Service handles /api/lessons AND /api/quizzes on port 5004:
+    app.use('/api/lessons', createProxyMiddleware({ target: 'http://127.0.0.1:5004', changeOrigin: true, fixRequestBody: true }));
+    app.use('/api/quizzes', createProxyMiddleware({ target: 'http://127.0.0.1:5004', changeOrigin: true, fixRequestBody: true }));
+
 PACKAGE.JSON per service:
   {"name":"[name]-service","version":"1.0.0","scripts":{"start":"node index.js","dev":"nodemon index.js"},"dependencies":{"express":"^4.18.2","mongoose":"^8.0.3","cors":"^2.8.5","dotenv":"^16.0.0","uuid":"^9.0.0","bcryptjs":"^2.4.3","jsonwebtoken":"^9.0.2"}}
 
@@ -386,6 +427,7 @@ Rules:
     BACKEND_FIX_PROMPT: dedent`
 You are a senior Node.js debugger reviewing Express + MongoDB microservice code.
 Find and fix ALL bugs in the provided backend files.
+If a LOCAL REFERENCE BLUEPRINT block is present, use it to prefer structured, observable, diff-safe, whole-file repairs over brittle tiny patches.
 
 ROUND STRATEGY:
 - Round 1 should fix every visible backend bug in one strong pass.
@@ -420,6 +462,28 @@ BUGS TO CHECK
 15. Literal routes like /health are declared after parameterized routes like /:id, causing CastError or route shadowing
 16. Service ignores process.env.MONGODB_URI / process.env.MONGO_URL and hardcodes a database URI
 17. Cross-service mongoose populate() is used for models that are not registered in the current service
+18. Auth middleware file missing — if any service has JWT-protected routes that require('../middleware/auth') or require('./middleware/auth'), the file /[service]/middleware/auth.js MUST exist; if absent, generate it:
+    const jwt = require('jsonwebtoken');
+    const SECRET = process.env.JWT_SECRET || process.env.SECRET_KEY || process.env.SEKRET_KEY || 'dev-secret';
+    module.exports = (req, res, next) => {
+      const header = req.headers['authorization'] || '';
+      const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+      if (!token) return res.status(401).json({ success: false, error: 'No token provided' });
+      try { req.user = jwt.verify(token, SECRET); next(); }
+      catch (_) { res.status(401).json({ success: false, error: 'Invalid or expired token' }); }
+    };
+19. Service-wise completeness — for each service directory verify:
+    a. index.js mounts every route file via app.use('/api/[resource]', require('./routes/[name]'))
+    b. Every model field has an explicit { type: String|Number|Boolean|Date } declaration
+    c. Route POST/PUT handlers validate required fields exist and match model schema types before calling save() or findByIdAndUpdate()
+20. Route shadowing — in every routes file, any literal-path route (e.g. /my, /me, /search, /count, /course/:id) that appears AFTER a parameterized route (/:id, /:courseId) will shadow/steal requests:
+    a. Move ALL literal routes to BEFORE any /:param route in the same router
+    b. Example fix: router.get('/my', auth, handler) MUST come before router.get('/:id', handler)
+    c. Example fix: router.get('/course/:id', handler) MUST come before router.get('/:id', handler)
+    d. If a service in the spec has endpoints under multiple gateway prefixes (e.g. /api/lessons AND /api/quizzes), generate TWO separate app.use() proxy rules in the gateway pointing to the same service port
+21. Dual-prefix gateway — if a single service handles endpoints under more than one /api/* prefix (e.g. a Learning Service handling both /api/lessons and /api/quizzes), the gateway MUST have two separate proxy rules:
+    app.use('/api/lessons', createProxyMiddleware({ target: 'http://127.0.0.1:PORT', ... }));
+    app.use('/api/quizzes', createProxyMiddleware({ target: 'http://127.0.0.1:PORT', ... }));
 
 Output ONLY fixed files or ===NO_BUGS=== Ã¢â‚¬â€ no explanations outside markers.
 `,
@@ -486,6 +550,7 @@ Test ALL routes in ALL service files AND the gateway. Include every GET/POST/PUT
 You are a senior Node.js developer fixing specific API route failures.
 You will receive backend code AND a list of FAILED routes with their failure reasons.
 You may also receive a DEEP FAILURE ANALYSIS block that groups failures by root cause, likely owner files, and shared fix hints.
+If a LOCAL REFERENCE BLUEPRINT block is present, use it to guide architecture-level fixes, deterministic runtime recovery, and stronger end-to-end route coverage.
 
 ROUND STRATEGY:
 - Round 1 should eliminate every listed failing route in one pass.
@@ -531,6 +596,17 @@ FIXING RULES:
 23. If many routes fail with 401/403, repair auth flow ordering, token issuance, middleware exemptions, and Bearer token compatibility together in one pass
 24. If many routes fail with 400 validation errors, align sample-acceptable payload handling with schema enums/required fields and keep create/update handlers realistic
 25. Treat the DEEP FAILURE ANALYSIS as the primary debugging guide for round 1 and aim to finish the full failure bundle in that first pass
+26. Auth middleware file missing — if any route file contains require('../middleware/auth') or require('./middleware/auth') but that file does not exist in the generated output, create /[service]/middleware/auth.js:
+    const jwt = require('jsonwebtoken');
+    const SECRET = process.env.JWT_SECRET || process.env.SECRET_KEY || process.env.SEKRET_KEY || 'dev-secret';
+    module.exports = (req, res, next) => {
+      const header = req.headers['authorization'] || '';
+      const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+      if (!token) return res.status(401).json({ success: false, error: 'No token provided' });
+      try { req.user = jwt.verify(token, SECRET); next(); }
+      catch (_) { res.status(401).json({ success: false, error: 'Invalid or expired token' }); }
+    };
+27. Service-wise route alignment — for each service verify index.js mounts every route file; every model field has explicit type; route POST/PUT handlers validate required fields before persistence
 
 Output ONLY the corrected files in ===BACKEND: /path===...===ENDFILE=== format.
 `,
@@ -538,6 +614,7 @@ Output ONLY the corrected files in ===BACKEND: /path===...===ENDFILE=== format.
     FRONTEND_FIX_PROMPT: dedent`
 You are a React + Tailwind CSS debugging expert.
 Review the provided React frontend files and fix ALL bugs.
+If a LOCAL REFERENCE BLUEPRINT block is present, use it to improve product polish, local preview reliability, workflow clarity, and diff-safe frontend repairs.
 
 If the code is correct with NO bugs, output ONLY this exact line:
 ===NO_BUGS===

@@ -813,7 +813,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: { alias: { '@': path.resolve(__dirname, './src') } },
   server: {
-    port: 3000,
+    port: 3004,
     proxy: { '/api': { target: 'http://localhost:3005', changeOrigin: true } },
   },
 });`);
@@ -871,7 +871,7 @@ export default {
             });
         }
 
-        zip.file('README.md', `# ${projectTitle || slug}\n\n## Quick Start\n\n### Frontend\n\`\`\`bash\ncd frontend && npm install && npm run dev\n\`\`\`\n\n### Backend\n\`\`\`bash\ncd backend/api-gateway && npm install && npm start\ncd backend/[service]-service && npm install && npm start\n\`\`\`\n\n## Ports\n- Frontend: 3000\n- API Gateway: 3005\n- Service 1: 3006 / Service 2: 3007\n- MongoDB: 27017\n`);
+        zip.file('README.md', `# ${projectTitle || slug}\n\n## Quick Start\n\n### Frontend\n\`\`\`bash\ncd frontend && npm install && npm run dev -- --port 3004\n\`\`\`\n\n### Backend\n\`\`\`bash\ncd backend/api-gateway && npm install && npm start\ncd backend/[service]-service && npm install && npm start\n\`\`\`\n\n## Ports\n- Frontend: 3004\n- API Gateway: 3005\n- Service 1: 3006 / Service 2: 3007\n- MongoDB: 27017\n`);
 
         const beKeys  = Object.keys(backendFiles);
         const hasBack = beKeys.length > 0;
@@ -884,15 +884,15 @@ export default {
             bat.push('timeout /t 2 /nobreak >nul');
         });
         bat.push(`echo  [${svcDirs.length+1}/${svcDirs.length+1}] Starting Frontend`);
-        bat.push(`start "Frontend" cmd /k "cd /d "%~dp0frontend" && npm install && npm run dev"`);
-        bat.push('timeout /t 10 /nobreak >nul', 'start "" "http://localhost:3000"', 'echo.', 'echo  ========================================');
+        bat.push(`start "Frontend" cmd /k "cd /d "%~dp0frontend" && npm install && npm run dev -- --port 3004"`);
+        bat.push('timeout /t 10 /nobreak >nul', 'start "" "http://localhost:3004"', 'echo.', 'echo  ========================================');
         if (hasBack) bat.push('echo    Gateway  : http://localhost:3005');
-        bat.push('echo    Frontend : http://localhost:3000', 'echo  ========================================', 'pause');
+        bat.push('echo    Frontend : http://localhost:3004', 'echo  ========================================', 'pause');
         zip.file('start.bat', bat.join('\r\n'));
 
         const sh = ['#!/bin/bash', `echo "Starting ${projectTitle || slug}..."`, ''];
         svcDirs.forEach(dir => sh.push(`(cd "$(dirname "$0")/backend/${dir}" && npm install --silent && node index.js) &`));
-        sh.push('(cd "$(dirname "$0")/frontend" && npm install && npm run dev) &', 'sleep 8', 'command -v open &>/dev/null && open http://localhost:3000 || xdg-open http://localhost:3000 2>/dev/null || true');
+        sh.push('(cd "$(dirname "$0")/frontend" && npm install && npm run dev -- --port 3004) &', 'sleep 8', 'command -v open &>/dev/null && open http://localhost:3004 || xdg-open http://localhost:3004 2>/dev/null || true');
         zip.file('start.sh', sh.join('\n'));
         zip.file('.gitignore', 'node_modules\n.env\ndist\n.DS_Store\n');
 

@@ -1,12 +1,12 @@
-﻿// Ollama client helper â€” Hybrid DeepSeek generation with Qwen coder repair/testing
+// Ollama client helper — default to local coder models
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
-const MODEL = process.env.OLLAMA_MODEL || 'deepseek-v3.1:671b-cloud';
-const BACKEND_GEN_MODEL = process.env.OLLAMA_MODEL_BACKEND_GEN || MODEL;
-const BACKEND_FIX_MODEL = process.env.OLLAMA_MODEL_BACKEND_FIX || 'qwen2.5-coder:7b';
-const API_TEST_MODEL = process.env.OLLAMA_MODEL_API_TEST || 'qwen2.5-coder:7b';
-const FRONTEND_GEN_MODEL = process.env.OLLAMA_MODEL_FRONTEND || MODEL;
-const FRONTEND_FIX_MODEL = process.env.OLLAMA_MODEL_FRONTEND_FIX || 'qwen2.5-coder:7b';
-const FALLBACK_MODEL = process.env.OLLAMA_MODEL_FALLBACK || 'qwen2.5-coder:7b';
+const MODEL = process.env.OLLAMA_MODEL || 'qwen2.5-coder:7b';
+const BACKEND_GEN_MODEL  = process.env.OLLAMA_MODEL_BACKEND_GEN  || MODEL;
+const BACKEND_FIX_MODEL  = process.env.OLLAMA_MODEL_BACKEND_FIX  || MODEL;
+const API_TEST_MODEL     = process.env.OLLAMA_MODEL_API_TEST      || MODEL;
+const FRONTEND_GEN_MODEL = process.env.OLLAMA_MODEL_FRONTEND      || MODEL;
+const FRONTEND_FIX_MODEL = process.env.OLLAMA_MODEL_FRONTEND_FIX  || MODEL;
+const FALLBACK_MODEL     = process.env.OLLAMA_MODEL_FALLBACK       || 'codellama:7b';
 
 async function requestOllamaChat(body) {
     return fetch(`${OLLAMA_BASE_URL}/api/chat`, {
@@ -100,3 +100,4 @@ export { OLLAMA_BASE_URL, MODEL, BACKEND_GEN_MODEL, BACKEND_FIX_MODEL, API_TEST_
 
 
 
+

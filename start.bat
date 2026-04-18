@@ -85,12 +85,13 @@ echo    Backend   : http://localhost:5000
 echo    Ollama    : http://localhost:11434
 echo    MongoDB   : mongodb://localhost:27017
 echo.
-echo    Model     : deepseek-v3.1:671b-cloud (generation) + qwen2.5-coder:7b (fix/test)
+echo    Model     : qwen2.5-coder:7b (primary) + codellama:7b (fallback)
 echo.
 echo  Press any key to exit this window...
 echo  (The service windows will keep running)
 echo.
 pause >nul
+
 
 
 

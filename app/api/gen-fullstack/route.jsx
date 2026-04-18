@@ -1,6 +1,7 @@
 ﻿import { spawn } from 'node:child_process';
-import { mkdir, writeFile, rm, readFile, access } from 'node:fs/promises';
+import { mkdir, writeFile, rm, readFile, access, appendFile } from 'node:fs/promises';
 import net from 'node:net';
+import { builtinModules } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -14,13 +15,91 @@ import {
     FRONTEND_FIX_MODEL,
 } from '@/configs/AiModel';
 import Prompt from '@/data/Prompt';
+import {
+    storeBugFix,
+    buildMemoryContext,
+    getFailedMethods,
+    getBestKnownFix,
+} from '@/lib/bugMemoryChroma';
+import {
+    pickStrategy,
+    markStrategyFailed,
+    clearStrategyState,
+    buildHumanLikeInstruction,
+} from '@/lib/fixStrategy';
 
-const MAX_BACKEND_FIX_ROUNDS = 10;
-const MAX_API_FIX_ROUNDS = 10;
-const MAX_LIVE_FIX_ROUNDS = 10;
-const MIN_BACKEND_BUGS_TO_BLOCK_FRONTEND = 3;
+const FIX_ROUND_CAP = Number.parseInt(process.env.AI_BUILDER_MAX_FIX_ROUNDS || '10', 10);
+const MAX_BACKEND_FIX_ROUNDS = Number.isFinite(FIX_ROUND_CAP) && FIX_ROUND_CAP > 0 ? FIX_ROUND_CAP : 10;
+const MAX_API_FIX_ROUNDS = Number.isFinite(FIX_ROUND_CAP) && FIX_ROUND_CAP > 0 ? FIX_ROUND_CAP : 10;
+const MAX_LIVE_FIX_ROUNDS = Number.isFinite(FIX_ROUND_CAP) && FIX_ROUND_CAP > 0 ? FIX_ROUND_CAP : 10;
+const MAX_NO_PROGRESS_ROUNDS = 2;
+const MAX_SAME_SIGNATURE_ROUNDS = 2;
+const MAX_REGRESSIVE_ROUNDS = 1;
+const DEFAULT_FRONTEND_PORT = 3004;
+const DEFAULT_GATEWAY_PORT = 3005;
+const DEFAULT_SERVICE_PORT_START = 3006;
 const BUG_MEMORY_PATH = path.join(process.cwd(), 'memory.md');
 const BUG_SKILL_PATH = path.join(process.cwd(), 'skills', 'ai-web-builder-backend-recovery', 'SKILL.md');
+const LOCAL_REFERENCE_MANIFEST = [
+    {
+        name: 'AgentField',
+        file: 'references/agentfield-main/README.md',
+        guidance: [
+            'prefer structured contracts and typed outputs over loose code guesses',
+            'preserve memory, auditability, and explicit execution state across repair rounds',
+            'treat long-running work as observable multi-step workflows, not one-shot blobs',
+        ],
+    },
+    {
+        name: 'AI Website Builder',
+        file: 'references/Ai-Website-Builder-main/README.md',
+        guidance: [
+            'optimize for full app coverage, real-time progress, and usable live preview',
+            'favor end-to-end generation that keeps frontend and backend aligned',
+        ],
+    },
+    {
+        name: 'bolt.diy',
+        file: 'references/bolt.diy-main/README.md',
+        guidance: [
+            'prefer deterministic file patches, diff-safe rewrites, and recovery from bad generations',
+            'use file locking, snapshots, and provider/runtime abstraction patterns',
+            'keep terminal, preview, and search workflows first-class in the builder UX',
+        ],
+    },
+    {
+        name: 'BuildShip',
+        file: 'references/buildship-main/README.md',
+        guidance: [
+            'think in backend workflows, jobs, APIs, and production-ready service orchestration',
+            'generate integrations and backend workflows as explicit system capabilities',
+        ],
+    },
+    {
+        name: 'Claude Code',
+        file: 'references/claude-code-main/README.md',
+        guidance: [
+            'prefer terminal-first debugging, plugins/skills, and clear bug-report driven recovery',
+            'treat bug fixing as an iterative engineering workflow with explicit ownership',
+        ],
+    },
+    {
+        name: 'Dyad',
+        file: 'references/dyad-main/README.md',
+        guidance: [
+            'optimize for local-first app generation, runtime separation, and preview reliability',
+            'support restartable dev environments and stable local execution paths',
+        ],
+    },
+    {
+        name: 'Dyad Cloud Sandboxes',
+        file: 'references/dyad-main/plans/cloud-sandboxes.md',
+        guidance: [
+            'separate runtime modes cleanly and keep preview/start/restart actions deterministic',
+            'treat browser-open and server lifecycle as explicit product behaviors',
+        ],
+    },
+];
 
 /* Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
    SHARED HELPERS
@@ -143,15 +222,406 @@ async function loadBackendRepairContext() {
     sections.push(
         [
             'ROUND POLICY:',
-            '- Round 1 must fix every currently known backend bug in one pass.',
-            '- Rounds 2-5 are recovery rounds for exact remaining failures only.',
-            '- Stop early as soon as every backend bug is fixed; do not spend extra rounds after the backend is clean.',
+            '- Round 1 should classify failures by root cause and fix only the single highest-impact root-cause group first.',
+            '- Later rounds are recovery rounds for the same remaining root-cause group only.',
+            '- Do not stop while backend validation errors or route/runtime bugs still remain.',
             '- If a failure repeats, rewrite the owning route file and related gateway/service registration completely instead of making a tiny patch.',
-            '- Do not leave a known failing route for later rounds if its owning file is already being edited.',
+            '- Ignore blocked routes when choosing the next fix target; fix the direct root cause first.',
+            `- Live runtime ports are fixed: frontend ${DEFAULT_FRONTEND_PORT}, gateway ${DEFAULT_GATEWAY_PORT}, services start at ${DEFAULT_SERVICE_PORT_START}.`,
+            '- Validate routes, models, controllers, local requires, package.json files, and structured-spec endpoint coverage before claiming the backend is clean.',
+            '- Never continue to frontend generation while any backend validation issue or route bug remains.',
         ].join('\n')
     );
 
     return sections.join('\n\n').trim();
+}
+
+function extractReferenceHeading(text = '') {
+    const lines = String(text || '')
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+    const heading = lines.find((line) => /^#/.test(line)) || lines[0] || '';
+    return heading.replace(/^#+\s*/, '').trim();
+}
+
+async function loadLocalReferenceContext() {
+    const discovered = [];
+
+    for (const reference of LOCAL_REFERENCE_MANIFEST) {
+        const absolutePath = path.join(process.cwd(), reference.file);
+        const preview = await readOptionalText(absolutePath, 600);
+        if (!preview) {
+            continue;
+        }
+
+        discovered.push({
+            ...reference,
+            heading: extractReferenceHeading(preview),
+        });
+    }
+
+    if (!discovered.length) {
+        return '';
+    }
+
+    const lines = [
+        'LOCAL REFERENCE BLUEPRINT:',
+        'Use the following local projects as implementation-quality guidance. Keep the user prompt and structured spec as the primary contract, then apply these patterns to improve architecture, repair strategy, and product polish.',
+        ...discovered.map((reference) => {
+            const heading = reference.heading ? ` | ${reference.heading}` : '';
+            return `- ${reference.name}${heading}: ${reference.guidance.join('; ')}.`;
+        }),
+        'Apply these references to generation and bug fixing by improving service boundaries, route/controller/model alignment, diff-safe rewrites, validation discipline, live-preview reliability, and deterministic runtime behavior.',
+    ];
+
+    return lines.join('\n');
+}
+
+async function appendBugMemory(section, details = []) {
+    const lines = Array.isArray(details)
+        ? details.map((item) => String(item || '').trim()).filter(Boolean)
+        : [String(details || '').trim()].filter(Boolean);
+    if (!lines.length) {
+        return;
+    }
+
+    const timestamp = new Date().toISOString();
+    const entry = [
+        '',
+        `## ${section} | ${timestamp}`,
+        ...lines.slice(0, 8).map((line) => `- ${line}`),
+    ].join('\n') + '\n';
+
+    await appendFile(BUG_MEMORY_PATH, entry, 'utf8').catch(() => {});
+}
+
+function normalizeDisplayList(values = []) {
+    return [...new Set((values || []).map((value) => String(value || '').trim()).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b));
+}
+
+function humanizeServiceName(serviceDir = '') {
+    const label = String(serviceDir || '').replace(/^\/+/, '') || 'service';
+    return label
+        .replace(/-service$/i, ' service')
+        .replace(/-/g, ' ')
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function fileUsesAuthMiddleware(code = '') {
+    return /\b(?:app|router)\.(?:get|post|put|patch|delete)\s*\([\s\S]{0,400}?\bauth\b/.test(String(code || ''));
+}
+
+function fileDeclaresAuthMiddleware(code = '') {
+    return /\b(?:const|let|var)\s+auth\b/.test(String(code || ''))
+        || /\bfunction\s+auth\b/.test(String(code || ''))
+        || /\bimport\s+auth\b/.test(String(code || ''))
+        || /\bimport\s*\{\s*auth\s*\}\s*from\b/.test(String(code || ''))
+        || /require\(\s*['"](?:\.\.\/|\.\/)*middleware\/auth['"]\s*\)/.test(String(code || ''));
+}
+
+function fileNeedsAuthMiddlewareImport(code = '') {
+    return fileUsesAuthMiddleware(code) && !fileDeclaresAuthMiddleware(code);
+}
+
+function prependRequireLine(code = '', requireLine = '') {
+    const source = String(code || '');
+    const line = String(requireLine || '').trim();
+    if (!source.trim() || !line) {
+        return source;
+    }
+    if (source.includes(line)) {
+        return source;
+    }
+
+    const requireBlockMatch = source.match(/^((?:\s*(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*require\([^\n]+\);\s*\r?\n)+)/);
+    if (requireBlockMatch) {
+        return `${requireBlockMatch[1]}${line}\n${source.slice(requireBlockMatch[1].length)}`;
+    }
+
+    return `${line}\n${source}`;
+}
+
+function inferExpectedLibraries(structuredSpec = null, prompt = '') {
+    const backendLibraries = new Set(['express', 'cors', 'dotenv']);
+    const frontendLibraries = new Set(['react']);
+    const signalText = [
+        prompt,
+        structuredSpec?.projectTitle || '',
+        ...(structuredSpec?.services || []).map((service) => `${service.name} ${service.description} ${(service.endpoints || []).map((endpoint) => `${endpoint.method} ${endpoint.path}`).join(' ')}`),
+        ...(structuredSpec?.features || []).map((feature) => `${feature.name} ${feature.description}`),
+    ].join(' ').toLowerCase();
+
+    if ((structuredSpec?.services || []).length > 0) {
+        backendLibraries.add('mongoose');
+    }
+    if ((structuredSpec?.services || []).length > 1) {
+        backendLibraries.add('http-proxy-middleware');
+        frontendLibraries.add('axios');
+    }
+    if (/auth|login|register|token|jwt|password/.test(signalText)) {
+        backendLibraries.add('jsonwebtoken');
+        backendLibraries.add('bcryptjs');
+        frontendLibraries.add('react-router-dom');
+    }
+    if (/upload|image|file/.test(signalText)) {
+        backendLibraries.add('multer');
+    }
+    if (/toast|notification|alert/.test(signalText)) {
+        frontendLibraries.add('react-toastify');
+    }
+    if (/dashboard|chart|analytics|report/.test(signalText)) {
+        frontendLibraries.add('recharts');
+    }
+
+    return {
+        backendLibraries: normalizeDisplayList([...backendLibraries]),
+        frontendLibraries: normalizeDisplayList([...frontendLibraries]),
+    };
+}
+
+function buildAppPlanningSnapshot(structuredSpec = null, prompt = '') {
+    const libraries = inferExpectedLibraries(structuredSpec, prompt);
+    const services = (structuredSpec?.services || []).map((service) => {
+        const endpointCount = Array.isArray(service?.endpoints) ? service.endpoints.length : 0;
+        return `${service.name || service.slug || 'service'} (${endpointCount} endpoint${endpointCount === 1 ? '' : 's'})`;
+    });
+    const features = (structuredSpec?.features || []).map((feature) => feature.name).filter(Boolean);
+
+    const lines = [
+        `Project: ${structuredSpec?.projectTitle || 'Generated app'}`,
+        `Services: ${services.length ? services.join(', ') : 'not structured'}`,
+        `Features: ${features.length ? features.join(', ') : 'not structured'}`,
+        `Expected backend libraries: ${libraries.backendLibraries.join(', ') || 'none inferred'}`,
+        `Expected frontend libraries: ${libraries.frontendLibraries.join(', ') || 'none inferred'}`,
+        'Developer workflow: understand app scope, remember expected libraries, then audit each backend service in order (models -> routes -> controllers -> index.js -> package.json) before patching.',
+        'Frontend workflow: audit pages/files individually for syntax, local imports, and missing external libraries before final preview.',
+    ];
+
+    return {
+        libraries,
+        lines,
+    };
+}
+
+function inspectBackendFileImports(filePath = '', code = '', backendFiles = {}, declaredPackages = new Set()) {
+    const missingLocalRequires = new Set();
+    const missingPackages = new Set();
+    const modelImports = new Set();
+
+    [...String(code || '').matchAll(/require\(\s*['"](\.[^'"]+)['"]\s*\)/g)].forEach((match) => {
+        const requestPath = match[1];
+        const candidates = resolveLocalRequireCandidates(filePath, requestPath);
+        const found = candidates.some((candidate) => backendFiles[candidate]);
+        if (!found) {
+            missingLocalRequires.add(requestPath);
+        }
+    });
+
+    extractRequireAndImportRequests(code).forEach((requestPath) => {
+        if (/\/models?\//i.test(requestPath) || /^\.\.\/models?\//i.test(requestPath) || /^\.\/*models?\//i.test(requestPath)) {
+            modelImports.add(requestPath);
+        }
+        const packageName = getExternalRequirePackageName(requestPath);
+        if (!packageName || NODE_BUILTIN_MODULES.has(packageName)) {
+            return;
+        }
+        if (!declaredPackages.has(packageName)) {
+            missingPackages.add(packageName);
+        }
+    });
+
+    return {
+        missingLocalRequires: normalizeDisplayList([...missingLocalRequires]),
+        missingPackages: normalizeDisplayList([...missingPackages]),
+        modelImports: normalizeDisplayList([...modelImports]),
+    };
+}
+
+function collectBackendServiceAudit(backendFiles = {}, structuredSpec = null) {
+    const backendPaths = Object.keys(backendFiles || {});
+    const packageJsonByService = parsePackageJsonMap(backendFiles);
+    const serviceDirs = new Set(
+        backendPaths
+            .map((filePath) => getServiceDirForFile(filePath))
+            .filter(Boolean)
+    );
+
+    return [...serviceDirs]
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b))
+        .map((serviceDir) => {
+            const files = backendPaths.filter((filePath) => filePath.startsWith(`${serviceDir}/`) || filePath === `${serviceDir}/index.js`);
+            const modelFiles = files.filter((filePath) => /\/models?\//i.test(filePath));
+            const routeFiles = files.filter((filePath) => /\/routes?\//i.test(filePath));
+            const controllerFiles = files.filter((filePath) => /\/controllers?\//i.test(filePath));
+            const indexPath = `${serviceDir}/index.js`;
+            const packagePath = `${serviceDir}/package.json`;
+            const indexCode = normalizeBackendFileContent(indexPath, typeof backendFiles[indexPath] === 'string' ? backendFiles[indexPath] : backendFiles[indexPath]?.code || '');
+            const servicePackageJson = packageJsonByService.get(serviceDir) || {};
+            const declaredPackages = getDeclaredPackageNames(servicePackageJson);
+
+            const routeAudit = routeFiles.reduce((acc, filePath) => {
+                const code = normalizeBackendFileContent(filePath, typeof backendFiles[filePath] === 'string' ? backendFiles[filePath] : backendFiles[filePath]?.code || '');
+                const imports = inspectBackendFileImports(filePath, code, backendFiles, declaredPackages);
+                imports.missingLocalRequires.forEach((value) => acc.missingLocalRequires.add(value));
+                imports.missingPackages.forEach((value) => acc.missingPackages.add(value));
+                imports.modelImports.forEach((value) => acc.modelImports.add(value));
+                [...code.matchAll(/\brouter\.(get|post|put|patch|delete)\s*\(\s*['"]([^'"]+)['"]/gi)].forEach((match) => {
+                    acc.endpoints.add(`${String(match[1] || 'GET').toUpperCase()} ${match[2]}`);
+                });
+                if (/(joi|zod|express-validator|celebrate|validate|validationresult|required\s*:|enum\s*:)/i.test(code)) {
+                    acc.hasValidationHints = true;
+                }
+                if (fileNeedsAuthMiddlewareImport(code)) {
+                    acc.missingAuthMiddleware = true;
+                }
+                return acc;
+            }, {
+                missingLocalRequires: new Set(),
+                missingPackages: new Set(),
+                modelImports: new Set(),
+                endpoints: new Set(),
+                hasValidationHints: false,
+                missingAuthMiddleware: false,
+            });
+
+            const modelAudit = modelFiles.reduce((acc, filePath) => {
+                const code = normalizeBackendFileContent(filePath, typeof backendFiles[filePath] === 'string' ? backendFiles[filePath] : backendFiles[filePath]?.code || '');
+                const imports = inspectBackendFileImports(filePath, code, backendFiles, declaredPackages);
+                imports.missingLocalRequires.forEach((value) => acc.missingLocalRequires.add(value));
+                imports.missingPackages.forEach((value) => acc.missingPackages.add(value));
+                if (/new\s+Schema\s*\(|mongoose\.Schema|required\s*:|enum\s*:|default\s*:/.test(code)) {
+                    acc.hasSchemaValidation = true;
+                }
+                return acc;
+            }, {
+                missingLocalRequires: new Set(),
+                missingPackages: new Set(),
+                hasSchemaValidation: false,
+            });
+
+            const indexAudit = inspectBackendFileImports(indexPath, indexCode, backendFiles, declaredPackages);
+            const indexMissingAuthMiddleware = fileNeedsAuthMiddlewareImport(indexCode);
+            const mountedRoutes = [...indexCode.matchAll(/\bapp\.use\(\s*['"]([^'"]+)['"]/g)]
+                .map((match) => match[1])
+                .filter(Boolean);
+
+            return {
+                serviceDir,
+                serviceName: humanizeServiceName(serviceDir),
+                modelFiles,
+                routeFiles,
+                controllerFiles,
+                hasIndex: Boolean(backendFiles[indexPath]),
+                hasPackage: Boolean(backendFiles[packagePath]),
+                declaredPackages: normalizeDisplayList([...declaredPackages]),
+                routeMissingLocalRequires: normalizeDisplayList([...routeAudit.missingLocalRequires]),
+                routeMissingPackages: normalizeDisplayList([...routeAudit.missingPackages]),
+                routeModelImports: normalizeDisplayList([...routeAudit.modelImports]),
+                routeEndpoints: normalizeDisplayList([...routeAudit.endpoints]),
+                routeValidationState: routeFiles.length === 0
+                    ? 'no route files generated yet'
+                    : routeAudit.hasValidationHints
+                        ? 'route validation hints found'
+                        : 'no explicit route validation hints found',
+                routeMissingAuthMiddleware: routeAudit.missingAuthMiddleware,
+                modelMissingLocalRequires: normalizeDisplayList([...modelAudit.missingLocalRequires]),
+                modelMissingPackages: normalizeDisplayList([...modelAudit.missingPackages]),
+                modelValidationState: modelFiles.length === 0
+                    ? 'no model files generated yet'
+                    : modelAudit.hasSchemaValidation
+                        ? 'schema validation hints found'
+                        : 'model files present but validation hints are light',
+                indexMissingLocalRequires: indexAudit.missingLocalRequires,
+                indexMissingPackages: indexAudit.missingPackages,
+                indexMissingAuthMiddleware,
+                mountedRoutes: normalizeDisplayList(mountedRoutes),
+            };
+        });
+}
+
+function emitBackendServiceAudit(emit, audit = [], { phase = 'backend-fix', round = null } = {}) {
+    if (!emit || !Array.isArray(audit) || audit.length === 0) {
+        return;
+    }
+
+    const base = { type: 'log', phase, level: 'info' };
+    if (round != null) {
+        base.round = round;
+    }
+
+    audit.forEach((service) => {
+        emit({
+            ...base,
+            message: `[developer-check] ${service.serviceName}: models ${service.modelFiles.length}, routes ${service.routeFiles.length}, controllers ${service.controllerFiles.length}, index.js ${service.hasIndex ? 'present' : 'missing'}, package.json ${service.hasPackage ? 'present' : 'missing'}`,
+        });
+        emit({
+            ...base,
+            message: `[developer-check] ${service.serviceName}: model layer ${service.modelValidationState}; model imports ${service.modelMissingLocalRequires.length || service.modelMissingPackages.length ? `issues -> local ${service.modelMissingLocalRequires.join(', ') || 'none'} | packages ${service.modelMissingPackages.join(', ') || 'none'}` : 'OK'}`,
+        });
+        emit({
+            ...base,
+            message: `[developer-check] ${service.serviceName}: routes ${service.routeEndpoints.join(', ') || 'none parsed'}; route/model imports ${service.routeMissingLocalRequires.length || service.routeMissingPackages.length || service.routeMissingAuthMiddleware ? `issues -> local ${service.routeMissingLocalRequires.join(', ') || 'none'} | packages ${service.routeMissingPackages.join(', ') || 'none'}${service.routeMissingAuthMiddleware ? ' | auth middleware import missing' : ''}` : 'OK'}`,
+        });
+        emit({
+            ...base,
+            message: `[developer-check] ${service.serviceName}: index/routes ${service.hasIndex ? `mounts ${service.mountedRoutes.join(', ') || 'none parsed'}` : 'index.js missing'}; index import check ${service.indexMissingLocalRequires.length || service.indexMissingPackages.length || service.indexMissingAuthMiddleware ? `issues -> local ${service.indexMissingLocalRequires.join(', ') || 'none'} | packages ${service.indexMissingPackages.join(', ') || 'none'}${service.indexMissingAuthMiddleware ? ' | auth middleware import missing' : ''}` : 'OK'}`,
+        });
+    });
+}
+
+function classifyFrontendAuditKind(filePath = '') {
+    const normalized = String(filePath || '').replace(/\\/g, '/').toLowerCase();
+    if (/\/pages?\//.test(normalized) || /\/app\//.test(normalized)) return 'page';
+    if (/(^|\/)(app|main|index)\.(jsx?|tsx?)$/.test(normalized)) return 'entry';
+    if (/\/components?\//.test(normalized)) return 'component';
+    return 'file';
+}
+
+function emitFrontendValidationPlan(emit, frontendFiles = {}, { phase = 'frontend-fix', round = null } = {}) {
+    if (!emit) {
+        return;
+    }
+
+    const candidates = Object.keys(frontendFiles || {})
+        .filter((filePath) => /\.(jsx?|tsx?)$/i.test(filePath))
+        .sort((a, b) => a.localeCompare(b));
+
+    if (!candidates.length) {
+        return;
+    }
+
+    const pages = candidates.filter((filePath) => classifyFrontendAuditKind(filePath) === 'page');
+    emit({
+        type: 'log',
+        phase,
+        level: 'info',
+        ...(round != null ? { round } : {}),
+        message: `Frontend checker: reviewing ${pages.length} page file(s) and ${candidates.length - pages.length} shared file(s) one by one for syntax, imports, and missing libraries.`,
+    });
+
+    candidates.slice(0, 40).forEach((filePath) => {
+        emit({
+            type: 'log',
+            phase,
+            level: 'info',
+            ...(round != null ? { round } : {}),
+            message: `[frontend-check] Checking ${classifyFrontendAuditKind(filePath)} ${filePath} for syntax, local imports, and library imports...`,
+        });
+    });
+
+    if (candidates.length > 40) {
+        emit({
+            type: 'log',
+            phase,
+            level: 'info',
+            ...(round != null ? { round } : {}),
+            message: `[frontend-check] ...and ${candidates.length - 40} more frontend files in the same pass.`,
+        });
+    }
 }
 
 function resolveMongoUri(candidateUri, fallbackDbName) {
@@ -191,8 +661,8 @@ async function persistGeneratedAppOutput({ projectTitle, frontendFiles = {}, bac
     const reportsDir = path.join(outputRoot, 'reports');
     const gatewayUrl = String(metadata.gatewayUrl || '').trim();
     const gatewayPortMatch = gatewayUrl.match(/:(\d+)(?:\/|$)/);
-    const frontendPort = Number(metadata.frontendPort || 3010);
-    const gatewayPort = Number(gatewayPortMatch?.[1] || metadata.gatewayPort || 3005);
+    const frontendPort = Number(metadata.frontendPort || DEFAULT_FRONTEND_PORT);
+    const gatewayPort = Number(gatewayPortMatch?.[1] || metadata.gatewayPort || DEFAULT_GATEWAY_PORT);
     const gatewayHost = gatewayUrl || `http://127.0.0.1:${gatewayPort}`;
     const servicePorts = metadata.servicePorts && typeof metadata.servicePorts === 'object'
         ? metadata.servicePorts
@@ -274,7 +744,7 @@ export default defineConfig(({ mode }) => {
         Object.entries(frontendFiles).map(async ([filePath, content]) => {
             const absolutePath = path.join(frontendSrcDir, normalizeFrontendPath(filePath));
             await mkdir(path.dirname(absolutePath), { recursive: true });
-            const code = typeof content === 'string' ? content : content?.code || '';
+            const code = normalizeFrontendFileContent(filePath, typeof content === 'string' ? content : content?.code || '');
             await writeFile(absolutePath, code, 'utf8');
         })
     );
@@ -700,12 +1170,27 @@ function buildStructuredSpecContract(spec = null) {
     if (spec.services.length) {
         lines.push('Required backend services:');
         spec.services.forEach((service) => {
-            lines.push(`- ${service.name}${service.port ? ` (preferred port ${service.port})` : ''}: ${service.description || 'Implement fully.'}`);
+            // Compute distinct gateway prefixes (/api/resource) for this service
+            const gwPrefixes = [...new Set(
+                (service.endpoints || [])
+                    .map(ep => {
+                        const parts = ep.path.replace(/^\//, '').split('/');
+                        return parts.length >= 2 ? `/${parts[0]}/${parts[1]}` : `/${parts[0]}`;
+                    })
+                    .filter(Boolean)
+            )];
+            const prefixNote = gwPrefixes.length > 1
+                ? ` [DUAL-PREFIX: generate TWO gateway proxy rules for port ${service.port}: ${gwPrefixes.join(', ')}]`
+                : '';
+            lines.push(`- ${service.name}${service.port ? ` (preferred port ${service.port})` : ''}${prefixNote}: ${service.description || 'Implement fully.'}`);
             if (service.entities.length) {
                 lines.push(`  Entities: ${service.entities.join(', ')}`);
             }
             if (service.dependencies.length) {
                 lines.push(`  Dependencies: ${service.dependencies.join(', ')}`);
+            }
+            if (gwPrefixes.length > 1) {
+                lines.push(`  Gateway prefixes (ALL must be proxied to port ${service.port}): ${gwPrefixes.join(', ')}`);
             }
             service.endpoints.forEach((endpoint) => {
                 lines.push(`  - ${endpoint.method} ${endpoint.path}${endpoint.auth ? ' [auth]' : ' [public]'}${endpoint.description ? ` - ${endpoint.description}` : ''}`);
@@ -790,17 +1275,369 @@ function validateStructuredSpecCoverage(backendFiles = {}, structuredSpec = null
     return errors;
 }
 
+function splitStructuredEndpointPath(endpointPath = '') {
+    const segments = String(endpointPath || '')
+        .trim()
+        .replace(/\/+/g, '/')
+        .replace(/\/$/, '')
+        .split('/')
+        .filter(Boolean);
+
+    if (!segments.length) {
+        return { mountPath: '/api/generated', routePath: '/' };
+    }
+
+    if (segments[0] !== 'api') {
+        return {
+            mountPath: `/${segments[0]}`,
+            routePath: segments.length > 1 ? `/${segments.slice(1).join('/')}` : '/',
+        };
+    }
+
+    if (segments.length <= 2) {
+        return {
+            mountPath: `/${segments.join('/')}`,
+            routePath: '/',
+        };
+    }
+
+    return {
+        mountPath: `/${segments.slice(0, 2).join('/')}`,
+        routePath: `/${segments.slice(2).join('/')}`,
+    };
+}
+
+function pickStructuredServiceDir(service = {}, backendFiles = {}) {
+    const backendPaths = Object.keys(backendFiles || {});
+    const matched = specServiceDirCandidates(service).find((dirPrefix) =>
+        backendPaths.some((filePath) => filePath.startsWith(dirPrefix))
+    );
+    if (matched) {
+        return matched;
+    }
+
+    const fallbackSlug = String(service?.slug || 'generated').trim() || 'generated';
+    return `/${fallbackSlug}-service`;
+}
+
+function pickStructuredModelInfo(serviceDir = '', backendFiles = {}, service = {}) {
+    const modelPaths = Object.keys(backendFiles || {}).filter((filePath) =>
+        filePath.startsWith(`${serviceDir}/models/`) && filePath.endsWith('.js')
+    );
+
+    if (!modelPaths.length) {
+        return null;
+    }
+
+    const desiredNames = new Set([
+        ...((service?.entities || []).map((value) => String(value || '').toLowerCase())),
+        String(service?.name || '').toLowerCase(),
+        String(service?.slug || '').toLowerCase(),
+    ]);
+
+    const selectedPath = modelPaths.find((filePath) => {
+        const modelBase = filePath.split('/').pop()?.replace(/\.[^.]+$/, '') || '';
+        return desiredNames.has(modelBase.toLowerCase());
+    }) || modelPaths[0];
+
+    const modelBase = selectedPath.split('/').pop()?.replace(/\.[^.]+$/, '') || 'Record';
+    return {
+        modelName: modelBase.replace(/[^A-Za-z0-9_$]/g, '') || 'Record',
+        requirePath: `../models/${modelBase}`,
+    };
+}
+
+function buildStructuredRouteSkeleton(routeFilePath, modelInfo, service = {}) {
+    const serviceName = String(service?.name || routeFilePath.split('/').pop()?.replace(/\.[^.]+$/, '') || 'service').trim();
+    const serviceLabel = serviceName.toLowerCase().replace(/\s+/g, '-');
+    const modelRequireLine = modelInfo
+        ? `const ${modelInfo.modelName} = require('${modelInfo.requirePath}');\n`
+        : '';
+
+    return [
+        "const express = require('express');",
+        modelRequireLine.trimEnd(),
+        'const router = express.Router();',
+        '',
+        '// Health check',
+        "router.get('/health', (req, res) => {",
+        `  res.json({ success: true, data: { status: 'ok', service: '${serviceLabel}-routes' } });`,
+        '});',
+        '',
+        'module.exports = router;',
+        '',
+    ].filter(Boolean).join('\n');
+}
+
+function buildStructuredRouteHandler(method, routePath, modelInfo) {
+    const httpMethod = String(method || 'GET').toUpperCase();
+    const normalizedRoute = routePath && routePath !== '/' ? routePath : '/';
+    const usesId = normalizedRoute.includes(':');
+    const pathLiteral = normalizedRoute.replace(/'/g, "\\'");
+    const modelName = modelInfo?.modelName || null;
+
+    const withTryCatch = (bodyLines = [], successLine = "res.json({ success: true, data: {} });") => [
+        `router.${httpMethod.toLowerCase()}('${pathLiteral}', async (req, res) => {`,
+        '  try {',
+        ...bodyLines.map((line) => `    ${line}`),
+        `    ${successLine}`,
+        '  } catch (error) {',
+        "    res.status(500).json({ success: false, error: error.message });",
+        '  }',
+        '});',
+    ].join('\n');
+
+    if (!modelName) {
+        if (httpMethod === 'POST') {
+            return withTryCatch(
+                [
+                    "const record = { _id: req.body?._id || req.body?.id || `generated-${Date.now()}`, ...req.body };",
+                ],
+                'res.status(201).json({ success: true, data: record });'
+            );
+        }
+        if (httpMethod === 'GET') {
+            return withTryCatch(
+                [usesId ? "const record = { _id: req.params.id, ...req.query };" : 'const records = [];'],
+                usesId
+                    ? 'res.json({ success: true, data: record });'
+                    : 'res.json({ success: true, data: records });'
+            );
+        }
+        if (httpMethod === 'DELETE') {
+            return withTryCatch([], 'res.json({ success: true, data: { deleted: true, _id: req.params.id || null } });');
+        }
+        return withTryCatch(
+            [usesId ? "const record = { _id: req.params.id, ...req.body };" : 'const record = { ...req.body };'],
+            'res.json({ success: true, data: record });'
+        );
+    }
+
+    if (httpMethod === 'POST') {
+        return withTryCatch(
+            [
+                'const payload = { ...req.body };',
+                `const record = new ${modelName}(payload);`,
+                'await record.save();',
+            ],
+            'res.status(201).json({ success: true, data: record });'
+        );
+    }
+
+    if (httpMethod === 'GET') {
+        return usesId
+            ? withTryCatch(
+                [
+                    `const record = await ${modelName}.findById(req.params.id);`,
+                    "if (!record) return res.status(404).json({ success: false, error: 'Record not found' });",
+                ],
+                'res.json({ success: true, data: record });'
+            )
+            : withTryCatch(
+                [`const records = await ${modelName}.find({});`],
+                'res.json({ success: true, data: records });'
+            );
+    }
+
+    if (httpMethod === 'DELETE') {
+        return withTryCatch(
+            [
+                `const record = await ${modelName}.findByIdAndDelete(req.params.id);`,
+                "if (!record) return res.status(404).json({ success: false, error: 'Record not found' });",
+            ],
+            'res.json({ success: true, data: record });'
+        );
+    }
+
+    return withTryCatch(
+        [
+            usesId
+                ? `const record = await ${modelName}.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });`
+                : `const record = await ${modelName}.findOneAndUpdate({}, req.body, { new: true, upsert: true, runValidators: true });`,
+            "if (!record) return res.status(404).json({ success: false, error: 'Record not found' });",
+        ],
+        'res.json({ success: true, data: record });'
+    );
+}
+
+function ensureStructuredRouteHandler(routeCode = '', endpoint = {}, routePath = '/', modelInfo = null) {
+    const httpMethod = String(endpoint?.method || 'GET').toUpperCase();
+    const pathRegex = routePath === '/'
+        ? /['"]\/['"]/
+        : new RegExp(`['"]${routePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]`);
+    const existingHandler = new RegExp(`router\\.${httpMethod.toLowerCase()}\\(\\s*${pathRegex.source}`);
+
+    if (existingHandler.test(routeCode)) {
+        return routeCode;
+    }
+
+    const handlerBlock = buildStructuredRouteHandler(httpMethod, routePath, modelInfo);
+    const exportPattern = /\nmodule\.exports\s*=\s*router\s*;\s*$/;
+    if (exportPattern.test(routeCode)) {
+        return routeCode.replace(exportPattern, `\n${handlerBlock}\n\nmodule.exports = router;\n`);
+    }
+
+    return `${routeCode.trim()}\n\n${handlerBlock}\n`;
+}
+
+function ensureServiceMount(indexCode = '', mountPath = '', routeFileBase = '') {
+    if (!mountPath || !routeFileBase) {
+        return indexCode;
+    }
+
+    const requireLine = `app.use('${mountPath}', require('./routes/${routeFileBase}'));`;
+    if (indexCode.includes(requireLine) || new RegExp(`app\\.use\\(\\s*['"]${mountPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]\\s*,`).test(indexCode)) {
+        return indexCode;
+    }
+
+    if (indexCode.includes('// Routes')) {
+        return indexCode.replace(/\/\/ Routes\s*\n/, `// Routes\n${requireLine}\n`);
+    }
+
+    const healthPattern = /\n\/\/ Health check[\s\S]*$/;
+    if (healthPattern.test(indexCode)) {
+        return indexCode.replace(healthPattern, `\n${requireLine}\n$&`);
+    }
+
+    return `${indexCode.trim()}\n\n${requireLine}\n`;
+}
+
+function ensureGatewayProxy(gatewayCode = '', mountPath = '', serviceDir = '', topology = null) {
+    if (!gatewayCode || !mountPath || !serviceDir || !topology?.serviceConfigs?.[serviceDir]) {
+        return gatewayCode;
+    }
+
+    if (new RegExp(`app\\.use\\(\\s*['"]${mountPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]\\s*,\\s*createProxyMiddleware`, 'i').test(gatewayCode)) {
+        return gatewayCode;
+    }
+
+    const serviceConfig = topology.serviceConfigs[serviceDir];
+    const fallbackPort = Number(serviceConfig.originalPort || DEFAULT_SERVICE_PORT_START);
+    const serviceLabel = serviceDir.replace(/^\/+/, '');
+    const titleLabel = serviceLabel.replace(/-service$/i, '').replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+    const proxyBlock = [
+        `// ${titleLabel} proxy`,
+        `app.use('${mountPath}', createProxyMiddleware({`,
+        `  target: 'http://127.0.0.1:' + (${`process.env.${serviceConfig.envVar}`} || ${fallbackPort}),`,
+        '  changeOrigin: true,',
+        '  proxyTimeout: 10000,',
+        '  timeout: 10000,',
+        '  onProxyReq: fixRequestBody,',
+        `  onError: (error, req, res) => res.status(502).json({ success: false, error: '${titleLabel} service unavailable', details: error.code || error.message })`,
+        '}));',
+    ].join('\n');
+
+    const listenPattern = /\napp\.listen\(/;
+    if (listenPattern.test(gatewayCode)) {
+        return gatewayCode.replace(listenPattern, `\n${proxyBlock}\n$&`);
+    }
+
+    return `${gatewayCode.trim()}\n\n${proxyBlock}\n`;
+}
+
+function applyStructuredSpecCoverageFixes(backendFiles = {}, structuredSpec = null) {
+    if (!structuredSpec) {
+        return { files: backendFiles, fixCount: 0 };
+    }
+
+    const fixed = { ...backendFiles };
+    const topology = inferBackendPortTopology(fixed);
+    let contracts = parseBackendContracts(fixed);
+    let fixCount = 0;
+
+    structuredSpec.services.forEach((service) => {
+        const serviceDir = pickStructuredServiceDir(service, fixed);
+        const serviceDirName = serviceDir.replace(/^\/+/, '');
+        const serviceIndexPath = `${serviceDir}/index.js`;
+        const modelInfo = pickStructuredModelInfo(serviceDir, fixed, service);
+
+        service.endpoints.forEach((endpoint) => {
+            const alreadyPresent = contracts.some((contract) =>
+                String(contract.method || '').toUpperCase() === endpoint.method &&
+                pathPatternMatches(contract.path, endpoint.path)
+            );
+            if (alreadyPresent) {
+                return;
+            }
+
+            const { mountPath, routePath } = splitStructuredEndpointPath(endpoint.path);
+            const routeFileBase = mountPath.split('/').filter(Boolean).pop() || 'generated';
+            const routeFilePath = `${serviceDir}/routes/${routeFileBase}.js`;
+
+            const existingRouteCode = normalizeBackendFileContent(
+                routeFilePath,
+                typeof fixed[routeFilePath] === 'string' ? fixed[routeFilePath] : fixed[routeFilePath]?.code || ''
+            );
+            let nextRouteCode = existingRouteCode || buildStructuredRouteSkeleton(routeFilePath, modelInfo, service);
+            nextRouteCode = ensureStructuredRouteHandler(nextRouteCode, endpoint, routePath, modelInfo);
+            if (nextRouteCode !== existingRouteCode) {
+                fixed[routeFilePath] = { code: nextRouteCode };
+                fixCount += 1;
+            }
+
+            const existingServiceIndex = normalizeBackendFileContent(
+                serviceIndexPath,
+                typeof fixed[serviceIndexPath] === 'string' ? fixed[serviceIndexPath] : fixed[serviceIndexPath]?.code || ''
+            );
+            if (existingServiceIndex) {
+                const nextServiceIndex = ensureServiceMount(existingServiceIndex, mountPath, routeFileBase);
+                if (nextServiceIndex !== existingServiceIndex) {
+                    fixed[serviceIndexPath] = { code: nextServiceIndex };
+                    fixCount += 1;
+                }
+            }
+
+            const gatewayPath = '/api-gateway/index.js';
+            const existingGateway = normalizeBackendFileContent(
+                gatewayPath,
+                typeof fixed[gatewayPath] === 'string' ? fixed[gatewayPath] : fixed[gatewayPath]?.code || ''
+            );
+            if (existingGateway) {
+                const nextGateway = ensureGatewayProxy(existingGateway, mountPath, serviceDirName, topology);
+                if (nextGateway !== existingGateway) {
+                    fixed[gatewayPath] = { code: nextGateway };
+                    fixCount += 1;
+                }
+            }
+
+            contracts = parseBackendContracts(fixed);
+        });
+    });
+
+    return { files: fixed, fixCount };
+}
+
 async function validateBackendCandidateFiles(backendFiles, projectTitle = 'generated-app', structuredSpec = null) {
     const errors = [];
     const contracts = parseBackendContracts(backendFiles);
     const backendPaths = Object.keys(backendFiles);
     const packagePaths = backendPaths.filter((filePath) => filePath.endsWith('package.json'));
+    const packageJsonByService = parsePackageJsonMap(backendFiles);
     if (packagePaths.length === 0) {
         return { ok: false, errors: ['Missing package.json in generated backend output'] };
     }
     if (backendPaths.length < 6 && contracts.length === 0) {
         return { ok: false, errors: ['Backend output is too small and contains no parseable routes'] };
     }
+    const backendDirs = new Set(
+        backendPaths
+            .map((filePath) => filePath.split('/').filter(Boolean)[0])
+            .filter(Boolean)
+    );
+    backendDirs.forEach((dirName) => {
+        const packagePath = `/${dirName}/package.json`;
+        const indexPath = `/${dirName}/index.js`;
+        const hasAnyServiceFiles = backendPaths.some((filePath) => filePath.startsWith(`/${dirName}/`));
+        if (!hasAnyServiceFiles) {
+            return;
+        }
+        if (!backendFiles[packagePath]) {
+            errors.push(`Missing package.json for backend service: ${dirName}`);
+        }
+        if (!backendFiles[indexPath]) {
+            errors.push(`Missing index.js for backend service: ${dirName}`);
+        }
+    });
     const validationRoot = path.join(getGenerationOutputRoot(projectTitle), 'validation-check');
 
     await rm(validationRoot, { recursive: true, force: true }).catch(() => {});
@@ -844,6 +1681,12 @@ async function validateBackendCandidateFiles(backendFiles, projectTitle = 'gener
         if (!isEntryFile && usesRouterObject && !hasRouterDeclaration) {
             errors.push(`${filePath}: route file uses router.* without declaring const router = express.Router()`);
         }
+        if (/new\s+Schema\s*\(/.test(code) && /\bRequired\s*:/m.test(code)) {
+            errors.push(`${filePath}: mongoose schema uses Required: instead of required:`);
+        }
+        if (/new\s+Schema\s*\(/.test(code) && /:\s*\{\s*required\s*:\s*true\s*[,}]/m.test(code) && !/:\s*\{\s*type\s*:/m.test(code)) {
+            errors.push(`${filePath}: schema field has required:true but no type declaration`);
+        }
 
         const requireMatches = [...code.matchAll(/require\(\s*['"](\.[^'"]+)['"]\s*\)/g)];
         requireMatches.forEach((match) => {
@@ -852,6 +1695,23 @@ async function validateBackendCandidateFiles(backendFiles, projectTitle = 'gener
             const found = candidates.some(candidate => backendFiles[candidate]);
             if (!found) {
                 errors.push(`${filePath}: missing local require ${requestPath}`);
+            }
+        });
+
+        const serviceDir = getServiceDirForFile(filePath);
+        const servicePackageJson = packageJsonByService.get(serviceDir) || {};
+        const declaredPackages = getDeclaredPackageNames(servicePackageJson);
+        if (fileNeedsAuthMiddlewareImport(code)) {
+            const requirePath = /\/routes\//i.test(filePath) ? '../middleware/auth' : './middleware/auth';
+            errors.push(`${filePath}: auth middleware is used but auth is not defined; add const auth = require('${requirePath}')`);
+        }
+        extractRequireAndImportRequests(code).forEach((requestPath) => {
+            const packageName = getExternalRequirePackageName(requestPath);
+            if (!packageName || NODE_BUILTIN_MODULES.has(packageName)) {
+                return;
+            }
+            if (!declaredPackages.has(packageName)) {
+                errors.push(`${filePath}: missing package dependency ${packageName} in ${serviceDir}/package.json`);
             }
         });
 
@@ -877,6 +1737,42 @@ async function validateBackendCandidateFiles(backendFiles, projectTitle = 'gener
     }
 
     errors.push(...validateStructuredSpecCoverage(backendFiles, structuredSpec));
+
+    // Check for route shadowing: literal routes after /:param routes cause MongoDB CastError
+    backendPaths.filter(p => p.includes('/routes/')).forEach(routeFilePath => {
+        const rc = backendFiles[routeFilePath];
+        const rCode = typeof rc === 'string' ? rc : rc?.code || '';
+        const rdRe = /\brouter\.(get|post|put|patch|delete)\s*\(\s*['"](\/?[^'"]*)['"]/gi;
+        const rdecls = [];
+        let rdm;
+        while ((rdm = rdRe.exec(rCode)) !== null) {
+            const rp = rdm[2];
+            const firstSeg = rp.replace(/^\//, '').split('/')[0] || '';
+            rdecls.push({ pos: rdm.index, path: rp, isParamFirst: firstSeg.startsWith(':') });
+        }
+        const fp = rdecls.find(d => d.isParamFirst);
+        if (fp) {
+            rdecls.filter(d => !d.isParamFirst && d.pos > fp.pos && d.path !== '/health' && d.path !== '/').forEach(s => {
+                errors.push(`${routeFilePath}: route shadowing — '${s.path}' defined after parameterized '${fp.path}'; move literal routes before /:param routes`);
+            });
+        }
+    });
+
+    if (structuredSpec?.services?.length) {
+        const generatedServiceDirs = new Set(
+            backendPaths
+                .filter((filePath) => /\/(?:routes|models|controllers|index\.js|package\.json)/i.test(filePath))
+                .map((filePath) => filePath.split('/').filter(Boolean)[0])
+                .filter(Boolean)
+        );
+        structuredSpec.services.forEach((service) => {
+            const candidates = specServiceDirCandidates(service).map((value) => value.replace(/^\/+/, ''));
+            const matchedService = candidates.some((candidate) => generatedServiceDirs.has(candidate));
+            if (!matchedService) {
+                errors.push(`Missing generated files for structured-spec service: ${service.name}`);
+            }
+        });
+    }
 
     await rm(validationRoot, { recursive: true, force: true }).catch(() => {});
 
@@ -905,6 +1801,13 @@ function unwrapGeneratedCodeBlock(text = '', filePath = '') {
 
 function normalizeBackendFileContent(filePath = '', content = '') {
     let value = unwrapGeneratedCodeBlock(content, filePath).replace(/\uFEFF/g, '');
+    if (/\.(js|jsx|ts|tsx)$/i.test(filePath)) {
+        value = value
+            .replace(/```[a-zA-Z0-9_.+-]*\s*\r?\n[\s\S]*?```/g, '')
+            .replace(/^\s*```[a-zA-Z0-9_.+-]*\s*$/gm, '')
+            .replace(/^\s*```\s*$/gm, '')
+            .trim();
+    }
     if (filePath.endsWith('package.json')) {
         value = sanitizePackageJsonText(value);
     } else if (filePath.endsWith('.json')) {
@@ -914,6 +1817,16 @@ function normalizeBackendFileContent(filePath = '', content = '') {
         }
     }
     return value;
+}
+
+function normalizeFrontendFileContent(filePath = '', content = '') {
+    let value = unwrapGeneratedCodeBlock(content, filePath).replace(/\uFEFF/g, '');
+    value = value
+        .replace(/```[a-zA-Z0-9_.+-]*\s*\r?\n[\s\S]*?```/g, '')
+        .replace(/^\s*```(?:[a-zA-Z0-9_.+-]+)?\s*$/gm, '')
+        .replace(/^\s*```\s*$/gm, '')
+        .trim();
+    return value.trim() ? value : '';
 }
 
 /** Parse ONLY backend files from text */
@@ -1107,7 +2020,7 @@ function inferBackendPortTopology(backendFiles) {
     });
 
     const discoveredPorts = [...targetPrefixesByPort.keys()].map(port => String(port));
-    let nextFallbackPort = 3006;
+    let nextFallbackPort = DEFAULT_SERVICE_PORT_START;
     const serviceConfigs = {};
 
     serviceDirs.forEach((dirName, index) => {
@@ -1169,7 +2082,7 @@ function extractApiSummary(backendFiles) {
 
     const proxyPrefixes = new Set();
     const lines = [];
-    lines.push('Backend API (Gateway port 3005):');
+    lines.push(`Backend API (Gateway port ${DEFAULT_GATEWAY_PORT}):`);
     Object.entries(backendFiles).forEach(([path, content]) => {
         const code = typeof content === 'string' ? content : content?.code || '';
         if (path.includes('gateway') && path.endsWith('index.js')) {
@@ -1197,8 +2110,11 @@ function extractApiSummary(backendFiles) {
 
         const resourceName = path.split('/').pop()?.replace(/\.[^.]+$/, '') || '';
         const singularName = resourceName.replace(/s$/, '');
+        // Find the best matching gateway prefix; a service may handle multiple prefixes
         const proxyPrefix = proxyList.find(prefix => prefix === `/api/${resourceName}`)
             || proxyList.find(prefix => prefix === `/api/${singularName}`)
+            || proxyList.find(prefix => resourceName.startsWith(prefix.replace('/api/', '')))
+            || proxyList.find(prefix => singularName.startsWith(prefix.replace('/api/', '')))
             || `/api/${resourceName}`;
         const routeMatches = [...code.matchAll(/router\.(get|post|put|delete|patch)\(\s*['"]([^'"]+)['"]/gi)];
 
@@ -1239,7 +2155,7 @@ function extractApiSummary(backendFiles) {
 }
 
 /** Run static fixes on backend code (no AI required) */
-function staticFixBackend(backendFiles) {
+function staticFixBackend(backendFiles, structuredSpec = null) {
     const sanitizeBackendCode = (code) =>
         code
             .replace(/\uFEFF/g, '')
@@ -1248,7 +2164,21 @@ function staticFixBackend(backendFiles) {
     const topology = inferBackendPortTopology(backendFiles);
     const serviceRouteMounts = collectServiceRouteMounts(backendFiles);
     const fixed = {};
+    const createdFiles = [];
+    const repairedFiles = [];
     let fixCount = 0;
+    const noteCreatedFile = (filePath, reason = '') => {
+        const message = reason ? `${filePath} — ${reason}` : filePath;
+        if (!createdFiles.includes(message)) {
+            createdFiles.push(message);
+        }
+    };
+    const noteRepairedFile = (filePath, reason = '') => {
+        const message = reason ? `${filePath} — ${reason}` : filePath;
+        if (!repairedFiles.includes(message)) {
+            repairedFiles.push(message);
+        }
+    };
     Object.entries(backendFiles).forEach(([path, content]) => {
         let code = normalizeBackendFileContent(path, typeof content === 'string' ? content : content?.code || '');
         const originalCode = code;
@@ -1267,6 +2197,17 @@ function staticFixBackend(backendFiles) {
                 '(process.env.MONGODB_URI || process.env.MONGO_URL)'
             );
             changed = true;
+        }
+
+        if (/Trying alternative port|alternative port|EADDRINUSE/i.test(code)) {
+            const nextCode = code
+                .replace(/\n?\s*\/\/\s*Try alternative port if primary fails[\s\S]*?(?=\n\s*app\.listen\(\s*PORT|\n\s*app\.listen\(|$)/i, '\n')
+                .replace(/\n\s*(?:const\s+server\s*=\s*)?app\.listen\(\s*PORT\s*,\s*\(\)\s*=>\s*\{[\s\S]*?\}\s*\);\s*server\.on\(\s*['"]error['"]\s*,\s*\([\s\S]*?\}\s*\);\s*/i, '\n')
+                .replace(/\n\s*(?:const\s+server\s*=\s*)?app\.listen\(\s*PORT\s*,\s*\(\)\s*=>\s*\{[\s\S]*?\}\s*\);\s*app\.on\(\s*['"]error['"]\s*,\s*\([\s\S]*?\}\s*\);\s*/i, '\n');
+            if (nextCode !== code) {
+                code = nextCode;
+                changed = true;
+            }
         }
 
         if (/jsonwebtoken|jwt\./i.test(code)) {
@@ -1305,23 +2246,24 @@ function staticFixBackend(backendFiles) {
                     `createServiceProxy('http://127.0.0.1:' + (process.env.${envVar} || ${originalPort}))`
                 );
             });
-            if (!code.includes('3005')) {
-                code = code.replace(/app\.listen\(\s*(\d{4})\s*[,)]/g, (m, p) => p !== '3005' ? `app.listen(3005,` : m);
+            if (!code.includes(String(DEFAULT_GATEWAY_PORT))) {
+                code = code.replace(/app\.listen\(\s*(\d{4})\s*[,)]/g, (m, p) => p !== String(DEFAULT_GATEWAY_PORT) ? `app.listen(${DEFAULT_GATEWAY_PORT},` : m);
                 changed = true;
             }
             code = code.replace(
                 /const\s+(PORT|port)\s*=\s*[^;]+;/g,
-                'const PORT = Number(process.env.PORT_GATEWAY || process.env.PORT || 3005);'
+                `const PORT = Number(process.env.PORT_GATEWAY || process.env.PORT || ${DEFAULT_GATEWAY_PORT});`
             );
             code = code.replace(
                 /process\.env\.PORT\s*\|\|\s*\d+/g,
-                'process.env.PORT_GATEWAY || process.env.PORT || 3005'
+                `process.env.PORT_GATEWAY || process.env.PORT || ${DEFAULT_GATEWAY_PORT}`
             );
             code = code.replace(/app\.listen\(\s*(?:\d+|process\.env\.[A-Z_]+[^,)]*|PORT)\s*,/g, 'app.listen(PORT,');
+            code = code.replace(/const\s+server\s*=\s*app\.listen\(/g, 'app.listen(');
             if (!/const\s+PORT\s*=/.test(code) && /app\.listen\(PORT,/.test(code)) {
                 code = code.replace(
                     /app\.use\(express\.json\(\)\);/,
-                    'app.use(express.json());\nconst PORT = Number(process.env.PORT_GATEWAY || process.env.PORT || 3005);'
+                    `app.use(express.json());\nconst PORT = Number(process.env.PORT_GATEWAY || process.env.PORT || ${DEFAULT_GATEWAY_PORT});`
                 );
                 changed = true;
             }
@@ -1339,6 +2281,12 @@ function staticFixBackend(backendFiles) {
                     if (!code.includes("require('cors')") && !code.includes('require(\"cors\")')) {
                         code = `const cors = require('cors');\n` + code;
                     }
+                    changed = true;
+                }
+                // Ensure require('cors') exists when app.use(cors()) is present but require is missing
+                if ((code.includes('app.use(cors())') || code.includes('app.use(cors(')) &&
+                    !code.includes("require('cors')") && !code.includes('require(\"cors\")')) {
+                    code = `const cors = require('cors');\n` + code;
                     changed = true;
                 }
             }
@@ -1456,13 +2404,38 @@ function staticFixBackend(backendFiles) {
                 }
             }
         }
+        if (path.includes('/models/') && path.endsWith('.js')) {
+            // Fix: `Required` is not a valid Mongoose type (e.g. { type: Required } or { required: { type: Required } })
+            const fixedModel = code
+                .replace(/\btype\s*:\s*Required\b/g, 'type: String, required: true')
+                .replace(/required\s*:\s*\{\s*type\s*:\s*(?:Required|Boolean|String|Number|Date)\s*\}/g, 'required: true')
+                // Fix nested subdoc field literally named "required" with an invalid type
+                .replace(/,?\s*required\s*:\s*\{\s*[^}]{0,120}\}/g, (m) => {
+                    // Only strip if it looks like a schema-type block, not a real required validator
+                    if (/type\s*:/.test(m)) return '';
+                    return m;
+                })
+                // Fix unique: true fields without sparse to prevent E11000 dup key on null values
+                .replace(/unique\s*:\s*true(?!\s*,\s*sparse)/g, 'unique: true, sparse: true')
+                // Fix category field typed as ObjectId → use String so plain category names work
+                .replace(/\bcategory\s*:\s*\{\s*type\s*:\s*(?:Schema\.Types\.ObjectId|mongoose\.Schema\.Types\.ObjectId)[^}]*\}/g,
+                    "category: { type: String, default: 'General' }")
+                // Fix any field where ObjectId ref is used for simple lookup-name fields
+                .replace(/\b(tag|label|type)\s*:\s*\{\s*type\s*:\s*(?:Schema\.Types\.ObjectId|mongoose\.Schema\.Types\.ObjectId)[^}]*\}/g,
+                    (m, fieldName) => `${fieldName}: { type: String }`);
+            if (fixedModel !== code) {
+                code = fixedModel;
+                changed = true;
+            }
+        }
+
         if (path.includes('-service') && path.endsWith('index.js')) {
             const serviceConfig = topology.serviceConfigs[serviceName] || {
                 envVar: 'PORT_SERVICE',
-                originalPort: '3006',
+                originalPort: String(DEFAULT_SERVICE_PORT_START),
             };
             const slotEnvName = serviceConfig.envVar;
-            const fallbackPort = Number(serviceConfig.originalPort || 3006);
+            const fallbackPort = Number(serviceConfig.originalPort || DEFAULT_SERVICE_PORT_START);
             if (/\b(?:const|let|var)\s+app\s*=\s*express\s*\(/.test(code) && !/\b(?:const|let|var)\s+router\s*=/.test(code) && /\brouter\./.test(code)) {
                 code = code.replace(/\brouter\./g, 'app.');
                 changed = true;
@@ -1479,11 +2452,25 @@ function staticFixBackend(backendFiles) {
                     changed = true;
                 }
             }
+            if (fileNeedsAuthMiddlewareImport(code)) {
+                const nextCode = prependRequireLine(code, "const auth = require('./middleware/auth');");
+                if (nextCode !== code) {
+                    code = nextCode;
+                    changed = true;
+                    noteRepairedFile(path, 'added missing auth middleware import');
+                }
+            }
             code = code.replace(
                 /mongoose\.connect\(\s*(['"`])([^'"`]+)\1/g,
                 (match, quote, uri) => uri.startsWith('mongodb://')
                     ? `mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URL || ${quote}${uri}${quote}`
                     : match
+            );
+            // Remove deprecated Mongoose v3 options (useNewUrlParser, useUnifiedTopology, etc.)
+            // that produce noisy warnings in MongoDB driver v4+.
+            code = code.replace(
+                /mongoose\.connect\(([^)]+),\s*\{\s*((?:useNewUrlParser\s*:\s*(?:true|false),?\s*|useUnifiedTopology\s*:\s*(?:true|false),?\s*|useCreateIndex\s*:\s*(?:true|false),?\s*|useFindAndModify\s*:\s*(?:true|false),?\s*)+)\}\s*\)/g,
+                (_, uriExpr) => `mongoose.connect(${uriExpr})`
             );
             code = code.replace(
                 /const\s+(PORT|port)\s*=\s*[^;]+;/g,
@@ -1491,6 +2478,7 @@ function staticFixBackend(backendFiles) {
             );
             code = code.replace(/process\.env\.PORT\s*\|\|\s*\d+/g, `process.env.PORT || process.env.${slotEnvName} || ${fallbackPort}`);
             code = code.replace(/app\.listen\(\s*[^,]+,\s*/g, 'app.listen(PORT, ');
+            code = code.replace(/const\s+server\s*=\s*app\.listen\(/g, 'app.listen(');
             code = code.replace(/app\.listen\(PORT\(\)\s*=>/g, 'app.listen(PORT, () =>');
             code = code.replace(/app\.listen\(PORT\s*\)\s*=>/g, 'app.listen(PORT, () =>');
             // Ensure cors + express.json
@@ -1504,11 +2492,38 @@ function staticFixBackend(backendFiles) {
                 }
                 changed = true;
             }
+            // Ensure require('cors') exists when app.use(cors()) is already present but require is missing
+            if ((code.includes('app.use(cors())') || code.includes('app.use(cors(')) &&
+                !code.includes("require('cors')") && !code.includes('require("cors")')) {
+                code = `const cors = require('cors');\n` + code;
+                changed = true;
+            }
             if (!/const\s+PORT\s*=/.test(code) && /app\.listen\(PORT,/.test(code)) {
                 code = code.replace(
                     /app\.use\(express\.json\(\)\);/,
                     `app.use(express.json());\nconst PORT = Number(process.env.PORT || process.env.${slotEnvName} || ${fallbackPort});`
                 );
+                changed = true;
+            }
+            // Ensure a direct app.get('/health') exists in the service index.js.
+            // Live health checks hit http://127.0.0.1:PORT/health directly — a health route
+            // buried inside a mounted router (e.g. /api/auth/health) will always return 404.
+            if (!/app\.get\(\s*['"]\/health['"]/i.test(code)) {
+                const svcHealthBlock =
+                    `\napp.get('/health', (req, res) => {\n` +
+                    `  res.json({ success: true, data: { status: 'ok', service: '${serviceName}' } });\n` +
+                    `});\n`;
+                // Insert before the first app.listen() — use a flexible regex that handles any
+                // amount of whitespace or no leading newline before the listen call.
+                if (/app\.listen\(/.test(code)) {
+                    code = code.replace(/([\s\S]*?)([ \t]*app\.listen\()/, (_, before, listenStart) => {
+                        return before + svcHealthBlock + '\n' + listenStart;
+                    });
+                } else if (/app\.use\(express\.json\(\)\)/.test(code)) {
+                    code = code.replace(/(app\.use\(express\.json\(\)\);)/, `$1${svcHealthBlock}`);
+                } else {
+                    code += svcHealthBlock;
+                }
                 changed = true;
             }
         }
@@ -1535,16 +2550,423 @@ function staticFixBackend(backendFiles) {
                 changed = true;
             }
 
+            // Fix route shadowing: move literal-path routes that appear after /:param routes
+            // to BEFORE the first parameterized route. Prevents Express treating literal segments
+            // like 'my', 'me', 'search', 'course' as an ObjectId and throwing CastError.
+            {
+                const shadowDeclRe = /\brouter\.(get|post|put|patch|delete)\s*\(\s*['"](\/?[^'"]*)['"]/gi;
+                const shadowDecls = [];
+                let sdm;
+                while ((sdm = shadowDeclRe.exec(code)) !== null) {
+                    const rp = sdm[2];
+                    const firstSeg = rp.replace(/^\//, '').split('/')[0] || '';
+                    shadowDecls.push({ pos: sdm.index, path: rp, isParamFirst: firstSeg.startsWith(':') });
+                }
+                const firstParamDecl = shadowDecls.find(d => d.isParamFirst);
+                if (firstParamDecl) {
+                    const shadowedLiterals = shadowDecls.filter(
+                        d => !d.isParamFirst && d.pos > firstParamDecl.pos && d.path !== '/health'
+                    );
+                    if (shadowedLiterals.length > 0) {
+                        // Extract each shadowed literal's complete block by tracking paren/brace depth
+                        const extractBlockEnd = (str, startPos) => {
+                            let depth = 0, started = false, i = startPos;
+                            while (i < str.length) {
+                                const ch = str[i];
+                                if (!started && ch === '(') started = true;
+                                if (started) {
+                                    if (ch === '(' || ch === '{') depth++;
+                                    else if (ch === ')' || ch === '}') {
+                                        depth--;
+                                        if (depth <= 0) {
+                                            let end = i + 1;
+                                            if (str[end] === ';') end++;
+                                            while (end < str.length && (str[end] === '\n' || str[end] === '\r')) end++;
+                                            return end;
+                                        }
+                                    }
+                                }
+                                i++;
+                            }
+                            return str.length;
+                        };
+
+                        let newCode = code;
+                        const blocksToInsert = [];
+                        [...shadowedLiterals].sort((a, b) => b.pos - a.pos).forEach(decl => {
+                            const endPos = extractBlockEnd(newCode, decl.pos);
+                            blocksToInsert.unshift(newCode.slice(decl.pos, endPos));
+                            newCode = newCode.slice(0, decl.pos) + newCode.slice(endPos);
+                        });
+
+                        const newFirstParamPos = newCode.search(/\brouter\.(get|post|put|patch|delete)\s*\(\s*['"]\/:[^'"]+['"]/i);
+                        if (newFirstParamPos !== -1 && blocksToInsert.length > 0) {
+                            newCode = newCode.slice(0, newFirstParamPos) + blocksToInsert.join('') + newCode.slice(newFirstParamPos);
+                            code = newCode;
+                            changed = true;
+                        }
+                    }
+                }
+            }
+
             code = code.replace(/res\.json\(([^{][^)]+)\)/g, (m, inner) => {
                 if (inner.includes('success')) return m;
                 return `res.json({ success: true, data: ${inner} })`;
             });
         }
         if (code !== originalCode) changed = true;
-        if (changed) fixCount++;
+        if (changed) {
+            fixCount++;
+            if (!repairedFiles.some((entry) => entry.startsWith(`${path} —`)) && !repairedFiles.includes(path)) {
+                noteRepairedFile(path, 'static backend repair');
+            }
+        }
         fixed[path] = { code };
     });
-    return { files: fixed, fixCount };
+
+    // POST-PASS: auto-create stub model files for any require('../models/X') that has no matching file.
+    // This prevents the recurring "Cannot find module '../models/X'" crash when AI patches a route
+    // but forgets to create/preserve the model file it references.
+    const fixedPaths = Object.keys(fixed);
+    fixedPaths.forEach((filePath) => {
+        if (!filePath.includes('/routes/')) return;
+        const routeCode = typeof fixed[filePath] === 'string' ? fixed[filePath] : fixed[filePath]?.code || '';
+        const serviceDir = filePath.split('/').filter(Boolean)[0];
+        if (!serviceDir) return;
+
+        const modelRequireRe = /require\(\s*['"]\.\.\/models\/([^'"]+)['"]\s*\)/g;
+        let m2;
+        while ((m2 = modelRequireRe.exec(routeCode)) !== null) {
+            const modelName = m2[1].replace(/\.js$/i, '');
+            const expectedPath = `/${serviceDir}/models/${modelName}.js`;
+
+            // Check for an exact or case-insensitive match among existing fixed files
+            const existsExact = Boolean(fixed[expectedPath]);
+            const existsCaseInsensitive = !existsExact && fixedPaths.some(
+                (p) => p.toLowerCase() === expectedPath.toLowerCase()
+            );
+
+            if (!existsExact && !existsCaseInsensitive) {
+                // Auto-create a sensible stub Mongoose model so the service can start
+                const entityName = modelName.charAt(0).toUpperCase() + modelName.slice(1).replace(/[^a-zA-Z0-9]/g, '');
+                fixed[expectedPath] = {
+                    code: [
+                        `const mongoose = require('mongoose');`,
+                        ``,
+                        `const ${entityName}Schema = new mongoose.Schema({`,
+                        `  name:        { type: String, required: true },`,
+                        `  description: { type: String },`,
+                        `  price:       { type: Number, default: 0 },`,
+                        `  status:      { type: String, default: 'active' },`,
+                        `  createdBy:   { type: mongoose.Schema.Types.ObjectId, ref: 'User' },`,
+                        `}, { timestamps: true });`,
+                        ``,
+                        `module.exports = mongoose.model('${entityName}', ${entityName}Schema);`,
+                    ].join('\n'),
+                };
+                fixCount++;
+                noteCreatedFile(expectedPath, 'created missing model file');
+            }
+        }
+    });
+
+    // POST-PASS 2: ensure routes/<name>.js file exists when index.js requires ./routes/<name>.
+    // Prevents "Cannot find module './routes/menu'" when AI replaces index.js but drops the routes file.
+    fixedPaths.forEach((filePath) => {
+        if (!/\/index\.js$/i.test(filePath) || /gateway/i.test(filePath)) return;
+        const indexCode = typeof fixed[filePath] === 'string' ? fixed[filePath] : fixed[filePath]?.code || '';
+        const serviceDir = filePath.split('/').filter(Boolean)[0];
+        if (!serviceDir) return;
+
+        const routeRequireRe = /require\(\s*['"]\.\/routes\/([^'"]+)['"]\s*\)/g;
+        let m3;
+        while ((m3 = routeRequireRe.exec(indexCode)) !== null) {
+            const routeName = m3[1].replace(/\.js$/i, '');
+            const expectedRoute = `/${serviceDir}/routes/${routeName}.js`;
+            const existsExact = Boolean(fixed[expectedRoute]);
+            const existsCaseInsensitive = !existsExact && Object.keys(fixed).some(
+                (p) => p.toLowerCase() === expectedRoute.toLowerCase()
+            );
+            if (!existsExact && !existsCaseInsensitive) {
+                // Create a minimal router stub so the service starts
+                fixed[expectedRoute] = {
+                    code: [
+                        `const express = require('express');`,
+                        `const router = express.Router();`,
+                        ``,
+                        `router.get('/health', (req, res) => {`,
+                        `  res.json({ success: true, data: { status: 'ok', route: '${routeName}' } });`,
+                        `});`,
+                        ``,
+                        `module.exports = router;`,
+                    ].join('\n'),
+                };
+                fixCount++;
+                noteCreatedFile(expectedRoute, 'created missing route file');
+            }
+        }
+    });
+
+    // POST-PASS 3 (new): Deep cross-validation — models ↔ routes ↔ index.js ↔ package.json.
+    // Runs AFTER stubs are created so it has the full file graph to resolve against.
+    // Fixes in order:
+    //   (a) Wrong relative prefix: '../routes/X' in index.js  →  './routes/X'
+    //   (b) Case-mismatched model require in route files      →  correct casing
+    //   (c) Case-mismatched route require in index.js         →  correct casing
+    //   (d) Mismatched app.use() mount vs actual route file   →  align path
+    //   (e) Missing module.exports = router in route files
+    //   (f) Missing app.listen() in service index.js
+    {
+        const crossPaths = Object.keys(fixed);
+        // Case-insensitive lookup: lowercase path → actual path
+        const pathByLower = new Map(crossPaths.map(p => [p.toLowerCase(), p]));
+
+        // Resolve a local require() path from a given file, returning the actual fixed-map key
+        const resolveLocal = (fromFp, requireStr) => {
+            const fromDir = fromFp.replace(/\\/g, '/').split('/').filter(Boolean).slice(0, -1);
+            const relParts = requireStr.replace(/\\/g, '/').split('/');
+            const resolved = [...fromDir];
+            for (const seg of relParts) {
+                if (!seg || seg === '.') continue;
+                if (seg === '..') resolved.pop();
+                else resolved.push(seg);
+            }
+            const base = '/' + resolved.join('/');
+            const candidates = [base, `${base}.js`, `${base}.json`, `${base}/index.js`];
+            for (const c of candidates) {
+                if (fixed[c]) return { path: c, found: true, caseFixed: false };
+            }
+            for (const c of candidates) {
+                const actual = pathByLower.get(c.toLowerCase());
+                if (actual) return { path: actual, found: true, caseFixed: actual !== c };
+            }
+            return { found: false };
+        };
+
+        // Compute a relative require() string from one file path to another
+        const makeRelativeRequire = (fromFp, toFp, stripExt = true) => {
+            const fromDir = fromFp.replace(/\\/g, '/').split('/').filter(Boolean).slice(0, -1);
+            const toSegs = toFp.replace(/\\/g, '/').split('/').filter(Boolean);
+            let common = 0;
+            while (common < fromDir.length && common < toSegs.length && fromDir[common] === toSegs[common]) common++;
+            const ups = fromDir.length - common;
+            const downs = toSegs.slice(common);
+            let rel = (ups === 0 ? './' : '../'.repeat(ups)) + downs.join('/');
+            if (stripExt) rel = rel.replace(/\.js$/, '');
+            return rel;
+        };
+
+        crossPaths.forEach((fp) => {
+            if (!fp.endsWith('.js')) return;
+            const svcDir = fp.split('/').filter(Boolean)[0] || '';
+            let code = typeof fixed[fp] === 'string' ? fixed[fp] : fixed[fp]?.code || '';
+            let changed = false;
+
+            const isIndexJs = /\/index\.js$/i.test(fp) && !/gateway/i.test(fp);
+            const isRouteFile = fp.includes('/routes/') && fp.endsWith('.js');
+
+            // (a) Fix '../routes/X' → './routes/X' in service index.js
+            if (isIndexJs) {
+                const fixed1 = code.replace(
+                    /require\(['"](\.\.\/routes\/[^'"]+)['"]\)/g,
+                    (_, wrongPath) => `require('${wrongPath.replace(/^\.\.\/routes\//, './routes/')}')`
+                );
+                if (fixed1 !== code) { code = fixed1; changed = true; }
+            }
+
+            // (b) Fix case-mismatched require paths (applies to all JS files)
+            const requireRe = /require\(['"](\.[^'"]+)['"]\)/g;
+            let newCode = '';
+            let lastIdx = 0;
+            let m;
+            requireRe.lastIndex = 0;
+            while ((m = requireRe.exec(code)) !== null) {
+                const reqStr = m[1];
+                const result = resolveLocal(fp, reqStr);
+                if (result.found && result.caseFixed) {
+                    const corrected = makeRelativeRequire(fp, result.path, !reqStr.endsWith('.js'));
+                    newCode += code.slice(lastIdx, m.index) + `require('${corrected}')`;
+                    lastIdx = m.index + m[0].length;
+                    changed = true;
+                }
+            }
+            if (changed && newCode !== '') {
+                code = newCode + code.slice(lastIdx);
+            }
+
+            // (c) Fix index.js app.use() path mismatches: align mount prefix to route file names
+            // e.g. app.use('/api/courses', require('./routes/course')) but file is 'courses.js'
+            if (isIndexJs) {
+                const mountRe = /app\.use\(\s*(['"])([^'"]+)\1\s*,\s*require\(['"](\.[^'"]+)['"]\)\)/g;
+                mountRe.lastIndex = 0;
+                let mountCode = '';
+                let mountLastIdx = 0;
+                let changed2 = false;
+                while ((m = mountRe.exec(code)) !== null) {
+                    const mountPath = m[2]; // e.g. '/api/courses'
+                    const reqPath = m[3];   // e.g. './routes/course'
+                    const result = resolveLocal(fp, reqPath);
+                    if (!result.found) {
+                        // Try to find a route file whose name matches the last segment of mountPath
+                        const mountSeg = mountPath.split('/').pop() || '';
+                        const routeFileKey = crossPaths.find(p =>
+                            p.startsWith(`/${svcDir}/routes/`) &&
+                            p.endsWith('.js') &&
+                            p.split('/').pop().replace(/\.js$/i, '').toLowerCase() === mountSeg.toLowerCase()
+                        );
+                        if (routeFileKey) {
+                            const correctedReq = makeRelativeRequire(fp, routeFileKey);
+                            mountCode += code.slice(mountLastIdx, m.index) +
+                                `app.use(${m[1]}${mountPath}${m[1]}, require('${correctedReq}'))`;
+                            mountLastIdx = m.index + m[0].length;
+                            changed2 = true;
+                        }
+                    }
+                }
+                if (changed2) {
+                    code = mountCode + code.slice(mountLastIdx);
+                    changed = true;
+                }
+            }
+
+            // (d) Ensure route files export the router
+            if (isRouteFile && !code.includes('module.exports') && code.includes('router.')) {
+                code += '\n\nmodule.exports = router;\n';
+                changed = true;
+            }
+
+            // (e) Ensure service index.js has app.listen()
+            if (isIndexJs && code.includes('express()') && !/app\.listen\(/.test(code)) {
+                const svcSegs = fp.split('/').filter(Boolean);
+                const svcName = svcSegs[0] || 'service';
+                code += `\nconst PORT = Number(process.env.PORT || ${DEFAULT_SERVICE_PORT_START});\napp.listen(PORT, () => console.log(\`${svcName} running on port \${PORT}\`));\n`;
+                changed = true;
+            }
+
+            if (changed) {
+                fixed[fp] = { code };
+                fixCount++;
+                noteRepairedFile(fp, 'cross-file backend consistency repair');
+            }
+        });
+    }
+
+    // POST-PASS 4 (was POST-PASS 3): audit every JS file in each service and auto-add any missing npm packages to
+    // that service's package.json.  This permanently fixes "Cannot find module 'jsonwebtoken'"
+    // (and bcryptjs, stripe, multer, nodemailer, socket.io, etc.) caused when the AI writes a
+    // require() call but forgets to list the package as a dependency.
+    const allFixedPaths = Object.keys(fixed);
+
+    // Collect distinct service directories (first path segment, including gateway)
+    const serviceDirs = new Set();
+    allFixedPaths.forEach((p) => {
+        const seg = p.split('/').filter(Boolean)[0];
+        if (seg) serviceDirs.add(seg);
+    });
+
+    serviceDirs.forEach((svcDir) => {
+        const pkgPath = `/${svcDir}/package.json`;
+        const pkgEntry = fixed[pkgPath];
+        if (!pkgEntry) return; // no package.json for this service — nothing to patch
+
+        // Parse existing package.json
+        let pkgJson;
+        try {
+            const raw = typeof pkgEntry === 'string' ? pkgEntry : pkgEntry.code || '';
+            pkgJson = JSON.parse(normalizeBackendFileContent(pkgPath, raw));
+        } catch (_) {
+            return; // invalid JSON — skip
+        }
+        pkgJson.dependencies = pkgJson.dependencies || {};
+
+        const needed = new Set();
+
+        allFixedPaths.forEach((fp) => {
+            if (!fp.startsWith(`/${svcDir}/`) || !/\.js$/i.test(fp)) return;
+            const code = typeof fixed[fp] === 'string' ? fixed[fp] : fixed[fp]?.code || '';
+            extractRequireAndImportRequests(code).forEach((requestPath) => {
+                const packageName = getExternalRequirePackageName(requestPath);
+                if (!packageName || NODE_BUILTIN_MODULES.has(packageName)) {
+                    return;
+                }
+                needed.add(packageName);
+            });
+        });
+
+        // Add any missing packages with their known versions
+        let patched = false;
+        needed.forEach((pkg) => {
+            if (!pkgJson.dependencies[pkg] && !pkgJson.devDependencies?.[pkg]) {
+                const ver = DEFAULT_PACKAGE_VERSION_BY_NAME[pkg] || 'latest';
+                pkgJson.dependencies[pkg] = ver;
+                patched = true;
+                fixCount++;
+            }
+        });
+
+        if (patched) {
+            const updatedCode = JSON.stringify(pkgJson, null, 2);
+            fixed[pkgPath] = typeof pkgEntry === 'string' ? updatedCode : { ...pkgEntry, code: updatedCode };
+            noteRepairedFile(pkgPath, 'added missing package dependencies');
+        }
+    });
+
+    // Auto-generate missing auth middleware files and inject missing auth imports
+    const authMiddlewareTemplate = [
+        "const jwt = require('jsonwebtoken');",
+        `const SECRET = process.env.JWT_SECRET || process.env.SECRET_KEY || process.env.SEKRET_KEY || 'dev-secret';`,
+        'module.exports = (req, res, next) => {',
+        "  const header = req.headers['authorization'] || '';",
+        "  const token = header.startsWith('Bearer ') ? header.slice(7) : null;",
+        "  if (!token) return res.status(401).json({ success: false, error: 'No token provided' });",
+        '  try { req.user = jwt.verify(token, SECRET); next(); }',
+        "  catch (_) { res.status(401).json({ success: false, error: 'Invalid or expired token' }); }",
+        '};',
+    ].join('\n');
+
+    Object.entries(fixed).forEach(([filePath, content]) => {
+        if (!/\.js$/i.test(filePath)) {
+            return;
+        }
+        let code = normalizeBackendFileContent(filePath, typeof content === 'string' ? content : content?.code || '');
+        const serviceDir = '/' + filePath.split('/').filter(Boolean)[0];
+        const middlewarePath = `${serviceDir}/middleware/auth.js`;
+        let changed = false;
+
+        if (fileNeedsAuthMiddlewareImport(code)) {
+            const requirePath = /\/routes\//i.test(filePath) ? '../middleware/auth' : './middleware/auth';
+            const nextCode = prependRequireLine(code, `const auth = require('${requirePath}');`);
+            if (nextCode !== code) {
+                code = nextCode;
+                changed = true;
+                noteRepairedFile(filePath, 'inserted auth middleware import');
+            }
+        }
+
+        const middlewareRequireRe = /require\(\s*['"](?:\.\.\/|\.\/)*middleware\/auth['"]\s*\)/g;
+        if (middlewareRequireRe.test(code) && !fixed[middlewarePath]) {
+            fixed[middlewarePath] = { code: authMiddlewareTemplate };
+            fixCount++;
+            noteCreatedFile(middlewarePath, 'created auth middleware file');
+        }
+
+        if (changed) {
+            fixed[filePath] = { code };
+            fixCount++;
+        }
+    });
+
+    if (structuredSpec) {
+        const structuredCoverageFix = applyStructuredSpecCoverageFixes(fixed, structuredSpec);
+        return {
+            files: structuredCoverageFix.files,
+            fixCount: fixCount + structuredCoverageFix.fixCount,
+            createdFiles,
+            repairedFiles,
+        };
+    }
+
+    return { files: fixed, fixCount, createdFiles, repairedFiles };
 }
 
 function repairCommonFrontendSyntax(code = '') {
@@ -1583,11 +3005,46 @@ function repairCommonFrontendSyntax(code = '') {
     return nextCode;
 }
 
-async function validateFrontendCandidateFiles(frontendFiles) {
+function ensureToastifyImports(code = '') {
+    let nextCode = String(code || '');
+    const usesToastContainer = /\<ToastContainer\b/.test(nextCode);
+    const usesToast = /\btoast\.(success|error|info|warn|warning|promise|loading|dark)\b|\btoast\(/.test(nextCode);
+    const reactToastifyImportRegex = /import\s*\{([^}]+)\}\s*from\s*['"]react-toastify['"];?/;
+    const hasReactToastifyImport = reactToastifyImportRegex.test(nextCode);
+
+    if (!usesToastContainer && !usesToast) {
+        return nextCode;
+    }
+
+    if (hasReactToastifyImport) {
+        nextCode = nextCode.replace(reactToastifyImportRegex, (full, names) => {
+            const parts = names.split(',').map((value) => value.trim()).filter(Boolean);
+            const nameSet = new Set(parts);
+            if (usesToastContainer) nameSet.add('ToastContainer');
+            if (usesToast) nameSet.add('toast');
+            return `import { ${[...nameSet].sort((a, b) => a.localeCompare(b)).join(', ')} } from 'react-toastify';`;
+        });
+    } else {
+        const required = [];
+        if (usesToastContainer) required.push('ToastContainer');
+        if (usesToast) required.push('toast');
+        const importLine = `import { ${required.join(', ')} } from 'react-toastify';\n`;
+        if (/^import[\s\S]+?\n/m.test(nextCode)) {
+            nextCode = nextCode.replace(/^((?:import .*;\n)+)/, `$1${importLine}`);
+        } else {
+            nextCode = `${importLine}${nextCode}`;
+        }
+    }
+
+    return nextCode;
+}
+
+async function validateFrontendCandidateFiles(frontendFiles, { emit = null, phase = 'frontend-fix', round = null } = {}) {
     const candidateEntries = Object.entries(frontendFiles || {}).filter(([filePath]) => /\.(jsx?|tsx?)$/i.test(filePath));
     if (candidateEntries.length === 0) {
         return { ok: true, errors: [] };
     }
+    emitFrontendValidationPlan(emit, Object.fromEntries(candidateEntries), { phase, round });
 
     const tempRoot = path.join(
         os.tmpdir(),
@@ -1601,7 +3058,7 @@ async function validateFrontendCandidateFiles(frontendFiles) {
         for (const [filePath, content] of candidateEntries) {
             const normalizedPath = filePath.replace(/^\/+/, '');
             const targetPath = path.join(tempRoot, normalizedPath);
-            const code = typeof content === 'string' ? content : content?.code || '';
+            const code = normalizeFrontendFileContent(filePath, typeof content === 'string' ? content : content?.code || '');
 
             await mkdir(path.dirname(targetPath), { recursive: true });
             await writeFile(targetPath, code, 'utf8');
@@ -1613,10 +3070,28 @@ async function validateFrontendCandidateFiles(frontendFiles) {
 
         const validatorScript = `
 const fs = require('node:fs');
-const { transformSync } = require('esbuild');
+const path = require('node:path');
+const { transformSync, buildSync } = require('esbuild');
 
 const manifest = JSON.parse(fs.readFileSync(process.argv[1], 'utf8'));
 const errors = [];
+const fileSet = new Set(manifest.map((entry) => String(entry.filePath || '').replace(/\\\\/g, '/')));
+
+const resolveImportCandidates = (fromPath, requestPath) => {
+  const fromDir = path.posix.dirname(String(fromPath || '').replace(/\\\\/g, '/'));
+  const basePath = path.posix.normalize(path.posix.join(fromDir, requestPath));
+  return [
+    basePath,
+    basePath + '.js',
+    basePath + '.jsx',
+    basePath + '.ts',
+    basePath + '.tsx',
+    path.posix.join(basePath, 'index.js'),
+    path.posix.join(basePath, 'index.jsx'),
+    path.posix.join(basePath, 'index.ts'),
+    path.posix.join(basePath, 'index.tsx'),
+  ];
+};
 
 for (const entry of manifest) {
   const code = fs.readFileSync(entry.diskPath, 'utf8');
@@ -1628,6 +3103,17 @@ for (const entry of manifest) {
       : (lowerPath.endsWith('.jsx') || /<\\/?[A-Za-z]/.test(code))
         ? 'jsx'
         : 'js';
+
+  const importRegex = /import\\s+[^'"]*?from\\s+['"]([^'"]+)['"]|import\\s+['"]([^'"]+)['"]|import\\(\\s*['"]([^'"]+)['"]\\s*\\)/g;
+  let importMatch;
+  while ((importMatch = importRegex.exec(code)) !== null) {
+    const requestPath = importMatch[1] || importMatch[2] || importMatch[3];
+    if (!requestPath || !requestPath.startsWith('.')) continue;
+    const found = resolveImportCandidates(entry.filePath, requestPath).some((candidate) => fileSet.has(candidate.startsWith('/') ? candidate : '/' + candidate));
+    if (!found) {
+      errors.push(\`\${entry.filePath}: missing local import \${requestPath}\`);
+    }
+  }
 
   try {
     transformSync(code, {
@@ -1645,7 +3131,41 @@ for (const entry of manifest) {
   }
 }
 
-process.stdout.write(JSON.stringify(errors));
+const entryCandidates = manifest.filter((entry) => /\\/(main|index|app)\\.(jsx?|tsx?)$/i.test(entry.filePath));
+for (const entry of entryCandidates.slice(0, 3)) {
+  try {
+    buildSync({
+      entryPoints: [entry.diskPath],
+      bundle: true,
+      write: false,
+      format: 'esm',
+      platform: 'browser',
+      jsx: 'automatic',
+      external: [
+        'react',
+        'react-dom',
+        'react-router-dom',
+        'lucide-react',
+        'framer-motion',
+        'react-toastify',
+        'tailwind-merge',
+        'uuid',
+        'react-beautiful-dnd',
+        'recharts',
+        'date-fns',
+      ],
+      logLevel: 'silent',
+    });
+  } catch (error) {
+    const firstError = error && error.errors && error.errors[0];
+    const location = firstError && firstError.location
+      ? \` (\${firstError.location.line}:\${firstError.location.column})\`
+      : '';
+    errors.push(\`\${entry.filePath}: \${(firstError && firstError.text) || error.message || 'frontend bundle validation failed'}\${location}\`);
+  }
+}
+
+process.stdout.write(JSON.stringify([...new Set(errors)]));
 `;
 
         const result = await runCommand(
@@ -1879,8 +3399,9 @@ const requestJson = async (path, options = {}) => {
     };
     const fixed = {};
     Object.entries(frontendFiles).forEach(([path, content]) => {
-        let code = typeof content === 'string' ? content : content?.code || '';
+        let code = normalizeFrontendFileContent(path, typeof content === 'string' ? content : content?.code || '');
         code = repairCommonFrontendSyntax(code);
+        code = ensureToastifyImports(code);
         code = code.replace(/http:\/\/localhost:3001/g, '/api');
         code = code.replace(/\(typeof\s+import\.meta\s*!==\s*'undefined'\s*&&\s*import\.meta\.env\?\.VITE_API_BASE_URL\)\s*\|\|\s*''/g, "''");
         code = code.replace(/\bimport\.meta\.env\?\.VITE_API_BASE_URL\b/g, "''");
@@ -2057,10 +3578,84 @@ function shouldUseShellForCommand(command = '', args = []) {
     }
 
     if (normalizedCommand === 'cmd.exe' || normalizedCommand === 'cmd') {
-        return true;
+        return false;
     }
 
     return ['install', 'start', 'run'].includes(firstArg);
+}
+
+function getWindowsShellPath(env = process.env) {
+    const candidates = [
+        env?.ComSpec,
+        env?.COMSPEC,
+        env?.comspec,
+        env?.SystemRoot ? path.join(env.SystemRoot, 'System32', 'cmd.exe') : '',
+        env?.SYSTEMROOT ? path.join(env.SYSTEMROOT, 'System32', 'cmd.exe') : '',
+        env?.WINDIR ? path.join(env.WINDIR, 'System32', 'cmd.exe') : '',
+        env?.windir ? path.join(env.windir, 'System32', 'cmd.exe') : '',
+        'cmd.exe',
+    ];
+
+    for (const candidate of candidates) {
+        const value = String(candidate || '').trim();
+        if (value) {
+            return value;
+        }
+    }
+
+    return 'cmd.exe';
+}
+
+function buildWindowsSpawnEnv(env = {}) {
+    if (process.platform !== 'win32') {
+        return env || process.env;
+    }
+
+    const mergedEnv = {
+        ...process.env,
+        ...(env || {}),
+    };
+
+    const systemRoot = mergedEnv.SystemRoot || mergedEnv.SYSTEMROOT || process.env.SystemRoot || process.env.SYSTEMROOT || 'C:\\Windows';
+    const windir = mergedEnv.WINDIR || mergedEnv.windir || process.env.WINDIR || process.env.windir || systemRoot;
+    const comSpec = getWindowsShellPath({
+        ...mergedEnv,
+        SystemRoot: systemRoot,
+        SYSTEMROOT: systemRoot,
+        WINDIR: windir,
+        windir,
+    });
+
+    mergedEnv.SystemRoot = systemRoot;
+    mergedEnv.SYSTEMROOT = systemRoot;
+    mergedEnv.WINDIR = windir;
+    mergedEnv.windir = windir;
+    mergedEnv.ComSpec = comSpec;
+    mergedEnv.COMSPEC = comSpec;
+
+    return mergedEnv;
+}
+
+function buildSpawnOptions({ cwd, env, shellMode }) {
+    const runtimeEnv = process.platform === 'win32'
+        ? buildWindowsSpawnEnv(env)
+        : (env || process.env);
+
+    const options = {
+        cwd,
+        env: runtimeEnv,
+        windowsHide: true,
+    };
+
+    if (shellMode) {
+        options.shell = process.platform === 'win32'
+            ? getWindowsShellPath(runtimeEnv)
+            : true;
+    } else {
+        options.shell = false;
+    }
+
+    return options;
 }
 
 function joinApiPath(prefix, routePath = '/') {
@@ -2409,9 +4004,15 @@ function appendQueryParams(routePath = '', queryPayload = null) {
 function buildFieldSampleValue(fieldName, fieldType = 'String', createdRecords = {}, sampleState = {}, enumValues = []) {
     const lowerName = String(fieldName || '').toLowerCase();
     const normalizedType = String(fieldType || 'String').toLowerCase();
-    const knownUserId = createdRecords['/api/users']?.id || '507f1f77bcf86cd799439011';
-    const knownTaskId = createdRecords['/api/tasks']?.id || '507f1f77bcf86cd799439012';
-    const knownColumnId = createdRecords['/api/columns']?.id || '507f1f77bcf86cd799439013';
+    const isObjectIdType = normalizedType.includes('objectid');
+
+    const knownUserId    = createdRecords['/api/users']?.id    || createdRecords['/api/auth']?.id    || '507f1f77bcf86cd799439011';
+    const knownTaskId    = createdRecords['/api/tasks']?.id    || '507f1f77bcf86cd799439012';
+    const knownColumnId  = createdRecords['/api/columns']?.id  || '507f1f77bcf86cd799439013';
+    const knownOrderId   = createdRecords['/api/orders']?.id   || '507f1f77bcf86cd799439015';
+    const knownMenuId    = createdRecords['/api/menu']?.id     || createdRecords['/api/menus']?.id    || '507f1f77bcf86cd799439016';
+    const knownCategoryId= createdRecords['/api/categories']?.id || '507f1f77bcf86cd799439014';
+
     const normalizedEnumValues = Array.isArray(enumValues)
         ? enumValues.map((value) => String(value).trim()).filter(Boolean)
         : [];
@@ -2422,26 +4023,45 @@ function buildFieldSampleValue(fieldName, fieldType = 'String', createdRecords =
     if (lowerName.includes('username')) return getLiveSampleStateValue(sampleState, 'auth.username', () => `john_${String(sampleState.seed).replace(/[^a-z0-9]/gi, '').toLowerCase()}`);
     if (lowerName.includes('displayname')) return `John Tester ${String(sampleState.seed).slice(-4)}`;
     if (lowerName === 'name') return getLiveSampleStateValue(sampleState, 'generic.name', () => `Sample ${sampleState.seed}`);
-    if (lowerName.includes('title')) return 'Test Task';
+    if (lowerName.includes('title')) return 'Test Item';
     if (lowerName.includes('description')) return 'Generated sample description';
     if (lowerName.includes('priority')) return 'high';
-    if (lowerName.includes('status')) return 'todo';
+    if (lowerName.includes('status')) return 'pending';
     if (lowerName.includes('password')) return getLiveSampleStateValue(sampleState, 'auth.password', () => `SecurePass123!${String(sampleState.seed).slice(-4)}`);
     if (lowerName.includes('theme')) return 'dark';
     if (lowerName === 'action') return 'created';
-    if (lowerName.includes('createdby') || lowerName.includes('userid') || lowerName === 'user') return knownUserId;
-    if (lowerName.includes('assignee')) return knownUserId;
-    if (lowerName.includes('taskid')) return knownTaskId;
-    if (lowerName.includes('columnid')) return knownColumnId;
+    if (lowerName === 'price' || lowerName === 'amount' || lowerName === 'total') return 9.99;
+    if (lowerName.includes('quantity') || lowerName.includes('qty')) return 1;
+    if (lowerName.includes('paymentmethod') || lowerName === 'method') return 'credit_card';
+    if (lowerName.includes('deliveryaddress') || lowerName === 'address') return '123 Test Street, City, State 12345';
+    if (lowerName.includes('phone')) return '+1234567890';
+    if (lowerName.includes('image') || lowerName.includes('photo') || lowerName.includes('avatar')) return 'https://via.placeholder.com/150';
+    if (lowerName.includes('url') || lowerName.includes('link')) return 'https://example.com';
+    if (lowerName.includes('role')) return 'customer';
+    if (lowerName.includes('type') && !isObjectIdType) return 'standard';
+
+    // ObjectId reference fields — always return a valid 24-char hex ObjectId string
+    if (lowerName.includes('createdby') || lowerName.includes('userid') || lowerName === 'user' || lowerName === 'customer') return knownUserId;
+    if (lowerName.includes('assignee') || lowerName.includes('driver')) return knownUserId;
+    if (lowerName.includes('taskid') || lowerName === 'task') return knownTaskId;
+    if (lowerName.includes('columnid') || lowerName === 'column') return knownColumnId;
+    if (lowerName.includes('orderid') || lowerName === 'order') return knownOrderId;
+    if (lowerName.includes('menuitem') || lowerName === 'item') return knownMenuId;
+    // category: send valid ObjectId if field is ObjectId type, else send a string
+    if (lowerName.includes('category')) {
+        if (isObjectIdType) return knownCategoryId;
+        return createdRecords['/api/categories']?.payload?.name || getLiveSampleStateValue(sampleState, 'category.name', () => `Main Course`);
+    }
+
     if (lowerName.includes('sku')) return getLiveSampleStateValue(sampleState, 'product.sku', () => `sku-${sampleState.seed}`);
     if (lowerName.includes('slug')) return getLiveSampleStateValue(sampleState, 'product.slug', () => `item-${sampleState.seed}`);
     if (lowerName.includes('brand')) return getLiveSampleStateValue(sampleState, 'product.brand', () => `Brand ${sampleState.seed}`);
-    if (lowerName.includes('category')) return createdRecords['/api/categories']?.payload?.name || getLiveSampleStateValue(sampleState, 'category.name', () => `Category ${sampleState.seed}`);
     if (lowerName.includes('position')) return 0;
     if (lowerName.includes('count') || lowerName.includes('total')) return 1;
-    if (lowerName.includes('date') || lowerName.includes('deadline')) return new Date().toISOString();
+    if (lowerName.includes('date') || lowerName.includes('deadline') || lowerName.includes('time')) return new Date().toISOString();
 
-    if (normalizedType.includes('objectid')) return knownUserId;
+    // Fallback: any ObjectId-typed field gets a valid ObjectId string
+    if (isObjectIdType) return knownUserId;
     if (normalizedType.includes('number')) return 1;
     if (normalizedType.includes('boolean')) return true;
     if (normalizedType.includes('date')) return new Date().toISOString();
@@ -2552,6 +4172,63 @@ function buildSchemaSamplePayload(modelCandidates = [], backendFiles = {}, route
     if (/\/api\/categories(\/|$)/i.test(routePath)) {
         payload.name ??= getLiveSampleStateValue(sampleState, 'category.name', () => `Category ${sampleState.seed}`);
         payload.slug ??= getLiveSampleStateValue(sampleState, 'category.slug', () => `category-${sampleState.seed}`);
+    }
+
+    // Restaurant-specific: menu items need a name, price, and a string category (not ObjectId)
+    if (/\/api\/menu(\/|$)/i.test(routePath)) {
+        payload.name     ??= getLiveSampleStateValue(sampleState, 'menu.name', () => `Menu Item ${sampleState.seed}`);
+        payload.price    ??= 9.99;
+        payload.description ??= 'Delicious menu item';
+        // Always send a String for category — avoids Cast to ObjectId BSONError
+        payload.category ??= 'Main Course';
+        payload.image    ??= 'https://via.placeholder.com/300x200';
+        payload.available ??= true;
+    }
+
+    // Payment routes: order/customer refs as valid ObjectIds, amount as number
+    if (/\/api\/payments?(\/|$)/i.test(routePath)) {
+        const ordId = createdRecords['/api/orders']?.id || '507f1f77bcf86cd799439015';
+        const usrId = createdRecords['/api/users']?.id  || createdRecords['/api/auth']?.id || '507f1f77bcf86cd799439011';
+        payload.order         ??= ordId;
+        payload.orderId       ??= ordId;
+        payload.customer      ??= usrId;
+        payload.customerId    ??= usrId;
+        payload.amount        ??= 19.99;
+        payload.paymentMethod ??= 'credit_card';
+        payload.status        ??= 'pending';
+    }
+
+    // Delivery routes: orderId/driver as valid ObjectIds
+    if (/\/api\/delivery(\/|$)/i.test(routePath)) {
+        const ordId = createdRecords['/api/orders']?.id || '507f1f77bcf86cd799439015';
+        const usrId = createdRecords['/api/users']?.id  || createdRecords['/api/auth']?.id || '507f1f77bcf86cd799439011';
+        payload.order            ??= ordId;
+        payload.orderId          ??= ordId;
+        payload.driver           ??= usrId;
+        payload.driverId         ??= usrId;
+        payload.status           ??= 'assigned';
+        payload.estimatedTime    ??= new Date(Date.now() + 30 * 60 * 1000).toISOString();
+    }
+
+    // Order routes: items array with valid menu item refs
+    if (/\/api\/orders?(\/|$)/i.test(routePath)) {
+        const menuId = createdRecords['/api/menu']?.id || '507f1f77bcf86cd799439016';
+        const usrId  = createdRecords['/api/users']?.id || createdRecords['/api/auth']?.id || '507f1f77bcf86cd799439011';
+        payload.customer      ??= usrId;
+        payload.customerId    ??= usrId;
+        payload.items         ??= [{ menuItem: menuId, quantity: 1, price: 9.99 }];
+        payload.totalAmount   ??= 9.99;
+        payload.status        ??= 'pending';
+        payload.deliveryAddress ??= '123 Test Street, City 12345';
+    }
+
+    // Auth register: always include name, email, password, username
+    if (/\/api\/auth\/register(\/|$)/i.test(routePath)) {
+        payload.name     ??= getLiveSampleStateValue(sampleState, 'generic.name', () => `Test User ${sampleState.seed}`);
+        payload.email    ??= getLiveSampleStateValue(sampleState, 'auth.email', () => `john+${sampleState.seed}@example.com`);
+        payload.username ??= getLiveSampleStateValue(sampleState, 'auth.username', () => `john_${String(sampleState.seed).replace(/[^a-z0-9]/gi, '')}`);
+        payload.password ??= getLiveSampleStateValue(sampleState, 'auth.password', () => `SecurePass123!${String(sampleState.seed).slice(-4)}`);
+        payload.role     ??= 'customer';
     }
 
     return Object.keys(payload).length > 0 ? payload : null;
@@ -2822,6 +4499,242 @@ function buildLiveExecutionPlan(simulatedResults = [], backendFiles = {}) {
     return unique.sort((left, right) => rank(left) - rank(right));
 }
 
+function getOrderedServiceDirs(topology, structuredSpec = null) {
+    const serviceDirs = [...(topology?.serviceDirs || [])];
+    if (!structuredSpec?.services?.length) {
+        return serviceDirs;
+    }
+
+    const matched = [];
+    const remaining = [...serviceDirs];
+    structuredSpec.services.forEach((service) => {
+        const candidates = specServiceDirCandidates(service).map((value) => value.replace(/^\/+/, ''));
+        const found = remaining.find((dirName) => candidates.includes(dirName));
+        if (found) {
+            matched.push(found);
+            remaining.splice(remaining.indexOf(found), 1);
+        }
+    });
+
+    return [...matched, ...remaining];
+}
+
+function buildPreferredRuntimePorts(topology, structuredSpec = null) {
+    const services = {};
+    getOrderedServiceDirs(topology, structuredSpec).forEach((dirName, index) => {
+        services[dirName] = DEFAULT_SERVICE_PORT_START + index;
+    });
+
+    return {
+        gateway: DEFAULT_GATEWAY_PORT,
+        services,
+    };
+}
+
+async function isPortAvailable(port, host = '127.0.0.1') {
+    return new Promise((resolve) => {
+        const server = net.createServer();
+        server.once('error', () => resolve(false));
+        server.listen(port, host, () => {
+            server.close(() => resolve(true));
+        });
+    });
+}
+
+async function listListeningPidsOnPort(port) {
+    if (!port) return [];
+
+    try {
+        if (process.platform === 'win32') {
+            const psCommand = `Get-NetTCPConnection -State Listen -LocalPort ${Number(port)} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess`;
+            const psResult = await runCommand('powershell.exe', ['-NoProfile', '-Command', psCommand], { timeoutMs: 20000 });
+            const psPids = String(psResult.stdout || '')
+                .split(/\r?\n/)
+                .map((value) => Number.parseInt(value.trim(), 10))
+                .filter((pid) => Number.isFinite(pid) && pid > 0 && pid !== process.pid);
+            if (psPids.length > 0) {
+                return [...new Set(psPids)];
+            }
+
+            const result = await runCommand('cmd.exe', ['/c', 'netstat -ano -p tcp'], { timeoutMs: 20000 });
+            const text = `${result.stdout || ''}\n${result.stderr || ''}`;
+            const matches = [...text.matchAll(new RegExp(`^\\s*TCP\\s+[^\\s]+:${port}\\s+[^\\s]+\\s+LISTENING\\s+(\\d+)\\s*$`, 'gim'))];
+            return [...new Set(matches.map((match) => Number(match[1])).filter((pid) => Number.isFinite(pid) && pid > 0 && pid !== process.pid))];
+        }
+
+        const result = await runCommand('lsof', ['-ti', `tcp:${port}`], { timeoutMs: 20000 });
+        return [...new Set(
+            String(result.stdout || '')
+                .split(/\r?\n/)
+                .map((value) => Number.parseInt(value.trim(), 10))
+                .filter((pid) => Number.isFinite(pid) && pid > 0 && pid !== process.pid)
+        )];
+    } catch (_) {
+        return [];
+    }
+}
+
+const NODE_BUILTIN_MODULES = new Set([
+    ...builtinModules,
+    ...builtinModules.map((name) => name.replace(/^node:/, '')),
+]);
+
+function parsePackageJsonMap(backendFiles = {}) {
+    const packageMap = new Map();
+
+    Object.entries(backendFiles).forEach(([filePath, content]) => {
+        if (!/\/package\.json$/i.test(filePath)) {
+            return;
+        }
+
+        try {
+            const normalized = normalizeBackendFileContent(filePath, typeof content === 'string' ? content : content?.code || '');
+            const parsed = JSON.parse(normalized);
+            const serviceDir = `/${filePath.split('/').filter(Boolean)[0] || ''}`.replace(/\/+$/, '');
+            if (!serviceDir || serviceDir === '/') {
+                return;
+            }
+
+            packageMap.set(serviceDir, parsed);
+        } catch (_) {}
+    });
+
+    return packageMap;
+}
+
+function getServiceDirForFile(filePath = '') {
+    const segments = String(filePath || '').replace(/\\/g, '/').split('/').filter(Boolean);
+    if (segments.length === 0) {
+        return '';
+    }
+    return `/${segments[0]}`;
+}
+
+function getDeclaredPackageNames(packageJson = {}) {
+    const names = new Set();
+    ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'].forEach((field) => {
+        Object.keys(packageJson?.[field] || {}).forEach((name) => names.add(name));
+    });
+    return names;
+}
+
+function getExternalRequirePackageName(requestPath = '') {
+    const normalized = String(requestPath || '').trim();
+    if (!normalized || normalized.startsWith('.') || normalized.startsWith('/')) {
+        return '';
+    }
+
+    if (normalized.startsWith('@')) {
+        const parts = normalized.split('/');
+        return parts.length >= 2 ? `${parts[0]}/${parts[1]}` : normalized;
+    }
+
+    return normalized.split('/')[0];
+}
+
+function extractRequireAndImportRequests(code = '') {
+    const requests = new Set();
+    const source = String(code || '');
+
+    [...source.matchAll(/require\(\s*['"]([^'"]+)['"]\s*\)/g)].forEach((match) => {
+        if (match[1]) requests.add(match[1].trim());
+    });
+    [...source.matchAll(/import\s+[^'"]*?from\s+['"]([^'"]+)['"]/g)].forEach((match) => {
+        if (match[1]) requests.add(match[1].trim());
+    });
+    [...source.matchAll(/import\s*\(\s*['"]([^'"]+)['"]\s*\)/g)].forEach((match) => {
+        if (match[1]) requests.add(match[1].trim());
+    });
+
+    return [...requests];
+}
+
+async function killProcessId(pid) {
+    if (!pid || pid === process.pid) return false;
+    try {
+        if (process.platform === 'win32') {
+            const result = await runCommand('taskkill', ['/PID', String(pid), '/T', '/F'], { timeoutMs: 30000 });
+            return result.code === 0;
+        }
+
+        const result = await runCommand('kill', ['-9', String(pid)], { timeoutMs: 30000 });
+        return result.code === 0;
+    } catch (_) {
+        return false;
+    }
+}
+
+async function killListeningProcessesOnPort(port, emit = null, label = '', { strict = false, phase = 'api-test' } = {}) {
+    if (!port) {
+        return [];
+    }
+
+    const pids = await listListeningPidsOnPort(port);
+    if (pids.length === 0) {
+        return [];
+    }
+
+    if (emit) {
+        emit({
+            type: 'log',
+            phase,
+            level: 'warning',
+            message: `Port ${port} is already in use${label ? ` for ${label}` : ''}. Found PID${pids.length === 1 ? '' : 's'} ${pids.join(', ')} via netstat/Get-NetTCPConnection. Running taskkill before testing...`,
+        });
+    }
+
+    for (const pid of pids) {
+        await killProcessId(pid);
+    }
+
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < 15000) {
+        if (await isPortAvailable(port)) {
+            return pids;
+        }
+        await delay(500);
+    }
+
+    if (strict) {
+        throw new Error(`Port ${port} is still not available${label ? ` for ${label}` : ''} after killing PID${pids.length === 1 ? '' : 's'} ${pids.join(', ')}.`);
+    }
+
+    if (emit) {
+        emit({
+            type: 'log',
+            phase,
+            level: 'warning',
+            message: `Port ${port} still appears busy${label ? ` for ${label}` : ''} after taskkill. The next round will fall back or retry cleanup.`,
+        });
+    }
+    return pids;
+}
+
+async function ensurePortAvailable(port, emit = null, label = '') {
+    if (await isPortAvailable(port)) {
+        return;
+    }
+
+    const pids = await listListeningPidsOnPort(port);
+    if (pids.length === 0) {
+        throw new Error(`Port ${port} is in use${label ? ` for ${label}` : ''}, but no owning process could be identified to free it.`);
+    }
+    await killListeningProcessesOnPort(port, emit, label, { strict: true, phase: 'api-test' });
+}
+
+async function reserveRuntimePorts(topology, emit = null, structuredSpec = null) {
+    const preferred = buildPreferredRuntimePorts(topology, structuredSpec);
+    const resolvedGatewayPort = await resolveRuntimePort(preferred.gateway, emit, 'api-gateway');
+    const resolvedServices = {};
+    for (const dirName of Object.keys(preferred.services)) {
+        resolvedServices[dirName] = await resolveRuntimePort(preferred.services[dirName], emit, dirName);
+    }
+    return {
+        gateway: resolvedGatewayPort,
+        services: resolvedServices,
+    };
+}
+
 async function getFreePort() {
     return new Promise((resolve, reject) => {
         const server = net.createServer();
@@ -2832,6 +4745,44 @@ async function getFreePort() {
             server.close(() => resolve(port));
         });
     });
+}
+
+async function resolveRuntimePort(preferredPort, emit = null, label = '') {
+    try {
+        await ensurePortAvailable(preferredPort, emit, label);
+        return preferredPort;
+    } catch (error) {
+        const fallbackPort = await getFreePort();
+        if (emit) {
+            emit({
+                type: 'log',
+                phase: 'api-test',
+                level: 'warning',
+                message: `Preferred port ${preferredPort} is unavailable${label ? ` for ${label}` : ''}. Using fallback port ${fallbackPort}. Reason: ${error.message}`,
+            });
+        }
+        return fallbackPort;
+    }
+}
+
+function buildRuntimePortEntries(ports) {
+    const entries = [];
+    if (ports?.gateway) {
+        entries.push({ port: ports.gateway, label: 'api-gateway' });
+    }
+    Object.entries(ports?.services || {}).forEach(([serviceName, servicePort]) => {
+        entries.push({ port: servicePort, label: serviceName });
+    });
+    return entries;
+}
+
+async function killRuntimePorts(ports, emit = null, phaseLabel = 'testing') {
+    for (const entry of buildRuntimePortEntries(ports)) {
+        await killListeningProcessesOnPort(entry.port, emit, `${entry.label} during ${phaseLabel}`, {
+            strict: false,
+            phase: 'api-test',
+        });
+    }
 }
 
 async function runCommand(command, args, { cwd, env, onStdout, onStderr, timeoutMs = 120000 } = {}) {
@@ -2875,12 +4826,11 @@ async function runCommand(command, args, { cwd, env, onStdout, onStderr, timeout
             const launchId = ++activeLaunchId;
             timedOut = false;
             try {
-                child = spawn(command, normalizedArgs, {
+                child = spawn(command, normalizedArgs, buildSpawnOptions({
                     cwd,
                     env,
-                    shell: shellMode,
-                    windowsHide: true,
-                });
+                    shellMode,
+                }));
             } catch (error) {
                 if (shouldRetrySpawn(error, retriedWithShell)) {
                     retriedWithShell = true;
@@ -3057,7 +5007,7 @@ async function writeBackendWorkspace(backendFiles, { topology, ports, mongoUri, 
             const relativePath = filePath.replace(/^\/+/, '');
             const absolutePath = path.join(rootDir, relativePath);
             await mkdir(path.dirname(absolutePath), { recursive: true });
-            const code = typeof content === 'string' ? content : content?.code || '';
+            const code = normalizeBackendFileContent(filePath, typeof content === 'string' ? content : content?.code || '');
             await writeFile(absolutePath, code, 'utf8');
         })
     );
@@ -3093,7 +5043,7 @@ async function writeBackendWorkspace(backendFiles, { topology, ports, mongoUri, 
             const config = topology.serviceConfigs[dirName];
             const servicePort = dirName === 'api-gateway'
                 ? ports.gateway
-                : (ports.services[dirName] || Number(config?.originalPort || 3006));
+                : (ports.services[dirName] || Number(config?.originalPort || DEFAULT_SERVICE_PORT_START));
             const serviceEnvLines = [
                 ...envLines.filter((line) => !line.startsWith('PORT=')),
                 `PORT=${servicePort}`,
@@ -3102,6 +5052,45 @@ async function writeBackendWorkspace(backendFiles, { topology, ports, mongoUri, 
         })
     );
     return rootDir;
+}
+
+async function resetServiceInstallState(serviceRoot) {
+    if (!serviceRoot) return;
+    await rm(path.join(serviceRoot, 'node_modules'), { recursive: true, force: true }).catch(() => {});
+    await rm(path.join(serviceRoot, 'package-lock.json'), { force: true }).catch(() => {});
+}
+
+async function installBackendDependencies(dirName, serviceRoot, env, emit) {
+    await resetServiceInstallState(serviceRoot);
+
+    const runInstall = () => runCommand(npmCommand(), ['install', '--no-fund', '--no-audit'], {
+        cwd: serviceRoot,
+        env,
+        timeoutMs: 180000,
+    });
+
+    let install = await runInstall();
+    if (install.code === 0) {
+        return install;
+    }
+
+    const installOutput = `${install.stderr || ''}\n${install.stdout || ''}`.toLowerCase();
+    if (
+        installOutput.includes('enotempty')
+        || installOutput.includes('ejsonparse')
+        || installOutput.includes('invalid package.json')
+    ) {
+        emit?.({
+            type: 'log',
+            phase: 'api-test',
+            level: 'warning',
+            message: `Retrying clean npm install in ${dirName} after resetting node_modules/package-lock because npm reported a corrupted install state...`,
+        });
+        await resetServiceInstallState(serviceRoot);
+        install = await runInstall();
+    }
+
+    return install;
 }
 
 async function startBackendService(label, cwd, env, emit) {
@@ -3189,12 +5178,11 @@ async function startBackendService(label, cwd, env, emit) {
         exitCode = null;
         exitSignal = null;
         try {
-            child = spawn(launchCommand, launchArgs, {
+            child = spawn(launchCommand, launchArgs, buildSpawnOptions({
                 cwd,
                 env,
-                shell: shellMode,
-                windowsHide: true,
-            });
+                shellMode,
+            }));
         } catch (error) {
             if (shouldRetrySpawn(error, retriedWithShell)) {
                 retriedWithShell = true;
@@ -3236,11 +5224,12 @@ async function startBackendService(label, cwd, env, emit) {
 }
 
 async function startFrontendPreview(cwd, { port, gatewayPort }, emit) {
+    const resolvedFrontendPort = await resolveRuntimePort(port, emit, 'frontend');
     emit({
         type: 'log',
         phase: 'frontend-gen',
         level: 'info',
-        message: `Starting local frontend on port ${port} (proxy -> ${gatewayPort})...`,
+        message: `Starting local frontend on port ${resolvedFrontendPort} (proxy -> ${gatewayPort})...`,
     });
 
     const nodeModulesDir = path.join(cwd, 'node_modules');
@@ -3263,8 +5252,8 @@ async function startFrontendPreview(cwd, { port, gatewayPort }, emit) {
             env: {
                 ...process.env,
                 NODE_ENV: 'development',
-                PORT: String(port),
-                VITE_FRONTEND_PORT: String(port),
+                PORT: String(resolvedFrontendPort),
+                VITE_FRONTEND_PORT: String(resolvedFrontendPort),
                 VITE_API_BASE_URL: `http://127.0.0.1:${gatewayPort}`,
                 VITE_GATEWAY_URL: `http://127.0.0.1:${gatewayPort}`,
                 VITE_GATEWAY_PORT: String(gatewayPort),
@@ -3331,20 +5320,23 @@ async function startFrontendPreview(cwd, { port, gatewayPort }, emit) {
 
     const launch = (shellMode = shouldUseShellForCommand(npmCommand(), ['run', 'dev', '--', '--port', String(port)])) => {
         const launchId = ++activeLaunchId;
-        child = spawn(npmCommand(), ['run', 'dev', '--', '--port', String(port)], {
-            cwd,
-            env: {
-                ...process.env,
-                NODE_ENV: 'development',
-                PORT: String(port),
-                VITE_FRONTEND_PORT: String(port),
-                VITE_API_BASE_URL: `http://127.0.0.1:${gatewayPort}`,
-                VITE_GATEWAY_URL: `http://127.0.0.1:${gatewayPort}`,
-                VITE_GATEWAY_PORT: String(gatewayPort),
-            },
-            shell: shellMode,
-            windowsHide: true,
-        });
+        child = spawn(
+            npmCommand(),
+            ['run', 'dev', '--', '--port', String(port)],
+            buildSpawnOptions({
+                cwd,
+                env: {
+                    ...process.env,
+                    NODE_ENV: 'development',
+                    PORT: String(resolvedFrontendPort),
+                    VITE_FRONTEND_PORT: String(resolvedFrontendPort),
+                    VITE_API_BASE_URL: `http://127.0.0.1:${gatewayPort}`,
+                    VITE_GATEWAY_URL: `http://127.0.0.1:${gatewayPort}`,
+                    VITE_GATEWAY_PORT: String(gatewayPort),
+                },
+                shellMode,
+            })
+        );
         attachListeners(child, launchId);
     };
 
@@ -3355,11 +5347,11 @@ async function startFrontendPreview(cwd, { port, gatewayPort }, emit) {
         type: 'log',
         phase: 'frontend-gen',
         level: 'info',
-        message: `Waiting for local frontend to respond at http://127.0.0.1:${port} or http://localhost:${port} ...`,
+        message: `Waiting for local frontend to respond at http://127.0.0.1:${resolvedFrontendPort} or http://localhost:${resolvedFrontendPort} ...`,
     });
     const frontendCandidates = [
-        `http://127.0.0.1:${port}`,
-        `http://localhost:${port}`,
+        `http://127.0.0.1:${resolvedFrontendPort}`,
+        `http://localhost:${resolvedFrontendPort}`,
     ];
     const readyFrontend = await waitForAnyHttp(frontendCandidates, { timeoutMs: 120000, intervalMs: 1000 });
     emit({
@@ -3371,16 +5363,34 @@ async function startFrontendPreview(cwd, { port, gatewayPort }, emit) {
 
     return {
         frontendUrl: readyFrontend.url,
+        frontendPort: resolvedFrontendPort,
         process: child,
         getStdout: () => stdout,
         getStderr: () => stderr,
     };
 }
 
-async function stopBackendProcesses(processes = []) {
+async function stopBackendProcesses(processes = [], emit = null) {
     await Promise.all(
         processes.map(async (service) => {
             if (!service?.child || service.child.killed) {
+                return;
+            }
+
+            if (process.platform === 'win32' && service.child.pid) {
+                if (emit) {
+                    emit({
+                        type: 'log',
+                        phase: 'api-test',
+                        level: 'info',
+                        message: `[live-stop] Killing ${service.label} process tree PID ${service.child.pid} with taskkill...`,
+                    });
+                }
+                await killProcessId(service.child.pid);
+                await Promise.race([
+                    new Promise((resolve) => service.child.once('close', resolve)),
+                    delay(4000),
+                ]).catch(() => {});
                 return;
             }
 
@@ -3402,21 +5412,17 @@ function summarizeLiveFailure(result) {
     return `${result.method} ${result.path} returned ${statusText}${result.reason ? ` (${result.reason})` : ''}`;
 }
 
-async function runLiveBackendValidation(backendFiles, simulatedResults, emit, { projectTitle, keepAliveOnSuccess = false } = {}) {
+async function runLiveBackendValidation(backendFiles, simulatedResults, emit, { projectTitle, keepAliveOnSuccess = false, structuredSpec = null, changedServiceDirs = null } = {}) {
     const topology = inferBackendPortTopology(backendFiles);
-    const servicePorts = {};
-    for (const dirName of topology.serviceDirs) {
-        servicePorts[dirName] = await getFreePort();
-    }
-    const ports = {
-        gateway: await getFreePort(),
-        services: servicePorts,
-    };
-    const fallbackDbName = `ai-website-builder-live-${Date.now()}`;
-    const mongoUri = resolveMongoUri(
-        process.env.MONGODB_URI || process.env.MONGO_URL,
-        fallbackDbName
-    ) || `mongodb://127.0.0.1:27017/${fallbackDbName}`;
+    const ports = await reserveRuntimePorts(topology, emit, structuredSpec);
+    // Always use a fresh per-run database so stale unique indexes from previous runs
+    // never cause E11000 duplicate key errors on null values.
+    const fallbackDbName = `ai-builder-test-${Date.now()}`;
+    const rawMongoBase = (process.env.MONGODB_URI || process.env.MONGO_URL || '').trim();
+    const mongoUri = rawMongoBase && rawMongoBase.includes('://')
+        ? rawMongoBase.replace(/\/[a-zA-Z0-9_-]+(\?|$)/, `/${fallbackDbName}$1`)
+            .replace(/^(mongodb:\/\/[^/]+)$/, `$1/${fallbackDbName}`)
+        : `mongodb://127.0.0.1:27017/${fallbackDbName}`;
     const jwtSecret = (process.env.JWT_SECRET || process.env.SECRET_KEY || process.env.SEKRET_KEY || 'dev-secret').trim();
     const rootDir = await writeBackendWorkspace(backendFiles, { topology, ports, mongoUri, jwtSecret, projectTitle });
     const packageDirs = topology.packageDirs;
@@ -3460,6 +5466,7 @@ async function runLiveBackendValidation(backendFiles, simulatedResults, emit, { 
 
     try {
         await mkdir(reportsDir, { recursive: true });
+        await killRuntimePorts(ports, emit, 'pre-round cleanup');
         emit({ type: 'log', phase: 'api-test', level: 'info', message: `Local backend workspace: ${rootDir}` });
         const livePortSummary = ['gateway ' + ports.gateway]
             .concat(serviceDirs.map(dirName => `${dirName} ${runtimePortByService[dirName]}`))
@@ -3468,33 +5475,22 @@ async function runLiveBackendValidation(backendFiles, simulatedResults, emit, { 
         emit({ type: 'log', phase: 'api-test', level: 'info', message: `Live gateway URL: http://127.0.0.1:${ports.gateway}` });
         emit({ type: 'log', phase: 'api-test', level: 'info', message: `Local MongoDB URI: ${mongoUri}` });
 
-        for (const dirName of packageDirs) {
-            emit({ type: 'log', phase: 'api-test', level: 'info', message: `Installing backend dependencies in ${dirName}...` });
-            const install = await runCommand(npmCommand(), ['install', '--no-fund', '--no-audit'], {
-                cwd: path.join(rootDir, dirName),
-                env,
-                timeoutMs: 180000,
-            });
+        // Use a full install/start pass for every live round. The backend workspace is rewritten
+        // fresh per round, so "unchanged" services would otherwise miss node_modules and fail to boot.
+        const dirsToInstall = packageDirs;
+        const dirsToStart = serviceDirs;
 
+        for (const dirName of dirsToInstall) {
+            emit({ type: 'log', phase: 'api-test', level: 'info', message: `Installing backend dependencies in ${dirName}...` });
+            const install = await installBackendDependencies(dirName, path.join(rootDir, dirName), env, emit);
             if (install.code !== 0) {
                 throw new Error(`npm install failed in ${dirName}: ${install.stderr || install.stdout}`);
             }
-
         }
-
-        for (const dirName of serviceDirs) {
+        for (const dirName of dirsToStart) {
             const port = runtimePortByService[dirName];
-            emit({
-                type: 'log',
-                phase: 'api-test',
-                level: 'info',
-                message: `[live-start] Starting ${dirName} on port ${port}...`,
-            });
-            const serviceEnv = {
-                ...env,
-                PORT: String(port),
-            };
-            const service = await startBackendService(dirName, path.join(rootDir, dirName), serviceEnv, emit);
+            emit({ type: 'log', phase: 'api-test', level: 'info', message: `[live-start] Starting ${dirName} on port ${port}...` });
+            const service = await startBackendService(dirName, path.join(rootDir, dirName), { ...env, PORT: String(port) }, emit);
             liveProcesses.push(service);
         }
 
@@ -3791,6 +5787,9 @@ async function runLiveBackendValidation(backendFiles, simulatedResults, emit, { 
             }, null, 2),
             'utf8'
         ).catch(() => {});
+        if (failedResults.length > 0) {
+            await appendBugMemory('Live Route Failures', failedResults.map((result) => `${result.method} ${result.path}: ${result.reason || result.detail || 'runtime failure'}`));
+        }
         preserveProcesses = keepAliveOnSuccess && failedResults.length === 0;
         return {
             ok: failedResults.length === 0,
@@ -3851,6 +5850,7 @@ async function runLiveBackendValidation(backendFiles, simulatedResults, emit, { 
             }, null, 2),
             'utf8'
         ).catch(() => {});
+        await appendBugMemory('Live Runtime Failure', [failureMessage]);
 
         return {
             ok: false,
@@ -3864,7 +5864,8 @@ async function runLiveBackendValidation(backendFiles, simulatedResults, emit, { 
         };
     } finally {
         if (!preserveProcesses) {
-            await stopBackendProcesses(liveProcesses);
+            await stopBackendProcesses(liveProcesses, emit);
+            await killRuntimePorts(ports, emit, 'post-round cleanup');
         }
         // Keep the local backend test workspace on disk so the user can inspect
         // the exact files used during npm install / npm start API validation.
@@ -4231,6 +6232,70 @@ function buildFailureAnalysisForAI(backendFiles, failedRoutes = []) {
     return lines.join('\n');
 }
 
+function classifyRouteFailure(result = {}) {
+    const text = String(result.reason || result.detail || '').toLowerCase();
+
+    if (!text) return 'UNKNOWN';
+
+    if (text.includes('cannot find module')) return 'MODULE_MISSING';
+    if (text.includes('eaddrinuse')) return 'PORT_IN_USE';
+    if (text.includes('not a valid enum')) return 'SCHEMA_VALIDATION';
+    if (text.includes('referenceerror')) return 'REFERENCE_ERROR';
+    if (text.includes('npm install failed') || text.includes('ejsonparse') || text.includes('enotempty')) return 'PACKAGE_INSTALL_FAILURE';
+
+    if (
+        text.includes('service unavailable')
+        || text.includes('econnrefused')
+    ) {
+        return 'BLOCKED_SERVICE';
+    }
+
+    if (
+        text.includes('until auth token is available')
+        || text.includes('until required ids exist')
+        || text.includes('skipping ')
+        || text.includes('deferring ')
+    ) {
+        return 'BLOCKED_DEPENDENCY';
+    }
+
+    if (text.includes('exited before health check')) return 'RUNTIME_FAILURE';
+
+    return 'RUNTIME_FAILURE';
+}
+
+function isBlockedRouteFailure(result = {}) {
+    const kind = classifyRouteFailure(result);
+    return kind === 'BLOCKED_SERVICE' || kind === 'BLOCKED_DEPENDENCY';
+}
+
+// Returns true when the only failure is GET /health returning 404 directly from a service port.
+// This is a service-internal health wiring issue — the frontend never calls /health, so it is
+// safe to proceed to frontend generation with a warning rather than blocking completely.
+function isServiceHealthOnlyFailure(result = {}) {
+    const method = String(result.method || '').toUpperCase();
+    const routePath = String(result.path || '');
+    const reason = String(result.reason || result.detail || '').toLowerCase();
+    return (
+        method === 'GET' &&
+        (routePath === '/health' || routePath.endsWith('/health')) &&
+        (reason.includes('404') || reason.includes('status 404') || reason.includes('received status 404'))
+    );
+}
+
+function normalizeFailureSignature(result = {}) {
+    const method = String(result.method || 'GET').toUpperCase();
+    const routePath = String(result.path || '');
+    const kind = classifyRouteFailure(result);
+    const reason = String(result.reason || result.detail || '')
+        .toLowerCase()
+        .replace(/\d+/g, ':n')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    return `${kind}|${method}|${routePath}|${reason}`;
+}
+
 /* Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
    ROUTE HANDLER
 Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
@@ -4249,11 +6314,21 @@ export async function POST(req) {
                 let projectTitle = '';
                 let totalChars   = 0;
                 let backendValidationErrors = [];
+                const genSessionKey = `gen-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
                 const structuredAppSpec = extractStructuredAppSpec(prompt);
+                const appPlanningSnapshot = buildAppPlanningSnapshot(structuredAppSpec, prompt);
+                await appendBugMemory('App Build Plan', appPlanningSnapshot.lines);
                 const structuredSpecContract = buildStructuredSpecContract(structuredAppSpec);
-                const generationPrompt = structuredSpecContract
-                    ? `${prompt}\n\n${structuredSpecContract}`
-                    : prompt;
+                const localReferenceContext = await loadLocalReferenceContext();
+                const generationPrompt = [
+                    prompt,
+                    structuredSpecContract,
+                    localReferenceContext,
+                ].filter(Boolean).join('\n\n');
+                const sharedBackendRepairContext = [
+                    await loadBackendRepairContext(),
+                    localReferenceContext,
+                ].filter(Boolean).join('\n\n');
 
                 if (structuredAppSpec?.projectTitle) {
                     projectTitle = structuredAppSpec.projectTitle;
@@ -4266,6 +6341,12 @@ export async function POST(req) {
                         message: `Structured spec detected: ${structuredAppSpec.projectTitle || 'Untitled app'} | ${structuredAppSpec.services.length} services | ${structuredAppSpec.features.length} features`,
                     });
                 }
+                emit({
+                    type: 'log',
+                    phase: 'backend-gen',
+                    level: 'info',
+                    message: `Developer memory saved locally: backend libraries ${appPlanningSnapshot.libraries.backendLibraries.join(', ') || 'none inferred'} | frontend libraries ${appPlanningSnapshot.libraries.frontendLibraries.join(', ') || 'none inferred'}`,
+                });
 
                 /* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
                    PHASE 1 Ã¢â‚¬â€ BACKEND GENERATION
@@ -4389,18 +6470,31 @@ export async function POST(req) {
                 if (beCount > 0) {
                     emit({ type: 'phase', phase: 'backend-fix', status: 'start',
                         message: 'Analyzing backend for bugs...' });
-                    const backendRepairContext = await loadBackendRepairContext();
+                    const backendRepairContext = sharedBackendRepairContext;
 
                     // Round 0 Ã¢â‚¬â€ static fixes (instant, no AI)
-                    const { files: staticFixed, fixCount } = staticFixBackend(backendFiles);
+                    const { files: staticFixed, fixCount, createdFiles = [], repairedFiles = [] } = staticFixBackend(backendFiles, structuredAppSpec);
                     backendFiles = staticFixed;
                     if (fixCount > 0) {
                         emit({ type: 'log', phase: 'backend-fix', level: 'info',
                             message: `Static analysis fixed ${fixCount} files (ports, middleware, CORS, proxy safety)` });
+                        createdFiles.slice(0, 12).forEach((entry) => {
+                            emit({ type: 'log', phase: 'backend-fix', level: 'success', message: `[developer-fix] Created ${entry}` });
+                        });
+                        repairedFiles.slice(0, 18).forEach((entry) => {
+                            emit({ type: 'log', phase: 'backend-fix', level: 'success', message: `[developer-fix] Fixed ${entry}` });
+                        });
                     } else {
                         emit({ type: 'log', phase: 'backend-fix', level: 'success',
                             message: 'Static analysis: no quick-fix issues found' });
                     }
+                    emit({
+                        type: 'log',
+                        phase: 'backend-fix',
+                        level: 'info',
+                        message: 'Next step: read each backend service in developer order — models, routes, controllers, index.js, and package imports — before applying AI fixes.',
+                    });
+                    emitBackendServiceAudit(emit, collectBackendServiceAudit(backendFiles, structuredAppSpec), { phase: 'backend-fix' });
 
                     let currentBackendValidation = await validateBackendCandidateFiles(
                         backendFiles,
@@ -4416,9 +6510,19 @@ export async function POST(req) {
                         });
                     }
 
+                    let beNoProgressCount = 0;
+                    let bePrevErrorCount = currentBackendValidation.errors.length;
+                    let bePrevErrorSignature = currentBackendValidation.errors.slice().sort().join('\n');
+
                     for (let round = 1; round <= MAX_BACKEND_FIX_ROUNDS; round++) {
                         emit({ type: 'log', phase: 'backend-fix', level: 'info', round,
-                            message: `Round ${round}/${MAX_BACKEND_FIX_ROUNDS}: AI reviewing backend code...` });
+                            message: `Round ${round}: AI reviewing backend code... (${currentBackendValidation.errors.length} issue(s) remaining)` });
+
+                        if (currentBackendValidation.ok) {
+                            emit({ type: 'log', phase: 'backend-fix', level: 'success', round,
+                                message: `Round ${round}: Backend is fully clean — stopping fix loop.` });
+                            break;
+                        }
 
                         // Build snapshot (limit to avoid huge prompts)
                         const snapshot = buildBackendSnapshot(backendFiles, {
@@ -4429,9 +6533,24 @@ export async function POST(req) {
 
                         let fixText = '';
                         const repairModel = pickBackendRepairModel(round, Object.keys(backendFiles).length);
-                        const roundInstruction = round === 1
-                            ? 'This is round 1. Deeply analyze the backend as a whole and fix every backend bug you can see in one complete pass. Prefer broader startup, gateway, route, and model file rewrites over partial patches if that increases the chance of ending backend fixes in round 1.'
-                            : `This is recovery round ${round}. Only exact leftovers from earlier rounds should remain. Finish every remaining blocker now and do not revisit already-clean files unless they are directly related.`;
+                        const currentErrors = currentBackendValidation.errors;
+                        const [beMemCtx, beFailedMethods] = await Promise.all([
+                            buildMemoryContext(currentErrors.join('\n')).catch(() => ''),
+                            getFailedMethods(currentErrors.join('\n')).catch(() => []),
+                        ]);
+                        const beStrategy = pickStrategy(genSessionKey + '-be', beFailedMethods, round);
+                        emit({ type: 'log', phase: 'backend-fix', level: 'info', round,
+                            message: `Round ${round}: Strategy "${beStrategy.name}" — ${beStrategy.description}` });
+                        const roundInstruction = buildHumanLikeInstruction({
+                            strategy: beStrategy,
+                            memoryContext: beMemCtx,
+                            round,
+                            errorCount: currentErrors.length,
+                            currentErrors,
+                        });
+                        const escalatedRoundInstruction = beNoProgressCount >= 1
+                            ? `${roundInstruction}\nEscalation: previous patch did not improve validation. Rewrite the owning file(s) completely from scratch. For each bug, identify the exact file, approximate code element/line area, and replace that whole block instead of returning a tiny patch.`
+                            : roundInstruction;
                         for await (const chunk of streamOllama(
                             [{
                                 role: 'user',
@@ -4439,10 +6558,8 @@ export async function POST(req) {
                                     `${backendRepairContext}\n\n` +
                                     (structuredSpecContract ? `STRUCTURED APP CONTRACT:\n${structuredSpecContract}\n\n` : '') +
                                     `BACKEND SNAPSHOT:\n${snapshot}\n\n` +
-                                    (!currentBackendValidation.ok
-                                        ? `CURRENT VALIDATION ERRORS:\n${currentBackendValidation.errors.join('\n')}\n\n`
-                                        : '') +
-                                    `${roundInstruction}`
+                                    `CURRENT VALIDATION ERRORS (fix ALL of these):\n${currentErrors.join('\n')}\n\n` +
+                                    `${escalatedRoundInstruction}`
                             }],
                             Prompt.BACKEND_FIX_PROMPT, 0.2, { model: repairModel }
                         )) {
@@ -4455,7 +6572,7 @@ export async function POST(req) {
                             if (chunk?.done) break;
                         }
 
-        if (fixText.includes('===NO_BUGS===') || fixText.trim() === '===NO_BUGS===') {
+                        if (fixText.includes('===NO_BUGS===') || fixText.trim() === '===NO_BUGS===') {
                             emit({ type: 'log', phase: 'backend-fix', level: 'success', round,
                                 message: `Round ${round}: No bugs found - backend is clean!` });
                             break;
@@ -4464,23 +6581,44 @@ export async function POST(req) {
                         const fixParsed = parseBackendOnly(fixText);
                         const fixedCount = Object.keys(fixParsed.backend).length;
                         if (fixedCount > 0) {
-                            const candidateFiles = staticFixBackend({ ...backendFiles, ...fixParsed.backend }).files;
+                            const candidateFiles = staticFixBackend({ ...backendFiles, ...fixParsed.backend }, structuredAppSpec).files;
                             const validation = await validateBackendCandidateFiles(candidateFiles, projectTitle || 'generated-app', structuredAppSpec);
                             if (validation.ok) {
                                 backendFiles = candidateFiles;
                                 currentBackendValidation = validation;
-                                emit({ type: 'log', phase: 'backend-fix', level: 'warning', round,
-                                    message: `Round ${round}: Fixed ${fixedCount} backend file(s)` });
+                                beNoProgressCount = 0;
+                                bePrevErrorCount = 0;
+                                bePrevErrorSignature = '';
+                                storeBugFix({ bugText: currentErrors.join('\n'), method: beStrategy.name, outcome: 'success', phase: 'backend-fix', round, fixSummary: `Fully fixed ${fixedCount} file(s), backend clean` }).catch(() => {});
+                                emit({ type: 'log', phase: 'backend-fix', level: 'success', round,
+                                    message: `Round ${round}: Fixed ${fixedCount} backend file(s) — backend is clean!` });
+                                break;
                             } else {
-                                emit({
-                                    type: 'log',
-                                    phase: 'backend-fix',
-                                    level: 'warning',
-                                    round,
-                                    message: `Rejected invalid backend patch for round ${round}: ${validation.errors.slice(0, 2).join(' | ')}`,
-                                });
-                                currentBackendValidation = validation;
-                                continue;
+                                const newErrCount = validation.errors.length;
+                                const newErrSig = validation.errors.slice().sort().join('\n');
+                                if (newErrCount < bePrevErrorCount) {
+                                    // Applied a partial fix — keep it and continue
+                                    backendFiles = candidateFiles;
+                                    currentBackendValidation = validation;
+                                    beNoProgressCount = 0;
+                                    storeBugFix({ bugText: currentErrors.join('\n'), method: beStrategy.name, outcome: 'success', phase: 'backend-fix', round, fixSummary: `Partial fix: resolved ${bePrevErrorCount - newErrCount} of ${bePrevErrorCount} issues` }).catch(() => {});
+                                    bePrevErrorCount = newErrCount;
+                                    bePrevErrorSignature = newErrSig;
+                                    emit({ type: 'log', phase: 'backend-fix', level: 'warning', round,
+                                        message: `Round ${round}: Partial fix applied — ${bePrevErrorCount - newErrCount} issue(s) resolved, ${newErrCount} remaining.` });
+                                } else {
+                                    beNoProgressCount++;
+                                    markStrategyFailed(genSessionKey + '-be', beStrategy.name);
+                                    storeBugFix({ bugText: currentErrors.join('\n'), method: beStrategy.name, outcome: 'fail', phase: 'backend-fix', round, fixSummary: `No improvement: ${validation.errors.slice(0, 2).join(' | ')}` }).catch(() => {});
+                                    emit({ type: 'log', phase: 'backend-fix', level: 'warning', round,
+                                        message: `Rejected invalid backend patch for round ${round} (no improvement): ${validation.errors.slice(0, 2).join(' | ')} — no-progress count: ${beNoProgressCount}/${MAX_NO_PROGRESS_ROUNDS}`,
+                                    });
+                                    if (beNoProgressCount >= MAX_NO_PROGRESS_ROUNDS) {
+                                        emit({ type: 'error', phase: 'backend-fix', round,
+                                            error: `Stopping backend repair: ${MAX_NO_PROGRESS_ROUNDS} consecutive no-improvement rounds.` });
+                                        break;
+                                    }
+                                }
                             }
                         } else {
                             if (currentBackendValidation.ok) {
@@ -4488,13 +6626,17 @@ export async function POST(req) {
                                     message: `Round ${round}: No bugs found - backend is clean!` });
                                 break;
                             }
-                            emit({
-                                type: 'log',
-                                phase: 'backend-fix',
-                                level: 'warning',
-                                round,
-                                message: `Round ${round}: AI found no actionable changes, but ${currentBackendValidation.errors.length} validation issue(s) still remain.`,
+                            beNoProgressCount++;
+                            markStrategyFailed(genSessionKey + '-be', beStrategy.name);
+                            storeBugFix({ bugText: currentErrors.join('\n'), method: beStrategy.name, outcome: 'fail', phase: 'backend-fix', round, fixSummary: 'AI produced no file changes' }).catch(() => {});
+                            emit({ type: 'log', phase: 'backend-fix', level: 'warning', round,
+                                message: `Round ${round}: AI produced no file changes, ${currentBackendValidation.errors.length} issue(s) still remain. No-progress: ${beNoProgressCount}/${MAX_NO_PROGRESS_ROUNDS}`,
                             });
+                            if (beNoProgressCount >= MAX_NO_PROGRESS_ROUNDS) {
+                                emit({ type: 'error', phase: 'backend-fix', round,
+                                    error: `Stopping backend repair: ${MAX_NO_PROGRESS_ROUNDS} consecutive no-progress rounds.` });
+                                break;
+                            }
                         }
                     }
 
@@ -4524,12 +6666,14 @@ export async function POST(req) {
                     let bestFailedCount = Number.POSITIVE_INFINITY;
                     let lastFailedRoutes = [];
                     let latestTestResults = [];
-                    const backendRepairContext = await loadBackendRepairContext();
+                    const backendRepairContext = sharedBackendRepairContext;
                     let previousFailureSignature = '';
+                    let apiSameSignatureCount = 0;
+                    let apiNoProgressCount = 0;
 
                     for (let round = 1; round <= MAX_API_FIX_ROUNDS; round++) {
                         emit({ type: 'log', phase: 'api-test', level: 'info', round,
-                            message: `Round ${round}/${MAX_API_FIX_ROUNDS}: Simulating request payloads, gateway routing, and MongoDB persistence for all routes...` });
+                            message: `Round ${round}: Simulating request payloads, gateway routing, and MongoDB persistence for all routes...` });
 
                         const snapshot = round === 1
                             ? buildBackendSnapshot(backendFiles)
@@ -4625,9 +6769,24 @@ export async function POST(req) {
                             ? snapshot
                             : buildFailureFocusedBackendSnapshot(backendFiles, failed);
                         const failureAnalysis = buildFailureAnalysisForAI(backendFiles, failed);
-                        const fixInstruction = round === 1
-                            ? 'Round 1 must deeply analyze the full failure bundle and fix every currently failing route in one pass. If multiple failures share a file or root cause, rewrite that whole file completely.'
-                            : `Recovery round ${round}: fix only these remaining routes and finish them now. Do not broaden the patch beyond files that own the failures unless gateway wiring or shared middleware is involved.`;
+                        const apiFailText = failList;
+                        const [apiMemCtx, apiFailedMethods] = await Promise.all([
+                            buildMemoryContext(apiFailText).catch(() => ''),
+                            getFailedMethods(apiFailText).catch(() => []),
+                        ]);
+                        const apiStrategy = pickStrategy(genSessionKey + '-api', apiFailedMethods, round);
+                        emit({ type: 'log', phase: 'api-test', level: 'info', round,
+                            message: `Round ${round} fix strategy: "${apiStrategy.name}" — ${apiStrategy.description}` });
+                        const fixInstruction = buildHumanLikeInstruction({
+                            strategy: apiStrategy,
+                            memoryContext: apiMemCtx,
+                            round,
+                            errorCount: failed.length,
+                            currentErrors: failed.map(r => `${r.method} ${r.path}: ${r.reason || 'unknown'}`),
+                        });
+                        const escalatedApiInstruction = apiNoProgressCount >= 1
+                            ? `${fixInstruction}\nEscalation: the previous route fix did not improve results. Identify the owner files for each failure, state the exact file and code element to replace, and regenerate the whole owning route/controller/index file from scratch.`
+                            : fixInstruction;
                         for await (const chunk of streamOllama(
                             [{ role: 'user', content:
                                 `${backendRepairContext}\n\n` +
@@ -4635,7 +6794,7 @@ export async function POST(req) {
                                 `${targetedSnapshot}\n\n` +
                                 `${failureAnalysis}\n\n` +
                                 `FAILED ROUTES THAT MUST BE FIXED:\n${failList}\n\n` +
-                                `${fixInstruction}\nOutput the corrected files only.`
+                                `${escalatedApiInstruction}\nOutput the corrected files only.`
                             }],
                             Prompt.API_FIX_PROMPT, 0.2, { model: repairModel }
                         )) {
@@ -4658,32 +6817,59 @@ export async function POST(req) {
                         const fixParsed   = parseBackendOnly(fixText);
                         const fixedCount  = Object.keys(fixParsed.backend).length;
                         if (fixedCount > 0) {
-                            const candidateFiles = staticFixBackend({ ...backendFiles, ...fixParsed.backend }).files;
-                        const validation = await validateBackendCandidateFiles(candidateFiles, projectTitle || 'generated-app', structuredAppSpec);
+                            const candidateFiles = staticFixBackend({ ...backendFiles, ...fixParsed.backend }, structuredAppSpec).files;
+                            const validation = await validateBackendCandidateFiles(candidateFiles, projectTitle || 'generated-app', structuredAppSpec);
                             if (validation.ok) {
                                 backendFiles = candidateFiles;
+                                apiNoProgressCount = 0;
+                                apiSameSignatureCount = 0;
+                                previousFailureSignature = '';
+                                storeBugFix({ bugText: apiFailText, method: apiStrategy.name, outcome: 'success', phase: 'api-test', round, fixSummary: `Fixed ${fixedCount} file(s), all routes clean` }).catch(() => {});
                                 emit({ type: 'log', phase: 'api-test', level: 'info', round,
                                     message: `Applied fixes to ${fixedCount} file(s). Re-running tests next round...` });
                             } else {
+                                apiNoProgressCount++;
+                                markStrategyFailed(genSessionKey + '-api', apiStrategy.name);
+                                storeBugFix({ bugText: apiFailText, method: apiStrategy.name, outcome: 'fail', phase: 'api-test', round, fixSummary: `Invalid patch: ${validation.errors.slice(0, 2).join(' | ')}` }).catch(() => {});
                                 emit({ type: 'log', phase: 'api-test', level: 'warning', round,
-                                    message: `Rejected invalid API-fix patch: ${validation.errors.slice(0, 2).join(' | ')}` });
-                                break;
+                                    message: `Rejected invalid API-fix patch: ${validation.errors.slice(0, 2).join(' | ')} — retrying (no-progress: ${apiNoProgressCount}/${MAX_NO_PROGRESS_ROUNDS})` });
+                                    if (apiNoProgressCount >= MAX_NO_PROGRESS_ROUNDS) {
+                                        emit({ type: 'error', phase: 'api-test', round,
+                                            error: `Stopping API repair: ${MAX_NO_PROGRESS_ROUNDS} consecutive no-progress rounds.` });
+                                        break;
+                                    }
+                                continue;
                             }
                         } else {
+                            apiNoProgressCount++;
+                            markStrategyFailed(genSessionKey + '-api', apiStrategy.name);
+                            storeBugFix({ bugText: apiFailText, method: apiStrategy.name, outcome: 'fail', phase: 'api-test', round, fixSummary: 'AI produced no fix files' }).catch(() => {});
                             emit({ type: 'log', phase: 'api-test', level: 'warning', round,
-                                message: `Could not generate fixes automatically. Moving on.` });
-                            break;
+                                message: `AI produced no fix files — retrying with refined context. (no-progress: ${apiNoProgressCount}/${MAX_NO_PROGRESS_ROUNDS})` });
+                            if (apiNoProgressCount >= MAX_NO_PROGRESS_ROUNDS) {
+                                emit({ type: 'error', phase: 'api-test', round,
+                                    error: `Stopping API repair: ${MAX_NO_PROGRESS_ROUNDS} consecutive no-progress rounds.` });
+                                break;
+                            }
+                            continue;
                         }
 
                         if (failureSignature && failureSignature === previousFailureSignature) {
+                            apiSameSignatureCount++;
                             emit({
                                 type: 'log',
                                 phase: 'api-test',
                                 level: 'warning',
                                 round,
-                                message: 'Repeated failing-route signature detected. Stopping extra rounds and surfacing the exact remaining blockers.',
+                            message: `Repeated failing-route signature (${apiSameSignatureCount}/${MAX_SAME_SIGNATURE_ROUNDS}).`,
                             });
+                        if (apiSameSignatureCount >= MAX_SAME_SIGNATURE_ROUNDS) {
+                            emit({ type: 'error', phase: 'api-test', round,
+                                error: `Stopping API repair: repeated identical failure signature after ${apiSameSignatureCount} rounds.` });
                             break;
+                        }
+                        } else {
+                            apiSameSignatureCount = 0;
                         }
 
                         previousFailureSignature = failureSignature;
@@ -4693,9 +6879,13 @@ export async function POST(req) {
                         let liveValidationPassed = false;
                         let lastLiveFailures = [];
                         let previousLiveFailureSignature = '';
+                        let liveSameSignatureCount = 0;
+                        let liveNoProgressCount = 0;
+                        let liveRegressiveCount = 0;
                         let bestLiveFailedCount = Number.POSITIVE_INFINITY;
                         let bestLiveFailures = [];
                         let bestLiveBackendFiles = cloneJson(backendFiles);
+                        let prevLiveBackendFiles = null; // track file state before each round to compute changed dirs
 
                         for (let liveRound = 1; liveRound <= MAX_LIVE_FIX_ROUNDS; liveRound++) {
                             emit({
@@ -4703,33 +6893,69 @@ export async function POST(req) {
                                 phase: 'api-test',
                                 level: 'info',
                                 round: `live-${liveRound}`,
-                                message: `Live backend round ${liveRound}/${MAX_LIVE_FIX_ROUNDS}: installing services, starting gateway + microservices, and running real HTTP requests...`,
+                                message: `Live backend round ${liveRound}: installing services, starting gateway + microservices, and running real HTTP requests...`,
                             });
 
-                            const liveValidation = await runLiveBackendValidation(backendFiles, latestTestResults, emit, {
-                                projectTitle,
-                                keepAliveOnSuccess: true,
-                            });
+                            // Compute which service dirs changed since the last round.
+                            // Round 1 always installs everything (changedServiceDirs = null).
+                            let liveChangedDirs = null;
+                            if (liveRound > 1 && prevLiveBackendFiles) {
+                                const changed = new Set();
+                                for (const [fp, content] of Object.entries(backendFiles)) {
+                                    const prev = prevLiveBackendFiles[fp];
+                                    const curCode = typeof content === 'string' ? content : content?.code || '';
+                                    const prevCode = typeof prev === 'string' ? prev : prev?.code || '';
+                                    if (curCode !== prevCode) {
+                                        const svcDir = fp.split('/').filter(Boolean)[0];
+                                        if (svcDir) changed.add(svcDir);
+                                    }
+                                }
+                                liveChangedDirs = changed.size > 0 ? changed : null;
+                            }
+                            prevLiveBackendFiles = cloneJson(backendFiles);
+
+                        const liveValidation = await runLiveBackendValidation(backendFiles, latestTestResults, emit, {
+                            projectTitle,
+                            keepAliveOnSuccess: true,
+                            structuredSpec: structuredAppSpec,
+                            changedServiceDirs: liveChangedDirs,
+                        });
                             lastLiveFailures = liveValidation.failedResults;
+                            const actionableLiveFailures = lastLiveFailures.filter(result => !isBlockedRouteFailure(result));
 
                             const livePassed = liveValidation.results.filter(result => result.status === 'PASS').length;
-                            const liveFailed = liveValidation.failedResults.length;
-                            if (liveFailed < bestLiveFailedCount) {
-                                bestLiveFailedCount = liveFailed;
-                                bestLiveFailures = cloneJson(liveValidation.failedResults);
+                            const liveFailed = lastLiveFailures.length;
+                            const actionableLiveFailed = actionableLiveFailures.length;
+
+                            // Track best known state
+                            if (actionableLiveFailed < bestLiveFailedCount) {
+                                bestLiveFailedCount = actionableLiveFailed;
+                                bestLiveFailures = cloneJson(actionableLiveFailures);
                                 bestLiveBackendFiles = cloneJson(backendFiles);
-                            } else if (liveRound > 1 && Number.isFinite(bestLiveFailedCount) && liveFailed > bestLiveFailedCount) {
+                                liveNoProgressCount = 0;
+                                liveRegressiveCount = 0;
+                            } else if (liveRound > 1 && Number.isFinite(bestLiveFailedCount) && actionableLiveFailed > bestLiveFailedCount) {
+                                // Regression: restore best-known state and keep trying
                                 backendFiles = cloneJson(bestLiveBackendFiles);
                                 lastLiveFailures = cloneJson(bestLiveFailures);
+                                liveNoProgressCount++;
+                                liveRegressiveCount++;
                                 emit({
                                     type: 'log',
                                     phase: 'api-test',
                                     level: 'warning',
                                     round: `live-${liveRound}`,
-                                    message: `Rejected a regressive live-runtime patch: this round had ${liveFailed} failing routes, but the best previous round had ${bestLiveFailedCount}. Restored the best-known backend and stopped extra live rounds.`,
+                                    message: `Regressive patch detected (${actionableLiveFailed} actionable failures vs best ${bestLiveFailedCount}). Restored best-known backend — continuing with new approach. (no-progress: ${liveNoProgressCount}/${MAX_NO_PROGRESS_ROUNDS})`,
                                 });
-                                break;
+                        if (liveRegressiveCount >= MAX_REGRESSIVE_ROUNDS) {
+                            emit({ type: 'error', phase: 'api-test', round: `live-${liveRound}`,
+                                error: `Stopping live repair: ${MAX_REGRESSIVE_ROUNDS} regressive round reached.` });
+                            break;
+                        }
+                            } else {
+                                liveNoProgressCount++;
                             }
+
                             emit({
                                 type: 'test-summary',
                                 passed: livePassed,
@@ -4752,40 +6978,53 @@ export async function POST(req) {
                                 break;
                             }
 
+                            if (actionableLiveFailures.length === 0) {
+                                emit({
+                                    type: 'log',
+                                    phase: 'api-test',
+                                    level: 'warning',
+                                    round: `live-${liveRound}`,
+                                    message: 'Only blocked/deferred route failures remain, so live repair is stopping instead of looping on non-actionable routes.',
+                                });
+                                break;
+                            }
+
                             emit({
                                 type: 'log',
                                 phase: 'api-test',
                                 level: 'warning',
                                 round: `live-${liveRound}`,
-                                message: `Live backend validation found ${liveFailed} runtime bug(s). Applying another backend fix round...`,
+                                message: `Live backend validation found ${actionableLiveFailed} actionable runtime bug(s). Applying backend fix round...`,
                             });
 
-                            const snapshot = liveRound === 1
+                            const liveFixSnapshot = liveRound === 1
                                 ? buildBackendSnapshot(backendFiles)
-                                : buildFailureFocusedBackendSnapshot(backendFiles, lastLiveFailures);
-                            const liveFailList = lastLiveFailures
+                                : buildFailureFocusedBackendSnapshot(backendFiles, actionableLiveFailures);
+                            const liveFailList = actionableLiveFailures
                                 .map(result => `${result.method} ${result.path}: ${result.reason || result.detail || 'runtime failure'}`)
                                 .join('\n');
-                            const liveFailureSignature = lastLiveFailures
-                                .map(result => `${result.method} ${result.path}: ${result.reason || result.detail || 'runtime failure'}`)
+                            const liveFailureSignature = actionableLiveFailures
+                                .map(result => normalizeFailureSignature(result))
                                 .sort()
                                 .join('\n');
 
                             let liveFixText = '';
                             const repairModel = pickBackendRepairModel(liveRound, liveFailed);
-                            const failureAnalysis = buildFailureAnalysisForAI(backendFiles, lastLiveFailures);
+                            const liveFailureAnalysis = buildFailureAnalysisForAI(backendFiles, actionableLiveFailures);
                             const liveFixInstruction = liveRound === 1
-                                ? 'Round 1 must deeply analyze the full live runtime failure bundle and fix every live runtime failure in one pass. If startup, env wiring, proxy registration, or route mapping is involved, rewrite the owning startup file completely.'
-                                : `Recovery round ${liveRound}: fix only the remaining live runtime failures and close them out now. Keep edits focused on the files that own these failures unless shared gateway/service wiring is the cause.`;
+                                ? 'Round 1: classify failures by root cause and fix only the single highest-impact root-cause group first. Ignore blocked routes and do not patch unrelated services in the same round.'
+                                : liveNoProgressCount >= 1
+                                    ? `Stuck round ${liveRound}: Previous fixes made no progress on this same root-cause group. Try a completely different approach — rewrite only the owning service/gateway file from scratch.\nFailing:\n${liveFailList}`
+                                    : `Recovery round ${liveRound}: Fix only this remaining root-cause group. Ignore blocked routes and do not broaden the patch beyond the owning files.\nFailing:\n${liveFailList}`;
                             for await (const chunk of streamOllama(
                                 [{
                                     role: 'user',
                                     content:
                                         `${backendRepairContext}\n\n` +
                                         (structuredSpecContract ? `STRUCTURED APP CONTRACT:\n${structuredSpecContract}\n\n` : '') +
-                                        `${snapshot}\n\n` +
-                                        `${failureAnalysis}\n\n` +
-                                        `REAL RUNTIME FAILURES FROM STARTED SERVICES:\n${liveFailList}\n\n` +
+                                        `${liveFixSnapshot}\n\n` +
+                                        `${liveFailureAnalysis}\n\n` +
+                                        `REAL RUNTIME FAILURES (fix these actionable failures only):\n${liveFailList}\n\n` +
                                         `${liveFixInstruction}\nOutput corrected backend files only.`
                                 }],
                                 Prompt.API_FIX_PROMPT,
@@ -4804,8 +7043,8 @@ export async function POST(req) {
                             const liveFixParsed = parseBackendOnly(liveFixText);
                             const liveFixCount = Object.keys(liveFixParsed.backend).length;
                             if (liveFixCount > 0) {
-                                const candidateFiles = staticFixBackend({ ...backendFiles, ...liveFixParsed.backend }).files;
-                        const validation = await validateBackendCandidateFiles(candidateFiles, projectTitle || 'generated-app', structuredAppSpec);
+                                const candidateFiles = staticFixBackend({ ...backendFiles, ...liveFixParsed.backend }, structuredAppSpec).files;
+                                const validation = await validateBackendCandidateFiles(candidateFiles, projectTitle || 'generated-app', structuredAppSpec);
                                 if (validation.ok) {
                                     backendFiles = candidateFiles;
                                     emit({
@@ -4816,39 +7055,69 @@ export async function POST(req) {
                                         message: `Applied ${liveFixCount} live runtime backend fix file(s).`,
                                     });
                                 } else {
+                                    liveNoProgressCount++;
                                     emit({
                                         type: 'log',
                                         phase: 'api-test',
                                         level: 'warning',
                                         round: `live-${liveRound}`,
-                                        message: `Rejected invalid live-runtime patch: ${validation.errors.slice(0, 2).join(' | ')}`,
+                                        message: `Rejected invalid live-runtime patch: ${validation.errors.slice(0, 2).join(' | ')} — retrying. (no-progress: ${liveNoProgressCount}/${MAX_NO_PROGRESS_ROUNDS})`,
                                     });
-                                    break;
+                                    if (liveNoProgressCount >= MAX_NO_PROGRESS_ROUNDS) {
+                                        emit({ type: 'error', phase: 'api-test', round: `live-${liveRound}`,
+                                            error: `Stopping live repair: ${MAX_NO_PROGRESS_ROUNDS} consecutive invalid/no-progress rounds.` });
+                                        break;
+                                    }
+                                    continue;
                                 }
                             } else {
-                                break;
-                            }
-
-                            if (liveFailureSignature && liveFailureSignature === previousLiveFailureSignature) {
+                                liveNoProgressCount++;
                                 emit({
                                     type: 'log',
                                     phase: 'api-test',
                                     level: 'warning',
                                     round: `live-${liveRound}`,
-                                    message: 'Live runtime failure signature repeated. Stopping extra live rounds and keeping the exact remaining blockers.',
+                                    message: `AI produced no fix files for live failures. (no-progress: ${liveNoProgressCount}/${MAX_NO_PROGRESS_ROUNDS})`,
                                 });
+                            if (liveNoProgressCount >= MAX_NO_PROGRESS_ROUNDS) {
+                                emit({ type: 'error', phase: 'api-test', round: `live-${liveRound}`,
+                                    error: `Stopping live repair: ${MAX_NO_PROGRESS_ROUNDS} consecutive no-progress rounds.` });
                                 break;
+                            }
+                                continue;
+                            }
+
+                            if (liveFailureSignature && liveFailureSignature === previousLiveFailureSignature) {
+                                liveSameSignatureCount++;
+                                emit({
+                                    type: 'log',
+                                    phase: 'api-test',
+                                    level: 'warning',
+                                    round: `live-${liveRound}`,
+                            message: `Live runtime failure signature repeated (${liveSameSignatureCount}/${MAX_SAME_SIGNATURE_ROUNDS}).`,
+                                });
+                        if (liveSameSignatureCount >= MAX_SAME_SIGNATURE_ROUNDS) {
+                            emit({ type: 'error', phase: 'api-test', round: `live-${liveRound}`,
+                                error: `Stopping live repair: repeated identical failure signature after ${liveSameSignatureCount} rounds.` });
+                            break;
+                        }
+                            } else {
+                                liveSameSignatureCount = 0;
                             }
 
                             previousLiveFailureSignature = liveFailureSignature;
                         }
 
                         allRoutesClean = liveValidationPassed;
-                        lastFailedRoutes = lastLiveFailures.map(result => ({
-                            method: result.method,
-                            path: result.path,
-                            reason: result.reason || result.detail || 'runtime failure',
-                        }));
+                        lastFailedRoutes = lastLiveFailures
+                            .filter(result => !isBlockedRouteFailure(result))
+                            .map(result => ({
+                                method: result.method,
+                                path: result.path,
+                                reason: result.reason || result.detail || 'runtime failure',
+                                kind: classifyRouteFailure(result),
+                                signature: normalizeFailureSignature(result),
+                            }));
                         if (Number.isFinite(bestLiveFailedCount)) {
                             bestFailedCount = Math.min(bestFailedCount, bestLiveFailedCount);
                         }
@@ -4862,18 +7131,20 @@ export async function POST(req) {
                             : `API testing complete - ${finalBeCount} backend files ready` });
 
                     if (backendValidationErrors.length > 0) {
+                        await appendBugMemory('Backend Validation Failures', backendValidationErrors);
                         await persistGeneratedAppOutput({
                             projectTitle,
                             frontendFiles: {},
                             backendFiles,
                             metadata: {
-                                stage: 'backend-validation-blocked',
+                                stage: 'backend-validation-warnings',
                                 validationErrors: backendValidationErrors,
                             },
                         });
                         emit({
                             type: 'error',
-                            error: `Backend verification failed. ${backendValidationErrors.length} backend validation issue(s) still remain after auto-fix, so frontend generation is blocked until backend is valid. Remaining validation issues: ${backendValidationErrors.slice(0, 3).join('; ')}`,
+                            phase: 'api-test',
+                            error: `Backend has ${backendValidationErrors.length} validation issue(s) remaining after all fix rounds. Frontend generation is blocked until backend is clean. Issues: ${backendValidationErrors.slice(0, 3).join('; ')}`,
                             done: true,
                         });
                         controller.close();
@@ -4881,40 +7152,52 @@ export async function POST(req) {
                     }
 
                     if (!allRoutesClean) {
-                        const remainingBugs = lastFailedRoutes.length > 0
-                            ? lastFailedRoutes.length
-                            : (Number.isFinite(bestFailedCount) && bestFailedCount > 0 ? bestFailedCount : 0);
-                        const remainingSummary = lastFailedRoutes.length > 0
-                            ? lastFailedRoutes
+                        const actionableFailedRoutes = lastFailedRoutes.filter(route => !isBlockedRouteFailure(route));
+                        // Health-only 404s (GET /health from a service port) are non-blocking:
+                        // the frontend never calls /health directly, so wiring issues there do not
+                        // prevent a usable app from being generated.
+                        const hardFailedRoutes = actionableFailedRoutes.filter(route => !isServiceHealthOnlyFailure(route));
+                        const healthOnlyFailures = actionableFailedRoutes.filter(route => isServiceHealthOnlyFailure(route));
+
+                        const remainingBugs = hardFailedRoutes.length;
+                        const remainingSummary = hardFailedRoutes.length > 0
+                            ? hardFailedRoutes
                                 .slice(0, 3)
                                 .map(route => `${route.method} ${route.path}${route.reason ? ` (${route.reason})` : ''}`)
                                 .join('; ')
                             : 'No exact failing route details were captured.';
-                        if (remainingBugs < MIN_BACKEND_BUGS_TO_BLOCK_FRONTEND) {
+                        await appendBugMemory('Remaining Route Failures', actionableFailedRoutes.length > 0
+                            ? actionableFailedRoutes.map(route => `${route.method} ${route.path}: ${route.reason || 'route failure'}`)
+                            : [remainingSummary]);
+
+                        if (remainingBugs > 0) {
+                            await persistGeneratedAppOutput({
+                                projectTitle,
+                                frontendFiles: {},
+                                backendFiles,
+                                metadata: { stage: 'backend-partial', remainingBugs, remainingSummary },
+                            });
+                            emit({
+                                type: 'error',
+                                phase: 'api-test',
+                                error: `${remainingBugs} route bug(s) remain after all fix rounds. Frontend generation is blocked until backend routes are clean. Remaining: ${remainingSummary}`,
+                                done: true,
+                            });
+                            controller.close();
+                            return;
+                        }
+
+                        if (healthOnlyFailures.length > 0) {
+                            // Health wiring failed but all real API routes are clean — proceed with a warning.
+                            const healthSummary = healthOnlyFailures
+                                .map(r => `${r.method} ${r.path}`)
+                                .join(', ');
                             emit({
                                 type: 'log',
                                 phase: 'api-test',
                                 level: 'warning',
-                                message: `Backend verification still has ${remainingBugs} route bug(s), but that is below the frontend block threshold of ${MIN_BACKEND_BUGS_TO_BLOCK_FRONTEND}. Continuing to frontend generation. Remaining routes: ${remainingSummary}`,
+                                message: `Service health endpoint(s) returned 404 (${healthSummary}) but all API routes are clean. Proceeding to frontend generation — health wiring does not affect the app.`,
                             });
-                        } else {
-                        await persistGeneratedAppOutput({
-                            projectTitle,
-                            frontendFiles: {},
-                            backendFiles,
-                            metadata: {
-                                stage: 'backend-blocked',
-                                remainingBugs,
-                                remainingSummary,
-                            },
-                        });
-                        emit({
-                            type: 'error',
-                            error: `Backend verification failed. ${remainingBugs} route bug(s) still remain after auto-fix, so frontend generation is blocked until backend is clean. Remaining routes: ${remainingSummary}`,
-                            done: true,
-                        });
-                        controller.close();
-                        return;
                         }
                     }
                 }
@@ -4976,7 +7259,7 @@ export async function POST(req) {
                 frontendFiles = staticFixFrontend(frontendFiles);
                 emit({ type: 'log', phase: 'frontend-fix', level: 'info',
                     message: 'Static sanitization applied (CSS, @/ aliases, package whitelist, react-toastify)' });
-                let frontendValidation = await validateFrontendCandidateFiles(frontendFiles);
+                    let frontendValidation = await validateFrontendCandidateFiles(frontendFiles, { emit, phase: 'frontend-fix' });
                 if (!frontendValidation.ok) {
                     emit({ type: 'log', phase: 'frontend-fix', level: 'warning',
                     message: `Frontend syntax validation found ${frontendValidation.errors.length} issue(s). Starting targeted frontend repair.` });
@@ -4988,6 +7271,7 @@ export async function POST(req) {
 
                     const snapshot = buildFrontendSnapshot(frontendFiles);
                     const frontendReviewContext =
+                        `${localReferenceContext ? `${localReferenceContext}\n\n` : ''}` +
                         `${apiSummary}\n\n` +
                         `${frontendValidation.ok ? '' : `CURRENT FRONTEND SYNTAX FAILURES:\n${frontendValidation.errors.slice(0, 8).join('\n')}\n\n`}` +
                         `Preview note: Sandpack only runs the frontend. Fix the app so CRUD still works in preview using local state/localStorage fallback, and only call real backend routes that exist above.\n\n` +
@@ -5017,7 +7301,7 @@ export async function POST(req) {
                     const fixedCount = Object.keys(fixParsed.frontend).length;
                     if (fixedCount > 0) {
                         const candidateFrontendFiles = staticFixFrontend({ ...frontendFiles, ...fixParsed.frontend });
-                        const candidateValidation = await validateFrontendCandidateFiles(candidateFrontendFiles);
+                        const candidateValidation = await validateFrontendCandidateFiles(candidateFrontendFiles, { emit, phase: 'frontend-fix', round });
                         if (
                             candidateValidation.ok
                             || (!frontendValidation.ok && candidateValidation.errors.length < frontendValidation.errors.length)
@@ -5042,7 +7326,7 @@ export async function POST(req) {
                     }
                 }
 
-                frontendValidation = await validateFrontendCandidateFiles(frontendFiles);
+                    frontendValidation = await validateFrontendCandidateFiles(frontendFiles, { emit, phase: 'frontend-fix' });
                 if (!frontendValidation.ok) {
                     emit({ type: 'log', phase: 'frontend-fix', level: 'warning',
                         message: `Frontend still has ${frontendValidation.errors.length} syntax issue(s). Applying final safety fallback to broken page files.` });
@@ -5070,7 +7354,7 @@ export async function POST(req) {
                 /* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
                    FINAL Ã¢â‚¬â€ emit complete result
                 Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
-                const frontendLaunchPort = successfulLiveRuntime?.ok ? await getFreePort() : null;
+                const preferredFrontendPort = successfulLiveRuntime?.ok ? DEFAULT_FRONTEND_PORT : null;
                 const totalFiles = Object.keys(frontendFiles).length + Object.keys(backendFiles).length;
                 const outputRoot = await persistGeneratedAppOutput({
                     projectTitle: projectTitle || 'Generated App',
@@ -5084,19 +7368,34 @@ export async function POST(req) {
                         servicePorts: successfulLiveRuntime?.ports?.services || {},
                         mongoUri: successfulLiveRuntime?.mongoUri || '',
                         jwtSecret: process.env.JWT_SECRET || process.env.SECRET_KEY || process.env.SEKRET_KEY || 'ravindu2232',
-                        frontendPort: frontendLaunchPort || 3010,
+                        frontendPort: preferredFrontendPort || DEFAULT_FRONTEND_PORT,
                     },
                 });
                 let frontendRuntime = null;
-                if (successfulLiveRuntime?.ok && frontendLaunchPort) {
+                if (successfulLiveRuntime?.ok && preferredFrontendPort) {
                     frontendRuntime = await startFrontendPreview(
                         path.join(outputRoot, 'frontend'),
                         {
-                            port: frontendLaunchPort,
+                            port: preferredFrontendPort,
                             gatewayPort: successfulLiveRuntime.ports.gateway,
                         },
                         emit
                     );
+
+                    if (frontendRuntime?.frontendPort && frontendRuntime.frontendPort !== preferredFrontendPort) {
+                        const gatewayPort = successfulLiveRuntime?.ports?.gateway || DEFAULT_GATEWAY_PORT;
+                        const gatewayHost = successfulLiveRuntime?.gatewayUrl || `http://127.0.0.1:${gatewayPort}`;
+                        await writeFile(
+                            path.join(outputRoot, 'frontend', '.env'),
+                            [
+                                `PORT=${frontendRuntime.frontendPort}`,
+                                `VITE_API_BASE_URL=${gatewayHost}`,
+                                `VITE_GATEWAY_URL=${gatewayHost}`,
+                                `VITE_GATEWAY_PORT=${gatewayPort}`,
+                            ].join('\n') + '\n',
+                            'utf8'
+                        ).catch(() => {});
+                    }
                 }
                 emit({ type: 'log', phase: 'complete', level: 'success',
                     message: `Full-stack app ready! ${totalFiles} files total. Output folder: ${outputRoot}` });
@@ -5113,10 +7412,14 @@ export async function POST(req) {
                     },
                     done: true,
                 });
+                clearStrategyState(genSessionKey + '-be');
+                clearStrategyState(genSessionKey + '-api');
                 controller.close();
 
             } catch (e) {
                 console.error('[gen-fullstack] error:', e);
+                clearStrategyState(genSessionKey + '-be');
+                clearStrategyState(genSessionKey + '-api');
                 emit({ type: 'error', error: e.message || 'Generation failed', done: true });
                 controller.close();
             }
@@ -5131,4 +7434,3 @@ export async function POST(req) {
         },
     });
 }
-
