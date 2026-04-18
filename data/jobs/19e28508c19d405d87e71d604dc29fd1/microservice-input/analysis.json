@@ -1,0 +1,190 @@
+{
+  "declared_architecture": null,
+  "scanned_architecture": "microservices",
+  "final_architecture": "microservices",
+  "confidence": 0.88,
+  "conflict": false,
+  "project_name": "Microservice_input",
+  "selected_stack": "",
+  "services": [
+    {
+      "name": "restaurant-service",
+      "service_key": "restaurant_service",
+      "relative_path": "server/Restaurant-service",
+      "runtime": "node",
+      "kind": "backend",
+      "port": 3002,
+      "has_health_endpoint": true,
+      "entrypoint": "Server.js",
+      "dependencies": [
+        "mongo"
+      ],
+      "env_vars": [
+        "MONGO_URL",
+        "NODE_ENV",
+        "PORT",
+        "SEKRET_KEY",
+        "SERVER_URL"
+      ],
+      "inferred_from": [
+        "/Users/malith_bandara/Desktop/AGENT4_Research/Microservice_input/server/Restaurant-service"
+      ]
+    },
+    {
+      "name": "deliver-service",
+      "service_key": "deliver_service",
+      "relative_path": "server/deliver-service",
+      "runtime": "node",
+      "kind": "backend",
+      "port": 3005,
+      "has_health_endpoint": true,
+      "entrypoint": "Server.js",
+      "dependencies": [
+        "localhost",
+        "mongo",
+        "order_service"
+      ],
+      "env_vars": [
+        "MONGO_URL",
+        "NODE_ENV",
+        "ORDER_SERVICE_URL",
+        "PORT",
+        "SEKRET_KEY",
+        "SERVER_URL"
+      ],
+      "inferred_from": [
+        "/Users/malith_bandara/Desktop/AGENT4_Research/Microservice_input/server/deliver-service"
+      ]
+    },
+    {
+      "name": "notification-service",
+      "service_key": "notification_service",
+      "relative_path": "server/notification-server",
+      "runtime": "node",
+      "kind": "backend",
+      "port": 3006,
+      "has_health_endpoint": true,
+      "entrypoint": "Server.js",
+      "dependencies": [
+        "localhost",
+        "mongo",
+        "restaurant_service"
+      ],
+      "env_vars": [
+        "MONGO_URL",
+        "NODE_ENV",
+        "PORT",
+        "RESTAURANT_SERVICE_URL",
+        "SEKRET_KEY",
+        "SERVER_URL"
+      ],
+      "inferred_from": [
+        "/Users/malith_bandara/Desktop/AGENT4_Research/Microservice_input/server/notification-server"
+      ]
+    },
+    {
+      "name": "order-service",
+      "service_key": "order_service",
+      "relative_path": "server/order-service",
+      "runtime": "node",
+      "kind": "backend",
+      "port": 3003,
+      "has_health_endpoint": true,
+      "entrypoint": "Server.js",
+      "dependencies": [
+        "mongo"
+      ],
+      "env_vars": [
+        "MONGO_URL",
+        "NODE_ENV",
+        "PORT",
+        "SEKRET_KEY",
+        "SERVER_URL"
+      ],
+      "inferred_from": [
+        "/Users/malith_bandara/Desktop/AGENT4_Research/Microservice_input/server/order-service"
+      ]
+    },
+    {
+      "name": "payment-service",
+      "service_key": "payment_service",
+      "relative_path": "server/payment-service",
+      "runtime": "node",
+      "kind": "backend",
+      "port": 3004,
+      "has_health_endpoint": true,
+      "entrypoint": "Server.js",
+      "dependencies": [
+        "localhost",
+        "mongo",
+        "order_service"
+      ],
+      "env_vars": [
+        "MONGO_URL",
+        "NODE_ENV",
+        "ORDER_SERVICE_URL",
+        "PORT",
+        "SEKRET_KEY",
+        "SERVER_URL"
+      ],
+      "inferred_from": [
+        "/Users/malith_bandara/Desktop/AGENT4_Research/Microservice_input/server/payment-service"
+      ]
+    },
+    {
+      "name": "user-service",
+      "service_key": "user_service",
+      "relative_path": "server/user-service",
+      "runtime": "node",
+      "kind": "backend",
+      "port": 3000,
+      "has_health_endpoint": true,
+      "entrypoint": "Server.js",
+      "dependencies": [
+        "mongo"
+      ],
+      "env_vars": [
+        "MONGO_URL",
+        "PORT",
+        "SEKRET_KEY",
+        "SERVER_URL"
+      ],
+      "inferred_from": [
+        "/Users/malith_bandara/Desktop/AGENT4_Research/Microservice_input/server/user-service"
+      ]
+    },
+    {
+      "name": "frontend",
+      "service_key": "frontend",
+      "relative_path": "client",
+      "runtime": "node-frontend",
+      "kind": "frontend",
+      "port": 5173,
+      "has_health_endpoint": false,
+      "entrypoint": "index.js",
+      "dependencies": [
+        "vite_backend",
+        "vite_deliver_service",
+        "vite_notification_service",
+        "vite_order_service",
+        "vite_payment_service",
+        "vite_restaurant_service",
+        "vite_user_service"
+      ],
+      "env_vars": [],
+      "inferred_from": [
+        "/Users/malith_bandara/Desktop/AGENT4_Research/Microservice_input/client"
+      ]
+    }
+  ],
+  "infrastructure": {
+    "mongo": true,
+    "postgres": true,
+    "redis": false,
+    "rabbitmq": false
+  },
+  "evidence": [
+    "Detected 6 backend services with independent manifests.",
+    "Detected a separate client application alongside backend services."
+  ]
+}

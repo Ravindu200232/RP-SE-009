@@ -1074,6 +1074,70 @@ textarea {
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.2);
 }
 
+.commit-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.commit-preview-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 0.95rem;
+  background: rgba(255, 255, 255, 0.03);
+  display: grid;
+  gap: 0.8rem;
+}
+
+.commit-preview-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), transparent 38%);
+}
+
+.commit-preview-card.tone-pass {
+  border-color: rgba(51, 214, 197, 0.28);
+}
+
+.commit-preview-card.tone-warn {
+  border-color: rgba(255, 191, 93, 0.28);
+}
+
+.commit-preview-card.tone-fail {
+  border-color: rgba(255, 107, 107, 0.28);
+}
+
+.commit-preview-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.commit-preview-head strong {
+  font-family: var(--font-space-grotesk), sans-serif;
+}
+
+.commit-preview-items {
+  position: relative;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.commit-preview-pill {
+  width: 100%;
+  max-width: 100%;
+  white-space: normal;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .progress-track {
   width: 100%;
   height: 0.55rem;
@@ -1137,7 +1201,8 @@ textarea {
   .hero-stats,
   .feature-columns,
   .workflow,
-  .status-metrics {
+  .status-metrics,
+  .commit-preview-grid {
     grid-template-columns: 1fr;
   }
 

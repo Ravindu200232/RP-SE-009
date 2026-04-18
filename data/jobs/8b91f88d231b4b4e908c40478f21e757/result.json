@@ -1,0 +1,107 @@
+{
+  "job_id": "8b91f88d231b4b4e908c40478f21e757",
+  "state": "PUSHED",
+  "architecture": "microservices",
+  "confidence": 0.88,
+  "strategy": {
+    "architecture": "microservices",
+    "deployment_profile": "docker-compose + github-actions",
+    "packaging_supported": true,
+    "release_strategy": "manual-promote",
+    "monitoring": [
+      "/health endpoints",
+      "container health checks",
+      "GitHub Actions run status"
+    ],
+    "notes": [
+      "Generate Dockerfiles, docker-compose, GitHub Actions workflows, and deployment evidence.",
+      "Cloud deployment targets are intentionally deferred until a later milestone."
+    ]
+  },
+  "validation": {
+    "success": true,
+    "checks": [
+      {
+        "name": "docker-compose.yml exists",
+        "success": true,
+        "details": "/Users/malith_bandara/Desktop/final_research_agentic/data/jobs/8b91f88d231b4b4e908c40478f21e757/microservice-input/docker-compose.yml exists."
+      },
+      {
+        "name": "docker-compose.yml parses",
+        "success": true,
+        "details": "YAML parsed successfully."
+      },
+      {
+        "name": "client.yml parses",
+        "success": true,
+        "details": "Workflow YAML parsed successfully."
+      },
+      {
+        "name": "deliver_service.yml parses",
+        "success": true,
+        "details": "Workflow YAML parsed successfully."
+      },
+      {
+        "name": "notification_service.yml parses",
+        "success": true,
+        "details": "Workflow YAML parsed successfully."
+      },
+      {
+        "name": "order_service.yml parses",
+        "success": true,
+        "details": "Workflow YAML parsed successfully."
+      },
+      {
+        "name": "payment_service.yml parses",
+        "success": true,
+        "details": "Workflow YAML parsed successfully."
+      },
+      {
+        "name": "restaurant_service.yml parses",
+        "success": true,
+        "details": "Workflow YAML parsed successfully."
+      },
+      {
+        "name": "user_service.yml parses",
+        "success": true,
+        "details": "Workflow YAML parsed successfully."
+      }
+    ]
+  },
+  "push_result": {
+    "state": "PUSHED",
+    "message": "Packaged output pushed successfully.",
+    "branch": "main",
+    "commit_sha": "4cc5c01aa90564ad3140dcca70c55ad020265248"
+  },
+  "artifacts": [
+    "server/Restaurant-service/Dockerfile",
+    "server/deliver-service/Dockerfile",
+    "server/notification-server/Dockerfile",
+    "server/order-service/Dockerfile",
+    "server/payment-service/Dockerfile",
+    "server/user-service/Dockerfile",
+    "client/Dockerfile",
+    "docker-compose.yml",
+    ".env.example",
+    "setup.sh",
+    "README.md",
+    ".github/workflows/restaurant_service.yml",
+    ".github/workflows/deliver_service.yml",
+    ".github/workflows/notification_service.yml",
+    ".github/workflows/order_service.yml",
+    ".github/workflows/payment_service.yml",
+    ".github/workflows/user_service.yml",
+    ".github/workflows/client.yml",
+    "analysis.json",
+    "strategy.json",
+    "deployment_evidence.json",
+    "microservice-input_generated_20260418.zip"
+  ],
+  "download_path": "/download/8b91f88d231b4b4e908c40478f21e757",
+  "package_dir": "/Users/malith_bandara/Desktop/final_research_agentic/data/jobs/8b91f88d231b4b4e908c40478f21e757/microservice-input",
+  "evidence_path": "/Users/malith_bandara/Desktop/final_research_agentic/data/jobs/8b91f88d231b4b4e908c40478f21e757/microservice-input/deployment_evidence.json",
+  "created_at": "2026-04-18T18:53:38.589971+00:00",
+  "updated_at": "2026-04-18T18:53:38.589981+00:00",
+  "message": "Packaging completed."
+}

@@ -143,6 +143,7 @@ class JobResult:
     download_path: str
     package_dir: str
     evidence_path: str
+    commit_preview: dict[str, Any] = field(default_factory=dict)
     created_at: str = field(default_factory=now_iso)
     updated_at: str = field(default_factory=now_iso)
     message: str = ""

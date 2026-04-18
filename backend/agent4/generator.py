@@ -33,7 +33,7 @@ class ArtifactGenerator:
         analysis: ArchitectureAnalysis,
         strategy: StrategyDecision,
         job_dir: Path,
-    ) -> tuple[Path, Path, list[str]]:
+    ) -> tuple[Path, Path, list[str], dict]:
         package_dir = job_dir / slugify(analysis.project_name)
         if package_dir.exists():
             shutil.rmtree(package_dir)
@@ -42,7 +42,7 @@ class ArtifactGenerator:
             package_dir,
             ignore=shutil.ignore_patterns(*IGNORE_NAMES),
         )
-        self._sanitize_package_dir(package_dir)
+        sanitization = self._sanitize_package_dir(package_dir)
 
         artifacts: list[str] = []
         for service in analysis.services:
@@ -91,12 +91,14 @@ class ArtifactGenerator:
         evidence_path.write_text(to_pretty_json({"status": "generated", "artifacts": artifacts}), encoding="utf-8")
         artifacts.append("deployment_evidence.json")
 
+        commit_preview = self._build_commit_preview(artifacts, sanitization)
+
         zip_path = job_dir / f"{slugify(analysis.project_name)}_generated_{datetime.now(timezone.utc):%Y%m%d}.zip"
         self._zip_dir(package_dir, zip_path)
         artifacts.append(zip_path.name)
-        return package_dir, zip_path, artifacts
+        return package_dir, zip_path, artifacts, commit_preview
 
-    def _sanitize_package_dir(self, package_dir: Path) -> None:
+    def _sanitize_package_dir(self, package_dir: Path) -> dict:
         blocked_names = {
             "superbase.txt",
             ".env",
@@ -107,6 +109,8 @@ class ArtifactGenerator:
             "id_dsa",
         }
         blocked_suffixes = {".pem", ".key", ".p12", ".pfx"}
+        removed_files: list[str] = []
+        redacted_files: list[dict[str, str]] = []
 
         for path in package_dir.rglob("*"):
             if not path.is_file():
@@ -114,6 +118,7 @@ class ArtifactGenerator:
 
             lower_name = path.name.lower()
             if lower_name in blocked_names or path.suffix.lower() in blocked_suffixes:
+                removed_files.append(str(path.relative_to(package_dir)))
                 path.unlink(missing_ok=True)
                 continue
 
@@ -125,11 +130,19 @@ class ArtifactGenerator:
             redacted, changed = self._redact_sensitive_content(content)
             if changed:
                 path.write_text(redacted, encoding="utf-8")
+                redacted_files.append({
+                    "path": str(path.relative_to(package_dir)),
+                    "reason": self._redaction_reason(content, redacted),
+                })
 
         # Remove any copied workflow files so only Agent 4's generated workflows remain.
         copied_workflows = package_dir / ".github" / "workflows"
         if copied_workflows.exists():
+            for path in sorted(copied_workflows.rglob("*.yml")) + sorted(copied_workflows.rglob("*.yaml")):
+                removed_files.append(str(path.relative_to(package_dir)))
             shutil.rmtree(copied_workflows)
+
+        return {"removed_files": removed_files, "redacted_files": redacted_files}
 
     def _redact_sensitive_content(self, content: str) -> tuple[str, bool]:
         redacted = content
@@ -144,6 +157,50 @@ class ArtifactGenerator:
             redacted = pattern.sub(replacement, redacted)
 
         return redacted, redacted != content
+
+    def _redaction_reason(self, original: str, redacted: str) -> str:
+        reasons = []
+        if original != redacted and "AIza" in original:
+            reasons.append("Google API key redacted")
+        if original != redacted and "GOCSPX-" in original:
+            reasons.append("Google OAuth client secret redacted")
+        if original != redacted and "googleusercontent.com" in original:
+            reasons.append("Google OAuth client id redacted")
+        return ", ".join(reasons) or "Sensitive content redacted"
+
+    def _build_commit_preview(self, artifacts: list[str], sanitization: dict) -> dict:
+        generated_workflows = [
+            artifact
+            for artifact in artifacts
+            if artifact.startswith(".github/workflows/") and artifact.endswith((".yml", ".yaml"))
+        ]
+
+        return {
+            "title": "What will be committed",
+            "sections": [
+                {
+                    "id": "generated-workflows",
+                    "title": "Generated workflows",
+                    "tone": "pass",
+                    "items": generated_workflows,
+                },
+                {
+                    "id": "redacted-secrets",
+                    "title": "Redacted secrets",
+                    "tone": "warn",
+                    "items": [
+                        f"{item['path']} ({item['reason']})"
+                        for item in sanitization.get("redacted_files", [])
+                    ],
+                },
+                {
+                    "id": "removed-files",
+                    "title": "Removed files",
+                    "tone": "fail",
+                    "items": sanitization.get("removed_files", []),
+                },
+            ],
+        }
 
     def write_evidence(self, package_dir: Path, payload: dict) -> Path:
         evidence_path = package_dir / "deployment_evidence.json"

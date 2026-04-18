@@ -93,7 +93,7 @@ class Agent4Service:
             self.store.save(base_result)
             return base_result
 
-        package_dir, zip_path, artifacts = self.generator.generate(request, analysis, strategy, job_dir)
+        package_dir, zip_path, artifacts, commit_preview = self.generator.generate(request, analysis, strategy, job_dir)
         validation = self.validator.validate(package_dir, analysis, request.docker_enabled)
         state = JobState.PACKAGED if not request.docker_enabled else JobState.VALIDATED if validation.success else JobState.VALIDATION_FAILED
         push_result = GitHubPushResult(state="SKIPPED", message="GitHub push not requested.")
@@ -120,6 +120,7 @@ class Agent4Service:
             "validation": {"success": validation.success, "checks": [check.__dict__ for check in validation.checks]},
             "push_result": push_result.__dict__,
             "artifacts": artifacts,
+            "commit_preview": commit_preview,
         }
         evidence_path = self.generator.write_evidence(package_dir, evidence_payload)
         self.generator.rewrite_zip(package_dir, zip_path)
@@ -133,6 +134,7 @@ class Agent4Service:
             validation=validation,
             push_result=push_result,
             artifacts=artifacts,
+            commit_preview=commit_preview,
             download_path=f"/download/{request.job_id}",
             package_dir=str(package_dir),
             evidence_path=str(evidence_path),

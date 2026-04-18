@@ -15,6 +15,15 @@ type JobPayload = {
   download_path: string;
   evidence_path: string;
   artifacts: string[];
+  commit_preview?: {
+    title: string;
+    sections: Array<{
+      id: string;
+      title: string;
+      tone: "pass" | "warn" | "fail";
+      items: string[];
+    }>;
+  };
   validation: {
     success: boolean;
     checks: Array<{ name: string; success: boolean; details: string }>;
@@ -193,6 +202,32 @@ export default function JobPage() {
     ];
   }, [payload, validationSummary.failed, validationSummary.passed]);
 
+  const smartDiffPreview = useMemo(() => {
+    if (!payload) {
+      return null;
+    }
+
+    if (payload.commit_preview) {
+      return payload.commit_preview;
+    }
+
+    const workflowArtifacts = payload.artifacts.filter(
+      (artifact) => artifact.startsWith(".github/workflows/") && artifact.endsWith((".yml")),
+    );
+
+    return {
+      title: "What will be committed",
+      sections: [
+        {
+          id: "generated-workflows",
+          title: "Generated workflows",
+          tone: "pass" as const,
+          items: workflowArtifacts.length ? workflowArtifacts : ["No workflow artifacts detected yet."],
+        },
+      ],
+    };
+  }, [payload]);
+
   return (
     <main className="page-shell">
       <header className="topbar">
@@ -362,21 +397,42 @@ export default function JobPage() {
             </div>
           </section>
 
-          <section className="section-grid">
-            <div className="panel">
-              <p className="section-kicker">GitHub push</p>
+          {smartDiffPreview ? (
+            <section className="panel">
+              <p className="section-kicker">Smart Diff Preview</p>
               <h2 className="section-title" style={{ fontSize: "1.4rem" }}>
-                {payload.push_result.state}
+                {smartDiffPreview.title}
               </h2>
-              <p className="section-subtitle">{payload.push_result.message}</p>
-              {payload.push_result.commit_sha ? (
-                <div className="pill-row" style={{ marginTop: "0.9rem" }}>
-                  <span className="pill mono">Commit {payload.push_result.commit_sha}</span>
-                  {payload.push_result.branch ? <span className="pill">Branch {payload.push_result.branch}</span> : null}
-                </div>
-              ) : null}
-            </div>
+              <p className="section-subtitle">See what will be committed before the push is made.</p>
 
+              <div className="commit-preview-grid" style={{ marginTop: "1rem" }}>
+                {smartDiffPreview.sections.map((section) => (
+                  <article className={`commit-preview-card tone-${section.tone}`} key={section.id}>
+                    <div className="commit-preview-head">
+                      <strong>{section.title}</strong>
+                      <span className={`badge badge-${section.tone}`}>{section.tone.toUpperCase()}</span>
+                    </div>
+                    {section.items.length ? (
+                      <div className="commit-preview-items">
+                        {section.items.map((item) => (
+                          <span className="pill mono commit-preview-pill" key={`${section.id}-${item}`}>
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="empty-state" style={{ padding: "0.8rem" }}>
+                        <strong>None detected</strong>
+                        <span>No entries in this category for the current package.</span>
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          <section className="section-grid">
             <div className="panel">
               <p className="section-kicker">Artifacts</p>
               <h2 className="section-title" style={{ fontSize: "1.4rem" }}>
