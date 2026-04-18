@@ -1,0 +1,225 @@
+version: '3.9'
+services:
+  mongo:
+    image: mongo:latest
+    container_name: mongo_container
+    volumes:
+    - mongo_data:/data/db
+    ports:
+    - 27017:27017
+    healthcheck:
+      test:
+      - CMD
+      - mongosh
+      - --eval
+      - db.adminCommand('ping')
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres_container
+    environment:
+    - POSTGRES_DB=${POSTGRES_DB:-app}
+    - POSTGRES_USER=${POSTGRES_USER:-app}
+    - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-change-me}
+    ports:
+    - 5432:5432
+    volumes:
+    - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U $$POSTGRES_USER
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  restaurant_service:
+    build: ./server/Restaurant-service
+    container_name: restaurant_service_container
+    ports:
+    - 3002:3002
+    environment:
+    - PORT=3002
+    - SERVER_URL=${RESTAURANT_SERVICE_URL:-http://localhost:3002}
+    - MONGO_URL=${MONGO_URL}
+    - NODE_ENV=${NODE_ENV}
+    - SEKRET_KEY=${SEKRET_KEY}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -qO-
+      - http://localhost:3002/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  deliver_service:
+    build: ./server/deliver-service
+    container_name: deliver_service_container
+    ports:
+    - 3005:3005
+    environment:
+    - PORT=3005
+    - SERVER_URL=${DELIVER_SERVICE_URL:-http://localhost:3005}
+    - MONGO_URL=${MONGO_URL}
+    - NODE_ENV=${NODE_ENV}
+    - ORDER_SERVICE_URL=http://order_service_container:3003
+    - SEKRET_KEY=${SEKRET_KEY}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      order_service:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -qO-
+      - http://localhost:3005/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  notification_service:
+    build: ./server/notification-server
+    container_name: notification_service_container
+    ports:
+    - 3006:3006
+    environment:
+    - PORT=3006
+    - SERVER_URL=${NOTIFICATION_SERVICE_URL:-http://localhost:3006}
+    - MONGO_URL=${MONGO_URL}
+    - NODE_ENV=${NODE_ENV}
+    - RESTAURANT_SERVICE_URL=http://restaurant_service_container:3002
+    - SEKRET_KEY=${SEKRET_KEY}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      restaurant_service:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -qO-
+      - http://localhost:3006/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  order_service:
+    build: ./server/order-service
+    container_name: order_service_container
+    ports:
+    - 3003:3003
+    environment:
+    - PORT=3003
+    - SERVER_URL=${ORDER_SERVICE_URL:-http://localhost:3003}
+    - MONGO_URL=${MONGO_URL}
+    - NODE_ENV=${NODE_ENV}
+    - SEKRET_KEY=${SEKRET_KEY}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -qO-
+      - http://localhost:3003/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  payment_service:
+    build: ./server/payment-service
+    container_name: payment_service_container
+    ports:
+    - 3004:3004
+    environment:
+    - PORT=3004
+    - SERVER_URL=${PAYMENT_SERVICE_URL:-http://localhost:3004}
+    - MONGO_URL=${MONGO_URL}
+    - NODE_ENV=${NODE_ENV}
+    - ORDER_SERVICE_URL=http://order_service_container:3003
+    - SEKRET_KEY=${SEKRET_KEY}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      order_service:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -qO-
+      - http://localhost:3004/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  user_service:
+    build: ./server/user-service
+    container_name: user_service_container
+    ports:
+    - 3000:3000
+    environment:
+    - PORT=3000
+    - SERVER_URL=${USER_SERVICE_URL:-http://localhost:3000}
+    - MONGO_URL=${MONGO_URL}
+    - SEKRET_KEY=${SEKRET_KEY}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - wget
+      - -qO-
+      - http://localhost:3000/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  frontend:
+    build: ./client
+    container_name: frontend_container
+    ports:
+    - 5173:5173
+    environment:
+    - PORT=5173
+    - VITE_RESTAURANT_SERVICE_URL=http://localhost:3002
+    - VITE_DELIVER_SERVICE_URL=http://localhost:3005
+    - VITE_NOTIFICATION_SERVICE_URL=http://localhost:3006
+    - VITE_ORDER_SERVICE_URL=http://localhost:3003
+    - VITE_PAYMENT_SERVICE_URL=http://localhost:3004
+    - VITE_USER_SERVICE_URL=http://localhost:3000
+    depends_on:
+      restaurant_service:
+        condition: service_started
+      deliver_service:
+        condition: service_started
+      notification_service:
+        condition: service_started
+      order_service:
+        condition: service_started
+      payment_service:
+        condition: service_started
+      user_service:
+        condition: service_started
+    stdin_open: true
+    tty: true
+volumes:
+  mongo_data: null
+  postgres_data: null

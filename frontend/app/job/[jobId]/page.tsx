@@ -36,6 +36,7 @@ export default function JobPage() {
   const jobId = params?.jobId ?? "";
   const [payload, setPayload] = useState<JobPayload | null>(null);
   const [error, setError] = useState("");
+  const [expandedCheckpoint, setExpandedCheckpoint] = useState("detect");
 
   useEffect(() => {
     if (!jobId) {
@@ -119,6 +120,78 @@ export default function JobPage() {
     : /fail|error|reject/i.test(pushState)
       ? "badge-fail"
       : "badge-warn";
+
+  const timeline = useMemo(() => {
+    if (!payload) {
+      return [] as Array<{
+        id: string;
+        title: string;
+        state: "completed" | "active" | "failed" | "pending";
+        summary: string;
+        snapshot: string[];
+      }>;
+    }
+
+    const validationFailed = payload.validation.checks.length > 0 && !payload.validation.success;
+    const pushFailed = /fail|error|reject|auth_required/i.test(payload.push_result.state);
+    const pushSucceeded = /pushed|success|done|complete/i.test(payload.push_result.state);
+    const sanitizeFailed = /sensitive token patterns|blocked|secret/i.test(payload.push_result.message || "");
+
+    return [
+      {
+        id: "detect",
+        title: "Detect",
+        state: "completed" as const,
+        summary: "Architecture and strategy inference complete.",
+        snapshot: [
+          `Architecture: ${payload.architecture}`,
+          `Confidence: ${Math.round(payload.confidence * 100)}%`,
+          `Profile: ${payload.strategy.deployment_profile}`,
+        ],
+      },
+      {
+        id: "validate",
+        title: "Validate",
+        state: validationFailed ? ("failed" as const) : ("completed" as const),
+        summary: validationFailed
+          ? "Some validation checks failed."
+          : "Validation checks are healthy.",
+        snapshot: [
+          `Checks passed: ${validationSummary.passed}`,
+          `Checks failed: ${validationSummary.failed}`,
+          `Validator result: ${payload.validation.success ? "PASS" : "FAIL"}`,
+        ],
+      },
+      {
+        id: "sanitize",
+        title: "Sanitize",
+        state: sanitizeFailed ? ("failed" as const) : ("completed" as const),
+        summary: sanitizeFailed
+          ? "Sanitization gate blocked sensitive content."
+          : "Artifacts and secrets sanitization completed.",
+        snapshot: [
+          `Artifacts generated: ${payload.artifacts.length}`,
+          `Evidence file ready: ${payload.evidence_path ? "Yes" : "No"}`,
+          `Secret gate: ${sanitizeFailed ? "Blocked" : "Clear"}`,
+        ],
+      },
+      {
+        id: "push",
+        title: "Push",
+        state: pushFailed ? ("failed" as const) : pushSucceeded ? ("completed" as const) : ("pending" as const),
+        summary: pushSucceeded
+          ? "Repository update delivered successfully."
+          : pushFailed
+            ? "Push blocked or rejected."
+            : "Push skipped or awaiting action.",
+        snapshot: [
+          `State: ${payload.push_result.state}`,
+          `Branch: ${payload.push_result.branch || "—"}`,
+          `Commit: ${payload.push_result.commit_sha || "—"}`,
+        ],
+      },
+    ];
+  }, [payload, validationSummary.failed, validationSummary.passed]);
 
   return (
     <main className="page-shell">
@@ -242,6 +315,53 @@ export default function JobPage() {
 
       {payload ? (
         <>
+          <section className="panel">
+            <p className="section-kicker">Timeline Replay</p>
+            <h2 className="section-title" style={{ fontSize: "1.4rem" }}>
+              Cinematic Packaging Journey
+            </h2>
+            <p className="section-subtitle">Detect → Validate → Sanitize → Push with expandable checkpoints.</p>
+
+            <div className="timeline-replay" style={{ marginTop: "1rem" }}>
+              {timeline.map((checkpoint) => {
+                const expanded = expandedCheckpoint === checkpoint.id;
+                return (
+                  <article
+                    key={checkpoint.id}
+                    className={`timeline-step timeline-${checkpoint.state} ${expanded ? "is-expanded" : ""}`}
+                  >
+                    <button
+                      type="button"
+                      className="timeline-head"
+                      onClick={() => setExpandedCheckpoint(expanded ? "" : checkpoint.id)}
+                    >
+                      <span className="timeline-dot" aria-hidden="true" />
+                      <span className="timeline-title-wrap">
+                        <strong>{checkpoint.title}</strong>
+                        <span>{checkpoint.summary}</span>
+                      </span>
+                      <span className={`badge ${checkpoint.state === "completed" ? "badge-pass" : checkpoint.state === "failed" ? "badge-fail" : "badge-warn"}`}>
+                        {checkpoint.state.toUpperCase()}
+                      </span>
+                    </button>
+
+                    {expanded ? (
+                      <div className="timeline-body">
+                        <div className="timeline-snapshot">
+                          {checkpoint.snapshot.map((item) => (
+                            <span className="pill" key={`${checkpoint.id}-${item}`}>
+                              {item}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+
           <section className="panel">
             <p className="section-kicker">Strategy notes</p>
             <h2 className="section-title" style={{ fontSize: "1.4rem" }}>

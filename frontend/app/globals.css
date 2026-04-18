@@ -961,6 +961,119 @@ textarea {
   box-shadow: 0 0 0 6px rgba(51, 214, 197, 0.12);
 }
 
+.timeline-replay {
+  position: relative;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.timeline-replay::before {
+  content: "";
+  position: absolute;
+  top: 0.6rem;
+  bottom: 0.6rem;
+  left: 0.95rem;
+  width: 2px;
+  background: linear-gradient(180deg, rgba(124, 92, 255, 0.7), rgba(51, 214, 197, 0.45));
+  opacity: 0.45;
+}
+
+.timeline-step {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+}
+
+.timeline-head {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.85rem 0.95rem;
+}
+
+.timeline-dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.06);
+}
+
+.timeline-title-wrap {
+  min-width: 0;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.timeline-title-wrap strong {
+  display: block;
+  font-family: var(--font-space-grotesk), sans-serif;
+}
+
+.timeline-title-wrap span {
+  color: var(--muted);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.timeline-body {
+  padding: 0 0.95rem 0.95rem 2.4rem;
+}
+
+.timeline-snapshot {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.timeline-snapshot .pill {
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 0.75rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.timeline-completed {
+  border-color: rgba(51, 214, 197, 0.24);
+}
+
+.timeline-completed .timeline-dot {
+  background: rgba(51, 214, 197, 0.9);
+  border-color: rgba(208, 255, 248, 0.9);
+}
+
+.timeline-failed {
+  border-color: rgba(255, 107, 107, 0.3);
+}
+
+.timeline-failed .timeline-dot {
+  background: rgba(255, 107, 107, 0.85);
+  border-color: rgba(255, 221, 221, 0.95);
+}
+
+.timeline-pending {
+  border-color: rgba(255, 191, 93, 0.24);
+}
+
+.timeline-pending .timeline-dot {
+  background: rgba(255, 191, 93, 0.85);
+  border-color: rgba(255, 236, 197, 0.95);
+}
+
+.timeline-step.is-expanded {
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.2);
+}
+
 .progress-track {
   width: 100%;
   height: 0.55rem;
@@ -1072,6 +1185,15 @@ textarea {
 
   .reply-row {
     grid-template-columns: 1fr;
+  }
+
+  .timeline-head {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .timeline-head .badge {
+    grid-column: 1 / -1;
+    justify-self: start;
   }
 }
 
