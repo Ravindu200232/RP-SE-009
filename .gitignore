@@ -24,6 +24,7 @@
 
 # generated samples / reference dumps
 /references/
+/artifacts
 /sandbox references/
 /taskflow-manager-fullstack (2)/
 
