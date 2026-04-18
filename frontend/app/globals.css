@@ -1076,8 +1076,19 @@ textarea {
 
 .commit-preview-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.85rem;
+}
+
+.commit-preview-grid.cols-1 {
+  grid-template-columns: 1fr;
+}
+
+.commit-preview-grid.cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.commit-preview-grid.cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .commit-preview-card {
@@ -1136,6 +1147,115 @@ textarea {
   line-height: 1.4;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.diff-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.diff-search {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.diff-search span {
+  font-size: 0.82rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.diff-search input {
+  width: 100%;
+  border-radius: 0.85rem;
+  border: 1px solid var(--border);
+  background: rgba(6, 11, 26, 0.72);
+  color: var(--ink);
+  padding: 0.72rem 0.82rem;
+  outline: none;
+}
+
+.diff-search input:focus {
+  border-color: rgba(124, 92, 255, 0.5);
+  box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.14);
+}
+
+.diff-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.diff-console {
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.75rem;
+}
+
+.diff-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.diff-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.78rem;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.diff-mark {
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 0.92rem;
+  border: 1px solid var(--border);
+}
+
+.diff-generated .diff-mark {
+  color: #8af0df;
+  background: rgba(51, 214, 197, 0.1);
+  border-color: rgba(51, 214, 197, 0.35);
+}
+
+.diff-redacted .diff-mark {
+  color: #ffd58c;
+  background: rgba(255, 191, 93, 0.1);
+  border-color: rgba(255, 191, 93, 0.35);
+}
+
+.diff-removed .diff-mark {
+  color: #ffb0b0;
+  background: rgba(255, 107, 107, 0.1);
+  border-color: rgba(255, 107, 107, 0.35);
+}
+
+.diff-note .diff-mark {
+  color: rgba(231, 238, 255, 0.72);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.diff-path {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.4;
 }
 
 .progress-track {
@@ -1203,6 +1323,10 @@ textarea {
   .workflow,
   .status-metrics,
   .commit-preview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .diff-toolbar {
     grid-template-columns: 1fr;
   }
 
@@ -1276,6 +1400,7 @@ textarea {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .chat-row,
   .chat-row.user .chat-bubble,
   .typing-indicator span {
@@ -1298,6 +1423,7 @@ textarea {
 }
 
 @keyframes typing-pulse {
+
   0%,
   100% {
     transform: translateY(0);
