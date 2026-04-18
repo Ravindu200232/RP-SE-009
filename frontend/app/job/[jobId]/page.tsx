@@ -362,24 +362,6 @@ export default function JobPage() {
             </div>
           </section>
 
-          <section className="panel">
-            <p className="section-kicker">Strategy notes</p>
-            <h2 className="section-title" style={{ fontSize: "1.4rem" }}>
-              What the package engine decided
-            </h2>
-            <ul className="feature-list" style={{ marginTop: "1rem" }}>
-              {payload.strategy.notes.map((note) => (
-                <li className="feature-item" key={note}>
-                  <div className="feature-icon">•</div>
-                  <div>
-                    <strong>{note}</strong>
-                    <p>Included in the generated execution plan and preserved with the job output.</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
-
           <section className="section-grid">
             <div className="panel">
               <p className="section-kicker">GitHub push</p>
