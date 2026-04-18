@@ -1,0 +1,689 @@
+{
+  "info": {
+    "name": "Food Order App - All Microservices",
+    "_postman_id": "ctse-food-order-app-2024",
+    "description": "Complete API collection for all 6 microservices: User, Order, Restaurant, Deliver, Payment, Notification",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "USER_URL",         "value": "http://13.61.23.48:3001",     "type": "string" },
+    { "key": "ORDER_URL",        "value": "http://13.51.241.210:3003",   "type": "string" },
+    { "key": "RESTAURANT_URL",   "value": "http://16.170.204.16:3002",   "type": "string" },
+    { "key": "DELIVER_URL",      "value": "http://13.60.62.20:3005",     "type": "string" },
+    { "key": "PAYMENT_URL",      "value": "http://16.16.100.51:3004",    "type": "string" },
+    { "key": "NOTIFICATION_URL", "value": "http://13.53.49.216:3006",    "type": "string" },
+    { "key": "TOKEN",            "value": "paste_your_jwt_token_here",   "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "01 - User Service",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{USER_URL}}/api/v1/users", "host": ["{{USER_URL}}"], "path": ["api","v1","users"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"customer\",\n  \"phone\": \"+94771234567\",\n  \"address\": \"123 Main Street, Colombo\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{USER_URL}}/api/v1/users/login", "host": ["{{USER_URL}}"], "path": ["api","v1","users","login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get All Users (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{TOKEN}}" }],
+            "url": { "raw": "{{USER_URL}}/api/v1/users", "host": ["{{USER_URL}}"], "path": ["api","v1","users"] }
+          }
+        },
+        {
+          "name": "Get One User by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{TOKEN}}" }],
+            "url": { "raw": "{{USER_URL}}/api/v1/users/oneuser/USER_ID_HERE", "host": ["{{USER_URL}}"], "path": ["api","v1","users","oneuser","USER_ID_HERE"] }
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{TOKEN}}" }
+            ],
+            "url": { "raw": "{{USER_URL}}/api/v1/users/update/USER_ID_HERE", "host": ["{{USER_URL}}"], "path": ["api","v1","users","update","USER_ID_HERE"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Smith\",\n  \"phone\": \"+94779876543\",\n  \"address\": \"456 New Road, Colombo\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{TOKEN}}" }
+            ],
+            "url": { "raw": "{{USER_URL}}/api/v1/users/update/password/USER_ID_HERE", "host": ["{{USER_URL}}"], "path": ["api","v1","users","update","password","USER_ID_HERE"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"password123\",\n  \"newPassword\": \"newpassword456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Block or Unblock User (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{TOKEN}}" }],
+            "url": { "raw": "{{USER_URL}}/api/v1/users/block/john.doe@example.com", "host": ["{{USER_URL}}"], "path": ["api","v1","users","block","john.doe@example.com"] }
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{TOKEN}}" }],
+            "url": { "raw": "{{USER_URL}}/api/v1/users/USER_ID_HERE", "host": ["{{USER_URL}}"], "path": ["api","v1","users","USER_ID_HERE"] }
+          }
+        },
+        {
+          "name": "Login with Google",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{USER_URL}}/api/v1/users/google", "host": ["{{USER_URL}}"], "path": ["api","v1","users","google"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"google_oauth_id_token_here\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Send OTP",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{USER_URL}}/api/v1/users/sendOTP?email=john.doe@example.com",
+              "host": ["{{USER_URL}}"],
+              "path": ["api","v1","users","sendOTP"],
+              "query": [{ "key": "email", "value": "john.doe@example.com" }]
+            }
+          }
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{USER_URL}}/api/v1/users/verifyOTP", "host": ["{{USER_URL}}"], "path": ["api","v1","users","verifyOTP"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"otp\": \"123456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Submit Inquiry",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{USER_URL}}/api/inquiry", "host": ["{{USER_URL}}"], "path": ["api","inquiry"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"message\": \"I have a question about my order delivery time.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get All Inquiries (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{TOKEN}}" }],
+            "url": { "raw": "{{USER_URL}}/api/inquiry", "host": ["{{USER_URL}}"], "path": ["api","inquiry"] }
+          }
+        },
+        {
+          "name": "Update Inquiry",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{TOKEN}}" }
+            ],
+            "url": { "raw": "{{USER_URL}}/api/inquiry/INQUIRY_ID_HERE", "host": ["{{USER_URL}}"], "path": ["api","inquiry","INQUIRY_ID_HERE"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"message\": \"Updated message content here.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Inquiry",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{TOKEN}}" }],
+            "url": { "raw": "{{USER_URL}}/api/inquiry/INQUIRY_ID_HERE", "host": ["{{USER_URL}}"], "path": ["api","inquiry","INQUIRY_ID_HERE"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "02 - Order Service",
+      "item": [
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{TOKEN}}" }
+            ],
+            "url": { "raw": "{{ORDER_URL}}/api/v1/orders", "host": ["{{ORDER_URL}}"], "path": ["api","v1","orders"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderItem\": [\n    { \"key\": \"COLLECTION_ITEM_ID_1\", \"qty\": 2 },\n    { \"key\": \"COLLECTION_ITEM_ID_2\", \"qty\": 1 }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Orders",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{TOKEN}}" }],
+            "url": { "raw": "{{ORDER_URL}}/api/v1/orders", "host": ["{{ORDER_URL}}"], "path": ["api","v1","orders"] }
+          }
+        },
+        {
+          "name": "Get Price Quote",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{ORDER_URL}}/api/v1/orders/quote", "host": ["{{ORDER_URL}}"], "path": ["api","v1","orders","quote"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderItem\": [\n    { \"key\": \"COLLECTION_ITEM_ID_1\", \"qty\": 2 },\n    { \"key\": \"COLLECTION_ITEM_ID_2\", \"qty\": 1 }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Order Status",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{ORDER_URL}}/api/v1/orders/status/ORDER_ID_HERE", "host": ["{{ORDER_URL}}"], "path": ["api","v1","orders","status","ORDER_ID_HERE"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"confirmed\",\n  \"paymentStatus\": \"paid\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Approve Order (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{TOKEN}}" }],
+            "url": { "raw": "{{ORDER_URL}}/api/v1/orders/isApprove/ORDER_ID_HERE", "host": ["{{ORDER_URL}}"], "path": ["api","v1","orders","isApprove","ORDER_ID_HERE"] }
+          }
+        },
+        {
+          "name": "Delete Order",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{TOKEN}}" }],
+            "url": { "raw": "{{ORDER_URL}}/api/v1/orders/delete/ORDER_ID_HERE", "host": ["{{ORDER_URL}}"], "path": ["api","v1","orders","delete","ORDER_ID_HERE"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "03 - Restaurant Service",
+      "item": [
+        {
+          "name": "Restaurants",
+          "item": [
+            {
+              "name": "Create Restaurant",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{TOKEN}}" }
+                ],
+                "url": { "raw": "{{RESTAURANT_URL}}/api/v1/restaurant", "host": ["{{RESTAURANT_URL}}"], "path": ["api","v1","restaurant"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Spice Garden\",\n  \"ownerName\": \"Ravi Kumar\",\n  \"address\": \"45 Galle Road, Colombo 03\",\n  \"phone\": \"+94112345678\",\n  \"description\": \"Authentic Sri Lankan cuisine\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Get All Restaurants",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{RESTAURANT_URL}}/api/v1/restaurant", "host": ["{{RESTAURANT_URL}}"], "path": ["api","v1","restaurant"] }
+              }
+            },
+            {
+              "name": "Get One Restaurant",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{RESTAURANT_URL}}/api/v1/restaurant/getOne/RESTAURANT_ID_HERE", "host": ["{{RESTAURANT_URL}}"], "path": ["api","v1","restaurant","getOne","RESTAURANT_ID_HERE"] }
+              }
+            },
+            {
+              "name": "Update Restaurant",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{TOKEN}}" }
+                ],
+                "url": { "raw": "{{RESTAURANT_URL}}/api/v1/restaurant/update/RESTAURANT_ID_HERE", "host": ["{{RESTAURANT_URL}}"], "path": ["api","v1","restaurant","update","RESTAURANT_ID_HERE"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Spice Garden Updated\",\n  \"phone\": \"+94119999999\",\n  \"description\": \"Updated description\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Restaurant (Admin)",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{TOKEN}}" }],
+                "url": { "raw": "{{RESTAURANT_URL}}/api/v1/restaurant/delete/RESTAURANT_ID_HERE", "host": ["{{RESTAURANT_URL}}"], "path": ["api","v1","restaurant","delete","RESTAURANT_ID_HERE"] }
+              }
+            },
+            {
+              "name": "Mark Restaurant Open",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Authorization", "value": "Bearer {{TOKEN}}" }],
+                "url": { "raw": "{{RESTAURANT_URL}}/api/v1/restaurant/isOpen/RESTAURANT_ID_HERE", "host": ["{{RESTAURANT_URL}}"], "path": ["api","v1","restaurant","isOpen","RESTAURANT_ID_HERE"] }
+              }
+            },
+            {
+              "name": "Mark Restaurant Closed",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Authorization", "value": "Bearer {{TOKEN}}" }],
+                "url": { "raw": "{{RESTAURANT_URL}}/api/v1/restaurant/isClose/RESTAURANT_ID_HERE", "host": ["{{RESTAURANT_URL}}"], "path": ["api","v1","restaurant","isClose","RESTAURANT_ID_HERE"] }
+              }
+            },
+            {
+              "name": "Verify Restaurant (Admin)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Authorization", "value": "Bearer {{TOKEN}}" }],
+                "url": { "raw": "{{RESTAURANT_URL}}/api/v1/restaurant/isVerify/RESTAURANT_ID_HERE", "host": ["{{RESTAURANT_URL}}"], "path": ["api","v1","restaurant","isVerify","RESTAURANT_ID_HERE"] }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Menu Collections",
+          "item": [
+            {
+              "name": "Create Menu Item",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{TOKEN}}" }
+                ],
+                "url": { "raw": "{{RESTAURANT_URL}}/api/v1/collection", "host": ["{{RESTAURANT_URL}}"], "path": ["api","v1","collection"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Chicken Rice\",\n  \"price\": 550,\n  \"restaurantId\": \"RESTAURANT_ID_HERE\",\n  \"description\": \"Grilled chicken with fragrant rice\",\n  \"image\": \"https://example.com/chicken-rice.jpg\",\n  \"category\": \"Main Course\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Get All Menu Items",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{RESTAURANT_URL}}/api/v1/collection", "host": ["{{RESTAURANT_URL}}"], "path": ["api","v1","collection"] }
+              }
+            },
+            {
+              "name": "Get Restaurant Menu",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{RESTAURANT_URL}}/api/v1/collection/getAll/RESTAURANT_ID_HERE", "host": ["{{RESTAURANT_URL}}"], "path": ["api","v1","collection","getAll","RESTAURANT_ID_HERE"] }
+              }
+            },
+            {
+              "name": "Get One Menu Item",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{RESTAURANT_URL}}/api/v1/collection/getOne/COLLECTION_ID_HERE", "host": ["{{RESTAURANT_URL}}"], "path": ["api","v1","collection","getOne","COLLECTION_ID_HERE"] }
+              }
+            },
+            {
+              "name": "Update Menu Item",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{TOKEN}}" }
+                ],
+                "url": { "raw": "{{RESTAURANT_URL}}/api/v1/collection/update/COLLECTION_ID_HERE", "host": ["{{RESTAURANT_URL}}"], "path": ["api","v1","collection","update","COLLECTION_ID_HERE"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Chicken Rice Special\",\n  \"price\": 650,\n  \"description\": \"Updated: Premium grilled chicken with fragrant rice\",\n  \"category\": \"Main Course\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Approve Menu Item (Admin)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Authorization", "value": "Bearer {{TOKEN}}" }],
+                "url": { "raw": "{{RESTAURANT_URL}}/api/v1/collection/isApprove/COLLECTION_ID_HERE", "host": ["{{RESTAURANT_URL}}"], "path": ["api","v1","collection","isApprove","COLLECTION_ID_HERE"] }
+              }
+            },
+            {
+              "name": "Delete Menu Item",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{TOKEN}}" }],
+                "url": { "raw": "{{RESTAURANT_URL}}/api/v1/collection/delete/COLLECTION_ID_HERE", "host": ["{{RESTAURANT_URL}}"], "path": ["api","v1","collection","delete","COLLECTION_ID_HERE"] }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reviews",
+          "item": [
+            {
+              "name": "Add Review",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{TOKEN}}" }
+                ],
+                "url": { "raw": "{{RESTAURANT_URL}}/api/v1/reviews", "host": ["{{RESTAURANT_URL}}"], "path": ["api","v1","reviews"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"restaurantId\": \"RESTAURANT_ID_HERE\",\n  \"rating\": 4,\n  \"comment\": \"Great food and fast service!\",\n  \"customerName\": \"John Doe\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Get All Reviews (Admin)",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{TOKEN}}" }],
+                "url": { "raw": "{{RESTAURANT_URL}}/api/v1/reviews", "host": ["{{RESTAURANT_URL}}"], "path": ["api","v1","reviews"] }
+              }
+            },
+            {
+              "name": "Approve Review (Admin)",
+              "request": {
+                "method": "PUT",
+                "header": [{ "key": "Authorization", "value": "Bearer {{TOKEN}}" }],
+                "url": { "raw": "{{RESTAURANT_URL}}/api/v1/reviews/approve/REVIEW_ID_HERE", "host": ["{{RESTAURANT_URL}}"], "path": ["api","v1","reviews","approve","REVIEW_ID_HERE"] }
+              }
+            },
+            {
+              "name": "Disapprove Review (Admin)",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{TOKEN}}" }],
+                "url": { "raw": "{{RESTAURANT_URL}}/api/v1/reviews/REVIEW_ID_HERE", "host": ["{{RESTAURANT_URL}}"], "path": ["api","v1","reviews","REVIEW_ID_HERE"] }
+              }
+            },
+            {
+              "name": "Delete Review",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{TOKEN}}" }],
+                "url": { "raw": "{{RESTAURANT_URL}}/api/v1/reviews/delete/REVIEW_ID_HERE", "host": ["{{RESTAURANT_URL}}"], "path": ["api","v1","reviews","delete","REVIEW_ID_HERE"] }
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "04 - Deliver Service",
+      "item": [
+        {
+          "name": "Drivers",
+          "item": [
+            {
+              "name": "Register Driver",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{DELIVER_URL}}/api/v1/driver", "host": ["{{DELIVER_URL}}"], "path": ["api","v1","driver"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Kamal Perera\",\n  \"email\": \"kamal.driver@example.com\",\n  \"password\": \"driver123\",\n  \"phone\": \"+94771112233\",\n  \"vehicleType\": \"Motorcycle\",\n  \"licenseNumber\": \"B1234567\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Driver Login",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": { "raw": "{{DELIVER_URL}}/api/v1/driver/login", "host": ["{{DELIVER_URL}}"], "path": ["api","v1","driver","login"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"kamal.driver@example.com\",\n  \"password\": \"driver123\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Get All Drivers (Admin)",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{TOKEN}}" }],
+                "url": { "raw": "{{DELIVER_URL}}/api/v1/driver", "host": ["{{DELIVER_URL}}"], "path": ["api","v1","driver"] }
+              }
+            },
+            {
+              "name": "Update Driver",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{TOKEN}}" }
+                ],
+                "url": { "raw": "{{DELIVER_URL}}/api/v1/driver/DRIVER_ID_HERE", "host": ["{{DELIVER_URL}}"], "path": ["api","v1","driver","DRIVER_ID_HERE"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Kamal Perera\",\n  \"phone\": \"+94779998888\",\n  \"vehicleType\": \"Car\",\n  \"licenseNumber\": \"B9876543\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Driver",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{TOKEN}}" }],
+                "url": { "raw": "{{DELIVER_URL}}/api/v1/driver/DRIVER_ID_HERE", "host": ["{{DELIVER_URL}}"], "path": ["api","v1","driver","DRIVER_ID_HERE"] }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Deliveries",
+          "item": [
+            {
+              "name": "Add Delivery",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{TOKEN}}" }
+                ],
+                "url": { "raw": "{{DELIVER_URL}}/api/v1/delivery", "host": ["{{DELIVER_URL}}"], "path": ["api","v1","delivery"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"driverId\": \"DRIVER_ID_HERE\",\n  \"driverName\": \"Kamal Perera\",\n  \"customerEmail\": \"john.doe@example.com\",\n  \"orderId\": \"ORDER_ID_HERE\",\n  \"orderName\": \"Chicken Rice x2\",\n  \"address\": \"123 Main Street, Colombo\",\n  \"lat\": 6.9271,\n  \"lng\": 79.8612\n}"
+                }
+              }
+            },
+            {
+              "name": "Get Deliveries",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{TOKEN}}" }],
+                "url": { "raw": "{{DELIVER_URL}}/api/v1/delivery", "host": ["{{DELIVER_URL}}"], "path": ["api","v1","delivery"] }
+              }
+            },
+            {
+              "name": "Update Delivery Location",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{TOKEN}}" }
+                ],
+                "url": { "raw": "{{DELIVER_URL}}/api/v1/delivery/location/DELIVERY_ID_HERE", "host": ["{{DELIVER_URL}}"], "path": ["api","v1","delivery","location","DELIVERY_ID_HERE"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"lat\": 6.9350,\n  \"lng\": 79.8500\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Delivery Status",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{TOKEN}}" }
+                ],
+                "url": { "raw": "{{DELIVER_URL}}/api/v1/delivery/update/DELIVERY_ID_HERE", "host": ["{{DELIVER_URL}}"], "path": ["api","v1","delivery","update","DELIVERY_ID_HERE"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"on the way\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Get Delivery Location",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{DELIVER_URL}}/api/v1/delivery/loc/DELIVERY_ID_HERE", "host": ["{{DELIVER_URL}}"], "path": ["api","v1","delivery","loc","DELIVERY_ID_HERE"] }
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "05 - Payment Service",
+      "item": [
+        {
+          "name": "Make Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{TOKEN}}" }
+            ],
+            "url": { "raw": "{{PAYMENT_URL}}/api/payment", "host": ["{{PAYMENT_URL}}"], "path": ["api","payment"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": \"ORDER_ID_HERE\",\n  \"amount\": 1650,\n  \"paymentType\": \"Card\",\n  \"cardNumber\": \"4111111111111111\",\n  \"expiry\": \"12/26\",\n  \"cvv\": \"123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get All Payments (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{TOKEN}}" }],
+            "url": { "raw": "{{PAYMENT_URL}}/api/payment", "host": ["{{PAYMENT_URL}}"], "path": ["api","payment"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "06 - Notification Service",
+      "item": [
+        {
+          "name": "Send Delivery Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{TOKEN}}" }
+            ],
+            "url": { "raw": "{{NOTIFICATION_URL}}/api/v1/notification", "host": ["{{NOTIFICATION_URL}}"], "path": ["api","v1","notification"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"ORDER_ID_HERE\",\n  \"driverId\": \"DRIVER_ID_HERE\",\n  \"driverName\": \"Kamal Perera\",\n  \"driverPhone\": \"+94771112233\",\n  \"driverEmail\": \"kamal.driver@example.com\",\n  \"customerEmail\": \"john.doe@example.com\",\n  \"address\": \"123 Main Street, Colombo\",\n  \"phone\": \"+94771234567\",\n  \"status\": \"picked up\",\n  \"estimatedTime\": \"2024-03-22T14:30:00Z\",\n  \"lat\": 6.9271,\n  \"lng\": 79.8612,\n  \"itemName\": \"Chicken Rice\",\n  \"qty\": 2,\n  \"totalPrice\": 1100,\n  \"restaurantId\": \"RESTAURANT_ID_HERE\"\n}"
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Health Checks",
+      "item": [
+        {
+          "name": "User Service Health",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{USER_URL}}/health", "host": ["{{USER_URL}}"], "path": ["health"] } }
+        },
+        {
+          "name": "Order Service Health",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{ORDER_URL}}/health", "host": ["{{ORDER_URL}}"], "path": ["health"] } }
+        },
+        {
+          "name": "Restaurant Service Health",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{RESTAURANT_URL}}/health", "host": ["{{RESTAURANT_URL}}"], "path": ["health"] } }
+        },
+        {
+          "name": "Deliver Service Health",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{DELIVER_URL}}/health", "host": ["{{DELIVER_URL}}"], "path": ["health"] } }
+        },
+        {
+          "name": "Payment Service Health",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{PAYMENT_URL}}/health", "host": ["{{PAYMENT_URL}}"], "path": ["health"] } }
+        },
+        {
+          "name": "Notification Service Health",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{NOTIFICATION_URL}}/health", "host": ["{{NOTIFICATION_URL}}"], "path": ["health"] } }
+        }
+      ]
+    }
+
+  ]
+}

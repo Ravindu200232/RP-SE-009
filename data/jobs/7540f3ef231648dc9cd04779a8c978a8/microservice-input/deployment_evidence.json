@@ -1,0 +1,25 @@
+{
+  "status": "generated",
+  "artifacts": [
+    "server/Restaurant-service/Dockerfile",
+    "server/deliver-service/Dockerfile",
+    "server/notification-server/Dockerfile",
+    "server/order-service/Dockerfile",
+    "server/payment-service/Dockerfile",
+    "server/user-service/Dockerfile",
+    "client/Dockerfile",
+    "docker-compose.yml",
+    ".env.example",
+    "setup.sh",
+    "README.md",
+    ".github/workflows/restaurant_service.yml",
+    ".github/workflows/deliver_service.yml",
+    ".github/workflows/notification_service.yml",
+    ".github/workflows/order_service.yml",
+    ".github/workflows/payment_service.yml",
+    ".github/workflows/user_service.yml",
+    ".github/workflows/client.yml",
+    "analysis.json",
+    "strategy.json"
+  ]
+}

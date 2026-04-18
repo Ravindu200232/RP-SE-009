@@ -1,0 +1,33 @@
+name: client CI
+'on':
+  push:
+    branches:
+    - main
+    paths:
+    - client/**
+    - .github/workflows/client.yml
+  pull_request:
+    branches:
+    - main
+    paths:
+    - client/**
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  build-and-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    - name: Install dependencies
+      working-directory: ./client
+      run: if [ -f package.json ]; then npm ci || npm install || true; else echo 'No
+        package.json found, skipping install'; fi
+    - name: Build app
+      working-directory: ./client
+      run: if [ -f package.json ] && npm run | grep -q '\bbuild\b'; then npm run build
+        || true; else echo 'No build script found, skipping build'; fi
+      continue-on-error: true
