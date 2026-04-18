@@ -11,6 +11,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/board', require('./routes/board'));
+app.use('/api/boards', require('./routes/board'));
 
 // Health check
 app.get('/health', (req, res) => {

@@ -19,6 +19,20 @@
 
 # production
 /build
+/output/
+/local-runs/
+
+# generated samples / reference dumps
+/references/
+/sandbox references/
+/taskflow-manager-fullstack (2)/
+
+# temp validation / debug artifacts
+tmp-*
+*.tmp
+*.log
+app/api/gen-fullstack/*.mjs
+data/*.mjs
 
 # misc
 .DS_Store

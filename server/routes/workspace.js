@@ -2,11 +2,24 @@ const express = require('express');
 const router = express.Router();
 const Workspace = require('../models/Workspace');
 
+function sanitizeMessages(messages) {
+    if (!Array.isArray(messages)) {
+        return [];
+    }
+
+    return messages
+        .map((message) => ({
+            role: typeof message?.role === 'string' ? message.role.trim() : '',
+            content: typeof message?.content === 'string' ? message.content.trim() : '',
+        }))
+        .filter((message) => message.role && message.content);
+}
+
 // POST / - Create new workspace
 router.post('/', async (req, res) => {
     try {
         const { messages } = req.body;
-        const workspace = new Workspace({ messages: messages || [] });
+        const workspace = new Workspace({ messages: sanitizeMessages(messages) });
         await workspace.save();
         res.status(201).json({
             workspaceId: workspace._id.toString(),
@@ -36,9 +49,10 @@ router.get('/:id', async (req, res) => {
 router.put('/:id/messages', async (req, res) => {
     try {
         const { messages } = req.body;
+        const sanitizedMessages = sanitizeMessages(messages);
         const workspace = await Workspace.findByIdAndUpdate(
             req.params.id,
-            { $set: { messages, updatedAt: new Date() } },
+            { $set: { messages: sanitizedMessages, updatedAt: new Date() } },
             { new: true, runValidators: true }
         );
         if (!workspace) {

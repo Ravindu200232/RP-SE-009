@@ -1,4 +1,4 @@
-import dedent from 'dedent';
+﻿import dedent from 'dedent';
 
 export default {
 
@@ -10,10 +10,12 @@ export default {
 
     CODE_GEN_PROMPT: dedent`
 You are an expert full-stack developer. Generate a complete, production-quality full-stack web app.
+If the user provides a structured JSON spec, IEEE SRS, service catalog, endpoint list, entity list, or requirements document, treat it as the main source of truth.
+Cover every listed feature, actor workflow, service route family, and required page or dashboard in the generated frontend.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-OUTPUT FORMAT — FOLLOW EXACTLY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
+OUTPUT FORMAT Ã¢â‚¬â€ FOLLOW EXACTLY
+Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
 Output each file between markers. No extra explanation outside markers.
 
 ===META===
@@ -39,28 +41,28 @@ const express = require('express');
 
 CRITICAL: Every ===FRONTEND: path=== and ===BACKEND: path=== MUST be closed with ===ENDFILE===
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
 FRONTEND FILE RULES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-FILE STRUCTURE — always use this layout:
-  /src/App.jsx               ← root router component
-  /src/components/Navbar.jsx ← sticky responsive navbar
-  /src/components/Footer.jsx ← footer with links
-  /src/pages/Home.jsx        ← hero + features sections
-  /src/pages/[Feature].jsx   ← main feature page
-  /src/pages/[Feature2].jsx  ← secondary feature page
-  /src/pages/About.jsx       ← about page
+Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
+FILE STRUCTURE Ã¢â‚¬â€ always use this layout:
+  /src/App.jsx               Ã¢â€ Â root router component
+  /src/components/Navbar.jsx Ã¢â€ Â sticky responsive navbar
+  /src/components/Footer.jsx Ã¢â€ Â footer with links
+  /src/pages/Home.jsx        Ã¢â€ Â hero + features sections
+  /src/pages/[Feature].jsx   Ã¢â€ Â main feature page
+  /src/pages/[Feature2].jsx  Ã¢â€ Â secondary feature page
+  /src/pages/About.jsx       Ã¢â€ Â about page
 
 CRITICAL CODING RULES:
 - All JSX files MUST use .jsx extension (not .js)
 - All source files go inside /src/ directory
 - DO NOT generate: main.jsx, index.html, App.css, package.json, vite.config.js, tailwind.config.js
-- Every file: starts with import React from 'react'; — ends with export default ComponentName;
+- Every file: starts with import React from 'react'; Ã¢â‚¬â€ ends with export default ComponentName;
 - App.jsx uses react-router-dom BrowserRouter + Routes + Route
-- NEVER use path aliases like @/ — use ONLY relative imports: ./components/Navbar or ../pages/Home
-- NEVER use TypeScript (.tsx, .ts) — use JavaScript (.jsx, .js) only
+- NEVER use path aliases like @/ Ã¢â‚¬â€ use ONLY relative imports: ./components/Navbar or ../pages/Home
+- NEVER use TypeScript (.tsx, .ts) Ã¢â‚¬â€ use JavaScript (.jsx, .js) only
 
-TOAST NOTIFICATIONS — use ONLY react-toastify (NEVER react-hot-toast):
+TOAST NOTIFICATIONS Ã¢â‚¬â€ use ONLY react-toastify (NEVER react-hot-toast):
   import { toast, ToastContainer } from 'react-toastify';
   Add <ToastContainer position="top-right" theme="dark" /> in App.jsx
   FORBIDDEN: import from 'react-hot-toast', import { Toaster } from anything
@@ -70,26 +72,49 @@ ALLOWED PACKAGES (ONLY these, no others):
   react-toastify, tailwind-merge, uuid,
   react-beautiful-dnd, recharts, date-fns
 
-API CALLS — always include localStorage fallback:
-  const API_BASE = 'http://localhost:3001';
+API CALLS Ã¢â‚¬â€ always include localStorage fallback:
+  const API_BASE = 'http://localhost:3005';
+  const requestJson = async (path, options = {}) => {
+    const res = await fetch(API_BASE + path, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+      },
+      signal: AbortSignal.timeout(3000),
+    });
+    const payload = await res.json().catch(() => null);
+    if (!res.ok || !payload?.success) {
+      throw new Error(payload?.error || 'Request failed with status ' + res.status);
+    }
+    return payload;
+  };
   const fetchItems = async () => {
     try {
-      const res = await fetch(API_BASE + '/api/items', { signal: AbortSignal.timeout(3000) });
-      const data = await res.json();
-      if (data.success) {
-        setItems(data.data);
-        localStorage.setItem('items', JSON.stringify(data.data));
-      }
+      const payload = await requestJson('/api/items', { method: 'GET' });
+      const nextItems = Array.isArray(payload.data) ? payload.data : (payload.data?.items || []);
+      setItems(nextItems);
+      localStorage.setItem('items', JSON.stringify(nextItems));
     } catch {
       const saved = localStorage.getItem('items');
-      if (saved) setItems(JSON.parse(saved));
+      if (saved) setItems(Array.isArray(JSON.parse(saved)) ? JSON.parse(saved) : []);
     }
   };
+  PREVIEW SAFETY:
+  - Sandpack/browser preview does NOT run backend services, so all CRUD actions must still work when API requests fail.
+  - Use the API gateway on port 3005 for all frontend requests. Never call service ports 3006 or 3007 directly from React.
+  - In Sandpack/CodeSandbox preview hosts, do not hit localhost at all for initial page-load reads. Return preview-safe data from local state or localStorage first, then use the real backend only outside the preview sandbox.
+  - For create/update/delete, first try the API, but on failure immediately update local React state and localStorage so the app remains usable offline.
+  - For locally created records, always generate a stable _id (for example with uuid()) and reuse it for edit/delete actions.
+  - Never build URLs like /api/items/undefined, /api/items/null, or /api/items/. Only call PUT/PATCH/DELETE when a valid id exists; otherwise treat it as a create action.
+  - Modal/forms must clearly separate create mode vs edit mode:
+    const isEditing = Boolean(item && (item._id || item.id));
+    const itemId = item?._id || item?.id || null;
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-DESIGN SYSTEM — MANDATORY (use the DESIGN SEED colors from user)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-IMPORTANT: Use Tailwind CSS classes ONLY — absolutely NO inline styles (style={{...}}).
+Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
+DESIGN SYSTEM Ã¢â‚¬â€ MANDATORY (use the DESIGN SEED colors from user)
+Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
+IMPORTANT: Use Tailwind CSS classes ONLY Ã¢â‚¬â€ absolutely NO inline styles (style={{...}}).
 The Tailwind CDN is available. Every component MUST be visually stunning.
 
 HERO SECTION (every Home.jsx must have this):
@@ -125,7 +150,7 @@ CARDS:
   hover:-translate-y-2 hover:shadow-2xl hover:border-white/20 transition-all duration-300 cursor-pointer
 
 SECTIONS:
-  py-24 px-4 — <div className="max-w-7xl mx-auto">
+  py-24 px-4 Ã¢â‚¬â€ <div className="max-w-7xl mx-auto">
   Title: text-4xl md:text-5xl font-black text-white mb-4
   Subtitle: text-lg text-gray-400 max-w-2xl mb-16
   Grid: grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6
@@ -141,17 +166,33 @@ FORMS:
 
 Apply DESIGN SEED gradient/bg colors consistently to: navbar CTA, hero headline, section accents, card borders.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
 BACKEND RULES (Node.js + Express + MongoDB)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
 Generate 1 API gateway + 2 microservices:
 
 ===BACKEND: /api-gateway/index.js===
   Express, port 3001, CORS *
-  Proxy /api/users/* → http://localhost:3002
-  Proxy /api/[domain]/* → http://localhost:3003
-  GET /health → { status:'ok' }
+  Proxy /api/users/* Ã¢â€ â€™ http://localhost:3002
+  Proxy /api/[domain]/* Ã¢â€ â€™ http://localhost:3003
+  GET /health Ã¢â€ â€™ { status:'ok' }
 ===ENDFILE===
+
+PROXY SAFETY PATTERN Ã¢â‚¬â€ mandatory whenever gateway uses express.json():
+  const { createProxyMiddleware, fixRequestBody } = require('http-proxy-middleware');
+  createProxyMiddleware({
+    target: 'http://127.0.0.1:3002',
+    changeOrigin: true,
+    proxyTimeout: 10000,
+    timeout: 10000,
+    onProxyReq: fixRequestBody,
+    onError: (error, req, res) => {
+      if (!res.headersSent) {
+        res.status(502).json({ success: false, error: 'downstream service unavailable', details: error.code || error.message });
+      }
+    }
+  });
+  Reason: if express.json() runs before proxying, POST/PUT/PATCH bodies must be re-written with fixRequestBody or writes may hang/fail.
 
 ===BACKEND: /api-gateway/package.json===
   {"name":"api-gateway","scripts":{"start":"node index.js","dev":"nodemon index.js"},"dependencies":{"express":"^4.18.2","cors":"^2.8.5","http-proxy-middleware":"^3.0.0","dotenv":"^16.0.0"}}
@@ -160,7 +201,8 @@ Generate 1 API gateway + 2 microservices:
 For each service (2 total):
 ===BACKEND: /[name]-service/index.js===
   Express on port 3002/3003
-  mongoose.connect('mongodb://localhost:27017/[name]-db')
+  mongoose.connect('mongodb://127.0.0.1:27017/[name]-db')
+  GET /health returns { success:true, data:{ status:'ok', service:'[name]-service' } }
 ===ENDFILE===
 ===BACKEND: /[name]-service/models/[Name].js===
   Mongoose schema, { timestamps: true }
@@ -172,17 +214,27 @@ For each service (2 total):
   {"name":"[name]-service","scripts":{"start":"node index.js","dev":"nodemon index.js"},"dependencies":{"express":"^4.18.2","mongoose":"^8.0.3","cors":"^2.8.5","dotenv":"^16.0.0","uuid":"^9.0.0","bcryptjs":"^2.4.3","jsonwebtoken":"^9.0.2"}}
 ===ENDFILE===
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DATA PERSISTENCE REQUIREMENTS:
+  Main resource routes must use clear, consistent plural gateway paths such as /api/tasks and /api/boards.
+  Keep gateway proxy prefixes, route filenames, model names, and frontend resource names aligned. Never mix /api/task with /api/tasks.
+  POST must save a Mongoose document, GET must read saved documents, PUT/PATCH must update stored data, and DELETE must remove stored data.
+  Generate routes that accept realistic sample JSON bodies so a tester can submit sample data immediately after startup.
+
+Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
 QUALITY CHECKLIST
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ Zero placeholder functions — complete working code
-✅ All JSX files use .jsx extension, all in /src/ directory
-✅ Only react-toastify for notifications
-✅ Every page: loading state + empty state + error state
-✅ All interactive elements: hover + transition effects
-✅ Backend API calls with 3s timeout + localStorage fallback
-✅ Gateway + 2 services with Mongoose models + CRUD routes
-✅ Mobile-first responsive design
+Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
+Ã¢Å“â€¦ Zero placeholder functions Ã¢â‚¬â€ complete working code
+Ã¢Å“â€¦ All JSX files use .jsx extension, all in /src/ directory
+Ã¢Å“â€¦ Only react-toastify for notifications
+Ã¢Å“â€¦ Every page: loading state + empty state + error state
+Ã¢Å“â€¦ All interactive elements: hover + transition effects
+Ã¢Å“â€¦ Backend API calls with 3s timeout + localStorage fallback
+Ã¢Å“â€¦ Create/edit/delete still work in preview when backend is offline
+Ã¢Å“â€¦ Forms and modals never send PUT/PATCH/DELETE requests with undefined ids
+Ã¢Å“â€¦ Gateway POST/PUT/PATCH proxies forward JSON bodies with fixRequestBody + return 502 JSON on downstream failure
+Ã¢Å“â€¦ Gateway + 2 services with Mongoose models + CRUD routes
+Ã¢Å“â€¦ Sample POST data can be created, read back, updated, and deleted through gateway routes backed by MongoDB
+Ã¢Å“â€¦ Mobile-first responsive design
 `,
 
     ENHANCE_PROMPT_RULES: dedent`
@@ -194,15 +246,17 @@ QUALITY CHECKLIST
     Keep under 200 words. Return ONLY the enhanced prompt as plain text.
     `,
 
-    // ── Multi-phase pipeline prompts ─────────────────────────────────────
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Multi-phase pipeline prompts Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
     BACKEND_GEN_PROMPT: dedent`
 You are an expert Node.js + Express + MongoDB developer.
-Generate ONLY the backend microservices — no frontend code.
+Generate ONLY the backend microservices Ã¢â‚¬â€ no frontend code.
+If the user provides a structured JSON spec, IEEE SRS, service catalog, endpoint list, entity list, or requirements document, treat it as HARD REQUIREMENTS.
+That structured contract overrides the simple example architecture below. Generate every listed service, endpoint, entity, auth rule, and dependency unless the user explicitly asks to simplify.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-OUTPUT FORMAT — FOLLOW EXACTLY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
+OUTPUT FORMAT Ã¢â‚¬â€ FOLLOW EXACTLY
+Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
 ===META===
 {"projectTitle":"App Name","explanation":"One sentence description"}
 ===ENDMETA===
@@ -217,24 +271,26 @@ OUTPUT FORMAT — FOLLOW EXACTLY
 
 CRITICAL: Every ===BACKEND: path=== MUST be closed with ===ENDFILE===
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
 ARCHITECTURE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
 Generate exactly:
-  /api-gateway/index.js           ← Express port 3005, proxies all /api/* routes
-  /api-gateway/package.json       ← with http-proxy-middleware, express, cors, dotenv
-  /[domain1]-service/index.js     ← Express port 3006, mongoose.connect
-  /[domain1]-service/models/[Model].js   ← Mongoose schema { timestamps: true }
-  /[domain1]-service/routes/[name].js    ← CRUD routes
+  /api-gateway/index.js           Ã¢â€ Â Express port 3005, proxies all /api/* routes
+  /api-gateway/package.json       Ã¢â€ Â with http-proxy-middleware, express, cors, dotenv
+  /[domain1]-service/index.js     Ã¢â€ Â Express port 3006, mongoose.connect
+  /[domain1]-service/models/[Model].js   Ã¢â€ Â Mongoose schema { timestamps: true }
+  /[domain1]-service/routes/[name].js    Ã¢â€ Â CRUD routes
   /[domain1]-service/package.json
-  /[domain2]-service/index.js     ← Express port 3007, mongoose.connect
+  /[domain2]-service/index.js     Ã¢â€ Â Express port 3007, mongoose.connect
   /[domain2]-service/models/[Model].js
   /[domain2]-service/routes/[name].js
   /[domain2]-service/package.json
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+If a structured contract lists more than two services, generate all listed services instead of only two example services.
+
+Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
 CRITICAL CODING RULES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
 PORTS: Gateway=3005, Service1=3006, Service2=3007
 ALWAYS include in every service index.js:
   const cors = require('cors');
@@ -245,25 +301,96 @@ ALWAYS include in every service index.js:
 
 ROUTES: Every route returns { success: true, data: ... } or { success: false, error: "..." }
   Wrap in try/catch. Async handlers.
+  In every resource router file, add router.get('/health', ...) before any router.get('/:id') or other parameterized /:id routes.
+  Never place parameterized routes like /:id before literal routes such as /health, /status, /search, or /stats.
 
-MONGOOSE: mongoose.connect('mongodb://localhost:27017/[name]-db', { useNewUrlParser: true, useUnifiedTopology: true })
+MONGOOSE: mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URL || 'mongodb://127.0.0.1:27017/[name]-db', { useNewUrlParser: true, useUnifiedTopology: true })
+  Do not hardcode MongoDB URIs without the process.env.MONGODB_URI or process.env.MONGO_URL fallback.
+  If auth is used, use a secret expression like process.env.JWT_SECRET || process.env.SECRET_KEY || process.env.SEKRET_KEY || 'dev-secret'.
+  Do not use mongoose populate() for models owned by another microservice. Return raw ObjectId references instead.
 
 GATEWAY: Use http-proxy-middleware to proxy:
-  /api/users/* → http://localhost:3006
-  /api/[domain]/* → http://localhost:3007
-  GET /health → { status: 'ok', timestamp: new Date() }
+  /api/users/* Ã¢â€ â€™ http://localhost:3006
+  /api/[domain]/* Ã¢â€ â€™ http://localhost:3007
+  GET /health Ã¢â€ â€™ { status: 'ok', timestamp: new Date() }
+  Because express.json() runs before proxying, import { createProxyMiddleware, fixRequestBody } from http-proxy-middleware and set for every proxy:
+    changeOrigin: true
+    proxyTimeout: 10000
+    timeout: 10000
+    onProxyReq: fixRequestBody
+    onError: (error, req, res) => res.status(502).json({ success: false, error: 'downstream service unavailable', details: error.code || error.message })
+
+SERVICES:
+  Every service must expose GET /health returning { success: true, data: { status: 'ok', service: '[name]-service' } }
+  Every resource router file must also expose GET /health so gateway checks like /api/tasks/health and /api/analytics/health work.
 
 PACKAGE.JSON per service:
   {"name":"[name]-service","version":"1.0.0","scripts":{"start":"node index.js","dev":"nodemon index.js"},"dependencies":{"express":"^4.18.2","mongoose":"^8.0.3","cors":"^2.8.5","dotenv":"^16.0.0","uuid":"^9.0.0","bcryptjs":"^2.4.3","jsonwebtoken":"^9.0.2"}}
 
-✅ Complete working code — zero placeholders
-✅ All files use CommonJS (require/module.exports) — NO ES modules
-✅ Every CRUD route: GET all, GET by id, POST create, PUT update, DELETE
+Ã¢Å“â€¦ Complete working code Ã¢â‚¬â€ zero placeholders
+Ã¢Å“â€¦ All files use CommonJS (require/module.exports) Ã¢â‚¬â€ NO ES modules
+Ã¢Å“â€¦ Every CRUD route: GET all, GET by id, POST create, PUT update, DELETE
+Ã¢Å“â€¦ Write routes must work through the gateway, not only when hitting services directly
+Ã¢Å“â€¦ Gateway proxy prefixes, route filenames, and resource names must stay consistent (for example /api/tasks with tasks routes, not /api/task)
+Ã¢Å“â€¦ CRUD must represent real MongoDB persistence: create sample data, read it back, update it, then delete it cleanly
+`,
+
+    BACKEND_REFORMAT_PROMPT: dedent`
+You are reformatting an existing backend answer from another model.
+Do NOT invent a new architecture.
+Convert the raw backend answer into the exact file marker format required by this app.
+
+Output ONLY:
+===META===
+{"projectTitle":"App Name","explanation":"One sentence description"}
+===ENDMETA===
+
+===BACKEND: /path/to/file===
+// exact file contents
+===ENDFILE===
+
+Rules:
+- Preserve the original backend code as much as possible
+- Recover every backend file you can find
+- Use paths beginning with /
+- Include package.json, index.js, route files, and model files when present
+- Do not include frontend files
+- Do not explain anything outside the markers
+`,
+
+    BACKEND_GEN_JSON_PROMPT: dedent`
+You are an expert Node.js + Express + MongoDB developer.
+Generate ONLY backend microservice files as strict JSON.
+Do not include frontend files.
+If the user provides a structured JSON spec, IEEE SRS, service catalog, endpoint list, entity list, or requirements document, treat it as HARD REQUIREMENTS and generate every listed service and endpoint.
+
+Return one JSON object with exactly this shape:
+{
+  "projectTitle": "App Name",
+  "explanation": "One sentence description",
+  "files": [
+    { "path": "/api-gateway/index.js", "code": "complete file contents" },
+    { "path": "/api-gateway/package.json", "code": "{ ... }" }
+  ]
+}
+
+Rules:
+- Every file path must start with /
+- Include package.json, index.js, route files, and model files
+- Code must be complete, not partial
+- Use CommonJS for backend JavaScript
+- Generate real Express + MongoDB code, not placeholders
+- Do not wrap the JSON in markdown fences
 `,
 
     BACKEND_FIX_PROMPT: dedent`
 You are a senior Node.js debugger reviewing Express + MongoDB microservice code.
 Find and fix ALL bugs in the provided backend files.
+
+ROUND STRATEGY:
+- Round 1 should fix every visible backend bug in one strong pass.
+- Later rounds are recovery-only for exact leftovers.
+- If multiple bugs belong to the same file, rewrite that whole file instead of returning tiny partial patches.
 
 If the code is correct with NO bugs, output ONLY this exact line:
 ===NO_BUGS===
@@ -273,9 +400,9 @@ If there ARE bugs, output ONLY the fixed files using this format (no explanation
 // complete fixed file code
 ===ENDFILE===
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
 BUGS TO CHECK
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
 1. Missing app.use(cors()) or app.use(express.json())
 2. Wrong ports (Gateway MUST be 3005, Service1=3006, Service2=3007)
 3. Async route handlers missing try/catch
@@ -286,8 +413,15 @@ BUGS TO CHECK
 8. Missing error status codes (should use res.status(400/404/500))
 9. HTTP proxy middleware config errors in gateway
 10. Missing /health endpoint in gateway
+11. Gateway uses express.json() but proxy routes are missing fixRequestBody, causing POST/PUT/PATCH bodies to fail or hang
+12. Gateway proxy missing proxyTimeout/timeout or JSON 502 error handler for downstream failures
+13. Missing /health endpoint in services
+14. Resource router is missing GET /health
+15. Literal routes like /health are declared after parameterized routes like /:id, causing CastError or route shadowing
+16. Service ignores process.env.MONGODB_URI / process.env.MONGO_URL and hardcodes a database URI
+17. Cross-service mongoose populate() is used for models that are not registered in the current service
 
-Output ONLY fixed files or ===NO_BUGS=== — no explanations outside markers.
+Output ONLY fixed files or ===NO_BUGS=== Ã¢â‚¬â€ no explanations outside markers.
 `,
 
     API_TEST_PROMPT: dedent`
@@ -295,24 +429,29 @@ You are a senior API testing engineer performing Postman-style route testing.
 Analyze the provided backend Express + MongoDB code and simulate testing every route.
 
 For EACH route handler you find, predict what would happen when called with sample data.
+Simulate real CRUD flow, not just isolated health checks: create a sample row, read it back, update it, and delete it through the gateway path when those routes exist.
+Treat this as a Postman-style integration checklist and include the expected HTTP status code plus the MongoDB persistence outcome for every route.
 
-OUTPUT FORMAT — output ONLY this block, nothing else outside the markers:
+OUTPUT FORMAT Ã¢â‚¬â€ output ONLY this block, nothing else outside the markers:
 ===API_TESTS===
-POST /api/users/register | PASS | {"name":"John Doe","email":"john@example.com","password":"SecurePass123"} | -
-POST /api/users/login | FAIL | {"email":"john@example.com","password":"SecurePass123"} | bcrypt.compare not awaited properly
-GET /api/users | PASS | - | Returns users array
-GET /api/users/:id | PASS | - | Returns single user
-PUT /api/users/:id | FAIL | {"name":"Updated Name"} | Missing try/catch causes unhandled rejection
-DELETE /api/users/:id | PASS | - | Returns deleted document
-GET /health | PASS | - | Gateway health check works
+POST /api/users/register | PASS | 201 | {"name":"John Doe","email":"john@example.com","password":"SecurePass123"} | Creates user document and stores it in MongoDB
+POST /api/users/login | FAIL | 500 | {"email":"john@example.com","password":"SecurePass123"} | bcrypt.compare not awaited properly
+GET /api/users | PASS | 200 | - | Returns users array from MongoDB
+GET /api/users/:id | PASS | 200 | - | Returns single stored user document
+PUT /api/users/:id | FAIL | 500 | {"name":"Updated Name"} | Missing try/catch causes unhandled rejection
+DELETE /api/users/:id | PASS | 200 | - | Deletes stored document from MongoDB
+GET /health | PASS | 200 | - | Gateway health check works
 ===END_API_TESTS===
 
 FORMAT RULES (critical):
 - One route per line
-- Columns separated by PIPE character (|): METHOD+PATH | PASS or FAIL | sample body or - | fail reason or -
+- Columns separated by PIPE character (|): METHOD+PATH | PASS or FAIL | expected HTTP status code | sample body or - | integration result or fail reason
 - Method must be: GET, POST, PUT, DELETE, or PATCH
 - Path must start with /api/ or /health
-- For POST/PUT: provide realistic sample JSON body matching the Mongoose schema
+- For POST/PUT/PATCH: provide realistic sample JSON body matching the Mongoose schema
+- For GET routes that require query params such as date ranges, provide a realistic sample JSON/query object instead of `-`
+- The status code column must use realistic values such as 200, 201, 400, 404, 500
+- For PASS rows, the last column must describe what happens to MongoDB data or what record is returned
 - Mark PASS only if code is 100% correct end-to-end
 - Mark FAIL for ANY of these issues:
   * Missing try/catch in async handler
@@ -324,6 +463,21 @@ FORMAT RULES (critical):
   * Missing module.exports = router
   * Wrong HTTP method used
   * Missing error status codes (400/404/500)
+  * Gateway parses JSON but does not re-send proxied request bodies with fixRequestBody
+  * Gateway proxy lacks timeout / 502 JSON error handling
+  * Gateway proxy prefix does not match the real resource route name (for example /api/task vs /api/tasks)
+  * Sample POST data would not actually be saved/read/updated/deleted through the Mongo-backed route flow
+  * The code contains invalid JavaScript syntax, broken tokens, or stray non-ASCII characters such as æž inside executable code
+
+Also verify at least:
+- GET /health on gateway and each service
+- One POST route through the gateway for each proxied domain
+- One PUT or PATCH write route through the gateway when the code exposes one
+- One DELETE route through the gateway when the code exposes one
+- For each main resource, verify the collection path is consistent across gateway and service routes (for example /api/tasks and /api/boards)
+- Show that a sample POST payload would be stored, then available to later GET/PUT/DELETE operations for the same resource when the code supports that flow
+- For auth flows, include a realistic register/login sequence and assume protected verify/profile/me/current-user routes require a Bearer token from login/register
+- For analytics/reporting routes that require startDate and endDate, include realistic sample values such as {"startDate":"2026-01-01","endDate":"2026-01-31"}
 
 Test ALL routes in ALL service files AND the gateway. Include every GET/POST/PUT/DELETE found.
 `,
@@ -331,6 +485,13 @@ Test ALL routes in ALL service files AND the gateway. Include every GET/POST/PUT
     API_FIX_PROMPT: dedent`
 You are a senior Node.js developer fixing specific API route failures.
 You will receive backend code AND a list of FAILED routes with their failure reasons.
+You may also receive a DEEP FAILURE ANALYSIS block that groups failures by root cause, likely owner files, and shared fix hints.
+
+ROUND STRATEGY:
+- Round 1 should eliminate every listed failing route in one pass.
+- Later rounds are only for exact remaining failures.
+- If multiple failed routes share one file, rewrite that file fully instead of making a small patch.
+- In round 1, prefer fixing shared root causes once rather than treating every 400/401/403/404/500/502 result as a separate isolated bug.
 
 Fix ONLY the failed routes. Output ONLY the fixed files using this format:
 ===BACKEND: /path/to/file===
@@ -352,6 +513,24 @@ FIXING RULES:
 5. Validate req.params.id before mongoose.isValidObjectId() check
 6. Add module.exports = router; at end of route files
 7. Fix import/require paths that reference wrong filenames
+8. For any gateway using express.json(), import fixRequestBody from http-proxy-middleware and set onProxyReq: fixRequestBody on every proxy route
+9. Add proxyTimeout, timeout, and a JSON 502 onError handler to gateway proxies
+10. Add missing GET /health endpoints for services when absent
+11. If a route still fails after earlier partial fixes, fully rewrite the owning route file and any gateway/service registration needed for that route instead of returning a tiny patch
+12. Prefer correcting route path mismatches, missing router registration, and singular/plural resource mismatches completely in one pass
+13. Remove stray non-ASCII garbage characters from backend JavaScript code and return valid ASCII-only source when executable code was corrupted
+14. In resource router files, add GET /health before any /:id route so /api/[resource]/health never falls through to an invalid id lookup
+15. Preserve literal route ordering: /health, /status, /search, /stats must appear before parameterized routes like /:id
+16. Replace hardcoded mongoose.connect('mongodb://...') calls with process.env.MONGODB_URI or process.env.MONGO_URL fallback
+17. Remove cross-service populate() calls that reference models not registered in the current microservice
+18. If a protected route such as /api/users/me, /api/auth/profile, or /api/auth/verify exists, keep it compatible with Bearer-token auth from register/login and do not treat it as a public route
+19. If JWT or auth secrets are used, read them from process.env.JWT_SECRET || process.env.SECRET_KEY || process.env.SEKRET_KEY || 'dev-secret'
+20. If startup crashes mention "router is not defined" or "app is not defined", fully repair the service or gateway entry file so the declared Express object matches every app.use/app.get/router.use/router.get call
+21. If many routes fail with 404, repair gateway prefixes, pathRewrite rules, app.use mounts, and router registrations together in one pass
+22. If many routes fail with 502 or ECONNREFUSED, repair proxy target ports/env vars and downstream service startup wiring together in one pass
+23. If many routes fail with 401/403, repair auth flow ordering, token issuance, middleware exemptions, and Bearer token compatibility together in one pass
+24. If many routes fail with 400 validation errors, align sample-acceptable payload handling with schema enums/required fields and keep create/update handlers realistic
+25. Treat the DEEP FAILURE ANALYSIS as the primary debugging guide for round 1 and aim to finish the full failure bundle in that first pass
 
 Output ONLY the corrected files in ===BACKEND: /path===...===ENDFILE=== format.
 `,
@@ -368,9 +547,9 @@ If there ARE bugs, output ONLY the fixed files using this format:
 // complete fixed file code
 ===ENDFILE===
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
 BUGS TO CHECK
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
 1. Missing import React from 'react' at top of every JSX file
 2. Missing export default ComponentName at end of file
 3. @/ path aliases (MUST be changed to relative ./... or ../...)
@@ -378,12 +557,24 @@ BUGS TO CHECK
 5. CSS file imports (REMOVE all import '*.css' lines)
 6. TypeScript syntax in .jsx files (.tsx/.ts extensions, type annotations, interface/type keywords)
 7. Using packages NOT in this list: react, react-dom, react-router-dom, lucide-react, framer-motion, react-toastify, tailwind-merge, uuid, react-beautiful-dnd, recharts, date-fns
-   — Comment out any import from unlisted packages
-8. react-router-dom v6 issues: <Switch> → <Routes>, <Redirect> → <Navigate>, component= → element=
+   Ã¢â‚¬â€ Comment out any import from unlisted packages
+8. react-router-dom v6 issues: <Switch> Ã¢â€ â€™ <Routes>, <Redirect> Ã¢â€ â€™ <Navigate>, component= Ã¢â€ â€™ element=
 9. Missing key prop in .map() loops
 10. Undefined component references (using a component that is not imported)
 11. Broken BrowserRouter setup (App.jsx must wrap routes in <BrowserRouter>)
+12. Create/update/delete handlers must gracefully fall back to local state + localStorage when backend requests fail in preview mode
+13. In Sandpack/CodeSandbox preview, request helpers must avoid calling localhost during initial reads and instead serve localStorage/default preview data without noisy fetch errors
+14. Any PUT/PATCH/DELETE request that can be called with undefined/null id must be fixed
+15. Modal or form submit logic must correctly separate create mode vs edit mode using a real item id
+16. Locally created records must have a stable id (_id or id) so later edit/delete actions do not break
+17. Frontend API base must target gateway port 3005, not 3001/3006/3007
+18. Frontend API paths must match the actual backend proxy prefixes; fix singular/plural mismatches such as /api/board vs /api/boards
+19. Any collection state used with .map/.filter must be normalized to an array first; never assume payload.data is already an array
 
-Output ONLY fixed files or ===NO_BUGS=== — no explanations outside markers.
+Output ONLY fixed files or ===NO_BUGS=== Ã¢â‚¬â€ no explanations outside markers.
 `,
 }
+
+
+
+

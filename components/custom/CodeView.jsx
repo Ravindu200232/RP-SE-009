@@ -6,8 +6,8 @@ import { MessagesContext } from '@/context/MessagesContext';
 import { useParams } from 'next/navigation';
 import {
     Download, ExternalLink, Copy, Check, Code2, Eye,
-    Server, Layers, AlertTriangle, X, FileCode2, Terminal,
-    CheckCircle2, Circle, Loader2, ChevronRight,
+    Server, Layers, AlertTriangle, X, FileCode2, Terminal, Info,
+    CheckCircle2, Circle, Loader2, ChevronRight, Play,
 } from 'lucide-react';
 import JSZip from 'jszip';
 
@@ -18,6 +18,7 @@ const SandpackPreview      = dynamic(() => import("@codesandbox/sandpack-react")
 const SandpackFileExplorer = dynamic(() => import("@codesandbox/sandpack-react").then(m => m.SandpackFileExplorer), { ssr: false });
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+const LOCAL_WORKSPACE_PREFIX = 'ai-builder-workspace:';
 
 // ── Design seeds ──────────────────────────────────────────────────────────────
 const DESIGN_SEEDS = [
@@ -36,6 +37,20 @@ const DESIGN_SEEDS = [
 ];
 const randomSeed = () => DESIGN_SEEDS[Math.floor(Math.random() * DESIGN_SEEDS.length)];
 
+function serializeMessagesForGeneration(messages = []) {
+    const list = Array.isArray(messages) ? messages : (messages ? [messages] : []);
+    return list
+        .map((msg, index) => {
+            const role = String(msg?.role || 'user').toUpperCase();
+            const content = typeof msg?.content === 'string'
+                ? msg.content
+                : JSON.stringify(msg?.content ?? '', null, 2);
+            return `[${role} ${index + 1}]\n${content}`.trim();
+        })
+        .filter(Boolean)
+        .join('\n\n');
+}
+
 // ── Packages allowed in Sandpack ──────────────────────────────────────────────
 const ALLOWED = new Set([
     'react', 'react-dom', 'react-router-dom', 'lucide-react',
@@ -43,9 +58,31 @@ const ALLOWED = new Set([
     'react-beautiful-dnd', 'recharts', 'date-fns',
 ]);
 
+function repairCommonFrontendSyntax(code) {
+    if (typeof code !== 'string') return code;
+    let nextCode = code.replace(/\uFEFF/g, '');
+    nextCode = nextCode.replace(
+        /\b(on[A-Z][A-Za-z0-9_]*)[^\S\r\n]*[^\w\s"'`=/{>(-]+([A-Za-z_$][\w$]*)\}/g,
+        '$1={$2}'
+    );
+    nextCode = nextCode.replace(/\b(on[A-Z][A-Za-z0-9_]*)\{([A-Za-z_$][\w$]*)\}/g, '$1={$2}');
+    nextCode = nextCode.replace(/\b(on[A-Z][A-Za-z0-9_]*)=([A-Za-z_$][\w$]*)\}/g, '$1={$2}');
+    nextCode = nextCode.replace(/\b(on[A-Z][A-Za-z0-9_]*)\s+([A-Za-z_$][\w$]*)\}/g, '$1={$2}');
+    return nextCode.split('\n').map((line) => {
+        if (/\bon[A-Z][A-Za-z0-9_]*/.test(line) || /<(input|button|select|textarea|form)\b/i.test(line)) {
+            return line.replace(/[^\x09\x0A\x0D\x20-\x7E]/g, '');
+        }
+        return line;
+    }).join('\n');
+}
+
 function sanitize(code) {
     if (typeof code !== 'string') return code;
-    let processed = code.replace(/from\s+['"]@\/([^'"]+)['"]/g, "from '/$1'");
+    let processed = repairCommonFrontendSyntax(code);
+    processed = processed.replace(/\(typeof\s+import\.meta\s*!==\s*'undefined'\s*&&\s*import\.meta\.env\?\.VITE_API_BASE_URL\)\s*\|\|\s*''/g, "''");
+    processed = processed.replace(/\bimport\.meta\.env\?\.VITE_API_BASE_URL\b/g, "''");
+    processed = processed.replace(/\bimport\.meta\.env\.VITE_API_BASE_URL\b/g, "''");
+    processed = processed.replace(/from\s+['"]@\/([^'"]+)['"]/g, "from '/$1'");
     processed = processed.replace(/import\s*\(\s*['"]@\/([^'"]+)['"]\s*\)/g, "import('/$1')");
     return processed.split('\n').map(line => {
         if (/^\s*import\s+['"][^'"]+\.css['"]/.test(line)) return `// [css import removed for sandpack preview]`;
@@ -58,6 +95,7 @@ function sanitize(code) {
         }
         if (line.includes('<Toaster') && !line.includes('Container'))
             return line.replace(/<Toaster([^>]*)\/>/, '<ToastContainer$1/>');
+        line = line.replace(/\b(on[A-Z][A-Za-z0-9_]*)[^\S\r\n]*([A-Za-z_$][\w$]*)\}/g, '$1={$2}');
         const m = line.match(/^\s*import\s+.*?from\s+['"]([^'"./][^'"@][^'"]*)['"]/);
         if (m) {
             const pkg = m[1].split('/')[0];
@@ -71,14 +109,131 @@ function sandpackPath(filePath) {
     return filePath.replace(/^\/src\//, '/');
 }
 
+function normalizeFrontendSourcePath(filePath = '') {
+    const trimmed = String(filePath || '').replace(/\\/g, '/').trim();
+    if (!trimmed) return '/src/App.jsx';
+    if (trimmed.startsWith('/src/')) return trimmed;
+    if (trimmed.startsWith('/public/')) return trimmed;
+    return trimmed.startsWith('/') ? `/src${trimmed}` : `/src/${trimmed}`;
+}
+
+function getSourceDirname(filePath = '') {
+    const normalized = filePath.replace(/\\/g, '/');
+    const idx = normalized.lastIndexOf('/');
+    return idx <= 0 ? '/' : normalized.slice(0, idx);
+}
+
+function joinSourcePath(...parts) {
+    const merged = parts.join('/').replace(/\\/g, '/').replace(/\/+/g, '/');
+    return merged.startsWith('/') ? merged : `/${merged}`;
+}
+
+function resolveFrontendImport(fromPath, importPath) {
+    const baseDir = getSourceDirname(normalizeFrontendSourcePath(fromPath)).split('/').filter(Boolean);
+    importPath.split('/').forEach((segment) => {
+        if (!segment || segment === '.') return;
+        if (segment === '..') baseDir.pop();
+        else baseDir.push(segment);
+    });
+    return `/${baseDir.join('/')}`;
+}
+
+function makeFrontendStub(filePath) {
+    const base = filePath.split('/').pop()?.replace(/\.[^.]+$/, '') || 'GeneratedComponent';
+    const componentName = base
+        .replace(/[^A-Za-z0-9]+/g, ' ')
+        .replace(/(?:^|\s)([A-Za-z0-9])/g, (_, ch) => ch.toUpperCase())
+        .replace(/\s+/g, '') || 'GeneratedComponent';
+
+    if (filePath.endsWith('.css')) {
+        return '';
+    }
+
+    if (filePath.includes('/pages/')) {
+        return `import React from 'react';
+
+export default function ${componentName}() {
+  return (
+    <section className="min-h-screen bg-gray-950 text-white px-6 py-16">
+      <div className="max-w-5xl mx-auto">
+        <h1 className="text-4xl font-black mb-4">${componentName}</h1>
+        <p className="text-gray-400">This page was auto-created because the generator referenced it but did not include the file.</p>
+      </div>
+    </section>
+  );
+}
+`;
+    }
+
+    return `import React from 'react';
+
+export default function ${componentName}() {
+  return null;
+}
+`;
+}
+
+function ensureFrontendDependencyFiles(rawFiles = {}) {
+    if (!rawFiles || typeof rawFiles !== 'object') return {};
+
+    const nextFiles = { ...rawFiles };
+    const normalizedPathLookup = new Map(
+        Object.keys(nextFiles).map((filePath) => [normalizeFrontendSourcePath(filePath), filePath])
+    );
+    const importRegex = /import\s+[^'"]*?from\s+['"](\.[^'"]+)['"]|import\s+['"](\.[^'"]+)['"]/g;
+
+    Object.entries(rawFiles).forEach(([filePath, content]) => {
+        const code = typeof content === 'string' ? content : content?.code != null ? String(content.code) : '';
+        if (!code) return;
+
+        let match;
+        while ((match = importRegex.exec(code)) !== null) {
+            const importTarget = match[1] || match[2];
+            if (!importTarget) continue;
+
+            const resolved = resolveFrontendImport(filePath, importTarget);
+            const candidates = importTarget.endsWith('.css')
+                ? [`${resolved}.css`, resolved]
+                : [resolved, `${resolved}.jsx`, `${resolved}.js`, joinSourcePath(resolved, 'index.jsx'), joinSourcePath(resolved, 'index.js')];
+            const exists = candidates.some((candidate) => normalizedPathLookup.has(normalizeFrontendSourcePath(candidate)));
+            if (exists) continue;
+
+            const newPath = importTarget.endsWith('.css') ? `${resolved}.css` : `${resolved}.jsx`;
+            if (!nextFiles[newPath]) {
+                nextFiles[newPath] = { code: makeFrontendStub(newPath) };
+                normalizedPathLookup.set(normalizeFrontendSourcePath(newPath), newPath);
+            }
+        }
+    });
+
+    return nextFiles;
+}
+
 // ── Phase metadata ────────────────────────────────────────────────────────────
 const PHASES = [
-    { key: 'backend-gen',  label: 'Backend Gen',      icon: '⚙️',  color: 'text-yellow-400' },
-    { key: 'backend-fix',  label: 'Backend Fix',      icon: '🔍',  color: 'text-orange-400' },
+    { key: 'backend-gen',  label: 'Backend Gen',      icon: '⚙️',  color: 'text-sky-400' },
+    { key: 'backend-fix',  label: 'Backend Fix',      icon: '🔍',  color: 'text-cyan-400' },
     { key: 'api-test',     label: 'API Testing',      icon: '🧪',  color: 'text-green-400'  },
     { key: 'frontend-gen', label: 'Frontend Gen',     icon: '🎨',  color: 'text-blue-400'   },
-    { key: 'frontend-fix', label: 'Frontend Fix',     icon: '🔧',  color: 'text-purple-400' },
+    { key: 'frontend-fix', label: 'Frontend Fix',     icon: '🔧',  color: 'text-violet-400' },
 ];
+
+const normalizeConsoleLevel = (level = 'info', message = '') => {
+    const text = String(message || '').toLowerCase();
+
+    if (
+        text.includes('spawn recovery enabled')
+        || text.includes('[mongodb driver] warning')
+        || text.includes('deprecationwarning')
+        || text.includes('proxy created:')
+        || text.includes('proxy rewrite rule created:')
+        || text.includes('using local browser storage instead')
+    ) {
+        return 'info';
+    }
+
+    return level;
+};
 
 // ── Developer Console ─────────────────────────────────────────────────────────
 const DeveloperConsole = memo(({ phases, logs, chars, currentPhase, done }) => {
@@ -94,8 +249,8 @@ const DeveloperConsole = memo(({ phases, logs, chars, currentPhase, done }) => {
 
     const logColor = (level) => {
         if (level === 'success') return 'text-green-400';
-        if (level === 'warning') return 'text-yellow-400';
-        if (level === 'error')   return 'text-red-400';
+        if (level === 'warning') return 'text-sky-300';
+        if (level === 'error')   return 'text-rose-300';
         return 'text-gray-300';
     };
 
@@ -163,8 +318,9 @@ const DeveloperConsole = memo(({ phases, logs, chars, currentPhase, done }) => {
                     return (
                         <div key={i}
                             className={`flex items-start gap-2 leading-relaxed px-1 rounded
-                                ${isTestRow && line.level === 'success' ? 'bg-green-950/20' :
-                                  isTestRow && line.level === 'error'   ? 'bg-red-950/20'   :
+                                ${isTestRow && line.level === 'success' ? 'bg-green-950/15' :
+                                  isTestRow && line.level === 'error'   ? 'bg-rose-950/10 border-l border-rose-800/30'   :
+                                  line.level === 'warning'              ? 'bg-sky-950/10' :
                                   isSummary                             ? 'bg-gray-800/40 border-l-2 border-blue-600/40 pl-2 my-1' :
                                   ''} ${logColor(line.level)}`}>
                             <ChevronRight className="h-3 w-3 mt-0.5 shrink-0 opacity-40"/>
@@ -243,7 +399,10 @@ export default function CodeView() {
     const [fileCount, setFileCount]       = useState(0);
     const [copied, setCopied]             = useState(false);
     const [loading, setLoading]           = useState(false);
+    const [localRunPending, setLocalRunPending] = useState(false);
     const [genError, setGenError]         = useState('');
+    const [statusNotice, setStatusNotice] = useState('');
+    const [statusLinks, setStatusLinks]   = useState(null);
     const lastGeneratedMsg                = useRef('');
 
     // ── Developer console state ───────────────────────────────────────────
@@ -256,14 +415,19 @@ export default function CodeView() {
 
     const addLog = useCallback((entry) => {
         const ts = new Date().toLocaleTimeString('en-US', { hour12: false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
-        setConsoleLogs(prev => [...prev, { ts, ...entry }]);
+        const normalizedEntry = {
+            ...entry,
+            level: normalizeConsoleLevel(entry?.level || 'info', entry?.message || ''),
+        };
+        setConsoleLogs(prev => [...prev, { ts, ...normalizedEntry }]);
     }, []);
 
     // ── File preprocessing ────────────────────────────────────────────────
     const preprocessFiles = useCallback((rawFiles) => {
         if (!rawFiles || typeof rawFiles !== 'object') return {};
+        const safeRawFiles = ensureFrontendDependencyFiles(rawFiles);
         const out = {};
-        Object.entries(rawFiles).forEach(([path, content]) => {
+        Object.entries(safeRawFiles).forEach(([path, content]) => {
             const code = typeof content === 'string' ? content
                 : content?.code != null ? String(content.code) : null;
             if (!code) return;
@@ -281,24 +445,68 @@ export default function CodeView() {
         return { ...Lookup.DEFAULT_FILE, ...processed };
     }, []);
 
+    const getLocalWorkspaceKey = useCallback(() => {
+        return id ? `${LOCAL_WORKSPACE_PREFIX}${id}` : '';
+    }, [id]);
+
+    const loadLocalWorkspace = useCallback(() => {
+        if (typeof window === 'undefined') return null;
+        const storageKey = getLocalWorkspaceKey();
+        if (!storageKey) return null;
+        try {
+            const raw = window.localStorage.getItem(storageKey);
+            return raw ? JSON.parse(raw) : null;
+        } catch (error) {
+            console.warn('loadLocalWorkspace:', error);
+            return null;
+        }
+    }, [getLocalWorkspaceKey]);
+
+    const persistLocalWorkspace = useCallback((payload) => {
+        if (typeof window === 'undefined') return;
+        const storageKey = getLocalWorkspaceKey();
+        if (!storageKey) return;
+        try {
+            window.localStorage.setItem(storageKey, JSON.stringify(payload));
+        } catch (error) {
+            console.warn('persistLocalWorkspace:', error);
+        }
+    }, [getLocalWorkspaceKey]);
+
     // ── Load saved workspace ──────────────────────────────────────────────
     const loadFiles = useCallback(async () => {
         if (!id) return;
+        const localData = loadLocalWorkspace();
+        if (localData?.fileData && Object.keys(localData.fileData).length > 0) {
+            const safeLocalFiles = ensureFrontendDependencyFiles(localData.fileData);
+            setRawFrontend(safeLocalFiles);
+            setFiles(mergeWithDefaults(preprocessFiles(safeLocalFiles)));
+            setFileCount(Object.keys(safeLocalFiles).length);
+            setActiveTab('preview');
+            if (localData.backendData && Object.keys(localData.backendData).length > 0)
+                setBackendFiles(localData.backendData);
+            if (localData.projectTitle) setProjectTitle(localData.projectTitle);
+        }
         try {
             const res  = await fetch(`${BACKEND_URL}/api/workspaces/${id}`);
             if (!res.ok) return;
             const data = await res.json();
             if (data.fileData && Object.keys(data.fileData).length > 0) {
-                setRawFrontend(data.fileData);
-                setFiles(mergeWithDefaults(preprocessFiles(data.fileData)));
-                setFileCount(Object.keys(data.fileData).length);
+                const safeRemoteFiles = ensureFrontendDependencyFiles(data.fileData);
+                setRawFrontend(safeRemoteFiles);
+                setFiles(mergeWithDefaults(preprocessFiles(safeRemoteFiles)));
+                setFileCount(Object.keys(safeRemoteFiles).length);
                 setActiveTab('preview');
             }
             if (data.backendData && Object.keys(data.backendData).length > 0)
                 setBackendFiles(data.backendData);
             if (data.projectTitle) setProjectTitle(data.projectTitle);
+            persistLocalWorkspace({
+                ...data,
+                fileData: data.fileData ? ensureFrontendDependencyFiles(data.fileData) : data.fileData,
+            });
         } catch (e) { console.error('loadFiles:', e); }
-    }, [id, preprocessFiles, mergeWithDefaults]);
+    }, [id, preprocessFiles, mergeWithDefaults, loadLocalWorkspace, persistLocalWorkspace]);
 
     useEffect(() => { loadFiles(); }, [loadFiles]);
 
@@ -319,10 +527,12 @@ export default function CodeView() {
         const fullPrompt =
             `DESIGN SEED: palette="${seed.id}" bg=${seed.bg} primary=${seed.primary} ` +
             `gradient="${seed.gradient}" style="${seed.style}". Use these colors everywhere.\n\n` +
-            `USER REQUEST:\n${JSON.stringify(msgs)}`;
+            `USER REQUEST:\n${serializeMessagesForGeneration(msgs)}`;
 
         setLoading(true);
         setGenError('');
+        setStatusNotice('');
+        setStatusLinks(null);
         setConsoleLogs([]);
         setConsolePhases({});
         setCurrentPhase('');
@@ -335,7 +545,13 @@ export default function CodeView() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt: fullPrompt }),
             });
-            if (!response.ok) throw new Error(`Server error ${response.status}`);
+            if (!response.ok) {
+                const errorText = await response.text().catch(() => '');
+                throw new Error(errorText || `Server error ${response.status}`);
+            }
+            if (!response.body) {
+                throw new Error('Generation stream is unavailable. The server did not return a readable response body.');
+            }
 
             const reader  = response.body.getReader();
             const decoder = new TextDecoder();
@@ -382,13 +598,37 @@ export default function CodeView() {
                         if (d.type === 'test-result') {
                             const icon   = d.status === 'PASS' ? '✅' : '❌';
                             const method = `${d.method?.padEnd(6, ' ')}`;
+                            const statusCode = d.statusCode ? ` [${d.statusCode}]` : '';
                             const reason = d.reason ? ` — ${d.reason}` : '';
                             addLog({
                                 phase: 'api-test',
                                 level: d.status === 'PASS' ? 'success' : 'error',
                                 round: d.round,
-                                message: `${icon} ${method} ${d.path}${reason}`,
+                                message: `${icon} ${method} ${d.path}${statusCode}${reason}`,
                             });
+                            if (d.sampleData) {
+                                addLog({
+                                    phase: 'api-test',
+                                    level: 'info',
+                                    round: d.round,
+                                    message: `   📨 sample payload: ${d.sampleData}`,
+                                });
+                            }
+                            if (d.dbEffect) {
+                                addLog({
+                                    phase: 'api-test',
+                                    level: d.status === 'PASS' ? 'info' : 'warning',
+                                    round: d.round,
+                                    message: `   🗄️ mongo check: ${d.dbEffect}`,
+                                });
+                            } else if (d.detail && d.status === 'PASS') {
+                                addLog({
+                                    phase: 'api-test',
+                                    level: 'info',
+                                    round: d.round,
+                                    message: `   ℹ️ result: ${d.detail}`,
+                                });
+                            }
                         }
 
                         // API test summary
@@ -398,7 +638,7 @@ export default function CodeView() {
                                 phase: 'api-test',
                                 level: allPass ? 'success' : 'warning',
                                 round: d.round,
-                                message: `📊 Round ${d.round} results: ${d.passed} passed, ${d.failed} failed out of ${d.total} routes${allPass ? ' 🎉' : ` — fixing ${d.failed} route(s)…`}`,
+                                message: `📊 Round ${d.round} results: ${d.passed} passed, ${d.failed} failed out of ${d.total} routes, ${d.fixed || 0} fixed so far${allPass ? ' 🎉' : ` — fixing ${d.failed} route(s)…`}`,
                             });
                         }
 
@@ -447,7 +687,7 @@ export default function CodeView() {
                 return;
             }
 
-            const frontendFiles = finalData.frontend || {};
+            const frontendFiles = ensureFrontendDependencyFiles(finalData.frontend || {});
             const beFiles       = finalData.backend  || {};
             const fCount        = Object.keys(frontendFiles).length;
 
@@ -463,17 +703,63 @@ export default function CodeView() {
             setFileCount(fCount);
             if (finalData.projectTitle) setProjectTitle(finalData.projectTitle);
             if (Object.keys(beFiles).length > 0) setBackendFiles(beFiles);
+            if (finalData.frontendUrl || finalData.gatewayUrl || finalData.outputRoot) {
+                setStatusNotice(
+                    [
+                        finalData.frontendUrl ? `Frontend: ${finalData.frontendUrl}` : null,
+                        finalData.gatewayUrl ? `Gateway: ${finalData.gatewayUrl}` : null,
+                        finalData.outputRoot ? `Output: ${finalData.outputRoot}` : null,
+                    ].filter(Boolean).join(' | ')
+                );
+                setStatusLinks({
+                    frontendUrl: finalData.frontendUrl || '',
+                    gatewayUrl: finalData.gatewayUrl || '',
+                    outputRoot: finalData.outputRoot || '',
+                });
+                if (finalData.frontendUrl && typeof window !== 'undefined') {
+                    const openedWindow = window.open(finalData.frontendUrl, '_blank', 'noopener,noreferrer');
+                    if (!openedWindow) {
+                        addLog({
+                            phase: 'frontend-gen',
+                            level: 'warning',
+                            message: `⚠️ Browser popup was blocked. Use the Frontend link in the status bar: ${finalData.frontendUrl}`,
+                        });
+                    }
+                }
+            }
 
-            // Save to MongoDB
-            await fetch(`${BACKEND_URL}/api/workspaces/${id}/files`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    files: frontendFiles,
-                    backendFiles: beFiles,
-                    projectTitle: finalData.projectTitle || '',
-                })
-            });
+            const workspaceSnapshot = {
+                fileData: frontendFiles,
+                backendData: beFiles,
+                projectTitle: finalData.projectTitle || '',
+            };
+            persistLocalWorkspace(workspaceSnapshot);
+
+            // Save to remote backend when available, but do not fail generation if it is offline.
+            try {
+                const saveResponse = await fetch(`${BACKEND_URL}/api/workspaces/${id}/files`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        files: frontendFiles,
+                        backendFiles: beFiles,
+                        projectTitle: finalData.projectTitle || '',
+                    })
+                });
+                if (!saveResponse.ok) {
+                    const saveText = await saveResponse.text().catch(() => '');
+                    throw new Error(saveText || `Workspace save failed with status ${saveResponse.status}`);
+                }
+            } catch (saveError) {
+                const message = saveError?.message || 'Workspace sync failed';
+                setStatusNotice(`Generated successfully. Remote workspace sync is unavailable, so this session is using local browser storage. Details: ${message}`);
+                setStatusLinks(null);
+                addLog({
+                    phase: 'system',
+                    level: 'warning',
+                    message: `⚠️ Remote workspace save skipped. Using local browser storage instead. ${message}`,
+                });
+            }
 
             // Brief pause so user can read "complete" state, then switch to preview
             await new Promise(r => setTimeout(r, 1200));
@@ -481,12 +767,13 @@ export default function CodeView() {
 
         } catch (e) {
             console.error('generateCode:', e);
-            setGenError(`Generation error: ${e.message}`);
-            addLog({ phase: currentPhaseRef.current || 'system', level: 'error', message: `❌ ${e.message}` });
+            const friendlyMessage = e?.message || 'Generation failed';
+            setGenError(`Generation error: ${friendlyMessage}`);
+            addLog({ phase: currentPhaseRef.current || 'system', level: 'error', message: `❌ ${friendlyMessage}` });
         } finally {
             setLoading(false);
         }
-    }, [messages, id, preprocessFiles, mergeWithDefaults, addLog]);
+    }, [messages, id, preprocessFiles, mergeWithDefaults, addLog, persistLocalWorkspace]);
 
     useEffect(() => { generateCode(); }, [messages]); // eslint-disable-line
 
@@ -617,6 +904,54 @@ export default {
         URL.revokeObjectURL(url); document.body.removeChild(a);
     }, [rawFrontend, files, backendFiles, projectTitle]);
 
+    const runLocalApp = useCallback(async () => {
+        const sourceFiles = ensureFrontendDependencyFiles(Object.keys(rawFrontend).length > 0 ? rawFrontend : files);
+        if (!Object.keys(sourceFiles).length) {
+            setGenError('No generated frontend files are available to run locally yet.');
+            return;
+        }
+
+        setLocalRunPending(true);
+        setGenError('');
+        setStatusNotice('');
+        setStatusLinks(null);
+
+        try {
+            const response = await fetch('/api/run-local', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    workspaceId: id,
+                    projectTitle,
+                    frontendFiles: sourceFiles,
+                    backendFiles,
+                }),
+            });
+
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok || !payload?.success) {
+                throw new Error(payload?.error || `Local run failed with status ${response.status}`);
+            }
+
+            if (payload.frontendUrl && typeof window !== 'undefined') {
+                window.open(payload.frontendUrl, '_blank', 'noopener,noreferrer');
+            }
+
+            setStatusNotice(
+                `Local run started. Frontend: ${payload.frontendUrl} | Gateway: ${payload.gatewayUrl || 'not started'} | Workspace: ${payload.workspacePath}`
+            );
+            setStatusLinks({
+                frontendUrl: payload.frontendUrl || '',
+                gatewayUrl: payload.gatewayUrl || '',
+                outputRoot: payload.workspacePath || '',
+            });
+        } catch (error) {
+            setGenError(error?.message || 'Local run failed.');
+        } finally {
+            setLocalRunPending(false);
+        }
+    }, [rawFrontend, files, backendFiles, projectTitle, id]);
+
     const hasBackend   = Object.keys(backendFiles).length > 0;
     const hasGenerated = fileCount > 0;
 
@@ -666,15 +1001,75 @@ export default {
                         <Download className="h-3.5 w-3.5"/>
                         {hasBackend ? 'Full-Stack ZIP' : 'Download ZIP'}
                     </button>
+                    {hasGenerated && (
+                        <button
+                            onClick={runLocalApp}
+                            disabled={localRunPending}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                localRunPending
+                                    ? 'bg-emerald-900/40 text-emerald-200 cursor-wait'
+                                    : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                            }`}
+                        >
+                            {localRunPending ? <Loader2 className="h-3.5 w-3.5 animate-spin"/> : <Play className="h-3.5 w-3.5"/>}
+                            {localRunPending ? 'Starting Local' : 'Run Local'}
+                        </button>
+                    )}
                 </div>
             </div>
 
             {/* ── Error banner ─────────────────────────────────────────── */}
             {genError && (
-                <div className="flex items-center gap-3 bg-red-950/70 border-b border-red-800/50 px-4 py-2.5">
-                    <AlertTriangle className="h-4 w-4 text-red-400 shrink-0"/>
-                    <span className="text-red-300 text-xs flex-1">{genError}</span>
-                    <button onClick={() => setGenError('')} className="text-red-500 hover:text-red-300"><X className="h-4 w-4"/></button>
+                <div className="flex items-center gap-3 bg-rose-950/45 border-b border-rose-800/35 px-4 py-2.5">
+                    <AlertTriangle className="h-4 w-4 text-rose-300 shrink-0"/>
+                    <span className="text-rose-200 text-xs flex-1">{genError}</span>
+                    <button onClick={() => setGenError('')} className="text-rose-400 hover:text-rose-200"><X className="h-4 w-4"/></button>
+                </div>
+            )}
+
+            {statusNotice && !genError && (
+                <div className="flex items-center gap-3 bg-sky-950/45 border-b border-sky-800/35 px-4 py-2.5">
+                    <Info className="h-4 w-4 text-sky-300 shrink-0"/>
+                    <div className="text-sky-200 text-xs flex-1">
+                        <div>{statusNotice}</div>
+                        {statusLinks && (
+                            <div className="mt-1 flex flex-wrap gap-3">
+                                {statusLinks.frontendUrl && (
+                                    <a
+                                        href={statusLinks.frontendUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-sky-300 hover:text-sky-100 underline"
+                                    >
+                                        Open Frontend
+                                    </a>
+                                )}
+                                {statusLinks.gatewayUrl && (
+                                    <a
+                                        href={statusLinks.gatewayUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-sky-300 hover:text-sky-100 underline"
+                                    >
+                                        Open Gateway
+                                    </a>
+                                )}
+                                {statusLinks.outputRoot && (
+                                    <span className="text-sky-300/90">Output: {statusLinks.outputRoot}</span>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                    <button onClick={() => { setStatusNotice(''); setStatusLinks(null); }} className="text-sky-400 hover:text-sky-200"><X className="h-4 w-4"/></button>
+                </div>
+            )}
+
+            {hasBackend && activeTab === 'preview' && (
+                <div className="flex items-center gap-3 bg-sky-950/60 border-b border-sky-800/40 px-4 py-2.5">
+                    <Info className="h-4 w-4 text-sky-400 shrink-0"/>
+                    <span className="text-sky-200 text-xs flex-1">
+                        Preview runs the React frontend only. Use Run Local to auto-write the generated app to a local workspace, start backend services + frontend in terminal windows, and open the local browser automatically.
+                    </span>
                 </div>
             )}
 
@@ -725,3 +1120,5 @@ export default {
         </div>
     );
 }
+
+

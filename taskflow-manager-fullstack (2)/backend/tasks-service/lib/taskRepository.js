@@ -71,6 +71,7 @@ const initialize = async () => {
     await mongoose.connect(mongoUri, {
       serverSelectionTimeoutMS: 3000,
     });
+    await Task.createCollection().catch(() => null);
 
     storageState.connected = true;
     storageState.mode = 'mongo';

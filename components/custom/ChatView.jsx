@@ -8,6 +8,16 @@ import ReactMarkdown from 'react-markdown';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
+const sanitizeMessages = (messages) => {
+    const list = Array.isArray(messages) ? messages : (messages ? [messages] : []);
+    return list
+        .map((message) => ({
+            role: typeof message?.role === 'string' ? message.role.trim() : '',
+            content: typeof message?.content === 'string' ? message.content.trim() : '',
+        }))
+        .filter((message) => message.role && message.content);
+};
+
 const MessageItem = memo(({ msg }) => (
     <div className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
         {msg.role !== 'user' && (
@@ -63,10 +73,11 @@ function ChatView() {
     const saveMessages = useCallback(async (msgs) => {
         if (!id) return;
         try {
+            const cleanedMessages = sanitizeMessages(msgs);
             await fetch(`${BACKEND_URL}/api/workspaces/${id}/messages`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messages: msgs })
+                body: JSON.stringify({ messages: cleanedMessages })
             });
         } catch (err) {
             console.error('Error saving messages:', err);

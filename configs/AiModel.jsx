@@ -1,6 +1,20 @@
-// Ollama client helper — replaces Google Gemini
+﻿// Ollama client helper â€” Hybrid DeepSeek generation with Qwen coder repair/testing
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
 const MODEL = process.env.OLLAMA_MODEL || 'deepseek-v3.1:671b-cloud';
+const BACKEND_GEN_MODEL = process.env.OLLAMA_MODEL_BACKEND_GEN || MODEL;
+const BACKEND_FIX_MODEL = process.env.OLLAMA_MODEL_BACKEND_FIX || 'qwen2.5-coder:7b';
+const API_TEST_MODEL = process.env.OLLAMA_MODEL_API_TEST || 'qwen2.5-coder:7b';
+const FRONTEND_GEN_MODEL = process.env.OLLAMA_MODEL_FRONTEND || MODEL;
+const FRONTEND_FIX_MODEL = process.env.OLLAMA_MODEL_FRONTEND_FIX || 'qwen2.5-coder:7b';
+const FALLBACK_MODEL = process.env.OLLAMA_MODEL_FALLBACK || 'qwen2.5-coder:7b';
+
+async function requestOllamaChat(body) {
+    return fetch(`${OLLAMA_BASE_URL}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    });
+}
 
 /**
  * Send a chat request to Ollama and return the raw Response (supports streaming).
@@ -11,31 +25,43 @@ const MODEL = process.env.OLLAMA_MODEL || 'deepseek-v3.1:671b-cloud';
  * @param {boolean} [opts.stream]       - default true
  * @param {string}  [opts.format]       - e.g. "json" to force JSON output
  */
-export async function ollamaChat({ messages, system, temperature = 0.7, stream = true, format }) {
+export async function ollamaChat({ messages, system, temperature = 0.7, stream = true, format, model = MODEL }) {
     const fullMessages = system
         ? [{ role: 'system', content: system }, ...messages]
         : messages;
 
-    const body = {
-        model: MODEL,
+    const buildBody = (selectedModel) => ({
+        model: selectedModel,
         messages: fullMessages,
         stream,
         options: { temperature },
         ...(format ? { format } : {}),
-    };
-
-    const response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
     });
 
-    if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Ollama API error (${response.status}): ${errText}`);
+    const modelsToTry = [model];
+    if (FALLBACK_MODEL && FALLBACK_MODEL !== model) {
+        modelsToTry.push(FALLBACK_MODEL);
     }
 
-    return response;
+    let lastError = null;
+    for (const selectedModel of modelsToTry) {
+        try {
+            const response = await requestOllamaChat(buildBody(selectedModel));
+            if (!response.ok) {
+                const errText = await response.text();
+                lastError = new Error(`Ollama API error (${response.status}) for model ${selectedModel}: ${errText}`);
+                continue;
+            }
+
+            return response;
+        } catch (error) {
+            lastError = new Error(
+                `Ollama fetch failed for model ${selectedModel} at ${OLLAMA_BASE_URL}/api/chat: ${error.message}`
+            );
+        }
+    }
+
+    throw lastError || new Error(`Ollama request failed for models ${modelsToTry.join(', ')}`);
 }
 
 /**
@@ -69,4 +95,8 @@ export async function* readOllamaStream(response) {
     }
 }
 
-export { OLLAMA_BASE_URL, MODEL };
+export { OLLAMA_BASE_URL, MODEL, BACKEND_GEN_MODEL, BACKEND_FIX_MODEL, API_TEST_MODEL, FRONTEND_GEN_MODEL, FRONTEND_FIX_MODEL, FALLBACK_MODEL };
+
+
+
+
