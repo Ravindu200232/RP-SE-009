@@ -127,7 +127,7 @@ export default function JobPage() {
           <div className="brand-mark">A4</div>
           <div className="brand-copy">
             <strong>Agent 4 Job Console</strong>
-            <span>Live job view with packaging, validation, and push telemetry</span>
+            <span>Track every step live — from packaging to validation to push</span>
           </div>
         </div>
 
@@ -143,7 +143,7 @@ export default function JobPage() {
           <div>
             <p className="section-kicker">Job Status</p>
             <h1>{jobId || "Loading..."}</h1>
-            <p>Track architecture detection, validation, and optional GitHub push results.</p>
+            <p>Stay in sync with architecture insights, validation progress, and delivery results.</p>
           </div>
 
           <div className="pill-row">
@@ -280,9 +280,9 @@ export default function JobPage() {
               <h2 className="section-title" style={{ fontSize: "1.4rem" }}>
                 Deliverables and evidence
               </h2>
-              <div className="pill-row" style={{ margin: "1rem 0" }}>
+              <div className="artifacts-row" style={{ margin: "1rem 0" }}>
                 {payload.artifacts.map((artifact) => (
-                  <span className="pill mono" key={artifact}>
+                  <span className="pill mono artifact-pill" key={artifact}>
                     {artifact}
                   </span>
                 ))}
@@ -299,8 +299,8 @@ export default function JobPage() {
                 </Link>
               </div>
 
-              <p className="section-subtitle" style={{ marginTop: "1rem" }}>
-                Evidence file: <span className="mono">{payload.evidence_path}</span>
+              <p className="section-subtitle evidence-line" style={{ marginTop: "1rem" }}>
+                Evidence file: <span className="mono path-value">{payload.evidence_path}</span>
               </p>
             </div>
           </section>

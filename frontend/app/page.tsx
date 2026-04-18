@@ -8,19 +8,19 @@ const apiBase = process.env.NEXT_PUBLIC_AGENT4_API_BASE_URL ?? "http://localhost
 const workflowSteps = [
     {
         title: "Detect",
-        description: "Reads architecture from Agent 3 output and verifies packaging scope.",
+        description: "Analyze & Understand.",
     },
     {
         title: "Package",
-        description: "Generates Docker-ready artifacts with architecture-aware strategies.",
+        description: "Build Deployment-Ready Artifacts.",
     },
     {
         title: "Validate",
-        description: "Runs validation checks before finalizing package output.",
+        description: "Ensure Production Quality.",
     },
     {
         title: "Publish",
-        description: "Optionally pushes to GitHub when you confirm repository details.",
+        description: "Deploy or Share Instantly.",
     },
 ];
 
@@ -61,7 +61,7 @@ export default function HomePage() {
         {
             id: "welcome",
             role: "assistant",
-            text: "Welcome. I will package using your uploaded Agent 4 input folder and Agent 3 outputs. First, choose which detected input package you want to process.",
+            text: "Welcome! I’ve detected your Agent 3 outputs and prepared them for packaging. Let’s begin — select the package you’d like to process.",
         },
     ]);
     const [stage, setStage] = useState<ConversationStage>("loadingInputs");
@@ -293,7 +293,7 @@ export default function HomePage() {
                     <div className="brand-mark">A4</div>
                     <div className="brand-copy">
                         <strong>Agent 4 Packaging Console</strong>
-                        <span>Architecture-aware deployment, validation, and repository handoff</span>
+                        <span>Built with awareness. Deployed with precision. Delivered with confidence</span>
                     </div>
                 </div>
 
@@ -311,11 +311,10 @@ export default function HomePage() {
                     <div className="hero-content">
                         <p className="eyebrow">Agent 4 Deployment Studio</p>
                         <h1>
-                            Move from <span className="gradient-text">manual form fields</span> to guided Q&A.
+                           Experience a <span className="gradient-text">smarter workflow</span> with guided Q&A.
                         </h1>
                         <p className="lede hero-note">
-                            Agent 4 now discovers uploaded Agent 3 outputs and asks focused questions only. You choose
-                            the input package, decide Docker validation, and optionally provide GitHub details.
+                            Agent 4 automatically detects your validated outputs and guides you through a focused, decision-driven packaging flow — no unnecessary steps, just what matters.
                         </p>
                         <div className="workflow" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
                             {workflowSteps.map((step, index) => (
@@ -341,9 +340,9 @@ export default function HomePage() {
                         </p>
                     </div>
                     <div className="sidebar-card">
-                        <p className="section-kicker">Detected inputs</p>
+                        <p className="section-kicker">Detected Input Packages</p>
                         <h2 className="section-title">{inputCandidates.length}</h2>
-                        <p className="section-subtitle">Packages discovered from your Agent 4 input folder.</p>
+                        <p className="section-subtitle">We found ready-to-process packages from Agent 3 workspace..</p>
                     </div>
                 </aside>
             </section>
@@ -352,10 +351,9 @@ export default function HomePage() {
                 <div className="form-header">
                     <div>
                         <p className="section-kicker">Conversational submission</p>
-                        <h2 className="section-title">Package through Q&A instead of filling a form</h2>
+                        <h2 className="section-title">Guided Packaging Workflow</h2>
                         <p className="section-subtitle">
-                            Manual job ID and path fields are removed. Agent 4 auto-uses discovered inputs and asks
-                            only for decisions like Docker validation and optional GitHub push settings.
+                            Agent 4 simplifies the process by asking only essential questions — you stay in control while we handle the complexity.
                         </p>
                     </div>
                     <span className="status-pill">Q&A mode</span>
@@ -468,7 +466,7 @@ export default function HomePage() {
 
                         <div className="button-stack">
                             <button className="ghost-button" type="button" onClick={resetConversation}>
-                                Reset conversation
+                                Reset Workflow
                             </button>
                         </div>
                     </div>

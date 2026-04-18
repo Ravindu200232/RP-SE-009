@@ -434,10 +434,58 @@ textarea {
 
 .feature-item,
 .status-list-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 0.8rem;
-  align-items: flex-start;
+  align-items: start;
   padding: 0.9rem;
+}
+
+.stacked-copy {
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.stacked-copy strong {
+  display: block;
+  line-height: 1.35;
+}
+
+.stacked-copy span {
+  display: block;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.artifacts-row {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.artifact-pill {
+  width: 100%;
+  max-width: 100%;
+  border-radius: 0.8rem;
+  justify-content: flex-start;
+  white-space: normal;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.evidence-line {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.path-value {
+  display: block;
+  max-width: 100%;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .feature-icon,

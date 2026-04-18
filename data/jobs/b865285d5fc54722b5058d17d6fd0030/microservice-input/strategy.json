@@ -1,0 +1,15 @@
+{
+  "architecture": "microservices",
+  "deployment_profile": "docker-compose + github-actions",
+  "packaging_supported": true,
+  "release_strategy": "manual-promote",
+  "monitoring": [
+    "/health endpoints",
+    "container health checks",
+    "GitHub Actions run status"
+  ],
+  "notes": [
+    "Generate Dockerfiles, docker-compose, GitHub Actions workflows, and deployment evidence.",
+    "Cloud deployment targets are intentionally deferred until a later milestone."
+  ]
+}
