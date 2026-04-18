@@ -36,6 +36,19 @@ class GitHubPushClient:
 
         self._sync_package(package_dir, workspace)
         self._sanitize_workspace_for_push(workspace)
+        findings = self._find_blocked_secrets(workspace)
+        if findings:
+            preview = "\n".join(findings[:6])
+            suffix = "\n..." if len(findings) > 6 else ""
+            return GitHubPushResult(
+                state="ERROR",
+                message=(
+                    "Push blocked: sensitive token patterns are still present after sanitization. "
+                    "Rotate/revoke the leaked keys and remove them from source before pushing.\n"
+                    f"{preview}{suffix}"
+                ),
+                branch=branch,
+            )
         self._run_git(["git", "add", "."], cwd=workspace)
         diff = self._run_git(["git", "diff", "--cached", "--quiet"], cwd=workspace)
         if diff.returncode == 0:
@@ -131,6 +144,10 @@ class GitHubPushClient:
         redacted = content
 
         patterns = [
+            # Google API key format (e.g. AIza...).
+            (re.compile(r"\bAIza[0-9A-Za-z\-_]{20,}\b"), "<REDACTED_GOOGLE_API_KEY>"),
+            # Google Maps script URL query key.
+            (re.compile(r"(?i)([?&]key=)AIza[0-9A-Za-z\-_]{20,}"), r"\1<REDACTED_GOOGLE_API_KEY>"),
             # Google OAuth client ID.
             (re.compile(r"\b[0-9]{8,}-[a-z0-9\-]+\.apps\.googleusercontent\.com\b", re.IGNORECASE), "<REDACTED_GOOGLE_OAUTH_CLIENT_ID>"),
             # Google OAuth client secret token format.
@@ -179,6 +196,33 @@ class GitHubPushClient:
             "http2 stream",
         )
         return any(token in output for token in tokens)
+
+    def _find_blocked_secrets(self, workspace: Path) -> list[str]:
+        patterns: list[tuple[str, re.Pattern[str]]] = [
+            ("Google API key", re.compile(r"\bAIza[0-9A-Za-z\-_]{20,}\b")),
+            ("Google OAuth client secret", re.compile(r"\bGOCSPX-[A-Za-z0-9_-]+\b")),
+            (
+                "Google OAuth client id",
+                re.compile(r"\b[0-9]{8,}-[a-z0-9\-]+\.apps\.googleusercontent\.com\b", re.IGNORECASE),
+            ),
+        ]
+
+        findings: list[str] = []
+        for path in workspace.rglob("*"):
+            if not path.is_file():
+                continue
+            try:
+                content = path.read_text(encoding="utf-8")
+            except (UnicodeDecodeError, OSError):
+                continue
+
+            for label, pattern in patterns:
+                for match in pattern.finditer(content):
+                    line_no = content.count("\n", 0, match.start()) + 1
+                    findings.append(f"{label}: {path.relative_to(workspace)}:{line_no}")
+                    if len(findings) >= 25:
+                        return findings
+        return findings
 
     def _validate_repo_url(self, repo_url: str) -> str:
         value = (repo_url or "").strip()

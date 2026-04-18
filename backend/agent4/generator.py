@@ -115,11 +115,35 @@ class ArtifactGenerator:
             lower_name = path.name.lower()
             if lower_name in blocked_names or path.suffix.lower() in blocked_suffixes:
                 path.unlink(missing_ok=True)
+                continue
+
+            try:
+                content = path.read_text(encoding="utf-8")
+            except (UnicodeDecodeError, OSError):
+                continue
+
+            redacted, changed = self._redact_sensitive_content(content)
+            if changed:
+                path.write_text(redacted, encoding="utf-8")
 
         # Remove any copied workflow files so only Agent 4's generated workflows remain.
         copied_workflows = package_dir / ".github" / "workflows"
         if copied_workflows.exists():
             shutil.rmtree(copied_workflows)
+
+    def _redact_sensitive_content(self, content: str) -> tuple[str, bool]:
+        redacted = content
+        patterns = [
+            (re.compile(r"\bAIza[0-9A-Za-z\-_]{20,}\b"), "<REDACTED_GOOGLE_API_KEY>"),
+            (re.compile(r"(?i)([?&]key=)AIza[0-9A-Za-z\-_]{20,}"), r"\1<REDACTED_GOOGLE_API_KEY>"),
+            (re.compile(r"\bGOCSPX-[A-Za-z0-9_-]+\b"), "<REDACTED_GOOGLE_OAUTH_CLIENT_SECRET>"),
+            (re.compile(r"\b[0-9]{8,}-[a-z0-9\-]+\.apps\.googleusercontent\.com\b", re.IGNORECASE), "<REDACTED_GOOGLE_OAUTH_CLIENT_ID>"),
+        ]
+
+        for pattern, replacement in patterns:
+            redacted = pattern.sub(replacement, redacted)
+
+        return redacted, redacted != content
 
     def write_evidence(self, package_dir: Path, payload: dict) -> Path:
         evidence_path = package_dir / "deployment_evidence.json"
