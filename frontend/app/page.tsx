@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const apiBase = process.env.NEXT_PUBLIC_AGENT4_API_BASE_URL ?? "http://localhost:8004";
@@ -57,6 +57,8 @@ const defaultCommitMessage = "Add packaged deployment output";
 
 export default function HomePage() {
     const router = useRouter();
+    const conversationLogRef = useRef<HTMLDivElement | null>(null);
+    const isTypingRef = useRef(false);
     const [messages, setMessages] = useState<ChatMessage[]>([
         {
             id: "welcome",
@@ -76,8 +78,33 @@ export default function HomePage() {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
 
+    function emitConversationEvent(
+        eventName: string,
+        detail: Record<string, unknown> = {},
+    ) {
+        if (typeof window === "undefined") {
+            return;
+        }
+
+        window.dispatchEvent(
+            new CustomEvent("agent4:conversation", {
+                detail: {
+                    source: "agent4",
+                    event: eventName,
+                    audioAutoplay: false,
+                    timestamp: Date.now(),
+                    ...detail,
+                },
+            }),
+        );
+    }
+
     function addMessage(role: ChatMessage["role"], text: string) {
         setMessages((previous) => [...previous, { id: `${Date.now()}-${previous.length}`, role, text }]);
+        emitConversationEvent(role === "user" ? "message-sent" : "message-received", {
+            role,
+            text,
+        });
     }
 
     async function loadInputs(active: boolean) {
@@ -119,6 +146,19 @@ export default function HomePage() {
     useEffect(() => {
         let active = true;
 
+        emitConversationEvent("ready", {
+            availableEvents: [
+                "ready",
+                "message-sent",
+                "message-received",
+                "typing-start",
+                "typing-stop",
+                "submission-start",
+                "submission-success",
+                "submission-failed",
+            ],
+        });
+
         async function refreshInputs() {
             try {
                 await loadInputs(active);
@@ -141,6 +181,33 @@ export default function HomePage() {
         };
     }, []);
 
+    useEffect(() => {
+        const container = conversationLogRef.current;
+        if (!container) {
+            return;
+        }
+
+        const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const behavior = prefersReducedMotion || messages.length < 2 ? "auto" : "smooth";
+
+        window.requestAnimationFrame(() => {
+            container.scrollTo({
+                top: container.scrollHeight,
+                behavior,
+            });
+        });
+    }, [messages, stage]);
+
+    useEffect(() => {
+        const isTyping = stage === "loadingInputs" || stage === "submitting";
+        if (isTypingRef.current === isTyping) {
+            return;
+        }
+
+        isTypingRef.current = isTyping;
+        emitConversationEvent(isTyping ? "typing-start" : "typing-stop", { stage });
+    }, [stage]);
+
     async function submitPackaging() {
         if (!selectedInput || !selectedInput.ready) {
             return;
@@ -149,6 +216,7 @@ export default function HomePage() {
         setSubmitting(true);
         setStage("submitting");
         setError("");
+        emitConversationEvent("submission-start", { selectedInput: selectedInput.display_name });
 
         try {
             const response = await fetch(`${apiBase}/package`, {
@@ -170,11 +238,13 @@ export default function HomePage() {
             }
 
             addMessage("assistant", `Packaging started successfully. Opening job ${payload.job_id}.`);
+            emitConversationEvent("submission-success", { jobId: payload.job_id });
             router.push(`/job/${payload.job_id}`);
         } catch (caught) {
             const message = caught instanceof Error ? caught.message : "Packaging request failed.";
             setError(message);
             addMessage("assistant", `Submission failed: ${message}`);
+            emitConversationEvent("submission-failed", { error: message });
             setStage("confirm");
         } finally {
             setSubmitting(false);
@@ -360,12 +430,34 @@ export default function HomePage() {
                 </div>
 
                 <div className="conversation-shell">
-                    <div className="conversation-log" role="log" aria-live="polite">
-                        {messages.map((message) => (
-                            <div key={message.id} className={`chat-row ${message.role === "assistant" ? "assistant" : "user"}`}>
-                                <div className="chat-bubble">{message.text}</div>
+                    <div className="conversation-log" role="log" aria-live="polite" ref={conversationLogRef}>
+                        {messages.map((message, index) => (
+                            <div
+                                key={message.id}
+                                className={`chat-row ${message.role === "assistant" ? "assistant" : "user"}`}
+                                style={{ "--row-index": index } as CSSProperties}
+                            >
+                                <div className="chat-avatar">{message.role === "assistant" ? "A4" : "You"}</div>
+                                <div className="chat-bubble-shell">
+                                    <span className="chat-meta">{message.role === "assistant" ? "Agent 4" : "You"}</span>
+                                    <div className="chat-bubble">{message.text}</div>
+                                </div>
                             </div>
                         ))}
+
+                        {(stage === "loadingInputs" || stage === "submitting") ? (
+                            <div className="chat-row assistant typing-row">
+                                <div className="chat-avatar">A4</div>
+                                <div className="chat-bubble-shell">
+                                    <span className="chat-meta">Agent 4</span>
+                                    <div className="typing-indicator" aria-label="Agent is typing">
+                                        <span />
+                                        <span />
+                                        <span />
+                                    </div>
+                                </div>
+                            </div>
+                        ) : null}
                     </div>
 
                     <div className="conversation-actions">

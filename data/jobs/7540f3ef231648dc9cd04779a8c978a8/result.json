@@ -1,5 +1,6 @@
 {
   "job_id": "7540f3ef231648dc9cd04779a8c978a8",
+  "state": "PUSHED",
   "architecture": "microservices",
   "confidence": 0.88,
   "strategy": {
@@ -136,5 +137,11 @@
     "strategy.json",
     "deployment_evidence.json",
     "microservice-input_generated_20260418.zip"
-  ]
+  ],
+  "download_path": "/download/7540f3ef231648dc9cd04779a8c978a8",
+  "package_dir": "/Users/malith_bandara/Desktop/final_research_agentic/data/jobs/7540f3ef231648dc9cd04779a8c978a8/microservice-input",
+  "evidence_path": "/Users/malith_bandara/Desktop/final_research_agentic/data/jobs/7540f3ef231648dc9cd04779a8c978a8/microservice-input/deployment_evidence.json",
+  "created_at": "2026-04-18T18:16:28.681380+00:00",
+  "updated_at": "2026-04-18T18:16:28.681393+00:00",
+  "message": "Packaging completed."
 }
