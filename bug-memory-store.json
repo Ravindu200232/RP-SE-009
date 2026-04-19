@@ -142,6 +142,84 @@
         "timestamp": "2026-04-19T07:56:29.675Z",
         "fixSummary": "Fully fixed 1 file(s), backend clean"
       }
+    },
+    {
+      "id": "fix-1776595303447-h4lfoq",
+      "bugText": "/enrollment-service/middleware/auth.js: missing local require ../config/default.json",
+      "embedding": [],
+      "meta": {
+        "method": "full-rewrite",
+        "outcome": "fail",
+        "phase": "backend-fix",
+        "round": "1",
+        "timestamp": "2026-04-19T10:41:43.447Z",
+        "fixSummary": "No improvement: /enrollment-service/middleware/auth.js: JWT secret is repeated in the same expression — collapse to: process.env.JWT_SECRET || process.env.SECRET_KEY || process.env.SEKRET_KEY || 'dev-secret'"
+      }
+    },
+    {
+      "id": "fix-1776596236825-7zt3g3",
+      "bugText": "/enrollment-service/routes/enrollments.js: missing local require ../../models/Enrollment",
+      "embedding": [],
+      "meta": {
+        "method": "gateway-first",
+        "outcome": "fail",
+        "phase": "backend-fix",
+        "round": "1",
+        "timestamp": "2026-04-19T10:57:16.825Z",
+        "fixSummary": "No improvement: /enrollment-service/routes/enrollments.js: missing local require ../../models/Enrollment"
+      }
+    },
+    {
+      "id": "fix-1776596280068-a2pge3",
+      "bugText": "/enrollment-service/routes/enrollments.js: missing local require ../../models/Enrollment",
+      "embedding": [],
+      "meta": {
+        "method": "schema-aligned",
+        "outcome": "fail",
+        "phase": "backend-fix",
+        "round": "2",
+        "timestamp": "2026-04-19T10:58:00.068Z",
+        "fixSummary": "No improvement: /enrollment-service/routes/enrollments.js: missing local require ../../models/Enrollment"
+      }
+    },
+    {
+      "id": "fix-1776598754965-ft5l7a",
+      "bugText": "/course-service/index.js: E:\\final_research_agentic\\output\\learnhub-learning-management-system\\validation-check\\course-service\\index.js:18 => console.log('MongoDB connected')) ^^ SyntaxError: Unexpected token '=>'\n/enrollment-service/index.js: E:\\final_research_agentic\\output\\learnhub-learning-management-system\\validation-check\\enrollment-service\\index.js:19 => console.log('MongoDB connected')) ^^ SyntaxError: Unexpected token '=>'",
+      "embedding": [],
+      "meta": {
+        "method": "standard",
+        "outcome": "fail",
+        "phase": "backend-fix",
+        "round": "1",
+        "timestamp": "2026-04-19T11:39:14.965Z",
+        "fixSummary": "No improvement: /course-service/index.js: app.listen() starts before mongoose.connect() is confirmed — service can report healthy while write routes hang and later abort | /enrollment-service/index.js: E:\\final_research_agentic\\output\\learnhub-learning-management-system\\validation-check\\enrollment-service\\index.js:19 => console.log('MongoDB connected')) ^^ SyntaxError: Unexpected token '=>'"
+      }
+    },
+    {
+      "id": "fix-1776598769630-52yo0q",
+      "bugText": "/course-service/index.js: E:\\final_research_agentic\\output\\learnhub-learning-management-system\\validation-check\\course-service\\index.js:18 => console.log('MongoDB connected')) ^^ SyntaxError: Unexpected token '=>'\n/enrollment-service/index.js: E:\\final_research_agentic\\output\\learnhub-learning-management-system\\validation-check\\enrollment-service\\index.js:19 => console.log('MongoDB connected')) ^^ SyntaxError: Unexpected token '=>'",
+      "embedding": [],
+      "meta": {
+        "method": "root-cause",
+        "outcome": "success",
+        "phase": "backend-fix",
+        "round": "2",
+        "timestamp": "2026-04-19T11:39:29.630Z",
+        "fixSummary": "Fully fixed 2 file(s), backend clean"
+      }
+    },
+    {
+      "id": "fix-1776599514765-6iwqls",
+      "bugText": "/auth-service/models/User.js: schema option timestamps is incorrectly declared inside the schema fields — move it to the second argument as new mongoose.Schema(fields, { timestamps: true })\n/room-service/index.js: E:\\final_research_agentic\\output\\stayease-hotel-booking-system\\validation-check\\room-service\\index.js:14 => console.log('MongoDB connected')) ^^ SyntaxError: Unexpected token '=>'\n/reservation-service/models/Reservation.js: schema option timestamps is incorrectly declared inside the schema fields — move it to the second argument as new mongoose.Schema(fields, { timestamps: true })\n/payment-service/models/Payment.js: schema option timestamps is incorrectly declared inside the schema fields — move it to the second argument as new mongoose.Schema(fields, { timestamps: true })",
+      "embedding": [],
+      "meta": {
+        "method": "standard",
+        "outcome": "success",
+        "phase": "backend-fix",
+        "round": "1",
+        "timestamp": "2026-04-19T11:51:54.765Z",
+        "fixSummary": "Partial fix: resolved 1 of 4 issues"
+      }
     }
   ]
 }

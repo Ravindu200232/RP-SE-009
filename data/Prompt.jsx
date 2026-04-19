@@ -186,10 +186,12 @@ PROXY SAFETY PATTERN Ã¢â‚¬â€ mandatory whenever gateway uses express.
     changeOrigin: true,
     proxyTimeout: 10000,
     timeout: 10000,
-    onProxyReq: fixRequestBody,
-    onError: (error, req, res) => {
-      if (!res.headersSent) {
-        res.status(502).json({ success: false, error: 'downstream service unavailable', details: error.code || error.message });
+    on: {
+      proxyReq: fixRequestBody,
+      error: (error, req, res) => {
+        if (!res.headersSent) {
+          res.status(502).json({ success: false, error: 'downstream service unavailable', details: error.code || error.message });
+        }
       }
     }
   });
@@ -322,14 +324,18 @@ GATEWAY: Use http-proxy-middleware to proxy:
   GET /health Ã¢â€ â€™ { status: 'ok', timestamp: new Date() }
   Because express.json() runs before proxying, import { createProxyMiddleware, fixRequestBody } from http-proxy-middleware and set for every proxy:
     changeOrigin: true
+    pathRewrite: (path) => '/api/[resource]' + path   // when downstream service mounts routes at /api/[resource]
     proxyTimeout: 10000
     timeout: 10000
-    onProxyReq: fixRequestBody
-    onError: (error, req, res) => res.status(502).json({ success: false, error: 'downstream service unavailable', details: error.code || error.message })
+    on: { proxyReq: fixRequestBody, error: (error, req, res) => res.status(502).json({ success: false, error: 'downstream service unavailable', details: error.code || error.message }) }
+  CRITICAL: Express removes the mounted prefix before the proxy middleware sees req.url. If the downstream service mounts /api/auth, /api/courses, or similar, you MUST restore that prefix with pathRewrite or an equivalent target base path, otherwise gateway calls hit /register or /health instead of /api/auth/register or /api/auth/health.
 
 SERVICES:
   Every service must expose GET /health returning { success: true, data: { status: 'ok', service: '[name]-service' } }
   Every resource router file must also expose GET /health so gateway checks like /api/tasks/health and /api/analytics/health work.
+  In every service index.js, mount routes with app.use(...), never router.use(...).
+  In every service index.js, never export module.exports = app or module.exports = router.
+  If a service needs a database connection, do not call app.listen(...) until the database connect/bootstrap step has succeeded. Do not let /health go green while write routes still buffer and hang.
 
 AUTH MIDDLEWARE (mandatory when the app has authentication):
   If any service uses JWT auth, generate /[auth-or-user]-service/middleware/auth.js:
@@ -468,12 +474,13 @@ BUGS TO CHECK
 10. Missing /health endpoint in gateway
 11. Gateway uses express.json() but proxy routes are missing fixRequestBody, causing POST/PUT/PATCH bodies to fail or hang
 12. Gateway proxy missing proxyTimeout/timeout or JSON 502 error handler for downstream failures
-13. Missing /health endpoint in services
-14. Resource router is missing GET /health
-15. Literal routes like /health are declared after parameterized routes like /:id, causing CastError or route shadowing
-16. Service ignores process.env.MONGODB_URI / process.env.MONGO_URL and hardcodes a database URI
-17. Cross-service mongoose populate() is used for models that are not registered in the current service
-18. Auth middleware file missing — if any service has JWT-protected routes that require('../middleware/auth') or require('./middleware/auth'), the file /[service]/middleware/auth.js MUST exist; if absent, generate it:
+13. Gateway strips the mounted /api prefix before proxying and does not restore it for a downstream service mounted at /api/... , causing 404/504/fetch failed on routes like /api/auth/register
+14. Missing /health endpoint in services
+15. Resource router is missing GET /health
+16. Literal routes like /health are declared after parameterized routes like /:id, causing CastError or route shadowing
+17. Service ignores process.env.MONGODB_URI / process.env.MONGO_URL and hardcodes a database URI
+18. Cross-service mongoose populate() is used for models that are not registered in the current service
+19. Auth middleware file missing — if any service has JWT-protected routes that require('../middleware/auth') or require('./middleware/auth'), the file /[service]/middleware/auth.js MUST exist; if absent, generate it:
     const jwt = require('jsonwebtoken');
     const SECRET = process.env.JWT_SECRET || process.env.SECRET_KEY || process.env.SEKRET_KEY || 'dev-secret';
     module.exports = (req, res, next) => {
@@ -493,8 +500,10 @@ BUGS TO CHECK
       .catch(err => console.error('MongoDB error:', err.message));
     A missing mongoose.connect() causes ALL POST/PUT/DELETE requests to hang until the gateway proxy times out (10s), producing "request aborted" on the service and "fetch failed" on the client.
 23. module.exports = app in index.js — entry files are NOT modules. Remove module.exports = app from any service index.js. Only route files, model files, and middleware files should export.
-24. Mismatched require() path — if index.js has require('./routes/lessons') but the generated route file is routes/lesson.js, fix the require path to match the actual filename exactly.
-25. Repeated JWT secret chain — if code has process.env.JWT_SECRET || process.env.JWT_SECRET (repeated), collapse it to the canonical single expression: process.env.JWT_SECRET || process.env.SECRET_KEY || process.env.SEKRET_KEY || 'dev-secret'.
+24. module.exports = router in index.js — entry files are NOT routers. Replace router.use(...) with app.use(...) and remove module.exports from service index.js.
+25. Mismatched require() path — if index.js has require('./routes/lessons') but the generated route file is routes/lesson.js, fix the require path to match the actual filename exactly.
+26. Repeated JWT secret chain — if code has process.env.JWT_SECRET || process.env.JWT_SECRET (repeated), collapse it to the canonical single expression: process.env.JWT_SECRET || process.env.SECRET_KEY || process.env.SEKRET_KEY || 'dev-secret'.
+27. If POST/PUT requests fail with "fetch failed", "request aborted", or raw-body/body-parser abort errors across several services, treat it as a startup/body-forwarding root cause: repair gateway body forwarding, convert router.use(...) to app.use(...) in service index.js, and ensure app.listen waits for the database to be ready.
 20. Route shadowing — in every routes file, any literal-path route (e.g. /my, /me, /search, /count, /course/:id) that appears AFTER a parameterized route (/:id, /:courseId) will shadow/steal requests:
     a. Move ALL literal routes to BEFORE any /:param route in the same router
     b. Example fix: router.get('/my', auth, handler) MUST come before router.get('/:id', handler)
@@ -599,22 +608,23 @@ FIXING RULES:
 7. Fix import/require paths that reference wrong filenames
 8. For any gateway using express.json(), import fixRequestBody from http-proxy-middleware and set onProxyReq: fixRequestBody on every proxy route
 9. Add proxyTimeout, timeout, and a JSON 502 onError handler to gateway proxies
-10. Add missing GET /health endpoints for services when absent
-11. If a route still fails after earlier partial fixes, fully rewrite the owning route file and any gateway/service registration needed for that route instead of returning a tiny patch
-12. Prefer correcting route path mismatches, missing router registration, and singular/plural resource mismatches completely in one pass
-13. Remove stray non-ASCII garbage characters from backend JavaScript code and return valid ASCII-only source when executable code was corrupted
-14. In resource router files, add GET /health before any /:id route so /api/[resource]/health never falls through to an invalid id lookup
-15. Preserve literal route ordering: /health, /status, /search, /stats must appear before parameterized routes like /:id
-16. Replace hardcoded mongoose.connect('mongodb://...') calls with process.env.MONGODB_URI or process.env.MONGO_URL fallback
-17. Remove cross-service populate() calls that reference models not registered in the current microservice
-18. If a protected route such as /api/users/me, /api/auth/profile, or /api/auth/verify exists, keep it compatible with Bearer-token auth from register/login and do not treat it as a public route
-19. If JWT or auth secrets are used, read them from process.env.JWT_SECRET || process.env.SECRET_KEY || process.env.SEKRET_KEY || 'dev-secret'
-20. If startup crashes mention "router is not defined" or "app is not defined", fully repair the service or gateway entry file so the declared Express object matches every app.use/app.get/router.use/router.get call
-21. If many routes fail with 404, repair gateway prefixes, pathRewrite rules, app.use mounts, and router registrations together in one pass
-22. If many routes fail with 502 or ECONNREFUSED, repair proxy target ports/env vars and downstream service startup wiring together in one pass
-23. If many routes fail with 401/403, repair auth flow ordering, token issuance, middleware exemptions, and Bearer token compatibility together in one pass
-24. If many routes fail with 400 validation errors, align sample-acceptable payload handling with schema enums/required fields and keep create/update handlers realistic
-25. Treat the DEEP FAILURE ANALYSIS as the primary debugging guide for round 1 and aim to finish the full failure bundle in that first pass
+10. If the downstream service mounts /api/auth, /api/courses, or another /api/... prefix, preserve that prefix when proxying by adding pathRewrite or an equivalent target base path. Example: app.use('/api/auth', createProxyMiddleware({ target: 'http://127.0.0.1:3006', pathRewrite: (path) => '/api/auth' + path, ... }))
+11. Add missing GET /health endpoints for services when absent
+12. If a route still fails after earlier partial fixes, fully rewrite the owning route file and any gateway/service registration needed for that route instead of returning a tiny patch
+13. Prefer correcting route path mismatches, missing router registration, and singular/plural resource mismatches completely in one pass
+14. Remove stray non-ASCII garbage characters from backend JavaScript code and return valid ASCII-only source when executable code was corrupted
+15. In resource router files, add GET /health before any /:id route so /api/[resource]/health never falls through to an invalid id lookup
+16. Preserve literal route ordering: /health, /status, /search, /stats must appear before parameterized routes like /:id
+17. Replace hardcoded mongoose.connect('mongodb://...') calls with process.env.MONGODB_URI or process.env.MONGO_URL fallback
+18. Remove cross-service populate() calls that reference models not registered in the current microservice
+19. If a protected route such as /api/users/me, /api/auth/profile, or /api/auth/verify exists, keep it compatible with Bearer-token auth from register/login and do not treat it as a public route
+20. If JWT or auth secrets are used, read them from process.env.JWT_SECRET || process.env.SECRET_KEY || process.env.SEKRET_KEY || 'dev-secret'
+21. If startup crashes mention "router is not defined" or "app is not defined", fully repair the service or gateway entry file so the declared Express object matches every app.use/app.get/router.use/router.get call
+22. If many routes fail with 404, repair gateway prefixes, pathRewrite rules, app.use mounts, and router registrations together in one pass
+23. If many routes fail with 502 or ECONNREFUSED, repair proxy target ports/env vars and downstream service startup wiring together in one pass
+24. If many routes fail with 401/403, repair auth flow ordering, token issuance, middleware exemptions, and Bearer token compatibility together in one pass
+25. If many routes fail with 400 validation errors, align sample-acceptable payload handling with schema enums/required fields and keep create/update handlers realistic
+26. Treat the DEEP FAILURE ANALYSIS as the primary debugging guide for round 1 and aim to finish the full failure bundle in that first pass
 26. Auth middleware file missing — if any route file contains require('../middleware/auth') or require('./middleware/auth') but that file does not exist in the generated output, create /[service]/middleware/auth.js:
     const jwt = require('jsonwebtoken');
     const SECRET = process.env.JWT_SECRET || process.env.SECRET_KEY || process.env.SEKRET_KEY || 'dev-secret';
@@ -625,6 +635,8 @@ FIXING RULES:
       try { req.user = jwt.verify(token, SECRET); next(); }
       catch (_) { res.status(401).json({ success: false, error: 'Invalid or expired token' }); }
     };
+27. Never leave service startup as: mongoose.connect(...); app.listen(...); because /health may pass while writes hang. Either await mongoose.connect() before app.listen(), or start listening only inside the success path.
+28. Never use router.use(...) inside service index.js. Service entry files must create const app = express() and mount child routers with app.use(...).
 27. Service-wise route alignment — for each service verify index.js mounts every route file; every model field has explicit type; route POST/PUT handlers validate required fields before persistence
 
 Output ONLY the corrected files in ===BACKEND: /path===...===ENDFILE=== format.

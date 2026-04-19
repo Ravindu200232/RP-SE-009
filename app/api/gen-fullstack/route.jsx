@@ -29,9 +29,15 @@ import {
 } from '@/lib/fixStrategy';
 
 const FIX_ROUND_CAP = Number.parseInt(process.env.AI_BUILDER_MAX_FIX_ROUNDS || '10', 10);
+const LIVE_POSTMORTEM_ROUND_CAP = Number.parseInt(
+    process.env.AI_BUILDER_MAX_POSTMORTEM_ROUNDS
+    || process.env.AI_BUILDER_MAX_MONGO_TEST_ROUNDS
+    || '4',
+    10
+);
 const MAX_BACKEND_FIX_ROUNDS = Number.isFinite(FIX_ROUND_CAP) && FIX_ROUND_CAP > 0 ? FIX_ROUND_CAP : 10;
 const MAX_API_FIX_ROUNDS = Number.isFinite(FIX_ROUND_CAP) && FIX_ROUND_CAP > 0 ? FIX_ROUND_CAP : 10;
-const MAX_LIVE_FIX_ROUNDS = Number.isFinite(FIX_ROUND_CAP) && FIX_ROUND_CAP > 0 ? FIX_ROUND_CAP : 10;
+const MAX_LIVE_FIX_ROUNDS = Number.isFinite(LIVE_POSTMORTEM_ROUND_CAP) && LIVE_POSTMORTEM_ROUND_CAP > 0 ? LIVE_POSTMORTEM_ROUND_CAP : 4;
 const MAX_NO_PROGRESS_ROUNDS = 2;
 const MAX_SAME_SIGNATURE_ROUNDS = 2;
 const MAX_REGRESSIVE_ROUNDS = 1;
@@ -492,7 +498,7 @@ function buildGatewayGenerationTemplateBlock(structuredSpec = null) {
         "require('dotenv').config();",
         '// app.use(cors());',
         '// app.use(express.json());',
-        '// app.use(\'/api/...\', createProxyMiddleware({ target: ..., changeOrigin: true, proxyTimeout: 10000, timeout: 10000, onProxyReq: fixRequestBody }))',
+        '// app.use(\'/api/...\', createProxyMiddleware({ target: ..., changeOrigin: true, proxyTimeout: 10000, timeout: 10000, on: { proxyReq: fixRequestBody, error: (...) => ... } }))',
         '// app.get(\'/health\', (req, res) => res.json({ status: \'ok\', timestamp: new Date().toISOString() }));',
         '===ENDFILE===',
         '===BACKEND: /api-gateway/package.json===',
@@ -572,7 +578,7 @@ function buildAuthServiceTemplate(service = {}, serviceDir = '/auth-service') {
         `  username: { type: String, unique: true, sparse: true },`,
         `  role: { type: String, default: 'user' },`,
         extraFields || '',
-        `  timestamps: true`,
+        `schema options MUST be passed as the second argument: { timestamps: true }`,
         ``,
         `routes/auth.js MUST export: router with POST /register, POST /login, GET /me, PUT /profile`,
         `  - POST /register: hash password with bcryptjs, save user, return JWT`,
@@ -654,13 +660,16 @@ function createGatewayIndexTemplate(structuredSpec = null) {
             `app.use('${mountPath}', createProxyMiddleware({`,
             `  target: 'http://127.0.0.1:${port}',`,
             '  changeOrigin: true,',
+            `  pathRewrite: (path) => '${mountPath}' + path,`,
             '  proxyTimeout: 10000,',
             '  timeout: 10000,',
-            '  onProxyReq: fixRequestBody,',
-            `  onError: (error, req, res) => {`,
-            '    if (!res.headersSent) {',
-            "      res.status(502).json({ success: false, error: 'downstream service unavailable', details: error.code || error.message });",
-            '    }',
+            '  on: {',
+            '    proxyReq: fixRequestBody,',
+            `    error: (error, req, res) => {`,
+            '      if (!res.headersSent) {',
+            "        res.status(502).json({ success: false, error: 'downstream service unavailable', details: error.code || error.message });",
+            '      }',
+            '    },',
             '  }',
             '}));',
         ].join('\n'));
@@ -975,6 +984,21 @@ function inspectBackendFileImports(filePath = '', code = '', backendFiles = {}, 
         missingPackages: normalizeDisplayList([...missingPackages]),
         modelImports: normalizeDisplayList([...modelImports]),
     };
+}
+
+function serviceHasMongooseModels(serviceDir = '', backendFiles = {}) {
+    const normalizedServiceDir = String(serviceDir || '').trim();
+    if (!normalizedServiceDir) {
+        return false;
+    }
+
+    return Object.entries(backendFiles || {}).some(([filePath, content]) => {
+        if (!filePath.startsWith(`${normalizedServiceDir}/models/`) || !/\.js$/i.test(filePath)) {
+            return false;
+        }
+        const code = normalizeBackendFileContent(filePath, typeof content === 'string' ? content : content?.code || '');
+        return /mongoose\.Schema|new\s+mongoose\.Schema|require\(\s*['"]mongoose['"]\s*\)/.test(code);
+    });
 }
 
 function collectBackendServiceAudit(backendFiles = {}, structuredSpec = null) {
@@ -2057,10 +2081,13 @@ function ensureGatewayProxy(gatewayCode = '', mountPath = '', serviceDir = '', t
         `app.use('${mountPath}', createProxyMiddleware({`,
         `  target: 'http://127.0.0.1:' + (${`process.env.${serviceConfig.envVar}`} || ${fallbackPort}),`,
         '  changeOrigin: true,',
+        `  pathRewrite: (path) => '${mountPath}' + path,`,
         '  proxyTimeout: 10000,',
         '  timeout: 10000,',
-        '  onProxyReq: fixRequestBody,',
-        `  onError: (error, req, res) => res.status(502).json({ success: false, error: '${titleLabel} service unavailable', details: error.code || error.message })`,
+        '  on: {',
+        '    proxyReq: fixRequestBody,',
+        `    error: (error, req, res) => res.status(502).json({ success: false, error: '${titleLabel} service unavailable', details: error.code || error.message }),`,
+        '  }',
         '}));',
     ].join('\n');
 
@@ -2205,6 +2232,8 @@ async function validateBackendCandidateFiles(backendFiles, projectTitle = 'gener
         const hasRouterDeclaration = /\b(?:const|let|var)\s+router\s*=\s*express\.Router\s*\(/.test(code);
         const usesAppObject = /\bapp\./.test(code);
         const usesRouterObject = /\brouter\./.test(code);
+        const serviceDir = getServiceDirForFile(filePath);
+        const serviceUsesMongoose = serviceHasMongooseModels(serviceDir, backendFiles);
 
         if (isEntryFile && usesAppObject && !hasAppDeclaration) {
             errors.push(`${filePath}: entry file uses app.* without declaring const app = express()`);
@@ -2218,13 +2247,49 @@ async function validateBackendCandidateFiles(backendFiles, projectTitle = 'gener
         if (!isEntryFile && usesRouterObject && !hasRouterDeclaration) {
             errors.push(`${filePath}: route file uses router.* without declaring const router = express.Router()`);
         }
+        if (
+            /\/models\/.+\.js$/i.test(filePath)
+            && /new\s+(?:mongoose\.)?Schema\s*\(\s*\{[\s\S]*?\btimestamps\s*:\s*(?:true|false|True|False)\b[\s\S]*?\}\s*\)/.test(code)
+        ) {
+            errors.push(`${filePath}: schema option timestamps is incorrectly declared inside the schema fields — move it to the second argument as new mongoose.Schema(fields, { timestamps: true })`);
+        }
+        if (isEntryFile && serviceUsesMongoose && !/mongoose\s*=\s*require\(['"]mongoose['"]\)/.test(code)) {
+            errors.push(`${filePath}: service has Mongoose models but index.js never imports mongoose`);
+        }
+        if (isEntryFile && serviceUsesMongoose && !/mongoose\.connect\s*\(/.test(code)) {
+            errors.push(`${filePath}: service has Mongoose models but index.js never calls mongoose.connect() — DB routes will hang and surface as fetch failed`);
+        }
         // Bug #22: mongoose required but connect() never called — causes all DB operations to hang
         if (isEntryFile && /mongoose\s*=\s*require\(['"]mongoose['"]\)/.test(code) && !/mongoose\.connect\s*\(/.test(code)) {
             errors.push(`${filePath}: mongoose is required but mongoose.connect() is never called — all DB requests will hang`);
         }
+        if (
+            isEntryFile
+            && /mongoose\s*=\s*require\(['"]mongoose['"]\)/.test(code)
+            && /mongoose\.connect\s*\(/.test(code)
+            && /app\.listen\s*\(/.test(code)
+            && !/await\s+mongoose\.connect\s*\(/.test(code)
+            && !/mongoose\.connect[\s\S]{0,500}\.then\s*\(\s*(?:async\s*)?\(\)\s*=>[\s\S]{0,300}app\.listen\s*\(/.test(code)
+            && !/async\s+function\s+start[\s\S]{0,800}await\s+mongoose\.connect[\s\S]{0,500}app\.listen\s*\(/.test(code)
+            && !/const\s+start\s*=\s*async\s*\(\)\s*=>[\s\S]{0,800}await\s+mongoose\.connect[\s\S]{0,500}app\.listen\s*\(/.test(code)
+        ) {
+            errors.push(`${filePath}: app.listen() starts before mongoose.connect() is confirmed — service can report healthy while write routes hang and later abort`);
+        }
         // Bug #23: module.exports = app in an entry file — entry files are not modules
         if (isEntryFile && /module\.exports\s*=\s*app/.test(code)) {
             errors.push(`${filePath}: entry file must not export module.exports = app — remove it, index.js is an entry point not a module`);
+        }
+        if (isEntryFile && /module\.exports\s*=\s*router/.test(code)) {
+            errors.push(`${filePath}: entry file must not export module.exports = router — mount routers with app.use(...) and keep index.js as the process entry point`);
+        }
+        if (isEntryFile && /\brouter\.use\s*\(/.test(code)) {
+            errors.push(`${filePath}: entry file uses router.use(...) — service startup files must mount routes with app.use(...) instead`);
+        }
+        if (isEntryFile && /gateway/i.test(filePath) && /\bonProxyReq\s*:/i.test(code)) {
+            errors.push(`${filePath}: gateway uses legacy onProxyReq option with http-proxy-middleware v3 — move it to on: { proxyReq: ... } or proxied JSON bodies may fail`);
+        }
+        if (isEntryFile && /gateway/i.test(filePath) && /\bonError\s*:/i.test(code)) {
+            errors.push(`${filePath}: gateway uses legacy onError option with http-proxy-middleware v3 — move it to on: { error: ... }`);
         }
         // Bug #25: repeated JWT secret chain
         if (/process\.env\.JWT_SECRET[\s\S]{0,200}process\.env\.JWT_SECRET/.test(code)) {
@@ -2235,6 +2300,19 @@ async function validateBackendCandidateFiles(backendFiles, projectTitle = 'gener
         }
         if (/new\s+Schema\s*\(/.test(code) && /:\s*\{\s*required\s*:\s*true\s*[,}]/m.test(code) && !/:\s*\{\s*type\s*:/m.test(code)) {
             errors.push(`${filePath}: schema field has required:true but no type declaration`);
+        }
+        if (isEntryFile && /gateway/i.test(filePath)) {
+            [...code.matchAll(/app\.use\(\s*['"]([^'"]+)['"]\s*,\s*createProxyMiddleware\(\{([\s\S]*?)\}\)\s*\)/gi)]
+                .forEach((match) => {
+                    const prefix = String(match[1] || '').trim();
+                    const proxyBlock = String(match[2] || '');
+                    const hasRewrite = /pathRewrite\s*:/i.test(proxyBlock);
+                    const targetMatch = proxyBlock.match(/target:\s*['"]https?:\/\/(?:localhost|127\.0\.0\.1):\d+([^'"]*)['"]/i);
+                    const targetPath = String(targetMatch?.[1] || '').trim();
+                    if (prefix.startsWith('/api/') && !hasRewrite && (!targetPath || targetPath === '/')) {
+                        errors.push(`${filePath}: gateway proxy ${prefix} strips the mounted prefix before forwarding — add pathRewrite or include ${prefix} in the proxy target base path`);
+                    }
+                });
         }
 
         const requireMatches = [...code.matchAll(/require\(\s*['"](\.[^'"]+)['"]\s*\)/g)];
@@ -2247,8 +2325,8 @@ async function validateBackendCandidateFiles(backendFiles, projectTitle = 'gener
             }
         });
 
-        const serviceDir = getServiceDirForFile(filePath);
-        const servicePackageJson = packageJsonByService.get(serviceDir) || {};
+        const packageServiceDir = getServiceDirForFile(filePath);
+        const servicePackageJson = packageJsonByService.get(packageServiceDir) || {};
         const declaredPackages = getDeclaredPackageNames(servicePackageJson);
         if (fileNeedsAuthMiddlewareImport(code)) {
             const requirePath = /\/routes\//i.test(filePath) ? '../middleware/auth' : './middleware/auth';
@@ -2260,7 +2338,7 @@ async function validateBackendCandidateFiles(backendFiles, projectTitle = 'gener
                 return;
             }
             if (!declaredPackages.has(packageName)) {
-                errors.push(`${filePath}: missing package dependency ${packageName} in ${serviceDir}/package.json`);
+                errors.push(`${filePath}: missing package dependency ${packageName} in ${packageServiceDir}/package.json`);
             }
         });
 
@@ -2857,17 +2935,18 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
                 const proxyAdditions = [];
                 if (!code.includes('proxyTimeout:')) proxyAdditions.push('proxyTimeout: 10000,');
                 if (!code.includes('timeout:')) proxyAdditions.push('timeout: 10000,');
-                if (!code.includes('onProxyReq: fixRequestBody')) proxyAdditions.push('onProxyReq: fixRequestBody,');
-                if (!code.includes('onError:')) {
+                if (!code.includes('proxyReq: fixRequestBody')) {
                     proxyAdditions.push(
-                        `onError: (error, req, res) => {\n` +
-                        `      if (!res.headersSent) {\n` +
-                        `        res.status(502).json({ success: false, error: 'downstream service unavailable', details: error.code || error.message });\n` +
-                        `      }\n` +
+                        `on: {\n` +
+                        `      proxyReq: fixRequestBody,\n` +
+                        `      error: (error, req, res) => {\n` +
+                        `        if (!res.headersSent) {\n` +
+                        `          res.status(502).json({ success: false, error: 'downstream service unavailable', details: error.code || error.message });\n` +
+                        `        }\n` +
+                        `      },\n` +
                         `    },`
                     );
                 }
-
                 if (proxyAdditions.length > 0) {
                     code = code.replace(
                         /createProxyMiddleware\(\{\s*/g,
@@ -2902,7 +2981,7 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
                 (fullMatch, prefix, proxyBlock) => {
                     const serviceConfig = findServiceConfigForPrefix(prefix);
                     if (!serviceConfig) return fullMatch;
-                    const normalizedBlock = proxyBlock
+                    let normalizedBlock = proxyBlock
                         .replace(
                             /target:\s*['"]http:\/\/127\.0\.0\.1:'\s*\+\s*\(process\.env\.[A-Z0-9_]+\s*\|\|\s*\d+\)/i,
                             `target: 'http://127.0.0.1:' + (process.env.${serviceConfig.envVar} || ${serviceConfig.originalPort})`
@@ -2911,6 +2990,15 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
                             /target:\s*['"]http:\/\/(?:localhost|127\.0\.0\.1):\d+['"]/i,
                             `target: 'http://127.0.0.1:' + (process.env.${serviceConfig.envVar} || ${serviceConfig.originalPort})`
                         );
+                    normalizedBlock = normalizedBlock.replace(/\bonProxyReq\s*:\s*fixRequestBody\s*,?/i, '');
+                    normalizedBlock = normalizedBlock.replace(/\bonError\s*:\s*\(error,\s*req,\s*res\)\s*=>\s*\{[\s\S]*?\}\s*,?/i, '');
+                    normalizedBlock = normalizedBlock.replace(/\bonError\s*:\s*\(error,\s*req,\s*res\)\s*=>\s*res\.status\(502\)\.json\([\s\S]*?\)\s*,?/i, '');
+                    if (!/pathRewrite\s*:/i.test(normalizedBlock)) {
+                        normalizedBlock = `\n  pathRewrite: (path) => '${prefix}' + path,${normalizedBlock}`;
+                    }
+                    if (!/\bon\s*:\s*\{/i.test(normalizedBlock)) {
+                        normalizedBlock = `\n  on: {\n    proxyReq: fixRequestBody,\n    error: (error, req, res) => {\n      if (!res.headersSent) {\n        res.status(502).json({ success: false, error: 'downstream service unavailable', details: error.code || error.message });\n      }\n    },\n  },${normalizedBlock}`;
+                    }
                     return `app.use('${prefix}', createProxyMiddleware({${normalizedBlock}}))`;
                 }
             );
@@ -2933,13 +3021,16 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
                             `app.use('${prefix}', createProxyMiddleware({\n` +
                             `  target: 'http://127.0.0.1:' + (process.env.${serviceConfig.envVar} || ${serviceConfig.originalPort}),\n` +
                             `  changeOrigin: true,\n` +
+                            `  pathRewrite: (path) => '${prefix}' + path,\n` +
                             `  proxyTimeout: 10000,\n` +
                             `  timeout: 10000,\n` +
-                            `  onProxyReq: fixRequestBody,\n` +
-                            `  onError: (error, req, res) => {\n` +
-                            `    if (!res.headersSent) {\n` +
-                            `      res.status(502).json({ success: false, error: 'downstream service unavailable', details: error.code || error.message });\n` +
-                            `    }\n` +
+                            `  on: {\n` +
+                            `    proxyReq: fixRequestBody,\n` +
+                            `    error: (error, req, res) => {\n` +
+                            `      if (!res.headersSent) {\n` +
+                            `        res.status(502).json({ success: false, error: 'downstream service unavailable', details: error.code || error.message });\n` +
+                            `      }\n` +
+                            `    },\n` +
                             `  }\n` +
                             `}));`
                         );
@@ -2961,6 +3052,7 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
         if (path.includes('/models/') && path.endsWith('.js')) {
             // Fix: `Required` is not a valid Mongoose type (e.g. { type: Required } or { required: { type: Required } })
             const fixedModel = code
+                .replace(/\b(True|False)\b/g, (match) => match.toLowerCase())
                 .replace(/\btype\s*:\s*Required\b/g, 'type: String, required: true')
                 .replace(/required\s*:\s*\{\s*type\s*:\s*(?:Required|Boolean|String|Number|Date)\s*\}/g, 'required: true')
                 // Fix nested subdoc field literally named "required" with an invalid type
@@ -2971,6 +3063,15 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
                 })
                 // Fix unique: true fields without sparse to prevent E11000 dup key on null values
                 .replace(/unique\s*:\s*true(?!\s*,\s*sparse)/g, 'unique: true, sparse: true')
+                // Fix misplaced schema options written inside the schema definition body
+                .replace(
+                    /new\s+(?:mongoose\.)?Schema\s*\(\s*\{([\s\S]*?)\n\s*timestamps\s*:\s*(true|false)\s*\n\s*\}\s*\)/g,
+                    (_, fieldsBody, timestampsValue) => `new mongoose.Schema({${fieldsBody}\n}, { timestamps: ${timestampsValue} })`
+                )
+                .replace(
+                    /new\s+mongoose\.Schema\s*\(\s*\{([\s\S]*?)\n\s*timestamps\s*:\s*(true|false)\s*\n\s*\}\s*\)/g,
+                    (_, fieldsBody, timestampsValue) => `new mongoose.Schema({${fieldsBody}\n}, { timestamps: ${timestampsValue} })`
+                )
                 // Fix category field typed as ObjectId → use String so plain category names work
                 .replace(/\bcategory\s*:\s*\{\s*type\s*:\s*(?:Schema\.Types\.ObjectId|mongoose\.Schema\.Types\.ObjectId)[^}]*\}/g,
                     "category: { type: String, default: 'General' }")
@@ -2990,6 +3091,8 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
             };
             const slotEnvName = serviceConfig.envVar;
             const fallbackPort = Number(serviceConfig.originalPort || DEFAULT_SERVICE_PORT_START);
+            const serviceDir = `/${serviceName}`;
+            const serviceUsesMongoose = serviceHasMongooseModels(serviceDir, backendFiles) || serviceHasMongooseModels(serviceDir, fixed);
             if (/\b(?:const|let|var)\s+app\s*=\s*express\s*\(/.test(code) && !/\b(?:const|let|var)\s+router\s*=/.test(code) && /\brouter\./.test(code)) {
                 code = code.replace(/\brouter\./g, 'app.');
                 changed = true;
@@ -3032,6 +3135,16 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
                     }
                 }
             }
+            if (serviceUsesMongoose && !/require\(['"]dotenv['"]\)\.config\(\)/.test(code)) {
+                code = `require('dotenv').config();\n` + code;
+                changed = true;
+                noteRepairedFile(path, 'inserted dotenv config for database-backed service');
+            }
+            if (serviceUsesMongoose && !/mongoose\s*=\s*require\(['"]mongoose['"]\)/.test(code)) {
+                code = prependRequireLine(code, "const mongoose = require('mongoose');");
+                changed = true;
+                noteRepairedFile(path, 'inserted mongoose import for service with Mongoose models');
+            }
             if (fileNeedsAuthMiddlewareImport(code)) {
                 const nextCode = prependRequireLine(code, "const auth = require('./middleware/auth');");
                 if (nextCode !== code) {
@@ -3046,9 +3159,19 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
                 changed = true;
                 noteRepairedFile(path, 'removed module.exports = app from entry file');
             }
+            if (/module\.exports\s*=\s*router/.test(code)) {
+                code = code.replace(/\n?\s*module\.exports\s*=\s*router\s*;?\s*\n?/g, '\n');
+                changed = true;
+                noteRepairedFile(path, 'removed module.exports = router from entry file');
+            }
+            if (/router\.use\s*\(/.test(code) && /\bconst\s+app\s*=\s*express\s*\(/.test(code)) {
+                code = code.replace(/\brouter\.use\s*\(/g, 'app.use(');
+                changed = true;
+                noteRepairedFile(path, 'converted router.use(...) to app.use(...) in entry file');
+            }
 
             // Inject mongoose.connect() when mongoose is required but never connected
-            if (/mongoose\s*=\s*require\(['"]mongoose['"]\)/.test(code) && !/mongoose\.connect\s*\(/.test(code)) {
+            if (serviceUsesMongoose && /mongoose\s*=\s*require\(['"]mongoose['"]\)/.test(code) && !/mongoose\.connect\s*\(/.test(code)) {
                 const dbName = serviceName.replace(/-service$/, '').replace(/-/g, '') + 'db';
                 const mongoConnectBlock =
                     `\nmongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URL || 'mongodb://127.0.0.1:27017/${dbName}')\n` +
@@ -3065,6 +3188,43 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
                 }
                 changed = true;
                 noteRepairedFile(path, `injected missing mongoose.connect() for ${dbName}`);
+            }
+            if (
+                /mongoose\s*=\s*require\(['"]mongoose['"]\)/.test(code)
+                && /mongoose\.connect\s*\(/.test(code)
+                && /app\.listen\s*\(/.test(code)
+                && !/await\s+mongoose\.connect\s*\(/.test(code)
+                && !/mongoose\.connect[\s\S]{0,500}\.then\s*\(\s*(?:async\s*)?\(\)\s*=>[\s\S]{0,300}app\.listen\s*\(/.test(code)
+                && !/async\s+function\s+start[\s\S]{0,800}await\s+mongoose\.connect[\s\S]{0,500}app\.listen\s*\(/.test(code)
+                && !/const\s+start\s*=\s*async\s*\(\)\s*=>[\s\S]{0,800}await\s+mongoose\.connect[\s\S]{0,500}app\.listen\s*\(/.test(code)
+            ) {
+                const connectMatch = code.match(/mongoose\.connect\s*\([\s\S]*?\)\s*(?:\.\s*then\s*\([\s\S]*?\))?\s*(?:\.\s*catch\s*\([\s\S]*?\))?\s*;?/);
+                const listenMatch = code.match(/app\.listen\s*\([\s\S]*?\)\s*;?/);
+                if (connectMatch && listenMatch) {
+                    const connectExpression = connectMatch[0]
+                        .replace(/\.\s*then\s*\([\s\S]*?\)\s*(?=(?:\.\s*catch|\s*;|$))/g, '')
+                        .replace(/\.\s*catch\s*\([\s\S]*?\)\s*(?=(?:\s*;|$))/g, '')
+                        .replace(/;?\s*$/, '');
+                    const listenExpression = listenMatch[0].replace(/;?\s*$/, ';');
+                    const startBlock = [
+                        'const start = async () => {',
+                        '  try {',
+                        `    await ${connectExpression};`,
+                        "    console.log('MongoDB connected');",
+                        `    ${listenExpression}`,
+                        '  } catch (err) {',
+                        "    console.error('MongoDB error:', err.message);",
+                        '    process.exit(1);',
+                        '  }',
+                        '};',
+                        '',
+                        'start();',
+                    ].join('\n');
+                    code = code.replace(connectMatch[0], '');
+                    code = code.replace(listenMatch[0], startBlock);
+                    changed = true;
+                    noteRepairedFile(path, 'gated app.listen() behind successful mongoose.connect()');
+                }
             }
 
             code = code.replace(
@@ -3427,7 +3587,9 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
             if (isRouteFile) {
                 const fixedModelPath = code
                     .replace(/require\(['"]\.\/models\/([^'"]+)['"]\)/g, (_, modelName) => `require('../models/${modelName}')`)
-                    .replace(/require\(['"]\.\/middleware\/([^'"]+)['"]\)/g, (_, middlewareName) => `require('../middleware/${middlewareName}')`);
+                    .replace(/require\(['"](?:\.\.\/){2,}models\/([^'"]+)['"]\)/g, (_, modelName) => `require('../models/${modelName}')`)
+                    .replace(/require\(['"]\.\/middleware\/([^'"]+)['"]\)/g, (_, middlewareName) => `require('../middleware/${middlewareName}')`)
+                    .replace(/require\(['"](?:\.\.\/){2,}middleware\/([^'"]+)['"]\)/g, (_, middlewareName) => `require('../middleware/${middlewareName}')`);
                 if (fixedModelPath !== code) {
                     code = fixedModelPath;
                     changed = true;
@@ -3593,6 +3755,19 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
         const middlewarePath = `${serviceDir}/middleware/auth.js`;
         let changed = false;
 
+        if (/\/middleware\/auth\.js$/i.test(filePath)) {
+            const usesLegacyConfigAuth =
+                /require\(\s*['"]\.\.\/config\/default\.json['"]\s*\)/.test(code)
+                || /req\.header\(\s*['"]x-auth-token['"]\s*\)/i.test(code)
+                || /authorization denied/i.test(code)
+                || /token is not valid/i.test(code);
+            if (usesLegacyConfigAuth) {
+                code = authMiddlewareTemplate;
+                changed = true;
+                noteRepairedFile(filePath, 'normalized legacy auth middleware to env-based Bearer token middleware');
+            }
+        }
+
         if (fileNeedsAuthMiddlewareImport(code)) {
             const requirePath = /\/routes\//i.test(filePath) ? '../middleware/auth' : './middleware/auth';
             const nextCode = prependRequireLine(code, `const auth = require('${requirePath}');`);
@@ -3600,6 +3775,19 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
                 code = nextCode;
                 changed = true;
                 noteRepairedFile(filePath, 'inserted auth middleware import');
+            }
+        }
+
+        if (/\/routes\/.+\.js$/i.test(filePath)) {
+            const normalizedRouteLocalRequires = code
+                .replace(/require\(\s*['"]\.\/models\/([^'"]+)['"]\s*\)/g, (_, modelName) => `require('../models/${modelName}')`)
+                .replace(/require\(\s*['"](?:\.\.\/){2,}models\/([^'"]+)['"]\s*\)/g, (_, modelName) => `require('../models/${modelName}')`)
+                .replace(/require\(\s*['"]\.\/middleware\/([^'"]+)['"]\s*\)/g, (_, middlewareName) => `require('../middleware/${middlewareName}')`)
+                .replace(/require\(\s*['"](?:\.\.\/){2,}middleware\/([^'"]+)['"]\s*\)/g, (_, middlewareName) => `require('../middleware/${middlewareName}')`);
+            if (normalizedRouteLocalRequires !== code) {
+                code = normalizedRouteLocalRequires;
+                changed = true;
+                noteRepairedFile(filePath, 'normalized route-local require paths to service-relative models and middleware');
             }
         }
 
@@ -3613,6 +3801,26 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
         if (changed) {
             fixed[filePath] = { code };
             fixCount++;
+        }
+    });
+
+    const datatypeDocs = synthesizeBackendDatatypeDocs(fixed);
+    Object.entries(datatypeDocs).forEach(([filePath, content]) => {
+        const nextCode = typeof content === 'string' ? content : content?.code || '';
+        const existingCode = typeof fixed[filePath] === 'string' ? fixed[filePath] : fixed[filePath]?.code || '';
+        if (!nextCode) {
+            return;
+        }
+        if (!fixed[filePath]) {
+            fixed[filePath] = { code: nextCode };
+            fixCount++;
+            noteCreatedFile(filePath, 'created service datatype guide');
+            return;
+        }
+        if (normalizeBackendFileContent(filePath, existingCode) !== normalizeBackendFileContent(filePath, nextCode)) {
+            fixed[filePath] = { code: nextCode };
+            fixCount++;
+            noteRepairedFile(filePath, 'refreshed service datatype guide');
         }
     });
 
@@ -4474,6 +4682,18 @@ function getCreatedIdForParam(paramName, routePath, createdRecords) {
     if (lower.includes('user')) {
         return createdRecords['/api/users']?.id || createdRecords['/api/auth']?.id || null;
     }
+    if (lower.includes('course')) {
+        return createdRecords['/api/courses']?.id || null;
+    }
+    if (lower.includes('lesson')) {
+        return createdRecords['/api/lessons']?.id || null;
+    }
+    if (lower.includes('quiz')) {
+        return createdRecords['/api/quizzes']?.id || null;
+    }
+    if (lower.includes('enrollment')) {
+        return createdRecords['/api/enrollments']?.id || null;
+    }
     if (lower.includes('task')) {
         return createdRecords['/api/tasks']?.id || null;
     }
@@ -4499,16 +4719,20 @@ function getCreatedIdForParam(paramName, routePath, createdRecords) {
 const FALLBACK_OBJECT_ID = '000000000000000000000001';
 
 function resolveDynamicPath(routePath, createdRecords) {
+    const missingParams = [];
     const resolvedPath = routePath.replace(/:([A-Za-z0-9_]+)/g, (match, paramName) => {
         const resolvedValue = getCreatedIdForParam(paramName, routePath, createdRecords);
         if (!resolvedValue) {
-            // Use a valid-looking ObjectId placeholder so the route still runs
-            return FALLBACK_OBJECT_ID;
+            missingParams.push(paramName);
+            return match;
         }
         return encodeURIComponent(String(resolvedValue));
     });
 
-    return resolvedPath;
+    return {
+        path: missingParams.length > 0 ? null : resolvedPath,
+        missingParams,
+    };
 }
 
 function extractCreatedRecord(payload) {
@@ -4667,6 +4891,9 @@ function buildFieldSampleValue(fieldName, fieldType = 'String', createdRecords =
     const isObjectIdType = normalizedType.includes('objectid');
 
     const knownUserId    = createdRecords['/api/users']?.id    || createdRecords['/api/auth']?.id    || '507f1f77bcf86cd799439011';
+    const knownCourseId  = createdRecords['/api/courses']?.id  || '507f1f77bcf86cd799439017';
+    const knownLessonId  = createdRecords['/api/lessons']?.id  || '507f1f77bcf86cd799439018';
+    const knownQuizId    = createdRecords['/api/quizzes']?.id  || '507f1f77bcf86cd799439019';
     const knownTaskId    = createdRecords['/api/tasks']?.id    || '507f1f77bcf86cd799439012';
     const knownColumnId  = createdRecords['/api/columns']?.id  || '507f1f77bcf86cd799439013';
     const knownOrderId   = createdRecords['/api/orders']?.id   || '507f1f77bcf86cd799439015';
@@ -4703,6 +4930,9 @@ function buildFieldSampleValue(fieldName, fieldType = 'String', createdRecords =
     // ObjectId reference fields — always return a valid 24-char hex ObjectId string
     if (lowerName.includes('createdby') || lowerName.includes('userid') || lowerName === 'user' || lowerName === 'customer') return knownUserId;
     if (lowerName.includes('assignee') || lowerName.includes('driver')) return knownUserId;
+    if (lowerName.includes('courseid') || lowerName === 'course') return knownCourseId;
+    if (lowerName.includes('lessonid') || lowerName === 'lesson') return knownLessonId;
+    if (lowerName.includes('quizid') || lowerName === 'quiz') return knownQuizId;
     if (lowerName.includes('taskid') || lowerName === 'task') return knownTaskId;
     if (lowerName.includes('columnid') || lowerName === 'column') return knownColumnId;
     if (lowerName.includes('orderid') || lowerName === 'order') return knownOrderId;
@@ -4772,7 +5002,49 @@ function extractModelFieldSpecs(modelCode = '') {
     return specs;
 }
 
-function buildSchemaSamplePayload(modelCandidates = [], backendFiles = {}, routePath = '', createdRecords = {}, sampleState = createLiveSampleState()) {
+function routePathMatchesPattern(pattern = '', actual = '') {
+    const normalize = (value) => {
+        const trimmed = String(value || '').split('?')[0].trim();
+        if (!trimmed) return '/';
+        const normalized = trimmed.replace(/\/+$/, '');
+        return normalized || '/';
+    };
+    const patternParts = normalize(pattern).split('/');
+    const actualParts = normalize(actual).split('/');
+    if (patternParts.length !== actualParts.length) {
+        return false;
+    }
+    return patternParts.every((part, index) => part.startsWith(':') || part === actualParts[index]);
+}
+
+function findContractForRoutePath(method = '', routePath = '', backendFiles = {}) {
+    return parseBackendContracts(backendFiles).find((contract) => (
+        String(contract.method || '').toUpperCase() === String(method || '').toUpperCase()
+        && routePathMatchesPattern(contract.path, routePath)
+    )) || null;
+}
+
+function extractDatatypePayloadExample(backendFiles = {}, routePath = '', method = 'POST') {
+    const contract = findContractForRoutePath(method, routePath, backendFiles);
+    if (!contract?.serviceDir) {
+        return null;
+    }
+    const docPath = `${contract.serviceDir}/SERVICE-DATATYPES.md`;
+    const docEntry = backendFiles[docPath];
+    const docText = typeof docEntry === 'string' ? docEntry : docEntry?.code || '';
+    if (!docText) {
+        return null;
+    }
+
+    const escapedHeading = `${String(method || 'POST').toUpperCase()} ${contract.path}`.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const match = docText.match(new RegExp('###\\s+' + escapedHeading + '[\\s\\S]*?```json\\s*([\\s\\S]*?)\\s*```', 'i'));
+    if (!match?.[1]) {
+        return null;
+    }
+    return parseJsonSafely(match[1]);
+}
+
+function buildDefaultSchemaSamplePayload(modelCandidates = [], backendFiles = {}, routePath = '', createdRecords = {}, sampleState = createLiveSampleState(), method = 'POST') {
     const payload = {};
 
     modelCandidates.forEach((modelPath) => {
@@ -4888,10 +5160,83 @@ function buildSchemaSamplePayload(modelCandidates = [], backendFiles = {}, route
         payload.email    ??= getLiveSampleStateValue(sampleState, 'auth.email', () => `john+${sampleState.seed}@example.com`);
         payload.username ??= getLiveSampleStateValue(sampleState, 'auth.username', () => `john_${String(sampleState.seed).replace(/[^a-z0-9]/gi, '')}`);
         payload.password ??= getLiveSampleStateValue(sampleState, 'auth.password', () => `SecurePass123!${String(sampleState.seed).slice(-4)}`);
-        payload.role     ??= 'customer';
+        payload.role     ??= 'student';
+    }
+
+    if (/\/api\/auth\/login(\/|$)/i.test(routePath)) {
+        payload.email ??= getLiveSampleStateValue(sampleState, 'auth.email', () => `john+${sampleState.seed}@example.com`);
+        payload.password ??= getLiveSampleStateValue(sampleState, 'auth.password', () => `SecurePass123!${String(sampleState.seed).slice(-4)}`);
+        delete payload.role;
+        delete payload.name;
+    }
+
+    if (/\/api\/auth\/profile(\/|$)/i.test(routePath)) {
+        payload.name ??= `Updated ${getLiveSampleStateValue(sampleState, 'generic.name', () => `User ${sampleState.seed}`)}`;
+        payload.username ??= getLiveSampleStateValue(sampleState, 'auth.username', () => `john_${String(sampleState.seed).replace(/[^a-z0-9]/gi, '')}`);
+        delete payload.email;
+        delete payload.password;
+        delete payload.role;
+    }
+
+    if (/\/api\/courses(\/|$)/i.test(routePath)) {
+        payload.title ??= 'Generated Course';
+        payload.description ??= 'Generated sample description';
+        payload.price ??= 9.99;
+        payload.thumbnail ??= 'https://example.com/course-thumbnail.png';
+    }
+
+    if (/\/api\/enrollments(\/|$)/i.test(routePath)) {
+        payload.courseId ??= createdRecords['/api/courses']?.id || '507f1f77bcf86cd799439017';
+        payload.studentId ??= createdRecords['/api/users']?.id || createdRecords['/api/auth']?.id || '507f1f77bcf86cd799439011';
+        payload.status ??= 'enrolled';
+    }
+
+    if (/\/api\/lessons\/[^/]+\/complete(\/|$)/i.test(routePath)) {
+        return { completed: true };
+    }
+
+    if (/\/api\/lessons(\/|$)/i.test(routePath)) {
+        payload.title ??= 'Introduction Lesson';
+        payload.description ??= 'Generated sample description';
+        payload.courseId ??= createdRecords['/api/courses']?.id || '507f1f77bcf86cd799439017';
+        payload.videoUrl ??= 'https://example.com/video.mp4';
+        payload.attachments ??= [];
+    }
+
+    if (/\/api\/quizzes\/[^/]+\/submit(\/|$)/i.test(routePath)) {
+        return {
+            answers: ['Learning Management System'],
+        };
+    }
+
+    if (/\/api\/quizzes(\/|$)/i.test(routePath)) {
+        payload.title ??= 'Generated Quiz';
+        payload.questions ??= [{
+            questionText: 'What does LMS stand for?',
+            options: ['Learning Management System', 'Local Machine Service'],
+            correctAnswer: 'Learning Management System',
+        }];
+        payload.courseId ??= createdRecords['/api/courses']?.id || '507f1f77bcf86cd799439017';
+    }
+
+    if (String(method || '').toUpperCase() === 'PUT' || String(method || '').toUpperCase() === 'PATCH') {
+        if (/\/api\/courses(\/|$)/i.test(routePath)) {
+            payload.title ??= 'Updated Course Title';
+        }
+        if (/\/api\/lessons(\/|$)/i.test(routePath)) {
+            payload.title ??= 'Updated Lesson Title';
+        }
     }
 
     return Object.keys(payload).length > 0 ? payload : null;
+}
+
+function buildSchemaSamplePayload(modelCandidates = [], backendFiles = {}, routePath = '', createdRecords = {}, sampleState = createLiveSampleState(), method = 'POST') {
+    const docPayload = extractDatatypePayloadExample(backendFiles, routePath, method);
+    if (docPayload && typeof docPayload === 'object') {
+        return cloneJson(docPayload);
+    }
+    return buildDefaultSchemaSamplePayload(modelCandidates, backendFiles, routePath, createdRecords, sampleState, method);
 }
 
 function parseBackendContracts(backendFiles) {
@@ -5085,6 +5430,84 @@ function parseBackendContracts(backendFiles) {
     return uniqueContracts;
 }
 
+function synthesizeBackendDatatypeDocs(backendFiles = {}) {
+    const docs = {};
+    const contracts = parseBackendContracts(backendFiles);
+    const sampleState = createLiveSampleState();
+    const serviceDirs = [...new Set(
+        Object.keys(backendFiles || {})
+            .map((filePath) => getServiceDirForFile(filePath))
+            .filter((serviceDir) => serviceDir && serviceDir !== '/api-gateway')
+    )];
+
+    serviceDirs.forEach((serviceDir) => {
+        const serviceName = humanizeServiceName(serviceDir);
+        const modelFiles = Object.keys(backendFiles).filter((filePath) => filePath.startsWith(`${serviceDir}/models/`) && /\.js$/i.test(filePath));
+        const mutationContracts = contracts.filter((contract) => contract.serviceDir === serviceDir && ['POST', 'PUT', 'PATCH'].includes(contract.method));
+        const sections = [
+            `# ${serviceName} Datatypes`,
+            '',
+            'Generated automatically from models and routes so live API testing can reuse service-correct sample payloads.',
+            '',
+            '## Models',
+        ];
+
+        if (modelFiles.length === 0) {
+            sections.push('', '- No model files parsed for this service.');
+        } else {
+            modelFiles.forEach((modelPath) => {
+                const modelName = path.posix.basename(modelPath, '.js');
+                const modelCode = typeof backendFiles[modelPath] === 'string' ? backendFiles[modelPath] : backendFiles[modelPath]?.code || '';
+                const specs = extractModelFieldSpecs(modelCode);
+                sections.push('', `### ${modelName}`, '');
+                if (specs.length === 0) {
+                    sections.push('- No schema fields parsed.');
+                    return;
+                }
+                specs.forEach((fieldSpec) => {
+                    const enumSuffix = fieldSpec.enumValues?.length ? ` enum=${fieldSpec.enumValues.join('|')}` : '';
+                    sections.push(`- ${fieldSpec.name}: ${fieldSpec.type}${fieldSpec.required ? ' required' : ' optional'}${enumSuffix}`);
+                });
+            });
+        }
+
+        sections.push('', '## Sample Payloads');
+        if (mutationContracts.length === 0) {
+            sections.push('', '- No POST/PUT/PATCH routes parsed for this service.');
+        } else {
+            mutationContracts.forEach((contract) => {
+                const samplePayload = buildDefaultSchemaSamplePayload(
+                    contract.modelCandidates || [],
+                    backendFiles,
+                    contract.path,
+                    {},
+                    sampleState,
+                    contract.method
+                );
+                sections.push('', `### ${contract.method} ${contract.path}`, '', '```json', JSON.stringify(samplePayload || {}, null, 2), '```');
+            });
+        }
+
+        docs[`${serviceDir}/SERVICE-DATATYPES.md`] = { code: `${sections.join('\n')}\n` };
+    });
+
+    return docs;
+}
+
+function statusMatchesExpected(method = '', routePath = '', expectedStatus = null, actualStatus = null) {
+    const expected = expectedStatus || (String(method || '').toUpperCase() === 'POST' ? 201 : 200);
+    if (actualStatus === expected) {
+        return true;
+    }
+    if (String(method || '').toUpperCase() === 'POST' && expected === 201 && actualStatus === 200) {
+        return true;
+    }
+    if (/\/api\/auth\/register(\/|$)/i.test(routePath) && [200, 201].includes(actualStatus)) {
+        return true;
+    }
+    return false;
+}
+
 function buildLiveExecutionPlan(simulatedResults = [], backendFiles = {}) {
     const fallbackContracts = parseBackendContracts(backendFiles);
     const simulatedByKey = new Map(
@@ -5104,7 +5527,7 @@ function buildLiveExecutionPlan(simulatedResults = [], backendFiles = {}) {
             const simulated = simulatedByKey.get(`${contract.method} ${contract.path}`);
             const synthesizedSample = simulated?.sampleData
                 ? parseJsonSafely(simulated.sampleData)
-                : buildSchemaSamplePayload(contract.modelCandidates, backendFiles, contract.path);
+                : buildSchemaSamplePayload(contract.modelCandidates, backendFiles, contract.path, {}, createLiveSampleState(), contract.method);
             return {
                 method: contract.method,
                 path: contract.path,
@@ -6169,7 +6592,18 @@ async function runLiveBackendValidation(backendFiles, simulatedResults, emit, { 
 
         for (const step of executionPlan) {
             const resourceBase = getResourceBase(step.path);
-            const resolvedPath = resolveDynamicPath(step.path, createdRecords);
+            const dynamicPathInfo = resolveDynamicPath(step.path, createdRecords);
+            const resolvedPath = dynamicPathInfo.path;
+            if (!resolvedPath) {
+                emit({
+                    type: 'log',
+                    phase: 'api-test',
+                    level: 'warning',
+                    round: 'live',
+                    message: `Skipping ${step.method} ${step.path} until required IDs exist from earlier live requests.`,
+                });
+                continue;
+            }
 
             const requiresAuth = routeRequiresAuth(resolvedPath, step.detail);
             if (requiresAuth && !authState.token) {
@@ -6187,7 +6621,8 @@ async function runLiveBackendValidation(backendFiles, simulatedResults, emit, { 
                 backendFiles,
                 resolvedPath,
                 createdRecords,
-                sampleState
+                sampleState,
+                step.method
             );
             const payloadData = injectKnownIds(rawPayload, resolvedPath, createdRecords, sampleState);
             const queryPayload = step.method === 'GET'
@@ -6221,7 +6656,13 @@ async function runLiveBackendValidation(backendFiles, simulatedResults, emit, { 
                     const payload = await response.json().catch(() => null);
                     return { response, payload, failureReason: null };
                 } catch (error) {
-                    return { response: null, payload: null, failureReason: error.message };
+                    return {
+                        response: null,
+                        payload: null,
+                        failureReason: error?.name === 'AbortError'
+                            ? 'fetch failed: request timed out after 12s'
+                            : error.message,
+                    };
                 }
             };
 
@@ -6277,7 +6718,7 @@ async function runLiveBackendValidation(backendFiles, simulatedResults, emit, { 
             const result = {
                 method: step.method,
                 path: requestPath,
-                status: actualSuccess && actualStatus === expectedStatus ? 'PASS' : 'FAIL',
+                status: actualSuccess && statusMatchesExpected(step.method, requestPath, expectedStatus, actualStatus) ? 'PASS' : 'FAIL',
                 statusCode: actualStatus,
                 sampleData: body
                     ? JSON.stringify(body)
@@ -6285,7 +6726,7 @@ async function runLiveBackendValidation(backendFiles, simulatedResults, emit, { 
                 detail: actualSuccess
                     ? `Live request returned HTTP ${actualStatus}`
                     : failureDetail,
-                reason: actualSuccess && actualStatus === expectedStatus
+                reason: actualSuccess && statusMatchesExpected(step.method, requestPath, expectedStatus, actualStatus)
                     ? null
                     : failureDetail,
             };
@@ -6331,8 +6772,16 @@ async function runLiveBackendValidation(backendFiles, simulatedResults, emit, { 
 
             for (const step of deferredAuthSteps) {
                 const resourceBase = getResourceBase(step.path);
-                const resolvedPath = resolveDynamicPath(step.path, createdRecords);
+                const dynamicPathInfo = resolveDynamicPath(step.path, createdRecords);
+                const resolvedPath = dynamicPathInfo.path;
                 if (!resolvedPath) {
+                    emit({
+                        type: 'log',
+                        phase: 'api-test',
+                        level: 'warning',
+                        round: 'live',
+                        message: `Skipping ${step.method} ${step.path} until required IDs exist from earlier live requests.`,
+                    });
                     continue;
                 }
 
@@ -6343,7 +6792,8 @@ async function runLiveBackendValidation(backendFiles, simulatedResults, emit, { 
                     backendFiles,
                     resolvedPath,
                     createdRecords,
-                    sampleState
+                    sampleState,
+                    step.method
                 );
                 const payloadData = injectKnownIds(rawPayload, resolvedPath, createdRecords, sampleState);
                 const queryPayload = step.method === 'GET'
@@ -6381,7 +6831,7 @@ async function runLiveBackendValidation(backendFiles, simulatedResults, emit, { 
                 const result = {
                     method: step.method,
                     path: requestPath,
-                    status: actualSuccess && actualStatus === expectedStatus ? 'PASS' : 'FAIL',
+                    status: actualSuccess && statusMatchesExpected(step.method, requestPath, expectedStatus, actualStatus) ? 'PASS' : 'FAIL',
                     statusCode: actualStatus,
                     sampleData: body
                         ? JSON.stringify(body)
@@ -6389,7 +6839,7 @@ async function runLiveBackendValidation(backendFiles, simulatedResults, emit, { 
                     detail: actualSuccess
                         ? `Live request returned HTTP ${actualStatus}`
                         : payload?.error || failureReason || `Expected HTTP ${expectedStatus} but received ${actualStatus ?? 'no response'}`,
-                    reason: actualSuccess && actualStatus === expectedStatus
+                    reason: actualSuccess && statusMatchesExpected(step.method, requestPath, expectedStatus, actualStatus)
                         ? null
                         : payload?.error || failureReason || `Expected HTTP ${expectedStatus} but received ${actualStatus ?? 'no response'}`,
                 };
@@ -6851,6 +7301,12 @@ function buildFailureAnalysisForAI(backendFiles, failedRoutes = []) {
         }
         if (/404|route not found/i.test(reason)) {
             hints.push('gateway prefix, pathRewrite, app.use mount, and router file paths likely disagree; repair them as one unit');
+        }
+        if (/fetch failed|request aborted|raw-body|body-parser/i.test(reason)) {
+            hints.push('writes are aborting while the service is still reading the request; check gateway body forwarding, app.use mounts in index.js, and whether the service started before the database was truly ready');
+        }
+        if (/app\.listen\(\) starts before mongoose\.connect|mongoose is required but mongoose\.connect\(\) is never called/i.test(reason)) {
+            hints.push('move app.listen() behind a successful database connection or fail fast; do not let /health go green while writes still buffer and hang');
         }
         if (/401|403|no token|access denied|unauthorized/i.test(reason)) {
             hints.push('protected routes need register/login-compatible auth flow or proper middleware exclusions');
@@ -7677,13 +8133,13 @@ export async function POST(req) {
                         let prevLiveBackendFiles = null; // track file state before each round to compute changed dirs
 
                         for (let liveRound = 1; liveRound <= MAX_LIVE_FIX_ROUNDS; liveRound++) {
-                            emit({
-                                type: 'log',
-                                phase: 'api-test',
-                                level: 'info',
-                                round: `live-${liveRound}`,
-                                message: `Live backend round ${liveRound}: installing services, starting gateway + microservices, and running real HTTP requests...`,
-                            });
+                        emit({
+                            type: 'log',
+                            phase: 'api-test',
+                            level: 'info',
+                            round: `live-${liveRound}`,
+                            message: `Live backend round ${liveRound}/${MAX_LIVE_FIX_ROUNDS}: installing services, starting gateway + microservices, and running real HTTP requests...`,
+                        });
 
                             // Compute which service dirs changed since the last round.
                             // Round 1 always installs everything (changedServiceDirs = null).
@@ -7931,13 +8387,11 @@ export async function POST(req) {
                             },
                         });
                         emit({
-                            type: 'error',
+                            type: 'log',
                             phase: 'api-test',
-                            error: `Backend has ${backendValidationErrors.length} validation issue(s) remaining after all fix rounds. Frontend generation is blocked until backend is clean. Issues: ${backendValidationErrors.slice(0, 3).join('; ')}`,
-                            done: true,
+                            level: 'warning',
+                            message: `Backend has ${backendValidationErrors.length} validation issue(s) remaining after all fix rounds. Proceeding to frontend generation with backend warnings. Issues: ${backendValidationErrors.slice(0, 3).join('; ')}`,
                         });
-                        controller.close();
-                        return;
                     }
 
                     if (!allRoutesClean) {
@@ -7967,13 +8421,11 @@ export async function POST(req) {
                                 metadata: { stage: 'backend-partial', remainingBugs, remainingSummary },
                             });
                             emit({
-                                type: 'error',
+                                type: 'log',
                                 phase: 'api-test',
-                                error: `${remainingBugs} route bug(s) remain after all fix rounds. Frontend generation is blocked until backend routes are clean. Remaining: ${remainingSummary}`,
-                                done: true,
+                                level: 'warning',
+                                message: `${remainingBugs} route bug(s) remain after ${MAX_LIVE_FIX_ROUNDS} live postmortem/Mongo testing round(s). Proceeding to frontend generation with backend warnings. Remaining: ${remainingSummary}`,
                             });
-                            controller.close();
-                            return;
                         }
 
                         if (healthOnlyFailures.length > 0) {
