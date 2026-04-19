@@ -3220,3 +3220,311 @@ Require stack:
 
 Node.js v22.22.2 | > course-service@1.0.0 start
 > node index.js | exit=1 | service failed to start
+
+## Live Runtime Failure | 2026-04-19T06:00:13.741Z
+- course-service exited before health check: node:internal/modules/cjs/loader:1386
+  throw err;
+  ^
+
+Error: Cannot find module 'jsonwebtoken'
+Require stack:
+- E:\final_research_agentic\output\learnhub-learning-management-system\backend\course-service\middleware\auth.js
+- E:\final_research_agentic\output\learnhub-learning-management-system\backend\course-service\index.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)
+    at Function._load (node:internal/modules/cjs/loader:1192:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.require (node:internal/modules/cjs/loader:1463:12)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (E:\final_research_agentic\output\learnhub-learning-management-system\backend\course-service\middleware\auth.js:1:13)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'E:\\final_research_agentic\\output\\learnhub-learning-management-system\\backend\\course-service\\middleware\\auth.js',
+    'E:\\final_research_agentic\\output\\learnhub-learning-management-system\\backend\\course-service\\index.js'
+  ]
+}
+
+Node.js v22.22.2 | > course-service@1.0.0 start
+> node index.js | exit=1 | service failed to start
+
+## Backend Validation Failures | 2026-04-19T06:00:46.365Z
+- /course-service/routes/courses.js: missing local require ../../models/Course
+- /quiz-service/index.js: entry file uses app.* without declaring const app = express()
+- /course-service/middleware/auth.js: missing package dependency jsonwebtoken in /course-service/package.json
+- /lesson-service/middleware/auth.js: missing package dependency jsonwebtoken in /lesson-service/package.json
+- /quiz-service/middleware/auth.js: missing package dependency jsonwebtoken in /quiz-service/package.json
+
+## App Build Plan | 2026-04-19T06:05:11.596Z
+- Project: LearnHub Learning Management System
+- Services: Auth Service (4 endpoints), Course Service (5 endpoints), Enrollment Service (3 endpoints), Lesson Service (5 endpoints), Quiz Service (4 endpoints)
+- Features: User Authentication, Course Management, Enrollment Management, Lesson and Content Delivery, Quiz and Assessment
+- Expected backend libraries: bcryptjs, cors, dotenv, express, http-proxy-middleware, jsonwebtoken, mongoose, multer
+- Expected frontend libraries: axios, react, react-router-dom, recharts
+- Developer workflow: understand app scope, remember expected libraries, then audit each backend service in order (models -> routes -> controllers -> index.js -> package.json) before patching.
+- Frontend workflow: audit pages/files individually for syntax, local imports, and missing external libraries before final preview.
+
+## Live Runtime Failure | 2026-04-19T06:12:13.518Z
+- lesson-service exited before health check: E:\final_research_agentic\output\learnhub-learning-management-system\backend\lesson-service\index.js:11
+app.get('/health', (req, res) => {
+^
+
+ReferenceError: app is not defined
+    at Object.<anonymous> (E:\final_research_agentic\output\learnhub-learning-management-system\backend\lesson-service\index.js:11:1)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14)
+    at Object..js (node:internal/modules/cjs/loader:1838:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+
+Node.js v22.22.2 | > lesson-service@1.0.0 start
+> node index.js | exit=1 | service failed to start
+
+## Live Runtime Failure | 2026-04-19T06:13:32.672Z
+- lesson-service exited before health check: E:\final_research_agentic\output\learnhub-learning-management-system\backend\lesson-service\index.js:11
+app.get('/health', (req, res) => {
+^
+
+ReferenceError: app is not defined
+    at Object.<anonymous> (E:\final_research_agentic\output\learnhub-learning-management-system\backend\lesson-service\index.js:11:1)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14)
+    at Object..js (node:internal/modules/cjs/loader:1838:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+
+Node.js v22.22.2 | > lesson-service@1.0.0 start
+> node index.js | exit=1 | service failed to start
+
+## Backend Validation Failures | 2026-04-19T06:13:48.068Z
+- /lesson-service/index.js: entry file uses app.* without declaring const app = express()
+- /quiz-service/index.js: entry file uses app.* without declaring const app = express()
+
+## App Build Plan | 2026-04-19T06:16:02.640Z
+- Project: LearnHub Learning Management System
+- Services: Auth Service (4 endpoints), Course Service (5 endpoints), Enrollment Service (3 endpoints), Lesson Service (5 endpoints), Quiz Service (4 endpoints)
+- Features: User Authentication, Course Management, Enrollment Management, Lesson and Content Delivery, Quiz and Assessment
+- Expected backend libraries: bcryptjs, cors, dotenv, express, http-proxy-middleware, jsonwebtoken, mongoose, multer
+- Expected frontend libraries: axios, react, react-router-dom, recharts
+- Developer workflow: understand app scope, remember expected libraries, then audit each backend service in order (models -> routes -> controllers -> index.js -> package.json) before patching.
+- Frontend workflow: audit pages/files individually for syntax, local imports, and missing external libraries before final preview.
+
+## Live Route Failures | 2026-04-19T06:23:55.432Z
+- POST /api/auth/register: fetch failed
+- POST /api/auth/login: fetch failed
+- POST /api/lessons: fetch failed
+- POST /api/quizzes: fetch failed
+
+## Live Route Failures | 2026-04-19T06:27:15.176Z
+- POST /api/auth/register: fetch failed
+- POST /api/auth/login: fetch failed
+- POST /api/lessons: fetch failed
+- POST /api/quizzes: fetch failed
+
+## Live Route Failures | 2026-04-19T06:30:35.031Z
+- POST /api/auth/register: fetch failed
+- POST /api/auth/login: fetch failed
+- POST /api/lessons: fetch failed
+- POST /api/quizzes: fetch failed
+
+## Live Route Failures | 2026-04-19T06:34:04.228Z
+- POST /api/auth/register: fetch failed
+- POST /api/auth/login: fetch failed
+- POST /api/lessons: fetch failed
+- POST /api/quizzes: fetch failed
+
+## Remaining Route Failures | 2026-04-19T06:35:44.485Z
+- POST /api/auth/register: fetch failed
+- POST /api/auth/login: fetch failed
+- POST /api/lessons: fetch failed
+- POST /api/quizzes: fetch failed
+
+## App Build Plan | 2026-04-19T07:02:48.385Z
+- Project: LearnHub Learning Management System
+- Services: Auth Service (4 endpoints), Course Service (5 endpoints), Enrollment Service (3 endpoints), Lesson Service (5 endpoints), Quiz Service (4 endpoints)
+- Features: User Authentication, Course Management, Enrollment Management, Lesson and Content Delivery, Quiz and Assessment
+- Expected backend libraries: bcryptjs, cors, dotenv, express, http-proxy-middleware, jsonwebtoken, mongoose, multer
+- Expected frontend libraries: axios, react, react-router-dom, recharts
+- Developer workflow: understand app scope, remember expected libraries, then audit each backend service in order (models -> routes -> controllers -> index.js -> package.json) before patching.
+- Frontend workflow: audit pages/files individually for syntax, local imports, and missing external libraries before final preview.
+
+## Live Route Failures | 2026-04-19T07:10:13.404Z
+- POST /api/auth/register: fetch failed
+- POST /api/auth/login: fetch failed
+- POST /api/lessons: fetch failed
+- POST /api/quizzes: fetch failed
+
+## App Build Plan | 2026-04-19T07:14:08.361Z
+- Project: LearnHub Learning Management System
+- Services: Auth Service (4 endpoints), Course Service (5 endpoints), Enrollment Service (3 endpoints), Lesson Service (5 endpoints), Quiz Service (4 endpoints)
+- Features: User Authentication, Course Management, Enrollment Management, Lesson and Content Delivery, Quiz and Assessment
+- Expected backend libraries: bcryptjs, cors, dotenv, express, http-proxy-middleware, jsonwebtoken, mongoose, multer
+- Expected frontend libraries: axios, react, react-router-dom, recharts
+- Developer workflow: understand app scope, remember expected libraries, then audit each backend service in order (models -> routes -> controllers -> index.js -> package.json) before patching.
+- Frontend workflow: audit pages/files individually for syntax, local imports, and missing external libraries before final preview.
+
+## Live Runtime Failure | 2026-04-19T07:20:45.879Z
+- lesson-service exited before health check: node:internal/modules/cjs/loader:1386
+  throw err;
+  ^
+
+Error: Cannot find module './routes/lessons'
+Require stack:
+- E:\final_research_agentic\output\learnhub-learning-management-system\backend\lesson-service\index.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)
+    at Function._load (node:internal/modules/cjs/loader:1192:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.require (node:internal/modules/cjs/loader:1463:12)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (E:\final_research_agentic\output\learnhub-learning-management-system\backend\lesson-service\index.js:3:16)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'E:\\final_research_agentic\\output\\learnhub-learning-management-system\\backend\\lesson-service\\index.js'
+  ]
+}
+
+Node.js v22.22.2 | > lesson-service@1.0.0 start
+> node index.js | exit=1 | service failed to start
+
+## Live Route Failures | 2026-04-19T07:24:07.079Z
+- POST /api/auth/register: fetch failed
+- POST /api/auth/login: fetch failed
+- POST /api/lessons: fetch failed
+- POST /api/lessons/000000000000000000000001/complete: fetch failed
+- POST /api/quizzes: fetch failed
+- POST /api/quizzes/000000000000000000000001/submit: fetch failed
+- GET /api/auth/me: Expected HTTP 200 but received 404
+- PUT /api/auth/profile: fetch failed
+
+## Remaining Route Failures | 2026-04-19T07:24:16.641Z
+- GET /health: lesson-service exited before health check: node:internal/modules/cjs/loader:1386
+  throw err;
+  ^
+
+Error: Cannot find module './routes/lessons'
+Require stack:
+- E:\final_research_agentic\output\learnhub-learning-management-system\backend\lesson-service\index.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)
+    at Function._load (node:internal/modules/cjs/loader:1192:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.require (node:internal/modules/cjs/loader:1463:12)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (E:\final_research_agentic\output\learnhub-learning-management-system\backend\lesson-service\index.js:3:16)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'E:\\final_research_agentic\\output\\learnhub-learning-management-system\\backend\\lesson-service\\index.js'
+  ]
+}
+
+Node.js v22.22.2 | > lesson-service@1.0.0 start
+> node index.js | exit=1 | service failed to start
+
+## App Build Plan | 2026-04-19T07:28:36.980Z
+- Project: LearnHub Learning Management System
+- Services: Auth Service (4 endpoints), Course Service (5 endpoints), Enrollment Service (3 endpoints), Lesson Service (5 endpoints), Quiz Service (4 endpoints)
+- Features: User Authentication, Course Management, Enrollment Management, Lesson and Content Delivery, Quiz and Assessment
+- Expected backend libraries: bcryptjs, cors, dotenv, express, http-proxy-middleware, jsonwebtoken, mongoose, multer
+- Expected frontend libraries: axios, react, react-router-dom, recharts
+- Developer workflow: understand app scope, remember expected libraries, then audit each backend service in order (models -> routes -> controllers -> index.js -> package.json) before patching.
+- Frontend workflow: audit pages/files individually for syntax, local imports, and missing external libraries before final preview.
+
+## Live Route Failures | 2026-04-19T07:37:28.355Z
+- POST /api/auth/register: fetch failed
+- POST /api/auth/login: fetch failed
+- POST /api/lessons: fetch failed
+- POST /api/lessons/000000000000000000000001/complete: fetch failed
+- POST /api/quizzes: fetch failed
+- POST /api/quizzes/000000000000000000000001/submit: fetch failed
+- GET /api/auth/me: Expected HTTP 200 but received 404
+- PUT /api/auth/profile: fetch failed
+
+## Live Route Failures | 2026-04-19T07:42:39.673Z
+- POST /api/auth/register: fetch failed
+- POST /api/auth/login: fetch failed
+- POST /api/lessons: fetch failed
+- POST /api/lessons/000000000000000000000001/complete: fetch failed
+- POST /api/quizzes: fetch failed
+- POST /api/quizzes/000000000000000000000001/submit: fetch failed
+- GET /api/auth/me: Expected HTTP 200 but received 404
+- PUT /api/auth/profile: fetch failed
+
+## Live Route Failures | 2026-04-19T07:47:41.568Z
+- POST /api/auth/register: fetch failed
+- POST /api/auth/login: fetch failed
+- POST /api/lessons: fetch failed
+- POST /api/lessons/000000000000000000000001/complete: fetch failed
+- POST /api/quizzes: fetch failed
+- POST /api/quizzes/000000000000000000000001/submit: fetch failed
+- GET /api/auth/me: Expected HTTP 200 but received 404
+- PUT /api/auth/profile: fetch failed
+
+## App Build Plan | 2026-04-19T07:49:54.992Z
+- Project: LearnHub Learning Management System
+- Services: Auth Service (4 endpoints), Course Service (5 endpoints), Enrollment Service (3 endpoints), Lesson Service (5 endpoints), Quiz Service (4 endpoints)
+- Features: User Authentication, Course Management, Enrollment Management, Lesson and Content Delivery, Quiz and Assessment
+- Expected backend libraries: bcryptjs, cors, dotenv, express, http-proxy-middleware, jsonwebtoken, mongoose, multer
+- Expected frontend libraries: axios, react, react-router-dom, recharts
+- Developer workflow: understand app scope, remember expected libraries, then audit each backend service in order (models -> routes -> controllers -> index.js -> package.json) before patching.
+- Frontend workflow: audit pages/files individually for syntax, local imports, and missing external libraries before final preview.
+
+## Live Runtime Failure | 2026-04-19T07:57:50.511Z
+- enrollment-service exited before health check: E:\final_research_agentic\output\learnhub-learning-management-system\backend\enrollment-service\index.js:12
+router.use('/api/enrollments', enrollments);
+                               ^
+
+ReferenceError: enrollments is not defined
+    at Object.<anonymous> (E:\final_research_agentic\output\learnhub-learning-management-system\backend\enrollment-service\index.js:12:32)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14)
+    at Object..js (node:internal/modules/cjs/loader:1838:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+
+Node.js v22.22.2 | exit=1 | service failed to start
+
+## Live Route Failures | 2026-04-19T08:01:07.821Z
+- POST /api/auth/register: fetch failed
+- POST /api/auth/login: fetch failed
+- POST /api/lessons: fetch failed
+- POST /api/lessons/000000000000000000000001/complete: fetch failed
+- POST /api/quizzes: fetch failed
+- POST /api/quizzes/000000000000000000000001/submit: fetch failed
+- GET /api/auth/me: Expected HTTP 200 but received 404
+- PUT /api/auth/profile: fetch failed
+
+## Remaining Route Failures | 2026-04-19T08:01:18.151Z
+- GET /health: enrollment-service exited before health check: E:\final_research_agentic\output\learnhub-learning-management-system\backend\enrollment-service\index.js:12
+router.use('/api/enrollments', enrollments);
+                               ^
+
+ReferenceError: enrollments is not defined
+    at Object.<anonymous> (E:\final_research_agentic\output\learnhub-learning-management-system\backend\enrollment-service\index.js:12:32)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14)
+    at Object..js (node:internal/modules/cjs/loader:1838:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+
+Node.js v22.22.2 | exit=1 | service failed to start

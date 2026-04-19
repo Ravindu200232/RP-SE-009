@@ -531,6 +531,89 @@ function buildServiceGenerationTemplateBlock(service = {}, serviceDir = '') {
     ].join('\n');
 }
 
+/**
+ * Returns a hardcoded auth service template.
+ * Only the User model fields are customized based on the app spec.
+ * Guaranteed filenames: index.js, models/User.js, routes/auth.js, middleware/auth.js, package.json
+ */
+function buildAuthServiceTemplate(service = {}, serviceDir = '/auth-service') {
+    const serviceDirName = serviceDir.replace(/^\/+/, '');
+    const extraFields = (service?.entities || [])
+        .filter(e => !['id', '_id', 'email', 'password', 'name', 'username', 'role', 'createdAt', 'updatedAt'].includes(String(e).toLowerCase()))
+        .map(e => `  ${e}: { type: String, default: '' },`)
+        .join('\n');
+
+    return [
+        'TARGET TEMPLATE BLOCK:',
+        `Generate ONLY files under /${serviceDirName}.`,
+        `EXACT required filenames — use these names, do not rename:`,
+        `- /${serviceDirName}/index.js`,
+        `- /${serviceDirName}/package.json`,
+        `- /${serviceDirName}/models/User.js`,
+        `- /${serviceDirName}/routes/auth.js`,
+        `- /${serviceDirName}/middleware/auth.js`,
+        ``,
+        `index.js MUST:`,
+        `  const express = require('express');`,
+        `  const cors = require('cors');`,
+        `  const mongoose = require('mongoose');`,
+        `  require('dotenv').config();`,
+        `  const app = express();`,
+        `  app.use(cors()); app.use(express.json());`,
+        `  const authRoutes = require('./routes/auth');`,
+        `  app.use('/api/auth', authRoutes);`,
+        `  app.get('/health', (req, res) => res.json({ status: 'ok' }));`,
+        `  app.listen(PORT, ...)`,
+        ``,
+        `models/User.js schema fields (always include these + app-specific extras):`,
+        `  email: { type: String, required: true, unique: true, sparse: true },`,
+        `  password: { type: String, required: true },`,
+        `  name: { type: String, default: '' },`,
+        `  username: { type: String, unique: true, sparse: true },`,
+        `  role: { type: String, default: 'user' },`,
+        extraFields || '',
+        `  timestamps: true`,
+        ``,
+        `routes/auth.js MUST export: router with POST /register, POST /login, GET /me, PUT /profile`,
+        `  - POST /register: hash password with bcryptjs, save user, return JWT`,
+        `  - POST /login: verify email+password, return JWT`,
+        `  - GET /me: auth middleware required, return current user`,
+        `  - PUT /profile: auth middleware required, update name/username`,
+        ``,
+        `middleware/auth.js: verify JWT from Authorization header, set req.user`,
+        ``,
+        `package.json dependencies MUST include: express, cors, dotenv, mongoose, jsonwebtoken, bcryptjs`,
+        ``,
+        `RULE: require paths in index.js must exactly match the filenames above.`,
+        `RULE: Do NOT use require('./routes/users') or any name other than './routes/auth'.`,
+    ].filter(s => s !== null).join('\n');
+}
+
+/**
+ * Build a per-service contract spec (field names, exact filenames, endpoints).
+ * This is injected into the generation prompt to prevent filename/require mismatches.
+ */
+function buildServiceContractSpec(service = {}, serviceDir = '') {
+    const serviceDirName = serviceDir.replace(/^\/+/, '');
+    const modelBase = inferServiceModelBase(service);
+    const routeBases = inferServiceRouteBases(service);
+    const mounts = inferServiceMounts(service);
+    const usesAuth = structuredServiceUsesAuth(service);
+    const endpoints = Array.isArray(service?.endpoints) ? service.endpoints : [];
+
+    return [
+        `SERVICE CONTRACT for ${service.name || serviceDirName}:`,
+        `  Directory: /${serviceDirName}`,
+        `  Model file: /${serviceDirName}/models/${modelBase}.js  ← use EXACTLY this filename`,
+        ...routeBases.map((rb, i) => `  Route file ${i + 1}: /${serviceDirName}/routes/${rb}.js  ← use EXACTLY this filename`),
+        `  index.js must require: ${routeBases.map(rb => `'./routes/${rb}'`).join(', ')}`,
+        `  index.js must mount: ${mounts.map((m, i) => `app.use('${m}', ${routeBases[i] || 'routes'})`).join(', ')}`,
+        usesAuth ? `  Auth: require('../middleware/auth') in route files` : '',
+        endpoints.length ? `  Endpoints: ${endpoints.slice(0, 8).map(ep => `${ep.method || 'GET'} ${ep.path || '/'}`).join(', ')}` : '',
+        `  RULE: The require() path in index.js MUST match the actual filename above exactly.`,
+    ].filter(Boolean).join('\n');
+}
+
 function filterBackendFilesForGenerationTarget(parsedBackend = {}, target = null) {
     if (!target?.serviceDir) {
         return { ...(parsedBackend || {}) };
@@ -753,10 +836,24 @@ function ensureStructuredBackendTargetFoundation(backendFiles = {}, target = nul
     return { files: fixed, createdFiles };
 }
 
+function isAuthService(target = null) {
+    const dir = String(target?.serviceDir || '').toLowerCase();
+    const name = String(target?.name || target?.service?.name || '').toLowerCase();
+    return dir.includes('auth') || name.includes('auth');
+}
+
 function buildStructuredBackendTargetPrompt(basePrompt = '', target = null, existingBackendFiles = {}, structuredSpec = null) {
-    const targetBlock = target?.type === 'gateway'
-        ? buildGatewayGenerationTemplateBlock(structuredSpec)
-        : buildServiceGenerationTemplateBlock(target?.service || {}, target?.serviceDir || '');
+    let targetBlock;
+    if (target?.type === 'gateway') {
+        targetBlock = buildGatewayGenerationTemplateBlock(structuredSpec);
+    } else if (isAuthService(target)) {
+        // Auth service always uses the fixed template — only User model fields vary
+        targetBlock = buildAuthServiceTemplate(target?.service || {}, target?.serviceDir || '/auth-service');
+    } else {
+        // All other services: standard template + per-service contract spec to lock filenames
+        const contractSpec = buildServiceContractSpec(target?.service || {}, target?.serviceDir || '');
+        targetBlock = buildServiceGenerationTemplateBlock(target?.service || {}, target?.serviceDir || '') + '\n\n' + contractSpec;
+    }
 
     const existingTargetFiles = target?.serviceDir
         ? filterBackendFilesForGenerationTarget(existingBackendFiles, target)
@@ -771,6 +868,7 @@ function buildStructuredBackendTargetPrompt(basePrompt = '', target = null, exis
         target?.type === 'gateway'
             ? 'Generate the API gateway only in this step.'
             : `Generate ${target?.name || 'the current service'} only in this step.`,
+        'CRITICAL: The require() paths in index.js MUST exactly match the filenames you generate. Double-check every require() path against the exact filename in your response before returning.',
         'Before finalizing code, internally check: missing files, missing package imports, broken export/module.exports, wrong local require paths, route mounting, middleware paths, and package.json coverage.',
         'Return only complete backend files for this target. Do not include frontend files and do not include unrelated services in this step.',
         targetBlock,
@@ -2120,6 +2218,18 @@ async function validateBackendCandidateFiles(backendFiles, projectTitle = 'gener
         if (!isEntryFile && usesRouterObject && !hasRouterDeclaration) {
             errors.push(`${filePath}: route file uses router.* without declaring const router = express.Router()`);
         }
+        // Bug #22: mongoose required but connect() never called — causes all DB operations to hang
+        if (isEntryFile && /mongoose\s*=\s*require\(['"]mongoose['"]\)/.test(code) && !/mongoose\.connect\s*\(/.test(code)) {
+            errors.push(`${filePath}: mongoose is required but mongoose.connect() is never called — all DB requests will hang`);
+        }
+        // Bug #23: module.exports = app in an entry file — entry files are not modules
+        if (isEntryFile && /module\.exports\s*=\s*app/.test(code)) {
+            errors.push(`${filePath}: entry file must not export module.exports = app — remove it, index.js is an entry point not a module`);
+        }
+        // Bug #25: repeated JWT secret chain
+        if (/process\.env\.JWT_SECRET[\s\S]{0,200}process\.env\.JWT_SECRET/.test(code)) {
+            errors.push(`${filePath}: JWT secret is repeated in the same expression — collapse to: process.env.JWT_SECRET || process.env.SECRET_KEY || process.env.SEKRET_KEY || 'dev-secret'`);
+        }
         if (/new\s+Schema\s*\(/.test(code) && /\bRequired\s*:/m.test(code)) {
             errors.push(`${filePath}: mongoose schema uses Required: instead of required:`);
         }
@@ -2651,22 +2761,27 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
 
         if (/jsonwebtoken|jwt\./i.test(code)) {
             const secretExpr = buildSecretExpression();
-            const secretPatterns = [
-                { re: /process\.env\.JWT_SECRET(?!\s*\|\|)/g, replacement: `(${secretExpr})` },
-                { re: /process\.env\.SECRET_KEY(?!\s*\|\|)/g, replacement: `(${secretExpr})` },
-                { re: /process\.env\.SEKRET_KEY(?!\s*\|\|)/g, replacement: `(${secretExpr})` },
-                { re: /process\.env\.JWT_SECRET\s*\|\|\s*(['"`][^'"`]+['"`])/g, replacement: `${secretExpr}` },
-                { re: /process\.env\.SECRET_KEY\s*\|\|\s*(['"`][^'"`]+['"`])/g, replacement: `${secretExpr}` },
-                { re: /process\.env\.SEKRET_KEY\s*\|\|\s*(['"`][^'"`]+['"`])/g, replacement: `${secretExpr}` },
-            ];
+            // First, collapse any repeated/chained secret expressions into the canonical form
+            const repeatedSecretRe = /\(\s*(?:process\.env\.(?:JWT_SECRET|SECRET_KEY|SEKRET_KEY)\s*\|\|\s*){2,}['"`][^'"`]*['"`]\s*\)/g;
+            const longChainRe = /(?:process\.env\.(?:JWT_SECRET|SECRET_KEY|SEKRET_KEY)\s*\|\|\s*){2,}['"`][^'"`]*['"`]/g;
+            let collapsed = code.replace(repeatedSecretRe, `(${secretExpr})`).replace(longChainRe, secretExpr);
+            if (collapsed !== code) { code = collapsed; changed = true; }
 
-            secretPatterns.forEach(({ re, replacement }) => {
-                const nextCode = code.replace(re, replacement);
-                if (nextCode !== code) {
-                    code = nextCode;
-                    changed = true;
-                }
-            });
+            // Only expand simple single-env-var references if the canonical form isn't already present
+            if (!code.includes(secretExpr)) {
+                const secretPatterns = [
+                    { re: /process\.env\.JWT_SECRET\s*\|\|\s*(['"`][^'"`]+['"`])/g, replacement: secretExpr },
+                    { re: /process\.env\.SECRET_KEY\s*\|\|\s*(['"`][^'"`]+['"`])/g, replacement: secretExpr },
+                    { re: /process\.env\.SEKRET_KEY\s*\|\|\s*(['"`][^'"`]+['"`])/g, replacement: secretExpr },
+                    { re: /process\.env\.JWT_SECRET(?!\s*\|\|)/g, replacement: `(${secretExpr})` },
+                    { re: /process\.env\.SECRET_KEY(?!\s*\|\|)/g, replacement: `(${secretExpr})` },
+                    { re: /process\.env\.SEKRET_KEY(?!\s*\|\|)/g, replacement: `(${secretExpr})` },
+                ];
+                secretPatterns.forEach(({ re, replacement }) => {
+                    const nextCode = code.replace(re, replacement);
+                    if (nextCode !== code) { code = nextCode; changed = true; }
+                });
+            }
         }
 
         // Fix ports
@@ -2881,14 +2996,40 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
             }
             if (/\bapp\./.test(code) && !/\b(?:const|let|var)\s+app\s*=\s*express\s*\(/.test(code)) {
                 if (/express\s*=\s*require\(['"]express['"]\)/.test(code)) {
-                    code = code.replace(
-                        /(require\('dotenv'\)\.config\(\);\s*\n?)/,
-                        `$1\nconst app = express();\n`
-                    );
-                    if (!/\b(?:const|let|var)\s+app\s*=\s*express\s*\(/.test(code)) {
-                        code = code.replace(/(const\s+cors\s*=\s*require\(['"]cors['"]\);\s*\n?)/, `$1const app = express();\n`);
+                    let appInjected = false;
+                    // Try after dotenv.config()
+                    const afterDotenv = code.replace(/(require\(['"]dotenv['"]\)\.config\(\);?\s*\n?)/, `$1const app = express();\n`);
+                    if (afterDotenv !== code) { code = afterDotenv; appInjected = true; }
+                    // Try after cors require
+                    if (!appInjected) {
+                        const afterCors = code.replace(/((?:const|let|var)\s+cors\s*=\s*require\(['"]cors['"]\);?\s*\n?)/, `$1const app = express();\n`);
+                        if (afterCors !== code) { code = afterCors; appInjected = true; }
                     }
-                    changed = true;
+                    // Try after express require (semicolon optional)
+                    if (!appInjected) {
+                        const afterExpress = code.replace(
+                            /((?:const|let|var)\s+express\s*=\s*require\(['"]express['"]\);?\s*\n?)/,
+                            `$1const app = express();\n`
+                        );
+                        if (afterExpress !== code) { code = afterExpress; appInjected = true; }
+                    }
+                    // Last resort: insert after the last require() line
+                    if (!appInjected) {
+                        const lines = code.split('\n');
+                        let lastRequireIdx = -1;
+                        for (let i = 0; i < lines.length; i++) {
+                            if (/require\s*\(/.test(lines[i])) lastRequireIdx = i;
+                        }
+                        if (lastRequireIdx >= 0) {
+                            lines.splice(lastRequireIdx + 1, 0, 'const app = express();');
+                            code = lines.join('\n');
+                            appInjected = true;
+                        }
+                    }
+                    if (appInjected) {
+                        changed = true;
+                        noteRepairedFile(path, 'injected missing const app = express()');
+                    }
                 }
             }
             if (fileNeedsAuthMiddlewareImport(code)) {
@@ -2899,6 +3040,33 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
                     noteRepairedFile(path, 'added missing auth middleware import');
                 }
             }
+            // Remove module.exports from entry index.js files — entry files are not modules
+            if (/module\.exports\s*=\s*app/.test(code)) {
+                code = code.replace(/\n?\s*module\.exports\s*=\s*app\s*;?\s*\n?/g, '\n');
+                changed = true;
+                noteRepairedFile(path, 'removed module.exports = app from entry file');
+            }
+
+            // Inject mongoose.connect() when mongoose is required but never connected
+            if (/mongoose\s*=\s*require\(['"]mongoose['"]\)/.test(code) && !/mongoose\.connect\s*\(/.test(code)) {
+                const dbName = serviceName.replace(/-service$/, '').replace(/-/g, '') + 'db';
+                const mongoConnectBlock =
+                    `\nmongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URL || 'mongodb://127.0.0.1:27017/${dbName}')\n` +
+                    `  .then(() => console.log('MongoDB connected'))\n` +
+                    `  .catch(err => console.error('MongoDB error:', err.message));\n`;
+                if (/app\.get\(['"]\/health/.test(code)) {
+                    code = code.replace(/(app\.get\(['"]\/health)/, mongoConnectBlock + '$1');
+                } else if (/app\.use\(express\.json\(\)\)/.test(code)) {
+                    code = code.replace(/(app\.use\(express\.json\(\)\);?\s*\n)/, `$1${mongoConnectBlock}`);
+                } else if (/app\.listen\(/.test(code)) {
+                    code = code.replace(/(app\.listen\()/, mongoConnectBlock + '$1');
+                } else {
+                    code += mongoConnectBlock;
+                }
+                changed = true;
+                noteRepairedFile(path, `injected missing mongoose.connect() for ${dbName}`);
+            }
+
             code = code.replace(
                 /mongoose\.connect\(\s*(['"`])([^'"`]+)\1/g,
                 (match, quote, uri) => uri.startsWith('mongodb://')
@@ -2944,6 +3112,38 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
                 );
                 changed = true;
             }
+            // Fix mismatched local require paths (e.g. require('./routes/lessons') when file is routes/lesson.js)
+            const servicePrefix = `/${serviceName}/`;
+            const serviceFileKeys = Object.keys(backendFiles).filter(f => f.startsWith(servicePrefix));
+            const requireLocalMatches = [...code.matchAll(/require\(\s*['"](\.\/(routes|models|middleware)\/([^'"./]+))['"]\s*\)/g)];
+            for (const reqMatch of requireLocalMatches) {
+                const fullReqPath = reqMatch[1];   // e.g. ./routes/lessons
+                const category   = reqMatch[2];    // routes | models | middleware
+                const basename   = reqMatch[3];    // lessons
+                const candidates = resolveLocalRequireCandidates(path, fullReqPath);
+                const alreadyOk  = candidates.some(c => backendFiles[c]);
+                if (!alreadyOk) {
+                    // Find actual files in that category for this service
+                    const actualInCategory = serviceFileKeys
+                        .filter(f => f.includes(`/${category}/`) && f.endsWith('.js'))
+                        .map(f => f.replace(/^.*\//, '').replace(/\.js$/, ''));
+                    // Pick best match: exact, singular/plural variant, or first file
+                    const singular = basename.endsWith('s') ? basename.slice(0, -1) : basename + 's';
+                    const bestMatch = actualInCategory.find(b => b === basename)
+                        || actualInCategory.find(b => b === singular)
+                        || (actualInCategory.length === 1 ? actualInCategory[0] : null);
+                    if (bestMatch && bestMatch !== basename) {
+                        const escapedReq = fullReqPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        code = code.replace(
+                            new RegExp(`require\\((['"])${escapedReq}\\1\\)`, 'g'),
+                            `require('./${category}/${bestMatch}')`
+                        );
+                        changed = true;
+                        noteRepairedFile(path, `fixed mismatched require ./${category}/${basename} → ./${category}/${bestMatch}`);
+                    }
+                }
+            }
+
             // Ensure a direct app.get('/health') exists in the service index.js.
             // Live health checks hit http://127.0.0.1:PORT/health directly — a health route
             // buried inside a mounted router (e.g. /api/auth/health) will always return 404.
@@ -4296,19 +4496,19 @@ function getCreatedIdForParam(paramName, routePath, createdRecords) {
     return null;
 }
 
+const FALLBACK_OBJECT_ID = '000000000000000000000001';
+
 function resolveDynamicPath(routePath, createdRecords) {
-    let unresolved = false;
     const resolvedPath = routePath.replace(/:([A-Za-z0-9_]+)/g, (match, paramName) => {
         const resolvedValue = getCreatedIdForParam(paramName, routePath, createdRecords);
         if (!resolvedValue) {
-            unresolved = true;
-            return match;
+            // Use a valid-looking ObjectId placeholder so the route still runs
+            return FALLBACK_OBJECT_ID;
         }
-
         return encodeURIComponent(String(resolvedValue));
     });
 
-    return unresolved ? null : resolvedPath;
+    return resolvedPath;
 }
 
 function extractCreatedRecord(payload) {
@@ -5970,16 +6170,6 @@ async function runLiveBackendValidation(backendFiles, simulatedResults, emit, { 
         for (const step of executionPlan) {
             const resourceBase = getResourceBase(step.path);
             const resolvedPath = resolveDynamicPath(step.path, createdRecords);
-            if (!resolvedPath) {
-                emit({
-                    type: 'log',
-                    phase: 'api-test',
-                    level: 'warning',
-                    round: 'live',
-                    message: `Skipping ${step.method} ${step.path} until required IDs exist from earlier live requests.`,
-                });
-                continue;
-            }
 
             const requiresAuth = routeRequiresAuth(resolvedPath, step.detail);
             if (requiresAuth && !authState.token) {
@@ -5988,14 +6178,6 @@ async function runLiveBackendValidation(backendFiles, simulatedResults, emit, { 
                     deferredAuthKeys.add(key);
                     deferredAuthSteps.push(cloneJson(step));
                 }
-                emit({
-                    type: 'log',
-                    phase: 'api-test',
-                    level: 'warning',
-                    round: 'live',
-                    message: `Deferring ${step.method} ${step.path} until auth token is available from register/login.`,
-                });
-                continue;
             }
 
             const rawPayload = step.sampleData || buildSchemaSamplePayload(
@@ -6032,7 +6214,10 @@ async function runLiveBackendValidation(backendFiles, simulatedResults, emit, { 
 
             const performRequest = async (options) => {
                 try {
-                    const response = await fetch(`http://127.0.0.1:${ports.gateway}${requestPath}`, options);
+                    const controller = new AbortController();
+                    const timer = setTimeout(() => controller.abort(), 12000);
+                    const response = await fetch(`http://127.0.0.1:${ports.gateway}${requestPath}`, { ...options, signal: controller.signal });
+                    clearTimeout(timer);
                     const payload = await response.json().catch(() => null);
                     return { response, payload, failureReason: null };
                 } catch (error) {
@@ -6914,6 +7099,29 @@ export async function POST(req) {
                                 level: 'warning',
                                 message: `[service-check] ${targetLabel}: still needs fixes -> ${targetIssues.slice(0, 4).join(' | ')}`,
                             });
+                            // Immediately attempt static fixes for this service before moving on
+                            const serviceStaticResult = staticFixBackend(sequentialBackendFiles, structuredAppSpec);
+                            sequentialBackendFiles = serviceStaticResult.files;
+                            const scopeKey = targetValidationScope.replace(/^\/+/, '');
+                            const scopedRepairs = serviceStaticResult.repairedFiles.filter((entry) => entry.startsWith(scopeKey) || entry.startsWith('/' + scopeKey));
+                            const scopedCreated = serviceStaticResult.createdFiles.filter((entry) => entry.startsWith(scopeKey) || entry.startsWith('/' + scopeKey));
+                            const allScopedFixes = [...scopedCreated, ...scopedRepairs];
+                            if (allScopedFixes.length > 0) {
+                                const fixedEntries = allScopedFixes.slice(0, 6).join(', ');
+                                emit({
+                                    type: 'log',
+                                    phase: 'backend-gen',
+                                    level: 'success',
+                                    message: `[service-fix] Fixed service ${targetLabel} — static repair applied: ${fixedEntries}`,
+                                });
+                            } else {
+                                emit({
+                                    type: 'log',
+                                    phase: 'backend-gen',
+                                    level: 'info',
+                                    message: `[service-fix] ${targetLabel}: no static-fix candidates found — AI repair will run in backend-fix phase`,
+                                });
+                            }
                         } else {
                             emit({
                                 type: 'log',

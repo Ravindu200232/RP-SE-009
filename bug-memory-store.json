@@ -90,6 +90,58 @@
         "timestamp": "2026-04-19T05:43:00.695Z",
         "fixSummary": "No improvement: /course-service/index.js: missing local require ../middleware/auth | /course-service/routes/courses.js: missing local require ./models/Course"
       }
+    },
+    {
+      "id": "fix-1776579041926-6lopn0",
+      "bugText": "/lesson-service/index.js: entry file uses app.* without declaring const app = express()\n/quiz-service/index.js: entry file uses app.* without declaring const app = express()",
+      "embedding": [],
+      "meta": {
+        "method": "standard",
+        "outcome": "fail",
+        "phase": "backend-fix",
+        "round": "1",
+        "timestamp": "2026-04-19T06:10:41.926Z",
+        "fixSummary": "No improvement: /lesson-service/index.js: entry file uses app.* without declaring const app = express() | /quiz-service/index.js: entry file uses app.* without declaring const app = express()"
+      }
+    },
+    {
+      "id": "fix-1776579046242-ao5z2v",
+      "bugText": "/lesson-service/index.js: entry file uses app.* without declaring const app = express()\n/quiz-service/index.js: entry file uses app.* without declaring const app = express()",
+      "embedding": [],
+      "meta": {
+        "method": "root-cause",
+        "outcome": "fail",
+        "phase": "backend-fix",
+        "round": "2",
+        "timestamp": "2026-04-19T06:10:46.242Z",
+        "fixSummary": "No improvement: /lesson-service/index.js: entry file uses app.* without declaring const app = express() | /quiz-service/index.js: entry file uses app.* without declaring const app = express()"
+      }
+    },
+    {
+      "id": "fix-1776585384801-lnfn1w",
+      "bugText": "/enrollment-service/middleware/auth.js: missing local require ../config/default.json",
+      "embedding": [],
+      "meta": {
+        "method": "standard",
+        "outcome": "fail",
+        "phase": "backend-fix",
+        "round": "1",
+        "timestamp": "2026-04-19T07:56:24.801Z",
+        "fixSummary": "No improvement: /enrollment-service/middleware/auth.js: missing local require ../config/default.json"
+      }
+    },
+    {
+      "id": "fix-1776585389675-pudohf",
+      "bugText": "/enrollment-service/middleware/auth.js: missing local require ../config/default.json",
+      "embedding": [],
+      "meta": {
+        "method": "full-rewrite",
+        "outcome": "success",
+        "phase": "backend-fix",
+        "round": "2",
+        "timestamp": "2026-04-19T07:56:29.675Z",
+        "fixSummary": "Fully fixed 1 file(s), backend clean"
+      }
     }
   ]
 }

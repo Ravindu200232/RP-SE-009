@@ -306,7 +306,12 @@ ROUTES: Every route returns { success: true, data: ... } or { success: false, er
   In every resource router file, add router.get('/health', ...) before any router.get('/:id') or other parameterized /:id routes.
   Never place parameterized routes like /:id before literal routes such as /health, /status, /search, or /stats.
 
-MONGOOSE: mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URL || 'mongodb://127.0.0.1:27017/[name]-db', { useNewUrlParser: true, useUnifiedTopology: true })
+MONGOOSE: Every service index.js that requires('mongoose') MUST call mongoose.connect() before app.listen().
+  REQUIRED pattern (do NOT skip this):
+    mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URL || 'mongodb://127.0.0.1:27017/[name]db')
+      .then(() => console.log('MongoDB connected'))
+      .catch(err => console.error('MongoDB error:', err.message));
+  Do NOT use deprecated options (useNewUrlParser, useUnifiedTopology) — MongoDB driver v4+ rejects them.
   Do not hardcode MongoDB URIs without the process.env.MONGODB_URI or process.env.MONGO_URL fallback.
   If auth is used, use a secret expression like process.env.JWT_SECRET || process.env.SECRET_KEY || process.env.SEKRET_KEY || 'dev-secret'.
   Do not use mongoose populate() for models owned by another microservice. Return raw ObjectId references instead.
@@ -346,6 +351,12 @@ SERVICE-WISE COMPLETENESS (required for every service):
   index.js mounts every route file: app.use('/api/[resource]', require('./routes/[name]'))
   Model fields MUST declare explicit types: { type: String|Number|Boolean|Date }
   Route POST/PUT handlers MUST validate required fields match model schema types before persistence.
+
+FORBIDDEN PATTERNS — never generate these:
+  ✗ module.exports = app  in any service index.js — index.js is an entry point, not a module. Only route/model files use module.exports.
+  ✗ mongoose.connect() missing — if you require('mongoose'), you MUST call mongoose.connect() in the same file.
+  ✗ require('./routes/X') in index.js when the route file is named differently — the require path MUST exactly match the filename you generate.
+  ✗ Repeated JWT secret chains like process.env.JWT_SECRET || process.env.JWT_SECRET — use the canonical form exactly once.
 
 ROUTE ORDERING (critical — prevents MongoDB CastError at runtime):
   In every routes file, literal-path routes MUST come BEFORE parameterized routes.
@@ -476,6 +487,14 @@ BUGS TO CHECK
     a. index.js mounts every route file via app.use('/api/[resource]', require('./routes/[name]'))
     b. Every model field has an explicit { type: String|Number|Boolean|Date } declaration
     c. Route POST/PUT handlers validate required fields exist and match model schema types before calling save() or findByIdAndUpdate()
+22. mongoose.connect() missing — every service index.js that requires('mongoose') MUST call mongoose.connect() BEFORE app.listen(). If it is missing, add:
+    mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URL || 'mongodb://127.0.0.1:27017/[servicename]db')
+      .then(() => console.log('MongoDB connected'))
+      .catch(err => console.error('MongoDB error:', err.message));
+    A missing mongoose.connect() causes ALL POST/PUT/DELETE requests to hang until the gateway proxy times out (10s), producing "request aborted" on the service and "fetch failed" on the client.
+23. module.exports = app in index.js — entry files are NOT modules. Remove module.exports = app from any service index.js. Only route files, model files, and middleware files should export.
+24. Mismatched require() path — if index.js has require('./routes/lessons') but the generated route file is routes/lesson.js, fix the require path to match the actual filename exactly.
+25. Repeated JWT secret chain — if code has process.env.JWT_SECRET || process.env.JWT_SECRET (repeated), collapse it to the canonical single expression: process.env.JWT_SECRET || process.env.SECRET_KEY || process.env.SEKRET_KEY || 'dev-secret'.
 20. Route shadowing — in every routes file, any literal-path route (e.g. /my, /me, /search, /count, /course/:id) that appears AFTER a parameterized route (/:id, /:courseId) will shadow/steal requests:
     a. Move ALL literal routes to BEFORE any /:param route in the same router
     b. Example fix: router.get('/my', auth, handler) MUST come before router.get('/:id', handler)
