@@ -38,6 +38,58 @@
         "timestamp": "2026-04-18T12:33:56.876Z",
         "fixSummary": "No improvement: /learning-service/routes/lessons.js: route shadowing — '/' defined after parameterized '/:id'; move literal routes before /:param routes"
       }
+    },
+    {
+      "id": "fix-1776575542571-lfg37r",
+      "bugText": "/auth-service/routes/auth.js: auth middleware is used but auth is not defined; add const auth = require('../middleware/auth')",
+      "embedding": [],
+      "meta": {
+        "method": "standard",
+        "outcome": "success",
+        "phase": "backend-fix",
+        "round": "1",
+        "timestamp": "2026-04-19T05:12:22.571Z",
+        "fixSummary": "Fully fixed 1 file(s), backend clean"
+      }
+    },
+    {
+      "id": "fix-1776577335447-piazbw",
+      "bugText": "/course-service/index.js: entry file uses app.* without declaring const app = express()\n/course-service/index.js: missing local require ../middleware/auth\n/course-service/routes/courses.js: missing local require ./models/Course\n/lesson-service/index.js: entry file uses app.* without declaring const app = express()\n/quiz-service/index.js: entry file uses app.* without declaring const app = express()\n/lesson-service/middleware/auth.js: missing package dependency jsonwebtoken in /lesson-service/package.json\n/quiz-service/middleware/auth.js: missing package dependency jsonwebtoken in /quiz-service/package.json",
+      "embedding": [],
+      "meta": {
+        "method": "standard",
+        "outcome": "success",
+        "phase": "backend-fix",
+        "round": "1",
+        "timestamp": "2026-04-19T05:42:15.447Z",
+        "fixSummary": "Partial fix: resolved 5 of 7 issues"
+      }
+    },
+    {
+      "id": "fix-1776577359647-7w4a18",
+      "bugText": "/course-service/index.js: missing local require ../middleware/auth\n/course-service/routes/courses.js: missing local require ./models/Course",
+      "embedding": [],
+      "meta": {
+        "method": "root-cause",
+        "outcome": "fail",
+        "phase": "backend-fix",
+        "round": "2",
+        "timestamp": "2026-04-19T05:42:39.647Z",
+        "fixSummary": "No improvement: /course-service/index.js: missing local require ../middleware/auth | /course-service/routes/courses.js: missing local require ./models/Course"
+      }
+    },
+    {
+      "id": "fix-1776577380695-ynv5w0",
+      "bugText": "/course-service/index.js: missing local require ../middleware/auth\n/course-service/routes/courses.js: missing local require ./models/Course",
+      "embedding": [],
+      "meta": {
+        "method": "service-isolation",
+        "outcome": "fail",
+        "phase": "backend-fix",
+        "round": "3",
+        "timestamp": "2026-04-19T05:43:00.695Z",
+        "fixSummary": "No improvement: /course-service/index.js: missing local require ../middleware/auth | /course-service/routes/courses.js: missing local require ./models/Course"
+      }
     }
   ]
 }

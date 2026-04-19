@@ -406,6 +406,445 @@ function buildAppPlanningSnapshot(structuredSpec = null, prompt = '') {
     };
 }
 
+function normalizeServiceSlug(value = '') {
+    return String(value || '')
+        .toLowerCase()
+        .replace(/service$/i, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        || 'service';
+}
+
+function singularizeWord(value = '') {
+    const text = String(value || '').trim();
+    if (!text) return 'Item';
+    if (/ies$/i.test(text)) return text.replace(/ies$/i, 'y');
+    if (/ses$/i.test(text)) return text.replace(/es$/i, '');
+    if (/s$/i.test(text) && !/ss$/i.test(text)) return text.replace(/s$/i, '');
+    return text;
+}
+
+function inferServiceMounts(service = {}) {
+    const mounts = normalizeDisplayList(
+        (service?.endpoints || [])
+            .map((endpoint) => splitStructuredEndpointPath(endpoint.path).mountPath)
+            .filter(Boolean)
+    );
+    if (mounts.length > 0) {
+        return mounts;
+    }
+    const fallbackSlug = normalizeServiceSlug(service?.slug || service?.name || 'items');
+    return [`/api/${fallbackSlug}`];
+}
+
+function inferServiceRouteBases(service = {}) {
+    return inferServiceMounts(service).map((mountPath) => mountPath.split('/').filter(Boolean).pop() || 'generated');
+}
+
+function inferServiceModelBase(service = {}) {
+    const entityName = Array.isArray(service?.entities) && service.entities.length > 0
+        ? String(service.entities[0] || '')
+        : singularizeWord(service?.slug || service?.name || 'Record');
+    const cleaned = entityName.replace(/service$/i, '').replace(/[^A-Za-z0-9]/g, '');
+    return cleaned ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1) : 'Record';
+}
+
+function structuredServiceUsesAuth(service = {}) {
+    const text = [
+        service?.name || '',
+        service?.slug || '',
+        service?.description || '',
+        ...(service?.endpoints || []).map((endpoint) => `${endpoint.method || ''} ${endpoint.path || ''}`),
+    ].join(' ').toLowerCase();
+    return /(auth|login|register|password|token|jwt|\/me\b|\/profile\b|\/my\b)/.test(text);
+}
+
+function buildStructuredBackendGenerationTargets(structuredSpec = null, backendFiles = {}) {
+    if (!structuredSpec?.services?.length) {
+        return [];
+    }
+
+    return [
+        { type: 'gateway', name: 'Api Gateway', serviceDir: '/api-gateway' },
+        ...structuredSpec.services.map((service) => ({
+            type: 'service',
+            name: service?.name || humanizeServiceName(pickStructuredServiceDir(service, backendFiles)),
+            service,
+            serviceDir: pickStructuredServiceDir(service, backendFiles),
+        })),
+    ];
+}
+
+function buildGatewayGenerationTemplateBlock(structuredSpec = null) {
+    const serviceLines = (structuredSpec?.services || []).map((service, index) => {
+        const port = DEFAULT_SERVICE_PORT_START + index;
+        const mounts = inferServiceMounts(service);
+        return `- ${service.name || service.slug || `service-${index + 1}`} -> port ${port} -> mounts ${mounts.join(', ')}`;
+    });
+
+    return [
+        'TARGET TEMPLATE BLOCK:',
+        'Generate ONLY these files for this step:',
+        '===BACKEND: /api-gateway/index.js===',
+        "const express = require('express');",
+        "const cors = require('cors');",
+        "const { createProxyMiddleware, fixRequestBody } = require('http-proxy-middleware');",
+        "require('dotenv').config();",
+        '// app.use(cors());',
+        '// app.use(express.json());',
+        '// app.use(\'/api/...\', createProxyMiddleware({ target: ..., changeOrigin: true, proxyTimeout: 10000, timeout: 10000, onProxyReq: fixRequestBody }))',
+        '// app.get(\'/health\', (req, res) => res.json({ status: \'ok\', timestamp: new Date().toISOString() }));',
+        '===ENDFILE===',
+        '===BACKEND: /api-gateway/package.json===',
+        '{"name":"api-gateway","version":"1.0.0","scripts":{"start":"node index.js","dev":"nodemon index.js"},"dependencies":{"express":"^4.18.2","cors":"^2.8.5","dotenv":"^16.0.0","http-proxy-middleware":"^3.0.0"}}',
+        '===ENDFILE===',
+        serviceLines.length ? `Gateway routing map:\n${serviceLines.join('\n')}` : '',
+        'Before returning code, verify api-gateway/index.js and api-gateway/package.json both exist and every proxy prefix points to the correct service port.',
+    ].filter(Boolean).join('\n');
+}
+
+function buildServiceGenerationTemplateBlock(service = {}, serviceDir = '') {
+    const serviceDirName = String(serviceDir || '').replace(/^\/+/, '') || 'generated-service';
+    const routeBases = inferServiceRouteBases(service);
+    const mounts = inferServiceMounts(service);
+    const modelBase = inferServiceModelBase(service);
+    const usesAuth = structuredServiceUsesAuth(service);
+
+    return [
+        'TARGET TEMPLATE BLOCK:',
+        `Generate ONLY files under ${serviceDir}.`,
+        `Required files for ${service.name || serviceDirName}:`,
+        `- /${serviceDirName}/index.js`,
+        `- /${serviceDirName}/package.json`,
+        `- /${serviceDirName}/models/${modelBase}.js`,
+        ...routeBases.map((routeBase) => `- /${serviceDirName}/routes/${routeBase}.js`),
+        ...(usesAuth ? [`- /${serviceDirName}/middleware/auth.js (only if protected routes use auth)`] : []),
+        `Mounts required in index.js: ${mounts.join(', ')}`,
+        `Model expected: ${modelBase}`,
+        'Checks to satisfy before returning code:',
+        '- index.js exists and mounts every generated route file',
+        '- package.json exists and includes every imported external library',
+        '- local require/import paths point to real files',
+        '- module.exports exists for models, routes, and middleware',
+        '- route literal paths come before parameterized /:id routes',
+        '- if auth is used, import const auth = require(\'../middleware/auth\') in route files or ./middleware/auth in index.js',
+    ].join('\n');
+}
+
+function filterBackendFilesForGenerationTarget(parsedBackend = {}, target = null) {
+    if (!target?.serviceDir) {
+        return { ...(parsedBackend || {}) };
+    }
+
+    const serviceDir = String(target.serviceDir);
+    const nextFiles = {};
+    Object.entries(parsedBackend || {}).forEach(([filePath, content]) => {
+        if (filePath.startsWith(`${serviceDir}/`) || filePath === `${serviceDir}/index.js` || filePath === `${serviceDir}/package.json`) {
+            nextFiles[filePath] = content;
+        }
+    });
+    return nextFiles;
+}
+
+function createGatewayPackageJsonTemplate() {
+    return JSON.stringify({
+        name: 'api-gateway',
+        version: '1.0.0',
+        main: 'index.js',
+        scripts: {
+            start: 'node index.js',
+            dev: 'nodemon index.js',
+        },
+        dependencies: {
+            express: '^4.18.2',
+            cors: '^2.8.5',
+            dotenv: '^16.0.0',
+            'http-proxy-middleware': '^3.0.0',
+        },
+    }, null, 2);
+}
+
+function createGatewayIndexTemplate(structuredSpec = null) {
+    const proxyLines = (structuredSpec?.services || []).flatMap((service, index) => {
+        const port = DEFAULT_SERVICE_PORT_START + index;
+        return inferServiceMounts(service).map((mountPath) => [
+            `app.use('${mountPath}', createProxyMiddleware({`,
+            `  target: 'http://127.0.0.1:${port}',`,
+            '  changeOrigin: true,',
+            '  proxyTimeout: 10000,',
+            '  timeout: 10000,',
+            '  onProxyReq: fixRequestBody,',
+            `  onError: (error, req, res) => {`,
+            '    if (!res.headersSent) {',
+            "      res.status(502).json({ success: false, error: 'downstream service unavailable', details: error.code || error.message });",
+            '    }',
+            '  }',
+            '}));',
+        ].join('\n'));
+    });
+
+    return [
+        "const express = require('express');",
+        "const cors = require('cors');",
+        "const { createProxyMiddleware, fixRequestBody } = require('http-proxy-middleware');",
+        "require('dotenv').config();",
+        '',
+        'const app = express();',
+        'app.use(cors());',
+        'app.use(express.json());',
+        `const PORT = Number(process.env.PORT_GATEWAY || process.env.PORT || ${DEFAULT_GATEWAY_PORT});`,
+        '',
+        "app.get('/health', (req, res) => {",
+        "  res.json({ status: 'ok', timestamp: new Date().toISOString() });",
+        '});',
+        '',
+        proxyLines.join('\n\n'),
+        '',
+        "app.listen(PORT, () => console.log(`API Gateway running on port ${PORT}`));",
+    ].filter(Boolean).join('\n');
+}
+
+function createServicePackageJsonTemplate(serviceDir = '', service = {}) {
+    const dependencies = {
+        express: '^4.18.2',
+        mongoose: '^8.0.3',
+        cors: '^2.8.5',
+        dotenv: '^16.0.0',
+        uuid: '^9.0.0',
+    };
+    if (structuredServiceUsesAuth(service)) {
+        dependencies.bcryptjs = '^2.4.3';
+        dependencies.jsonwebtoken = '^9.0.2';
+    }
+
+    return JSON.stringify({
+        name: String(serviceDir || '').replace(/^\/+/, '') || 'generated-service',
+        version: '1.0.0',
+        main: 'index.js',
+        scripts: {
+            start: 'node index.js',
+            dev: 'nodemon index.js',
+        },
+        dependencies,
+    }, null, 2);
+}
+
+function createServiceModelTemplate(service = {}, modelBase = 'Record') {
+    if (structuredServiceUsesAuth(service)) {
+        return [
+            "const mongoose = require('mongoose');",
+            '',
+            `const ${modelBase}Schema = new mongoose.Schema({`,
+            '  email: { type: String, required: true, unique: true, sparse: true },',
+            '  password: { type: String, required: true },',
+            '  firstName: { type: String },',
+            '  lastName: { type: String },',
+            "  role: { type: String, enum: ['student', 'instructor', 'admin'], default: 'student' },",
+            '}, { timestamps: true });',
+            '',
+            `module.exports = mongoose.model('${modelBase}', ${modelBase}Schema);`,
+        ].join('\n');
+    }
+
+    return [
+        "const mongoose = require('mongoose');",
+        '',
+        `const ${modelBase}Schema = new mongoose.Schema({`,
+        '  title: { type: String, required: true },',
+        '  description: { type: String, default: "" },',
+        '  status: { type: String, default: "active" },',
+        '}, { timestamps: true });',
+        '',
+        `module.exports = mongoose.model('${modelBase}', ${modelBase}Schema);`,
+    ].join('\n');
+}
+
+function createServiceIndexTemplate(service = {}, serviceDir = '') {
+    const serviceDirName = String(serviceDir || '').replace(/^\/+/, '') || 'generated-service';
+    const mounts = inferServiceMounts(service);
+    const routeBases = inferServiceRouteBases(service);
+    const mongoDbName = normalizeServiceSlug(service?.slug || service?.name || serviceDirName);
+    const routeMountLines = mounts.map((mountPath, index) => `app.use('${mountPath}', require('./routes/${routeBases[index] || routeBases[0] || 'generated'}'));`);
+
+    return [
+        "require('dotenv').config();",
+        "const express = require('express');",
+        "const cors = require('cors');",
+        "const mongoose = require('mongoose');",
+        '',
+        'const app = express();',
+        'app.use(cors());',
+        'app.use(express.json());',
+        `const PORT = Number(process.env.PORT || ${DEFAULT_SERVICE_PORT_START});`,
+        '',
+        `mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URL || 'mongodb://127.0.0.1:27017/${mongoDbName}-db')`,
+        `  .then(() => console.log('${humanizeServiceName(serviceDir)} connected to MongoDB'))`,
+        "  .catch((error) => console.error('MongoDB connection error:', error.message));",
+        '',
+        routeMountLines.join('\n'),
+        '',
+        "app.get('/health', (req, res) => {",
+        `  res.json({ success: true, data: { status: 'ok', service: '${serviceDirName}' } });`,
+        '});',
+        '',
+        "app.listen(PORT, () => console.log(`${PORT && '" + humanizeServiceName(serviceDir) + "'} running on port ${PORT}`));",
+    ].filter(Boolean).join('\n');
+}
+
+function ensureStructuredBackendTargetFoundation(backendFiles = {}, target = null, structuredSpec = null) {
+    const fixed = { ...(backendFiles || {}) };
+    const createdFiles = [];
+    const noteCreated = (filePath, reason = '') => {
+        const message = reason ? `${filePath} — ${reason}` : filePath;
+        if (!createdFiles.includes(message)) {
+            createdFiles.push(message);
+        }
+    };
+
+    if (!target) {
+        return { files: fixed, createdFiles };
+    }
+
+    if (target.type === 'gateway') {
+        if (!fixed['/api-gateway/package.json']) {
+            fixed['/api-gateway/package.json'] = { code: createGatewayPackageJsonTemplate() };
+            noteCreated('/api-gateway/package.json', 'created gateway package template');
+        }
+        if (!fixed['/api-gateway/index.js']) {
+            fixed['/api-gateway/index.js'] = { code: createGatewayIndexTemplate(structuredSpec) };
+            noteCreated('/api-gateway/index.js', 'created gateway index template');
+        }
+        return { files: fixed, createdFiles };
+    }
+
+    const serviceDir = target.serviceDir;
+    const service = target.service || {};
+    const serviceDirName = String(serviceDir || '').replace(/^\/+/, '') || 'generated-service';
+    const modelBase = inferServiceModelBase(service);
+    const modelPath = `${serviceDir}/models/${modelBase}.js`;
+
+    if (!fixed[`${serviceDir}/package.json`]) {
+        fixed[`${serviceDir}/package.json`] = { code: createServicePackageJsonTemplate(serviceDir, service) };
+        noteCreated(`${serviceDir}/package.json`, 'created service package template');
+    }
+    if (!fixed[`${serviceDir}/index.js`]) {
+        fixed[`${serviceDir}/index.js`] = { code: createServiceIndexTemplate(service, serviceDir) };
+        noteCreated(`${serviceDir}/index.js`, 'created service index template');
+    }
+    if (!Object.keys(fixed).some((filePath) => filePath.startsWith(`${serviceDir}/models/`))) {
+        fixed[modelPath] = { code: createServiceModelTemplate(service, modelBase) };
+        noteCreated(modelPath, 'created service model template');
+    }
+
+    const subsetSpec = structuredSpec && target.service
+        ? { ...structuredSpec, services: [target.service] }
+        : null;
+    if (subsetSpec) {
+        const beforePaths = new Set(Object.keys(fixed));
+        const coverageFixed = applyStructuredSpecCoverageFixes(fixed, subsetSpec);
+        Object.keys(coverageFixed.files).forEach((filePath) => {
+            if (!beforePaths.has(filePath)) {
+                noteCreated(filePath, `created structured route template for ${serviceDirName}`);
+            }
+        });
+        return { files: coverageFixed.files, createdFiles };
+    }
+
+    return { files: fixed, createdFiles };
+}
+
+function buildStructuredBackendTargetPrompt(basePrompt = '', target = null, existingBackendFiles = {}, structuredSpec = null) {
+    const targetBlock = target?.type === 'gateway'
+        ? buildGatewayGenerationTemplateBlock(structuredSpec)
+        : buildServiceGenerationTemplateBlock(target?.service || {}, target?.serviceDir || '');
+
+    const existingTargetFiles = target?.serviceDir
+        ? filterBackendFilesForGenerationTarget(existingBackendFiles, target)
+        : existingBackendFiles;
+    const existingSnapshot = Object.keys(existingTargetFiles || {}).length > 0
+        ? buildBackendSnapshot(existingTargetFiles, { maxFiles: 8, maxCharsPerFile: 3500, maxTotalChars: 12000 })
+        : '';
+
+    return [
+        basePrompt,
+        'SERVICE-BY-SERVICE BACKEND GENERATION MODE:',
+        target?.type === 'gateway'
+            ? 'Generate the API gateway only in this step.'
+            : `Generate ${target?.name || 'the current service'} only in this step.`,
+        'Before finalizing code, internally check: missing files, missing package imports, broken export/module.exports, wrong local require paths, route mounting, middleware paths, and package.json coverage.',
+        'Return only complete backend files for this target. Do not include frontend files and do not include unrelated services in this step.',
+        targetBlock,
+        existingSnapshot ? `CURRENT FILES ALREADY GENERATED FOR THIS TARGET:\n${existingSnapshot}` : '',
+    ].filter(Boolean).join('\n\n');
+}
+
+function inferServiceDirFromValidationError(errorText = '') {
+    const text = String(errorText || '');
+    const pathMatch = text.match(/(\/[a-z0-9-]+-service)(?:\/|:)/i);
+    if (pathMatch) {
+        return pathMatch[1];
+    }
+
+    const namedServiceMatch = text.match(/backend service:\s*([a-z0-9-]+-service)/i);
+    if (namedServiceMatch) {
+        return `/${namedServiceMatch[1]}`;
+    }
+
+    return '';
+}
+
+function groupValidationErrorsByService(errors = []) {
+    const grouped = new Map();
+    (errors || []).forEach((errorText) => {
+        const serviceDir = inferServiceDirFromValidationError(errorText) || '/unknown-service';
+        if (!grouped.has(serviceDir)) {
+            grouped.set(serviceDir, []);
+        }
+        grouped.get(serviceDir).push(String(errorText || ''));
+    });
+    return grouped;
+}
+
+function buildServiceFocusedBackendSnapshot(backendFiles = {}, serviceDir = '', validationErrors = []) {
+    const normalizedServiceDir = String(serviceDir || '').trim();
+    if (!normalizedServiceDir || normalizedServiceDir === '/unknown-service') {
+        return buildBackendSnapshot(backendFiles, {
+            maxFiles: 12,
+            maxCharsPerFile: 5000,
+            maxTotalChars: 32000,
+        });
+    }
+
+    const selectedFiles = {};
+    Object.entries(backendFiles || {}).forEach(([filePath, content]) => {
+        if (
+            filePath.startsWith(`${normalizedServiceDir}/`)
+            || filePath === `${normalizedServiceDir}/index.js`
+            || filePath === `${normalizedServiceDir}/package.json`
+            || filePath === '/api-gateway/index.js'
+            || filePath === '/api-gateway/package.json'
+        ) {
+            selectedFiles[filePath] = content;
+        }
+    });
+
+    const groupedErrors = groupValidationErrorsByService(validationErrors);
+    const serviceErrors = groupedErrors.get(normalizedServiceDir) || [];
+
+    return [
+        `SERVICE REPAIR TARGET: ${normalizedServiceDir}`,
+        serviceErrors.length ? `SERVICE VALIDATION ERRORS:\n${serviceErrors.join('\n')}` : '',
+        buildBackendSnapshot(
+            Object.keys(selectedFiles).length > 0 ? selectedFiles : backendFiles,
+            {
+                maxFiles: 12,
+                maxCharsPerFile: 5000,
+                maxTotalChars: 32000,
+            }
+        ),
+    ].filter(Boolean).join('\n\n');
+}
+
 function inspectBackendFileImports(filePath = '', code = '', backendFiles = {}, declaredPackages = new Set()) {
     const missingLocalRequires = new Set();
     const missingPackages = new Set();
@@ -2772,6 +3211,27 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
                     (_, wrongPath) => `require('${wrongPath.replace(/^\.\.\/routes\//, './routes/')}')`
                 );
                 if (fixed1 !== code) { code = fixed1; changed = true; }
+            }
+
+            if (isIndexJs) {
+                const fixedMiddlewarePath = code.replace(
+                    /require\(['"]\.\.\/middleware\/([^'"]+)['"]\)/g,
+                    (_, middlewareName) => `require('./middleware/${middlewareName}')`
+                );
+                if (fixedMiddlewarePath !== code) {
+                    code = fixedMiddlewarePath;
+                    changed = true;
+                }
+            }
+
+            if (isRouteFile) {
+                const fixedModelPath = code
+                    .replace(/require\(['"]\.\/models\/([^'"]+)['"]\)/g, (_, modelName) => `require('../models/${modelName}')`)
+                    .replace(/require\(['"]\.\/middleware\/([^'"]+)['"]\)/g, (_, middlewareName) => `require('../middleware/${middlewareName}')`);
+                if (fixedModelPath !== code) {
+                    code = fixedModelPath;
+                    changed = true;
+                }
             }
 
             // (b) Fix case-mismatched require paths (applies to all JS files)
@@ -6363,86 +6823,191 @@ export async function POST(req) {
                 let backendText = '';
                 let prevText    = '';
                 const beUserPrompt = generationPrompt;
+                let beParsed = { projectTitle: projectTitle || '', backend: {} };
 
-                for await (const chunk of streamOllama(
-                    [{ role: 'user', content: beUserPrompt }],
-                    Prompt.BACKEND_GEN_PROMPT, 0.6, { model: BACKEND_GEN_MODEL }
-                )) {
-                    const content = chunk?.message?.content ?? '';
-                    if (content) {
-                        backendText += content;
-                        totalChars  += content.length;
+                if (structuredAppSpec?.services?.length) {
+                    const generationTargets = buildStructuredBackendGenerationTargets(structuredAppSpec, {});
+                    let sequentialBackendFiles = {};
+
+                    for (const target of generationTargets) {
+                        const targetLabel = target.type === 'gateway' ? 'Api Gateway' : (target.name || humanizeServiceName(target.serviceDir));
+                        const targetPrompt = buildStructuredBackendTargetPrompt(beUserPrompt, target, sequentialBackendFiles, structuredAppSpec);
+                        emit({
+                            type: 'log',
+                            phase: 'backend-gen',
+                            level: 'info',
+                            message: `[service-template] ${targetLabel}: analyzing required files, exports, library imports, route mounts, and package.json before generation`,
+                        });
+
+                        let targetRawText = await askOllamaText(
+                            [{ role: 'user', content: targetPrompt }],
+                            Prompt.BACKEND_GEN_JSON_PROMPT,
+                            0.2,
+                            { model: BACKEND_GEN_MODEL, format: 'json' }
+                        );
+                        totalChars += targetRawText.length;
                         emit({ type: 'chunk', phase: 'backend-gen', chars: totalChars });
-                        // Emit file-found events
-                        const newFiles = extractNewFilePaths(backendText, prevText);
-                        newFiles.forEach(f => emit({ type: 'file', phase: 'backend-gen', ...f }));
-                        prevText = backendText;
+
+                        let targetParsed = parseBackendJsonPayload(targetRawText);
+                        let targetFiles = filterBackendFilesForGenerationTarget(targetParsed.backend, target);
+
+                        if (Object.keys(targetFiles).length === 0) {
+                            emit({
+                                type: 'log',
+                                phase: 'backend-gen',
+                                level: 'warning',
+                                message: `[service-template] ${targetLabel}: JSON target generation returned no usable files. Retrying with marker format...`,
+                            });
+
+                            targetRawText = await askOllamaText(
+                                [{ role: 'user', content: targetPrompt }],
+                                Prompt.BACKEND_GEN_PROMPT,
+                                0.35,
+                                { model: BACKEND_GEN_MODEL }
+                            );
+                            totalChars += targetRawText.length;
+                            emit({ type: 'chunk', phase: 'backend-gen', chars: totalChars });
+
+                            targetParsed = parseBackendOnly(targetRawText);
+                            targetFiles = filterBackendFilesForGenerationTarget(targetParsed.backend, target);
+                        }
+
+                        Object.keys(targetFiles).forEach((filePath) => {
+                            emit({ type: 'file', phase: 'backend-gen', section: 'backend', path: filePath });
+                        });
+
+                        sequentialBackendFiles = { ...sequentialBackendFiles, ...targetFiles };
+                        const foundation = ensureStructuredBackendTargetFoundation(sequentialBackendFiles, target, structuredAppSpec);
+                        sequentialBackendFiles = foundation.files;
+
+                        foundation.createdFiles.forEach((entry) => {
+                            emit({
+                                type: 'log',
+                                phase: 'backend-gen',
+                                level: 'success',
+                                message: `[service-template] ${targetLabel}: created ${entry}`,
+                            });
+                        });
+
+                        if (target.type === 'service') {
+                            const targetAudit = collectBackendServiceAudit(sequentialBackendFiles, structuredAppSpec)
+                                .filter((serviceAudit) => serviceAudit.serviceDir === target.serviceDir);
+                            emitBackendServiceAudit(emit, targetAudit, { phase: 'backend-gen' });
+                        }
+
+                        const targetSpec = target.type === 'service' && target.service
+                            ? { ...structuredAppSpec, services: [target.service] }
+                            : null;
+                        const targetValidation = await validateBackendCandidateFiles(
+                            sequentialBackendFiles,
+                            projectTitle || structuredAppSpec.projectTitle || 'generated-app',
+                            targetSpec
+                        );
+                        const targetValidationScope = target.type === 'gateway'
+                            ? '/api-gateway'
+                            : target.serviceDir;
+                        const targetIssues = targetValidation.errors.filter((error) => error.includes(targetValidationScope.replace(/^\/+/, '')) || error.includes(targetValidationScope));
+                        if (targetIssues.length > 0) {
+                            emit({
+                                type: 'log',
+                                phase: 'backend-gen',
+                                level: 'warning',
+                                message: `[service-check] ${targetLabel}: still needs fixes -> ${targetIssues.slice(0, 4).join(' | ')}`,
+                            });
+                        } else {
+                            emit({
+                                type: 'log',
+                                phase: 'backend-gen',
+                                level: 'success',
+                                message: `[service-check] ${targetLabel}: required files, imports, exports, and package coverage look ready`,
+                            });
+                        }
                     }
-                    if (chunk?.done) break;
-                }
 
-                console.log(`[backend-gen] ${backendText.length} chars`);
-                let beParsed = parseBackendOnly(backendText);
-                if (Object.keys(beParsed.backend).length === 0 && backendText.trim()) {
-                    let reformatPrevText = '';
-                    emit({
-                        type: 'log',
-                        phase: 'backend-gen',
-                        level: 'warning',
-                        message: `Backend output was not in file-marker format. Trying recovery reformat using ${BACKEND_FIX_MODEL}...`,
-                    });
-
-                    let reformattedBackendText = '';
+                    beParsed = {
+                        projectTitle: projectTitle || structuredAppSpec.projectTitle || '',
+                        backend: sequentialBackendFiles,
+                    };
+                } else {
                     for await (const chunk of streamOllama(
-                        [{
-                            role: 'user',
-                            content:
-                                `RAW BACKEND ANSWER TO REFORMAT:\n\n${backendText}\n\n` +
-                                `Convert this into exact ===BACKEND: /path=== ... ===ENDFILE=== blocks.`
-                        }],
-                        Prompt.BACKEND_REFORMAT_PROMPT,
-                        0.1,
-                        { model: BACKEND_FIX_MODEL }
+                        [{ role: 'user', content: beUserPrompt }],
+                        Prompt.BACKEND_GEN_PROMPT, 0.6, { model: BACKEND_GEN_MODEL }
                     )) {
                         const content = chunk?.message?.content ?? '';
                         if (content) {
-                            reformattedBackendText += content;
-                            totalChars += content.length;
+                            backendText += content;
+                            totalChars  += content.length;
                             emit({ type: 'chunk', phase: 'backend-gen', chars: totalChars });
-                            const newFiles = extractNewFilePaths(reformattedBackendText, reformatPrevText);
+                            const newFiles = extractNewFilePaths(backendText, prevText);
                             newFiles.forEach(f => emit({ type: 'file', phase: 'backend-gen', ...f }));
-                            reformatPrevText = reformattedBackendText;
+                            prevText = backendText;
                         }
                         if (chunk?.done) break;
                     }
 
-                    const reparsed = parseBackendOnly(reformattedBackendText);
-                    if (Object.keys(reparsed.backend).length > 0) {
-                        beParsed = reparsed;
-                        backendText = reformattedBackendText;
-                    }
-                }
-                if (Object.keys(beParsed.backend).length === 0) {
-                    emit({
-                        type: 'log',
-                        phase: 'backend-gen',
-                        level: 'warning',
-                        message: `Marker recovery failed. Trying strict JSON backend generation with ${BACKEND_GEN_MODEL}...`,
-                    });
-
-                    const jsonBackendText = await askOllamaText(
-                        [{ role: 'user', content: beUserPrompt }],
-                        Prompt.BACKEND_GEN_JSON_PROMPT,
-                        0.2,
-                        { model: BACKEND_GEN_MODEL, format: 'json' }
-                    );
-                    const jsonParsed = parseBackendJsonPayload(jsonBackendText);
-                    if (Object.keys(jsonParsed.backend).length > 0) {
-                        beParsed = jsonParsed;
-                        projectTitle = jsonParsed.projectTitle || projectTitle;
-                        Object.keys(jsonParsed.backend).forEach((filePath) => {
-                            emit({ type: 'file', phase: 'backend-gen', section: 'backend', path: filePath });
+                    console.log(`[backend-gen] ${backendText.length} chars`);
+                    beParsed = parseBackendOnly(backendText);
+                    if (Object.keys(beParsed.backend).length === 0 && backendText.trim()) {
+                        let reformatPrevText = '';
+                        emit({
+                            type: 'log',
+                            phase: 'backend-gen',
+                            level: 'warning',
+                            message: `Backend output was not in file-marker format. Trying recovery reformat using ${BACKEND_FIX_MODEL}...`,
                         });
+
+                        let reformattedBackendText = '';
+                        for await (const chunk of streamOllama(
+                            [{
+                                role: 'user',
+                                content:
+                                    `RAW BACKEND ANSWER TO REFORMAT:\n\n${backendText}\n\n` +
+                                    `Convert this into exact ===BACKEND: /path=== ... ===ENDFILE=== blocks.`
+                            }],
+                            Prompt.BACKEND_REFORMAT_PROMPT,
+                            0.1,
+                            { model: BACKEND_FIX_MODEL }
+                        )) {
+                            const content = chunk?.message?.content ?? '';
+                            if (content) {
+                                reformattedBackendText += content;
+                                totalChars += content.length;
+                                emit({ type: 'chunk', phase: 'backend-gen', chars: totalChars });
+                                const newFiles = extractNewFilePaths(reformattedBackendText, reformatPrevText);
+                                newFiles.forEach(f => emit({ type: 'file', phase: 'backend-gen', ...f }));
+                                reformatPrevText = reformattedBackendText;
+                            }
+                            if (chunk?.done) break;
+                        }
+
+                        const reparsed = parseBackendOnly(reformattedBackendText);
+                        if (Object.keys(reparsed.backend).length > 0) {
+                            beParsed = reparsed;
+                            backendText = reformattedBackendText;
+                        }
+                    }
+                    if (Object.keys(beParsed.backend).length === 0) {
+                        emit({
+                            type: 'log',
+                            phase: 'backend-gen',
+                            level: 'warning',
+                            message: `Marker recovery failed. Trying strict JSON backend generation with ${BACKEND_GEN_MODEL}...`,
+                        });
+
+                        const jsonBackendText = await askOllamaText(
+                            [{ role: 'user', content: beUserPrompt }],
+                            Prompt.BACKEND_GEN_JSON_PROMPT,
+                            0.2,
+                            { model: BACKEND_GEN_MODEL, format: 'json' }
+                        );
+                        const jsonParsed = parseBackendJsonPayload(jsonBackendText);
+                        if (Object.keys(jsonParsed.backend).length > 0) {
+                            beParsed = jsonParsed;
+                            projectTitle = jsonParsed.projectTitle || projectTitle;
+                            Object.keys(jsonParsed.backend).forEach((filePath) => {
+                                emit({ type: 'file', phase: 'backend-gen', section: 'backend', path: filePath });
+                            });
+                        }
                     }
                 }
                 let backendFiles = beParsed.backend;
@@ -6525,15 +7090,21 @@ export async function POST(req) {
                         }
 
                         // Build snapshot (limit to avoid huge prompts)
-                        const snapshot = buildBackendSnapshot(backendFiles, {
-                            maxFiles: 12,
-                            maxCharsPerFile: 5000,
-                            maxTotalChars: 32000,
-                        });
-
                         let fixText = '';
                         const repairModel = pickBackendRepairModel(round, Object.keys(backendFiles).length);
                         const currentErrors = currentBackendValidation.errors;
+                        const groupedServiceErrors = groupValidationErrorsByService(currentErrors);
+                        const activeServiceEntry = [...groupedServiceErrors.entries()]
+                            .filter(([serviceDir]) => serviceDir && serviceDir !== '/unknown-service')
+                            .sort((left, right) => right[1].length - left[1].length)[0] || null;
+                        const activeServiceDir = activeServiceEntry?.[0] || '';
+                        const snapshot = activeServiceDir
+                            ? buildServiceFocusedBackendSnapshot(backendFiles, activeServiceDir, currentErrors)
+                            : buildBackendSnapshot(backendFiles, {
+                                maxFiles: 12,
+                                maxCharsPerFile: 5000,
+                                maxTotalChars: 32000,
+                            });
                         const [beMemCtx, beFailedMethods] = await Promise.all([
                             buildMemoryContext(currentErrors.join('\n')).catch(() => ''),
                             getFailedMethods(currentErrors.join('\n')).catch(() => []),
@@ -6541,6 +7112,15 @@ export async function POST(req) {
                         const beStrategy = pickStrategy(genSessionKey + '-be', beFailedMethods, round);
                         emit({ type: 'log', phase: 'backend-fix', level: 'info', round,
                             message: `Round ${round}: Strategy "${beStrategy.name}" — ${beStrategy.description}` });
+                        if (activeServiceDir) {
+                            emit({
+                                type: 'log',
+                                phase: 'backend-fix',
+                                level: 'info',
+                                round,
+                                message: `[service-fix] ${humanizeServiceName(activeServiceDir)}: focusing backend repair on ${activeServiceDir} (${activeServiceEntry[1].length} issue(s))`,
+                            });
+                        }
                         const roundInstruction = buildHumanLikeInstruction({
                             strategy: beStrategy,
                             memoryContext: beMemCtx,
@@ -6558,6 +7138,7 @@ export async function POST(req) {
                                     `${backendRepairContext}\n\n` +
                                     (structuredSpecContract ? `STRUCTURED APP CONTRACT:\n${structuredSpecContract}\n\n` : '') +
                                     `BACKEND SNAPSHOT:\n${snapshot}\n\n` +
+                                    (activeServiceDir ? `ACTIVE SERVICE TARGET:\n- Service directory: ${activeServiceDir}\n- Repair this service completely before touching others.\n- Fix its route imports, model imports, index mounts, middleware paths, and package.json.\n\n` : '') +
                                     `CURRENT VALIDATION ERRORS (fix ALL of these):\n${currentErrors.join('\n')}\n\n` +
                                     `${escalatedRoundInstruction}`
                             }],
