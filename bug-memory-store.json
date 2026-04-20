@@ -220,6 +220,32 @@
         "timestamp": "2026-04-19T11:51:54.765Z",
         "fixSummary": "Partial fix: resolved 1 of 4 issues"
       }
+    },
+    {
+      "id": "fix-1776688365830-dw5huo",
+      "bugText": "/auth-service/models/User.js: schema option timestamps is incorrectly declared inside the schema fields — move it to the second argument as new mongoose.Schema(fields, { timestamps: true })\n/medical-record-service/index.js: E:\\final_research_agentic\\output\\medicare-clinic-management-system\\validation-check\\medical-record-service\\index.js:15 => console.log('MongoDB connected')).catch(err => console.error(err)); ^^ SyntaxError: Unexpected token '=>'",
+      "embedding": [],
+      "meta": {
+        "method": "standard",
+        "outcome": "success",
+        "phase": "backend-fix",
+        "round": "1",
+        "timestamp": "2026-04-20T12:32:45.830Z",
+        "fixSummary": "Partial fix: resolved 1 of 2 issues"
+      }
+    },
+    {
+      "id": "fix-1776688373894-5ce229",
+      "bugText": "/medical-record-service/index.js: app.listen() starts before mongoose.connect() is confirmed — service can report healthy while write routes hang and later abort",
+      "embedding": [],
+      "meta": {
+        "method": "root-cause",
+        "outcome": "success",
+        "phase": "backend-fix",
+        "round": "2",
+        "timestamp": "2026-04-20T12:32:53.894Z",
+        "fixSummary": "Fully fixed 1 file(s), backend clean"
+      }
     }
   ]
 }

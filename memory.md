@@ -3827,3 +3827,56 @@ Node.js v22.22.2 | > auth-service@1.0.0 start
 - /auth-service/models/User.js: schema option timestamps is incorrectly declared inside the schema fields — move it to the second argument as new mongoose.Schema(fields, { timestamps: true })
 - /reservation-service/models/Reservation.js: schema option timestamps is incorrectly declared inside the schema fields — move it to the second argument as new mongoose.Schema(fields, { timestamps: true })
 - /payment-service/models/Payment.js: schema option timestamps is incorrectly declared inside the schema fields — move it to the second argument as new mongoose.Schema(fields, { timestamps: true })
+
+## App Build Plan | 2026-04-20T12:27:26.958Z
+- Project: MediCare Clinic Management System
+- Services: Auth Service (4 endpoints), Doctor Service (5 endpoints), Appointment Service (5 endpoints), Medical Record Service (5 endpoints)
+- Features: User Authentication, Doctor Management, Appointment Scheduling, Medical Records
+- Expected backend libraries: bcryptjs, cors, dotenv, express, http-proxy-middleware, jsonwebtoken, mongoose, multer
+- Expected frontend libraries: axios, react, react-router-dom, react-toastify
+- Developer workflow: understand app scope, remember expected libraries, then audit each backend service in order (models -> routes -> controllers -> index.js -> package.json) before patching.
+- Frontend workflow: audit pages/files individually for syntax, local imports, and missing external libraries before final preview.
+
+## Live Runtime Failure | 2026-04-20T12:34:10.575Z
+- api-gateway exited before health check: E:\final_research_agentic\output\medicare-clinic-management-system\backend\api-gateway\index.js:21
+gateway.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+^
+
+ReferenceError: gateway is not defined
+    at Object.<anonymous> (E:\final_research_agentic\output\medicare-clinic-management-system\backend\api-gateway\index.js:21:1)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14)
+    at Object..js (node:internal/modules/cjs/loader:1838:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+
+Node.js v22.22.2 | > api-gateway@1.0.0 start
+> node index.js | exit=1 | service failed to start
+
+## Live Route Failures | 2026-04-20T12:35:30.775Z
+- POST /api/auth/reset-password: User validation failed: password: Path `password` is required.
+- POST /api/doctors: Doctor validation failed: specialization: Path `specialization` is required.
+- POST /api/appointments: Appointment validation failed: date: Path `date` is required., doctorId: Path `doctorId` is required.
+- POST /api/records: MedicalRecord validation failed: doctorId: Path `doctorId` is required.
+
+## Remaining Route Failures | 2026-04-20T12:35:40.384Z
+- GET /health: api-gateway exited before health check: E:\final_research_agentic\output\medicare-clinic-management-system\backend\api-gateway\index.js:21
+gateway.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+^
+
+ReferenceError: gateway is not defined
+    at Object.<anonymous> (E:\final_research_agentic\output\medicare-clinic-management-system\backend\api-gateway\index.js:21:1)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14)
+    at Object..js (node:internal/modules/cjs/loader:1838:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+
+Node.js v22.22.2 | > api-gateway@1.0.0 start
+> node index.js | exit=1 | service failed to start
