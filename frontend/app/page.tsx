@@ -376,7 +376,7 @@ export default function HomePage() {
                 </div>
             </header>
 
-            <section className="hero-grid">
+            <section className="hero-grid hero-grid-single">
                 <section className="panel hero">
                     <div className="hero-content">
                         <p className="eyebrow">Agent 4 Deployment Studio</p>
@@ -398,23 +398,6 @@ export default function HomePage() {
                         </div>
                     </div>
                 </section>
-
-                <aside className="sidebar">
-                    <div className="sidebar-card">
-                        <p className="section-kicker">Conversation state</p>
-                        <h2 className="section-title">{stage === "blocked" ? "Waiting for valid input" : "Ready for guided submission"}</h2>
-                        <p className="section-subtitle">
-                            {selectedInput
-                                ? `Selected input: ${selectedInput.display_name}`
-                                : "No input selected yet. Choose one of the discovered Agent 3 output packages."}
-                        </p>
-                    </div>
-                    <div className="sidebar-card">
-                        <p className="section-kicker">Detected Input Packages</p>
-                        <h2 className="section-title">{inputCandidates.length}</h2>
-                        <p className="section-subtitle">We found ready-to-process packages from Agent 3 workspace..</p>
-                    </div>
-                </aside>
             </section>
 
             <section className="panel form-panel" id="submission">

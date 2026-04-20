@@ -46,8 +46,6 @@ export default function JobPage() {
   const [payload, setPayload] = useState<JobPayload | null>(null);
   const [error, setError] = useState("");
   const [expandedCheckpoint, setExpandedCheckpoint] = useState("detect");
-  const [diffQuery, setDiffQuery] = useState("");
-  const [copiedDiff, setCopiedDiff] = useState(false);
   const [artifactQuery, setArtifactQuery] = useState("");
   const [copiedArtifacts, setCopiedArtifacts] = useState(false);
 
@@ -206,105 +204,6 @@ export default function JobPage() {
     ];
   }, [payload, validationSummary.failed, validationSummary.passed]);
 
-  const smartDiffPreview = useMemo(() => {
-    if (!payload) {
-      return null;
-    }
-
-    if (payload.commit_preview) {
-      return payload.commit_preview;
-    }
-
-    const workflowArtifacts = payload.artifacts.filter(
-      (artifact) => artifact.startsWith(".github/workflows/") && artifact.endsWith((".yml")),
-    );
-
-    return {
-      title: "What will be committed",
-      sections: [
-        {
-          id: "generated-workflows",
-          title: "Generated workflows",
-          tone: "pass" as const,
-          items: workflowArtifacts.length ? workflowArtifacts : ["No workflow artifacts detected yet."],
-        },
-      ],
-    };
-  }, [payload]);
-
-  const smartDiffGridClass = useMemo(() => {
-    const count = smartDiffPreview?.sections.length ?? 0;
-    if (count <= 1) {
-      return "commit-preview-grid cols-1";
-    }
-    if (count === 2) {
-      return "commit-preview-grid cols-2";
-    }
-    return "commit-preview-grid cols-3";
-  }, [smartDiffPreview]);
-
-  const diffEntries = useMemo(() => {
-    if (!smartDiffPreview) {
-      return [] as Array<{
-        sectionId: string;
-        sectionTitle: string;
-        sectionTone: "pass" | "warn" | "fail";
-        text: string;
-        kind: "generated" | "redacted" | "removed" | "note";
-      }>;
-    }
-
-    return smartDiffPreview.sections.flatMap((section) =>
-      section.items.map((item) => {
-        const lower = item.toLowerCase();
-        let kind: "generated" | "redacted" | "removed" | "note" = "note";
-
-        if (section.id.includes("workflow") || lower.includes(".github/workflows/")) {
-          kind = "generated";
-        } else if (section.id.includes("redacted") || lower.includes("redacted")) {
-          kind = "redacted";
-        } else if (section.id.includes("removed") || lower.includes("removed")) {
-          kind = "removed";
-        }
-
-        if (lower.includes("unavailable") || lower.includes("no ")) {
-          kind = "note";
-        }
-
-        return {
-          sectionId: section.id,
-          sectionTitle: section.title,
-          sectionTone: section.tone,
-          text: item,
-          kind,
-        };
-      }),
-    );
-  }, [smartDiffPreview]);
-
-  const filteredDiffEntries = useMemo(() => {
-    const query = diffQuery.trim().toLowerCase();
-    if (!query) {
-      return diffEntries;
-    }
-    return diffEntries.filter((entry) =>
-      `${entry.sectionTitle} ${entry.text} ${entry.kind}`.toLowerCase().includes(query),
-    );
-  }, [diffEntries, diffQuery]);
-
-  const diffStats = useMemo(() => {
-    const generated = filteredDiffEntries.filter((entry) => entry.kind === "generated").length;
-    const redacted = filteredDiffEntries.filter((entry) => entry.kind === "redacted").length;
-    const removed = filteredDiffEntries.filter((entry) => entry.kind === "removed").length;
-    const notes = filteredDiffEntries.filter((entry) => entry.kind === "note").length;
-    return {
-      total: filteredDiffEntries.length,
-      generated,
-      redacted,
-      removed,
-      notes,
-    };
-  }, [filteredDiffEntries]);
 
   const artifactEntries = useMemo(() => {
     if (!payload) {
@@ -389,20 +288,6 @@ export default function JobPage() {
       .map(([id, bucket]) => ({ id, ...bucket }));
   }, [visibleArtifactEntries]);
 
-  async function copyVisibleDiff() {
-    const text = filteredDiffEntries
-      .map((entry) => `[${entry.sectionTitle}] ${entry.text}`)
-      .join("\n");
-
-    try {
-      await navigator.clipboard.writeText(text || "No visible diff entries.");
-      setCopiedDiff(true);
-      window.setTimeout(() => setCopiedDiff(false), 1200);
-    } catch {
-      setCopiedDiff(false);
-    }
-  }
-
   async function copyVisibleArtifacts() {
     const text = visibleArtifactEntries.map((entry) => entry.path).join("\n");
 
@@ -451,7 +336,7 @@ export default function JobPage() {
 
         <div className="shell-divider" />
 
-        <div className="status-layout" style={{ marginTop: "1rem" }}>
+        <div className="status-layout status-layout-full" style={{ marginTop: "1rem" }}>
           <div className="status-card">
             <div className="status-banner">
               <div>
@@ -584,95 +469,24 @@ export default function JobPage() {
             </div>
           </section>
 
-          {smartDiffPreview ? (
-            <section className="panel">
-              <p className="section-kicker">Smart Diff Preview</p>
-              <h2 className="section-title" style={{ fontSize: "1.4rem" }}>
-                {smartDiffPreview.title}
-              </h2>
-              <p className="section-subtitle">See what will be committed before the push is made.</p>
-
-              <div className="diff-toolbar" style={{ marginTop: "1rem" }}>
-                <label className="diff-search" htmlFor="diff-search-input">
-                  <span>Search changes</span>
-                  <input
-                    id="diff-search-input"
-                    value={diffQuery}
-                    onChange={(event) => setDiffQuery(event.target.value)}
-                    placeholder="Filter by file, section, or change type"
-                  />
-                </label>
-                <button type="button" className="secondary-button" onClick={copyVisibleDiff}>
-                  {copiedDiff ? "Copied" : "Copy visible diff"}
-                </button>
-              </div>
-
-              <div className="diff-metrics" style={{ marginTop: "0.85rem" }}>
-                <span className="pill">Total {diffStats.total}</span>
-                <span className="pill">Generated {diffStats.generated}</span>
-                <span className="pill">Redacted {diffStats.redacted}</span>
-                <span className="pill">Removed {diffStats.removed}</span>
-                {diffStats.notes ? <span className="pill">Notes {diffStats.notes}</span> : null}
-              </div>
-
-              <div className={smartDiffGridClass} style={{ marginTop: "1rem" }}>
-                {smartDiffPreview.sections.map((section) => (
-                  <article className={`commit-preview-card tone-${section.tone}`} key={section.id}>
-                    <div className="commit-preview-head">
-                      <strong>{section.title}</strong>
-                      <span className={`badge badge-${section.tone}`}>{section.tone.toUpperCase()}</span>
-                    </div>
-                    {section.items.length ? (
-                      <div className="commit-preview-items">
-                        {section.items.map((item) => (
-                          <span className="pill mono commit-preview-pill" key={`${section.id}-${item}`}>
-                            {item}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="empty-state" style={{ padding: "0.8rem" }}>
-                        <strong>None detected</strong>
-                        <span>No entries in this category for the current package.</span>
-                      </div>
-                    )}
-                  </article>
-                ))}
-              </div>
-
-              <div className="diff-console" style={{ marginTop: "1rem" }}>
-                {filteredDiffEntries.length ? (
-                  <ul className="diff-list">
-                    {filteredDiffEntries.map((entry) => (
-                      <li className={`diff-row diff-${entry.kind}`} key={`${entry.sectionId}-${entry.text}`}>
-                        <span className="diff-mark" aria-hidden="true">
-                          {entry.kind === "generated" ? "+" : entry.kind === "removed" ? "-" : entry.kind === "redacted" ? "~" : "·"}
-                        </span>
-                        <span className="diff-path mono">{entry.text}</span>
-                        <span className={`badge ${entry.sectionTone === "pass" ? "badge-pass" : entry.sectionTone === "fail" ? "badge-fail" : "badge-warn"}`}>
-                          {entry.sectionTitle}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="empty-state" style={{ padding: "0.8rem" }}>
-                    <strong>No matching changes</strong>
-                    <span>Adjust your search query to inspect other diff entries.</span>
-                  </div>
-                )}
-              </div>
-            </section>
-          ) : null}
-
           <section className="panel">
-              <p className="section-kicker">Artifacts</p>
-              <h2 className="section-title" style={{ fontSize: "1.4rem" }}>
-                What will be packaged
-              </h2>
-              <p className="section-subtitle">
-                Review generated deliverables before download and push.
-              </p>
+              <div className="panel-title-row">
+                <div>
+                  <p className="section-kicker">Artifacts</p>
+                  <h2 className="section-title" style={{ fontSize: "1.4rem" }}>
+                    What will be packaged
+                  </h2>
+                  <p className="section-subtitle">
+                    Review generated deliverables before download and push.
+                  </p>
+                </div>
+
+                {downloadUrl ? (
+                  <a className="primary-button download-cta" href={downloadUrl}>
+                    Download packaged ZIP
+                  </a>
+                ) : null}
+              </div>
 
               <div className="diff-toolbar" style={{ marginTop: "1rem" }}>
                 <label className="artifact-search" htmlFor="artifact-search-input">
@@ -720,38 +534,6 @@ export default function JobPage() {
                     <span>Try a different keyword to locate a generated file.</span>
                   </div>
                 )}
-              </div>
-
-              <div className="diff-console" style={{ marginTop: "1rem" }}>
-                {visibleArtifactEntries.length ? (
-                  <ul className="diff-list">
-                    {visibleArtifactEntries.map((entry) => (
-                      <li className={`diff-row diff-${entry.kind === "evidence" ? "redacted" : "note"}`} key={entry.path}>
-                        <span className="diff-mark" aria-hidden="true">
-                          {entry.kind === "evidence" ? "~" : "·"}
-                        </span>
-                        <span className="diff-path mono">{entry.path}</span>
-                        <span className="pill">{entry.label}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="empty-state" style={{ padding: "0.8rem" }}>
-                    <strong>No matching artifacts</strong>
-                    <span>Adjust the search query to inspect other files.</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="button-stack">
-                {downloadUrl ? (
-                  <a className="primary-button" href={downloadUrl}>
-                    Download packaged ZIP
-                  </a>
-                ) : null}
-                <Link className="secondary-button" href="/">
-                  Create another job
-                </Link>
               </div>
 
               <p className="section-subtitle evidence-line" style={{ marginTop: "1rem" }}>
