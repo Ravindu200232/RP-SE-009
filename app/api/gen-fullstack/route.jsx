@@ -37,7 +37,10 @@ const LIVE_POSTMORTEM_ROUND_CAP = Number.parseInt(
 );
 const MAX_BACKEND_FIX_ROUNDS = Number.isFinite(FIX_ROUND_CAP) && FIX_ROUND_CAP > 0 ? FIX_ROUND_CAP : 10;
 const MAX_API_FIX_ROUNDS = Number.isFinite(FIX_ROUND_CAP) && FIX_ROUND_CAP > 0 ? FIX_ROUND_CAP : 10;
-const MAX_LIVE_FIX_ROUNDS = Number.isFinite(LIVE_POSTMORTEM_ROUND_CAP) && LIVE_POSTMORTEM_ROUND_CAP > 0 ? LIVE_POSTMORTEM_ROUND_CAP : 4;
+const MAX_LIVE_FIX_ROUNDS = Math.min(
+    Number.isFinite(LIVE_POSTMORTEM_ROUND_CAP) && LIVE_POSTMORTEM_ROUND_CAP > 0 ? LIVE_POSTMORTEM_ROUND_CAP : 2,
+    2
+);
 const MAX_NO_PROGRESS_ROUNDS = 2;
 const MAX_SAME_SIGNATURE_ROUNDS = 2;
 const MAX_REGRESSIVE_ROUNDS = 1;
@@ -7900,7 +7903,7 @@ export async function POST(req) {
                 /* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
                    PHASE 3 Ã¢â‚¬â€ POSTMAN-STYLE API ROUTE TESTING
                    Simulates real HTTP requests for every route.
-                   Auto-fixes failing routes for up to 5 rounds.
+                   Live Mongo/runtime repair is capped at 2 rounds.
                 Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
                 if (Object.keys(backendFiles).length > 0) {
                     emit({ type: 'phase', phase: 'api-test', status: 'start',
