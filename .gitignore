@@ -1,7 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+node_modules/
+**/node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -11,33 +12,58 @@
 !.yarn/versions
 
 # testing
-/coverage
+coverage/
+**/coverage/
 
 # next.js
-/.next/
-/out/
+.next/
+**/.next/
+out/
+**/out/
 
 # production
-/build
-/output/
-/local-runs/
+build/
+**/build/
+dist/
+**/dist/
+output/
+local-runs/
 
 # generated samples / reference dumps
-/references/
-/api-automation-agent-main
-/artifacts
-/sandbox references/
-/taskflow-manager-fullstack (2)/
+references/
+api-automation-agent-main/
+artifacts/
+sandbox references/
+frontend/
+taskflow-manager-fullstack (2)/
+*sample*/
+*samples*/
+*example*/
+*examples*/
+*demo*/
+*demos*/
+
+# local runtime data
+chroma-data/
+bug-memory-store.json
 
 # temp validation / debug artifacts
 tmp-*
+tmp-*/
+.tmp/
+temp/
+*.bak
 *.tmp
 *.log
+.codex-tmp/
+**/.codex-tmp/
 app/api/gen-fullstack/*.mjs
 data/*.mjs
+New Text Document.txt
 
 # misc
 .DS_Store
+Thumbs.db
 *.pem
 
 # debug

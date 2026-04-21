@@ -2784,6 +2784,737 @@ function extractApiSummary(backendFiles) {
     return lines.join('\n');
 }
 
+function toFrontendComponentName(value = '', fallback = 'GeneratedPage') {
+    const normalized = String(value || '')
+        .replace(/^\/?api\//i, '')
+        .replace(/-service$/i, '')
+        .replace(/[^A-Za-z0-9]+/g, ' ')
+        .trim();
+    const name = normalized
+        .replace(/(?:^|\s)([A-Za-z0-9])/g, (_, ch) => ch.toUpperCase())
+        .replace(/\s+/g, '');
+    return /^[A-Za-z]/.test(name) ? name : fallback;
+}
+
+function humanizeFrontendName(value = '', fallback = 'Items') {
+    const text = String(value || '')
+        .replace(/^\/?api\//i, '')
+        .replace(/-service$/i, '')
+        .replace(/[_-]+/g, ' ')
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .trim();
+    return text
+        ? text.replace(/\b\w/g, ch => ch.toUpperCase())
+        : fallback;
+}
+
+function inferFrontendFieldType(field = '', typeHint = '') {
+    const name = String(field || '').toLowerCase();
+    const type = String(typeHint || '').toLowerCase();
+    if (/date|checkin|checkout/.test(name)) return 'date';
+    if (/email/.test(name)) return 'email';
+    if (/password/.test(name)) return 'password';
+    if (/price|amount|total|count|capacity|number|rate|score|duration|quantity/.test(name) || /number/.test(type)) {
+        return 'number';
+    }
+    if (/boolean/.test(type) || /active|available|paid|completed|enabled/.test(name)) return 'checkbox';
+    return 'text';
+}
+
+function collectFrontendModelFields(modelCode = '') {
+    const blocked = new Set([
+        'type', 'required', 'default', 'enum', 'ref', 'unique', 'index', 'trim',
+        'lowercase', 'uppercase', 'min', 'max', 'minlength', 'maxlength',
+        'timestamps', 'createdAt', 'updatedAt', 'id', '_id', '__v',
+    ]);
+    const fields = [];
+    const seen = new Set();
+    const text = String(modelCode || '').replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+    const fieldRegex = /(?:^|[\s,{])([A-Za-z_][\w]*)\s*:\s*(?:\{\s*type\s*:\s*([A-Za-z.]+)|([A-Za-z.]+))/g;
+    let match;
+    while ((match = fieldRegex.exec(text)) !== null) {
+        const name = match[1];
+        if (!name || blocked.has(name) || seen.has(name)) continue;
+        seen.add(name);
+        fields.push({
+            name,
+            label: humanizeFrontendName(name, name),
+            type: inferFrontendFieldType(name, match[2] || match[3] || ''),
+        });
+    }
+    return fields.slice(0, 8);
+}
+
+function collectFrontendResourceContracts(backendFiles = {}) {
+    const joinRoute = (prefix, routePath = '/') => {
+        const cleanPrefix = String(prefix || '').endsWith('/') ? String(prefix).slice(0, -1) : String(prefix || '');
+        if (!routePath || routePath === '/') return cleanPrefix || '/';
+        const cleanRoute = routePath.startsWith('/') ? routePath : `/${routePath}`;
+        return `${cleanPrefix}${cleanRoute}`;
+    };
+    const proxyPrefixes = new Set();
+    Object.entries(backendFiles).forEach(([filePath, content]) => {
+        const code = typeof content === 'string' ? content : content?.code || '';
+        if (!/gateway/i.test(filePath) || !/index\.js$/i.test(filePath)) return;
+        [...code.matchAll(/app\.use\(\s*['"]([^'"]+)['"]\s*,\s*createProxyMiddleware/gi)]
+            .map(match => match[1].trim())
+            .forEach(prefix => proxyPrefixes.add(prefix));
+        [...code.matchAll(/['"](\/api\/[\w-]+)['"]/g)]
+            .map(match => match[1].trim())
+            .forEach(prefix => proxyPrefixes.add(prefix));
+    });
+
+    const proxyList = [...proxyPrefixes].sort();
+    const groups = new Map();
+    Object.entries(backendFiles).forEach(([filePath, content]) => {
+        const normalizedPath = String(filePath || '').replace(/\\/g, '/');
+        if (!normalizedPath.includes('/routes/')) return;
+        const code = typeof content === 'string' ? content : content?.code || '';
+        const parts = normalizedPath.split('/').filter(Boolean);
+        const serviceName = parts[0] || '';
+        const resourceName = normalizedPath.split('/').pop()?.replace(/\.[^.]+$/, '') || serviceName.replace(/-service$/, '') || 'items';
+        const singularName = resourceName.replace(/s$/, '');
+        const prefix = proxyList.find(candidate => candidate === `/api/${resourceName}`)
+            || proxyList.find(candidate => candidate === `/api/${singularName}`)
+            || proxyList.find(candidate => resourceName.startsWith(candidate.replace('/api/', '')))
+            || proxyList.find(candidate => singularName.startsWith(candidate.replace('/api/', '')))
+            || `/api/${resourceName}`;
+        const key = prefix.replace(/^\/api\//, '') || resourceName;
+        if (!groups.has(key)) {
+            groups.set(key, {
+                key,
+                serviceName,
+                resourceName,
+                prefix,
+                title: humanizeFrontendName(key),
+                componentName: toFrontendComponentName(key, 'ItemsPage'),
+                routes: [],
+                fields: [],
+            });
+        }
+        const routeMatches = [...code.matchAll(/router\.(get|post|put|delete|patch)\(\s*['"]([^'"]+)['"]/gi)];
+        routeMatches.forEach(match => {
+            groups.get(key).routes.push({
+                method: match[1].toUpperCase(),
+                path: joinRoute(prefix, match[2]),
+                localPath: match[2],
+            });
+        });
+    });
+
+    Object.entries(backendFiles).forEach(([filePath, content]) => {
+        const normalizedPath = String(filePath || '').replace(/\\/g, '/');
+        if (!normalizedPath.includes('/models/') || !/\.js$/i.test(normalizedPath)) return;
+        const serviceName = normalizedPath.split('/').filter(Boolean)[0] || '';
+        const fields = collectFrontendModelFields(typeof content === 'string' ? content : content?.code || '');
+        if (!fields.length) return;
+        for (const group of groups.values()) {
+            if (group.serviceName === serviceName && group.fields.length === 0) {
+                group.fields = fields;
+            }
+        }
+    });
+
+    return [...groups.values()]
+        .filter(group => group.prefix !== '/api/auth')
+        .map(group => ({
+            ...group,
+            fields: group.fields.length ? group.fields : [
+                { name: 'name', label: 'Name', type: 'text' },
+                { name: 'description', label: 'Description', type: 'text' },
+            ],
+        }));
+}
+
+function buildDeterministicFrontendFiles({ projectTitle = 'Generated App', backendFiles = {}, apiSummary = '' } = {}) {
+    const resources = collectFrontendResourceContracts(backendFiles).slice(0, 8);
+    const hasAuth = /\/api\/auth\b/i.test(apiSummary) || Object.keys(backendFiles).some(filePath => /auth-service/i.test(filePath));
+    const safeTitle = projectTitle || 'Generated App';
+    const appNameLiteral = JSON.stringify(safeTitle);
+    const resourceConfigLiteral = JSON.stringify(resources.map(resource => ({
+        key: resource.key,
+        title: resource.title,
+        prefix: resource.prefix,
+        routes: resource.routes,
+        fields: resource.fields,
+    })), null, 2);
+
+    const files = {
+        '/src/lib/api.js': {
+            code: `export const API_BASE = 'http://127.0.0.1:3005';
+
+export function canUseLiveApi() {
+  if (typeof window === 'undefined') return false;
+  return ['localhost', '127.0.0.1'].includes(window.location.hostname);
+}
+
+export async function requestJson(path, options = {}) {
+  if (!canUseLiveApi()) throw new Error('Preview mode uses local data');
+  const token = localStorage.getItem('authToken');
+  const res = await fetch(API_BASE + path, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: 'Bearer ' + token } : {}),
+      ...(options.headers || {}),
+    },
+    signal: AbortSignal.timeout(3500),
+  });
+  const payload = await res.json().catch(() => null);
+  if (!res.ok || payload?.success === false) {
+    throw new Error(payload?.error || payload?.message || 'Request failed with status ' + res.status);
+  }
+  return payload;
+}
+
+export function unwrapList(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.data?.items)) return payload.data.items;
+  if (payload?.data && typeof payload.data === 'object') return [payload.data];
+  return [];
+}
+
+export function stableId(prefix = 'item') {
+  return prefix + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+}
+`,
+        },
+        '/src/data/resources.js': {
+            code: `export const appName = ${appNameLiteral};
+
+export const resources = ${resourceConfigLiteral};
+`,
+        },
+        '/src/components/Navbar.jsx': {
+            code: `import React, { useState } from 'react';
+import { NavLink } from 'react-router-dom';
+import { resources, appName } from '../data/resources';
+
+export default function Navbar() {
+  const [open, setOpen] = useState(false);
+  const links = [
+    { to: '/', label: 'Home' },
+    ${hasAuth ? "{ to: '/auth', label: 'Auth' }," : ''}
+    ...resources.map((resource) => ({ to: '/' + resource.key, label: resource.title })),
+    { to: '/about', label: 'About' },
+  ];
+
+  return (
+    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
+        <NavLink to="/" className="text-xl font-black tracking-tight text-slate-950">
+          {appName}
+        </NavLink>
+        <button className="rounded-lg border px-3 py-2 text-sm font-semibold text-slate-700 md:hidden" onClick={() => setOpen(!open)}>
+          Menu
+        </button>
+        <nav className="hidden items-center gap-2 md:flex">
+          {links.map((link) => (
+            <NavLink key={link.to} to={link.to} className={({ isActive }) => 'rounded-lg px-3 py-2 text-sm font-semibold transition ' + (isActive ? 'bg-slate-950 text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950')}>
+              {link.label}
+            </NavLink>
+          ))}
+        </nav>
+      </div>
+      {open && (
+        <nav className="grid gap-2 border-t border-slate-200 bg-white px-4 py-3 md:hidden">
+          {links.map((link) => (
+            <NavLink key={link.to} to={link.to} onClick={() => setOpen(false)} className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">
+              {link.label}
+            </NavLink>
+          ))}
+        </nav>
+      )}
+    </header>
+  );
+}
+`,
+        },
+        '/src/components/Footer.jsx': {
+            code: `import React from 'react';
+import { appName } from '../data/resources';
+
+export default function Footer() {
+  return (
+    <footer className="border-t border-slate-200 bg-white">
+      <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-8 text-sm text-slate-500 md:flex-row md:items-center md:justify-between">
+        <p className="font-semibold text-slate-700">{appName}</p>
+        <p>Generated CRUD frontend connected to the backend gateway.</p>
+      </div>
+    </footer>
+  );
+}
+`,
+        },
+        '/src/pages/Home.jsx': {
+            code: `import React from 'react';
+import { Link } from 'react-router-dom';
+import { resources, appName } from '../data/resources';
+
+export default function Home() {
+  return (
+    <main>
+      <section className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-4 py-20 text-white">
+        <div className="mx-auto max-w-7xl">
+          <p className="mb-4 text-sm font-bold uppercase tracking-[0.3em] text-orange-300">Full-stack app</p>
+          <h1 className="max-w-4xl text-4xl font-black tracking-tight md:text-6xl">{appName}</h1>
+          <p className="mt-5 max-w-2xl text-lg text-slate-300">A clean frontend with working CRUD screens, local preview data, and API calls matched to the generated backend routes.</p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            {resources[0] && <Link to={'/' + resources[0].key} className="rounded-xl bg-orange-500 px-5 py-3 font-bold text-white shadow-lg shadow-orange-500/20 hover:bg-orange-600">Open CRUD</Link>}
+            <Link to="/about" className="rounded-xl border border-white/20 px-5 py-3 font-bold text-white hover:bg-white/10">About</Link>
+          </div>
+        </div>
+      </section>
+      <section className="px-4 py-14">
+        <div className="mx-auto max-w-7xl">
+          <h2 className="text-2xl font-black text-slate-950">Application parts</h2>
+          <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {resources.map((resource) => (
+              <Link key={resource.key} to={'/' + resource.key} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                <h3 className="text-lg font-black text-slate-950">{resource.title}</h3>
+                <p className="mt-2 text-sm text-slate-500">{resource.routes.length || 1} backend route(s), CRUD-ready page.</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+`,
+        },
+        '/src/pages/ResourcePage.jsx': {
+            code: `import React, { useEffect, useMemo, useState } from 'react';
+import { toast } from 'react-toastify';
+import { requestJson, stableId, unwrapList } from '../lib/api';
+
+function sampleForField(field, resourceKey) {
+  if (field.type === 'date') return new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  if (field.type === 'number') return 1;
+  if (field.type === 'checkbox') return true;
+  if (/email/i.test(field.name)) return 'guest@example.com';
+  if (/roomId|courseId|reservationId|userId|guestId|studentId|customerId|orderId/i.test(field.name)) return '507f1f77bcf86cd799439011';
+  if (/status/i.test(field.name)) return 'active';
+  if (/title|name/i.test(field.name)) return 'Sample ' + resourceKey;
+  return 'Sample value';
+}
+
+function makeBlank(resource) {
+  return Object.fromEntries(resource.fields.map((field) => [field.name, sampleForField(field, resource.key)]));
+}
+
+export default function ResourcePage({ resource }) {
+  const storageKey = 'crud-' + resource.key;
+  const [items, setItems] = useState([]);
+  const [form, setForm] = useState(() => makeBlank(resource));
+  const [editingId, setEditingId] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const listPath = useMemo(() => resource.prefix, [resource.prefix]);
+  const idPath = (id) => resource.prefix + '/' + encodeURIComponent(id);
+
+  function saveLocal(nextItems) {
+    setItems(nextItems);
+    localStorage.setItem(storageKey, JSON.stringify(nextItems));
+  }
+
+  useEffect(() => {
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) setItems(parsed);
+      } catch {
+        setItems([]);
+      }
+    } else {
+      const sample = { _id: stableId(resource.key), ...makeBlank(resource) };
+      saveLocal([sample]);
+    }
+
+    setLoading(true);
+    requestJson(listPath)
+      .then((payload) => {
+        const rows = unwrapList(payload);
+        if (rows.length) saveLocal(rows);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [listPath, resource.key]);
+
+  function updateField(name, value, type) {
+    setForm((current) => ({ ...current, [name]: type === 'number' ? Number(value) : value }));
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    const isEdit = Boolean(editingId);
+    const optimistic = isEdit
+      ? items.map((item) => ((item._id || item.id) === editingId ? { ...item, ...form } : item))
+      : [{ _id: stableId(resource.key), ...form }, ...items];
+    saveLocal(optimistic);
+    setForm(makeBlank(resource));
+    setEditingId(null);
+    toast.success(isEdit ? 'Updated locally' : 'Created locally');
+
+    try {
+      const payload = await requestJson(isEdit ? idPath(editingId) : listPath, {
+        method: isEdit ? 'PUT' : 'POST',
+        body: JSON.stringify(form),
+      });
+      const serverRow = payload?.data || payload?.item || null;
+      if (serverRow && !isEdit) saveLocal([serverRow, ...optimistic.slice(1)]);
+    } catch {
+      toast.info('Backend unavailable in preview, saved locally');
+    }
+  }
+
+  function startEdit(item) {
+    setEditingId(item._id || item.id);
+    setForm(Object.fromEntries(resource.fields.map((field) => [field.name, item[field.name] ?? sampleForField(field, resource.key)])));
+  }
+
+  async function removeItem(item) {
+    const id = item._id || item.id;
+    saveLocal(items.filter((row) => (row._id || row.id) !== id));
+    toast.success('Deleted locally');
+    if (!id) return;
+    try {
+      await requestJson(idPath(id), { method: 'DELETE' });
+    } catch {
+      toast.info('Backend unavailable in preview, delete kept locally');
+    }
+  }
+
+  return (
+    <main className="min-h-screen bg-slate-50 px-4 py-10">
+      <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[380px,1fr]">
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-sm font-bold uppercase tracking-[0.2em] text-orange-500">CRUD</p>
+          <h1 className="mt-2 text-3xl font-black text-slate-950">{resource.title}</h1>
+          <p className="mt-2 text-sm text-slate-500">Gateway path: {resource.prefix}</p>
+          <form onSubmit={handleSubmit} className="mt-6 grid gap-4">
+            {resource.fields.map((field) => (
+              <label key={field.name} className="grid gap-2 text-sm font-semibold text-slate-700">
+                {field.label}
+                <input
+                  className="rounded-xl border border-slate-200 px-3 py-3 outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+                  type={field.type === 'checkbox' ? 'text' : field.type}
+                  value={form[field.name] ?? ''}
+                  onChange={(event) => updateField(field.name, event.target.value, field.type)}
+                  placeholder={field.label}
+                />
+              </label>
+            ))}
+            <button className="rounded-xl bg-slate-950 px-4 py-3 font-bold text-white hover:bg-orange-600">
+              {editingId ? 'Update record' : 'Create record'}
+            </button>
+            {editingId && (
+              <button type="button" onClick={() => { setEditingId(null); setForm(makeBlank(resource)); }} className="rounded-xl border border-slate-200 px-4 py-3 font-bold text-slate-700">
+                Cancel edit
+              </button>
+            )}
+          </form>
+        </section>
+
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-2xl font-black text-slate-950">Records</h2>
+              <p className="text-sm text-slate-500">{loading ? 'Checking backend...' : items.length + ' item(s)'}</p>
+            </div>
+            <button onClick={() => saveLocal([{ _id: stableId(resource.key), ...makeBlank(resource) }, ...items])} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">
+              Add sample
+            </button>
+          </div>
+          <div className="mt-6 grid gap-4">
+            {items.map((item) => {
+              const id = item._id || item.id || stableId(resource.key);
+              return (
+                <article key={id} className="rounded-2xl border border-slate-200 p-4">
+                  <div className="grid gap-2 md:grid-cols-2">
+                    {resource.fields.map((field) => (
+                      <p key={field.name} className="text-sm">
+                        <span className="font-bold text-slate-600">{field.label}: </span>
+                        <span className="text-slate-900">{String(item[field.name] ?? '-')}</span>
+                      </p>
+                    ))}
+                  </div>
+                  <div className="mt-4 flex gap-2">
+                    <button onClick={() => startEdit(item)} className="rounded-lg bg-orange-500 px-3 py-2 text-sm font-bold text-white hover:bg-orange-600">Edit</button>
+                    <button onClick={() => removeItem(item)} className="rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50">Delete</button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
+`,
+        },
+        '/src/pages/About.jsx': {
+            code: `import React from 'react';
+import { resources, appName } from '../data/resources';
+
+export default function About() {
+  return (
+    <main className="min-h-screen bg-slate-50 px-4 py-12">
+      <section className="mx-auto max-w-4xl rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+        <h1 className="text-3xl font-black text-slate-950">About {appName}</h1>
+        <p className="mt-4 text-slate-600">This frontend is generated from the verified backend route contract. It keeps a normal, readable design and supports CRUD with local preview fallback.</p>
+        <div className="mt-6 grid gap-3">
+          {resources.map((resource) => (
+            <div key={resource.key} className="rounded-xl bg-slate-50 p-4">
+              <p className="font-bold text-slate-900">{resource.title}</p>
+              <p className="text-sm text-slate-500">{resource.prefix}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    </main>
+  );
+}
+`,
+        },
+    };
+
+    if (hasAuth) {
+        files['/src/pages/Auth.jsx'] = {
+            code: `import React, { useState } from 'react';
+import { toast } from 'react-toastify';
+import { requestJson } from '../lib/api';
+
+export default function Auth() {
+  const [form, setForm] = useState({ name: 'Demo User', username: 'demo_user', email: 'demo@example.com', password: 'SecurePass123!' });
+  const [mode, setMode] = useState('login');
+
+  function update(name, value) {
+    setForm((current) => ({ ...current, [name]: value }));
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    const path = mode === 'register' ? '/api/auth/register' : '/api/auth/login';
+    try {
+      const payload = await requestJson(path, { method: 'POST', body: JSON.stringify(form) });
+      const token = payload?.token || payload?.data?.token || payload?.accessToken || '';
+      if (token) localStorage.setItem('authToken', token);
+      toast.success(mode === 'register' ? 'Registered successfully' : 'Logged in successfully');
+    } catch {
+      localStorage.setItem('authUser', JSON.stringify(form));
+      toast.info('Preview mode: saved auth details locally');
+    }
+  }
+
+  return (
+    <main className="min-h-screen bg-slate-50 px-4 py-12">
+      <form onSubmit={submit} className="mx-auto grid max-w-md gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h1 className="text-3xl font-black text-slate-950">{mode === 'register' ? 'Register' : 'Login'}</h1>
+        {mode === 'register' && (
+          <input className="rounded-xl border border-slate-200 px-3 py-3" value={form.name} onChange={(e) => update('name', e.target.value)} placeholder="Name" />
+        )}
+        <input className="rounded-xl border border-slate-200 px-3 py-3" value={form.email} onChange={(e) => update('email', e.target.value)} placeholder="Email" />
+        <input className="rounded-xl border border-slate-200 px-3 py-3" value={form.username} onChange={(e) => update('username', e.target.value)} placeholder="Username" />
+        <input className="rounded-xl border border-slate-200 px-3 py-3" type="password" value={form.password} onChange={(e) => update('password', e.target.value)} placeholder="Password" />
+        <button className="rounded-xl bg-slate-950 px-4 py-3 font-bold text-white hover:bg-orange-600">{mode === 'register' ? 'Create account' : 'Login'}</button>
+        <button type="button" onClick={() => setMode(mode === 'register' ? 'login' : 'register')} className="text-sm font-bold text-orange-600">
+          Switch to {mode === 'register' ? 'login' : 'register'}
+        </button>
+      </form>
+    </main>
+  );
+}
+`,
+        };
+    }
+
+    const appImports = [
+        "import React from 'react';",
+        "import { BrowserRouter, Routes, Route } from 'react-router-dom';",
+        "import { ToastContainer } from 'react-toastify';",
+        "import Navbar from './components/Navbar';",
+        "import Footer from './components/Footer';",
+        "import Home from './pages/Home';",
+        "import About from './pages/About';",
+        "import ResourcePage from './pages/ResourcePage';",
+        "import { resources } from './data/resources';",
+        hasAuth ? "import Auth from './pages/Auth';" : '',
+    ].filter(Boolean).join('\n');
+
+    files['/src/App.jsx'] = {
+        code: `${appImports}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <div className="min-h-screen bg-slate-50 text-slate-950">
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          ${hasAuth ? '<Route path="/auth" element={<Auth />} />' : ''}
+          {resources.map((resource) => (
+            <Route key={resource.key} path={'/' + resource.key} element={<ResourcePage resource={resource} />} />
+          ))}
+          <Route path="/about" element={<About />} />
+        </Routes>
+        <Footer />
+        <ToastContainer position="top-right" theme="light" />
+      </div>
+    </BrowserRouter>
+  );
+}
+`,
+    };
+
+    if (!resources.length) {
+        files['/src/data/resources.js'] = {
+            code: `export const appName = ${appNameLiteral};
+
+export const resources = [{
+  key: 'items',
+  title: 'Items',
+  prefix: '/api/items',
+  routes: [],
+  fields: [
+    { name: 'name', label: 'Name', type: 'text' },
+    { name: 'description', label: 'Description', type: 'text' }
+  ]
+}];
+`,
+        };
+    }
+
+    return files;
+}
+
+function isFrontendGenerationStructurallyUnsafe(frontendFiles = {}) {
+    const entries = Object.entries(frontendFiles || {});
+    if (entries.length === 0) return true;
+
+    return entries.some(([filePath, content]) => {
+        if (!/\.(jsx?|tsx?)$/i.test(filePath)) return false;
+        const code = normalizeFrontendFileContent(filePath, typeof content === 'string' ? content : content?.code || '');
+        const defaultExportCount = (code.match(/\bexport\s+default\b/g) || []).length;
+        const reactImportCount = (code.match(/\bimport\s+React\b/g) || []).length;
+        const lateImportMatch = code.match(/[^\s;{}]\s*import\s+[\w*{\s,}]+from\s+['"][^'"]+['"]/);
+        const rootMarkerLeak = /={2,3}\s*FRONTEND\s*:|={2,3}\s*BACKEND\s*:|={2,3}\s*ENDFILE\s*={2,3}/i.test(code);
+
+        return defaultExportCount > 1 || reactImportCount > 1 || Boolean(lateImportMatch) || rootMarkerLeak;
+    });
+}
+
+function fixMisplacedMongooseSchemaOptions(code = '') {
+    const source = String(code || '');
+    const schemaRe = /new\s+(?:mongoose\.)?Schema\s*\(/g;
+    let result = '';
+    let cursor = 0;
+    let match;
+
+    const findMatching = (text, startIndex, openChar, closeChar) => {
+        let depth = 0;
+        let quote = '';
+        let escaped = false;
+        for (let i = startIndex; i < text.length; i++) {
+            const ch = text[i];
+            if (quote) {
+                if (escaped) {
+                    escaped = false;
+                } else if (ch === '\\') {
+                    escaped = true;
+                } else if (ch === quote) {
+                    quote = '';
+                }
+                continue;
+            }
+            if (ch === '"' || ch === "'" || ch === '`') {
+                quote = ch;
+                continue;
+            }
+            if (ch === openChar) depth++;
+            if (ch === closeChar) {
+                depth--;
+                if (depth === 0) return i;
+            }
+        }
+        return -1;
+    };
+
+    const removeTopLevelTimestamps = (body) => {
+        const matches = [];
+        let depth = 0;
+        let quote = '';
+        let escaped = false;
+        for (let i = 0; i < body.length; i++) {
+            const ch = body[i];
+            if (quote) {
+                if (escaped) escaped = false;
+                else if (ch === '\\') escaped = true;
+                else if (ch === quote) quote = '';
+                continue;
+            }
+            if (ch === '"' || ch === "'" || ch === '`') {
+                quote = ch;
+                continue;
+            }
+            if (ch === '{' || ch === '[' || ch === '(') depth++;
+            if (ch === '}' || ch === ']' || ch === ')') depth = Math.max(0, depth - 1);
+            if (depth === 0 && /\btimestamps\s*:/i.test(body.slice(i, i + 20))) {
+                const before = body.slice(0, i);
+                const keyMatch = body.slice(i).match(/^\s*,?\s*timestamps\s*:\s*(true|false|True|False)\s*,?/i);
+                if (keyMatch) {
+                    matches.push({ start: i, end: i + keyMatch[0].length, value: keyMatch[1].toLowerCase() });
+                    i += keyMatch[0].length - 1;
+                    if (before.trim().endsWith(',')) {
+                        matches[matches.length - 1].start = before.lastIndexOf(',');
+                    }
+                }
+            }
+        }
+        if (!matches.length) return { changed: false, body, timestampsValue: null };
+        let nextBody = body;
+        for (let i = matches.length - 1; i >= 0; i--) {
+            nextBody = nextBody.slice(0, matches[i].start) + nextBody.slice(matches[i].end);
+        }
+        nextBody = nextBody
+            .replace(/,\s*,/g, ',')
+            .replace(/\{\s*,/g, '{')
+            .replace(/,\s*$/g, '')
+            .replace(/\n\s*,\s*\n/g, '\n');
+        return { changed: true, body: nextBody, timestampsValue: matches[0].value || 'true' };
+    };
+
+    while ((match = schemaRe.exec(source)) !== null) {
+        const openParen = source.indexOf('(', match.index);
+        const openBrace = source.indexOf('{', openParen);
+        if (openParen === -1 || openBrace === -1) continue;
+        const closeBrace = findMatching(source, openBrace, '{', '}');
+        if (closeBrace === -1) continue;
+
+        const body = source.slice(openBrace + 1, closeBrace);
+        const fixed = removeTopLevelTimestamps(body);
+        if (!fixed.changed) continue;
+
+        const afterObject = source.slice(closeBrace + 1);
+        const closeParenRel = afterObject.search(/\)/);
+        const beforeCloseParen = closeParenRel === -1 ? '' : afterObject.slice(0, closeParenRel);
+        const hasOptions = /^\s*,\s*\{/.test(beforeCloseParen);
+        const replacement = hasOptions
+            ? `${source.slice(match.index, openBrace + 1)}${fixed.body}}`
+            : `${source.slice(match.index, openBrace + 1)}${fixed.body}}, { timestamps: ${fixed.timestampsValue} }`;
+        result += source.slice(cursor, match.index) + replacement;
+        cursor = hasOptions ? closeBrace + 1 : closeBrace + 1;
+    }
+
+    if (cursor === 0) return source;
+    result += source.slice(cursor);
+    return result;
+}
+
 /** Run static fixes on backend code (no AI required) */
 function staticFixBackend(backendFiles, structuredSpec = null) {
     const sanitizeBackendCode = (code) =>
@@ -3054,7 +3785,7 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
         }
         if (path.includes('/models/') && path.endsWith('.js')) {
             // Fix: `Required` is not a valid Mongoose type (e.g. { type: Required } or { required: { type: Required } })
-            const fixedModel = code
+            const fixedModel = fixMisplacedMongooseSchemaOptions(code
                 .replace(/\b(True|False)\b/g, (match) => match.toLowerCase())
                 .replace(/\btype\s*:\s*Required\b/g, 'type: String, required: true')
                 .replace(/required\s*:\s*\{\s*type\s*:\s*(?:Required|Boolean|String|Number|Date)\s*\}/g, 'required: true')
@@ -3080,7 +3811,7 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
                     "category: { type: String, default: 'General' }")
                 // Fix any field where ObjectId ref is used for simple lookup-name fields
                 .replace(/\b(tag|label|type)\s*:\s*\{\s*type\s*:\s*(?:Schema\.Types\.ObjectId|mongoose\.Schema\.Types\.ObjectId)[^}]*\}/g,
-                    (m, fieldName) => `${fieldName}: { type: String }`);
+                    (m, fieldName) => `${fieldName}: { type: String }`));
             if (fixedModel !== code) {
                 code = fixedModel;
                 changed = true;
@@ -3472,9 +4203,88 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
         }
     });
 
+    const createAuthRouteTemplate = () => [
+        "const express = require('express');",
+        "const bcrypt = require('bcryptjs');",
+        "const jwt = require('jsonwebtoken');",
+        "const User = require('../models/User');",
+        "const auth = require('../middleware/auth');",
+        '',
+        'const router = express.Router();',
+        `const SECRET = process.env.JWT_SECRET || process.env.SECRET_KEY || process.env.SEKRET_KEY || 'dev-secret';`,
+        '',
+        "router.get('/health', (req, res) => res.json({ success: true, data: { status: 'ok', service: 'auth-service' } }));",
+        '',
+        "router.post('/register', async (req, res) => {",
+        '  try {',
+        '    const { email, username, password, name, firstName, lastName, role } = req.body || {};',
+        "    if (!email || !password) return res.status(400).json({ success: false, error: 'Email and password are required' });",
+        '    const existing = await User.findOne({ email });',
+        "    if (existing) return res.status(400).json({ success: false, error: 'User already exists' });",
+        '    const passwordHash = await bcrypt.hash(password, 10);',
+        "    const user = await User.create({ email, username, name, firstName, lastName, role: role || 'student', password: passwordHash });",
+        '    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, SECRET, { expiresIn: "7d" });',
+        '    const cleanUser = user.toObject();',
+        '    delete cleanUser.password;',
+        '    res.status(201).json({ success: true, data: { user: cleanUser, token }, token });',
+        '  } catch (error) {',
+        "    res.status(500).json({ success: false, error: error.message || 'Registration failed' });",
+        '  }',
+        '});',
+        '',
+        "router.post('/login', async (req, res) => {",
+        '  try {',
+        '    const { email, password } = req.body || {};',
+        "    if (!email || !password) return res.status(400).json({ success: false, error: 'Email and password are required' });",
+        '    const user = await User.findOne({ email });',
+        "    if (!user) return res.status(400).json({ success: false, error: 'Invalid credentials' });",
+        '    const ok = await bcrypt.compare(password, user.password || "");',
+        "    if (!ok) return res.status(400).json({ success: false, error: 'Invalid credentials' });",
+        '    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, SECRET, { expiresIn: "7d" });',
+        '    const cleanUser = user.toObject();',
+        '    delete cleanUser.password;',
+        '    res.json({ success: true, data: { user: cleanUser, token }, token });',
+        '  } catch (error) {',
+        "    res.status(500).json({ success: false, error: error.message || 'Login failed' });",
+        '  }',
+        '});',
+        '',
+        "router.get('/me', auth, async (req, res) => {",
+        '  const userId = req.user?.id || req.user?._id;',
+        '  const user = userId ? await User.findById(userId).select("-password").catch(() => null) : null;',
+        '  res.json({ success: true, data: user || req.user || null });',
+        '});',
+        '',
+        "router.put('/profile', auth, async (req, res) => {",
+        '  const userId = req.user?.id || req.user?._id;',
+        '  const updates = { ...req.body };',
+        '  delete updates.password;',
+        '  const user = userId ? await User.findByIdAndUpdate(userId, updates, { new: true }).select("-password") : null;',
+        '  res.json({ success: true, data: user || updates });',
+        '});',
+        '',
+        'module.exports = router;',
+    ].join('\n');
+
+    const createAuthUserModelTemplate = () => [
+        "const mongoose = require('mongoose');",
+        '',
+        'const UserSchema = new mongoose.Schema({',
+        '  email: { type: String, required: true, unique: true, sparse: true, trim: true, lowercase: true },',
+        '  username: { type: String, unique: true, sparse: true, trim: true },',
+        '  name: { type: String, default: "" },',
+        '  firstName: { type: String, default: "" },',
+        '  lastName: { type: String, default: "" },',
+        '  password: { type: String, required: true },',
+        "  role: { type: String, enum: ['student', 'instructor', 'admin', 'customer', 'user'], default: 'student' },",
+        '}, { timestamps: true });',
+        '',
+        "module.exports = mongoose.model('User', UserSchema);",
+    ].join('\n');
+
     // POST-PASS 2: ensure routes/<name>.js file exists when index.js requires ./routes/<name>.
     // Prevents "Cannot find module './routes/menu'" when AI replaces index.js but drops the routes file.
-    fixedPaths.forEach((filePath) => {
+    Object.keys(fixed).forEach((filePath) => {
         if (!/\/index\.js$/i.test(filePath) || /gateway/i.test(filePath)) return;
         const indexCode = typeof fixed[filePath] === 'string' ? fixed[filePath] : fixed[filePath]?.code || '';
         const serviceDir = filePath.split('/').filter(Boolean)[0];
@@ -3490,9 +4300,17 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
                 (p) => p.toLowerCase() === expectedRoute.toLowerCase()
             );
             if (!existsExact && !existsCaseInsensitive) {
-                // Create a minimal router stub so the service starts
+                const isAuthRoute = /auth/i.test(serviceDir) || /auth/i.test(routeName);
+                if (isAuthRoute) {
+                    const userModelPath = `/${serviceDir}/models/User.js`;
+                    if (!fixed[userModelPath] && !Object.keys(fixed).some((p) => p.toLowerCase() === userModelPath.toLowerCase())) {
+                        fixed[userModelPath] = { code: createAuthUserModelTemplate() };
+                        fixCount++;
+                        noteCreatedFile(userModelPath, 'created missing auth user model file');
+                    }
+                }
                 fixed[expectedRoute] = {
-                    code: [
+                    code: isAuthRoute ? createAuthRouteTemplate() : [
                         `const express = require('express');`,
                         `const router = express.Router();`,
                         ``,
@@ -3504,7 +4322,7 @@ function staticFixBackend(backendFiles, structuredSpec = null) {
                     ].join('\n'),
                 };
                 fixCount++;
-                noteCreatedFile(expectedRoute, 'created missing route file');
+                noteCreatedFile(expectedRoute, isAuthRoute ? 'created missing auth route file' : 'created missing route file');
             }
         }
     });
@@ -3910,6 +4728,121 @@ function ensureToastifyImports(code = '') {
     return nextCode;
 }
 
+function insertFrontendImportLine(code = '', importLine = '') {
+    const nextCode = String(code || '');
+    if (!importLine) return nextCode;
+    if (/^import[\s\S]+?\n/m.test(nextCode)) {
+        return nextCode.replace(/^((?:import .*;\n)+)/, `$1${importLine}\n`);
+    }
+    return `${importLine}\n${nextCode}`;
+}
+
+function ensureReactDefaultImport(code = '') {
+    let nextCode = String(code || '');
+    const hasJsx = /<([A-Za-z][A-Za-z0-9.]*)\b/.test(nextCode);
+    if (!hasJsx || /import\s+(?:React\b|\*\s+as\s+React\b)[^;]*from\s*['"]react['"];?/.test(nextCode)) {
+        return nextCode;
+    }
+
+    const reactNamedOnlyImportRegex = /import\s*\{([^}]+)\}\s*from\s*['"]react['"];?/;
+    if (reactNamedOnlyImportRegex.test(nextCode)) {
+        return nextCode.replace(reactNamedOnlyImportRegex, (full, names) => `import React, { ${names.trim()} } from 'react';`);
+    }
+
+    return insertFrontendImportLine(nextCode, "import React from 'react';");
+}
+
+function ensureReactHookImports(code = '') {
+    let nextCode = String(code || '');
+    const hookNames = ['useState', 'useEffect', 'useMemo', 'useCallback', 'useRef', 'useReducer', 'useContext'];
+    const requiredHooks = hookNames.filter((hookName) => new RegExp(`(^|[^\\w$.])${hookName}\\s*\\(`).test(nextCode));
+
+    if (requiredHooks.length === 0) {
+        return nextCode;
+    }
+
+    const reactNamedImportRegex = /import\s+React\s*,\s*\{([^}]+)\}\s*from\s*['"]react['"];?/;
+    const reactDefaultImportRegex = /import\s+React\s+from\s*['"]react['"];?/;
+    const reactNamedOnlyImportRegex = /import\s*\{([^}]+)\}\s*from\s*['"]react['"];?/;
+
+    if (reactNamedImportRegex.test(nextCode)) {
+        return nextCode.replace(reactNamedImportRegex, (full, names) => {
+            const nameSet = new Set(names.split(',').map((value) => value.trim()).filter(Boolean));
+            requiredHooks.forEach((hookName) => nameSet.add(hookName));
+            return `import React, { ${[...nameSet].sort((a, b) => a.localeCompare(b)).join(', ')} } from 'react';`;
+        });
+    }
+
+    if (reactDefaultImportRegex.test(nextCode)) {
+        return nextCode.replace(reactDefaultImportRegex, () => (
+            `import React, { ${requiredHooks.sort((a, b) => a.localeCompare(b)).join(', ')} } from 'react';`
+        ));
+    }
+
+    if (reactNamedOnlyImportRegex.test(nextCode)) {
+        return nextCode.replace(reactNamedOnlyImportRegex, (full, names) => {
+            const nameSet = new Set(names.split(',').map((value) => value.trim()).filter(Boolean));
+            requiredHooks.forEach((hookName) => nameSet.add(hookName));
+            return `import React, { ${[...nameSet].sort((a, b) => a.localeCompare(b)).join(', ')} } from 'react';`;
+        });
+    }
+
+    return insertFrontendImportLine(
+        nextCode,
+        `import React, { ${requiredHooks.sort((a, b) => a.localeCompare(b)).join(', ')} } from 'react';`
+    );
+}
+
+function ensureReactRouterImports(code = '') {
+    let nextCode = String(code || '');
+    const required = [];
+    const addRequired = (value) => {
+        if (!required.includes(value)) required.push(value);
+    };
+
+    if (/<Link\b/.test(nextCode)) addRequired('Link');
+    if (/<NavLink\b/.test(nextCode)) addRequired('NavLink');
+    if (/<Routes\b/.test(nextCode)) addRequired('Routes');
+    if (/<Route\b/.test(nextCode)) addRequired('Route');
+    if (/<Navigate\b/.test(nextCode)) addRequired('Navigate');
+    if (/<BrowserRouter\b/.test(nextCode)) addRequired('BrowserRouter');
+    if (/<Router\b/.test(nextCode)) addRequired('BrowserRouter as Router');
+    if (/(^|[^\w$.])useNavigate\s*\(/.test(nextCode)) addRequired('useNavigate');
+    if (/(^|[^\w$.])useParams\s*\(/.test(nextCode)) addRequired('useParams');
+    if (/(^|[^\w$.])useLocation\s*\(/.test(nextCode)) addRequired('useLocation');
+    if (/(^|[^\w$.])useSearchParams\s*\(/.test(nextCode)) addRequired('useSearchParams');
+
+    if (required.length === 0) {
+        return nextCode;
+    }
+
+    const routerImportRegex = /import\s*\{([^}]+)\}\s*from\s*['"]react-router-dom['"];?/;
+    const localNameOf = (part = '') => {
+        const pieces = String(part).trim().split(/\s+as\s+/i);
+        return (pieces[pieces.length - 1] || '').trim();
+    };
+
+    if (routerImportRegex.test(nextCode)) {
+        return nextCode.replace(routerImportRegex, (full, names) => {
+            const parts = names.split(',').map((value) => value.trim()).filter(Boolean);
+            const localNames = new Set(parts.map(localNameOf));
+            required.forEach((item) => {
+                const localName = localNameOf(item);
+                if (!localNames.has(localName)) {
+                    parts.push(item);
+                    localNames.add(localName);
+                }
+            });
+            return `import { ${parts.sort((a, b) => localNameOf(a).localeCompare(localNameOf(b))).join(', ')} } from 'react-router-dom';`;
+        });
+    }
+
+    return insertFrontendImportLine(
+        nextCode,
+        `import { ${required.sort((a, b) => localNameOf(a).localeCompare(localNameOf(b))).join(', ')} } from 'react-router-dom';`
+    );
+}
+
 async function validateFrontendCandidateFiles(frontendFiles, { emit = null, phase = 'frontend-fix', round = null } = {}) {
     const candidateEntries = Object.entries(frontendFiles || {}).filter(([filePath]) => /\.(jsx?|tsx?)$/i.test(filePath));
     if (candidateEntries.length === 0) {
@@ -3984,6 +4917,43 @@ for (const entry of manifest) {
     if (!found) {
       errors.push(\`\${entry.filePath}: missing local import \${requestPath}\`);
     }
+  }
+
+  const getNamedImportLocals = (sourceName) => {
+    const escapedSource = sourceName.replace(/[-/\\\\^$*+?.()|[\\]{}]/g, '\\\\$&');
+    const sourceRegex = new RegExp("import\\\\s+(?:[A-Za-z_$][\\\\w$]*\\\\s*,\\\\s*)?\\\\{([^}]+)\\\\}\\\\s*from\\\\s*['\\"]" + escapedSource + "['\\"]");
+    const match = code.match(sourceRegex);
+    if (!match) return new Set();
+    return new Set(match[1].split(',').map((part) => {
+      const pieces = part.trim().split(/\\\\s+as\\\\s+/i);
+      return (pieces[pieces.length - 1] || '').trim();
+    }).filter(Boolean));
+  };
+  const routerLocals = getNamedImportLocals('react-router-dom');
+  const missingRouterImports = [];
+  if (/<Link\\b/.test(code) && !routerLocals.has('Link')) missingRouterImports.push('Link');
+  if (/<NavLink\\b/.test(code) && !routerLocals.has('NavLink')) missingRouterImports.push('NavLink');
+  if (/<Routes\\b/.test(code) && !routerLocals.has('Routes')) missingRouterImports.push('Routes');
+  if (/<Route\\b/.test(code) && !routerLocals.has('Route')) missingRouterImports.push('Route');
+  if (/<Navigate\\b/.test(code) && !routerLocals.has('Navigate')) missingRouterImports.push('Navigate');
+  if (/<Router\\b/.test(code) && !routerLocals.has('Router')) missingRouterImports.push('BrowserRouter as Router');
+  if (/(^|[^\\w$.])useNavigate\\s*\\(/.test(code) && !routerLocals.has('useNavigate')) missingRouterImports.push('useNavigate');
+  if (/(^|[^\\w$.])useParams\\s*\\(/.test(code) && !routerLocals.has('useParams')) missingRouterImports.push('useParams');
+  if (/(^|[^\\w$.])useLocation\\s*\\(/.test(code) && !routerLocals.has('useLocation')) missingRouterImports.push('useLocation');
+  if (/(^|[^\\w$.])useSearchParams\\s*\\(/.test(code) && !routerLocals.has('useSearchParams')) missingRouterImports.push('useSearchParams');
+  if (missingRouterImports.length) {
+    errors.push(entry.filePath + ': missing react-router-dom import(s): ' + [...new Set(missingRouterImports)].join(', '));
+  }
+
+  const reactLocals = getNamedImportLocals('react');
+  const missingReactHooks = [];
+  ['useState', 'useEffect', 'useMemo', 'useCallback', 'useRef', 'useReducer', 'useContext'].forEach((hookName) => {
+    if (new RegExp('(^|[^\\\\w$.])' + hookName + '\\\\s*\\\\(').test(code) && !reactLocals.has(hookName)) {
+      missingReactHooks.push(hookName);
+    }
+  });
+  if (missingReactHooks.length) {
+    errors.push(entry.filePath + ': missing React hook import(s): ' + [...new Set(missingReactHooks)].join(', '));
   }
 
   try {
@@ -4273,7 +5243,18 @@ const requestJson = async (path, options = {}) => {
         let code = normalizeFrontendFileContent(path, typeof content === 'string' ? content : content?.code || '');
         code = repairCommonFrontendSyntax(code);
         code = ensureToastifyImports(code);
+        code = ensureReactDefaultImport(code);
+        code = ensureReactHookImports(code);
+        code = ensureReactRouterImports(code);
         code = code.replace(/http:\/\/localhost:3001/g, '/api');
+        code = code.replace(
+            /const\s+([A-Z0-9_]*API[A-Z0-9_]*|API_BASE)\s*=\s*[^;\n]*import\.meta[^;\n]*;/gi,
+            "const API_BASE = 'http://127.0.0.1:3005';"
+        );
+        code = code.replace(
+            /\b(?:typeof\s+)?import\.meta(?:\.env)?(?:\?\.)?(?:[A-Z0-9_]+)?\b/gi,
+            "undefined"
+        );
         code = code.replace(/\(typeof\s+import\.meta\s*!==\s*'undefined'\s*&&\s*import\.meta\.env\?\.VITE_API_BASE_URL\)\s*\|\|\s*''/g, "''");
         code = code.replace(/\bimport\.meta\.env\?\.VITE_API_BASE_URL\b/g, "''");
         code = code.replace(/\bimport\.meta\.env\.VITE_API_BASE_URL\b/g, "''");
@@ -6499,6 +7480,26 @@ function summarizeLiveFailure(result) {
 }
 
 async function runLiveBackendValidation(backendFiles, simulatedResults, emit, { projectTitle, keepAliveOnSuccess = false, structuredSpec = null, changedServiceDirs = null } = {}) {
+    const liveStaticRepair = staticFixBackend(backendFiles, structuredSpec);
+    if (liveStaticRepair.fixCount > 0) {
+        backendFiles = liveStaticRepair.files;
+        emit({
+            type: 'log',
+            phase: 'api-test',
+            level: 'info',
+            round: 'live-preflight',
+            message: `Live preflight repaired ${liveStaticRepair.fixCount} backend file(s) before startup checks.`,
+        });
+        [...(liveStaticRepair.createdFiles || []), ...(liveStaticRepair.repairedFiles || [])]
+            .slice(0, 10)
+            .forEach((entry) => emit({
+                type: 'log',
+                phase: 'api-test',
+                level: 'success',
+                round: 'live-preflight',
+                message: `[developer-fix] ${entry}`,
+            }));
+    }
     const topology = inferBackendPortTopology(backendFiles);
     const ports = await reserveRuntimePorts(topology, emit, structuredSpec);
     // Always use a fresh per-run database so stale unique indexes from previous runs
@@ -6891,6 +7892,7 @@ async function runLiveBackendValidation(backendFiles, simulatedResults, emit, { 
         preserveProcesses = keepAliveOnSuccess && failedResults.length === 0;
         return {
             ok: failedResults.length === 0,
+            backendFiles,
             results: liveResults,
             failedResults,
             gatewayUrl: `http://127.0.0.1:${ports.gateway}`,
@@ -6952,6 +7954,7 @@ async function runLiveBackendValidation(backendFiles, simulatedResults, emit, { 
 
         return {
             ok: false,
+            backendFiles,
             results: liveResults.length > 0 ? [...liveResults, runtimeFailure] : [runtimeFailure],
             failedResults: [runtimeFailure],
             gatewayUrl: `http://127.0.0.1:${ports.gateway}`,
@@ -8168,6 +9171,9 @@ export async function POST(req) {
                             structuredSpec: structuredAppSpec,
                             changedServiceDirs: liveChangedDirs,
                         });
+                            if (liveValidation.backendFiles) {
+                                backendFiles = liveValidation.backendFiles;
+                            }
                             lastLiveFailures = liveValidation.failedResults;
                             const actionableLiveFailures = lastLiveFailures.filter(result => !isBlockedRouteFailure(result));
 
@@ -8457,6 +9463,9 @@ export async function POST(req) {
                 const feUserPrompt =
                     `IMPORTANT: Generate ONLY React frontend files (===FRONTEND: /src/...===). ` +
                     `Do NOT generate any ===BACKEND:=== files - the backend is already built and running.\n\n` +
+                    `Build a normal clean app, not a large decorative design. Include separate Home, Navbar, Footer, and CRUD pages for every backend resource route. ` +
+                    `CRUD must work in preview using localStorage fallback and should call only the exact backend gateway routes listed below. ` +
+                    `Every file block must contain one component only, App.jsx must import every page it routes to, and Navbar must link to all generated pages.\n\n` +
                     `${generationPrompt}\n\n${apiSummary}`;
 
                 let frontendText = '';
@@ -8482,15 +9491,51 @@ export async function POST(req) {
                 let frontendFiles = feParsed.frontend;
                 projectTitle = projectTitle || feParsed.projectTitle || '';
 
-                const feCount = Object.keys(frontendFiles).length;
+                let feCount = Object.keys(frontendFiles).length;
                 emit({ type: 'phase', phase: 'frontend-gen', status: 'done',
                     fileCount: feCount,
                     message: `Generated ${feCount} frontend files` });
 
                 if (feCount === 0) {
-                    emit({ type: 'error', error: 'Frontend generation produced 0 files. The AI may have not followed the output format. Try regenerating.', done: true });
-                    controller.close();
-                    return;
+                    emit({
+                        type: 'log',
+                        phase: 'frontend-gen',
+                        level: 'warning',
+                        message: 'Frontend generation produced 0 files. Building a reliable normal CRUD frontend from backend routes and model fields instead.',
+                    });
+                    frontendFiles = buildDeterministicFrontendFiles({
+                        projectTitle: projectTitle || structuredSpec?.projectTitle || structuredSpec?.name || 'Generated App',
+                        backendFiles,
+                        apiSummary,
+                    });
+                    feCount = Object.keys(frontendFiles).length;
+                    emit({
+                        type: 'phase',
+                        phase: 'frontend-gen',
+                        status: 'done',
+                        fileCount: feCount,
+                        message: `Generated ${feCount} fallback frontend files with CRUD pages`,
+                    });
+                } else if (isFrontendGenerationStructurallyUnsafe(frontendFiles)) {
+                    emit({
+                        type: 'log',
+                        phase: 'frontend-gen',
+                        level: 'warning',
+                        message: 'Frontend files look structurally unsafe (concatenated pages, duplicate default exports, late imports, or leaked markers). Replacing with reliable CRUD frontend.',
+                    });
+                    frontendFiles = buildDeterministicFrontendFiles({
+                        projectTitle: projectTitle || structuredSpec?.projectTitle || structuredSpec?.name || 'Generated App',
+                        backendFiles,
+                        apiSummary,
+                    });
+                    feCount = Object.keys(frontendFiles).length;
+                    emit({
+                        type: 'phase',
+                        phase: 'frontend-gen',
+                        status: 'done',
+                        fileCount: feCount,
+                        message: `Generated ${feCount} safe frontend files with Home, Navbar, Footer, Auth, and CRUD pages`,
+                    });
                 }
 
                 /* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
@@ -8573,23 +9618,22 @@ export async function POST(req) {
                     frontendValidation = await validateFrontendCandidateFiles(frontendFiles, { emit, phase: 'frontend-fix' });
                 if (!frontendValidation.ok) {
                     emit({ type: 'log', phase: 'frontend-fix', level: 'warning',
-                        message: `Frontend still has ${frontendValidation.errors.length} syntax issue(s). Applying final safety fallback to broken page files.` });
-                    frontendValidation.errors.forEach((errorText) => {
-                        const match = errorText.match(/^(\/[^:]+\.(?:jsx?|tsx?)):/);
-                        if (!match) return;
-                        const brokenPath = match[1];
-                        const base = brokenPath.split('/').pop()?.replace(/\.[^.]+$/, '') || 'GeneratedPage';
-                        const componentName = base
-                            .replace(/[^A-Za-z0-9]+/g, ' ')
-                            .replace(/(?:^|\s)([A-Za-z0-9])/g, (_, ch) => ch.toUpperCase())
-                            .replace(/\s+/g, '') || 'GeneratedPage';
-                        if (/\/pages\//.test(brokenPath) || /\/components\//.test(brokenPath)) {
-                            frontendFiles[brokenPath] = {
-                                code: `import React from 'react';\n\nexport default function ${componentName}() {\n  return (\n    <section className="min-h-screen bg-gray-950 text-white px-6 py-16">\n      <div className="max-w-5xl mx-auto rounded-2xl border border-rose-500/30 bg-rose-950/20 p-6">\n        <h1 className="text-3xl font-bold mb-3">${componentName}</h1>\n        <p className="text-rose-100/80">This file was auto-recovered because the generated JSX was invalid during preview validation.</p>\n      </div>\n    </section>\n  );\n}\n`,
-                            };
-                        }
+                        message: `Frontend still has ${frontendValidation.errors.length} syntax issue(s). Replacing the full frontend with a reliable CRUD scaffold instead of creating placeholder pages.` });
+                    frontendFiles = buildDeterministicFrontendFiles({
+                        projectTitle: projectTitle || structuredSpec?.projectTitle || structuredSpec?.name || 'Generated App',
+                        backendFiles,
+                        apiSummary,
                     });
                     frontendFiles = staticFixFrontend(frontendFiles);
+                    frontendValidation = await validateFrontendCandidateFiles(frontendFiles, { emit, phase: 'frontend-fix' });
+                    if (!frontendValidation.ok) {
+                        emit({
+                            type: 'log',
+                            phase: 'frontend-fix',
+                            level: 'warning',
+                            message: `Fallback frontend still has ${frontendValidation.errors.length} issue(s): ${frontendValidation.errors.slice(0, 2).join(' | ')}`,
+                        });
+                    }
                 }
 
                 emit({ type: 'phase', phase: 'frontend-fix', status: 'done',

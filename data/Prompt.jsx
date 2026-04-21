@@ -60,8 +60,14 @@ CRITICAL CODING RULES:
 - DO NOT generate: main.jsx, index.html, App.css, package.json, vite.config.js, tailwind.config.js
 - Every file: starts with import React from 'react'; Ã¢â‚¬â€ ends with export default ComponentName;
 - App.jsx uses react-router-dom BrowserRouter + Routes + Route
+- App.jsx MUST import every page component it uses, and every imported page file MUST be generated under /src/pages.
+- Navbar MUST include navigation links for all App.jsx page routes, not only Login/Register.
+- Any file that uses <Link>, <NavLink>, <Routes>, <Route>, <Navigate>, useNavigate, useParams, useLocation, or useSearchParams MUST import those names from react-router-dom in that same file.
+- Any file that uses React hooks directly, such as useState or useEffect, MUST import those hooks from react in that same file.
+- Each file block MUST contain exactly one component and one export default. Never concatenate multiple page files in one marker block.
 - NEVER use path aliases like @/ Ã¢â‚¬â€ use ONLY relative imports: ./components/Navbar or ../pages/Home
 - NEVER use TypeScript (.tsx, .ts) Ã¢â‚¬â€ use JavaScript (.jsx, .js) only
+- NEVER use import.meta or import.meta.env in generated React files; some previews parse files outside ESM module mode. Use a plain constant like const API_BASE = 'http://127.0.0.1:3005';
 
 TOAST NOTIFICATIONS Ã¢â‚¬â€ use ONLY react-toastify (NEVER react-hot-toast):
   import { toast, ToastContainer } from 'react-toastify';
@@ -116,7 +122,8 @@ API CALLS Ã¢â‚¬â€ always include localStorage fallback:
 DESIGN SYSTEM Ã¢â‚¬â€ MANDATORY (use the DESIGN SEED colors from user)
 Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
 IMPORTANT: Use Tailwind CSS classes ONLY Ã¢â‚¬â€ absolutely NO inline styles (style={{...}}).
-The Tailwind CDN is available. Every component MUST be visually stunning.
+Prefer a normal, clean, readable application design over a large decorative landing page.
+The Tailwind CDN is available. Pages should be practical CRUD screens with simple cards, forms, tables/lists, and clear navigation.
 
 HERO SECTION (every Home.jsx must have this):
   <section className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-4">
@@ -670,6 +677,8 @@ BUGS TO CHECK
 9. Missing key prop in .map() loops
 10. Undefined component references (using a component that is not imported)
 11. Broken BrowserRouter setup (App.jsx must wrap routes in <BrowserRouter>)
+11a. If JSX uses <Link>, <NavLink>, <Routes>, <Route>, or <Navigate>, the same file must import those names from react-router-dom
+11b. If a file uses useState/useEffect/useMemo/useCallback/useRef directly, the same file must import those hooks from react
 12. Create/update/delete handlers must gracefully fall back to local state + localStorage when backend requests fail in preview mode
 13. In Sandpack/CodeSandbox preview, request helpers must avoid calling localhost during initial reads and instead serve localStorage/default preview data without noisy fetch errors
 14. Any PUT/PATCH/DELETE request that can be called with undefined/null id must be fixed

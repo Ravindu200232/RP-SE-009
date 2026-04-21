@@ -3880,3 +3880,449 @@ ReferenceError: gateway is not defined
 
 Node.js v22.22.2 | > api-gateway@1.0.0 start
 > node index.js | exit=1 | service failed to start
+
+## App Build Plan | 2026-04-21T07:03:34.553Z
+- Project: StayEase Hotel Booking System
+- Services: Auth Service (4 endpoints), Room Service (5 endpoints), Reservation Service (5 endpoints), Checkin Service (3 endpoints), Payment Service (3 endpoints)
+- Features: User Authentication, Room Management, Reservation Management, Check-in and Check-out, Payment Processing
+- Expected backend libraries: bcryptjs, cors, dotenv, express, http-proxy-middleware, jsonwebtoken, mongoose, multer
+- Expected frontend libraries: axios, react, react-router-dom
+- Developer workflow: understand app scope, remember expected libraries, then audit each backend service in order (models -> routes -> controllers -> index.js -> package.json) before patching.
+- Frontend workflow: audit pages/files individually for syntax, local imports, and missing external libraries before final preview.
+
+## Live Route Failures | 2026-04-21T07:11:40.617Z
+- POST /api/reservations: Reservation validation failed: user: Cast to ObjectId failed for value "pending" (type string) at path "user" because of "BSONTypeError", checkOutDate: Path `checkOutDate` is required., checkInDate: Path `checkInDate` is required., room: Path `room` is required.
+- POST /api/checkin: GuestStay validation failed: reservation: Path `reservation` is required., user: Path `user` is required., checkInDate: Path `checkInDate` is required., checkOutDate: Path `checkOutDate` is required.
+- PUT /api/auth/profile: Expected HTTP 200 but received 404
+
+## Live Route Failures | 2026-04-21T07:15:02.708Z
+- POST /api/reservations: Reservation validation failed: user: Cast to ObjectId failed for value "pending" (type string) at path "user" because of "BSONTypeError", checkOutDate: Path `checkOutDate` is required., checkInDate: Path `checkInDate` is required., room: Path `room` is required.
+- POST /api/checkin: All fields are required
+- POST /api/checkout: All fields are required
+- GET /api/auth/me: User not found
+- PUT /api/auth/profile: User not found
+
+## Remaining Route Failures | 2026-04-21T07:15:11.893Z
+- POST /api/reservations: Reservation validation failed: user: Cast to ObjectId failed for value "pending" (type string) at path "user" because of "BSONTypeError", checkOutDate: Path `checkOutDate` is required., checkInDate: Path `checkInDate` is required., room: Path `room` is required.
+- POST /api/checkin: GuestStay validation failed: reservation: Path `reservation` is required., user: Path `user` is required., checkInDate: Path `checkInDate` is required., checkOutDate: Path `checkOutDate` is required.
+- PUT /api/auth/profile: Expected HTTP 200 but received 404
+
+## App Build Plan | 2026-04-21T07:28:40.280Z
+- Project: StayEase Hotel Booking System
+- Services: Auth Service (4 endpoints), Room Service (5 endpoints), Reservation Service (5 endpoints), Checkin Service (3 endpoints), Payment Service (3 endpoints)
+- Features: User Authentication, Room Management, Reservation Management, Check-in and Check-out, Payment Processing
+- Expected backend libraries: bcryptjs, cors, dotenv, express, http-proxy-middleware, jsonwebtoken, mongoose, multer
+- Expected frontend libraries: axios, react, react-router-dom
+- Developer workflow: understand app scope, remember expected libraries, then audit each backend service in order (models -> routes -> controllers -> index.js -> package.json) before patching.
+- Frontend workflow: audit pages/files individually for syntax, local imports, and missing external libraries before final preview.
+
+## Live Route Failures | 2026-04-21T07:36:04.879Z
+- POST /api/checkin: GuestStay validation failed: checkOutDate: Path `checkOutDate` is required., room: Path `room` is required., guest: Path `guest` is required.
+- POST /api/checkout: Guest stay not found
+- PUT /api/auth/profile: Expected HTTP 200 but received 404
+
+## App Build Plan | 2026-04-21T07:49:50.219Z
+- Project: LearnHub Learning Management System
+- Services: Auth Service (4 endpoints), Course Service (5 endpoints), Enrollment Service (3 endpoints), Lesson Service (5 endpoints), Quiz Service (4 endpoints)
+- Features: User Authentication, Course Management, Enrollment Management, Lesson and Content Delivery, Quiz and Assessment
+- Expected backend libraries: bcryptjs, cors, dotenv, express, http-proxy-middleware, jsonwebtoken, mongoose, multer
+- Expected frontend libraries: axios, react, react-router-dom, recharts
+- Developer workflow: understand app scope, remember expected libraries, then audit each backend service in order (models -> routes -> controllers -> index.js -> package.json) before patching.
+- Frontend workflow: audit pages/files individually for syntax, local imports, and missing external libraries before final preview.
+
+## Live Route Failures | 2026-04-21T07:58:55.547Z
+- GET /api/lessons/health: Expected HTTP 200 but received 404
+- POST /api/lessons: Expected HTTP 201 but received 404
+- POST /api/courses: Course validation failed: instructorId: Path `instructorId` is required.
+- POST /api/enrollments: Enrollment validation failed: userId: Path `userId` is required.
+- GET /api/quizzes/69e72e3f483a1e68d6f3d5f7/results: Cannot read properties of undefined (reading 'forEach')
+
+## Live Route Failures | 2026-04-21T08:00:52.479Z
+- GET /api/lessons/health: Expected HTTP 200 but received 404
+- POST /api/lessons: Expected HTTP 201 but received 404
+- POST /api/courses: Course validation failed: instructorId: Path `instructorId` is required.
+- POST /api/enrollments: Enrollment validation failed: userId: Path `userId` is required.
+- GET /api/quizzes/69e72eb4a62eb679293a047f/results: Cannot read properties of undefined (reading 'forEach')
+
+## Remaining Route Failures | 2026-04-21T08:02:24.392Z
+- GET /api/lessons/health: Expected HTTP 200 but received 404
+- POST /api/lessons: Expected HTTP 201 but received 404
+- POST /api/courses: Course validation failed: instructorId: Path `instructorId` is required.
+- POST /api/enrollments: Enrollment validation failed: userId: Path `userId` is required.
+- GET /api/quizzes/69e72eb4a62eb679293a047f/results: Cannot read properties of undefined (reading 'forEach')
+
+## App Build Plan | 2026-04-21T08:45:29.119Z
+- Project: Generated app
+- Services: not structured
+- Features: not structured
+- Expected backend libraries: bcryptjs, cors, dotenv, express, jsonwebtoken
+- Expected frontend libraries: react, react-router-dom
+- Developer workflow: understand app scope, remember expected libraries, then audit each backend service in order (models -> routes -> controllers -> index.js -> package.json) before patching.
+- Frontend workflow: audit pages/files individually for syntax, local imports, and missing external libraries before final preview.
+
+## App Build Plan | 2026-04-21T08:45:38.016Z
+- Project: LearnHub Learning Management System
+- Services: Auth Service (4 endpoints), Course Service (5 endpoints), Enrollment Service (3 endpoints), Lesson Service (5 endpoints), Quiz Service (4 endpoints)
+- Features: User Authentication, Course Management, Enrollment Management, Lesson and Content Delivery, Quiz and Assessment
+- Expected backend libraries: bcryptjs, cors, dotenv, express, http-proxy-middleware, jsonwebtoken, mongoose, multer
+- Expected frontend libraries: axios, react, react-router-dom, recharts
+- Developer workflow: understand app scope, remember expected libraries, then audit each backend service in order (models -> routes -> controllers -> index.js -> package.json) before patching.
+- Frontend workflow: audit pages/files individually for syntax, local imports, and missing external libraries before final preview.
+
+## App Build Plan | 2026-04-21T08:46:04.460Z
+- Project: LearnHub Learning Management System
+- Services: Auth Service (4 endpoints), Course Service (5 endpoints), Enrollment Service (3 endpoints), Lesson Service (5 endpoints), Quiz Service (4 endpoints)
+- Features: User Authentication, Course Management, Enrollment Management, Lesson and Content Delivery, Quiz and Assessment
+- Expected backend libraries: bcryptjs, cors, dotenv, express, http-proxy-middleware, jsonwebtoken, mongoose, multer
+- Expected frontend libraries: axios, react, react-router-dom, recharts
+- Developer workflow: understand app scope, remember expected libraries, then audit each backend service in order (models -> routes -> controllers -> index.js -> package.json) before patching.
+- Frontend workflow: audit pages/files individually for syntax, local imports, and missing external libraries before final preview.
+
+## App Build Plan | 2026-04-21T08:46:29.840Z
+- Project: LearnHub Learning Management System
+- Services: Auth Service (4 endpoints), Course Service (5 endpoints), Enrollment Service (3 endpoints), Lesson Service (5 endpoints), Quiz Service (4 endpoints)
+- Features: User Authentication, Course Management, Enrollment Management, Lesson and Content Delivery, Quiz and Assessment
+- Expected backend libraries: bcryptjs, cors, dotenv, express, http-proxy-middleware, jsonwebtoken, mongoose, multer
+- Expected frontend libraries: axios, react, react-router-dom, recharts
+- Developer workflow: understand app scope, remember expected libraries, then audit each backend service in order (models -> routes -> controllers -> index.js -> package.json) before patching.
+- Frontend workflow: audit pages/files individually for syntax, local imports, and missing external libraries before final preview.
+
+## Live Runtime Failure | 2026-04-21T08:59:39.793Z
+- course-service exited before health check: node:internal/modules/cjs/loader:1386
+  throw err;
+  ^
+
+Error: Cannot find module './routes/courses'
+Require stack:
+- E:\final_research_agentic\output\learnhub-learning-management-system\backend\course-service\index.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)
+    at Function._load (node:internal/modules/cjs/loader:1192:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.require (node:internal/modules/cjs/loader:1463:12)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (E:\final_research_agentic\output\learnhub-learning-management-system\backend\course-service\index.js:5:23)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'E:\\final_research_agentic\\output\\learnhub-learning-management-system\\backend\\course-service\\index.js'
+  ]
+}
+
+Node.js v22.22.2 | > course-service@1.0.0 start
+> node index.js | exit=1 | service failed to start
+
+## Live Runtime Failure | 2026-04-21T08:59:42.464Z
+- course-service exited before health check: node:internal/modules/cjs/loader:1386
+  throw err;
+  ^
+
+Error: Cannot find module './routes/courses'
+Require stack:
+- E:\final_research_agentic\output\learnhub-learning-management-system\backend\course-service\index.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)
+    at Function._load (node:internal/modules/cjs/loader:1192:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.require (node:internal/modules/cjs/loader:1463:12)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (E:\final_research_agentic\output\learnhub-learning-management-system\backend\course-service\index.js:5:23)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'E:\\final_research_agentic\\output\\learnhub-learning-management-system\\backend\\course-service\\index.js'
+  ]
+}
+
+Node.js v22.22.2 | > course-service@1.0.0 start
+> node index.js | exit=1 | service failed to start
+
+## Live Runtime Failure | 2026-04-21T09:00:56.493Z
+- auth-service exited before health check: node:internal/modules/cjs/loader:1386
+  throw err;
+  ^
+
+Error: Cannot find module './routes/auth'
+Require stack:
+- E:\final_research_agentic\output\learnhub-learning-management-system\backend\auth-service\index.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)
+    at Function._load (node:internal/modules/cjs/loader:1192:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.require (node:internal/modules/cjs/loader:1463:12)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (E:\final_research_agentic\output\learnhub-learning-management-system\backend\auth-service\index.js:10:20)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'E:\\final_research_agentic\\output\\learnhub-learning-management-system\\backend\\auth-service\\index.js'
+  ]
+}
+
+Node.js v22.22.2 | > auth-service@1.0.0 start
+> node index.js | exit=1 | service failed to start
+
+## Live Runtime Failure | 2026-04-21T09:01:12.200Z
+- auth-service exited before health check: node:internal/modules/cjs/loader:1386
+  throw err;
+  ^
+
+Error: Cannot find module './routes/auth'
+Require stack:
+- E:\final_research_agentic\output\learnhub-learning-management-system\backend\auth-service\index.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)
+    at Function._load (node:internal/modules/cjs/loader:1192:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.require (node:internal/modules/cjs/loader:1463:12)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (E:\final_research_agentic\output\learnhub-learning-management-system\backend\auth-service\index.js:10:20)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'E:\\final_research_agentic\\output\\learnhub-learning-management-system\\backend\\auth-service\\index.js'
+  ]
+}
+
+Node.js v22.22.2 | > auth-service@1.0.0 start
+> node index.js | exit=1 | service failed to start
+
+## Remaining Route Failures | 2026-04-21T09:01:32.553Z
+- GET /health: auth-service exited before health check: node:internal/modules/cjs/loader:1386
+  throw err;
+  ^
+
+Error: Cannot find module './routes/auth'
+Require stack:
+- E:\final_research_agentic\output\learnhub-learning-management-system\backend\auth-service\index.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)
+    at Function._load (node:internal/modules/cjs/loader:1192:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.require (node:internal/modules/cjs/loader:1463:12)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (E:\final_research_agentic\output\learnhub-learning-management-system\backend\auth-service\index.js:10:20)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'E:\\final_research_agentic\\output\\learnhub-learning-management-system\\backend\\auth-service\\index.js'
+  ]
+}
+
+Node.js v22.22.2 | > auth-service@1.0.0 start
+> node index.js | exit=1 | service failed to start
+
+## Backend Validation Failures | 2026-04-21T09:01:56.455Z
+- /auth-service/models/User.js: schema option timestamps is incorrectly declared inside the schema fields — move it to the second argument as new mongoose.Schema(fields, { timestamps: true })
+- /enrollment-service/index.js: E:\final_research_agentic\output\learnhub-learning-management-system\validation-check\enrollment-service\index.js:16 => console.log('MongoDB connected')) ^^ SyntaxError: Unexpected token '=>'
+- /enrollment-service/models/Enrollment.js: schema option timestamps is incorrectly declared inside the schema fields — move it to the second argument as new mongoose.Schema(fields, { timestamps: true })
+- /quiz-service/models/Quiz.js: schema option timestamps is incorrectly declared inside the schema fields — move it to the second argument as new mongoose.Schema(fields, { timestamps: true })
+
+## Remaining Route Failures | 2026-04-21T09:01:56.468Z
+- GET /health: auth-service exited before health check: node:internal/modules/cjs/loader:1386
+  throw err;
+  ^
+
+Error: Cannot find module './routes/auth'
+Require stack:
+- E:\final_research_agentic\output\learnhub-learning-management-system\backend\auth-service\index.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)
+    at Function._load (node:internal/modules/cjs/loader:1192:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.require (node:internal/modules/cjs/loader:1463:12)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (E:\final_research_agentic\output\learnhub-learning-management-system\backend\auth-service\index.js:10:20)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'E:\\final_research_agentic\\output\\learnhub-learning-management-system\\backend\\auth-service\\index.js'
+  ]
+}
+
+Node.js v22.22.2 | > auth-service@1.0.0 start
+> node index.js | exit=1 | service failed to start
+
+## App Build Plan | 2026-04-21T09:16:46.680Z
+- Project: LearnHub Learning Management System
+- Services: Auth Service (4 endpoints), Course Service (5 endpoints), Enrollment Service (3 endpoints), Lesson Service (5 endpoints), Quiz Service (4 endpoints)
+- Features: User Authentication, Course Management, Enrollment Management, Lesson and Content Delivery, Quiz and Assessment
+- Expected backend libraries: bcryptjs, cors, dotenv, express, http-proxy-middleware, jsonwebtoken, mongoose, multer
+- Expected frontend libraries: axios, react, react-router-dom, recharts
+- Developer workflow: understand app scope, remember expected libraries, then audit each backend service in order (models -> routes -> controllers -> index.js -> package.json) before patching.
+- Frontend workflow: audit pages/files individually for syntax, local imports, and missing external libraries before final preview.
+
+## Live Runtime Failure | 2026-04-21T09:25:10.462Z
+- lesson-service exited before health check: E:\final_research_agentic\output\learnhub-learning-management-system\backend\lesson-service\index.js:20
+=> console.log('MongoDB connected'))
+^^
+
+SyntaxError: Unexpected token '=>'
+    at wrapSafe (node:internal/modules/cjs/loader:1637:18)
+    at Module._compile (node:internal/modules/cjs/loader:1679:20)
+    at Object..js (node:internal/modules/cjs/loader:1838:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+
+Node.js v22.22.2 | > lesson-service@1.0.0 start
+> node index.js | exit=1 | service failed to start
+
+## Live Runtime Failure | 2026-04-21T09:26:15.161Z
+- lesson-service exited before health check: E:\final_research_agentic\output\learnhub-learning-management-system\backend\lesson-service\index.js:20
+=> console.log('MongoDB connected'))
+^^
+
+SyntaxError: Unexpected token '=>'
+    at wrapSafe (node:internal/modules/cjs/loader:1637:18)
+    at Module._compile (node:internal/modules/cjs/loader:1679:20)
+    at Object..js (node:internal/modules/cjs/loader:1838:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+
+Node.js v22.22.2 | > lesson-service@1.0.0 start
+> node index.js | exit=1 | service failed to start
+
+## Backend Validation Failures | 2026-04-21T09:26:40.318Z
+- /auth-service/models/User.js: schema option timestamps is incorrectly declared inside the schema fields — move it to the second argument as new mongoose.Schema(fields, { timestamps: true })
+- /enrollment-service/models/Enrollment.js: schema option timestamps is incorrectly declared inside the schema fields — move it to the second argument as new mongoose.Schema(fields, { timestamps: true })
+- /lesson-service/index.js: E:\final_research_agentic\output\learnhub-learning-management-system\validation-check\lesson-service\index.js:20 => console.log('MongoDB connected')) ^^ SyntaxError: Unexpected token '=>'
+- /lesson-service/models/Lesson.js: schema option timestamps is incorrectly declared inside the schema fields — move it to the second argument as new mongoose.Schema(fields, { timestamps: true })
+
+## Remaining Route Failures | 2026-04-21T09:26:40.330Z
+- GET /health: lesson-service exited before health check: E:\final_research_agentic\output\learnhub-learning-management-system\backend\lesson-service\index.js:20
+=> console.log('MongoDB connected'))
+^^
+
+SyntaxError: Unexpected token '=>'
+    at wrapSafe (node:internal/modules/cjs/loader:1637:18)
+    at Module._compile (node:internal/modules/cjs/loader:1679:20)
+    at Object..js (node:internal/modules/cjs/loader:1838:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+
+Node.js v22.22.2 | > lesson-service@1.0.0 start
+> node index.js | exit=1 | service failed to start
+
+## App Build Plan | 2026-04-21T09:27:59.298Z
+- Project: LearnHub Learning Management System
+- Services: Auth Service (4 endpoints), Course Service (5 endpoints), Enrollment Service (3 endpoints), Lesson Service (5 endpoints), Quiz Service (4 endpoints)
+- Features: User Authentication, Course Management, Enrollment Management, Lesson and Content Delivery, Quiz and Assessment
+- Expected backend libraries: bcryptjs, cors, dotenv, express, http-proxy-middleware, jsonwebtoken, mongoose, multer
+- Expected frontend libraries: axios, react, react-router-dom, recharts
+- Developer workflow: understand app scope, remember expected libraries, then audit each backend service in order (models -> routes -> controllers -> index.js -> package.json) before patching.
+- Frontend workflow: audit pages/files individually for syntax, local imports, and missing external libraries before final preview.
+
+## Live Runtime Failure | 2026-04-21T09:41:56.687Z
+- course-service exited before health check: E:\final_research_agentic\output\learnhub-learning-management-system\backend\course-service\index.js:15
+=> console.log('MongoDB connected')).catch(err => console.error(err));
+^^
+
+SyntaxError: Unexpected token '=>'
+    at wrapSafe (node:internal/modules/cjs/loader:1637:18)
+    at Module._compile (node:internal/modules/cjs/loader:1679:20)
+    at Object..js (node:internal/modules/cjs/loader:1838:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+
+Node.js v22.22.2 | > course-service@1.0.0 start
+> node index.js | exit=1 | service failed to start
+
+## Live Runtime Failure | 2026-04-21T09:42:55.577Z
+- course-service exited before health check: E:\final_research_agentic\output\learnhub-learning-management-system\backend\course-service\index.js:15
+=> console.log('MongoDB connected')).catch(err => console.error(err));
+^^
+
+SyntaxError: Unexpected token '=>'
+    at wrapSafe (node:internal/modules/cjs/loader:1637:18)
+    at Module._compile (node:internal/modules/cjs/loader:1679:20)
+    at Object..js (node:internal/modules/cjs/loader:1838:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+
+Node.js v22.22.2 | > course-service@1.0.0 start
+> node index.js | exit=1 | service failed to start
+
+## Backend Validation Failures | 2026-04-21T09:43:27.910Z
+- /auth-service/models/User.js: schema option timestamps is incorrectly declared inside the schema fields — move it to the second argument as new mongoose.Schema(fields, { timestamps: true })
+- /course-service/index.js: E:\final_research_agentic\output\learnhub-learning-management-system\validation-check\course-service\index.js:15 => console.log('MongoDB connected')).catch(err => console.error(err)); ^^ SyntaxError: Unexpected token '=>'
+- /course-service/models/Course.js: schema option timestamps is incorrectly declared inside the schema fields — move it to the second argument as new mongoose.Schema(fields, { timestamps: true })
+- /enrollment-service/index.js: E:\final_research_agentic\output\learnhub-learning-management-system\validation-check\enrollment-service\index.js:18 => console.log('MongoDB connected')) ^^ SyntaxError: Unexpected token '=>'
+- /enrollment-service/models/Enrollment.js: schema option timestamps is incorrectly declared inside the schema fields — move it to the second argument as new mongoose.Schema(fields, { timestamps: true })
+- /lesson-service/index.js: app.listen() starts before mongoose.connect() is confirmed — service can report healthy while write routes hang and later abort
+- /lesson-service/index.js: missing local require ../models/Lesson
+- /lesson-service/models/Lesson.js: schema option timestamps is incorrectly declared inside the schema fields — move it to the second argument as new mongoose.Schema(fields, { timestamps: true })
+
+## Remaining Route Failures | 2026-04-21T09:43:27.922Z
+- GET /health: course-service exited before health check: E:\final_research_agentic\output\learnhub-learning-management-system\backend\course-service\index.js:15
+=> console.log('MongoDB connected')).catch(err => console.error(err));
+^^
+
+SyntaxError: Unexpected token '=>'
+    at wrapSafe (node:internal/modules/cjs/loader:1637:18)
+    at Module._compile (node:internal/modules/cjs/loader:1679:20)
+    at Object..js (node:internal/modules/cjs/loader:1838:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+
+Node.js v22.22.2 | > course-service@1.0.0 start
+> node index.js | exit=1 | service failed to start
+
+## App Build Plan | 2026-04-21T10:48:56.941Z
+- Project: LearnHub Learning Management System
+- Services: Auth Service (4 endpoints), Course Service (5 endpoints), Enrollment Service (3 endpoints), Lesson Service (5 endpoints), Quiz Service (4 endpoints)
+- Features: User Authentication, Course Management, Enrollment Management, Lesson and Content Delivery, Quiz and Assessment
+- Expected backend libraries: bcryptjs, cors, dotenv, express, http-proxy-middleware, jsonwebtoken, mongoose, multer
+- Expected frontend libraries: axios, react, react-router-dom, recharts
+- Developer workflow: understand app scope, remember expected libraries, then audit each backend service in order (models -> routes -> controllers -> index.js -> package.json) before patching.
+- Frontend workflow: audit pages/files individually for syntax, local imports, and missing external libraries before final preview.
+
+## Live Route Failures | 2026-04-21T10:56:05.110Z
+- POST /api/courses: Course validation failed: instructorId: Path `instructorId` is required.
+- POST /api/enrollments: Enrollment validation failed: courseId: Cast to ObjectId failed for value "enrolled" (type string) at path "courseId" because of "BSONError", userId: Path `userId` is required.
+- GET /api/enrollments/my: Cannot read properties of undefined (reading 'id')
+
+## Live Route Failures | 2026-04-21T10:57:46.108Z
+- POST /api/courses: Course validation failed: instructorId: Path `instructorId` is required.
+- POST /api/enrollments: Enrollment validation failed: courseId: Cast to ObjectId failed for value "enrolled" (type string) at path "courseId" because of "BSONError", userId: Path `userId` is required.
+- GET /api/enrollments/my: Cannot read properties of undefined (reading 'id')
+
+## Remaining Route Failures | 2026-04-21T10:58:47.737Z
+- POST /api/courses: Course validation failed: instructorId: Path `instructorId` is required.
+- POST /api/enrollments: Enrollment validation failed: courseId: Cast to ObjectId failed for value "enrolled" (type string) at path "courseId" because of "BSONError", userId: Path `userId` is required.
+- GET /api/enrollments/my: Cannot read properties of undefined (reading 'id')
