@@ -182,7 +182,6 @@ export default function JobPage() {
           : "Artifacts and secrets sanitization completed.",
         snapshot: [
           `Artifacts generated: ${payload.artifacts.length}`,
-          `Evidence file ready: ${payload.evidence_path ? "Yes" : "No"}`,
           `Secret gate: ${sanitizeFailed ? "Blocked" : "Clear"}`,
         ],
       },
@@ -470,75 +469,72 @@ export default function JobPage() {
           </section>
 
           <section className="panel">
-              <div className="panel-title-row">
-                <div>
-                  <p className="section-kicker">Artifacts</p>
-                  <h2 className="section-title" style={{ fontSize: "1.4rem" }}>
-                    What will be packaged
-                  </h2>
-                  <p className="section-subtitle">
-                    Review generated deliverables before download and push.
-                  </p>
+            <div className="panel-title-row">
+              <div>
+                <p className="section-kicker">Artifacts</p>
+                <h2 className="section-title" style={{ fontSize: "1.4rem" }}>
+                  What will be packaged
+                </h2>
+                <p className="section-subtitle">
+                  Review generated deliverables before download and push.
+                </p>
+              </div>
+
+              {downloadUrl ? (
+                <a className="primary-button download-cta" href={downloadUrl}>
+                  Download packaged ZIP
+                </a>
+              ) : null}
+            </div>
+
+            <div className="diff-toolbar" style={{ marginTop: "1rem" }}>
+              <label className="artifact-search" htmlFor="artifact-search-input">
+                <span>Filter artifacts</span>
+                <input
+                  id="artifact-search-input"
+                  value={artifactQuery}
+                  onChange={(event) => setArtifactQuery(event.target.value)}
+                  placeholder="Search by path, type, or filename"
+                />
+              </label>
+              <button type="button" className="secondary-button" onClick={copyVisibleArtifacts}>
+                {copiedArtifacts ? "Copied" : "Copy visible artifacts"}
+              </button>
+            </div>
+
+            <div className="diff-metrics" style={{ marginTop: "0.85rem" }}>
+              <span className="pill">Total {artifactStats.total}</span>
+              <span className="pill">API {artifactStats.api}</span>
+              <span className="pill">Evidence {artifactStats.evidence}</span>
+              <span className="pill">Docs {artifactStats.docs}</span>
+              <span className="pill">Source {artifactStats.source}</span>
+            </div>
+
+            <div className="artifact-landscape-lane" style={{ marginTop: "1rem" }}>
+              {artifactBuckets.length ? (
+                artifactBuckets.map((bucket) => (
+                  <article className={`commit-preview-card tone-${bucket.tone}`} key={bucket.id}>
+                    <div className="commit-preview-head">
+                      <strong>{bucket.title}</strong>
+                      <span className={`badge badge-${bucket.tone}`}>{bucket.tone.toUpperCase()}</span>
+                    </div>
+                    <div className="commit-preview-items">
+                      {bucket.items.map((item) => (
+                        <span className="pill mono commit-preview-pill" key={`${bucket.id}-${item}`}>
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <div className="empty-state" style={{ padding: "0.85rem" }}>
+                  <strong>No matching artifacts</strong>
+                  <span>Try a different keyword to locate a generated file.</span>
                 </div>
+              )}
+            </div>
 
-                {downloadUrl ? (
-                  <a className="primary-button download-cta" href={downloadUrl}>
-                    Download packaged ZIP
-                  </a>
-                ) : null}
-              </div>
-
-              <div className="diff-toolbar" style={{ marginTop: "1rem" }}>
-                <label className="artifact-search" htmlFor="artifact-search-input">
-                  <span>Filter artifacts</span>
-                  <input
-                    id="artifact-search-input"
-                    value={artifactQuery}
-                    onChange={(event) => setArtifactQuery(event.target.value)}
-                    placeholder="Search by path, type, or filename"
-                  />
-                </label>
-                <button type="button" className="secondary-button" onClick={copyVisibleArtifacts}>
-                  {copiedArtifacts ? "Copied" : "Copy visible artifacts"}
-                </button>
-              </div>
-
-              <div className="diff-metrics" style={{ marginTop: "0.85rem" }}>
-                <span className="pill">Total {artifactStats.total}</span>
-                <span className="pill">API {artifactStats.api}</span>
-                <span className="pill">Evidence {artifactStats.evidence}</span>
-                <span className="pill">Docs {artifactStats.docs}</span>
-                <span className="pill">Source {artifactStats.source}</span>
-              </div>
-
-              <div className="artifact-landscape-lane" style={{ marginTop: "1rem" }}>
-                {artifactBuckets.length ? (
-                  artifactBuckets.map((bucket) => (
-                    <article className={`commit-preview-card tone-${bucket.tone}`} key={bucket.id}>
-                      <div className="commit-preview-head">
-                        <strong>{bucket.title}</strong>
-                        <span className={`badge badge-${bucket.tone}`}>{bucket.tone.toUpperCase()}</span>
-                      </div>
-                      <div className="commit-preview-items">
-                        {bucket.items.map((item) => (
-                          <span className="pill mono commit-preview-pill" key={`${bucket.id}-${item}`}>
-                            {item}
-                          </span>
-                        ))}
-                      </div>
-                    </article>
-                  ))
-                ) : (
-                  <div className="empty-state" style={{ padding: "0.85rem" }}>
-                    <strong>No matching artifacts</strong>
-                    <span>Try a different keyword to locate a generated file.</span>
-                  </div>
-                )}
-              </div>
-
-              <p className="section-subtitle evidence-line" style={{ marginTop: "1rem" }}>
-                Evidence file: <span className="mono path-value">{payload.evidence_path}</span>
-              </p>
           </section>
         </>
       ) : null}

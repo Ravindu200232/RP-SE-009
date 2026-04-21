@@ -1,0 +1,15 @@
+.bg-black {
+  background-image: url("/home_black.PNG");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  height: 90vh;
+  position: relative;
+}
+
+@media (max-width: 768px) {
+  .bg-black {
+    height: 25%;
+    background-size: cover;
+  }
+}
