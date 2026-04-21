@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs ls *)",
+      "Bash(npm install *)",
+      "Bash(npx next *)",
+      "Bash(npm run *)",
+      "Bash(curl -s http://localhost:3003 -o /dev/null -w \"%{http_code}\")"
+    ]
+  }
+}
