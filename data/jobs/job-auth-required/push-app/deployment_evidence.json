@@ -23,7 +23,7 @@
       {
         "name": "docker-compose.yml exists",
         "success": true,
-        "details": "/Users/malith_bandara/Documents/Playground/data/jobs/job-auth-required/push-app/docker-compose.yml exists."
+        "details": "/Users/malith_bandara/Desktop/final_research_agentic/data/jobs/job-auth-required/push-app/docker-compose.yml exists."
       },
       {
         "name": "docker-compose.yml parses",
@@ -60,6 +60,32 @@
     "analysis.json",
     "strategy.json",
     "deployment_evidence.json",
-    "push-app_generated_20260414.zip"
-  ]
+    "push-app_generated_20260420.zip"
+  ],
+  "commit_preview": {
+    "title": "What will be committed",
+    "sections": [
+      {
+        "id": "generated-workflows",
+        "title": "Generated workflows",
+        "tone": "pass",
+        "items": [
+          ".github/workflows/order_service.yml",
+          ".github/workflows/user_service.yml"
+        ]
+      },
+      {
+        "id": "redacted-secrets",
+        "title": "Redacted secrets",
+        "tone": "warn",
+        "items": []
+      },
+      {
+        "id": "removed-files",
+        "title": "Removed files",
+        "tone": "fail",
+        "items": []
+      }
+    ]
+  }
 }

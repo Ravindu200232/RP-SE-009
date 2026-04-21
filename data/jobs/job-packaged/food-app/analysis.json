@@ -26,7 +26,7 @@
         "USER_SERVICE_URL"
       ],
       "inferred_from": [
-        "/Users/malith_bandara/Documents/Playground/.pytest_tmp/service-d262ac95aea4474eb8f0ec66d5067525/source/server/order-service"
+        "/Users/malith_bandara/Desktop/final_research_agentic/.pytest_tmp/service-95696c007d5c4a9faac40f4467e77ec3/source/server/order-service"
       ]
     },
     {
@@ -47,7 +47,7 @@
         "SEKRET_KEY"
       ],
       "inferred_from": [
-        "/Users/malith_bandara/Documents/Playground/.pytest_tmp/service-d262ac95aea4474eb8f0ec66d5067525/source/server/user-service"
+        "/Users/malith_bandara/Desktop/final_research_agentic/.pytest_tmp/service-95696c007d5c4a9faac40f4467e77ec3/source/server/user-service"
       ]
     },
     {
@@ -62,7 +62,7 @@
       "dependencies": [],
       "env_vars": [],
       "inferred_from": [
-        "/Users/malith_bandara/Documents/Playground/.pytest_tmp/service-d262ac95aea4474eb8f0ec66d5067525/source/client"
+        "/Users/malith_bandara/Desktop/final_research_agentic/.pytest_tmp/service-95696c007d5c4a9faac40f4467e77ec3/source/client"
       ]
     }
   ],

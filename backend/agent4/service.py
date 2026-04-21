@@ -4,11 +4,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 import json
 import os
+import logging
 
 from .architecture import ArchitectureDetector
 from .generator import ArtifactGenerator
 from .github_push import GitHubPushClient
 from .jobs import JobStore
+from .learning import LearningEngine
 from .models import (
     GitHubPushResult,
     JobResult,
@@ -19,6 +21,8 @@ from .models import (
 )
 from .strategy import StrategySelector
 from .validators import Validator
+
+logger = logging.getLogger(__name__)
 
 
 AGENT4_FIXED_INPUT_ROOT = Path("/Users/malith_bandara/Desktop/AGENT4_Research/Microservice_input")
@@ -33,6 +37,7 @@ class Agent4Service:
         generator: ArtifactGenerator | None = None,
         validator: Validator | None = None,
         github_push_client: GitHubPushClient | None = None,
+        learning_engine: LearningEngine | None = None,
     ) -> None:
         self.store = store or JobStore()
         self.detector = detector or ArchitectureDetector()
@@ -40,6 +45,14 @@ class Agent4Service:
         self.generator = generator or ArtifactGenerator()
         self.validator = validator or Validator()
         self.github_push_client = github_push_client or GitHubPushClient()
+        self.learning_engine = learning_engine or LearningEngine()
+        
+        # Initialize learning from historical jobs on startup
+        try:
+            self.learning_engine.learn()
+            logger.info("Self-learning engine initialized from historical job data")
+        except Exception as e:
+            logger.warning(f"Failed to initialize learning engine: {e}")
 
     def process(self, request: PackageRequest) -> JobResult:
         job_dir = self.store.job_dir(request.job_id)
@@ -155,6 +168,50 @@ class Agent4Service:
             if child.suffix == ".zip":
                 return child
         return None
+
+    # Internal learning methods (not exposed via API)
+    def get_learning_summary(self) -> dict:
+        """
+        Internal method: Get summary of learned patterns from historical jobs.
+        Used for internal diagnostics and improving future job processing.
+        This is intentionally not exposed in any public API endpoint.
+        """
+        if not self.learning_engine.insights:
+            self.learning_engine.learn()
+        return self.learning_engine.to_dict()
+
+    def get_architecture_confidence_baseline(self, architecture: str) -> dict:
+        """
+        Internal method: Get confidence distribution for an architecture
+        based on historical jobs. Useful for calibrating confidence thresholds.
+        """
+        return self.learning_engine.get_best_confidence_for_architecture(architecture)
+
+    def get_recommended_stacks(self, architecture: str, limit: int = 3) -> list[tuple[str, int]]:
+        """
+        Internal method: Get most successful deployment profiles for an architecture.
+        Can be used to suggest deployment strategies to users without exposing raw data.
+        """
+        return self.learning_engine.get_common_stacks_for_architecture(architecture, limit)
+
+    def get_framework_insights(self, architecture: str) -> dict[str, int]:
+        """
+        Internal method: Get framework runtime distribution for services in this architecture.
+        Used to understand technology stack patterns without exposing other projects.
+        """
+        return self.learning_engine.get_service_frameworks_for_architecture(architecture)
+
+    def relearn_from_jobs(self, force: bool = True) -> dict:
+        """
+        Internal method: Force re-analysis of all historical jobs.
+        Returns summary of re-learned patterns.
+        Useful for periodic updates or after new jobs are processed.
+        """
+        self.learning_engine.learn(force_reload=force)
+        return {
+            "status": "relearned",
+            "insights": self.learning_engine.to_dict(),
+        }
 
     def list_input_candidates(self) -> dict:
         root = self._input_root()

@@ -24,7 +24,7 @@
         "USER_SERVICE_URL"
       ],
       "inferred_from": [
-        "/Users/malith_bandara/Documents/Playground/.pytest_tmp/validator-5c55753ffa28410d9cd505a18013c455/source/server/order-service"
+        "/Users/malith_bandara/Desktop/final_research_agentic/.pytest_tmp/validator-e01261d8cee843f1b28dfb0a0215d82b/source/server/order-service"
       ]
     },
     {
@@ -41,7 +41,7 @@
         "PORT"
       ],
       "inferred_from": [
-        "/Users/malith_bandara/Documents/Playground/.pytest_tmp/validator-5c55753ffa28410d9cd505a18013c455/source/server/user-service"
+        "/Users/malith_bandara/Desktop/final_research_agentic/.pytest_tmp/validator-e01261d8cee843f1b28dfb0a0215d82b/source/server/user-service"
       ]
     }
   ],
