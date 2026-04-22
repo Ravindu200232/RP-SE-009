@@ -26,7 +26,6 @@ const workflowSteps = [
 
 type ConversationStage =
     | "loadingInputs"
-    | "chooseInput"
     | "askDocker"
     | "askGithub"
     | "askRepo"
@@ -63,7 +62,7 @@ export default function HomePage() {
         {
             id: "welcome",
             role: "assistant",
-            text: "Welcome! I’ve detected your Agent 3 outputs and prepared them for packaging. Let’s begin — select the package you’d like to process.",
+            text: "Welcome! I’ve detected  output of Agent 3  and will use the microservice input automatically for packaging.",
         },
     ]);
     const [stage, setStage] = useState<ConversationStage>("loadingInputs");
@@ -77,6 +76,15 @@ export default function HomePage() {
     const [draftReply, setDraftReply] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
+
+    function pickPreferredInput(items: InputCandidate[]) {
+        const preferred = items.find((candidate) => {
+            const haystack = `${candidate.display_name} ${candidate.name} ${candidate.source_path}`.toLowerCase();
+            return haystack.includes("microservice");
+        });
+
+        return preferred ?? items.find((candidate) => candidate.ready) ?? items[0] ?? null;
+    }
 
     function emitConversationEvent(
         eventName: string,
@@ -122,16 +130,19 @@ export default function HomePage() {
         setInputCandidates(items);
         setError("");
 
-        if (!items.length) {
+        const preferredInput = pickPreferredInput(items);
+        if (!preferredInput) {
             setStage((currentStage) => (currentStage === "blocked" ? currentStage : "blocked"));
             return;
         }
 
+        setSelectedInput(preferredInput);
+
         setStage((currentStage) => {
-            if (currentStage === "chooseInput" || currentStage === "askDocker" || currentStage === "askGithub" || currentStage === "askRepo" || currentStage === "askBranch" || currentStage === "askCommit" || currentStage === "confirm" || currentStage === "submitting") {
+            if (currentStage === "askDocker" || currentStage === "askGithub" || currentStage === "askRepo" || currentStage === "askBranch" || currentStage === "askCommit" || currentStage === "confirm" || currentStage === "submitting") {
                 return currentStage;
             }
-            return "chooseInput";
+            return "askDocker";
         });
 
         setMessages((previous) => {
@@ -139,7 +150,7 @@ export default function HomePage() {
             if (alreadyAnnounced) {
                 return previous;
             }
-            return [...previous, { id: `${Date.now()}-${previous.length}`, role: "assistant", text: `Found ${items.length} candidate input packages. Select one to continue.` }];
+            return [...previous, { id: `${Date.now()}-${previous.length}`, role: "assistant", text: `Found ${items.length} candidate input packages. I selected the microservice input automatically. Do you want Docker validation enabled for this run?` }];
         });
     }
 
@@ -252,7 +263,6 @@ export default function HomePage() {
     }
 
     function resetConversation() {
-        setSelectedInput(null);
         setDockerEnabled(true);
         setGithubEnabled(false);
         setGithubRepoUrl("");
@@ -260,29 +270,22 @@ export default function HomePage() {
         setCommitMessage(defaultCommitMessage);
         setDraftReply("");
         setError("");
-        setStage(inputCandidates.length ? "chooseInput" : "blocked");
-        addMessage("assistant", "Conversation reset. Pick an input package to begin again.");
-    }
-
-    function chooseInput(candidate: InputCandidate) {
-        setSelectedInput(candidate);
-        addMessage("user", `Use ${candidate.display_name}.`);
-
-        if (!candidate.ready) {
-            addMessage(
-                "assistant",
-                `This input is missing: ${candidate.missing.join(", ")}. Add those files in the same input folder, then choose a ready package.`,
-            );
-            setStage("chooseInput");
+        const preferredInput = pickPreferredInput(inputCandidates);
+        if (!preferredInput) {
+            setSelectedInput(null);
+            setStage("blocked");
+            addMessage("assistant", "Conversation reset. I could not find a valid microservice input to use automatically.");
             return;
         }
 
+        setSelectedInput(preferredInput);
         setStage("askDocker");
-        addMessage("assistant", "Do you want Docker validation enabled for this run?");
+        addMessage("assistant", `Conversation reset. I selected ${preferredInput.display_name} automatically. Do you want Docker validation enabled for this run?`);
     }
 
     function answerDocker(value: boolean) {
         setDockerEnabled(value);
+
         addMessage("user", value ? "Yes, enable Docker validation." : "No, skip Docker validation.");
         setStage("askGithub");
         addMessage("assistant", "Do you want to push the packaged output to GitHub?");
@@ -381,7 +384,7 @@ export default function HomePage() {
                     <div className="hero-content">
                         <p className="eyebrow">Agent 4 Deployment Studio</p>
                         <h1>
-                           Experience a <span className="gradient-text">smarter workflow</span> with guided Q&A.
+                            Experience a <span className="gradient-text">smarter workflow</span> with guided Q&A.
                         </h1>
                         <p className="lede hero-note">
                             Agent 4 automatically detects your validated outputs and guides you through a focused, decision-driven packaging flow — no unnecessary steps, just what matters.
@@ -444,22 +447,6 @@ export default function HomePage() {
                     </div>
 
                     <div className="conversation-actions">
-                        {stage === "chooseInput" ? (
-                            <div className="option-grid">
-                                {inputCandidates.map((candidate) => (
-                                    <button
-                                        type="button"
-                                        className={`option-card ${candidate.ready ? "option-ready" : "option-missing"}`}
-                                        key={candidate.id}
-                                        onClick={() => chooseInput(candidate)}
-                                    >
-                                        <strong>{candidate.display_name}</strong>
-                                        <span>{candidate.ready ? "Ready to package" : `Missing: ${candidate.missing.join(", ")}`}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        ) : null}
-
                         {stage === "askDocker" ? (
                             <div className="button-stack">
                                 <button type="button" className="secondary-button" onClick={() => answerDocker(true)}>
