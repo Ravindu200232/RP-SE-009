@@ -1,0 +1,1000 @@
+{
+  "document_type": "Software Requirements Specification",
+  "standard": "IEEE SRS",
+  "metadata": {
+    "project_name": "Untitled App",
+    "project_id": "SRS-UNTITLED-APP",
+    "domain": "Task Management",
+    "application_type": "Web browser",
+    "version": "1.0",
+    "status": "approved",
+    "author": "Agent 1 SRS API",
+    "organization": "AgentForge Studio",
+    "date_created": "2026-04-24",
+    "last_updated": "2026-04-24",
+    "language": "en"
+  },
+  "sections": {
+    "introduction": {
+      "purpose": "This document defines the functional and non-functional requirements for Untitled App.",
+      "product_scope": {
+        "summary": "We're building a task management app to help users organize and track their tasks. Let's clarify a few details to ensure we build exactly what you need.",
+        "business_objectives": [
+          "Clarify scope early",
+          "Create a delivery-ready requirements baseline"
+        ],
+        "benefits": [
+          "Reduces ambiguity",
+          "Improves downstream handoff",
+          "Transforms guided interview answers into a structured IEEE SRS"
+        ],
+        "goals": [
+          "Deliver the first usable release of Untitled App.",
+          "Support JSON and PDF artifact export"
+        ]
+      }
+    },
+    "overall_description": {
+      "product_perspective": {
+        "system_context": "Untitled App is delivered through web browser with an API layer, AI orchestration, persistent storage, and downloadable artifacts.",
+        "product_origin": "New system",
+        "related_systems": [
+          {
+            "name": "email",
+            "relationship": "Integration",
+            "interface_summary": "Used for email."
+          }
+        ],
+        "context_diagram_reference": "Diagram generation is deferred. Review the analyst workspace and service breakdown for the current phase."
+      },
+      "product_functions": [
+        {
+          "function_id": "PF-001",
+          "name": "create",
+          "description": "Untitled App supports create as part of the core workflow."
+        },
+        {
+          "function_id": "PF-002",
+          "name": "delete",
+          "description": "Untitled App supports delete as part of the core workflow."
+        },
+        {
+          "function_id": "PF-003",
+          "name": "retirvei",
+          "description": "Untitled App supports retirvei as part of the core workflow."
+        }
+      ],
+      "user_classes_and_characteristics": [
+        {
+          "user_class_id": "UC-001",
+          "user_class_name": "General public",
+          "description": "General public uses the platform to complete the main workflow.",
+          "technical_expertise": "Low to Medium",
+          "security_or_privilege_level": "Role-based",
+          "education_or_experience": "Basic digital literacy",
+          "frequency_of_use": "Daily",
+          "importance_rank": 1,
+          "notes": ""
+        }
+      ]
+    },
+    "external_interface_requirements": {
+      "user_interfaces": [
+        {
+          "ui_id": "UI-001",
+          "name": "New Project page",
+          "description": "Collects text, files, and optional voice input.",
+          "input_elements": [
+            "Text area",
+            "Upload control",
+            "Voice recorder"
+          ],
+          "output_elements": [
+            "Analysis summary",
+            "Upload list"
+          ],
+          "layout_constraints": [
+            "Responsive layout"
+          ],
+          "accessibility_requirements": [
+            "Keyboard support"
+          ],
+          "error_message_standards": [
+            "Human-readable validation"
+          ],
+          "design_reference": "New Project"
+        },
+        {
+          "ui_id": "UI-002",
+          "name": "Question and answer workspace",
+          "description": "Captures guided interview answers before generation.",
+          "input_elements": [
+            "Chat questions",
+            "Answer composer"
+          ],
+          "output_elements": [
+            "Progress state",
+            "Draft readiness"
+          ],
+          "layout_constraints": [
+            "Responsive layout"
+          ],
+          "accessibility_requirements": [
+            "Touch-friendly controls"
+          ],
+          "error_message_standards": [
+            "Inline validation"
+          ],
+          "design_reference": "Agent 1 interview"
+        },
+        {
+          "ui_id": "UI-003",
+          "name": "Agent 1 review dashboard",
+          "description": "Shows SRS, requirements, JSON, risks, and export actions.",
+          "input_elements": [
+            "Tabs",
+            "Export buttons"
+          ],
+          "output_elements": [
+            "SRS document",
+            "JSON",
+            "Validation state"
+          ],
+          "layout_constraints": [
+            "Two-column desktop layout"
+          ],
+          "accessibility_requirements": [
+            "Semantic tabs"
+          ],
+          "error_message_standards": [
+            "Explicit artifact status"
+          ],
+          "design_reference": "Agent 1 dashboard"
+        }
+      ],
+      "software_interfaces": [
+        {
+          "software_interface_id": "SI-001",
+          "component_name": "email",
+          "component_version": "Current stable",
+          "description": "Integration with email.",
+          "incoming_data_items": [
+            "Request payload"
+          ],
+          "outgoing_data_items": [
+            "Response payload"
+          ],
+          "services_needed": [
+            "Authentication"
+          ],
+          "communication_method": "REST or webhook",
+          "shared_data": [
+            "Project metadata"
+          ],
+          "implementation_constraints": [
+            "Use secure transport"
+          ]
+        }
+      ],
+      "hardware_interfaces": [],
+      "communications_interfaces": [
+        {
+          "communication_interface_id": "CI-001",
+          "name": "Browser to API",
+          "description": "Interactive application traffic.",
+          "protocols": [
+            "HTTPS"
+          ],
+          "message_format": "JSON and multipart form data",
+          "security_or_encryption": "TLS 1.2+",
+          "data_transfer_rate": "Interactive",
+          "synchronization_mechanism": "Request-response"
+        },
+        {
+          "communication_interface_id": "CI-002",
+          "name": "Artifact delivery",
+          "description": "Downloads JSON and PDF artifacts.",
+          "protocols": [
+            "HTTPS"
+          ],
+          "message_format": "JSON and PDF",
+          "security_or_encryption": "TLS 1.2+",
+          "data_transfer_rate": "On demand",
+          "synchronization_mechanism": "Direct download"
+        }
+      ]
+    },
+    "system_features": [
+      {
+        "feature_id": "FEAT-001",
+        "feature_name": "create",
+        "description_and_priority": {
+          "description": "The platform provides create as part of the main workflow.",
+          "priority": "High",
+          "benefit_score": 10,
+          "penalty_score": 7,
+          "cost_score": 5,
+          "risk_score": 4
+        },
+        "stimulus_response_sequences": [
+          {
+            "sequence_id": "SRSQ-001",
+            "stimulus": "User initiates create",
+            "preconditions": [
+              "An active session exists."
+            ],
+            "system_response": "The system processes create and returns a visible status update.",
+            "postconditions": [
+              "create data is available for review."
+            ]
+          }
+        ],
+        "functional_requirements": [
+          {
+            "requirement_id": "REQ-011",
+            "title": "create submission",
+            "description": "The system shall support create through the primary interface.",
+            "actor": "Primary User",
+            "trigger": "User submits an action",
+            "inputs": [
+              {
+                "name": "payload",
+                "type": "json",
+                "required": true,
+                "validation_rules": [
+                  "Validate required fields"
+                ]
+              }
+            ],
+            "processing_logic": [
+              "Validate input",
+              "Persist state",
+              "Return a clear status"
+            ],
+            "outputs": [
+              {
+                "name": "result",
+                "type": "json",
+                "description": "Structured action result"
+              }
+            ],
+            "business_rules_applied": [
+              "BR-001"
+            ],
+            "error_conditions": [
+              {
+                "condition": "Invalid input",
+                "system_behavior": "Show a validation message"
+              }
+            ],
+            "acceptance_criteria": [
+              "Valid actions succeed",
+              "Errors are understandable to non-technical users"
+            ],
+            "priority": "High",
+            "status": "draft",
+            "traceability": {
+              "linked_user_class_ids": [
+                "UC-001"
+              ],
+              "linked_interface_ids": [
+                "UI-002"
+              ],
+              "linked_test_case_ids": [
+                "TC-001-01"
+              ]
+            }
+          },
+          {
+            "requirement_id": "REQ-012",
+            "title": "create review",
+            "description": "The system shall display create history and status to authorized users.",
+            "actor": "Administrator",
+            "trigger": "User opens a review screen",
+            "inputs": [
+              {
+                "name": "filters",
+                "type": "json",
+                "required": false,
+                "validation_rules": [
+                  "Ignore empty filters"
+                ]
+              }
+            ],
+            "processing_logic": [
+              "Load records",
+              "Sort results",
+              "Render the view"
+            ],
+            "outputs": [
+              {
+                "name": "history",
+                "type": "json",
+                "description": "Matching records and status"
+              }
+            ],
+            "business_rules_applied": [
+              "BR-001"
+            ],
+            "error_conditions": [
+              {
+                "condition": "Data unavailable",
+                "system_behavior": "Show a retryable error state"
+              }
+            ],
+            "acceptance_criteria": [
+              "Authorized users can review status"
+            ],
+            "priority": "Medium",
+            "status": "draft",
+            "traceability": {
+              "linked_user_class_ids": [
+                "UC-001"
+              ],
+              "linked_interface_ids": [
+                "UI-003"
+              ],
+              "linked_test_case_ids": [
+                "TC-001-02"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "feature_id": "FEAT-002",
+        "feature_name": "delete",
+        "description_and_priority": {
+          "description": "The platform provides delete as part of the main workflow.",
+          "priority": "High",
+          "benefit_score": 9,
+          "penalty_score": 7,
+          "cost_score": 5,
+          "risk_score": 4
+        },
+        "stimulus_response_sequences": [
+          {
+            "sequence_id": "SRSQ-002",
+            "stimulus": "User initiates delete",
+            "preconditions": [
+              "An active session exists."
+            ],
+            "system_response": "The system processes delete and returns a visible status update.",
+            "postconditions": [
+              "delete data is available for review."
+            ]
+          }
+        ],
+        "functional_requirements": [
+          {
+            "requirement_id": "REQ-021",
+            "title": "delete submission",
+            "description": "The system shall support delete through the primary interface.",
+            "actor": "Primary User",
+            "trigger": "User submits an action",
+            "inputs": [
+              {
+                "name": "payload",
+                "type": "json",
+                "required": true,
+                "validation_rules": [
+                  "Validate required fields"
+                ]
+              }
+            ],
+            "processing_logic": [
+              "Validate input",
+              "Persist state",
+              "Return a clear status"
+            ],
+            "outputs": [
+              {
+                "name": "result",
+                "type": "json",
+                "description": "Structured action result"
+              }
+            ],
+            "business_rules_applied": [
+              "BR-001"
+            ],
+            "error_conditions": [
+              {
+                "condition": "Invalid input",
+                "system_behavior": "Show a validation message"
+              }
+            ],
+            "acceptance_criteria": [
+              "Valid actions succeed",
+              "Errors are understandable to non-technical users"
+            ],
+            "priority": "High",
+            "status": "draft",
+            "traceability": {
+              "linked_user_class_ids": [
+                "UC-001"
+              ],
+              "linked_interface_ids": [
+                "UI-002"
+              ],
+              "linked_test_case_ids": [
+                "TC-002-01"
+              ]
+            }
+          },
+          {
+            "requirement_id": "REQ-022",
+            "title": "delete review",
+            "description": "The system shall display delete history and status to authorized users.",
+            "actor": "Administrator",
+            "trigger": "User opens a review screen",
+            "inputs": [
+              {
+                "name": "filters",
+                "type": "json",
+                "required": false,
+                "validation_rules": [
+                  "Ignore empty filters"
+                ]
+              }
+            ],
+            "processing_logic": [
+              "Load records",
+              "Sort results",
+              "Render the view"
+            ],
+            "outputs": [
+              {
+                "name": "history",
+                "type": "json",
+                "description": "Matching records and status"
+              }
+            ],
+            "business_rules_applied": [
+              "BR-001"
+            ],
+            "error_conditions": [
+              {
+                "condition": "Data unavailable",
+                "system_behavior": "Show a retryable error state"
+              }
+            ],
+            "acceptance_criteria": [
+              "Authorized users can review status"
+            ],
+            "priority": "Medium",
+            "status": "draft",
+            "traceability": {
+              "linked_user_class_ids": [
+                "UC-001"
+              ],
+              "linked_interface_ids": [
+                "UI-003"
+              ],
+              "linked_test_case_ids": [
+                "TC-002-02"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "feature_id": "FEAT-003",
+        "feature_name": "retirvei",
+        "description_and_priority": {
+          "description": "The platform provides retirvei as part of the main workflow.",
+          "priority": "High",
+          "benefit_score": 8,
+          "penalty_score": 7,
+          "cost_score": 5,
+          "risk_score": 4
+        },
+        "stimulus_response_sequences": [
+          {
+            "sequence_id": "SRSQ-003",
+            "stimulus": "User initiates retirvei",
+            "preconditions": [
+              "An active session exists."
+            ],
+            "system_response": "The system processes retirvei and returns a visible status update.",
+            "postconditions": [
+              "retirvei data is available for review."
+            ]
+          }
+        ],
+        "functional_requirements": [
+          {
+            "requirement_id": "REQ-031",
+            "title": "retirvei submission",
+            "description": "The system shall support retirvei through the primary interface.",
+            "actor": "Primary User",
+            "trigger": "User submits an action",
+            "inputs": [
+              {
+                "name": "payload",
+                "type": "json",
+                "required": true,
+                "validation_rules": [
+                  "Validate required fields"
+                ]
+              }
+            ],
+            "processing_logic": [
+              "Validate input",
+              "Persist state",
+              "Return a clear status"
+            ],
+            "outputs": [
+              {
+                "name": "result",
+                "type": "json",
+                "description": "Structured action result"
+              }
+            ],
+            "business_rules_applied": [
+              "BR-001"
+            ],
+            "error_conditions": [
+              {
+                "condition": "Invalid input",
+                "system_behavior": "Show a validation message"
+              }
+            ],
+            "acceptance_criteria": [
+              "Valid actions succeed",
+              "Errors are understandable to non-technical users"
+            ],
+            "priority": "High",
+            "status": "draft",
+            "traceability": {
+              "linked_user_class_ids": [
+                "UC-001"
+              ],
+              "linked_interface_ids": [
+                "UI-002"
+              ],
+              "linked_test_case_ids": [
+                "TC-003-01"
+              ]
+            }
+          },
+          {
+            "requirement_id": "REQ-032",
+            "title": "retirvei review",
+            "description": "The system shall display retirvei history and status to authorized users.",
+            "actor": "Administrator",
+            "trigger": "User opens a review screen",
+            "inputs": [
+              {
+                "name": "filters",
+                "type": "json",
+                "required": false,
+                "validation_rules": [
+                  "Ignore empty filters"
+                ]
+              }
+            ],
+            "processing_logic": [
+              "Load records",
+              "Sort results",
+              "Render the view"
+            ],
+            "outputs": [
+              {
+                "name": "history",
+                "type": "json",
+                "description": "Matching records and status"
+              }
+            ],
+            "business_rules_applied": [
+              "BR-001"
+            ],
+            "error_conditions": [
+              {
+                "condition": "Data unavailable",
+                "system_behavior": "Show a retryable error state"
+              }
+            ],
+            "acceptance_criteria": [
+              "Authorized users can review status"
+            ],
+            "priority": "Medium",
+            "status": "draft",
+            "traceability": {
+              "linked_user_class_ids": [
+                "UC-001"
+              ],
+              "linked_interface_ids": [
+                "UI-003"
+              ],
+              "linked_test_case_ids": [
+                "TC-003-02"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "other_nonfunctional_requirements": {
+      "performance_requirements": [
+        {
+          "requirement_id": "NFR-PERF-001",
+          "description": "The system shall return primary page loads and standard API actions within 2 seconds under normal load.",
+          "rationale": "Keeps the guided workflow responsive.",
+          "measurement_method": "Monitoring and tracing",
+          "target_metric": "95th percentile response time",
+          "target_value": "<= 2 seconds",
+          "conditions": "Normal business-hour traffic"
+        }
+      ],
+      "safety_requirements": [
+        {
+          "requirement_id": "NFR-SAFE-001",
+          "description": "The system shall prevent accidental loss of active project work.",
+          "hazard": "Loss of project inputs or artifacts",
+          "safeguards": [
+            "Persist session state",
+            "Confirm destructive actions"
+          ],
+          "prevented_actions": [
+            "Silent discard of work"
+          ],
+          "compliance_reference": "Internal product policy"
+        }
+      ],
+      "security_requirements": [
+        {
+          "requirement_id": "NFR-SEC-001",
+          "description": "The system shall protect uploaded materials, generated artifacts, and session metadata.",
+          "authentication_requirements": [
+            "Email and password"
+          ],
+          "authorization_requirements": [
+            "Role-based access to projects and exports"
+          ],
+          "data_protection_requirements": [
+            "TLS in transit",
+            "Encrypted storage"
+          ],
+          "privacy_requirements": [
+            "No special rules"
+          ],
+          "compliance_reference": "No special rules",
+          "verification_method": "Security review and integration tests"
+        }
+      ],
+      "software_quality_attributes": [
+        {
+          "attribute_id": "QA-001",
+          "attribute_name": "Usability",
+          "description": "Non-technical users should complete the intake and answer flow without training.",
+          "measurement": "Task completion rate",
+          "target_value": ">= 90%",
+          "priority": "High"
+        }
+      ],
+      "business_rules": [
+        {
+          "rule_id": "BR-001",
+          "description": "The platform only marks an SRS ready when required sections have content and export artifacts can be produced.",
+          "applicable_roles": [
+            "Administrator",
+            "Primary User"
+          ],
+          "conditions": [
+            "Required sections exist"
+          ],
+          "enforcement_requirements": [
+            "REQ-011",
+            "REQ-021"
+          ]
+        }
+      ]
+    },
+    "other_requirements": {
+      "database_requirements": [
+        {
+          "requirement_id": "DB-001",
+          "description": "The database shall store sessions, answers, upload metadata, generated SRS JSON, and validation results.",
+          "entities": [
+            "Session",
+            "Upload",
+            "AnswerSet",
+            "SRSArtifact",
+            "ValidationReport"
+          ],
+          "retention_policy": "Retain project data until policy-based cleanup",
+          "backup_policy": "Daily backup with point-in-time recovery"
+        }
+      ],
+      "internationalization_requirements": [
+        {
+          "requirement_id": "I18N-001",
+          "description": "The product should support future localization without changing the API contract.",
+          "supported_languages": [
+            "en"
+          ],
+          "locale_rules": [
+            "ISO date formatting for API payloads"
+          ]
+        }
+      ],
+      "legal_requirements": [
+        {
+          "requirement_id": "LEGAL-001",
+          "description": "The platform shall state how uploaded materials are stored and used for generation.",
+          "jurisdiction": "Project-dependent",
+          "reference": "No special rules"
+        }
+      ],
+      "reuse_objectives": [
+        {
+          "objective_id": "REUSE-001",
+          "description": "Reuse question planning, validation, and export modules across future agents.",
+          "target_components": [
+            "Question planner",
+            "Validation engine",
+            "Artifact exporter"
+          ]
+        }
+      ],
+      "additional_requirements": [
+        {
+          "requirement_id": "OTH-001",
+          "description": "Recommended delivery stack: Next.js 15 + Tailwind CSS with FastAPI REST API and Python AI worker with LangGraph-compatible orchestration."
+        }
+      ]
+    }
+  },
+  "appendices": {
+    "glossary": [
+      {
+        "term": "SRS",
+        "definition": "Software Requirements Specification"
+      },
+      {
+        "term": "NFR",
+        "definition": "Nonfunctional Requirement"
+      }
+    ],
+    "analysis_models": [
+      {
+        "model_id": "AM-001",
+        "model_type": "Interview Coverage Summary",
+        "description": "Summarises AI-driven questions, user answers, and completion coverage for the current SRS.",
+        "reference": "See analyst workspace interview review."
+      },
+      {
+        "model_id": "AM-002",
+        "model_type": "Service Outline",
+        "description": "Summarises service responsibilities and handoff boundaries for the current build phase.",
+        "reference": "See risk and stack review."
+      }
+    ],
+    "to_be_determined_list": []
+  },
+  "services": [
+    {
+      "service_name": "api-gateway",
+      "port": 8200,
+      "summary": "Routes frontend requests to backend capabilities.",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/api/v1/sessions",
+          "description": "Create a new session",
+          "entities": [
+            "Session"
+          ],
+          "dependencies": [
+            "project-service"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/sessions/{id}/intake",
+          "description": "Submit idea and files",
+          "entities": [
+            "Session",
+            "Upload"
+          ],
+          "dependencies": [
+            "ingestion-service",
+            "srs-service"
+          ]
+        }
+      ]
+    },
+    {
+      "service_name": "project-service",
+      "port": 8201,
+      "summary": "Stores session state, answers, and document metadata.",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/v1/sessions/{id}",
+          "description": "Load a session",
+          "entities": [
+            "Session"
+          ],
+          "dependencies": [
+            "artifact-service"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/sessions/{id}/answers",
+          "description": "Save answers and generate the SRS",
+          "entities": [
+            "AnswerSet",
+            "SRSDocument"
+          ],
+          "dependencies": [
+            "srs-service"
+          ]
+        }
+      ]
+    },
+    {
+      "service_name": "artifact-service",
+      "port": 8202,
+      "summary": "Publishes JSON and PDF artifacts for download.",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/v1/sessions/{id}/artifacts/srs.json",
+          "description": "Download machine-readable JSON",
+          "entities": [
+            "SRSDocument"
+          ],
+          "dependencies": [
+            "object-storage"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/sessions/{id}/artifacts/srs.pdf",
+          "description": "Download the PDF artifact",
+          "entities": [
+            "SRSArtifact"
+          ],
+          "dependencies": [
+            "object-storage"
+          ]
+        }
+      ]
+    }
+  ],
+  "revision_history": [
+    {
+      "revision_id": "REV-001",
+      "name": "Agent 1 SRS API",
+      "date": "2026-04-24",
+      "reason_for_changes": "Initial generated draft",
+      "version": "1.0"
+    }
+  ],
+  "generated_stack_recommendation": {
+    "frontend": "Next.js 15 + Tailwind CSS",
+    "api": "FastAPI REST API",
+    "ai_orchestrator": "Python AI worker with LangGraph-compatible orchestration",
+    "database": "PostgreSQL",
+    "storage": "S3-compatible object storage",
+    "deployment": "Docker Compose locally, ECS or Kubernetes in production"
+  },
+  "analyst_workspace": {
+    "analysis_summary": "We're building a task management app to help users organize and track their tasks. Let's clarify a few details to ensure we build exactly what you need.",
+    "planner": {
+      "provider": "ollama",
+      "model": "deepseek-v3.1:671b-cloud",
+      "orchestrator": "langgraph"
+    },
+    "coverage": {
+      "total_questions": 8,
+      "answered_questions": 8,
+      "open_questions": 0,
+      "completion_percent": 100
+    },
+    "interview_questions": [
+      {
+        "key": "target_users",
+        "section": "users",
+        "question": "Who will be using this app most often?",
+        "input_type": "multiselect",
+        "answered": true,
+        "answer": [
+          "General public"
+        ],
+        "answer_text": "General public"
+      },
+      {
+        "key": "core_features",
+        "section": "features",
+        "question": "What are the most important things people should be able to do in the app?",
+        "input_type": "textarea",
+        "answered": true,
+        "answer": "create,delete,retirvei",
+        "answer_text": "create,delete,retirvei"
+      },
+      {
+        "key": "platforms",
+        "section": "interfaces",
+        "question": "Where do you want people to use this app first?",
+        "input_type": "multiselect",
+        "answered": true,
+        "answer": [
+          "Web browser"
+        ],
+        "answer_text": "Web browser"
+      },
+      {
+        "key": "auth_method",
+        "section": "accounts",
+        "question": "How should users sign in to access their tasks?",
+        "input_type": "select",
+        "answered": true,
+        "answer": "Email and password",
+        "answer_text": "Email and password"
+      },
+      {
+        "key": "reports_and_notifications",
+        "section": "operations",
+        "question": "What kind of reminders or updates should the app send to users?",
+        "input_type": "textarea",
+        "answered": true,
+        "answer": "task date review remainder",
+        "answer_text": "task date review remainder"
+      },
+      {
+        "key": "compliance",
+        "section": "privacy",
+        "question": "Are there any privacy or data protection rules this app needs to follow?",
+        "input_type": "multiselect",
+        "answered": true,
+        "answer": [
+          "No special rules"
+        ],
+        "answer_text": "No special rules"
+      },
+      {
+        "key": "expected_scale",
+        "section": "technical",
+        "question": "Roughly how many users do you expect to have when the app launches?",
+        "input_type": "select",
+        "answered": true,
+        "answer": "100 to 1,000",
+        "answer_text": "100 to 1,000"
+      },
+      {
+        "key": "integrations",
+        "section": "integrations",
+        "question": "Does it need to connect with any other tools or services?",
+        "input_type": "textarea",
+        "answered": true,
+        "answer": "email",
+        "answer_text": "email"
+      }
+    ],
+    "open_items": [],
+    "template_standard": "IEEE SRS",
+    "template_document_type": "Software Requirements Specification",
+    "stack_summary": {
+      "frontend": "Next.js 15 + Tailwind CSS",
+      "api": "FastAPI REST API",
+      "ai_orchestrator": "Python AI worker with LangGraph-compatible orchestration",
+      "database": "PostgreSQL",
+      "storage": "S3-compatible object storage",
+      "deployment": "Docker Compose locally, ECS or Kubernetes in production"
+    },
+    "expected_scale": "100 to 1,000",
+    "integrations": [
+      "email"
+    ],
+    "reports_and_notifications": [
+      "task date review remainder"
+    ],
+    "compliance_focus": [
+      "No special rules"
+    ]
+  },
+  "diagram_previews": []
+}

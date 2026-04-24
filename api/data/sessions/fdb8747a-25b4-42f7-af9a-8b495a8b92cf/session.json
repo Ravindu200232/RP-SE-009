@@ -1,0 +1,2889 @@
+{
+  "session_id": "fdb8747a-25b4-42f7-af9a-8b495a8b92cf",
+  "status": "finalized",
+  "project_name": "Untitled App",
+  "audience": "General users",
+  "idea": "make task manger app",
+  "uploads": [],
+  "messages": [
+    {
+      "role": "user",
+      "content": "make task manger app",
+      "created_at": "2026-04-24T09:09:16.434025+00:00"
+    },
+    {
+      "role": "agent",
+      "content": "Great, let's start with some IEEE-style requirement gathering for your task manager app\u2014no technical knowledge needed. I'll ask a few questions to clarify your needs.",
+      "created_at": "2026-04-24T09:10:53.432310+00:00"
+    }
+  ],
+  "answers": {
+    "target_users": [
+      "Business owners or admins"
+    ],
+    "core_features": "create task.delete.retrive",
+    "platforms": [
+      "Web browser"
+    ],
+    "auth_method": "Email and password",
+    "reports_and_notifications": "task due app",
+    "compliance": [
+      "No special rules"
+    ],
+    "expected_scale": "Under 100",
+    "integrations": "payemtns"
+  },
+  "analysis_summary": "We're building a task management app to help users organize their work. Let's clarify a few details to ensure we build exactly what you need.",
+  "question_plan": {
+    "summary": "We're building a task management app to help users organize their work. Let's clarify a few details to ensure we build exactly what you need.",
+    "known": {
+      "domain": "Task Management",
+      "project_name": "Untitled App"
+    },
+    "questions": [
+      {
+        "key": "target_users",
+        "section": "users",
+        "question": "Who will be using this app most often?",
+        "inputType": "multiselect",
+        "placeholder": "",
+        "options": [
+          "Business owners or admins",
+          "Staff members",
+          "Managers",
+          "Students",
+          "Teachers or trainers",
+          "General public",
+          "Internal company team"
+        ]
+      },
+      {
+        "key": "core_features",
+        "section": "features",
+        "question": "What are the most important things people should be able to do in the first version?",
+        "inputType": "textarea",
+        "placeholder": "Example: create tasks, set due dates, mark tasks as complete, organize by projects",
+        "options": []
+      },
+      {
+        "key": "platforms",
+        "section": "interfaces",
+        "question": "Where do you want people to use this app first?",
+        "inputType": "multiselect",
+        "placeholder": "",
+        "options": [
+          "Web browser",
+          "Mobile app",
+          "Desktop app",
+          "Not sure yet"
+        ]
+      },
+      {
+        "key": "auth_method",
+        "section": "accounts",
+        "question": "How should users sign in to access their tasks?",
+        "inputType": "select",
+        "placeholder": "",
+        "options": [
+          "Email and password",
+          "Google or social sign-in",
+          "No sign-in needed",
+          "Not sure yet"
+        ]
+      },
+      {
+        "key": "reports_and_notifications",
+        "section": "operations",
+        "question": "What kind of reminders or updates should the app send to users?",
+        "inputType": "textarea",
+        "placeholder": "Example: task due date reminders, daily task summaries, completion notifications",
+        "options": []
+      },
+      {
+        "key": "compliance",
+        "section": "privacy",
+        "question": "Are there any privacy or data protection rules we need to follow?",
+        "inputType": "multiselect",
+        "placeholder": "",
+        "options": [
+          "No special rules",
+          "Personal or private data",
+          "Payment or billing data",
+          "Not sure yet"
+        ]
+      },
+      {
+        "key": "expected_scale",
+        "section": "technical",
+        "question": "About how many users do you expect to have when you launch?",
+        "inputType": "select",
+        "placeholder": "",
+        "options": [
+          "Under 100",
+          "100 to 1,000",
+          "1,000 to 10,000",
+          "More than 10,000",
+          "Not sure yet"
+        ]
+      },
+      {
+        "key": "integrations",
+        "section": "integrations",
+        "question": "Does it need to connect with any other tools or services?",
+        "inputType": "textarea",
+        "placeholder": "Example: payment service, email, SMS, calendar, WhatsApp, ERP.",
+        "options": []
+      }
+    ],
+    "reference_examples": [],
+    "planner": {
+      "provider": "ollama",
+      "model": "deepseek-v3.1:671b-cloud",
+      "orchestrator": "langgraph"
+    },
+    "created_at": "2026-04-24T09:09:29.196966+00:00"
+  },
+  "draft_srs": {
+    "document_type": "Software Requirements Specification",
+    "standard": "IEEE SRS",
+    "metadata": {
+      "project_name": "Untitled App",
+      "project_id": "SRS-UNTITLED-APP",
+      "domain": "Task Management",
+      "application_type": "Web browser",
+      "version": "1.0",
+      "status": "draft",
+      "author": "Agent 1 SRS API",
+      "organization": "AgentForge Studio",
+      "date_created": "2026-04-24",
+      "last_updated": "2026-04-24",
+      "language": "en"
+    },
+    "sections": {
+      "introduction": {
+        "purpose": "This document specifies the functional and non-functional requirements for the Task Manager application, providing a complete specification for development, testing, and implementation.",
+        "product_scope": {
+          "summary": "A web-based task management system that enables users to organize projects, track tasks, collaborate with team members, and generate structured documentation through AI-assisted workflows.",
+          "business_objectives": [
+            "Provide a centralized platform for task and project management",
+            "Enable efficient team collaboration and workflow automation",
+            "Reduce project planning time through AI-assisted requirements gathering",
+            "Ensure data integrity and security for all project information"
+          ],
+          "benefits": [
+            "Improved project visibility and tracking capabilities",
+            "Reduced administrative overhead through automation",
+            "Enhanced collaboration and communication among team members",
+            "Standardized documentation and reporting processes"
+          ],
+          "goals": [
+            "Deliver a fully functional task management system within 6 months",
+            "Achieve 99% system availability during business hours",
+            "Support concurrent access for up to 1000 users",
+            "Maintain response times under 2 seconds for critical operations"
+          ]
+        }
+      },
+      "overall_description": {
+        "product_perspective": {
+          "system_context": "The Task Manager application operates as a web-based service with a responsive frontend, RESTful API backend, database persistence, and integration capabilities with external systems. The system supports multiple user roles and provides real-time collaboration features.",
+          "product_origin": "New system",
+          "related_systems": [
+            {
+              "name": "Authentication Service",
+              "relationship": "Integration",
+              "interface_summary": "Integration with enterprise authentication system for user identity management and single sign-on capabilities"
+            },
+            {
+              "name": "File Storage Service",
+              "relationship": "Integration",
+              "interface_summary": "External cloud storage for document attachments and file management with secure access controls"
+            },
+            {
+              "name": "Notification Service",
+              "relationship": "Integration",
+              "interface_summary": "Integration with email and messaging platforms for task notifications and alerts"
+            }
+          ],
+          "context_diagram_reference": "Diagram generation is deferred. Review the analyst workspace and service breakdown for the current phase."
+        },
+        "product_functions": [
+          {
+            "function_id": "PF-001",
+            "name": "Project Management",
+            "description": "Create, organize, and manage projects with hierarchical task structures, deadlines, and resource allocation"
+          },
+          {
+            "function_id": "PF-002",
+            "name": "Task Tracking",
+            "description": "Monitor task progress, status updates, and completion metrics with visual indicators and reporting"
+          },
+          {
+            "function_id": "PF-003",
+            "name": "Team Collaboration",
+            "description": "Enable real-time collaboration through task assignments, comments, and shared project workspaces"
+          },
+          {
+            "function_id": "PF-004",
+            "name": "AI-Assisted Requirements",
+            "description": "Generate structured requirements documentation through guided interviews and automated analysis"
+          },
+          {
+            "function_id": "PF-005",
+            "name": "Reporting and Analytics",
+            "description": "Provide comprehensive reporting on project progress, team performance, and resource utilization"
+          }
+        ],
+        "user_classes_and_characteristics": [
+          {
+            "user_class_id": "UC-001",
+            "user_class_name": "Project Manager",
+            "description": "Responsible for project planning, resource allocation, and overall project oversight",
+            "technical_expertise": "Medium to High",
+            "security_or_privilege_level": "Role-based",
+            "education_or_experience": "Basic digital literacy",
+            "frequency_of_use": "Daily",
+            "importance_rank": 1,
+            "notes": ""
+          },
+          {
+            "user_class_id": "UC-002",
+            "user_class_name": "Team Member",
+            "description": "Individual contributor who works on assigned tasks and updates progress",
+            "technical_expertise": "Basic to Medium",
+            "security_or_privilege_level": "Role-based",
+            "education_or_experience": "Basic digital literacy",
+            "frequency_of_use": "Daily",
+            "importance_rank": 2,
+            "notes": ""
+          },
+          {
+            "user_class_id": "UC-003",
+            "user_class_name": "Stakeholder",
+            "description": "Project sponsor or client who monitors progress and reviews reports",
+            "technical_expertise": "Basic",
+            "security_or_privilege_level": "Role-based",
+            "education_or_experience": "Basic digital literacy",
+            "frequency_of_use": "Weekly",
+            "importance_rank": 3,
+            "notes": ""
+          },
+          {
+            "user_class_id": "UC-004",
+            "user_class_name": "Administrator",
+            "description": "System administrator responsible for user management and system configuration",
+            "technical_expertise": "High",
+            "security_or_privilege_level": "Role-based",
+            "education_or_experience": "Basic digital literacy",
+            "frequency_of_use": "As needed",
+            "importance_rank": 4,
+            "notes": ""
+          }
+        ]
+      },
+      "external_interface_requirements": {
+        "user_interfaces": [
+          {
+            "ui_id": "UI-001",
+            "name": "Dashboard",
+            "description": "Central hub displaying project overviews, task status, and performance metrics with customizable widgets",
+            "input_elements": [
+              "AI-guided input"
+            ],
+            "output_elements": [
+              "Structured response"
+            ],
+            "layout_constraints": [
+              "Responsive layout"
+            ],
+            "accessibility_requirements": [
+              "Keyboard support"
+            ],
+            "error_message_standards": [
+              "Human-readable validation"
+            ],
+            "design_reference": "Agent 1 UI"
+          },
+          {
+            "ui_id": "UI-002",
+            "name": "Project Workspace",
+            "description": "Detailed project view with task hierarchy, timelines, resource allocation, and collaboration tools",
+            "input_elements": [
+              "AI-guided input"
+            ],
+            "output_elements": [
+              "Structured response"
+            ],
+            "layout_constraints": [
+              "Responsive layout"
+            ],
+            "accessibility_requirements": [
+              "Keyboard support"
+            ],
+            "error_message_standards": [
+              "Human-readable validation"
+            ],
+            "design_reference": "Agent 1 UI"
+          },
+          {
+            "ui_id": "UI-003",
+            "name": "Task Editor",
+            "description": "Interface for creating, editing, and managing individual tasks with rich text formatting and attachment support",
+            "input_elements": [
+              "AI-guided input"
+            ],
+            "output_elements": [
+              "Structured response"
+            ],
+            "layout_constraints": [
+              "Responsive layout"
+            ],
+            "accessibility_requirements": [
+              "Keyboard support"
+            ],
+            "error_message_standards": [
+              "Human-readable validation"
+            ],
+            "design_reference": "Agent 1 UI"
+          },
+          {
+            "ui_id": "UI-004",
+            "name": "Reporting Console",
+            "description": "Comprehensive reporting interface with customizable filters, visualizations, and export options",
+            "input_elements": [
+              "AI-guided input"
+            ],
+            "output_elements": [
+              "Structured response"
+            ],
+            "layout_constraints": [
+              "Responsive layout"
+            ],
+            "accessibility_requirements": [
+              "Keyboard support"
+            ],
+            "error_message_standards": [
+              "Human-readable validation"
+            ],
+            "design_reference": "Agent 1 UI"
+          },
+          {
+            "ui_id": "UI-005",
+            "name": "Admin Panel",
+            "description": "Administrative interface for user management, system configuration, and audit logging",
+            "input_elements": [
+              "AI-guided input"
+            ],
+            "output_elements": [
+              "Structured response"
+            ],
+            "layout_constraints": [
+              "Responsive layout"
+            ],
+            "accessibility_requirements": [
+              "Keyboard support"
+            ],
+            "error_message_standards": [
+              "Human-readable validation"
+            ],
+            "design_reference": "Agent 1 UI"
+          }
+        ],
+        "software_interfaces": [
+          {
+            "software_interface_id": "SI-001",
+            "component_name": "REST API",
+            "component_version": "Current stable",
+            "description": "Comprehensive RESTful API supporting CRUD operations for all entities with JSON payloads and OAuth2 authentication",
+            "incoming_data_items": [
+              "Request payload"
+            ],
+            "outgoing_data_items": [
+              "Response payload"
+            ],
+            "services_needed": [
+              "Authentication"
+            ],
+            "communication_method": "REST or webhook",
+            "shared_data": [
+              "Project metadata"
+            ],
+            "implementation_constraints": [
+              "Use secure transport"
+            ]
+          },
+          {
+            "software_interface_id": "SI-002",
+            "component_name": "WebSocket Service",
+            "component_version": "Current stable",
+            "description": "Real-time communication service for live updates, notifications, and collaborative editing features",
+            "incoming_data_items": [
+              "Request payload"
+            ],
+            "outgoing_data_items": [
+              "Response payload"
+            ],
+            "services_needed": [
+              "Authentication"
+            ],
+            "communication_method": "REST or webhook",
+            "shared_data": [
+              "Project metadata"
+            ],
+            "implementation_constraints": [
+              "Use secure transport"
+            ]
+          },
+          {
+            "software_interface_id": "SI-003",
+            "component_name": "File Upload Service",
+            "component_version": "Current stable",
+            "description": "Secure file handling service supporting multiple file types with virus scanning and storage management",
+            "incoming_data_items": [
+              "Request payload"
+            ],
+            "outgoing_data_items": [
+              "Response payload"
+            ],
+            "services_needed": [
+              "Authentication"
+            ],
+            "communication_method": "REST or webhook",
+            "shared_data": [
+              "Project metadata"
+            ],
+            "implementation_constraints": [
+              "Use secure transport"
+            ]
+          },
+          {
+            "software_interface_id": "SI-004",
+            "component_name": "Export Service",
+            "component_version": "Current stable",
+            "description": "Document generation service producing JSON, PDF, and Excel formats for reports and requirements documentation",
+            "incoming_data_items": [
+              "Request payload"
+            ],
+            "outgoing_data_items": [
+              "Response payload"
+            ],
+            "services_needed": [
+              "Authentication"
+            ],
+            "communication_method": "REST or webhook",
+            "shared_data": [
+              "Project metadata"
+            ],
+            "implementation_constraints": [
+              "Use secure transport"
+            ]
+          }
+        ],
+        "hardware_interfaces": [],
+        "communications_interfaces": [
+          {
+            "communication_interface_id": "CI-001",
+            "name": "Browser to API",
+            "description": "Interactive application traffic.",
+            "protocols": [
+              "HTTPS"
+            ],
+            "message_format": "JSON and multipart form data",
+            "security_or_encryption": "TLS 1.2+",
+            "data_transfer_rate": "Interactive",
+            "synchronization_mechanism": "Request-response"
+          },
+          {
+            "communication_interface_id": "CI-002",
+            "name": "Artifact delivery",
+            "description": "Downloads JSON and PDF artifacts.",
+            "protocols": [
+              "HTTPS"
+            ],
+            "message_format": "JSON and PDF",
+            "security_or_encryption": "TLS 1.2+",
+            "data_transfer_rate": "On demand",
+            "synchronization_mechanism": "Direct download"
+          }
+        ]
+      },
+      "system_features": [
+        {
+          "feature_id": "FEAT-001",
+          "feature_name": "Project Creation and Management",
+          "description_and_priority": {
+            "description": "Comprehensive project lifecycle management from initiation to completion with full audit trail",
+            "priority": "High",
+            "benefit_score": 10,
+            "penalty_score": 7,
+            "cost_score": 5,
+            "risk_score": 4
+          },
+          "stimulus_response_sequences": [
+            {
+              "sequence_id": "SRSQ-001",
+              "stimulus": "User starts project creation and management",
+              "preconditions": [
+                "An active session exists."
+              ],
+              "system_response": "The system processes the request and shows a clear status update.",
+              "postconditions": [
+                "The updated result is available for review."
+              ]
+            }
+          ],
+          "functional_requirements": [
+            {
+              "requirement_id": "REQ-011",
+              "title": "Project Creation",
+              "description": "The system shall allow authorized users to create new projects with basic metadata including title, description, start date, and end date",
+              "actor": "Project Manager",
+              "trigger": "User initiates the workflow",
+              "inputs": [
+                {
+                  "name": "payload",
+                  "type": "json",
+                  "required": true,
+                  "validation_rules": [
+                    "Validate required fields"
+                  ]
+                }
+              ],
+              "processing_logic": [
+                "Validate input",
+                "Persist state",
+                "Return clear status"
+              ],
+              "outputs": [
+                {
+                  "name": "result",
+                  "type": "json",
+                  "description": "Structured action result"
+                }
+              ],
+              "business_rules_applied": [
+                "BR-001"
+              ],
+              "error_conditions": [
+                {
+                  "condition": "Invalid input",
+                  "system_behavior": "Show a validation message"
+                }
+              ],
+              "acceptance_criteria": [
+                "Projects can be created with required fields populated",
+                "Project creation includes validation of date ranges",
+                "Unique project identifiers are automatically generated"
+              ],
+              "priority": "High",
+              "status": "draft",
+              "traceability": {
+                "linked_user_class_ids": [
+                  "UC-001"
+                ],
+                "linked_interface_ids": [
+                  "UI-001"
+                ],
+                "linked_test_case_ids": [
+                  "TC-001-01"
+                ]
+              }
+            },
+            {
+              "requirement_id": "REQ-012",
+              "title": "Project Editing",
+              "description": "The system shall allow project managers to modify project details and metadata throughout the project lifecycle",
+              "actor": "Project Manager",
+              "trigger": "User initiates the workflow",
+              "inputs": [
+                {
+                  "name": "payload",
+                  "type": "json",
+                  "required": true,
+                  "validation_rules": [
+                    "Validate required fields"
+                  ]
+                }
+              ],
+              "processing_logic": [
+                "Validate input",
+                "Persist state",
+                "Return clear status"
+              ],
+              "outputs": [
+                {
+                  "name": "result",
+                  "type": "json",
+                  "description": "Structured action result"
+                }
+              ],
+              "business_rules_applied": [
+                "BR-001"
+              ],
+              "error_conditions": [
+                {
+                  "condition": "Invalid input",
+                  "system_behavior": "Show a validation message"
+                }
+              ],
+              "acceptance_criteria": [
+                "All editable fields can be modified by authorized users",
+                "Changes are logged in audit trail",
+                "Concurrent edits are handled with conflict resolution"
+              ],
+              "priority": "High",
+              "status": "draft",
+              "traceability": {
+                "linked_user_class_ids": [
+                  "UC-001"
+                ],
+                "linked_interface_ids": [
+                  "UI-001"
+                ],
+                "linked_test_case_ids": [
+                  "TC-001-02"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "feature_id": "FEAT-002",
+          "feature_name": "Task Management",
+          "description_and_priority": {
+            "description": "Complete task lifecycle management including creation, assignment, tracking, and completion",
+            "priority": "High",
+            "benefit_score": 9,
+            "penalty_score": 7,
+            "cost_score": 5,
+            "risk_score": 4
+          },
+          "stimulus_response_sequences": [
+            {
+              "sequence_id": "SRSQ-002",
+              "stimulus": "User starts task management",
+              "preconditions": [
+                "An active session exists."
+              ],
+              "system_response": "The system processes the request and shows a clear status update.",
+              "postconditions": [
+                "The updated result is available for review."
+              ]
+            }
+          ],
+          "functional_requirements": [
+            {
+              "requirement_id": "REQ-021",
+              "title": "Task Creation and Assignment",
+              "description": "The system shall support creating tasks with detailed descriptions, deadlines, and assigned team members",
+              "actor": "Project Manager",
+              "trigger": "User initiates the workflow",
+              "inputs": [
+                {
+                  "name": "payload",
+                  "type": "json",
+                  "required": true,
+                  "validation_rules": [
+                    "Validate required fields"
+                  ]
+                }
+              ],
+              "processing_logic": [
+                "Validate input",
+                "Persist state",
+                "Return clear status"
+              ],
+              "outputs": [
+                {
+                  "name": "result",
+                  "type": "json",
+                  "description": "Structured action result"
+                }
+              ],
+              "business_rules_applied": [
+                "BR-001"
+              ],
+              "error_conditions": [
+                {
+                  "condition": "Invalid input",
+                  "system_behavior": "Show a validation message"
+                }
+              ],
+              "acceptance_criteria": [
+                "Tasks can be created with all required metadata",
+                "Tasks can be assigned to specific team members",
+                "Assignment notifications are sent to recipients"
+              ],
+              "priority": "High",
+              "status": "draft",
+              "traceability": {
+                "linked_user_class_ids": [
+                  "UC-001"
+                ],
+                "linked_interface_ids": [
+                  "UI-001"
+                ],
+                "linked_test_case_ids": [
+                  "TC-002-01"
+                ]
+              }
+            },
+            {
+              "requirement_id": "REQ-022",
+              "title": "Task Progress Tracking",
+              "description": "The system shall provide mechanisms for tracking task progress including status updates and completion percentages",
+              "actor": "Team Member",
+              "trigger": "User initiates the workflow",
+              "inputs": [
+                {
+                  "name": "payload",
+                  "type": "json",
+                  "required": true,
+                  "validation_rules": [
+                    "Validate required fields"
+                  ]
+                }
+              ],
+              "processing_logic": [
+                "Validate input",
+                "Persist state",
+                "Return clear status"
+              ],
+              "outputs": [
+                {
+                  "name": "result",
+                  "type": "json",
+                  "description": "Structured action result"
+                }
+              ],
+              "business_rules_applied": [
+                "BR-001"
+              ],
+              "error_conditions": [
+                {
+                  "condition": "Invalid input",
+                  "system_behavior": "Show a validation message"
+                }
+              ],
+              "acceptance_criteria": [
+                "Progress can be updated by assigned team members",
+                "Status changes trigger appropriate notifications",
+                "Progress history is maintained and visible"
+              ],
+              "priority": "High",
+              "status": "draft",
+              "traceability": {
+                "linked_user_class_ids": [
+                  "UC-001"
+                ],
+                "linked_interface_ids": [
+                  "UI-001"
+                ],
+                "linked_test_case_ids": [
+                  "TC-002-02"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "feature_id": "FEAT-003",
+          "feature_name": "AI-Assisted Requirements Generation",
+          "description_and_priority": {
+            "description": "Intelligent requirements gathering and documentation generation through guided interviews",
+            "priority": "Medium",
+            "benefit_score": 8,
+            "penalty_score": 7,
+            "cost_score": 5,
+            "risk_score": 4
+          },
+          "stimulus_response_sequences": [
+            {
+              "sequence_id": "SRSQ-003",
+              "stimulus": "User starts ai-assisted requirements generation",
+              "preconditions": [
+                "An active session exists."
+              ],
+              "system_response": "The system processes the request and shows a clear status update.",
+              "postconditions": [
+                "The updated result is available for review."
+              ]
+            }
+          ],
+          "functional_requirements": [
+            {
+              "requirement_id": "REQ-031",
+              "title": "Guided Interview Process",
+              "description": "The system shall provide an interactive interview process to gather project requirements through structured questions",
+              "actor": "Project Manager",
+              "trigger": "User initiates the workflow",
+              "inputs": [
+                {
+                  "name": "payload",
+                  "type": "json",
+                  "required": true,
+                  "validation_rules": [
+                    "Validate required fields"
+                  ]
+                }
+              ],
+              "processing_logic": [
+                "Validate input",
+                "Persist state",
+                "Return clear status"
+              ],
+              "outputs": [
+                {
+                  "name": "result",
+                  "type": "json",
+                  "description": "Structured action result"
+                }
+              ],
+              "business_rules_applied": [
+                "BR-001"
+              ],
+              "error_conditions": [
+                {
+                  "condition": "Invalid input",
+                  "system_behavior": "Show a validation message"
+                }
+              ],
+              "acceptance_criteria": [
+                "Interview questions are contextually relevant",
+                "Answers are captured and stored persistently",
+                "Interview progress can be saved and resumed"
+              ],
+              "priority": "Medium",
+              "status": "draft",
+              "traceability": {
+                "linked_user_class_ids": [
+                  "UC-001"
+                ],
+                "linked_interface_ids": [
+                  "UI-001"
+                ],
+                "linked_test_case_ids": [
+                  "TC-003-01"
+                ]
+              }
+            },
+            {
+              "requirement_id": "REQ-032",
+              "title": "Document Generation",
+              "description": "The system shall generate structured requirements documentation in multiple formats based on interview responses",
+              "actor": "Project Manager",
+              "trigger": "User initiates the workflow",
+              "inputs": [
+                {
+                  "name": "payload",
+                  "type": "json",
+                  "required": true,
+                  "validation_rules": [
+                    "Validate required fields"
+                  ]
+                }
+              ],
+              "processing_logic": [
+                "Validate input",
+                "Persist state",
+                "Return clear status"
+              ],
+              "outputs": [
+                {
+                  "name": "result",
+                  "type": "json",
+                  "description": "Structured action result"
+                }
+              ],
+              "business_rules_applied": [
+                "BR-001"
+              ],
+              "error_conditions": [
+                {
+                  "condition": "Invalid input",
+                  "system_behavior": "Show a validation message"
+                }
+              ],
+              "acceptance_criteria": [
+                "Documents are generated in requested formats (JSON, PDF)",
+                "Generated content is accurate and complete",
+                "Documents include proper formatting and branding"
+              ],
+              "priority": "Medium",
+              "status": "draft",
+              "traceability": {
+                "linked_user_class_ids": [
+                  "UC-001"
+                ],
+                "linked_interface_ids": [
+                  "UI-001"
+                ],
+                "linked_test_case_ids": [
+                  "TC-003-02"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "feature_id": "FEAT-004",
+          "feature_name": "Reporting and Analytics",
+          "description_and_priority": {
+            "description": "Comprehensive reporting capabilities for project performance and team productivity",
+            "priority": "Medium",
+            "benefit_score": 7,
+            "penalty_score": 5,
+            "cost_score": 5,
+            "risk_score": 4
+          },
+          "stimulus_response_sequences": [
+            {
+              "sequence_id": "SRSQ-004",
+              "stimulus": "User starts reporting and analytics",
+              "preconditions": [
+                "An active session exists."
+              ],
+              "system_response": "The system processes the request and shows a clear status update.",
+              "postconditions": [
+                "The updated result is available for review."
+              ]
+            }
+          ],
+          "functional_requirements": [
+            {
+              "requirement_id": "REQ-041",
+              "title": "Custom Report Generation",
+              "description": "The system shall allow users to create custom reports with flexible filtering and formatting options",
+              "actor": "Project Manager",
+              "trigger": "User initiates the workflow",
+              "inputs": [
+                {
+                  "name": "payload",
+                  "type": "json",
+                  "required": true,
+                  "validation_rules": [
+                    "Validate required fields"
+                  ]
+                }
+              ],
+              "processing_logic": [
+                "Validate input",
+                "Persist state",
+                "Return clear status"
+              ],
+              "outputs": [
+                {
+                  "name": "result",
+                  "type": "json",
+                  "description": "Structured action result"
+                }
+              ],
+              "business_rules_applied": [
+                "BR-001"
+              ],
+              "error_conditions": [
+                {
+                  "condition": "Invalid input",
+                  "system_behavior": "Show a validation message"
+                }
+              ],
+              "acceptance_criteria": [
+                "Reports can be filtered by multiple criteria",
+                "Custom date ranges are supported",
+                "Report templates can be saved for reuse"
+              ],
+              "priority": "Medium",
+              "status": "draft",
+              "traceability": {
+                "linked_user_class_ids": [
+                  "UC-001"
+                ],
+                "linked_interface_ids": [
+                  "UI-001"
+                ],
+                "linked_test_case_ids": [
+                  "TC-004-01"
+                ]
+              }
+            },
+            {
+              "requirement_id": "REQ-042",
+              "title": "Performance Dashboards",
+              "description": "The system shall provide interactive dashboards showing key performance indicators and metrics",
+              "actor": "Stakeholder",
+              "trigger": "User initiates the workflow",
+              "inputs": [
+                {
+                  "name": "payload",
+                  "type": "json",
+                  "required": true,
+                  "validation_rules": [
+                    "Validate required fields"
+                  ]
+                }
+              ],
+              "processing_logic": [
+                "Validate input",
+                "Persist state",
+                "Return clear status"
+              ],
+              "outputs": [
+                {
+                  "name": "result",
+                  "type": "json",
+                  "description": "Structured action result"
+                }
+              ],
+              "business_rules_applied": [
+                "BR-001"
+              ],
+              "error_conditions": [
+                {
+                  "condition": "Invalid input",
+                  "system_behavior": "Show a validation message"
+                }
+              ],
+              "acceptance_criteria": [
+                "Dashboards display real-time data",
+                "Metrics are configurable and customizable",
+                "Visualizations are clear and informative"
+              ],
+              "priority": "Medium",
+              "status": "draft",
+              "traceability": {
+                "linked_user_class_ids": [
+                  "UC-001"
+                ],
+                "linked_interface_ids": [
+                  "UI-001"
+                ],
+                "linked_test_case_ids": [
+                  "TC-004-02"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "other_nonfunctional_requirements": {
+        "performance_requirements": [
+          {
+            "requirement_id": "NFR-PERF-001",
+            "description": "The system shall respond to user interactions within 2 seconds under normal load conditions",
+            "rationale": "Supports a responsive product experience.",
+            "measurement_method": "Monitoring and tracing",
+            "target_metric": "Service performance",
+            "target_value": "Defined during implementation",
+            "conditions": "Normal operating conditions"
+          },
+          {
+            "requirement_id": "NFR-PERF-002",
+            "description": "Database queries shall complete within 500 milliseconds for 95% of requests",
+            "rationale": "Supports a responsive product experience.",
+            "measurement_method": "Monitoring and tracing",
+            "target_metric": "Service performance",
+            "target_value": "Defined during implementation",
+            "conditions": "Normal operating conditions"
+          },
+          {
+            "requirement_id": "NFR-PERF-003",
+            "description": "The application shall support concurrent access by 1000 users without degradation",
+            "rationale": "Supports a responsive product experience.",
+            "measurement_method": "Monitoring and tracing",
+            "target_metric": "Service performance",
+            "target_value": "Defined during implementation",
+            "conditions": "Normal operating conditions"
+          },
+          {
+            "requirement_id": "NFR-PERF-004",
+            "description": "File uploads and downloads shall maintain throughput of at least 10 Mbps per user",
+            "rationale": "Supports a responsive product experience.",
+            "measurement_method": "Monitoring and tracing",
+            "target_metric": "Service performance",
+            "target_value": "Defined during implementation",
+            "conditions": "Normal operating conditions"
+          },
+          {
+            "requirement_id": "NFR-PERF-005",
+            "description": "System availability shall be 99.9% during business hours (8 AM - 6 PM local time)",
+            "rationale": "Supports a responsive product experience.",
+            "measurement_method": "Monitoring and tracing",
+            "target_metric": "Service performance",
+            "target_value": "Defined during implementation",
+            "conditions": "Normal operating conditions"
+          }
+        ],
+        "safety_requirements": [
+          {
+            "requirement_id": "NFR-SAFE-001",
+            "description": "The system shall prevent accidental loss of active project work.",
+            "hazard": "Loss of project inputs or artifacts",
+            "safeguards": [
+              "Persist session state",
+              "Confirm destructive actions"
+            ],
+            "prevented_actions": [
+              "Silent discard of work"
+            ],
+            "compliance_reference": "Internal product policy"
+          }
+        ],
+        "security_requirements": [
+          {
+            "requirement_id": "NFR-SEC-001",
+            "description": "All user authentication shall use multi-factor authentication with OAuth2 protocol",
+            "authentication_requirements": [
+              "Role-based authentication"
+            ],
+            "authorization_requirements": [
+              "Role-based access"
+            ],
+            "data_protection_requirements": [
+              "TLS in transit",
+              "Encrypted storage"
+            ],
+            "privacy_requirements": [
+              "Business and user data protection"
+            ],
+            "compliance_reference": "Project-dependent",
+            "verification_method": "Security review and tests"
+          },
+          {
+            "requirement_id": "NFR-SEC-002",
+            "description": "Data transmission shall be encrypted using TLS 1.3 or higher",
+            "authentication_requirements": [
+              "Role-based authentication"
+            ],
+            "authorization_requirements": [
+              "Role-based access"
+            ],
+            "data_protection_requirements": [
+              "TLS in transit",
+              "Encrypted storage"
+            ],
+            "privacy_requirements": [
+              "Business and user data protection"
+            ],
+            "compliance_reference": "Project-dependent",
+            "verification_method": "Security review and tests"
+          },
+          {
+            "requirement_id": "NFR-SEC-003",
+            "description": "Role-based access control shall enforce least privilege principles",
+            "authentication_requirements": [
+              "Role-based authentication"
+            ],
+            "authorization_requirements": [
+              "Role-based access"
+            ],
+            "data_protection_requirements": [
+              "TLS in transit",
+              "Encrypted storage"
+            ],
+            "privacy_requirements": [
+              "Business and user data protection"
+            ],
+            "compliance_reference": "Project-dependent",
+            "verification_method": "Security review and tests"
+          },
+          {
+            "requirement_id": "NFR-SEC-004",
+            "description": "Sensitive data shall be encrypted at rest using AES-256 encryption",
+            "authentication_requirements": [
+              "Role-based authentication"
+            ],
+            "authorization_requirements": [
+              "Role-based access"
+            ],
+            "data_protection_requirements": [
+              "TLS in transit",
+              "Encrypted storage"
+            ],
+            "privacy_requirements": [
+              "Business and user data protection"
+            ],
+            "compliance_reference": "Project-dependent",
+            "verification_method": "Security review and tests"
+          },
+          {
+            "requirement_id": "NFR-SEC-005",
+            "description": "Audit logs shall record all significant system events and user actions",
+            "authentication_requirements": [
+              "Role-based authentication"
+            ],
+            "authorization_requirements": [
+              "Role-based access"
+            ],
+            "data_protection_requirements": [
+              "TLS in transit",
+              "Encrypted storage"
+            ],
+            "privacy_requirements": [
+              "Business and user data protection"
+            ],
+            "compliance_reference": "Project-dependent",
+            "verification_method": "Security review and tests"
+          },
+          {
+            "requirement_id": "NFR-SEC-006",
+            "description": "Regular security vulnerability scans shall be performed and addressed promptly",
+            "authentication_requirements": [
+              "Role-based authentication"
+            ],
+            "authorization_requirements": [
+              "Role-based access"
+            ],
+            "data_protection_requirements": [
+              "TLS in transit",
+              "Encrypted storage"
+            ],
+            "privacy_requirements": [
+              "Business and user data protection"
+            ],
+            "compliance_reference": "Project-dependent",
+            "verification_method": "Security review and tests"
+          }
+        ],
+        "software_quality_attributes": [
+          {
+            "attribute_id": "QA-001",
+            "attribute_name": "Usability",
+            "description": "Non-technical users should complete the intake and answer flow without training.",
+            "measurement": "Task completion rate",
+            "target_value": ">= 90%",
+            "priority": "High"
+          }
+        ],
+        "business_rules": [
+          {
+            "rule_id": "BR-001",
+            "description": "Projects must have a unique name within the organization",
+            "applicable_roles": [
+              "Administrator",
+              "Primary User"
+            ],
+            "conditions": [
+              "Project workflow is active"
+            ],
+            "enforcement_requirements": [
+              "REQ-011"
+            ]
+          },
+          {
+            "rule_id": "BR-002",
+            "description": "Tasks cannot be deleted once marked as completed",
+            "applicable_roles": [
+              "Administrator",
+              "Primary User"
+            ],
+            "conditions": [
+              "Project workflow is active"
+            ],
+            "enforcement_requirements": [
+              "REQ-011"
+            ]
+          },
+          {
+            "rule_id": "BR-003",
+            "description": "User roles determine access to specific project features and data",
+            "applicable_roles": [
+              "Administrator",
+              "Primary User"
+            ],
+            "conditions": [
+              "Project workflow is active"
+            ],
+            "enforcement_requirements": [
+              "REQ-011"
+            ]
+          },
+          {
+            "rule_id": "BR-004",
+            "description": "Project deadlines cannot be set in the past during creation",
+            "applicable_roles": [
+              "Administrator",
+              "Primary User"
+            ],
+            "conditions": [
+              "Project workflow is active"
+            ],
+            "enforcement_requirements": [
+              "REQ-011"
+            ]
+          },
+          {
+            "rule_id": "BR-005",
+            "description": "All system-generated documents must include version information",
+            "applicable_roles": [
+              "Administrator",
+              "Primary User"
+            ],
+            "conditions": [
+              "Project workflow is active"
+            ],
+            "enforcement_requirements": [
+              "REQ-011"
+            ]
+          },
+          {
+            "rule_id": "BR-006",
+            "description": "Email notifications must include opt-out mechanisms where appropriate",
+            "applicable_roles": [
+              "Administrator",
+              "Primary User"
+            ],
+            "conditions": [
+              "Project workflow is active"
+            ],
+            "enforcement_requirements": [
+              "REQ-011"
+            ]
+          }
+        ]
+      },
+      "other_requirements": {
+        "database_requirements": [
+          {
+            "requirement_id": "DB-001",
+            "description": "The database shall support ACID transactions for data integrity",
+            "entities": [
+              "Session",
+              "AnswerSet",
+              "SRSArtifact"
+            ],
+            "retention_policy": "Policy-based retention",
+            "backup_policy": "Scheduled backups"
+          },
+          {
+            "requirement_id": "DB-002",
+            "description": "Data retention policies shall comply with organizational requirements (minimum 7 years)",
+            "entities": [
+              "Session",
+              "AnswerSet",
+              "SRSArtifact"
+            ],
+            "retention_policy": "Policy-based retention",
+            "backup_policy": "Scheduled backups"
+          },
+          {
+            "requirement_id": "DB-003",
+            "description": "Database backups shall occur daily with point-in-time recovery capability",
+            "entities": [
+              "Session",
+              "AnswerSet",
+              "SRSArtifact"
+            ],
+            "retention_policy": "Policy-based retention",
+            "backup_policy": "Scheduled backups"
+          },
+          {
+            "requirement_id": "DB-004",
+            "description": "The database shall support horizontal scaling for increased load capacity",
+            "entities": [
+              "Session",
+              "AnswerSet",
+              "SRSArtifact"
+            ],
+            "retention_policy": "Policy-based retention",
+            "backup_policy": "Scheduled backups"
+          },
+          {
+            "requirement_id": "DB-005",
+            "description": "Data migration scripts shall be provided for schema changes",
+            "entities": [
+              "Session",
+              "AnswerSet",
+              "SRSArtifact"
+            ],
+            "retention_policy": "Policy-based retention",
+            "backup_policy": "Scheduled backups"
+          },
+          {
+            "requirement_id": "DB-006",
+            "description": "Query performance shall be monitored and optimized regularly",
+            "entities": [
+              "Session",
+              "AnswerSet",
+              "SRSArtifact"
+            ],
+            "retention_policy": "Policy-based retention",
+            "backup_policy": "Scheduled backups"
+          }
+        ],
+        "internationalization_requirements": [
+          {
+            "requirement_id": "I18N-001",
+            "description": "The product should support future localization without changing the API contract.",
+            "supported_languages": [
+              "en"
+            ],
+            "locale_rules": [
+              "ISO date formatting for API payloads"
+            ]
+          }
+        ],
+        "legal_requirements": [
+          {
+            "requirement_id": "LEGAL-001",
+            "description": "The system shall comply with GDPR requirements for data protection and privacy",
+            "jurisdiction": "Project-dependent",
+            "reference": "Business and regulatory policy"
+          },
+          {
+            "requirement_id": "LEGAL-002",
+            "description": "All user data handling shall follow organizational privacy policies",
+            "jurisdiction": "Project-dependent",
+            "reference": "Business and regulatory policy"
+          },
+          {
+            "requirement_id": "LEGAL-003",
+            "description": "Export controls shall prevent unauthorized data transfer across jurisdictions",
+            "jurisdiction": "Project-dependent",
+            "reference": "Business and regulatory policy"
+          },
+          {
+            "requirement_id": "LEGAL-004",
+            "description": "Intellectual property rights for generated content shall be clearly defined",
+            "jurisdiction": "Project-dependent",
+            "reference": "Business and regulatory policy"
+          },
+          {
+            "requirement_id": "LEGAL-005",
+            "description": "Service level agreements shall meet organizational compliance standards",
+            "jurisdiction": "Project-dependent",
+            "reference": "Business and regulatory policy"
+          }
+        ],
+        "reuse_objectives": [
+          {
+            "objective_id": "REUSE-001",
+            "description": "Reuse question planning, validation, and export modules across future agents.",
+            "target_components": [
+              "Question planner",
+              "Validation engine",
+              "Artifact exporter"
+            ]
+          }
+        ],
+        "additional_requirements": [
+          {
+            "requirement_id": "OTH-001",
+            "description": "The system shall provide comprehensive API documentation for integration purposes"
+          },
+          {
+            "requirement_id": "OTH-002",
+            "description": "User training materials and help documentation shall be available online"
+          },
+          {
+            "requirement_id": "OTH-003",
+            "description": "The application shall support keyboard navigation and screen readers for accessibility"
+          },
+          {
+            "requirement_id": "OTH-004",
+            "description": "Mobile responsive design shall support devices from 320px width upwards"
+          },
+          {
+            "requirement_id": "OTH-005",
+            "description": "System shall include comprehensive monitoring and alerting capabilities"
+          },
+          {
+            "requirement_id": "OTH-006",
+            "description": "All external integrations shall include fallback mechanisms for service outages"
+          }
+        ]
+      }
+    },
+    "appendices": {
+      "glossary": [
+        {
+          "term": "SRS",
+          "definition": "Software Requirements Specification"
+        },
+        {
+          "term": "NFR",
+          "definition": "Nonfunctional Requirement"
+        }
+      ],
+      "analysis_models": [
+        {
+          "model_id": "AM-001",
+          "model_type": "Interview Coverage Summary",
+          "description": "Summarises AI-driven questions, user answers, and completion coverage for the current SRS.",
+          "reference": "See analyst workspace interview review."
+        },
+        {
+          "model_id": "AM-002",
+          "model_type": "Service Outline",
+          "description": "Summarises service responsibilities and handoff boundaries for the current build phase.",
+          "reference": "See risk and stack review."
+        }
+      ],
+      "to_be_determined_list": [
+        {
+          "tbd_id": "TBD-003",
+          "description": "Clarify target users.",
+          "owner": "Product owner",
+          "status": "open",
+          "target_resolution_date": "2026-05-01"
+        },
+        {
+          "tbd_id": "TBD-005",
+          "description": "Clarify platforms.",
+          "owner": "Product owner",
+          "status": "open",
+          "target_resolution_date": "2026-05-01"
+        },
+        {
+          "tbd_id": "TBD-006",
+          "description": "Clarify auth method.",
+          "owner": "Product owner",
+          "status": "open",
+          "target_resolution_date": "2026-05-01"
+        },
+        {
+          "tbd_id": "TBD-007",
+          "description": "Clarify integrations.",
+          "owner": "Product owner",
+          "status": "open",
+          "target_resolution_date": "2026-05-01"
+        },
+        {
+          "tbd_id": "TBD-008",
+          "description": "Clarify reports and notifications.",
+          "owner": "Product owner",
+          "status": "open",
+          "target_resolution_date": "2026-05-01"
+        },
+        {
+          "tbd_id": "TBD-009",
+          "description": "Clarify compliance.",
+          "owner": "Product owner",
+          "status": "open",
+          "target_resolution_date": "2026-05-01"
+        },
+        {
+          "tbd_id": "TBD-010",
+          "description": "Clarify expected scale.",
+          "owner": "Product owner",
+          "status": "open",
+          "target_resolution_date": "2026-05-01"
+        }
+      ]
+    },
+    "services": [
+      {
+        "service_name": "API Gateway",
+        "port": 8200,
+        "summary": "Central entry point for all API requests, handling authentication, routing, and rate limiting",
+        "endpoints": []
+      },
+      {
+        "service_name": "Project Service",
+        "port": 8201,
+        "summary": "Core service managing project data, task hierarchies, and project lifecycle operations",
+        "endpoints": []
+      },
+      {
+        "service_name": "User Management Service",
+        "port": 8202,
+        "summary": "Handles user authentication, authorization, and profile management with role-based access control",
+        "endpoints": []
+      },
+      {
+        "service_name": "Document Generation Service",
+        "port": 8203,
+        "summary": "AI-powered service for requirements gathering and document generation in multiple formats",
+        "endpoints": []
+      },
+      {
+        "service_name": "Notification Service",
+        "port": 8204,
+        "summary": "Manages all system notifications including email, in-app alerts, and integration with messaging platforms",
+        "endpoints": []
+      },
+      {
+        "service_name": "Reporting Service",
+        "port": 8205,
+        "summary": "Generates reports and analytics dashboards with customizable filters and export capabilities",
+        "endpoints": []
+      }
+    ],
+    "revision_history": [
+      {
+        "revision_id": "REV-001",
+        "name": "Agent 1 SRS API",
+        "date": "2026-04-24",
+        "reason_for_changes": "Initial generated draft",
+        "version": "0.1"
+      }
+    ],
+    "generated_stack_recommendation": {
+      "frontend": "Next.js 15 + Tailwind CSS",
+      "api": "FastAPI REST API",
+      "ai_orchestrator": "Python AI worker with LangGraph-compatible orchestration",
+      "database": "PostgreSQL",
+      "storage": "S3-compatible object storage",
+      "deployment": "Docker Compose locally, ECS or Kubernetes in production"
+    },
+    "analyst_workspace": {
+      "analysis_summary": "This Software Requirements Specification defines the requirements for a comprehensive task management application designed to streamline project organization and workflow management. The system provides a centralized platform for task tracking, project overview, and collaborative work management with AI-assisted features for requirements gathering and documentation generation.",
+      "planner": {
+        "provider": "ollama",
+        "model": "deepseek-v3.1:671b-cloud",
+        "orchestrator": "langgraph"
+      },
+      "coverage": {
+        "total_questions": 8,
+        "answered_questions": 0,
+        "open_questions": 8,
+        "completion_percent": 0
+      },
+      "interview_questions": [
+        {
+          "key": "target_users",
+          "section": "users",
+          "question": "Who will be using this app most often?",
+          "input_type": "multiselect",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "core_features",
+          "section": "features",
+          "question": "What are the most important things people should be able to do in the first version?",
+          "input_type": "textarea",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "platforms",
+          "section": "interfaces",
+          "question": "Where do you want people to use this app first?",
+          "input_type": "multiselect",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "auth_method",
+          "section": "accounts",
+          "question": "How should users sign in to access their tasks?",
+          "input_type": "select",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "reports_and_notifications",
+          "section": "operations",
+          "question": "What kind of reminders or updates should the app send to users?",
+          "input_type": "textarea",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "compliance",
+          "section": "privacy",
+          "question": "Are there any privacy or data protection rules we need to follow?",
+          "input_type": "multiselect",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "expected_scale",
+          "section": "technical",
+          "question": "About how many users do you expect to have when you launch?",
+          "input_type": "select",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "integrations",
+          "section": "integrations",
+          "question": "Does it need to connect with any other tools or services?",
+          "input_type": "textarea",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        }
+      ],
+      "open_items": [
+        {
+          "key": "target_users",
+          "section": "users",
+          "question": "Who will be using this app most often?",
+          "input_type": "multiselect",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "core_features",
+          "section": "features",
+          "question": "What are the most important things people should be able to do in the first version?",
+          "input_type": "textarea",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "platforms",
+          "section": "interfaces",
+          "question": "Where do you want people to use this app first?",
+          "input_type": "multiselect",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "auth_method",
+          "section": "accounts",
+          "question": "How should users sign in to access their tasks?",
+          "input_type": "select",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "reports_and_notifications",
+          "section": "operations",
+          "question": "What kind of reminders or updates should the app send to users?",
+          "input_type": "textarea",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "compliance",
+          "section": "privacy",
+          "question": "Are there any privacy or data protection rules we need to follow?",
+          "input_type": "multiselect",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "expected_scale",
+          "section": "technical",
+          "question": "About how many users do you expect to have when you launch?",
+          "input_type": "select",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "integrations",
+          "section": "integrations",
+          "question": "Does it need to connect with any other tools or services?",
+          "input_type": "textarea",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        }
+      ],
+      "template_standard": "IEEE SRS",
+      "template_document_type": "Software Requirements Specification",
+      "generator": {
+        "provider": "ollama",
+        "model": "deepseek-v3.1:671b-cloud",
+        "used_ai_generation": true
+      },
+      "stack_summary": {
+        "frontend": "Next.js 15 + Tailwind CSS",
+        "api": "FastAPI REST API",
+        "ai_orchestrator": "Python AI worker with LangGraph-compatible orchestration",
+        "database": "PostgreSQL",
+        "storage": "S3-compatible object storage",
+        "deployment": "Docker Compose locally, ECS or Kubernetes in production"
+      },
+      "expected_scale": "To be confirmed",
+      "integrations": [
+        "To be confirmed"
+      ],
+      "reports_and_notifications": [
+        "To be confirmed"
+      ],
+      "compliance_focus": [
+        "To be confirmed"
+      ]
+    },
+    "diagram_previews": []
+  },
+  "final_srs": {
+    "document_type": "Software Requirements Specification",
+    "standard": "IEEE SRS",
+    "metadata": {
+      "project_name": "Untitled App",
+      "project_id": "SRS-UNTITLED-APP",
+      "domain": "Task Management",
+      "application_type": "Web browser",
+      "version": "1.0",
+      "status": "approved",
+      "author": "Agent 1 SRS API",
+      "organization": "AgentForge Studio",
+      "date_created": "2026-04-24",
+      "last_updated": "2026-04-24",
+      "language": "en"
+    },
+    "sections": {
+      "introduction": {
+        "purpose": "This document specifies the functional and non-functional requirements for the Task Management Application, providing a complete specification for development, testing, and implementation.",
+        "product_scope": {
+          "summary": "A web-based task management system that allows business owners and administrators to organize, track, and manage tasks with due date notifications and payment integration capabilities.",
+          "business_objectives": [
+            "Provide efficient task management for small business operations",
+            "Enable task tracking with deadline awareness",
+            "Support payment processing integration for task-related transactions"
+          ],
+          "benefits": [
+            "Improved task organization and productivity",
+            "Automated deadline notifications",
+            "Streamlined payment processing for task-related services"
+          ],
+          "goals": [
+            "Deliver a fully functional task management web application",
+            "Support 100 concurrent users with responsive performance",
+            "Provide secure authentication and data protection"
+          ]
+        }
+      },
+      "overall_description": {
+        "product_perspective": {
+          "system_context": "The task management application operates as a web-based service with a responsive frontend, RESTful API backend, database storage, and external payment service integration.",
+          "product_origin": "New system",
+          "related_systems": [
+            {
+              "name": "Payment Service",
+              "relationship": "Integration",
+              "interface_summary": "Integration with external payment processing system for handling task-related transactions and payments"
+            }
+          ],
+          "context_diagram_reference": "Diagram generation is deferred. Review the analyst workspace and service breakdown for the current phase."
+        },
+        "product_functions": [
+          {
+            "function_id": "PF-001",
+            "name": "Task Creation",
+            "description": "Allows users to create new tasks with details such as title, description, due date, and priority level"
+          },
+          {
+            "function_id": "PF-002",
+            "name": "Task Deletion",
+            "description": "Enables users to remove tasks from the system with appropriate confirmation and audit logging"
+          },
+          {
+            "function_id": "PF-003",
+            "name": "Task Retrieval",
+            "description": "Provides functionality to view, search, and filter tasks based on various criteria including status, due date, and priority"
+          },
+          {
+            "function_id": "PF-004",
+            "name": "Due Date Notifications",
+            "description": "Automatically notifies users of upcoming and overdue tasks through in-app alerts and email reminders"
+          }
+        ],
+        "user_classes_and_characteristics": [
+          {
+            "user_class_id": "UC-001",
+            "user_class_name": "Business Owners/Administrators",
+            "description": "Primary users who manage tasks, oversee operations, and require task organization and tracking capabilities",
+            "technical_expertise": "Moderate - comfortable with web applications and basic digital tools",
+            "security_or_privilege_level": "Role-based",
+            "education_or_experience": "Basic digital literacy",
+            "frequency_of_use": "Daily for task management and monitoring",
+            "importance_rank": 1,
+            "notes": ""
+          }
+        ]
+      },
+      "external_interface_requirements": {
+        "user_interfaces": [
+          {
+            "ui_id": "UI-001",
+            "name": "Task Dashboard",
+            "description": "Main interface displaying task lists, filters, search functionality, and quick action buttons for task management",
+            "input_elements": [
+              "AI-guided input"
+            ],
+            "output_elements": [
+              "Structured response"
+            ],
+            "layout_constraints": [
+              "Responsive layout"
+            ],
+            "accessibility_requirements": [
+              "Keyboard support"
+            ],
+            "error_message_standards": [
+              "Human-readable validation"
+            ],
+            "design_reference": "Agent 1 UI"
+          },
+          {
+            "ui_id": "UI-002",
+            "name": "Task Creation Form",
+            "description": "Modal or page for entering task details including title, description, due date, priority, and optional payment information",
+            "input_elements": [
+              "AI-guided input"
+            ],
+            "output_elements": [
+              "Structured response"
+            ],
+            "layout_constraints": [
+              "Responsive layout"
+            ],
+            "accessibility_requirements": [
+              "Keyboard support"
+            ],
+            "error_message_standards": [
+              "Human-readable validation"
+            ],
+            "design_reference": "Agent 1 UI"
+          },
+          {
+            "ui_id": "UI-003",
+            "name": "Login/Registration",
+            "description": "Authentication interface for user sign-in and account creation using email and password credentials",
+            "input_elements": [
+              "AI-guided input"
+            ],
+            "output_elements": [
+              "Structured response"
+            ],
+            "layout_constraints": [
+              "Responsive layout"
+            ],
+            "accessibility_requirements": [
+              "Keyboard support"
+            ],
+            "error_message_standards": [
+              "Human-readable validation"
+            ],
+            "design_reference": "Agent 1 UI"
+          }
+        ],
+        "software_interfaces": [
+          {
+            "software_interface_id": "SI-001",
+            "component_name": "Payment API Integration",
+            "component_version": "Current stable",
+            "description": "RESTful API integration with external payment service for processing task-related payments and transactions",
+            "incoming_data_items": [
+              "Request payload"
+            ],
+            "outgoing_data_items": [
+              "Response payload"
+            ],
+            "services_needed": [
+              "Authentication"
+            ],
+            "communication_method": "REST or webhook",
+            "shared_data": [
+              "Project metadata"
+            ],
+            "implementation_constraints": [
+              "Use secure transport"
+            ]
+          }
+        ],
+        "hardware_interfaces": [],
+        "communications_interfaces": [
+          {
+            "communication_interface_id": "CI-001",
+            "name": "Browser to API",
+            "description": "Interactive application traffic.",
+            "protocols": [
+              "HTTPS"
+            ],
+            "message_format": "JSON and multipart form data",
+            "security_or_encryption": "TLS 1.2+",
+            "data_transfer_rate": "Interactive",
+            "synchronization_mechanism": "Request-response"
+          },
+          {
+            "communication_interface_id": "CI-002",
+            "name": "Artifact delivery",
+            "description": "Downloads JSON and PDF artifacts.",
+            "protocols": [
+              "HTTPS"
+            ],
+            "message_format": "JSON and PDF",
+            "security_or_encryption": "TLS 1.2+",
+            "data_transfer_rate": "On demand",
+            "synchronization_mechanism": "Direct download"
+          }
+        ]
+      },
+      "system_features": [
+        {
+          "feature_id": "FEAT-001",
+          "feature_name": "Task Management Core",
+          "description_and_priority": {
+            "description": "Comprehensive task creation, modification, deletion, and retrieval functionality with persistent storage",
+            "priority": "High",
+            "benefit_score": 10,
+            "penalty_score": 7,
+            "cost_score": 5,
+            "risk_score": 4
+          },
+          "stimulus_response_sequences": [
+            {
+              "sequence_id": "SRSQ-001",
+              "stimulus": "User starts task management core",
+              "preconditions": [
+                "An active session exists."
+              ],
+              "system_response": "The system processes the request and shows a clear status update.",
+              "postconditions": [
+                "The updated result is available for review."
+              ]
+            }
+          ],
+          "functional_requirements": [
+            {
+              "requirement_id": "REQ-011",
+              "title": "Task Creation Functionality",
+              "description": "The system shall allow authenticated users to create new tasks with title, description, due date, and priority fields",
+              "actor": "Business Owner/Administrator",
+              "trigger": "User initiates the workflow",
+              "inputs": [
+                {
+                  "name": "payload",
+                  "type": "json",
+                  "required": true,
+                  "validation_rules": [
+                    "Validate required fields"
+                  ]
+                }
+              ],
+              "processing_logic": [
+                "Validate input",
+                "Persist state",
+                "Return clear status"
+              ],
+              "outputs": [
+                {
+                  "name": "result",
+                  "type": "json",
+                  "description": "Structured action result"
+                }
+              ],
+              "business_rules_applied": [
+                "BR-001"
+              ],
+              "error_conditions": [
+                {
+                  "condition": "Invalid input",
+                  "system_behavior": "Show a validation message"
+                }
+              ],
+              "acceptance_criteria": [
+                "User can successfully create a task with all required fields",
+                "Task is immediately visible in the task list after creation",
+                "Validation prevents creation of tasks with missing required fields"
+              ],
+              "priority": "High",
+              "status": "approved",
+              "traceability": {
+                "linked_user_class_ids": [
+                  "UC-001"
+                ],
+                "linked_interface_ids": [
+                  "UI-001"
+                ],
+                "linked_test_case_ids": [
+                  "TC-001-01"
+                ]
+              }
+            },
+            {
+              "requirement_id": "REQ-012",
+              "title": "Task Deletion Capability",
+              "description": "The system shall provide secure task deletion with confirmation prompts and audit logging",
+              "actor": "Business Owner/Administrator",
+              "trigger": "User initiates the workflow",
+              "inputs": [
+                {
+                  "name": "payload",
+                  "type": "json",
+                  "required": true,
+                  "validation_rules": [
+                    "Validate required fields"
+                  ]
+                }
+              ],
+              "processing_logic": [
+                "Validate input",
+                "Persist state",
+                "Return clear status"
+              ],
+              "outputs": [
+                {
+                  "name": "result",
+                  "type": "json",
+                  "description": "Structured action result"
+                }
+              ],
+              "business_rules_applied": [
+                "BR-001"
+              ],
+              "error_conditions": [
+                {
+                  "condition": "Invalid input",
+                  "system_behavior": "Show a validation message"
+                }
+              ],
+              "acceptance_criteria": [
+                "User can delete tasks with appropriate confirmation",
+                "Deleted tasks are removed from all views immediately",
+                "Deletion actions are logged for audit purposes"
+              ],
+              "priority": "High",
+              "status": "approved",
+              "traceability": {
+                "linked_user_class_ids": [
+                  "UC-001"
+                ],
+                "linked_interface_ids": [
+                  "UI-001"
+                ],
+                "linked_test_case_ids": [
+                  "TC-001-02"
+                ]
+              }
+            },
+            {
+              "requirement_id": "REQ-013",
+              "title": "Task Retrieval and Filtering",
+              "description": "The system shall support viewing, searching, and filtering tasks by various criteria including status, due date, and priority",
+              "actor": "Business Owner/Administrator",
+              "trigger": "User initiates the workflow",
+              "inputs": [
+                {
+                  "name": "payload",
+                  "type": "json",
+                  "required": true,
+                  "validation_rules": [
+                    "Validate required fields"
+                  ]
+                }
+              ],
+              "processing_logic": [
+                "Validate input",
+                "Persist state",
+                "Return clear status"
+              ],
+              "outputs": [
+                {
+                  "name": "result",
+                  "type": "json",
+                  "description": "Structured action result"
+                }
+              ],
+              "business_rules_applied": [
+                "BR-001"
+              ],
+              "error_conditions": [
+                {
+                  "condition": "Invalid input",
+                  "system_behavior": "Show a validation message"
+                }
+              ],
+              "acceptance_criteria": [
+                "All tasks are visible in the main dashboard",
+                "Search functionality returns relevant results",
+                "Filters correctly narrow down task lists based on selected criteria"
+              ],
+              "priority": "High",
+              "status": "approved",
+              "traceability": {
+                "linked_user_class_ids": [
+                  "UC-001"
+                ],
+                "linked_interface_ids": [
+                  "UI-001"
+                ],
+                "linked_test_case_ids": [
+                  "TC-001-03"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "feature_id": "FEAT-002",
+          "feature_name": "Notification System",
+          "description_and_priority": {
+            "description": "Automated due date notifications and reminders for upcoming and overdue tasks",
+            "priority": "High",
+            "benefit_score": 9,
+            "penalty_score": 7,
+            "cost_score": 5,
+            "risk_score": 4
+          },
+          "stimulus_response_sequences": [
+            {
+              "sequence_id": "SRSQ-002",
+              "stimulus": "User starts notification system",
+              "preconditions": [
+                "An active session exists."
+              ],
+              "system_response": "The system processes the request and shows a clear status update.",
+              "postconditions": [
+                "The updated result is available for review."
+              ]
+            }
+          ],
+          "functional_requirements": [
+            {
+              "requirement_id": "REQ-021",
+              "title": "Due Date Notification",
+              "description": "The system shall automatically notify users of tasks approaching their due dates and overdue tasks",
+              "actor": "System",
+              "trigger": "User initiates the workflow",
+              "inputs": [
+                {
+                  "name": "payload",
+                  "type": "json",
+                  "required": true,
+                  "validation_rules": [
+                    "Validate required fields"
+                  ]
+                }
+              ],
+              "processing_logic": [
+                "Validate input",
+                "Persist state",
+                "Return clear status"
+              ],
+              "outputs": [
+                {
+                  "name": "result",
+                  "type": "json",
+                  "description": "Structured action result"
+                }
+              ],
+              "business_rules_applied": [
+                "BR-001"
+              ],
+              "error_conditions": [
+                {
+                  "condition": "Invalid input",
+                  "system_behavior": "Show a validation message"
+                }
+              ],
+              "acceptance_criteria": [
+                "Notifications are triggered for tasks within 24 hours of due date",
+                "Overdue tasks generate immediate notifications",
+                "Users receive both in-app and email notifications"
+              ],
+              "priority": "High",
+              "status": "approved",
+              "traceability": {
+                "linked_user_class_ids": [
+                  "UC-001"
+                ],
+                "linked_interface_ids": [
+                  "UI-001"
+                ],
+                "linked_test_case_ids": [
+                  "TC-002-01"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "feature_id": "FEAT-003",
+          "feature_name": "Payment Integration",
+          "description_and_priority": {
+            "description": "Integration with external payment services for task-related financial transactions",
+            "priority": "Medium",
+            "benefit_score": 8,
+            "penalty_score": 7,
+            "cost_score": 5,
+            "risk_score": 4
+          },
+          "stimulus_response_sequences": [
+            {
+              "sequence_id": "SRSQ-003",
+              "stimulus": "User starts payment integration",
+              "preconditions": [
+                "An active session exists."
+              ],
+              "system_response": "The system processes the request and shows a clear status update.",
+              "postconditions": [
+                "The updated result is available for review."
+              ]
+            }
+          ],
+          "functional_requirements": [
+            {
+              "requirement_id": "REQ-031",
+              "title": "Payment Processing",
+              "description": "The system shall integrate with external payment services to process task-related payments",
+              "actor": "Business Owner/Administrator",
+              "trigger": "User initiates the workflow",
+              "inputs": [
+                {
+                  "name": "payload",
+                  "type": "json",
+                  "required": true,
+                  "validation_rules": [
+                    "Validate required fields"
+                  ]
+                }
+              ],
+              "processing_logic": [
+                "Validate input",
+                "Persist state",
+                "Return clear status"
+              ],
+              "outputs": [
+                {
+                  "name": "result",
+                  "type": "json",
+                  "description": "Structured action result"
+                }
+              ],
+              "business_rules_applied": [
+                "BR-001"
+              ],
+              "error_conditions": [
+                {
+                  "condition": "Invalid input",
+                  "system_behavior": "Show a validation message"
+                }
+              ],
+              "acceptance_criteria": [
+                "Payment integration successfully processes transactions",
+                "Payment status is reflected in task details",
+                "Failed payments generate appropriate error messages"
+              ],
+              "priority": "Medium",
+              "status": "approved",
+              "traceability": {
+                "linked_user_class_ids": [
+                  "UC-001"
+                ],
+                "linked_interface_ids": [
+                  "UI-001"
+                ],
+                "linked_test_case_ids": [
+                  "TC-003-01"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "other_nonfunctional_requirements": {
+        "performance_requirements": [
+          {
+            "requirement_id": "NFR-PERF-001",
+            "description": "The system shall load the main dashboard within 2 seconds for 100 concurrent users",
+            "rationale": "Supports a responsive product experience.",
+            "measurement_method": "Monitoring and tracing",
+            "target_metric": "Service performance",
+            "target_value": "Defined during implementation",
+            "conditions": "Normal operating conditions"
+          },
+          {
+            "requirement_id": "NFR-PERF-002",
+            "description": "Task creation and retrieval operations shall complete within 1 second under normal load",
+            "rationale": "Supports a responsive product experience.",
+            "measurement_method": "Monitoring and tracing",
+            "target_metric": "Service performance",
+            "target_value": "Defined during implementation",
+            "conditions": "Normal operating conditions"
+          },
+          {
+            "requirement_id": "NFR-PERF-003",
+            "description": "API responses shall be delivered within 500ms for 95% of requests",
+            "rationale": "Supports a responsive product experience.",
+            "measurement_method": "Monitoring and tracing",
+            "target_metric": "Service performance",
+            "target_value": "Defined during implementation",
+            "conditions": "Normal operating conditions"
+          }
+        ],
+        "safety_requirements": [
+          {
+            "requirement_id": "NFR-SAFE-001",
+            "description": "The system shall prevent accidental loss of active project work.",
+            "hazard": "Loss of project inputs or artifacts",
+            "safeguards": [
+              "Persist session state",
+              "Confirm destructive actions"
+            ],
+            "prevented_actions": [
+              "Silent discard of work"
+            ],
+            "compliance_reference": "Internal product policy"
+          }
+        ],
+        "security_requirements": [
+          {
+            "requirement_id": "NFR-SEC-001",
+            "description": "User authentication shall be implemented using secure email and password validation",
+            "authentication_requirements": [
+              "Role-based authentication"
+            ],
+            "authorization_requirements": [
+              "Role-based access"
+            ],
+            "data_protection_requirements": [
+              "TLS in transit",
+              "Encrypted storage"
+            ],
+            "privacy_requirements": [
+              "Business and user data protection"
+            ],
+            "compliance_reference": "Project-dependent",
+            "verification_method": "Security review and tests"
+          },
+          {
+            "requirement_id": "NFR-SEC-002",
+            "description": "All data transmission shall use TLS 1.2 or higher encryption",
+            "authentication_requirements": [
+              "Role-based authentication"
+            ],
+            "authorization_requirements": [
+              "Role-based access"
+            ],
+            "data_protection_requirements": [
+              "TLS in transit",
+              "Encrypted storage"
+            ],
+            "privacy_requirements": [
+              "Business and user data protection"
+            ],
+            "compliance_reference": "Project-dependent",
+            "verification_method": "Security review and tests"
+          },
+          {
+            "requirement_id": "NFR-SEC-003",
+            "description": "User sessions shall be securely managed with appropriate timeout policies",
+            "authentication_requirements": [
+              "Role-based authentication"
+            ],
+            "authorization_requirements": [
+              "Role-based access"
+            ],
+            "data_protection_requirements": [
+              "TLS in transit",
+              "Encrypted storage"
+            ],
+            "privacy_requirements": [
+              "Business and user data protection"
+            ],
+            "compliance_reference": "Project-dependent",
+            "verification_method": "Security review and tests"
+          },
+          {
+            "requirement_id": "NFR-SEC-004",
+            "description": "Payment data shall be handled according to PCI DSS compliance standards",
+            "authentication_requirements": [
+              "Role-based authentication"
+            ],
+            "authorization_requirements": [
+              "Role-based access"
+            ],
+            "data_protection_requirements": [
+              "TLS in transit",
+              "Encrypted storage"
+            ],
+            "privacy_requirements": [
+              "Business and user data protection"
+            ],
+            "compliance_reference": "Project-dependent",
+            "verification_method": "Security review and tests"
+          }
+        ],
+        "software_quality_attributes": [
+          {
+            "attribute_id": "QA-001",
+            "attribute_name": "Usability",
+            "description": "Non-technical users should complete the intake and answer flow without training.",
+            "measurement": "Task completion rate",
+            "target_value": ">= 90%",
+            "priority": "High"
+          }
+        ],
+        "business_rules": [
+          {
+            "rule_id": "BR-001",
+            "description": "Tasks must have a title and due date to be created",
+            "applicable_roles": [
+              "Administrator",
+              "Primary User"
+            ],
+            "conditions": [
+              "Project workflow is active"
+            ],
+            "enforcement_requirements": [
+              "REQ-011"
+            ]
+          },
+          {
+            "rule_id": "BR-002",
+            "description": "Only task owners or administrators can delete tasks",
+            "applicable_roles": [
+              "Administrator",
+              "Primary User"
+            ],
+            "conditions": [
+              "Project workflow is active"
+            ],
+            "enforcement_requirements": [
+              "REQ-011"
+            ]
+          },
+          {
+            "rule_id": "BR-003",
+            "description": "Due date notifications are triggered 24 hours before task deadline",
+            "applicable_roles": [
+              "Administrator",
+              "Primary User"
+            ],
+            "conditions": [
+              "Project workflow is active"
+            ],
+            "enforcement_requirements": [
+              "REQ-011"
+            ]
+          },
+          {
+            "rule_id": "BR-004",
+            "description": "Payment integration is optional for tasks requiring financial transactions",
+            "applicable_roles": [
+              "Administrator",
+              "Primary User"
+            ],
+            "conditions": [
+              "Project workflow is active"
+            ],
+            "enforcement_requirements": [
+              "REQ-011"
+            ]
+          }
+        ]
+      },
+      "other_requirements": {
+        "database_requirements": [
+          {
+            "requirement_id": "DB-001",
+            "description": "The database shall store user accounts, task data, payment transactions, and audit logs",
+            "entities": [
+              "Session",
+              "AnswerSet",
+              "SRSArtifact"
+            ],
+            "retention_policy": "Policy-based retention",
+            "backup_policy": "Scheduled backups"
+          },
+          {
+            "requirement_id": "DB-002",
+            "description": "Data retention policies shall maintain task history for at least 2 years",
+            "entities": [
+              "Session",
+              "AnswerSet",
+              "SRSArtifact"
+            ],
+            "retention_policy": "Policy-based retention",
+            "backup_policy": "Scheduled backups"
+          },
+          {
+            "requirement_id": "DB-003",
+            "description": "Regular database backups shall be performed with point-in-time recovery capability",
+            "entities": [
+              "Session",
+              "AnswerSet",
+              "SRSArtifact"
+            ],
+            "retention_policy": "Policy-based retention",
+            "backup_policy": "Scheduled backups"
+          }
+        ],
+        "internationalization_requirements": [
+          {
+            "requirement_id": "I18N-001",
+            "description": "The product should support future localization without changing the API contract.",
+            "supported_languages": [
+              "en"
+            ],
+            "locale_rules": [
+              "ISO date formatting for API payloads"
+            ]
+          }
+        ],
+        "legal_requirements": [
+          {
+            "requirement_id": "LEGAL-001",
+            "description": "The system shall comply with general data protection principles for user information",
+            "jurisdiction": "Project-dependent",
+            "reference": "Business and regulatory policy"
+          },
+          {
+            "requirement_id": "LEGAL-002",
+            "description": "Payment processing shall adhere to relevant financial regulations and PCI compliance",
+            "jurisdiction": "Project-dependent",
+            "reference": "Business and regulatory policy"
+          },
+          {
+            "requirement_id": "LEGAL-003",
+            "description": "User data shall be handled in accordance with standard privacy practices",
+            "jurisdiction": "Project-dependent",
+            "reference": "Business and regulatory policy"
+          }
+        ],
+        "reuse_objectives": [
+          {
+            "objective_id": "REUSE-001",
+            "description": "Reuse question planning, validation, and export modules across future agents.",
+            "target_components": [
+              "Question planner",
+              "Validation engine",
+              "Artifact exporter"
+            ]
+          }
+        ],
+        "additional_requirements": [
+          {
+            "requirement_id": "OTH-001",
+            "description": "The application shall be responsive and work on modern web browsers"
+          },
+          {
+            "requirement_id": "OTH-002",
+            "description": "Error messages shall be user-friendly and provide clear guidance"
+          },
+          {
+            "requirement_id": "OTH-003",
+            "description": "The system shall support future scalability beyond initial 100-user capacity"
+          }
+        ]
+      }
+    },
+    "appendices": {
+      "glossary": [
+        {
+          "term": "SRS",
+          "definition": "Software Requirements Specification"
+        },
+        {
+          "term": "NFR",
+          "definition": "Nonfunctional Requirement"
+        }
+      ],
+      "analysis_models": [
+        {
+          "model_id": "AM-001",
+          "model_type": "Interview Coverage Summary",
+          "description": "Summarises AI-driven questions, user answers, and completion coverage for the current SRS.",
+          "reference": "See analyst workspace interview review."
+        },
+        {
+          "model_id": "AM-002",
+          "model_type": "Service Outline",
+          "description": "Summarises service responsibilities and handoff boundaries for the current build phase.",
+          "reference": "See risk and stack review."
+        }
+      ],
+      "to_be_determined_list": []
+    },
+    "services": [
+      {
+        "service_name": "Web Application Service",
+        "port": 8200,
+        "summary": "Frontend web application providing user interface for task management operations",
+        "endpoints": []
+      },
+      {
+        "service_name": "API Gateway Service",
+        "port": 8201,
+        "summary": "Backend API service handling business logic, authentication, and data processing",
+        "endpoints": []
+      },
+      {
+        "service_name": "Database Service",
+        "port": 8202,
+        "summary": "Persistent data storage for users, tasks, payments, and system data",
+        "endpoints": []
+      },
+      {
+        "service_name": "Notification Service",
+        "port": 8203,
+        "summary": "Handles due date notifications and reminder generation for tasks",
+        "endpoints": []
+      },
+      {
+        "service_name": "Payment Integration Service",
+        "port": 8204,
+        "summary": "Manages integration with external payment processing systems",
+        "endpoints": []
+      }
+    ],
+    "revision_history": [
+      {
+        "revision_id": "REV-001",
+        "name": "Agent 1 SRS API",
+        "date": "2026-04-24",
+        "reason_for_changes": "Initial generated draft",
+        "version": "1.0"
+      }
+    ],
+    "generated_stack_recommendation": {
+      "frontend": "Next.js 15 + Tailwind CSS",
+      "api": "FastAPI REST API",
+      "ai_orchestrator": "Python AI worker with LangGraph-compatible orchestration",
+      "database": "PostgreSQL",
+      "storage": "S3-compatible object storage",
+      "deployment": "Docker Compose locally, ECS or Kubernetes in production"
+    },
+    "analyst_workspace": {
+      "analysis_summary": "This Software Requirements Specification defines the requirements for a web-based task management application designed for business owners and administrators. The system will enable users to create, delete, and retrieve tasks with email/password authentication, task due notifications, and payment integration capabilities. The application targets under 100 users initially and focuses on core task management functionality with a clean, responsive web interface.",
+      "planner": {
+        "provider": "ollama",
+        "model": "deepseek-v3.1:671b-cloud",
+        "orchestrator": "langgraph"
+      },
+      "coverage": {
+        "total_questions": 8,
+        "answered_questions": 8,
+        "open_questions": 0,
+        "completion_percent": 100
+      },
+      "interview_questions": [
+        {
+          "key": "target_users",
+          "section": "users",
+          "question": "Who will be using this app most often?",
+          "input_type": "multiselect",
+          "answered": true,
+          "answer": [
+            "Business owners or admins"
+          ],
+          "answer_text": "Business owners or admins"
+        },
+        {
+          "key": "core_features",
+          "section": "features",
+          "question": "What are the most important things people should be able to do in the first version?",
+          "input_type": "textarea",
+          "answered": true,
+          "answer": "create task.delete.retrive",
+          "answer_text": "create task.delete.retrive"
+        },
+        {
+          "key": "platforms",
+          "section": "interfaces",
+          "question": "Where do you want people to use this app first?",
+          "input_type": "multiselect",
+          "answered": true,
+          "answer": [
+            "Web browser"
+          ],
+          "answer_text": "Web browser"
+        },
+        {
+          "key": "auth_method",
+          "section": "accounts",
+          "question": "How should users sign in to access their tasks?",
+          "input_type": "select",
+          "answered": true,
+          "answer": "Email and password",
+          "answer_text": "Email and password"
+        },
+        {
+          "key": "reports_and_notifications",
+          "section": "operations",
+          "question": "What kind of reminders or updates should the app send to users?",
+          "input_type": "textarea",
+          "answered": true,
+          "answer": "task due app",
+          "answer_text": "task due app"
+        },
+        {
+          "key": "compliance",
+          "section": "privacy",
+          "question": "Are there any privacy or data protection rules we need to follow?",
+          "input_type": "multiselect",
+          "answered": true,
+          "answer": [
+            "No special rules"
+          ],
+          "answer_text": "No special rules"
+        },
+        {
+          "key": "expected_scale",
+          "section": "technical",
+          "question": "About how many users do you expect to have when you launch?",
+          "input_type": "select",
+          "answered": true,
+          "answer": "Under 100",
+          "answer_text": "Under 100"
+        },
+        {
+          "key": "integrations",
+          "section": "integrations",
+          "question": "Does it need to connect with any other tools or services?",
+          "input_type": "textarea",
+          "answered": true,
+          "answer": "payemtns",
+          "answer_text": "payemtns"
+        }
+      ],
+      "open_items": [],
+      "template_standard": "IEEE SRS",
+      "template_document_type": "Software Requirements Specification",
+      "generator": {
+        "provider": "ollama",
+        "model": "deepseek-v3.1:671b-cloud",
+        "used_ai_generation": true
+      },
+      "stack_summary": {
+        "frontend": "Next.js 15 + Tailwind CSS",
+        "api": "FastAPI REST API",
+        "ai_orchestrator": "Python AI worker with LangGraph-compatible orchestration",
+        "database": "PostgreSQL",
+        "storage": "S3-compatible object storage",
+        "deployment": "Docker Compose locally, ECS or Kubernetes in production"
+      },
+      "expected_scale": "Under 100",
+      "integrations": [
+        "payemtns"
+      ],
+      "reports_and_notifications": [
+        "task due app"
+      ],
+      "compliance_focus": [
+        "No special rules"
+      ]
+    },
+    "diagram_previews": []
+  },
+  "validation": {
+    "status": "ready",
+    "completeness_score": 100,
+    "issues": [],
+    "summary": "The SRS is ready for review and export."
+  },
+  "recommended_stack": {
+    "frontend": "Next.js 15 + Tailwind CSS",
+    "api": "FastAPI REST API",
+    "ai_orchestrator": "Python AI worker with LangGraph-compatible orchestration",
+    "database": "PostgreSQL",
+    "storage": "S3-compatible object storage",
+    "deployment": "Docker Compose locally, ECS or Kubernetes in production"
+  },
+  "diagram_previews": [],
+  "artifacts": {
+    "json": null,
+    "pdf": null
+  }
+}

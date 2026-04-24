@@ -1,0 +1,944 @@
+{
+  "session_id": "35440a62-6d3a-4812-97d0-3f50ed7e6553",
+  "status": "awaiting_answers",
+  "project_name": "Untitled App",
+  "audience": "General users",
+  "idea": "",
+  "uploads": [
+    {
+      "asset_id": "7196f521-8717-4dfd-8222-8a1d06db42dc",
+      "filename": "gif.gif",
+      "kind": "image",
+      "summary": "Uploaded image 'gif.gif' (512x384).",
+      "excerpt": "Image dimensions: 512x384"
+    }
+  ],
+  "messages": [
+    {
+      "role": "agent",
+      "content": "Let's begin our IEEE-style requirements gathering by exploring your app's core purpose. No technical knowledge is needed\u2014just share your vision for the project.",
+      "created_at": "2026-04-24T14:07:15.346266+00:00"
+    }
+  ],
+  "answers": {},
+  "analysis_summary": "We're starting with an untitled app idea and an uploaded image, but need to understand the core purpose, users, and functionality to build a complete requirements specification.",
+  "question_plan": {
+    "summary": "We're starting with an untitled app idea and an uploaded image, but need to understand the core purpose, users, and functionality to build a complete requirements specification.",
+    "known": {},
+    "questions": [
+      {
+        "key": "domain",
+        "section": "basics",
+        "question": "Which area is this product closest to?",
+        "inputType": "select",
+        "placeholder": "",
+        "options": [
+          "Healthcare",
+          "Education",
+          "E-Commerce",
+          "Finance",
+          "Travel",
+          "Task Management",
+          "General"
+        ]
+      },
+      {
+        "key": "target_users",
+        "section": "users",
+        "question": "Who will use this product most often?",
+        "inputType": "multiselect",
+        "placeholder": "",
+        "options": [
+          "Customers",
+          "Business owners or admins",
+          "Staff members",
+          "Managers",
+          "Students",
+          "Teachers or trainers",
+          "General public",
+          "Internal company team"
+        ]
+      },
+      {
+        "key": "core_features",
+        "section": "features",
+        "question": "What should people be able to do in the first version?",
+        "inputType": "multiselect",
+        "placeholder": "",
+        "options": [
+          "Dashboard and overview",
+          "Create and manage records",
+          "Search and filters",
+          "File upload",
+          "Notifications and reminders",
+          "Reports and exports",
+          "Approvals and workflows",
+          "User accounts and roles",
+          "Chat or comments",
+          "Payments or billing",
+          "Not sure yet"
+        ]
+      },
+      {
+        "key": "platforms",
+        "section": "interfaces",
+        "question": "Where will people use it first?",
+        "inputType": "multiselect",
+        "placeholder": "",
+        "options": [
+          "Web browser",
+          "Mobile app",
+          "Desktop app",
+          "Tablet app",
+          "Internal office system",
+          "Not sure yet"
+        ]
+      },
+      {
+        "key": "auth_method",
+        "section": "accounts",
+        "question": "How should people get into the system?",
+        "inputType": "select",
+        "placeholder": "",
+        "options": [
+          "Email and password",
+          "Google or social sign-in",
+          "Company login",
+          "No sign-in needed",
+          "Not sure yet"
+        ]
+      },
+      {
+        "key": "integrations",
+        "section": "integrations",
+        "question": "Does it need to connect with any other tools or services?",
+        "inputType": "multiselect",
+        "placeholder": "",
+        "options": [
+          "Email service",
+          "SMS or WhatsApp",
+          "Calendar",
+          "Payment gateway",
+          "Cloud storage",
+          "ERP or internal system",
+          "CRM",
+          "Maps or location service",
+          "No integrations yet",
+          "Not sure yet"
+        ]
+      },
+      {
+        "key": "reports_and_notifications",
+        "section": "operations",
+        "question": "What updates, reminders, reports, or alerts should it send?",
+        "inputType": "multiselect",
+        "placeholder": "",
+        "options": [
+          "In-app notifications",
+          "Email updates",
+          "SMS or WhatsApp alerts",
+          "Daily reminders",
+          "Weekly summary reports",
+          "Admin alerts",
+          "PDF export",
+          "Excel or CSV export",
+          "No reports or alerts yet",
+          "Not sure yet"
+        ]
+      },
+      {
+        "key": "compliance",
+        "section": "privacy",
+        "question": "Are there any privacy, legal, or safety rules this product must follow?",
+        "inputType": "multiselect",
+        "placeholder": "",
+        "options": [
+          "No special rules",
+          "Personal or private data",
+          "Health or medical data",
+          "Payment or billing data",
+          "School or student data",
+          "Role-based access needed",
+          "Audit trail needed",
+          "Not sure yet"
+        ]
+      },
+      {
+        "key": "expected_scale",
+        "section": "technical",
+        "question": "About how many people may use it when you launch?",
+        "inputType": "select",
+        "placeholder": "",
+        "options": [
+          "Under 100",
+          "100 to 1,000",
+          "1,000 to 10,000",
+          "More than 10,000",
+          "Not sure yet"
+        ]
+      }
+    ],
+    "reference_examples": [],
+    "planner": {
+      "provider": "ollama",
+      "model": "deepseek-v3.1:671b-cloud",
+      "orchestrator": "langgraph"
+    },
+    "created_at": "2026-04-24T14:06:55.435973+00:00"
+  },
+  "draft_srs": {
+    "document_type": "Software Requirements Specification",
+    "standard": "IEEE SRS",
+    "metadata": {
+      "project_name": "Untitled App",
+      "project_id": "SRS-UNTITLED-APP",
+      "domain": "General",
+      "application_type": "Web browser",
+      "version": "1.0",
+      "status": "draft",
+      "author": "Agent 1 SRS API",
+      "organization": "AgentForge Studio",
+      "date_created": "2026-04-24",
+      "last_updated": "2026-04-24",
+      "language": "en"
+    },
+    "sections": {
+      "introduction": {
+        "purpose": "This document specifies the functional and non-functional requirements for the Untitled App, a web-based platform designed to support multimodal project intake and automated SRS generation.",
+        "product_scope": {
+          "summary": "The application enables users to submit project ideas through multiple input modalities, participate in guided interviews to refine requirements, and generate IEEE-compliant SRS documents with export functionality.",
+          "business_objectives": [
+            "Streamline project requirement gathering",
+            "Automate SRS document generation",
+            "Support multiple input modalities for flexibility"
+          ],
+          "benefits": [
+            "Reduces manual documentation effort",
+            "Improves requirement consistency",
+            "Accelerates project initiation"
+          ],
+          "goals": [
+            "Deliver a fully functional web application",
+            "Support JSON and PDF export formats",
+            "Maintain under 2-second response times for core functions"
+          ]
+        }
+      },
+      "overall_description": {
+        "product_perspective": {
+          "system_context": "The application operates as a web-based service with a browser interface, REST API backend, persistent storage, and AI-powered interview orchestration.",
+          "product_origin": "New system",
+          "related_systems": [
+            {
+              "name": "External Storage Service",
+              "relationship": "Integration",
+              "interface_summary": "Integration for secure file storage and retrieval of uploaded materials"
+            }
+          ],
+          "context_diagram_reference": "Diagram generation is deferred. Review the analyst workspace and service breakdown for the current phase."
+        },
+        "product_functions": [
+          {
+            "function_id": "PF-001",
+            "name": "Multimodal Project Intake",
+            "description": "Accepts project inputs through text, file uploads, and optional voice recordings"
+          }
+        ],
+        "user_classes_and_characteristics": [
+          {
+            "user_class_id": "UC-001",
+            "user_class_name": "General Users",
+            "description": "Primary users who initiate projects and complete guided interviews",
+            "technical_expertise": "Basic digital literacy",
+            "security_or_privilege_level": "Role-based",
+            "education_or_experience": "Basic digital literacy",
+            "frequency_of_use": "Daily",
+            "importance_rank": 1,
+            "notes": ""
+          }
+        ]
+      },
+      "external_interface_requirements": {
+        "user_interfaces": [
+          {
+            "ui_id": "UI-001",
+            "name": "Project Intake Interface",
+            "description": "Web form supporting text input, file uploads, and voice recording capabilities",
+            "input_elements": [
+              "AI-guided input"
+            ],
+            "output_elements": [
+              "Structured response"
+            ],
+            "layout_constraints": [
+              "Responsive layout"
+            ],
+            "accessibility_requirements": [
+              "Keyboard support"
+            ],
+            "error_message_standards": [
+              "Human-readable validation"
+            ],
+            "design_reference": "Agent 1 UI"
+          }
+        ],
+        "software_interfaces": [
+          {
+            "software_interface_id": "SI-001",
+            "component_name": "REST API",
+            "component_version": "Current stable",
+            "description": "JSON-based API for all application functionality including session management and artifact generation",
+            "incoming_data_items": [
+              "Request payload"
+            ],
+            "outgoing_data_items": [
+              "Response payload"
+            ],
+            "services_needed": [
+              "Authentication"
+            ],
+            "communication_method": "REST or webhook",
+            "shared_data": [
+              "Project metadata"
+            ],
+            "implementation_constraints": [
+              "Use secure transport"
+            ]
+          }
+        ],
+        "hardware_interfaces": [],
+        "communications_interfaces": [
+          {
+            "communication_interface_id": "CI-001",
+            "name": "Browser to API",
+            "description": "Interactive application traffic.",
+            "protocols": [
+              "HTTPS"
+            ],
+            "message_format": "JSON and multipart form data",
+            "security_or_encryption": "TLS 1.2+",
+            "data_transfer_rate": "Interactive",
+            "synchronization_mechanism": "Request-response"
+          },
+          {
+            "communication_interface_id": "CI-002",
+            "name": "Artifact delivery",
+            "description": "Downloads JSON and PDF artifacts.",
+            "protocols": [
+              "HTTPS"
+            ],
+            "message_format": "JSON and PDF",
+            "security_or_encryption": "TLS 1.2+",
+            "data_transfer_rate": "On demand",
+            "synchronization_mechanism": "Direct download"
+          }
+        ]
+      },
+      "system_features": [
+        {
+          "feature_id": "FEAT-001",
+          "feature_name": "Multimodal Intake Processing",
+          "description_and_priority": {
+            "description": "Handles multiple input types including text, files, and voice for comprehensive project initiation",
+            "priority": "High",
+            "benefit_score": 10,
+            "penalty_score": 7,
+            "cost_score": 5,
+            "risk_score": 4
+          },
+          "stimulus_response_sequences": [
+            {
+              "sequence_id": "SRSQ-001",
+              "stimulus": "User starts multimodal intake processing",
+              "preconditions": [
+                "An active session exists."
+              ],
+              "system_response": "The system processes the request and shows a clear status update.",
+              "postconditions": [
+                "The updated result is available for review."
+              ]
+            }
+          ],
+          "functional_requirements": [
+            {
+              "requirement_id": "REQ-011",
+              "title": "Input Validation",
+              "description": "System shall validate all input types according to predefined rules before processing",
+              "actor": "General User",
+              "trigger": "User initiates the workflow",
+              "inputs": [
+                {
+                  "name": "payload",
+                  "type": "json",
+                  "required": true,
+                  "validation_rules": [
+                    "Validate required fields"
+                  ]
+                }
+              ],
+              "processing_logic": [
+                "Validate input",
+                "Persist state",
+                "Return clear status"
+              ],
+              "outputs": [
+                {
+                  "name": "result",
+                  "type": "json",
+                  "description": "Structured action result"
+                }
+              ],
+              "business_rules_applied": [
+                "BR-001"
+              ],
+              "error_conditions": [
+                {
+                  "condition": "Invalid input",
+                  "system_behavior": "Show a validation message"
+                }
+              ],
+              "acceptance_criteria": [
+                "Invalid inputs are rejected with clear error messages",
+                "Valid inputs proceed to processing within 2 seconds"
+              ],
+              "priority": "High",
+              "status": "draft",
+              "traceability": {
+                "linked_user_class_ids": [
+                  "UC-001"
+                ],
+                "linked_interface_ids": [
+                  "UI-001"
+                ],
+                "linked_test_case_ids": [
+                  "TC-001-01"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "other_nonfunctional_requirements": {
+        "performance_requirements": [
+          {
+            "requirement_id": "NFR-PERF-001",
+            "description": "Page loads and API responses must complete within 2 seconds under normal load conditions",
+            "rationale": "Supports a responsive product experience.",
+            "measurement_method": "Monitoring and tracing",
+            "target_metric": "Service performance",
+            "target_value": "Defined during implementation",
+            "conditions": "Normal operating conditions"
+          }
+        ],
+        "safety_requirements": [
+          {
+            "requirement_id": "NFR-SAFE-001",
+            "description": "The system shall prevent accidental loss of active project work.",
+            "hazard": "Loss of project inputs or artifacts",
+            "safeguards": [
+              "Persist session state",
+              "Confirm destructive actions"
+            ],
+            "prevented_actions": [
+              "Silent discard of work"
+            ],
+            "compliance_reference": "Internal product policy"
+          }
+        ],
+        "security_requirements": [
+          {
+            "requirement_id": "NFR-SEC-001",
+            "description": "All data transmissions must use TLS 1.2+ encryption",
+            "authentication_requirements": [
+              "Role-based authentication"
+            ],
+            "authorization_requirements": [
+              "Role-based access"
+            ],
+            "data_protection_requirements": [
+              "TLS in transit",
+              "Encrypted storage"
+            ],
+            "privacy_requirements": [
+              "Business and user data protection"
+            ],
+            "compliance_reference": "Project-dependent",
+            "verification_method": "Security review and tests"
+          },
+          {
+            "requirement_id": "NFR-SEC-002",
+            "description": "Role-based access control for project data",
+            "authentication_requirements": [
+              "Role-based authentication"
+            ],
+            "authorization_requirements": [
+              "Role-based access"
+            ],
+            "data_protection_requirements": [
+              "TLS in transit",
+              "Encrypted storage"
+            ],
+            "privacy_requirements": [
+              "Business and user data protection"
+            ],
+            "compliance_reference": "Project-dependent",
+            "verification_method": "Security review and tests"
+          },
+          {
+            "requirement_id": "NFR-SEC-003",
+            "description": "Encrypted storage for sensitive information",
+            "authentication_requirements": [
+              "Role-based authentication"
+            ],
+            "authorization_requirements": [
+              "Role-based access"
+            ],
+            "data_protection_requirements": [
+              "TLS in transit",
+              "Encrypted storage"
+            ],
+            "privacy_requirements": [
+              "Business and user data protection"
+            ],
+            "compliance_reference": "Project-dependent",
+            "verification_method": "Security review and tests"
+          }
+        ],
+        "software_quality_attributes": [
+          {
+            "attribute_id": "QA-001",
+            "attribute_name": "Usability",
+            "description": "Non-technical users should complete the intake and answer flow without training.",
+            "measurement": "Task completion rate",
+            "target_value": ">= 90%",
+            "priority": "High"
+          }
+        ],
+        "business_rules": [
+          {
+            "rule_id": "BR-001",
+            "description": "SRS documents only marked complete when all required sections contain validated content",
+            "applicable_roles": [
+              "Administrator",
+              "Primary User"
+            ],
+            "conditions": [
+              "Project workflow is active"
+            ],
+            "enforcement_requirements": [
+              "REQ-011"
+            ]
+          }
+        ]
+      },
+      "other_requirements": {
+        "database_requirements": [
+          {
+            "requirement_id": "DB-001",
+            "description": "Support for session persistence, answer storage, and artifact metadata",
+            "entities": [
+              "Session",
+              "AnswerSet",
+              "SRSArtifact"
+            ],
+            "retention_policy": "Policy-based retention",
+            "backup_policy": "Scheduled backups"
+          },
+          {
+            "requirement_id": "DB-002",
+            "description": "Daily backups with point-in-time recovery capabilities",
+            "entities": [
+              "Session",
+              "AnswerSet",
+              "SRSArtifact"
+            ],
+            "retention_policy": "Policy-based retention",
+            "backup_policy": "Scheduled backups"
+          }
+        ],
+        "internationalization_requirements": [
+          {
+            "requirement_id": "I18N-001",
+            "description": "The product should support future localization without changing the API contract.",
+            "supported_languages": [
+              "en"
+            ],
+            "locale_rules": [
+              "ISO date formatting for API payloads"
+            ]
+          }
+        ],
+        "legal_requirements": [
+          {
+            "requirement_id": "LEGAL-001",
+            "description": "Clear data usage policies for uploaded materials",
+            "jurisdiction": "Project-dependent",
+            "reference": "Business and regulatory policy"
+          },
+          {
+            "requirement_id": "LEGAL-002",
+            "description": "Compliance with relevant data protection regulations",
+            "jurisdiction": "Project-dependent",
+            "reference": "Business and regulatory policy"
+          }
+        ],
+        "reuse_objectives": [
+          {
+            "objective_id": "REUSE-001",
+            "description": "Reuse question planning, validation, and export modules across future agents.",
+            "target_components": [
+              "Question planner",
+              "Validation engine",
+              "Artifact exporter"
+            ]
+          }
+        ],
+        "additional_requirements": [
+          {
+            "requirement_id": "OTH-001",
+            "description": "Support for future localization without API changes"
+          },
+          {
+            "requirement_id": "OTH-002",
+            "description": "Modular architecture for component reuse across future agents"
+          }
+        ]
+      }
+    },
+    "appendices": {
+      "glossary": [
+        {
+          "term": "SRS",
+          "definition": "Software Requirements Specification"
+        },
+        {
+          "term": "NFR",
+          "definition": "Nonfunctional Requirement"
+        }
+      ],
+      "analysis_models": [
+        {
+          "model_id": "AM-001",
+          "model_type": "Interview Coverage Summary",
+          "description": "Summarises AI-driven questions, user answers, and completion coverage for the current SRS.",
+          "reference": "See analyst workspace interview review."
+        },
+        {
+          "model_id": "AM-002",
+          "model_type": "Service Outline",
+          "description": "Summarises service responsibilities and handoff boundaries for the current build phase.",
+          "reference": "See risk and stack review."
+        }
+      ],
+      "to_be_determined_list": [
+        {
+          "tbd_id": "TBD-002",
+          "description": "Clarify target users.",
+          "owner": "Product owner",
+          "status": "open",
+          "target_resolution_date": "2026-05-01"
+        },
+        {
+          "tbd_id": "TBD-004",
+          "description": "Clarify platforms.",
+          "owner": "Product owner",
+          "status": "open",
+          "target_resolution_date": "2026-05-01"
+        },
+        {
+          "tbd_id": "TBD-005",
+          "description": "Clarify auth method.",
+          "owner": "Product owner",
+          "status": "open",
+          "target_resolution_date": "2026-05-01"
+        },
+        {
+          "tbd_id": "TBD-006",
+          "description": "Clarify integrations.",
+          "owner": "Product owner",
+          "status": "open",
+          "target_resolution_date": "2026-05-01"
+        },
+        {
+          "tbd_id": "TBD-007",
+          "description": "Clarify reports and notifications.",
+          "owner": "Product owner",
+          "status": "open",
+          "target_resolution_date": "2026-05-01"
+        },
+        {
+          "tbd_id": "TBD-008",
+          "description": "Clarify compliance.",
+          "owner": "Product owner",
+          "status": "open",
+          "target_resolution_date": "2026-05-01"
+        },
+        {
+          "tbd_id": "TBD-009",
+          "description": "Clarify expected scale.",
+          "owner": "Product owner",
+          "status": "open",
+          "target_resolution_date": "2026-05-01"
+        }
+      ]
+    },
+    "services": [
+      {
+        "service_name": "API Gateway",
+        "port": 8200,
+        "summary": "Routes frontend requests to appropriate backend services and handles authentication",
+        "endpoints": []
+      },
+      {
+        "service_name": "Project Service",
+        "port": 8201,
+        "summary": "Manages session state, answer storage, and document generation workflows",
+        "endpoints": []
+      },
+      {
+        "service_name": "Artifact Service",
+        "port": 8202,
+        "summary": "Handles generation and delivery of JSON and PDF export artifacts",
+        "endpoints": []
+      }
+    ],
+    "revision_history": [
+      {
+        "revision_id": "REV-001",
+        "name": "Agent 1 SRS API",
+        "date": "2026-04-24",
+        "reason_for_changes": "Initial generated draft",
+        "version": "0.1"
+      }
+    ],
+    "generated_stack_recommendation": {
+      "frontend": "Next.js 15 + Tailwind CSS",
+      "api": "FastAPI REST API",
+      "ai_orchestrator": "Python AI worker with LangGraph-compatible orchestration",
+      "database": "PostgreSQL",
+      "storage": "S3-compatible object storage",
+      "deployment": "Docker Compose locally, ECS or Kubernetes in production"
+    },
+    "analyst_workspace": {
+      "analysis_summary": "This Software Requirements Specification defines the requirements for a web-based application that facilitates multimodal project intake through text, file uploads, and optional voice input. The system supports guided interview workflows, generates structured SRS documents, and provides export capabilities for JSON and PDF artifacts. The application targets general users with basic digital literacy and focuses on usability, data protection, and responsive performance.",
+      "planner": {
+        "provider": "ollama",
+        "model": "deepseek-v3.1:671b-cloud",
+        "orchestrator": "langgraph"
+      },
+      "coverage": {
+        "total_questions": 9,
+        "answered_questions": 0,
+        "open_questions": 9,
+        "completion_percent": 0
+      },
+      "interview_questions": [
+        {
+          "key": "domain",
+          "section": "basics",
+          "question": "Which area is this product closest to?",
+          "input_type": "select",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "target_users",
+          "section": "users",
+          "question": "Who will use this product most often?",
+          "input_type": "multiselect",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "core_features",
+          "section": "features",
+          "question": "What should people be able to do in the first version?",
+          "input_type": "multiselect",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "platforms",
+          "section": "interfaces",
+          "question": "Where will people use it first?",
+          "input_type": "multiselect",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "auth_method",
+          "section": "accounts",
+          "question": "How should people get into the system?",
+          "input_type": "select",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "integrations",
+          "section": "integrations",
+          "question": "Does it need to connect with any other tools or services?",
+          "input_type": "multiselect",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "reports_and_notifications",
+          "section": "operations",
+          "question": "What updates, reminders, reports, or alerts should it send?",
+          "input_type": "multiselect",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "compliance",
+          "section": "privacy",
+          "question": "Are there any privacy, legal, or safety rules this product must follow?",
+          "input_type": "multiselect",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "expected_scale",
+          "section": "technical",
+          "question": "About how many people may use it when you launch?",
+          "input_type": "select",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        }
+      ],
+      "open_items": [
+        {
+          "key": "domain",
+          "section": "basics",
+          "question": "Which area is this product closest to?",
+          "input_type": "select",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "target_users",
+          "section": "users",
+          "question": "Who will use this product most often?",
+          "input_type": "multiselect",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "core_features",
+          "section": "features",
+          "question": "What should people be able to do in the first version?",
+          "input_type": "multiselect",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "platforms",
+          "section": "interfaces",
+          "question": "Where will people use it first?",
+          "input_type": "multiselect",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "auth_method",
+          "section": "accounts",
+          "question": "How should people get into the system?",
+          "input_type": "select",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "integrations",
+          "section": "integrations",
+          "question": "Does it need to connect with any other tools or services?",
+          "input_type": "multiselect",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "reports_and_notifications",
+          "section": "operations",
+          "question": "What updates, reminders, reports, or alerts should it send?",
+          "input_type": "multiselect",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "compliance",
+          "section": "privacy",
+          "question": "Are there any privacy, legal, or safety rules this product must follow?",
+          "input_type": "multiselect",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        },
+        {
+          "key": "expected_scale",
+          "section": "technical",
+          "question": "About how many people may use it when you launch?",
+          "input_type": "select",
+          "answered": false,
+          "answer": null,
+          "answer_text": ""
+        }
+      ],
+      "template_standard": "IEEE SRS",
+      "template_document_type": "Software Requirements Specification",
+      "generator": {
+        "provider": "ollama",
+        "model": "deepseek-v3.1:671b-cloud",
+        "used_ai_generation": true
+      },
+      "stack_summary": {
+        "frontend": "Next.js 15 + Tailwind CSS",
+        "api": "FastAPI REST API",
+        "ai_orchestrator": "Python AI worker with LangGraph-compatible orchestration",
+        "database": "PostgreSQL",
+        "storage": "S3-compatible object storage",
+        "deployment": "Docker Compose locally, ECS or Kubernetes in production"
+      },
+      "expected_scale": "To be confirmed",
+      "integrations": [
+        "To be confirmed"
+      ],
+      "reports_and_notifications": [
+        "To be confirmed"
+      ],
+      "compliance_focus": [
+        "To be confirmed"
+      ]
+    },
+    "diagram_previews": []
+  },
+  "final_srs": null,
+  "validation": null,
+  "recommended_stack": {
+    "frontend": "Next.js 15 + Tailwind CSS",
+    "api": "FastAPI REST API",
+    "ai_orchestrator": "Python AI worker with LangGraph-compatible orchestration",
+    "database": "PostgreSQL",
+    "storage": "S3-compatible object storage",
+    "deployment": "Docker Compose locally, ECS or Kubernetes in production"
+  },
+  "diagram_previews": [],
+  "artifacts": {
+    "json": null,
+    "pdf": null
+  }
+}
