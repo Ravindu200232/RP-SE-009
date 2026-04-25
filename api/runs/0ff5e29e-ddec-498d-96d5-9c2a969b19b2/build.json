@@ -1,0 +1,21 @@
+{
+  "run_id": "0ff5e29e-ddec-498d-96d5-9c2a969b19b2",
+  "files": [
+    {
+      "path": "frontend/src/pages/Dashboard.jsx",
+      "content": "import React from 'react';\n\nexport default function Dashboard() {\n  return (\n    <main>\n      <h1>TaskFlow</h1>\n      <p>Your generated app starts here.</p>\n    </main>\n  );\n}\n"
+    },
+    {
+      "path": "frontend/src/components/Header.jsx",
+      "content": "export function Header(){ return <header>Header</header>; }"
+    },
+    {
+      "path": "backend/app/main.py",
+      "content": "from fastapi import FastAPI\n\napp = FastAPI()\n\n@app.get('/health')\ndef health():\n    return {'ok': True}\n"
+    },
+    {
+      "path": "backend/app/routes/tasks.py",
+      "content": "def list_tasks():\n    return []\n"
+    }
+  ]
+}
