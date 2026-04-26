@@ -45,6 +45,8 @@ export default function JobPage() {
   const jobId = params?.jobId ?? "";
   const [payload, setPayload] = useState<JobPayload | null>(null);
   const [error, setError] = useState("");
+  const [awaitingJob, setAwaitingJob] = useState(false);
+  const [loadAttempts, setLoadAttempts] = useState(0);
   const [expandedCheckpoint, setExpandedCheckpoint] = useState("detect");
   const [artifactQuery, setArtifactQuery] = useState("");
   const [copiedArtifacts, setCopiedArtifacts] = useState(false);
@@ -57,6 +59,7 @@ export default function JobPage() {
     let active = true;
 
     async function load() {
+      setLoadAttempts((count) => count + 1);
       try {
         const response = await fetch(`${apiBase}/jobs/${jobId}`, { cache: "no-store" });
         const data = await response.json();
@@ -64,11 +67,20 @@ export default function JobPage() {
           throw new Error(data.detail ?? "Failed to load job.");
         }
         if (active) {
+          setAwaitingJob(false);
+          setError("");
           setPayload(data);
         }
       } catch (caught) {
         const message = caught instanceof Error ? caught.message : "Failed to load job.";
         if (active) {
+          if (message.toLowerCase().includes("job not found")) {
+            setAwaitingJob(true);
+            setError("");
+            return;
+          }
+
+          setAwaitingJob(false);
           setError(message);
         }
       }
@@ -202,6 +214,24 @@ export default function JobPage() {
       },
     ];
   }, [payload, validationSummary.failed, validationSummary.passed]);
+
+  const logSummary = useMemo(() => {
+    if (!payload) {
+      return {
+        totalChecks: 0,
+        passedChecks: 0,
+        failedChecks: 0,
+        completedStages: 0,
+      };
+    }
+
+    return {
+      totalChecks: payload.validation.checks.length,
+      passedChecks: validationSummary.passed,
+      failedChecks: validationSummary.failed,
+      completedStages: timeline.filter((checkpoint) => checkpoint.state === "completed").length,
+    };
+  }, [payload, timeline, validationSummary.failed, validationSummary.passed]);
 
 
   const artifactEntries = useMemo(() => {
@@ -383,15 +413,57 @@ export default function JobPage() {
             <div className="status-banner">
               <div>
                 <p className="status-heading">Execution log</p>
-                <p className="status-copy">A compact view of the latest checks and repository actions.</p>
+                <p className="status-copy">A refined live trace of checks, delivery events, and push outcomes.</p>
               </div>
               <span className={pushTone}>{pushState}</span>
+            </div>
+
+            <div className="log-header-strip">
+              <div className="log-live-indicator">
+                <span className="status-dot" />
+                <span>Live polling</span>
+              </div>
+              <span className="pill">Poll #{loadAttempts}</span>
+              <span className="pill">Mode {awaitingJob && !payload ? "Queueing" : "Tracing"}</span>
+            </div>
+
+            <div className="log-metrics">
+              <div className="log-metric">
+                <span>Checks</span>
+                <strong>{logSummary.totalChecks}</strong>
+              </div>
+              <div className="log-metric">
+                <span>Passed</span>
+                <strong>{logSummary.passedChecks}</strong>
+              </div>
+              <div className="log-metric">
+                <span>Failed</span>
+                <strong>{logSummary.failedChecks}</strong>
+              </div>
+              <div className="log-metric">
+                <span>Stages</span>
+                <strong>{logSummary.completedStages}/4</strong>
+              </div>
+            </div>
+
+            <div className="log-bands" aria-hidden="true">
+              <span className="log-band log-band-detect" />
+              <span className="log-band log-band-validate" />
+              <span className="log-band log-band-sanitize" />
+              <span className="log-band log-band-push" />
             </div>
 
             {error ? (
               <div className="empty-state" style={{ marginBottom: "1rem" }}>
                 <strong>Unable to load job</strong>
                 <span>{error}</span>
+              </div>
+            ) : null}
+
+            {awaitingJob && !payload && !error ? (
+              <div className="empty-state log-awaiting" style={{ marginBottom: "1rem" }}>
+                <strong>Job is warming up</strong>
+                <span>The job has been submitted and the backend is registering it now. This view will populate automatically.</span>
               </div>
             ) : null}
 
@@ -402,7 +474,7 @@ export default function JobPage() {
                     <span className={`badge ${check.success ? "badge-pass" : "badge-fail"}`}>
                       {check.success ? "PASS" : "FAIL"}
                     </span>
-                    <div className="stacked-copy">
+                    <div className="stacked-copy log-check-copy">
                       <strong>{check.name}</strong>
                       <span>{check.details}</span>
                     </div>

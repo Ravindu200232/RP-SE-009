@@ -54,6 +54,18 @@ type ChatMessage = {
 
 const defaultCommitMessage = "Add packaged deployment output";
 
+const stageTitles: Record<ConversationStage, string> = {
+    loadingInputs: "Discover Inputs",
+    askDocker: "Docker Validation",
+    askGithub: "GitHub Delivery",
+    askRepo: "Repository URL",
+    askBranch: "Branch",
+    askCommit: "Commit Message",
+    confirm: "Final Review",
+    submitting: "Submitting",
+    blocked: "Action Needed",
+};
+
 export default function HomePage() {
     const router = useRouter();
     const conversationLogRef = useRef<HTMLDivElement | null>(null);
@@ -62,7 +74,7 @@ export default function HomePage() {
         {
             id: "welcome",
             role: "assistant",
-            text: "Welcome! I’ve detected  output of Agent 3  and will use the microservice input automatically for packaging.",
+            text: "Welcome! I detected Agent 3 output and will use the microservice input automatically for packaging.",
         },
     ]);
     const [stage, setStage] = useState<ConversationStage>("loadingInputs");
@@ -150,7 +162,20 @@ export default function HomePage() {
             if (alreadyAnnounced) {
                 return previous;
             }
-            return [...previous, { id: `${Date.now()}-${previous.length}`, role: "assistant", text: `Found ${items.length} candidate input packages. I selected the microservice input automatically. Do you want Docker validation enabled for this run?` }];
+            return [
+                ...previous,
+                {
+                    id: `${Date.now()}-${previous.length}`,
+                    role: "assistant",
+                    text: `Found ${items.length} candidate input packages. I selected the microservice input automatically.`,
+                },
+                {
+                    id: `${Date.now()}-${previous.length + 1}`,
+                    role: "assistant",
+                    text: "Do you want Docker validation enabled for this run?",
+                },
+            ];
+
         });
     }
 
@@ -229,11 +254,21 @@ export default function HomePage() {
         setError("");
         emitConversationEvent("submission-start", { selectedInput: selectedInput.display_name });
 
+        const clientJobId =
+            typeof crypto !== "undefined" && "randomUUID" in crypto
+                ? crypto.randomUUID().replaceAll("-", "")
+                : `${Date.now()}${Math.random().toString(16).slice(2)}`;
+
+        addMessage("assistant", `Submission accepted. Opening live job ${clientJobId} now.`);
+        emitConversationEvent("submission-success", { jobId: clientJobId });
+        router.push(`/job/${clientJobId}`);
+
         try {
             const response = await fetch(`${apiBase}/package`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
+                    job_id: clientJobId,
                     source_path: selectedInput.source_path,
                     docker_enabled: dockerEnabled,
                     github_push_enabled: githubEnabled,
@@ -247,16 +282,10 @@ export default function HomePage() {
             if (!response.ok) {
                 throw new Error(payload.detail ?? "Packaging request failed.");
             }
-
-            addMessage("assistant", `Packaging started successfully. Opening job ${payload.job_id}.`);
-            emitConversationEvent("submission-success", { jobId: payload.job_id });
-            router.push(`/job/${payload.job_id}`);
         } catch (caught) {
             const message = caught instanceof Error ? caught.message : "Packaging request failed.";
-            setError(message);
-            addMessage("assistant", `Submission failed: ${message}`);
-            emitConversationEvent("submission-failed", { error: message });
-            setStage("confirm");
+            console.error("Packaging request failed after redirect:", message);
+            emitConversationEvent("submission-failed", { error: message, jobId: clientJobId });
         } finally {
             setSubmitting(false);
         }
@@ -359,6 +388,56 @@ export default function HomePage() {
         return lines;
     }, [selectedInput, dockerEnabled, githubEnabled, githubRepoUrl, githubBranch, commitMessage]);
 
+    const stageProgress = useMemo(() => {
+        if (stage === "loadingInputs") {
+            return 8;
+        }
+        if (stage === "askDocker") {
+            return 25;
+        }
+        if (stage === "askGithub") {
+            return 45;
+        }
+        if (stage === "askRepo" || stage === "askBranch" || stage === "askCommit") {
+            return 64;
+        }
+        if (stage === "confirm") {
+            return 85;
+        }
+        if (stage === "submitting") {
+            return 98;
+        }
+        return 0;
+    }, [stage]);
+
+    const stageHint = useMemo(() => {
+        if (stage === "askDocker") {
+            return "Choose whether to run local Docker checks before publishing artifacts.";
+        }
+        if (stage === "askGithub") {
+            return "Choose whether this run should push packaged output to GitHub.";
+        }
+        if (stage === "askRepo") {
+            return "Paste the destination repository URL where the packaged result should be pushed.";
+        }
+        if (stage === "askBranch") {
+            return "Provide a target branch or send empty to keep main.";
+        }
+        if (stage === "askCommit") {
+            return "Provide a commit message or send empty to use the default message.";
+        }
+        if (stage === "confirm") {
+            return "Review the run summary and submit when everything looks correct.";
+        }
+        if (stage === "submitting") {
+            return "Submitting your packaging request and preparing the live job page.";
+        }
+        if (stage === "blocked") {
+            return "Input discovery is blocked. Refresh discovery to continue.";
+        }
+        return "Preparing your run context automatically.";
+    }, [stage]);
+
     return (
         <main className="page-shell">
             <header className="topbar">
@@ -374,8 +453,8 @@ export default function HomePage() {
                     <span className="chip">
                         <strong>Active mode</strong> Conversational
                     </span>
-                    <span className="chip">Agent 3 source</span>
-                    <span className="chip">GitHub optional</span>
+                    <span className="chip">Source: {selectedInput?.display_name ?? "Detecting input..."}</span>
+                    <span className="chip">GitHub</span>
                 </div>
             </header>
 
@@ -416,6 +495,29 @@ export default function HomePage() {
                 </div>
 
                 <div className="conversation-shell">
+                    <section className="conversation-command-center">
+                        <div className="command-center-head">
+                            <div>
+                                <p className="section-kicker">Live orchestration</p>
+                                <h3>Packaging Copilot</h3>
+                            </div>
+                            <span className="status-pill">{stageTitles[stage]}</span>
+                        </div>
+
+                        <div className="command-center-metrics">
+                            <span className="pill">Progress {stageProgress}%</span>
+                            <span className="pill">Input {selectedInput ? "Auto-selected" : "Pending"}</span>
+                            <span className="pill">Validation {dockerEnabled ? "Enabled" : "Disabled"}</span>
+                            <span className="pill">GitHub {githubEnabled ? "Enabled" : "Skipped"}</span>
+                        </div>
+
+                        <div className="stage-progress-track" aria-hidden="true">
+                            <div className="stage-progress-fill" style={{ width: `${stageProgress}%` }} />
+                        </div>
+
+                        <p className="section-subtitle command-center-hint">{stageHint}</p>
+                    </section>
+
                     <div className="conversation-log" role="log" aria-live="polite" ref={conversationLogRef}>
                         {messages.map((message, index) => (
                             <div
@@ -448,24 +550,32 @@ export default function HomePage() {
 
                     <div className="conversation-actions">
                         {stage === "askDocker" ? (
-                            <div className="button-stack">
-                                <button type="button" className="secondary-button" onClick={() => answerDocker(true)}>
-                                    Yes, enable Docker validation
-                                </button>
-                                <button type="button" className="ghost-button" onClick={() => answerDocker(false)}>
-                                    No, skip Docker validation
-                                </button>
+                            <div className="prompt-card">
+                                <p className="prompt-title">Docker Validation</p>
+                                <p className="prompt-copy">Do you want Docker validation enabled for this run?</p>
+                                <div className="button-stack">
+                                    <button type="button" className="secondary-button" onClick={() => answerDocker(true)}>
+                                        Yes, enable Docker validation
+                                    </button>
+                                    <button type="button" className="ghost-button" onClick={() => answerDocker(false)}>
+                                        No, skip Docker validation
+                                    </button>
+                                </div>
                             </div>
                         ) : null}
 
                         {stage === "askGithub" ? (
-                            <div className="button-stack">
-                                <button type="button" className="secondary-button" onClick={() => answerGithub(true)}>
-                                    Yes, ask for repository and push
-                                </button>
-                                <button type="button" className="ghost-button" onClick={() => answerGithub(false)}>
-                                    No GitHub push
-                                </button>
+                            <div className="prompt-card">
+                                <p className="prompt-title">GitHub Push</p>
+                                <p className="prompt-copy">Do you want to push the packaged output to GitHub?</p>
+                                <div className="button-stack">
+                                    <button type="button" className="secondary-button" onClick={() => answerGithub(true)}>
+                                        Yes, ask for repository and push
+                                    </button>
+                                    <button type="button" className="ghost-button" onClick={() => answerGithub(false)}>
+                                        No GitHub push
+                                    </button>
+                                </div>
                             </div>
                         ) : null}
 
