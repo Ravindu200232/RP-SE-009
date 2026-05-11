@@ -1,0 +1,41 @@
+{
+  "run_id": "8ecd6afd1c0d",
+  "phase": "run.done",
+  "status": "completed",
+  "logs": [
+    "received run request for E:/final_research_agentic/agentapp/agent3-tester/sample-apps",
+    "resolved 4 services to test",
+    "[auth-service] dependencies already installed",
+    "[auth-service] running jest…",
+    "[auth-service] could not parse jest output",
+    "[booking-service] dependencies already installed",
+    "[booking-service] running jest…",
+    "[booking-service] could not parse jest output",
+    "[payment-service] dependencies already installed",
+    "[payment-service] running jest…",
+    "[payment-service] could not parse jest output",
+    "[user-service] dependencies already installed",
+    "[user-service] running jest…",
+    "[user-service] could not parse jest output"
+  ],
+  "discovered": [],
+  "generated": [],
+  "summary": {
+    "services_tested": [
+      "auth-service",
+      "booking-service",
+      "payment-service",
+      "user-service"
+    ],
+    "files": [],
+    "total_tests": 0,
+    "total_passed": 0,
+    "total_failed": 0,
+    "total_skipped": 0,
+    "duration_ms": 6830.713510513306
+  },
+  "error": null,
+  "started_at": 1778248960.94378,
+  "finished_at": 1778248967.7788782,
+  "used_llm": false
+}

@@ -1,0 +1,1375 @@
+{
+  "run_id": "d833c2ac140a",
+  "phase": "generate.done",
+  "status": "completed",
+  "logs": [
+    "received generate request for C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE",
+    "discovered 53 ESM source file(s) in client",
+    "discovered 10 ESM source file(s) in deliver-service",
+    "discovered 7 ESM source file(s) in notification-server",
+    "discovered 8 ESM source file(s) in order-service",
+    "discovered 7 ESM source file(s) in payment-service",
+    "discovered 13 ESM source file(s) in Restaurant-service",
+    "discovered 13 ESM source file(s) in user-service",
+    "analyzed 111 files; total exported functions = 153",
+    "wrote client\\__tests__\\App.test.mjs (17 tests, llm=True)",
+    "wrote client\\__tests__\\bookingitem.test.mjs (5 tests, llm=True)",
+    "wrote client\\__tests__\\footer.test.mjs (6 tests, llm=True)",
+    "wrote client\\__tests__\\header.test.mjs (3 tests, llm=True)",
+    "wrote client\\__tests__\\imageSlider.test.mjs (5 tests, llm=True)",
+    "wrote client\\__tests__\\productCard.test.mjs (5 tests, llm=True)",
+    "wrote client\\__tests__\\skeleton.test.mjs (4 tests, llm=True)",
+    "wrote client\\__tests__\\testing.test.mjs (4 tests, llm=True)",
+    "wrote client\\__tests__\\card.test.mjs (6 tests, llm=True)",
+    "wrote client\\__tests__\\mediaUpload.test.mjs (3 tests, llm=True)",
+    "wrote client\\__tests__\\adminbookingpage.test.mjs (9 tests, llm=True)",
+    "wrote client\\__tests__\\adminInquirypage.test.mjs (7 tests, llm=True)",
+    "wrote client\\__tests__\\adminItemPage.test.mjs (8 tests, llm=True)",
+    "wrote client\\__tests__\\adminPage.test.mjs (5 tests, llm=True)",
+    "wrote client\\__tests__\\adminpakage.test.mjs (7 tests, llm=True)",
+    "wrote client\\__tests__\\adminPayment.test.mjs (4 tests, llm=True)",
+    "wrote client\\__tests__\\adminReviewpage.test.mjs (6 tests, llm=True)",
+    "wrote client\\__tests__\\profile.test.mjs (8 tests, llm=True)",
+    "wrote client\\__tests__\\users.test.mjs (4 tests, llm=True)",
+    "wrote client\\__tests__\\available.jsx.test.mjs (6 tests, llm=True)",
+    "wrote client\\__tests__\\deliveryTrack.test.mjs (9 tests, llm=True)",
+    "wrote client\\__tests__\\driverPage.test.mjs (3 tests, llm=True)",
+    "wrote client\\__tests__\\profile.test.mjs (8 tests, llm=True)",
+    "wrote client\\__tests__\\drregister.test.mjs (8 tests, llm=True)",
+    "wrote client\\__tests__\\bookingConfirmation.test.mjs (6 tests, llm=True)",
+    "wrote client\\__tests__\\bookingpage.test.mjs (4 tests, llm=True)",
+    "wrote client\\__tests__\\contacts.test.mjs (4 tests, llm=True)",
+    "wrote client\\__tests__\\error.test.mjs (4 tests, llm=True)",
+    "wrote client\\__tests__\\home.test.mjs (3 tests, llm=True)",
+    "wrote client\\__tests__\\homePage.test.mjs (10 tests, llm=True)",
+    "wrote client\\__tests__\\item.test.mjs (8 tests, llm=True)",
+    "wrote client\\__tests__\\location.test.mjs (4 tests, llm=True)",
+    "wrote client\\__tests__\\payment.test.mjs (3 tests, llm=True)",
+    "wrote client\\__tests__\\productOverview.test.mjs (3 tests, llm=True)",
+    "wrote client\\__tests__\\profile.test.mjs (5 tests, llm=True)",
+    "wrote client\\__tests__\\restaurant.test.mjs (3 tests, llm=True)",
+    "wrote client\\__tests__\\restaurantDetails.test.mjs (5 tests, llm=True)",
+    "wrote client\\__tests__\\login.test.mjs (6 tests, llm=True)",
+    "wrote client\\__tests__\\register.test.mjs (6 tests, llm=True)",
+    "wrote client\\__tests__\\resregister.test.mjs (6 tests, llm=True)",
+    "wrote client\\__tests__\\addCollection.test.mjs (2 tests, llm=True)",
+    "wrote client\\__tests__\\addResturant.test.mjs (4 tests, llm=True)",
+    "wrote client\\__tests__\\collectionPage.test.mjs (4 tests, llm=True)",
+    "wrote client\\__tests__\\profile.test.mjs (15 tests, llm=True)",
+    "wrote client\\__tests__\\restaurantCreate.test.mjs (6 tests, llm=True)",
+    "wrote client\\__tests__\\restaurantOrder.test.mjs (4 tests, llm=True)",
+    "wrote client\\__tests__\\restaurantPage.test.mjs (11 tests, llm=True)",
+    "wrote client\\__tests__\\restaurantReview.test.mjs (4 tests, llm=True)",
+    "wrote client\\__tests__\\updateCollection.test.mjs (2 tests, llm=True)",
+    "wrote client\\__tests__\\updateRestaurant.test.mjs (8 tests, llm=True)",
+    "wrote client\\__tests__\\users.test.mjs (4 tests, llm=True)",
+    "wrote client\\__tests__\\verifyEmail.test.mjs (6 tests, llm=True)",
+    "wrote deliver-service\\__tests__\\DbConnection.test.mjs (3 tests, llm=True)",
+    "wrote deliver-service\\__tests__\\authController.test.mjs (20 tests, llm=True)",
+    "wrote deliver-service\\__tests__\\deliverController.test.mjs (10 tests, llm=True)",
+    "wrote deliver-service\\__tests__\\driverController.test.mjs (10 tests, llm=True)",
+    "wrote notification-server\\__tests__\\DbConnection.test.mjs (5 tests, llm=True)",
+    "wrote notification-server\\__tests__\\mailTransporter.test.mjs (4 tests, llm=True)",
+    "wrote notification-server\\__tests__\\authController.test.mjs (25 tests, llm=True)",
+    "wrote notification-server\\__tests__\\notificationSender.test.mjs (3 tests, llm=True)",
+    "wrote order-service\\__tests__\\DbConnection.test.mjs (5 tests, llm=True)",
+    "wrote order-service\\__tests__\\authController.test.mjs (20 tests, llm=True)",
+    "wrote order-service\\__tests__\\orderController.test.mjs (16 tests, llm=True)",
+    "wrote payment-service\\__tests__\\DbConnection.test.mjs (3 tests, llm=True)",
+    "wrote payment-service\\__tests__\\authController.test.mjs (20 tests, llm=True)",
+    "wrote payment-service\\__tests__\\paymentController.test.mjs (5 tests, llm=True)",
+    "wrote Restaurant-service\\__tests__\\DbConnection.test.mjs (5 tests, llm=True)",
+    "wrote Restaurant-service\\__tests__\\authController.test.mjs (10 tests, llm=True)",
+    "wrote Restaurant-service\\__tests__\\collectionController.test.mjs (16 tests, llm=True)",
+    "wrote Restaurant-service\\__tests__\\resturantsController.test.mjs (11 tests, llm=True)",
+    "wrote Restaurant-service\\__tests__\\reviewController.test.mjs (12 tests, llm=True)",
+    "wrote user-service\\__tests__\\DbConnection.test.mjs (3 tests, llm=True)",
+    "wrote user-service\\__tests__\\mailTransporter.test.mjs (4 tests, llm=True)",
+    "wrote user-service\\__tests__\\authController.test.mjs (20 tests, llm=True)",
+    "wrote user-service\\__tests__\\InquiryController.test.mjs (12 tests, llm=True)",
+    "wrote user-service\\__tests__\\userController.test.mjs (9 tests, llm=True)"
+  ],
+  "discovered": [
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\App.jsx",
+      "relative": "src/App.jsx",
+      "service": "client",
+      "bytes": 2032
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\main.jsx",
+      "relative": "src/main.jsx",
+      "service": "client",
+      "bytes": 239
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\components\\bookingitem.jsx",
+      "relative": "src/components/bookingitem.jsx",
+      "service": "client",
+      "bytes": 9091
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\components\\footer.jsx",
+      "relative": "src/components/footer.jsx",
+      "service": "client",
+      "bytes": 3062
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\components\\header.jsx",
+      "relative": "src/components/header.jsx",
+      "service": "client",
+      "bytes": 13484
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\components\\imageSlider.jsx",
+      "relative": "src/components/imageSlider.jsx",
+      "service": "client",
+      "bytes": 990
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\components\\productCard.jsx",
+      "relative": "src/components/productCard.jsx",
+      "service": "client",
+      "bytes": 5480
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\components\\skeleton.jsx",
+      "relative": "src/components/skeleton.jsx",
+      "service": "client",
+      "bytes": 593
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\components\\testing.jsx",
+      "relative": "src/components/testing.jsx",
+      "service": "client",
+      "bytes": 663
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\utils\\card.jsx",
+      "relative": "src/utils/card.jsx",
+      "service": "client",
+      "bytes": 1016
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\utils\\mediaUpload.js",
+      "relative": "src/utils/mediaUpload.js",
+      "service": "client",
+      "bytes": 1063
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\admin\\adminbookingpage.jsx",
+      "relative": "src/pages/admin/adminbookingpage.jsx",
+      "service": "client",
+      "bytes": 8434
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\admin\\adminInquirypage.jsx",
+      "relative": "src/pages/admin/adminInquirypage.jsx",
+      "service": "client",
+      "bytes": 4576
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\admin\\adminItemPage.jsx",
+      "relative": "src/pages/admin/adminItemPage.jsx",
+      "service": "client",
+      "bytes": 8533
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\admin\\adminPage.jsx",
+      "relative": "src/pages/admin/adminPage.jsx",
+      "service": "client",
+      "bytes": 4426
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\admin\\adminpakage.jsx",
+      "relative": "src/pages/admin/adminpakage.jsx",
+      "service": "client",
+      "bytes": 6745
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\admin\\adminPayment.jsx",
+      "relative": "src/pages/admin/adminPayment.jsx",
+      "service": "client",
+      "bytes": 2439
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\admin\\adminReviewpage.jsx",
+      "relative": "src/pages/admin/adminReviewpage.jsx",
+      "service": "client",
+      "bytes": 7493
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\admin\\profile.jsx",
+      "relative": "src/pages/admin/profile.jsx",
+      "service": "client",
+      "bytes": 9119
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\admin\\users.jsx",
+      "relative": "src/pages/admin/users.jsx",
+      "service": "client",
+      "bytes": 6525
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\driver\\available.jsx.jsx",
+      "relative": "src/pages/driver/available.jsx.jsx",
+      "service": "client",
+      "bytes": 5739
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\driver\\deliveryTrack.jsx",
+      "relative": "src/pages/driver/deliveryTrack.jsx",
+      "service": "client",
+      "bytes": 3693
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\driver\\driverPage.jsx",
+      "relative": "src/pages/driver/driverPage.jsx",
+      "service": "client",
+      "bytes": 3199
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\driver\\profile.jsx",
+      "relative": "src/pages/driver/profile.jsx",
+      "service": "client",
+      "bytes": 10945
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\driver signup\\drregister.jsx",
+      "relative": "src/pages/driver signup/drregister.jsx",
+      "service": "client",
+      "bytes": 7285
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\bookingConfirmation.jsx",
+      "relative": "src/pages/home/bookingConfirmation.jsx",
+      "service": "client",
+      "bytes": 13063
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\bookingpage.jsx",
+      "relative": "src/pages/home/bookingpage.jsx",
+      "service": "client",
+      "bytes": 12246
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\contacts.jsx",
+      "relative": "src/pages/home/contacts.jsx",
+      "service": "client",
+      "bytes": 18759
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\error.jsx",
+      "relative": "src/pages/home/error.jsx",
+      "service": "client",
+      "bytes": 145
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\home.jsx",
+      "relative": "src/pages/home/home.jsx",
+      "service": "client",
+      "bytes": 17068
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\homePage.jsx",
+      "relative": "src/pages/home/homePage.jsx",
+      "service": "client",
+      "bytes": 1600
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\item.jsx",
+      "relative": "src/pages/home/item.jsx",
+      "service": "client",
+      "bytes": 12800
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\location.jsx",
+      "relative": "src/pages/home/location.jsx",
+      "service": "client",
+      "bytes": 4149
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\payment.jsx",
+      "relative": "src/pages/home/payment.jsx",
+      "service": "client",
+      "bytes": 5041
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\productOverview.jsx",
+      "relative": "src/pages/home/productOverview.jsx",
+      "service": "client",
+      "bytes": 22634
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\profile.jsx",
+      "relative": "src/pages/home/profile.jsx",
+      "service": "client",
+      "bytes": 24664
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\restaurant.jsx",
+      "relative": "src/pages/home/restaurant.jsx",
+      "service": "client",
+      "bytes": 9478
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\restaurantDetails.jsx",
+      "relative": "src/pages/home/restaurantDetails.jsx",
+      "service": "client",
+      "bytes": 15845
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\login\\login.jsx",
+      "relative": "src/pages/login/login.jsx",
+      "service": "client",
+      "bytes": 6583
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\register\\register.jsx",
+      "relative": "src/pages/register/register.jsx",
+      "service": "client",
+      "bytes": 5992
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurant signup\\resregister.jsx",
+      "relative": "src/pages/restaurant signup/resregister.jsx",
+      "service": "client",
+      "bytes": 5870
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurantant\\addCollection.jsx",
+      "relative": "src/pages/restaurantant/addCollection.jsx",
+      "service": "client",
+      "bytes": 5078
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurantant\\addResturant.jsx",
+      "relative": "src/pages/restaurantant/addResturant.jsx",
+      "service": "client",
+      "bytes": 4127
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurantant\\collectionPage.jsx",
+      "relative": "src/pages/restaurantant/collectionPage.jsx",
+      "service": "client",
+      "bytes": 7882
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurantant\\profile.jsx",
+      "relative": "src/pages/restaurantant/profile.jsx",
+      "service": "client",
+      "bytes": 9119
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurantant\\restaurantCreate.jsx",
+      "relative": "src/pages/restaurantant/restaurantCreate.jsx",
+      "service": "client",
+      "bytes": 6811
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurantant\\restaurantOrder.jsx",
+      "relative": "src/pages/restaurantant/restaurantOrder.jsx",
+      "service": "client",
+      "bytes": 12880
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurantant\\restaurantPage.jsx",
+      "relative": "src/pages/restaurantant/restaurantPage.jsx",
+      "service": "client",
+      "bytes": 4367
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurantant\\restaurantReview.jsx",
+      "relative": "src/pages/restaurantant/restaurantReview.jsx",
+      "service": "client",
+      "bytes": 4696
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurantant\\updateCollection.jsx",
+      "relative": "src/pages/restaurantant/updateCollection.jsx",
+      "service": "client",
+      "bytes": 5357
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurantant\\updateRestaurant.jsx",
+      "relative": "src/pages/restaurantant/updateRestaurant.jsx",
+      "service": "client",
+      "bytes": 5601
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurantant\\users.jsx",
+      "relative": "src/pages/restaurantant/users.jsx",
+      "service": "client",
+      "bytes": 6509
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\verifyEmail\\verifyEmail.jsx",
+      "relative": "src/pages/verifyEmail/verifyEmail.jsx",
+      "service": "client",
+      "bytes": 5923
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\deliver-service\\babel.config.cjs",
+      "relative": "babel.config.cjs",
+      "service": "deliver-service",
+      "bytes": 95
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\deliver-service\\DbConnection.js",
+      "relative": "DbConnection.js",
+      "service": "deliver-service",
+      "bytes": 443
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\deliver-service\\Server.js",
+      "relative": "Server.js",
+      "service": "deliver-service",
+      "bytes": 2389
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\deliver-service\\controllers\\authController.js",
+      "relative": "controllers/authController.js",
+      "service": "deliver-service",
+      "bytes": 748
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\deliver-service\\controllers\\deliverController.js",
+      "relative": "controllers/deliverController.js",
+      "service": "deliver-service",
+      "bytes": 2804
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\deliver-service\\controllers\\driverController.js",
+      "relative": "controllers/driverController.js",
+      "service": "deliver-service",
+      "bytes": 5902
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\deliver-service\\models\\delivery.js",
+      "relative": "models/delivery.js",
+      "service": "deliver-service",
+      "bytes": 1359
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\deliver-service\\models\\driver.js",
+      "relative": "models/driver.js",
+      "service": "deliver-service",
+      "bytes": 1365
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\deliver-service\\routes\\deliveryRoute.js",
+      "relative": "routes/deliveryRoute.js",
+      "service": "deliver-service",
+      "bytes": 3234
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\deliver-service\\routes\\driverRoute.js",
+      "relative": "routes/driverRoute.js",
+      "service": "deliver-service",
+      "bytes": 3408
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\notification-server\\babel.config.cjs",
+      "relative": "babel.config.cjs",
+      "service": "notification-server",
+      "bytes": 95
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\notification-server\\DbConnection.js",
+      "relative": "DbConnection.js",
+      "service": "notification-server",
+      "bytes": 326
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\notification-server\\mailTransporter.js",
+      "relative": "mailTransporter.js",
+      "service": "notification-server",
+      "bytes": 840
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\notification-server\\Server.js",
+      "relative": "Server.js",
+      "service": "notification-server",
+      "bytes": 2292
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\notification-server\\controllers\\authController.js",
+      "relative": "controllers/authController.js",
+      "service": "notification-server",
+      "bytes": 748
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\notification-server\\controllers\\notificationSender.js",
+      "relative": "controllers/notificationSender.js",
+      "service": "notification-server",
+      "bytes": 4470
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\notification-server\\routes\\notificationRoute.js",
+      "relative": "routes/notificationRoute.js",
+      "service": "notification-server",
+      "bytes": 1868
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\order-service\\babel.config.cjs",
+      "relative": "babel.config.cjs",
+      "service": "order-service",
+      "bytes": 95
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\order-service\\DbConnection.js",
+      "relative": "DbConnection.js",
+      "service": "order-service",
+      "bytes": 326
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\order-service\\Server.js",
+      "relative": "Server.js",
+      "service": "order-service",
+      "bytes": 2237
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\order-service\\controllers\\authController.js",
+      "relative": "controllers/authController.js",
+      "service": "order-service",
+      "bytes": 748
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\order-service\\controllers\\orderController.js",
+      "relative": "controllers/orderController.js",
+      "service": "order-service",
+      "bytes": 5708
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\order-service\\models\\collection.js",
+      "relative": "models/collection.js",
+      "service": "order-service",
+      "bytes": 1062
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\order-service\\models\\order.js",
+      "relative": "models/order.js",
+      "service": "order-service",
+      "bytes": 1896
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\order-service\\routes\\orderRoute.js",
+      "relative": "routes/orderRoute.js",
+      "service": "order-service",
+      "bytes": 3588
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\payment-service\\babel.config.cjs",
+      "relative": "babel.config.cjs",
+      "service": "payment-service",
+      "bytes": 95
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\payment-service\\DbConnection.js",
+      "relative": "DbConnection.js",
+      "service": "payment-service",
+      "bytes": 326
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\payment-service\\Server.js",
+      "relative": "Server.js",
+      "service": "payment-service",
+      "bytes": 2254
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\payment-service\\controllers\\authController.js",
+      "relative": "controllers/authController.js",
+      "service": "payment-service",
+      "bytes": 748
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\payment-service\\controllers\\paymentController.js",
+      "relative": "controllers/paymentController.js",
+      "service": "payment-service",
+      "bytes": 1926
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\payment-service\\models\\payment.js",
+      "relative": "models/payment.js",
+      "service": "payment-service",
+      "bytes": 625
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\payment-service\\routes\\paymentRoute.js",
+      "relative": "routes/paymentRoute.js",
+      "service": "payment-service",
+      "bytes": 1596
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\Restaurant-service\\babel.config.cjs",
+      "relative": "babel.config.cjs",
+      "service": "Restaurant-service",
+      "bytes": 95
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\Restaurant-service\\DbConnection.js",
+      "relative": "DbConnection.js",
+      "service": "Restaurant-service",
+      "bytes": 326
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\Restaurant-service\\Server.js",
+      "relative": "Server.js",
+      "service": "Restaurant-service",
+      "bytes": 2481
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\Restaurant-service\\controllers\\authController.js",
+      "relative": "controllers/authController.js",
+      "service": "Restaurant-service",
+      "bytes": 756
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\Restaurant-service\\controllers\\collectionController.js",
+      "relative": "controllers/collectionController.js",
+      "service": "Restaurant-service",
+      "bytes": 6665
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\Restaurant-service\\controllers\\resturantsController.js",
+      "relative": "controllers/resturantsController.js",
+      "service": "Restaurant-service",
+      "bytes": 8779
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\Restaurant-service\\controllers\\reviewController.js",
+      "relative": "controllers/reviewController.js",
+      "service": "Restaurant-service",
+      "bytes": 3735
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\Restaurant-service\\models\\collection.js",
+      "relative": "models/collection.js",
+      "service": "Restaurant-service",
+      "bytes": 1107
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\Restaurant-service\\models\\resturants.js",
+      "relative": "models/resturants.js",
+      "service": "Restaurant-service",
+      "bytes": 952
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\Restaurant-service\\models\\review.js",
+      "relative": "models/review.js",
+      "service": "Restaurant-service",
+      "bytes": 1135
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\Restaurant-service\\routes\\collectionRoute.js",
+      "relative": "routes/collectionRoute.js",
+      "service": "Restaurant-service",
+      "bytes": 4546
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\Restaurant-service\\routes\\restaurantRoute.js",
+      "relative": "routes/restaurantRoute.js",
+      "service": "Restaurant-service",
+      "bytes": 4067
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\Restaurant-service\\routes\\reviewRouter.js",
+      "relative": "routes/reviewRouter.js",
+      "service": "Restaurant-service",
+      "bytes": 2989
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\user-service\\babel.config.cjs",
+      "relative": "babel.config.cjs",
+      "service": "user-service",
+      "bytes": 95
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\user-service\\DbConnection.js",
+      "relative": "DbConnection.js",
+      "service": "user-service",
+      "bytes": 376
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\user-service\\mailTransporter.js",
+      "relative": "mailTransporter.js",
+      "service": "user-service",
+      "bytes": 840
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\user-service\\Server.js",
+      "relative": "Server.js",
+      "service": "user-service",
+      "bytes": 2545
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\user-service\\controllers\\authController.js",
+      "relative": "controllers/authController.js",
+      "service": "user-service",
+      "bytes": 748
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\user-service\\controllers\\InquiryController.js",
+      "relative": "controllers/InquiryController.js",
+      "service": "user-service",
+      "bytes": 4654
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\user-service\\controllers\\userController.js",
+      "relative": "controllers/userController.js",
+      "service": "user-service",
+      "bytes": 13700
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\user-service\\models\\driver.js",
+      "relative": "models/driver.js",
+      "service": "user-service",
+      "bytes": 1365
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\user-service\\models\\inquiry.js",
+      "relative": "models/inquiry.js",
+      "service": "user-service",
+      "bytes": 789
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\user-service\\models\\otp.js",
+      "relative": "models/otp.js",
+      "service": "user-service",
+      "bytes": 439
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\user-service\\models\\users.js",
+      "relative": "models/users.js",
+      "service": "user-service",
+      "bytes": 1473
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\user-service\\routes\\inquiryRouter.js",
+      "relative": "routes/inquiryRouter.js",
+      "service": "user-service",
+      "bytes": 2597
+    },
+    {
+      "path": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\user-service\\routes\\userRoute.js",
+      "relative": "routes/userRoute.js",
+      "service": "user-service",
+      "bytes": 6021
+    }
+  ],
+  "generated": [
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\App.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\App.test.mjs",
+      "function_count": 1,
+      "test_count": 17,
+      "used_llm": true,
+      "preview": "// src/App.test.jsx\nimport * as mod from '../src/App';\nimport { jest } from '@jest/globals';\n\ndescribe('App', () => {\n  describe('#constructor', () => {\n    it('should create an instance of App with default values', () => {\n      const app = new mod.App();\n      expect(app).toBeInstanceOf(mod.App);\n      expect(app.clientId).toEqual('964342724823-b4bjne48paevmqpvbi48b5ebepjsiefe');\n    });\n  });\n\n  describe('#render', () => {\n    it('should render the App component with default values', () => {\n      const app = new mod.App();\n      const wrapper = shallow(app);\n      expect(wrapper).toMatchSnapshot();\n    });\n\n    it('should render the App component with custom values', () => {\n      const app = new mod.App({ clientId: 'custom-client-id' });\n      const wrapper = shallow(app);\n      expect(wrapper).toMatchSnapshot();\n    });"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\components\\bookingitem.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\bookingitem.test.mjs",
+      "function_count": 1,
+      "test_count": 5,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/components/bookingitem';\nimport { jest } from '@jest/globals';\n\ndescribe('BookingItem', () => {\n  describe('happy path', () => {\n    it('should render the booking item with correct props', () => {\n      const itemKey = '1234567890';\n      const qty = 2;\n      const refresh = jest.fn();\n\n      const wrapper = shallow(<mod.BookingItem itemKey={itemKey} qty={qty} refresh={refresh} />);\n\n      expect(wrapper).toMatchSnapshot();\n    });\n  });\n\n  describe('edge cases', () => {\n    it('should render the booking item with empty props', () => {\n      const wrapper = shallow(<mod.BookingItem itemKey={null} qty={0} refresh={jest.fn()} />);\n\n      expect(wrapper).toMatchSnapshot();\n    });\n\n    it('should render the booking item with undefined props', () => {\n      const wrapper = shallow(<mod.BookingItem itemKey={undefined} qty={undefined} refresh={jest.fn()} />);"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\components\\footer.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\footer.test.mjs",
+      "function_count": 1,
+      "test_count": 6,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/components/footer';\nimport { jest } from '@jest/globals';\n\ndescribe('Footer', () => {\n  it('should render the footer component correctly', () => {\n    const wrapper = shallow(<mod.Footer />);\n    expect(wrapper).toMatchSnapshot();\n  });\n\n  it('should render the company section correctly', () => {\n    const wrapper = shallow(<mod.Footer />);\n    expect(wrapper.find('.company-section')).toHaveLength(1);\n  });\n\n  it('should render the support section correctly', () => {\n    const wrapper = shallow(<mod.Footer />);\n    expect(wrapper.find('.support-section')).toHaveLength(1);\n  });\n\n  it('should render the contact section correctly', () => {\n    const wrapper = shallow(<mod.Footer />);\n    expect(wrapper.find('.contact-section')).toHaveLength(1);\n  });\n\n  it('should render the social media section correctly', () => {"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\components\\header.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\header.test.mjs",
+      "function_count": 1,
+      "test_count": 3,
+      "used_llm": true,
+      "preview": "// src/components/header.test.js\nimport * as mod from '../src/components/header';\nimport { jest } from '@jest/globals';\n\ndescribe('Header', () => {\n  describe('#render', () => {\n    it('should render the header component with clear background', () => {\n      const wrapper = shallow(<mod.Header />);\n      expect(wrapper).toMatchSnapshot();\n    });\n\n    it('should render the header component with solid background', () => {\n      const wrapper = shallow(<mod.Header isSolid={true} />);\n      expect(wrapper).toMatchSnapshot();\n    });\n  });\n\n  describe('#handleClick', () => {\n    it('should handle click event on hamburger button', () => {\n      const wrapper = shallow(<mod.Header />);\n      const instance = wrapper.instance();\n      instance.handleClick();\n      expect(wrapper).toMatchSnapshot();\n    });\n  });"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\components\\imageSlider.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\imageSlider.test.mjs",
+      "function_count": 1,
+      "test_count": 5,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/components/imageSlider';\nimport { jest } from '@jest/globals';\n\ndescribe('ImageSlider', () => {\n  it('should render the selected image', () => {\n    const props = { images: ['image1.jpg', 'image2.jpg'] };\n    const wrapper = shallow(<mod.ImageSlider {...props} />);\n    expect(wrapper).toMatchSnapshot();\n  });\n\n  it('should render the first image as selected by default', () => {\n    const props = { images: ['image1.jpg', 'image2.jpg'] };\n    const wrapper = shallow(<mod.ImageSlider {...props} />);\n    expect(wrapper.find('.selected').prop('src')).toBe('image1.jpg');\n  });\n\n  it('should render the selected image when clicked', () => {\n    const props = { images: ['image1.jpg', 'image2.jpg'] };\n    const wrapper = shallow(<mod.ImageSlider {...props} />);\n    wrapper.find('.cursor-pointer').simulate('click');\n    expect(wrapper.find('.selected').prop('src')).toBe('image2.jpg');\n  });\n\n  it('should not render the selected image when clicked if there are no images', () => {\n    const props = { images: [] };"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\components\\productCard.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\productCard.test.mjs",
+      "function_count": 1,
+      "test_count": 5,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/components/productCard';\nimport { jest } from '@jest/globals';\n\ndescribe('ProductCard', () => {\n  describe('ProductCard', () => {\n    it('should render a product card with image, name, price, and view details link', () => {\n      const item = {\n        _id: '1234567890',\n        name: 'Product Name',\n        price: 10.99,\n        images: [\n          'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&auto=format&fit=crop',\n        ],\n        available: true,\n        category: 'Category',\n      };\n\n      const wrapper = shallow(<mod.ProductCard item={item} />);\n\n      expect(wrapper).toMatchSnapshot();\n    });\n\n    it('should render a product card with image and name only if no price is provided', () => {\n      const item = {\n        _id: '1234567890',"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\components\\skeleton.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\skeleton.test.mjs",
+      "function_count": 1,
+      "test_count": 4,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/components/skeleton';\nimport { jest } from '@jest/globals';\n\ndescribe('SkeletonBookingItem', () => {\n  it('should render a skeleton booking item with realistic input', () => {\n    const wrapper = shallow(<mod.SkeletonBookingItem />);\n    expect(wrapper).toMatchSnapshot();\n  });\n\n  it('should handle empty/null/undefined input', () => {\n    const wrapper = shallow(<mod.SkeletonBookingItem />);\n    expect(wrapper).toMatchSnapshot();\n  });\n\n  it('should handle negative paths', () => {\n    const wrapper = shallow(<mod.SkeletonBookingItem />);\n    expect(wrapper).toMatchSnapshot();\n  });\n\n  it('should cover each if/else branch in the source code', () => {\n    // TODO: Add tests for each if/else branch in the source code\n  });\n});"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\components\\testing.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\testing.test.mjs",
+      "function_count": 1,
+      "test_count": 4,
+      "used_llm": true,
+      "preview": "// src/components/testing.test.jsx\nimport * as mod from '../src/components/testing';\nimport { jest } from '@jest/globals';\n\ndescribe('Testing', () => {\n  describe('#uploadFile', () => {\n    it('should upload a file and return the URL', async () => {\n      const file = new File(['hello'], 'hello.txt');\n      const url = await mod.mediaUpload(file);\n      expect(url).toBeDefined();\n    });\n\n    it('should handle empty files', async () => {\n      const file = null;\n      const url = await mod.mediaUpload(file);\n      expect(url).toBeNull();\n    });\n\n    it('should handle undefined files', async () => {\n      const file = undefined;\n      const url = await mod.mediaUpload(file);\n      expect(url).toBeUndefined();\n    });\n\n    it('should handle empty files', async () => {"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\utils\\card.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\card.test.mjs",
+      "function_count": 3,
+      "test_count": 6,
+      "used_llm": true,
+      "preview": "// src/utils/card.test.js\nimport * as mod from '../src/utils/card';\nimport { jest } from '@jest/globals';\n\ndescribe('LoadCart', () => {\n  it('should load cart from localStorage if available', () => {\n    const mockLocalStorage = { getItem: jest.fn(() => JSON.stringify({ orderItem: [{ key: 'item1', qty: 2 }] })) };\n    const result = mod.LoadCart(mockLocalStorage);\n    expect(result).toEqual({ orderItem: [{ key: 'item1', qty: 2 }] });\n    expect(mockLocalStorage.getItem).toHaveBeenCalledWith('cart');\n  });\n\n  it('should create a new cart if localStorage is not available', () => {\n    const mockLocalStorage = { getItem: jest.fn(() => null) };\n    const result = mod.LoadCart(mockLocalStorage);\n    expect(result).toEqual({ orderItem: [] });\n    expect(mockLocalStorage.getItem).toHaveBeenCalledWith('cart');\n  });\n});\n\ndescribe('addToCart', () => {\n  it('should add item to cart if not already present', () => {\n    const mockLocalStorage = { getItem: jest.fn(() => JSON.stringify({ orderItem: [{ key: 'item1', qty: 2 }] })), setItem: jest.fn() };\n    mod.addToCart(mockLocalStorage, 'item2', 3);\n    expect(mockLocalStorage.setItem).toHaveBeenCalledWith('cart', JSON.stringify({ orderItem: [{ key: 'item1', qty: 2 }, { key: 'item2', qty: 3 }] }));"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\utils\\mediaUpload.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\mediaUpload.test.mjs",
+      "function_count": 1,
+      "test_count": 3,
+      "used_llm": true,
+      "preview": "// src/utils/mediaUpload.test.js\nimport * as mod from '../src/utils/mediaUpload';\nimport { jest } from '@jest/globals';\n\ndescribe('mediaUpload', () => {\n  it('uploads a file and returns the public URL', async () => {\n    const file = new File([''], 'test.txt');\n    const result = await mod.mediaUpload(file);\n    expect(result).toBeTruthy();\n  });\n\n  it('rejects with an error if no file is selected', async () => {\n    try {\n      await mod.mediaUpload(null);\n    } catch (error) {\n      expect(error).toEqual('no file selected');\n    }\n  });\n\n  it('rejects with an error if the upload fails', async () => {\n    const file = new File([''], 'test.txt');\n    jest.spyOn(mod, 'mediaUpload').mockRejectedValueOnce('Error uploading file');\n    try {\n      await mod.mediaUpload(file);\n    } catch (error) {"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\admin\\adminbookingpage.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\adminbookingpage.test.mjs",
+      "function_count": 6,
+      "test_count": 9,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/pages/admin/adminbookingpage';\nimport { jest } from '@jest/globals';\n\ndescribe('AdminBookingPage', () => {\n  it('should render the booking page', () => {\n    const wrapper = shallow(<mod.AdminBookingPage />);\n    expect(wrapper).toMatchSnapshot();\n  });\n});\n\ndescribe('fetchBookingData', () => {\n  it('should fetch data from the API', async () => {\n    const mockAxios = jest.fn().mockResolvedValue({ data: [] });\n    const result = await mod.fetchBookingData(mockAxios);\n    expect(result).toEqual([]);\n  });\n\n  it('should handle errors', async () => {\n    const mockAxios = jest.fn().mockRejectedValue({ message: 'error' });\n    await mod.fetchBookingData(mockAxios).catch((err) => {\n      expect(err).toEqual({ message: 'error' });\n    });\n  });\n});\n"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\admin\\adminInquirypage.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\adminInquirypage.test.mjs",
+      "function_count": 1,
+      "test_count": 7,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/pages/admin/adminInquirypage';\nimport { jest } from '@jest/globals';\n\ndescribe('AdminInquiryPage', () => {\n  describe('fetchInquiries', () => {\n    it('should fetch inquiries successfully', async () => {\n      const token = 'token';\n      const res = { data: [] };\n      axios.get = jest.fn().mockResolvedValue(res);\n      localStorage.getItem = jest.fn().mockReturnValueOnce(token);\n      await mod.fetchInquiries();\n      expect(axios.get).toHaveBeenCalledWith(\n        `${import.meta.env.VITE_USER_SERVICE_URL}/api/inquiry`,\n        { headers: { Authorization: `Bearer ${token}` } }\n      );\n    });\n\n    it('should handle failed fetch inquiries', async () => {\n      const token = 'token';\n      axios.get = jest.fn().mockRejectedValue(new Error());\n      localStorage.getItem = jest.fn().mockReturnValueOnce(token);\n      await mod.fetchInquiries();\n      expect(axios.get).toHaveBeenCalledWith(\n        `${import.meta.env.VITE_USER_SERVICE_URL}/api/inquiry`,\n        { headers: { Authorization: `Bearer ${token}` } }"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\admin\\adminItemPage.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\adminItemPage.test.mjs",
+      "function_count": 1,
+      "test_count": 8,
+      "used_llm": true,
+      "preview": "// src/pages/admin/adminItemPage.test.js\nimport * as mod from '../src/pages/admin/adminItemPage';\nimport { jest } from '@jest/globals';\n\ndescribe('AdminItemPage', () => {\n  describe('handleDelete', () => {\n    it('should delete the item with the given id', async () => {\n      const itemId = '1234567890';\n      const token = 'fake-token';\n      const axiosMock = jest.fn();\n      mod.axios = axiosMock;\n\n      await mod.handleDelete(itemId);\n\n      expect(axiosMock).toHaveBeenCalledWith(\n        `${import.meta.env.VITE_RESTAURANT_SERVICE_URL}/api/v1/collection/delete/${itemId}`,\n        { headers: { Authorization: `Bearer ${token}` } },\n      );\n    });\n\n    it('should not delete the item if the id is empty', async () => {\n      const itemId = '';\n      const token = 'fake-token';\n      const axiosMock = jest.fn();\n      mod.axios = axiosMock;"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\admin\\adminPage.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\adminPage.test.mjs",
+      "function_count": 1,
+      "test_count": 5,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/pages/admin/adminPage';\nimport { jest } from '@jest/globals';\n\ndescribe('AdminPage', () => {\n  let token;\n\n  beforeEach(() => {\n    token = localStorage.getItem(\"token\");\n  });\n\n  afterEach(() => {\n    localStorage.clear();\n  });\n\n  describe('toggleSidebar', () => {\n    it('should toggle the sidebar open state', () => {\n      const setSidebarOpen = jest.fn();\n      mod.toggleSidebar(setSidebarOpen);\n      expect(setSidebarOpen).toHaveBeenCalledWith(true);\n    });\n  });\n\n  describe('closeSidebar', () => {\n    it('should close the sidebar', () => {\n      const setSidebarOpen = jest.fn();"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\admin\\adminpakage.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\adminpakage.test.mjs",
+      "function_count": 1,
+      "test_count": 7,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/pages/admin/adminpakage';\nimport { jest } from '@jest/globals';\n\ndescribe('AdminPackagePage', () => {\n  describe('fetchRestaurants', () => {\n    it('should fetch restaurants successfully', async () => {\n      const token = 'fake-token';\n      const response = { data: { restaurants: [{ _id: '1234567890' }] } };\n      const axiosMock = jest.fn().mockResolvedValue(response);\n      mod.axios = axiosMock;\n\n      await expect(mod.fetchRestaurants()).resolves.toEqual(response.data.restaurants);\n      expect(axiosMock).toHaveBeenCalledWith(`${import.meta.env.VITE_RESTAURANT_SERVICE_URL}/api/v1/restaurant`, { headers: { Authorization: `Bearer ${token}` } });\n    });\n\n    it('should handle empty response', async () => {\n      const token = 'fake-token';\n      const response = { data: {} };\n      const axiosMock = jest.fn().mockResolvedValue(response);\n      mod.axios = axiosMock;\n\n      await expect(mod.fetchRestaurants()).resolves.toEqual([]);\n      expect(axiosMock).toHaveBeenCalledWith(`${import.meta.env.VITE_RESTAURANT_SERVICE_URL}/api/v1/restaurant`, { headers: { Authorization: `Bearer ${token}` } });\n    });\n"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\admin\\adminPayment.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\adminPayment.test.mjs",
+      "function_count": 1,
+      "test_count": 4,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/pages/admin/adminPayment';\nimport { jest } from '@jest/globals';\n\ndescribe('AdminPayment', () => {\n  it('should render loading state initially', () => {\n    const wrapper = shallow(<mod.AdminPayment />);\n    expect(wrapper).toMatchSnapshot();\n  });\n\n  it('should fetch payments on mount', async () => {\n    const token = 'fake-token';\n    localStorage.setItem('token', token);\n\n    const backendUrl = 'http://localhost:3000/api/payment';\n    const paymentServiceUrl = 'http://localhost:3001/payment';\n\n    const fetchPayments = jest.fn();\n    const setLoading = jest.fn();\n    const setPayments = jest.fn();\n\n    const wrapper = shallow(<mod.AdminPayment fetchPayments={fetchPayments} setLoading={setLoading} setPayments={setPayments} />);\n\n    await act(() => {\n      wrapper.update();\n    });"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\admin\\adminReviewpage.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\adminReviewpage.test.mjs",
+      "function_count": 1,
+      "test_count": 6,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/pages/admin/adminReviewpage';\nimport { jest } from '@jest/globals';\n\ndescribe('AdminReviewPage', () => {\n  describe('fetchReviews', () => {\n    it('should fetch reviews successfully', async () => {\n      const token = 'token';\n      const response = { data: [] };\n      jest.spyOn(mod, 'axios').mockResolvedValueOnce(response);\n      await mod.fetchReviews();\n      expect(mod.axios).toHaveBeenCalledWith(\n        `${import.meta.env.VITE_RESTAURANT_SERVICE_URL}/api/v1/reviews`,\n        { headers: { Authorization: `Bearer ${token}` } },\n      );\n    });\n\n    it('should handle error fetching reviews', async () => {\n      const token = 'token';\n      const response = new Error('Error');\n      jest.spyOn(mod, 'axios').mockRejectedValueOnce(response);\n      await mod.fetchReviews();\n      expect(mod.axios).toHaveBeenCalledWith(\n        `${import.meta.env.VITE_RESTAURANT_SERVICE_URL}/api/v1/reviews`,\n        { headers: { Authorization: `Bearer ${token}` } },\n      );"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\admin\\profile.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\profile.test.mjs",
+      "function_count": 1,
+      "test_count": 8,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/pages/admin/profile';\nimport { jest } from '@jest/globals';\n\ndescribe('Profile', () => {\n  let user;\n  let setUser;\n  let fileInputRef;\n  let [formData, setFormData] = useState({\n    email: \"\",\n    firstName: \"\",\n    lastName: \"\",\n    address: \"\",\n    phone: \"\",\n    image: \"\",\n  });\n  let [passwords, setPasswords] = useState({ oldPassword: \"\", newPassword: \"\" });\n\n  beforeEach(() => {\n    user = {};\n    setUser = jest.fn();\n    fileInputRef = {};\n    formData = {\n      email: \"\",\n      firstName: \"\",\n      lastName: \"\","
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\admin\\users.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\users.test.mjs",
+      "function_count": 1,
+      "test_count": 4,
+      "used_llm": true,
+      "preview": "// src/pages/admin/users.test.js\nimport * as mod from '../src/pages/admin/users';\nimport { jest } from '@jest/globals';\n\ndescribe('User', () => {\n  describe('fetchUsers', () => {\n    it('should fetch users successfully', async () => {\n      const mockAxios = { get: jest.fn(() => Promise.resolve({ data: [] })) };\n      const mockLocalStorage = { getItem: jest.fn(() => 'token') };\n      const originalAxios = mod.axios;\n      const originalLocalStorage = mod.localStorage;\n\n      mod.axios = mockAxios;\n      mod.localStorage = mockLocalStorage;\n\n      await mod.fetchUsers();\n\n      expect(mockAxios.get).toHaveBeenCalledWith(\n        `${import.meta.env.VITE_USER_SERVICE_URL}/api/v1/users`,\n        { headers: { Authorization: `Bearer token` } }\n      );\n      expect(mockLocalStorage.getItem).toHaveBeenCalledWith('token');\n      mod.axios = originalAxios;\n      mod.localStorage = originalLocalStorage;\n    });"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\driver\\available.jsx.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\available.jsx.test.mjs",
+      "function_count": 1,
+      "test_count": 6,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/pages/driver/available.jsx';\nimport { jest } from '@jest/globals';\n\ndescribe('Available', () => {\n  let driver;\n  let formData;\n  let fileInputRef;\n\n  beforeEach(() => {\n    driver = {\n      id: '1234567890',\n      firstName: 'John',\n      lastName: 'Doe',\n      email: 'johndoe@example.com',\n      phone: '+1234567890',\n      address: '123 Main St, Anytown USA',\n      image: '',\n      vehicleType: 'Car',\n      drNic: 'ABC123',\n      isAvailable: false,\n    };\n    formData = {\n      firstName: '',\n      lastName: '',\n      email: '',"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\driver\\deliveryTrack.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\deliveryTrack.test.mjs",
+      "function_count": 1,
+      "test_count": 9,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/pages/driver/deliveryTrack';\nimport { jest } from '@jest/globals';\n\ndescribe('DeliveryTrack', () => {\n  describe('fetchDeliveries', () => {\n    it('should fetch deliveries successfully', async () => {\n      const token = 'fake-token';\n      const res = await mod.fetchDeliveries(token);\n      expect(res).toBeDefined();\n    });\n\n    it('should handle empty response', async () => {\n      const token = 'fake-token';\n      const res = await mod.fetchDeliveries(token);\n      expect(res).toEqual([]);\n    });\n\n    it('should handle error response', async () => {\n      const token = 'fake-token';\n      const res = await mod.fetchDeliveries(token);\n      expect(res).toBeUndefined();\n    });\n  });\n\n  describe('updateStatus', () => {"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\driver\\driverPage.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\driverPage.test.mjs",
+      "function_count": 1,
+      "test_count": 3,
+      "used_llm": true,
+      "preview": "// src/pages/driver/driverPage.test.jsx\nimport * as mod from '../src/pages/driver/driverPage';\nimport { jest } from '@jest/globals';\n\ndescribe('DriverPage', () => {\n  describe('toggleSidebar', () => {\n    it('should toggle the sidebar open state', () => {\n      const setSidebarOpen = jest.fn();\n      mod.toggleSidebar(setSidebarOpen);\n      expect(setSidebarOpen).toHaveBeenCalledWith(true);\n    });\n  });\n\n  describe('closeSidebar', () => {\n    it('should close the sidebar', () => {\n      const setSidebarOpen = jest.fn();\n      mod.closeSidebar(setSidebarOpen);\n      expect(setSidebarOpen).toHaveBeenCalledWith(false);\n    });\n  });\n\n  describe('render', () => {\n    it('should render the driver page with available and delivery track routes', () => {\n      const wrapper = shallow(<mod.DriverPage />);\n      expect(wrapper).toMatchSnapshot();"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\driver\\profile.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\profile.test.mjs",
+      "function_count": 1,
+      "test_count": 8,
+      "used_llm": true,
+      "preview": "// src/pages/driver/profile.test.js\nimport * as mod from '../src/pages/driver/profile';\nimport { jest } from '@jest/globals';\n\ndescribe('Profile', () => {\n  let user;\n  let setUser;\n  let fileInputRef;\n  let formData;\n  let setFormData;\n  let passwords;\n  let setPasswords;\n  let deliveries;\n  let setDeliveries;\n  let expandedDeliveryId;\n  let setExpandedDeliveryId;\n  let mapRefs;\n\n  beforeEach(() => {\n    user = {};\n    setUser = jest.fn();\n    fileInputRef = {};\n    formData = {};\n    setFormData = jest.fn();\n    passwords = {};"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\driver signup\\drregister.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\drregister.test.mjs",
+      "function_count": 1,
+      "test_count": 8,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/pages/driver signup/drregister';\nimport { jest } from '@jest/globals';\n\ndescribe('DriverRegister', () => {\n  let fileInputRef;\n  let navigate;\n\n  beforeEach(() => {\n    fileInputRef = { current: null };\n    navigate = jest.fn();\n  });\n\n  afterEach(() => {\n    jest.resetAllMocks();\n  });\n\n  describe('handleImageUpload', () => {\n    it('should upload the image successfully', async () => {\n      const file = new File([''], 'image.jpg');\n      const uploadedUrl = await mod.handleImageUpload(file);\n      expect(uploadedUrl).toBeTruthy();\n    });\n\n    it('should handle empty files', async () => {\n      const file = null;"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\bookingConfirmation.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\bookingConfirmation.test.mjs",
+      "function_count": 1,
+      "test_count": 6,
+      "used_llm": true,
+      "preview": "// src/pages/home/bookingConfirmation.test.js\nimport * as mod from '../src/pages/home/bookingConfirmation';\nimport { jest } from '@jest/globals';\n\ndescribe('BookingConfirmation', () => {\n  describe('happy path', () => {\n    it('should return the correct HTML structure for a booking confirmation page', () => {\n      const input = {\n        // Add realistic input here\n      };\n      const output = mod.BookingConfirmation(input);\n      expect(output).toEqual(\n        <div className=\"bc-root\">\n          <style>{`\n            @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap');\n          `}</style>\n          <div className=\"bc-hero\">\n            <img className=\"bc-hero-img\" src={input.imageUrl} alt=\"\" />\n            <div className=\"bc-hero-body\">\n              <p className=\"bc-eyebrow\">Booking Confirmation</p>\n              <h1 className=\"bc-hero-title\">\n                {input.name}\n                <em>{input.email}</em>\n              </h1>\n            </div>"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\bookingpage.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\bookingpage.test.mjs",
+      "function_count": 1,
+      "test_count": 4,
+      "used_llm": true,
+      "preview": "// src/pages/home/bookingpage.test.js\nimport * as mod from '../src/pages/home/bookingpage';\nimport { jest } from '@jest/globals';\n\ndescribe('BookingPage', () => {\n  describe('loadCart', () => {\n    it('should load the cart data', async () => {\n      const mockLoadCart = jest.fn();\n      const mockAxios = { get: mockLoadCart };\n      mod.axios = mockAxios;\n\n      await mod.loadCart();\n\n      expect(mockLoadCart).toHaveBeenCalledTimes(1);\n    });\n\n    it('should handle empty cart data', async () => {\n      const mockLoadCart = jest.fn().mockResolvedValue({});\n      const mockAxios = { get: mockLoadCart };\n      mod.axios = mockAxios;\n\n      await mod.loadCart();\n\n      expect(mockLoadCart).toHaveBeenCalledTimes(1);\n    });"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\contacts.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\contacts.test.mjs",
+      "function_count": 1,
+      "test_count": 4,
+      "used_llm": true,
+      "preview": "// src/pages/home/contacts.test.js\nimport * as mod from '../src/pages/home/contacts';\nimport { jest } from '@jest/globals';\n\ndescribe('Contact', () => {\n  describe('happy path', () => {\n    it('should return the correct contact information', () => {\n      const input = { name: 'John Doe', email: 'johndoe@example.com', phone: '555-1234' };\n      const expectedOutput = { name: 'John Doe', email: 'johndoe@example.com', phone: '555-1234' };\n      expect(mod.Contact(input)).toEqual(expectedOutput);\n    });\n  });\n\n  describe('edge cases', () => {\n    it('should return the correct contact information for an empty input', () => {\n      const input = {};\n      const expectedOutput = { name: '', email: '', phone: '' };\n      expect(mod.Contact(input)).toEqual(expectedOutput);\n    });\n\n    it('should return the correct contact information for a null input', () => {\n      const input = null;\n      const expectedOutput = { name: '', email: '', phone: '' };\n      expect(mod.Contact(input)).toEqual(expectedOutput);\n    });"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\error.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\error.test.mjs",
+      "function_count": 1,
+      "test_count": 4,
+      "used_llm": true,
+      "preview": "// src/pages/home/error.test.js\nimport * as mod from '../src/pages/home/error';\nimport { jest } from '@jest/globals';\n\ndescribe('ErrorNotFound', () => {\n  it('should return a div element with h1 tag and text \"404 Error: Page is Not Found\"', () => {\n    const result = mod.ErrorNotFound();\n    expect(result).toBeInstanceOf(HTMLElement);\n    expect(result.tagName).toEqual('DIV');\n    expect(result.innerHTML).toContain('<h1>404 Error: Page is Not Found</h1>');\n  });\n\n  it('should return a div element with h1 tag and text \"404 Error: Page is Not Found\" (edge case)', () => {\n    const result = mod.ErrorNotFound();\n    expect(result).toBeInstanceOf(HTMLElement);\n    expect(result.tagName).toEqual('DIV');\n    expect(result.innerHTML).toContain('<h1>404 Error: Page is Not Found</h1>');\n  });\n\n  it('should return a div element with h1 tag and text \"404 Error: Page is Not Found\" (negative test)', () => {\n    const result = mod.ErrorNotFound();\n    expect(result).toBeInstanceOf(HTMLElement);\n    expect(result.tagName).toEqual('DIV');\n    expect(result.innerHTML).not.toContain('<h1>404 Error: Page is Not Found</h1>');\n  });"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\home.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\home.test.mjs",
+      "function_count": 1,
+      "test_count": 3,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/pages/home/home';\nimport { jest } from '@jest/globals';\n\ndescribe('Home', () => {\n  describe('#exportedFunction', () => {\n    it('should handle happy path', () => {\n      // Arrange\n      const input = 'input value';\n\n      // Act\n      const result = mod.exportedFunction(input);\n\n      // Assert\n      expect(result).toBe('output value');\n    });\n\n    it('should handle edge cases', () => {\n      // Arrange\n      const input1 = '';\n      const input2 = null;\n      const input3 = undefined;\n\n      // Act\n      const result1 = mod.exportedFunction(input1);\n      const result2 = mod.exportedFunction(input2);"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\homePage.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\homePage.test.mjs",
+      "function_count": 1,
+      "test_count": 10,
+      "used_llm": true,
+      "preview": "// src/pages/home/homePage.test.js\nimport * as mod from '../src/pages/home/homePage';\nimport { jest } from '@jest/globals';\n\ndescribe('HomePage', () => {\n  it('should render the home page correctly', () => {\n    const wrapper = shallow(<mod.HomePage />);\n    expect(wrapper).toMatchSnapshot();\n  });\n\n  it('should render the contact page correctly', () => {\n    const wrapper = shallow(<mod.Contact />);\n    expect(wrapper).toMatchSnapshot();\n  });\n\n  it('should render the restaurant page correctly', () => {\n    const wrapper = shallow(<mod.Restaurant />);\n    expect(wrapper).toMatchSnapshot();\n  });\n\n  it('should render the restaurant details page correctly', () => {\n    const wrapper = shallow(<mod.RestaurantDetails />);\n    expect(wrapper).toMatchSnapshot();\n  });\n"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\item.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\item.test.mjs",
+      "function_count": 1,
+      "test_count": 8,
+      "used_llm": true,
+      "preview": "// src/pages/home/item.test.js\nimport * as mod from '../src/pages/home/item';\nimport { jest } from '@jest/globals';\n\ndescribe('Item', () => {\n  describe('happy path', () => {\n    it('should render the item correctly', () => {\n      const props = {\n        item: {\n          id: '1234567890',\n          name: 'Product Name',\n          description: 'Product Description',\n          price: 10.99,\n          imageUrl: 'https://example.com/image.jpg',\n        },\n      };\n      const { container } = render(<mod.Item {...props} />);\n      expect(container).toMatchSnapshot();\n    });\n  });\n\n  describe('edge cases', () => {\n    it('should handle empty item', () => {\n      const props = {\n        item: {},"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\location.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\location.test.mjs",
+      "function_count": 1,
+      "test_count": 4,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/pages/home/location';\nimport { jest } from '@jest/globals';\n\ndescribe('Location', () => {\n  let getLocation;\n  let handleUpdateLocation;\n  let initMap;\n\n  beforeEach(() => {\n    getLocation = jest.fn();\n    handleUpdateLocation = jest.fn();\n    initMap = jest.fn();\n  });\n\n  afterEach(() => {\n    jest.resetAllMocks();\n  });\n\n  it('should use current location', () => {\n    const latitude = 123;\n    const longitude = 456;\n    const position = { coords: { latitude, longitude } };\n\n    getLocation(position);\n"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\payment.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\payment.test.mjs",
+      "function_count": 1,
+      "test_count": 3,
+      "used_llm": true,
+      "preview": "// src/pages/home/payment.test.js\nimport * as mod from '../src/pages/home/payment';\nimport { jest } from '@jest/globals';\n\ndescribe('Payment', () => {\n  let location;\n  let navigate;\n  let amount;\n  let bookingIds;\n  let paymentType;\n  let cardNumber;\n  let expiry;\n  let cvv;\n\n  beforeEach(() => {\n    location = { state: {} };\n    navigate = jest.fn();\n    amount = 100;\n    bookingIds = [1, 2, 3];\n    paymentType = 'Card';\n    cardNumber = '';\n    expiry = '';\n    cvv = '';\n  });\n"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\productOverview.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\productOverview.test.mjs",
+      "function_count": 1,
+      "test_count": 3,
+      "used_llm": true,
+      "preview": "// src/pages/home/productOverview.test.js\nimport * as mod from '../src/pages/home/productOverview';\nimport { jest } from '@jest/globals';\n\ndescribe('FoodItemOverview', () => {\n  it('should return the correct product overview data for a valid product ID', async () => {\n    const productId = '1234567890';\n    const expectedData = {\n      title: 'Product Title',\n      description: 'Product Description',\n      price: 10.99,\n      rating: 4.5,\n      imageUrls: ['https://example.com/image1.jpg', 'https://example.com/image2.jpg'],\n    };\n\n    const axiosMock = jest.fn().mockResolvedValue({ data: expectedData });\n    mod.axios = axiosMock;\n\n    const result = await mod.FoodItemOverview(productId);\n    expect(result).toEqual(expectedData);\n  });\n\n  it('should return an error for a invalid product ID', async () => {\n    const productId = 'invalid';\n    const expectedError = new Error('Invalid product ID');"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\profile.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\profile.test.mjs",
+      "function_count": 1,
+      "test_count": 5,
+      "used_llm": true,
+      "preview": "// src/pages/home/profile.test.js\nimport * as mod from '../src/pages/home/profile';\nimport { jest } from '@jest/globals';\n\ndescribe('Profile', () => {\n  describe('#happyPath', () => {\n    it('should return the correct output for a happy path', () => {\n      const input = 'input';\n      const expectedOutput = 'output';\n      expect(mod.profile(input)).toEqual(expectedOutput);\n    });\n  });\n\n  describe('#edgeCases', () => {\n    it('should handle empty input', () => {\n      const input = '';\n      const expectedOutput = 'default output';\n      expect(mod.profile(input)).toEqual(expectedOutput);\n    });\n\n    it('should handle null input', () => {\n      const input = null;\n      const expectedOutput = 'default output';\n      expect(mod.profile(input)).toEqual(expectedOutput);\n    });"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\restaurant.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\restaurant.test.mjs",
+      "function_count": 1,
+      "test_count": 3,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/pages/home/restaurant';\nimport { jest } from '@jest/globals';\n\ndescribe('Restaurant', () => {\n  describe('SkeletonCard', () => {\n    it('should render a skeleton card', () => {\n      const wrapper = shallow(<mod.SkeletonCard />);\n      expect(wrapper).toMatchSnapshot();\n    });\n  });\n\n  describe('Restaurant', () => {\n    let fetchPackages;\n    let navigate;\n    let backendUrl;\n\n    beforeEach(() => {\n      fetchPackages = jest.fn().mockResolvedValue({ data: [] });\n      navigate = jest.fn();\n      backendUrl = 'https://example.com';\n    });\n\n    it('should render a list of packages', async () => {\n      const wrapper = shallow(<mod.Restaurant />);\n      await act(() => fetchPackages());"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\home\\restaurantDetails.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\restaurantDetails.test.mjs",
+      "function_count": 1,
+      "test_count": 5,
+      "used_llm": true,
+      "preview": "// src/pages/home/restaurantDetails.test.js\nimport * as mod from '../src/pages/home/restaurantDetails';\nimport { jest } from '@jest/globals';\n\ndescribe('RestaurantDetails', () => {\n  describe('#getDishes', () => {\n    it('should return an array of dish objects', () => {\n      const input = [\n        {\n          id: '1234567890',\n          name: 'Burger',\n          description: 'A juicy burger with lettuce, tomato, and cheese.',\n          price: 12.99,\n          imageUrl: 'https://example.com/burger.jpg',\n        },\n      ];\n      const expected = [\n        {\n          id: '1234567890',\n          name: 'Burger',\n          description: 'A juicy burger with lettuce, tomato, and cheese.',\n          price: 12.99,\n          imageUrl: 'https://example.com/burger.jpg',\n        },\n      ];"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\login\\login.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\login.test.mjs",
+      "function_count": 1,
+      "test_count": 6,
+      "used_llm": true,
+      "preview": "// src/pages/login/login.test.js\nimport * as mod from '../src/pages/login/login';\nimport { jest } from '@jest/globals';\n\ndescribe('Login', () => {\n  let email = '';\n  let password = '';\n  let navigate;\n  let googleLogin;\n  let handleOnSubmit;\n\n  beforeEach(() => {\n    email = '';\n    password = '';\n    navigate = jest.fn();\n    googleLogin = jest.fn();\n    handleOnSubmit = jest.fn();\n  });\n\n  afterEach(() => {\n    jest.resetAllMocks();\n  });\n\n  describe('handleOnSubmit', () => {\n    it('should call axios.post with correct params on happy path', async () => {"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\register\\register.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\register.test.mjs",
+      "function_count": 1,
+      "test_count": 6,
+      "used_llm": true,
+      "preview": "// pages/register/register.test.js\nimport * as register from '../src/pages/register/register';\nimport { jest } from '@jest/globals';\n\ndescribe('Register', () => {\n  it('should return success message on successful registration', async () => {\n    const toast = { success: jest.fn() };\n    const navigate = jest.fn();\n    const fileInputRef = { current: null };\n    const handleImageUpload = jest.fn();\n    const setFirstName = jest.fn();\n    const setLastName = jest.fn();\n    const setEmail = jest.fn();\n    const setPassword = jest.fn();\n    const setAddress = jest.fn();\n    const setPhone = jest.fn();\n    const handleOnSubmit = jest.fn();\n\n    await register.handleOnSubmit(toast, navigate, fileInputRef, handleImageUpload, setFirstName, setLastName, setEmail, setPassword, setAddress, setPhone, handleOnSubmit);\n\n    expect(toast.success).toHaveBeenCalledWith('Registration Successfully');\n    expect(navigate).toHaveBeenCalledWith('/login');\n  });\n\n  it('should return error message on failed registration', async () => {"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurant signup\\resregister.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\resregister.test.mjs",
+      "function_count": 1,
+      "test_count": 6,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/pages/restaurant signup/resregister';\nimport { jest } from '@jest/globals';\n\ndescribe('RestaurantRegister', () => {\n  let handleImageUpload;\n  let handleOnSubmit;\n\n  beforeEach(() => {\n    handleImageUpload = jest.fn();\n    handleOnSubmit = jest.fn();\n  });\n\n  afterEach(() => {\n    jest.resetAllMocks();\n  });\n\n  it('should upload image successfully', async () => {\n    const file = new File([''], 'image.jpg');\n    const uploadedUrl = 'https://example.com/image.jpg';\n    mediaUpload.mockResolvedValueOnce(uploadedUrl);\n    await handleImageUpload(file);\n    expect(mediaUpload).toHaveBeenCalledWith(file);\n    expect(handleImageUpload).toHaveBeenCalled();\n  });\n"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurantant\\addCollection.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\addCollection.test.mjs",
+      "function_count": 1,
+      "test_count": 2,
+      "used_llm": true,
+      "preview": "// src/pages/restaurant/addCollection.test.js\nimport * as mod from '../src/pages/restaurant/addCollection';\nimport { jest } from '@jest/globals';\n\ndescribe('AddCollection', () => {\n  let mockAxios;\n  let mockToast;\n  let mockUseState;\n  let mockUseNavigate;\n  let mockUseLocation;\n\n  beforeEach(() => {\n    mockAxios = jest.fn();\n    mockToast = jest.fn();\n    mockUseState = jest.fn();\n    mockUseNavigate = jest.fn();\n    mockUseLocation = jest.fn();\n  });\n\n  afterEach(() => {\n    jest.resetAllMocks();\n  });\n\n  describe('handleAddItem', () => {\n    it('should add a new item to the collection with valid inputs', async () => {"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurantant\\addResturant.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\addResturant.test.mjs",
+      "function_count": 1,
+      "test_count": 4,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/pages/restaurant/addResturant';\nimport { jest } from '@jest/globals';\n\ndescribe('AddRestaurant', () => {\n  let navigate;\n  let mediaUpload;\n  let axios;\n  let toast;\n\n  beforeEach(() => {\n    navigate = jest.fn();\n    mediaUpload = jest.fn();\n    axios = { post: jest.fn() };\n    toast = { success: jest.fn(), error: jest.fn() };\n  });\n\n  afterEach(() => {\n    jest.resetAllMocks();\n  });\n\n  describe('handleSubmit', () => {\n    it('should add a new restaurant with valid data', async () => {\n      const token = 'token';\n      const uploadedUrls = ['url1', 'url2'];\n      const restaurantData = { name: 'Restaurant Name', address: 'Address', phone: 'Phone Number', description: 'Description' };"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurantant\\collectionPage.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\collectionPage.test.mjs",
+      "function_count": 1,
+      "test_count": 4,
+      "used_llm": true,
+      "preview": "// src/pages/restaurant/collectionPage.test.js\nimport * as mod from '../src/pages/restaurant/collectionPage';\nimport { jest } from '@jest/globals';\n\ndescribe('CollectionPage', () => {\n  describe('useEffect', () => {\n    it('should fetch items on mount if restaurantId is present', () => {\n      const navigate = jest.fn();\n      const location = { state: { restaurantId: '123' } };\n      const setItems = jest.fn();\n      const setItemsLoaded = jest.fn();\n      mod.useEffect(navigate, location, setItems, setItemsLoaded);\n      expect(axios.get).toHaveBeenCalledTimes(1);\n    });\n\n    it('should not fetch items on mount if restaurantId is not present', () => {\n      const navigate = jest.fn();\n      const location = { state: {} };\n      const setItems = jest.fn();\n      const setItemsLoaded = jest.fn();\n      mod.useEffect(navigate, location, setItems, setItemsLoaded);\n      expect(axios.get).not.toHaveBeenCalled();\n    });\n  });\n"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurantant\\profile.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\profile.test.mjs",
+      "function_count": 1,
+      "test_count": 15,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/pages/restaurant/profile';\nimport { jest } from '@jest/globals';\n\ndescribe('Profile', () => {\n  let user;\n  let fileInputRef;\n  let formData;\n  let passwords;\n  let deliveries;\n  let expandedDeliveryId;\n  let mapRefs;\n\n  beforeEach(() => {\n    user = { id: '123', email: 'user@example.com' };\n    fileInputRef = { current: null };\n    formData = { email: '', firstName: '', lastName: '', address: '', phone: '' };\n    passwords = { oldPassword: '', newPassword: '' };\n    deliveries = [];\n    expandedDeliveryId = null;\n    mapRefs = { current: {} };\n  });\n\n  describe('handleDriverLocation', () => {\n    it('should fetch driver location and update delivery status', async () => {\n      const deliveryId = '1';"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurantant\\restaurantCreate.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\restaurantCreate.test.mjs",
+      "function_count": 1,
+      "test_count": 6,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/pages/restaurant/restaurantCreate';\nimport { jest } from '@jest/globals';\n\ndescribe('RestaurantCreate', () => {\n  describe('handleUpdateRestaurant', () => {\n    it('should navigate to the edit page with the correct id', async () => {\n      const navigate = jest.fn();\n      const id = '12345';\n      await mod.handleUpdateRestaurant(id, navigate);\n      expect(navigate).toHaveBeenCalledWith('/restaurantC/restaurant/edit', { state: id });\n    });\n  });\n});\n```\n\n```javascript\nimport * as mod from '../src/pages/restaurant/restaurantCreate';\nimport { jest } from '@jest/globals';\n\ndescribe('RestaurantCreate', () => {\n  describe('handleItem', () => {\n    it('should navigate to the collection page with the correct id', async () => {\n      const navigate = jest.fn();\n      const id = '12345';\n      await mod.handleItem(id, navigate);"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurantant\\restaurantOrder.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\restaurantOrder.test.mjs",
+      "function_count": 1,
+      "test_count": 4,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/pages/restaurant/restaurantOrder';\nimport { jest } from '@jest/globals';\n\ndescribe('RestaurantOrder', () => {\n  describe('handleStatusChange', () => {\n    it('should update the order status and save delivery info to database when new status is \"confirmed\"', async () => {\n      const orderId = '12345';\n      const newStatus = 'confirmed';\n      const token = 'token';\n      const bookingData = [\n        {\n          _id: '12345',\n          status: 'pending',\n          assignedDriver: 'driverId',\n          email: 'customerEmail',\n          address: 'address',\n          phone: 'phone',\n          lat: 0,\n          lng: 0,\n          Item_name: 'itemName',\n          image: 'image',\n          price: 'price',\n          totalAmount: 'total',\n          quantity: 'qty',\n        },"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurantant\\restaurantPage.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\restaurantPage.test.mjs",
+      "function_count": 1,
+      "test_count": 11,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/pages/restaurant/restaurantPage';\nimport { jest } from '@jest/globals';\n\ndescribe('RestaurantPage', () => {\n  describe('toggleSidebar', () => {\n    it('should toggle the sidebar open state', () => {\n      const setSidebarOpen = jest.fn();\n      mod.toggleSidebar(setSidebarOpen);\n      expect(setSidebarOpen).toHaveBeenCalledWith(true);\n    });\n  });\n\n  describe('closeSidebar', () => {\n    it('should close the sidebar', () => {\n      const setSidebarOpen = jest.fn();\n      mod.closeSidebar(setSidebarOpen);\n      expect(setSidebarOpen).toHaveBeenCalledWith(false);\n    });\n  });\n\n  describe('RestaurantReview', () => {\n    it('should render the restaurant review component', () => {\n      const wrapper = shallow(<mod.RestaurantReview />);\n      expect(wrapper).toMatchSnapshot();\n    });"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurantant\\restaurantReview.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\restaurantReview.test.mjs",
+      "function_count": 1,
+      "test_count": 4,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/pages/restaurant/restaurantReview';\nimport { jest } from '@jest/globals';\n\ndescribe('RestaurantReview', () => {\n  let fetchReviews;\n  let setReviews;\n  let setLoading;\n\n  beforeEach(() => {\n    fetchReviews = jest.fn();\n    setReviews = jest.fn();\n    setLoading = jest.fn();\n  });\n\n  afterEach(() => {\n    jest.resetAllMocks();\n  });\n\n  it('should render loading state initially', () => {\n    const wrapper = shallow(<mod.RestaurantReview />);\n    expect(wrapper).toMatchSnapshot();\n  });\n\n  it('should fetch reviews on mount', async () => {\n    const token = 'token';"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurantant\\updateCollection.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\updateCollection.test.mjs",
+      "function_count": 1,
+      "test_count": 2,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/pages/restaurant/updateCollection';\nimport { jest } from '@jest/globals';\n\ndescribe('UpdateCollection', () => {\n  let navigate;\n  let location;\n  let data;\n  let itemId;\n  let itemName;\n  let itemPrice;\n  let itemCategory;\n  let itemDescription;\n  let itemAvailable;\n  let itemImages;\n  let existingImages;\n\n  beforeEach(() => {\n    navigate = jest.fn();\n    location = { state: {} };\n    data = {};\n    itemId = '';\n    itemName = '';\n    itemPrice = '';\n    itemCategory = '';\n    itemDescription = '';"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurantant\\updateRestaurant.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\updateRestaurant.test.mjs",
+      "function_count": 1,
+      "test_count": 8,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/pages/restaurant/updateRestaurant';\nimport { jest } from '@jest/globals';\n\ndescribe('UpdateRestaurant', () => {\n  let location;\n  let navigate;\n  let restaurantData;\n  let backendUrl;\n  let fetchRestaurant;\n  let handleChange;\n  let handleImageChange;\n  let addImageField;\n  let removeImageField;\n  let handleSubmit;\n\n  beforeEach(() => {\n    location = { state: {} };\n    navigate = jest.fn();\n    restaurantData = {\n      name: '',\n      address: '',\n      phone: '',\n      description: '',\n      images: ['']\n    };"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\restaurantant\\users.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\users.test.mjs",
+      "function_count": 1,
+      "test_count": 4,
+      "used_llm": true,
+      "preview": "// src/pages/restaurant/users.test.js\nimport * as mod from '../src/pages/restaurant/users';\nimport { jest } from '@jest/globals';\n\ndescribe('User', () => {\n  describe('fetchUsers', () => {\n    it('should fetch users successfully', async () => {\n      // Arrange\n      const token = 'token';\n      const response = { data: [{ id: 1, email: 'user@example.com' }] };\n      const axiosMock = jest.fn().mockResolvedValue(response);\n      mod.axios = axiosMock;\n\n      // Act\n      const users = await mod.fetchUsers();\n\n      // Assert\n      expect(users).toEqual([{ id: 1, email: 'user@example.com' }]);\n    });\n\n    it('should handle error fetching users', async () => {\n      // Arrange\n      const token = 'token';\n      const response = new Error('Error fetching users');\n      const axiosMock = jest.fn().mockRejectedValue(response);"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\src\\pages\\verifyEmail\\verifyEmail.jsx",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\client\\__tests__\\verifyEmail.test.mjs",
+      "function_count": 1,
+      "test_count": 6,
+      "used_llm": true,
+      "preview": "import * as mod from '../src/pages/verifyEmail/verifyEmail';\nimport { jest } from '@jest/globals';\n\ndescribe('VerifyEmail', () => {\n  let navigate;\n\n  beforeEach(() => {\n    navigate = jest.fn();\n  });\n\n  afterEach(() => {\n    navigate.mockReset();\n  });\n\n  describe('sendOTP', () => {\n    it('should send OTP and set status to \"Verification email with OTP sent successfully!\" when token is found', async () => {\n      const token = 'token';\n      const response = { ok: true, json: jest.fn().mockResolvedValue({}) };\n      fetch.mockResolvedValue(response);\n\n      await mod.sendOTP();\n\n      expect(fetch).toHaveBeenCalledWith(\n        `${import.meta.env.VITE_USER_SERVICE_URL}/api/v1/users/sendOTP`,\n        {"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\deliver-service\\DbConnection.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\deliver-service\\__tests__\\DbConnection.test.mjs",
+      "function_count": 1,
+      "test_count": 3,
+      "used_llm": true,
+      "preview": "import * as mod from '../DbConnection';\nimport { jest } from '@jest/globals';\n\ndescribe('connectToDatabase', () => {\n  beforeEach(() => {\n    process.env.MONGO_URL = 'mongodb://localhost:27017';\n  });\n\n  afterEach(() => {\n    delete process.env.MONGO_URL;\n  });\n\n  it('should connect to the database successfully', async () => {\n    const mockMongooseConnect = jest.fn();\n    const mockDotenvConfig = jest.fn();\n\n    jest.doMock('mongoose', () => ({ connect: mockMongooseConnect }));\n    jest.doMock('dotenv', () => ({ config: mockDotenvConfig }));\n\n    await mod.connectToDatabase();\n\n    expect(mockMongooseConnect).toHaveBeenCalledWith('mongodb://localhost:27017');\n    expect(mockDotenvConfig).toHaveBeenCalledTimes(1);\n  });\n"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\deliver-service\\controllers\\authController.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\deliver-service\\__tests__\\authController.test.mjs",
+      "function_count": 5,
+      "test_count": 20,
+      "used_llm": true,
+      "preview": "import * as mod from '../controllers/authController';\nimport { jest } from '@jest/globals';\n\ndescribe('checkHasAccount', () => {\n  it('should return true if the user has an account', () => {\n    const req = { user: { role: 'customer' } };\n    expect(mod.checkHasAccount(req)).toBe(true);\n  });\n\n  it('should return false if the user does not have an account', () => {\n    const req = {};\n    expect(mod.checkHasAccount(req)).toBe(false);\n  });\n\n  it('should return false if the user is null', () => {\n    const req = null;\n    expect(mod.checkHasAccount(req)).toBe(false);\n  });\n\n  it('should return false if the user is undefined', () => {\n    const req = undefined;\n    expect(mod.checkHasAccount(req)).toBe(false);\n  });\n});\n"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\deliver-service\\controllers\\deliverController.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\deliver-service\\__tests__\\deliverController.test.mjs",
+      "function_count": 5,
+      "test_count": 10,
+      "used_llm": true,
+      "preview": "// deliverController.test.js\nimport * as mod from '../controllers/deliverController';\nimport { jest } from '@jest/globals';\n\ndescribe('addDelivery', () => {\n  it('should add a new delivery with valid input', async () => {\n    const req = { body: { customerEmail: 'test@example.com' } };\n    const res = { json: jest.fn() };\n    await mod.addDelivery(req, res);\n    expect(res.json).toHaveBeenCalledWith('Delivery details added successfully');\n  });\n\n  it('should not add a new delivery with invalid input', async () => {\n    const req = { body: {} };\n    const res = { status: jest.fn() };\n    await mod.addDelivery(req, res);\n    expect(res.status).toHaveBeenCalledWith(400);\n  });\n});\n\ndescribe('getDelivery', () => {\n  it('should return delivery details for a customer', async () => {\n    const req = { user: { email: 'test@example.com' } };\n    const res = { json: jest.fn() };\n    await mod.getDelivery(req, res);"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\deliver-service\\controllers\\driverController.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\deliver-service\\__tests__\\driverController.test.mjs",
+      "function_count": 5,
+      "test_count": 10,
+      "used_llm": true,
+      "preview": "import * as mod from '../controllers/driverController';\nimport { jest } from '@jest/globals';\n\ndescribe('createDriver', () => {\n  it('should create a new driver with valid data', async () => {\n    const req = { body: { email: 'test@example.com', password: 'password' } };\n    const res = { json: jest.fn() };\n    await mod.createDriver(req, res);\n    expect(res.json).toHaveBeenCalledWith({ message: 'Driver Added!' });\n  });\n\n  it('should not create a new driver with invalid data', async () => {\n    const req = { body: { email: '', password: '' } };\n    const res = { json: jest.fn() };\n    await mod.createDriver(req, res);\n    expect(res.json).toHaveBeenCalledWith({ message: 'Email is Already use' });\n  });\n});\n\ndescribe('driverLogin', () => {\n  it('should login a driver with valid credentials', async () => {\n    const req = { body: { email: 'test@example.com', password: 'password' } };\n    const res = { json: jest.fn() };\n    await mod.driverLogin(req, res);\n    expect(res.json).toHaveBeenCalledWith({ message: 'Login successfully' });"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\notification-server\\DbConnection.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\notification-server\\__tests__\\DbConnection.test.mjs",
+      "function_count": 1,
+      "test_count": 5,
+      "used_llm": true,
+      "preview": "// DbConnection.test.js\nimport * as mod from '../DbConnection';\nimport { jest } from '@jest/globals';\n\ndescribe('connectToDatabase', () => {\n  it('should connect to the database successfully with a valid MONGO_URL', async () => {\n    const MONGOURL = 'mongodb://localhost:27017';\n    process.env.MONGO_URL = MONGOURL;\n    await mod.connectToDatabase();\n    expect(mongoose.connection.readyState).toBe(1);\n  });\n\n  it('should throw an error if the MONGO_URL is not set', async () => {\n    delete process.env.MONGO_URL;\n    await expect(mod.connectToDatabase()).rejects.toThrow();\n  });\n\n  it('should throw an error if the MONGO_URL is empty', async () => {\n    process.env.MONGO_URL = '';\n    await expect(mod.connectToDatabase()).rejects.toThrow();\n  });\n\n  it('should throw an error if the MONGO_URL is null', async () => {\n    process.env.MONGO_URL = null;\n    await expect(mod.connectToDatabase()).rejects.toThrow();"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\notification-server\\mailTransporter.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\notification-server\\__tests__\\mailTransporter.test.mjs",
+      "function_count": 2,
+      "test_count": 4,
+      "used_llm": true,
+      "preview": "import * as mod from '../mailTransporter';\nimport { jest } from '@jest/globals';\n\ndescribe('getTransporter', () => {\n  it('should return a transporter instance with the correct configuration', () => {\n    const transporter = mod.getTransporter();\n    expect(transporter).toBeInstanceOf(nodemailer.createTransport);\n    expect(transporter.service).toEqual('gmail');\n    expect(transporter.host).toEqual('smtp.gmail.com');\n    expect(transporter.port).toEqual(587);\n    expect(transporter.secure).toBeFalsy();\n  });\n\n  it('should throw an error if EMAIL_USER and EMAIL_PASS are not set', () => {\n    const getMailCredentials = jest.fn().mockReturnValueOnce({ emailUser: null, emailPass: null });\n    expect(() => mod.getTransporter()).toThrowError(new Error('EMAIL_USER and EMAIL_PASS must be set before sending email'));\n  });\n});\n\ndescribe('getSenderAddress', () => {\n  it('should return a sender address with the correct format', () => {\n    const label = 'Food Delivery App';\n    const emailUser = 'test@example.com';\n    const senderAddress = mod.getSenderAddress(label);\n    expect(senderAddress).toEqual(`\"${label}\" <${emailUser}>`);"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\notification-server\\controllers\\authController.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\notification-server\\__tests__\\authController.test.mjs",
+      "function_count": 5,
+      "test_count": 25,
+      "used_llm": true,
+      "preview": "import * as mod from '../controllers/authController';\nimport { jest } from '@jest/globals';\n\ndescribe('checkHasAccount', () => {\n  it('should return true if the user has an account', () => {\n    const req = { user: { role: 'customer' } };\n    expect(mod.checkHasAccount(req)).toBe(true);\n  });\n\n  it('should return false if the user does not have an account', () => {\n    const req = {};\n    expect(mod.checkHasAccount(req)).toBe(false);\n  });\n\n  it('should handle empty objects', () => {\n    const req = {};\n    expect(mod.checkHasAccount(req)).toBe(false);\n  });\n\n  it('should handle null values', () => {\n    const req = null;\n    expect(mod.checkHasAccount(req)).toBe(false);\n  });\n\n  it('should handle undefined values', () => {"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\notification-server\\controllers\\notificationSender.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\notification-server\\__tests__\\notificationSender.test.mjs",
+      "function_count": 1,
+      "test_count": 3,
+      "used_llm": true,
+      "preview": "import * as mod from '../controllers/notificationSender';\nimport { jest } from '@jest/globals';\n\ndescribe('EmailSender', () => {\n  let transporter;\n  let senderAddress;\n  let driverMailOptions;\n  let customerMailOptions;\n\n  beforeEach(() => {\n    transporter = getTransporter();\n    senderAddress = getSenderAddress();\n    driverMailOptions = {\n      from: senderAddress,\n      to: 'driver@example.com',\n      subject: `New Delivery Assigned - Order ${orderId}`,\n      html: '',\n    };\n    customerMailOptions = {\n      from: senderAddress,\n      to: 'customer@example.com',\n      subject: `Your Order ${orderId} is on the way!`,\n      html: '',\n    };\n  });"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\order-service\\DbConnection.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\order-service\\__tests__\\DbConnection.test.mjs",
+      "function_count": 1,
+      "test_count": 5,
+      "used_llm": true,
+      "preview": "import * as mod from '../DbConnection';\nimport { jest } from '@jest/globals';\n\ndescribe('connectToDatabase', () => {\n  it('should connect to the database successfully with a valid MONGO_URL', async () => {\n    const MONGOURL = 'mongodb://localhost:27017';\n    process.env.MONGO_URL = MONGOURL;\n    await mod.connectToDatabase();\n    expect(mongoose.connection.readyState).toBe(1);\n  });\n\n  it('should throw an error if the MONGO_URL is not set', async () => {\n    delete process.env.MONGO_URL;\n    await expect(mod.connectToDatabase()).rejects.toThrow();\n  });\n\n  it('should throw an error if the MONGO_URL is invalid', async () => {\n    const MONGOURL = 'mongodb://invalid:27017';\n    process.env.MONGO_URL = MONGOURL;\n    await expect(mod.connectToDatabase()).rejects.toThrow();\n  });\n\n  it('should handle the \"open\" event with a valid MONGO_URL', async () => {\n    const MONGOURL = 'mongodb://localhost:27017';\n    process.env.MONGO_URL = MONGOURL;"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\order-service\\controllers\\authController.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\order-service\\__tests__\\authController.test.mjs",
+      "function_count": 5,
+      "test_count": 20,
+      "used_llm": true,
+      "preview": "import * as mod from '../controllers/authController';\nimport { jest } from '@jest/globals';\n\ndescribe('checkHasAccount', () => {\n  it('should return true if the user has an account', () => {\n    const req = { user: { role: 'customer' } };\n    expect(mod.checkHasAccount(req)).toBe(true);\n  });\n\n  it('should return false if the user does not have an account', () => {\n    const req = {};\n    expect(mod.checkHasAccount(req)).toBe(false);\n  });\n\n  it('should handle empty/null/undefined input correctly', () => {\n    expect(mod.checkHasAccount()).toBe(false);\n    expect(mod.checkHasAccount(null)).toBe(false);\n    expect(mod.checkHasAccount(undefined)).toBe(false);\n  });\n\n  it('should handle negative paths correctly', () => {\n    const req = { user: { role: 'invalid' } };\n    expect(mod.checkHasAccount(req)).toBe(false);\n  });\n});"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\order-service\\controllers\\orderController.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\order-service\\__tests__\\orderController.test.mjs",
+      "function_count": 6,
+      "test_count": 16,
+      "used_llm": true,
+      "preview": "import * as mod from '../controllers/orderController';\nimport { jest } from '@jest/globals';\n\ndescribe('addOrder', () => {\n  it('should create a new order with valid data', async () => {\n    const req = { body: { orderItem: [{ key: '1234567890' }] } };\n    const res = { json: jest.fn() };\n\n    await mod.addOrder(req, res);\n\n    expect(res.json).toHaveBeenCalledWith({ message: 'Orders created successfully', orders: [] });\n  });\n\n  it('should return a 401 error if the user is not logged in', async () => {\n    const req = {};\n    const res = { status: jest.fn() };\n\n    await mod.addOrder(req, res);\n\n    expect(res.status).toHaveBeenCalledWith(401);\n  });\n\n  it('should return a 400 error if the product is not available', async () => {\n    const req = { body: { orderItem: [{ key: '1234567890' }] } };\n    const res = { status: jest.fn() };"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\payment-service\\DbConnection.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\payment-service\\__tests__\\DbConnection.test.mjs",
+      "function_count": 1,
+      "test_count": 3,
+      "used_llm": true,
+      "preview": "// DbConnection.test.js\nimport * as mod from '../DbConnection';\nimport { jest } from '@jest/globals';\n\ndescribe('connectToDatabase', () => {\n  it('should connect to the database successfully with a valid MONGO_URL', async () => {\n    const MONGOURL = 'mongodb://localhost:27017';\n    process.env.MONGO_URL = MONGOURL;\n\n    await mod.connectToDatabase();\n\n    expect(mongoose.connection.readyState).toBe(1);\n  });\n\n  it('should throw an error if the MONGO_URL is not set', async () => {\n    delete process.env.MONGO_URL;\n\n    await expect(mod.connectToDatabase()).rejects.toThrowError();\n  });\n\n  it('should throw an error if the MONGO_URL is invalid', async () => {\n    const MONGOURL = 'mongodb://invalid:27017';\n    process.env.MONGO_URL = MONGOURL;\n\n    await expect(mod.connectToDatabase()).rejects.toThrowError();"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\payment-service\\controllers\\authController.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\payment-service\\__tests__\\authController.test.mjs",
+      "function_count": 5,
+      "test_count": 20,
+      "used_llm": true,
+      "preview": "import * as mod from '../controllers/authController';\nimport { jest } from '@jest/globals';\n\ndescribe('checkHasAccount', () => {\n  it('should return true if the user has an account', () => {\n    const req = { user: { role: 'customer' } };\n    expect(mod.checkHasAccount(req)).toBe(true);\n  });\n\n  it('should return false if the user does not have an account', () => {\n    const req = {};\n    expect(mod.checkHasAccount(req)).toBe(false);\n  });\n\n  it('should return false if the user is null', () => {\n    const req = null;\n    expect(mod.checkHasAccount(req)).toBe(false);\n  });\n\n  it('should return false if the user is undefined', () => {\n    const req = undefined;\n    expect(mod.checkHasAccount(req)).toBe(false);\n  });\n});\n"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\payment-service\\controllers\\paymentController.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\payment-service\\__tests__\\paymentController.test.mjs",
+      "function_count": 2,
+      "test_count": 5,
+      "used_llm": true,
+      "preview": "import * as mod from '../controllers/paymentController';\nimport { jest } from '@jest/globals';\n\ndescribe('makePayment', () => {\n  it('should make a payment successfully with valid input', async () => {\n    const req = { body: { bookingId: '1234567890', amount: 100, paymentType: 'credit_card' } };\n    const res = { status: jest.fn(), json: jest.fn() };\n\n    await mod.makePayment(req, res);\n\n    expect(res.status).toHaveBeenCalledWith(200);\n    expect(res.json).toHaveBeenCalledWith({ message: 'Payment successful', paymentId: '1234567890' });\n  });\n\n  it('should fail to make a payment with invalid input', async () => {\n    const req = { body: { bookingId: '', amount: 0, paymentType: '' } };\n    const res = { status: jest.fn(), json: jest.fn() };\n\n    await mod.makePayment(req, res);\n\n    expect(res.status).toHaveBeenCalledWith(400);\n    expect(res.json).toHaveBeenCalledWith({ message: 'Invalid input' });\n  });\n\n  it('should fail to make a payment with empty/null/undefined input', async () => {"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\Restaurant-service\\DbConnection.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\Restaurant-service\\__tests__\\DbConnection.test.mjs",
+      "function_count": 1,
+      "test_count": 5,
+      "used_llm": true,
+      "preview": "import * as mod from '../DbConnection';\nimport { jest } from '@jest/globals';\n\ndescribe('connectToDatabase', () => {\n  it('should connect to the database successfully with a valid MONGO_URL', async () => {\n    const MONGOURL = 'mongodb://localhost:27017';\n    process.env.MONGO_URL = MONGOURL;\n    await mod.connectToDatabase();\n    expect(mongoose.connection.readyState).toBe(1);\n  });\n\n  it('should throw an error if the MONGO_URL is not set', async () => {\n    delete process.env.MONGO_URL;\n    await expect(mod.connectToDatabase()).rejects.toThrow();\n  });\n\n  it('should throw an error if the MONGO_URL is invalid', async () => {\n    const MONGOURL = 'mongodb://invalid-url:27017';\n    process.env.MONGO_URL = MONGOURL;\n    await expect(mod.connectToDatabase()).rejects.toThrow();\n  });\n\n  it('should handle the \"open\" event with a valid MONGO_URL', async () => {\n    const MONGOURL = 'mongodb://localhost:27017';\n    process.env.MONGO_URL = MONGOURL;"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\Restaurant-service\\controllers\\authController.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\Restaurant-service\\__tests__\\authController.test.mjs",
+      "function_count": 5,
+      "test_count": 10,
+      "used_llm": true,
+      "preview": "import * as mod from '../controllers/authController';\nimport { jest } from '@jest/globals';\n\ndescribe('checkHasAccount', () => {\n  it('should return true if the user has an account', () => {\n    const req = { user: {} };\n    expect(mod.checkHasAccount(req)).toBe(true);\n  });\n\n  it('should return false if the user does not have an account', () => {\n    const req = {};\n    expect(mod.checkHasAccount(req)).toBe(false);\n  });\n});\n\ndescribe('checkAdmin', () => {\n  it('should return true if the user is an admin', () => {\n    const req = { user: { role: 'admin' } };\n    expect(mod.checkAdmin(req)).toBe(true);\n  });\n\n  it('should return false if the user is not an admin', () => {\n    const req = { user: { role: 'customer' } };\n    expect(mod.checkAdmin(req)).toBe(false);\n  });"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\Restaurant-service\\controllers\\collectionController.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\Restaurant-service\\__tests__\\collectionController.test.mjs",
+      "function_count": 7,
+      "test_count": 16,
+      "used_llm": true,
+      "preview": "// controllers/collectionController.test.js\nimport * as mod from '../controllers/collectionController';\nimport { jest } from '@jest/globals';\n\ndescribe('createCollection', () => {\n  it('should create a new collection with valid data', async () => {\n    const req = { body: { name: 'Test Collection' }, user: { id: '1234567890' } };\n    const res = { json: jest.fn() };\n    await mod.createCollection(req, res);\n    expect(res.json).toHaveBeenCalledWith({ message: 'Collection create successfully' });\n  });\n\n  it('should not create a new collection with invalid data', async () => {\n    const req = { body: {} };\n    const res = { json: jest.fn() };\n    await mod.createCollection(req, res);\n    expect(res.json).toHaveBeenCalledWith({ message: 'Please provide a valid name' });\n  });\n\n  it('should not create a new collection if the user is not logged in', async () => {\n    const req = {};\n    const res = { json: jest.fn() };\n    await mod.createCollection(req, res);\n    expect(res.json).toHaveBeenCalledWith({ message: 'Please login first' });\n  });"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\Restaurant-service\\controllers\\resturantsController.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\Restaurant-service\\__tests__\\resturantsController.test.mjs",
+      "function_count": 8,
+      "test_count": 11,
+      "used_llm": true,
+      "preview": "import * as mod from '../controllers/resturantsController';\nimport { jest } from '@jest/globals';\n\ndescribe('createRestaurant', () => {\n  it('should create a new restaurant with valid data', async () => {\n    const req = { body: { name: 'Test Restaurant', address: '123 Main St' } };\n    const res = { json: jest.fn() };\n\n    await mod.createRestaurant(req, res);\n\n    expect(res.json).toHaveBeenCalledWith({ message: 'Restaurant added successfully' });\n  });\n\n  it('should not create a new restaurant with invalid data', async () => {\n    const req = { body: {} };\n    const res = { json: jest.fn() };\n\n    await mod.createRestaurant(req, res);\n\n    expect(res.json).toHaveBeenCalledWith({ message: 'Please provide valid data' });\n  });\n\n  it('should not create a new restaurant if the user is not logged in', async () => {\n    const req = {};\n    const res = { json: jest.fn() };"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\Restaurant-service\\controllers\\reviewController.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\Restaurant-service\\__tests__\\reviewController.test.mjs",
+      "function_count": 5,
+      "test_count": 12,
+      "used_llm": true,
+      "preview": "import * as mod from '../controllers/reviewController';\nimport { jest } from '@jest/globals';\n\ndescribe('addReview', () => {\n  it('should add a new review with valid data', async () => {\n    const req = { body: { name: 'John Doe', email: 'johndoe@example.com' } };\n    const res = { json: jest.fn() };\n\n    await mod.addReview(req, res);\n\n    expect(res.json).toHaveBeenCalledWith({ message: 'Review added successfully' });\n  });\n\n  it('should not add a new review with invalid data', async () => {\n    const req = { body: {} };\n    const res = { json: jest.fn() };\n\n    await mod.addReview(req, res);\n\n    expect(res.json).toHaveBeenCalledWith({ err: 'Review added failed!' });\n  });\n\n  it('should not add a new review if the user is not logged in', async () => {\n    const req = {};\n    const res = { json: jest.fn() };"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\user-service\\DbConnection.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\user-service\\__tests__\\DbConnection.test.mjs",
+      "function_count": 1,
+      "test_count": 3,
+      "used_llm": true,
+      "preview": "// DbConnection.test.js\nimport * as mod from '../DbConnection';\nimport { jest } from '@jest/globals';\n\ndescribe('connectToDatabase', () => {\n  beforeEach(() => {\n    process.env.MONGO_URL = 'mongodb://localhost:27017';\n  });\n\n  afterEach(() => {\n    delete process.env.MONGO_URL;\n  });\n\n  it('should connect to the database successfully', () => {\n    const connection = mod.connectToDatabase();\n    expect(connection).toBeDefined();\n  });\n\n  it('should throw an error if MONGO_URL is not set', () => {\n    delete process.env.MONGO_URL;\n    expect(() => mod.connectToDatabase()).toThrowError('MONGO_URL must be set');\n  });\n\n  it('should throw an error if the database connection fails', () => {\n    const originalConnect = mongoose.connect;"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\user-service\\mailTransporter.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\user-service\\__tests__\\mailTransporter.test.mjs",
+      "function_count": 2,
+      "test_count": 4,
+      "used_llm": true,
+      "preview": "import * as mod from '../mailTransporter';\nimport { jest } from '@jest/globals';\n\ndescribe('getTransporter', () => {\n  it('should return a transporter instance with the correct configuration', () => {\n    const transporter = mod.getTransporter();\n    expect(transporter).toBeInstanceOf(nodemailer.createTransport);\n    expect(transporter.options).toEqual({\n      service: 'gmail',\n      host: 'smtp.gmail.com',\n      port: 587,\n      secure: false,\n      auth: {\n        user: process.env.EMAIL_USER,\n        pass: process.env.EMAIL_PASS,\n      },\n    });\n  });\n\n  it('should throw an error if EMAIL_USER and EMAIL_PASS are not set', () => {\n    const originalEnv = process.env;\n    delete process.env.EMAIL_USER;\n    delete process.env.EMAIL_PASS;\n    expect(() => mod.getTransporter()).toThrowError('EMAIL_USER and EMAIL_PASS must be set before sending email');\n    process.env = originalEnv;"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\user-service\\controllers\\authController.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\user-service\\__tests__\\authController.test.mjs",
+      "function_count": 5,
+      "test_count": 20,
+      "used_llm": true,
+      "preview": "import * as mod from '../controllers/authController';\nimport { jest } from '@jest/globals';\n\ndescribe('checkHasAccount', () => {\n  it('should return true if the user has an account', () => {\n    const req = { user: { role: 'customer' } };\n    expect(mod.checkHasAccount(req)).toBeTruthy();\n  });\n\n  it('should return false if the user does not have an account', () => {\n    const req = {};\n    expect(mod.checkHasAccount(req)).toBeFalsy();\n  });\n\n  it('should handle empty/null/undefined input correctly', () => {\n    const req1 = null;\n    const req2 = undefined;\n    expect(mod.checkHasAccount(req1)).toBeFalsy();\n    expect(mod.checkHasAccount(req2)).toBeFalsy();\n  });\n\n  it('should handle edge cases correctly', () => {\n    const req = { user: { role: 'customer' } };\n    expect(mod.checkHasAccount(req)).toBeTruthy();\n  });"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\user-service\\controllers\\InquiryController.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\user-service\\__tests__\\InquiryController.test.mjs",
+      "function_count": 4,
+      "test_count": 12,
+      "used_llm": true,
+      "preview": "// controllers/InquiryController.test.js\nimport * as mod from '../controllers/InquiryController';\nimport { jest } from '@jest/globals';\n\ndescribe('addInquiry', () => {\n  it('should add an inquiry successfully', async () => {\n    const req = { body: { message: 'Test message' }, user: { email: 'test@example.com', phone: '1234567890' } };\n    const res = { json: jest.fn() };\n\n    await mod.addInquiry(req, res);\n\n    expect(res.json).toHaveBeenCalledWith({ message: 'Inquiry added successfully' });\n  });\n\n  it('should not add an inquiry if the user is not logged in', async () => {\n    const req = {};\n    const res = { json: jest.fn() };\n\n    await mod.addInquiry(req, res);\n\n    expect(res.json).toHaveBeenCalledWith({ message: 'Please login and try again' });\n  });\n\n  it('should not add an inquiry if the user is not authorized', async () => {\n    const req = { body: {}, user: {} };"
+    },
+    {
+      "source_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\user-service\\controllers\\userController.js",
+      "test_file": "C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\Assignement_1_CTSE\\server\\user-service\\__tests__\\userController.test.mjs",
+      "function_count": 11,
+      "test_count": 9,
+      "used_llm": true,
+      "preview": "// userController.test.js\nimport * as mod from '../controllers/userController';\nimport { jest } from '@jest/globals';\n\ndescribe('createUser', () => {\n  it('should create a new user with hashed password', async () => {\n    const data = { email: 'test@example.com', password: 'password' };\n    const res = await mod.createUser(data);\n    expect(res).toBeTruthy();\n    expect(res.message).toEqual('User Added!');\n  });\n\n  it('should not create a new user with an existing email', async () => {\n    const data = { email: 'test@example.com', password: 'password' };\n    await mod.createUser(data);\n    const res = await mod.createUser(data);\n    expect(res).toBeFalsy();\n    expect(res.message).toEqual('Email is Already use');\n  });\n});\n\ndescribe('userLogin', () => {\n  it('should login a user with correct password', async () => {\n    const data = { email: 'test@example.com', password: 'password' };\n    await mod.createUser(data);"
+    }
+  ],
+  "summary": null,
+  "error": null,
+  "started_at": 1778252717.9284334,
+  "finished_at": 1778253910.5604064,
+  "used_llm": true
+}

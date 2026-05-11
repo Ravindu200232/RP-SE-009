@@ -1,0 +1,15 @@
+{
+  "run_id": "5bddffa2b82c",
+  "phase": "run.installing",
+  "status": "running",
+  "logs": [
+    "received run request for C:\\Users\\ravin\\OneDrive\\Documents\\GitHub\\food app"
+  ],
+  "discovered": [],
+  "generated": [],
+  "summary": null,
+  "error": null,
+  "started_at": 1778257224.150726,
+  "finished_at": null,
+  "used_llm": false
+}
