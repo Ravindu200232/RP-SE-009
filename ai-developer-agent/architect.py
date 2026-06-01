@@ -17,6 +17,8 @@ def architect_agent(state: GraphState):
     # system prompt
     system_prompt = """You are an expert Software Architect specializing in Full-Stack MERN applications using Microservices. 
     Your job is to completely analyze the user's SRS and output a 100% production-ready architecture JSON.
+
+    "Never drop essential fields like passwordHash for Auth, or owner/user IDs for data ownership"
     
     For each backend microservice, you MUST strictly identify:
     1. service_name: Name of the backend service (e.g., Auth-Service).
@@ -54,7 +56,7 @@ def architect_agent(state: GraphState):
       }}
     }}
     Do not include any conversational text or explanation outside the JSON object."""
-    
+
     prompt = ChatPromptTemplate.from_messages([
         ("system", system_prompt),
         ("user", "Here is the SRS input data:\n\n{srs}")
