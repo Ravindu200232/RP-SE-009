@@ -1,0 +1,44 @@
+{
+  "service_name": "Review-Service",
+  "port": 5004,
+  "database_name": "neighborly_review_db",
+  "files_to_create": [
+    {
+      "file_path": "src/models/Review.js",
+      "purpose": "Define the Review model for MongoDB using Mongoose.",
+      "imports_needed": [
+        "mongoose"
+      ],
+      "exact_schema_fields_or_logic": "const mongoose = require('mongoose');\n\nconst reviewSchema = new mongoose.Schema({\n  itemId: {\n    type: String,\n    required: true\n  },\n  reviewerId: {\n    type: String,\n    required: true\n  },\n  rating: {\n    type: Number,\n    min: 1,\n    max: 5,\n    required: true\n  },\n  comment: {\n    type: String\n  }\n});\n\nconst Review = mongoose.model('Review', reviewSchema);\n\nmodule.exports = Review;",
+      "exports": "module.exports = Review;"
+    },
+    {
+      "file_path": "src/controllers/reviewController.js",
+      "purpose": "Handle the logic for creating a new review.",
+      "imports_needed": [
+        "express",
+        "mongoose"
+      ],
+      "exact_schema_fields_or_logic": "const express = require('express');\nconst router = express.Router();\nconst Review = require('../models/Review');\n\nrouter.post('/api/reviews', async (req, res) => {\n  try {\n    const { itemId, reviewerId, rating, comment } = req.body;\n    if (!itemId || !reviewerId || !rating) {\n      return res.status(400).json({ error: 'Missing required fields' });\n    }\n\n    const newReview = new Review({\n      itemId,\n      reviewerId,\n      rating,\n      comment\n    });\n\n    await newReview.save();\n    res.status(201).json(newReview);\n  } catch (error) {\n    res.status(500).json({ error: 'Failed to create review' });\n  }\n});\n\nmodule.exports = router;",
+      "exports": "module.exports = router;"
+    },
+    {
+      "file_path": "src/app.js",
+      "purpose": "Set up the Express server, connect to MongoDB, and define routes.",
+      "imports_needed": [
+        "express",
+        "cors",
+        "mongoose"
+      ],
+      "exact_schema_fields_or_logic": "const express = require('express');\nconst cors = require('cors');\nconst mongoose = require('mongoose');\nconst reviewRoutes = require('./controllers/reviewController');\n\nrequire('dotenv').config();\n\nconst app = express();\napp.use(cors());\napp.use(express.json());\n\nmongoose.connect(process.env.MONGO_URI, {\n  useNewUrlParser: true,\n  useUnifiedTopology: true\n}).then(() => {\n  console.log('MongoDB connected');\n}).catch(err => {\n  console.error('MongoDB connection error:', err);\n});\n\napp.use('/api', reviewRoutes);\n\nconst PORT = process.env.PORT || 5004;\napp.listen(PORT, () => {\n  console.log(`Server running on port ${PORT}`);\n});",
+      "exports": ""
+    },
+    {
+      "file_path": ".env",
+      "purpose": "Environment variables for the service.",
+      "imports_needed": [],
+      "exact_schema_fields_or_logic": "MONGO_URI=mongodb://localhost:27017/neighborly_review_db\nAUTH_SERVICE_URL=http://localhost:5001",
+      "exports": ""
+    }
+  ]
+}

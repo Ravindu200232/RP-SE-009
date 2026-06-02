@@ -1,0 +1,39 @@
+{
+  "file_type": "Page",
+  "name": "Register.jsx",
+  "file_path": "src/pages/Register.jsx",
+  "allowed_role": "Public",
+  "ui_layout_spec": {
+    "theme_style": "Modern Minimalist with a clean, white background and subtle shadows",
+    "sections": [
+      "Header with logo and title",
+      "Form section with email and password fields",
+      "Footer with links to terms of service and privacy policy"
+    ]
+  },
+  "data_bindings_and_forms": {
+    "form_name": "RegisterForm",
+    "fields_to_bind": [
+      {
+        "field_name": "email",
+        "type": "email",
+        "validation": "required"
+      },
+      {
+        "field_name": "password",
+        "type": "password",
+        "validation": "required"
+      }
+    ]
+  },
+  "navigation_flow": {
+    "on_success": "/dashboard",
+    "on_cancel": "/"
+  },
+  "logic_steps_for_coder": [
+    "Step 1: Import core hooks like useState, useNavigate and axios.",
+    "Step 2: Explicitly mention using useNavigate() for routing instead of window.location.",
+    "Step 3: Map out the step-by-step logic to handle form submission, validate inputs, and make a POST request to the backend API.",
+    "Step 4: On successful registration, navigate the user to the dashboard page. On cancellation or failure, redirect them back to the home page."
+  ]
+}

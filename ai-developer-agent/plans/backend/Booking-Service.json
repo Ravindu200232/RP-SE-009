@@ -1,0 +1,44 @@
+{
+  "service_name": "Booking-Service",
+  "port": 5003,
+  "database_name": "neighborly_booking_db",
+  "files_to_create": [
+    {
+      "file_path": "src/models/Booking.js",
+      "purpose": "Define the Booking model with required fields and schema validation.",
+      "imports_needed": [
+        "mongoose"
+      ],
+      "exact_schema_fields_or_logic": "const mongoose = require('mongoose');\n\nconst bookingSchema = new mongoose.Schema({\n  itemId: {\n    type: String,\n    required: true\n  },\n  borrowerId: {\n    type: String,\n    required: true\n  },\n  lenderId: {\n    type: String,\n    required: true\n  },\n  startDate: {\n    type: Date,\n    required: true\n  },\n  endDate: {\n    type: Date,\n    required: true\n  },\n  status: {\n    type: String,\n    enum: ['Pending', 'Confirmed', 'Completed'],\n    default: 'Pending'\n  }\n});\n\nconst Booking = mongoose.model('Booking', bookingSchema);\n\nmodule.exports = Booking;",
+      "exports": "module.exports = Booking;"
+    },
+    {
+      "file_path": "src/controllers/bookingController.js",
+      "purpose": "Implement the logic for handling booking requests and confirmations.",
+      "imports_needed": [
+        "express",
+        "mongoose"
+      ],
+      "exact_schema_fields_or_logic": "const express = require('express');\nconst router = express.Router();\nconst Booking = require('../models/Booking');\n\n// Request a booking for an item\nrouter.post('/api/bookings', async (req, res) => {\n  try {\n    const { itemId, borrowerId, lenderId, startDate, endDate } = req.body;\n    if (!itemId || !borrowerId || !lenderId || !startDate || !endDate) {\n      return res.status(400).json({ message: 'All fields are required' });\n    }\n\n    const booking = new Booking({\n      itemId,\n      borrowerId,\n      lenderId,\n      startDate,\n      endDate,\n      status: 'Pending'\n    });\n\n    await booking.save();\n    res.status(201).json({ message: 'Booking request created', booking });\n  } catch (error) {\n    res.status(500).json({ message: error.message });\n  }\n});\n\n// Confirm a booking request\nrouter.put('/api/bookings/:id/confirm', async (req, res) => {\n  try {\n    const { id } = req.params;\n    const booking = await Booking.findById(id);\n    if (!booking) {\n      return res.status(404).json({ message: 'Booking not found' });\n    }\n\n    booking.status = 'Confirmed';\n    await booking.save();\n    res.json({ message: 'Booking confirmed', booking });\n  } catch (error) {\n    res.status(500).json({ message: error.message });\n  }\n});\n\nmodule.exports = router;",
+      "exports": "module.exports = router;"
+    },
+    {
+      "file_path": "src/app.js",
+      "purpose": "Set up the Express server, include routes and connect to MongoDB.",
+      "imports_needed": [
+        "express",
+        "cors",
+        "mongoose"
+      ],
+      "exact_schema_fields_or_logic": "const express = require('express');\nconst cors = require('cors');\nconst mongoose = require('mongoose');\nconst bookingRoutes = require('./controllers/bookingController');\n\nconst app = express();\napp.use(cors());\napp.use(express.json());\n\n// Connect to MongoDB\nmongoose.connect(process.env.MONGO_URI, {\n  useNewUrlParser: true,\n  useUnifiedTopology: true\n}).then(() => {\n  console.log('Connected to MongoDB');\n}).catch((error) => {\n  console.error('Failed to connect to MongoDB', error);\n});\n\n// Define routes\napp.use('/api/bookings', bookingRoutes);\n\nconst PORT = process.env.PORT || 5003;\napp.listen(PORT, () => {\n  console.log(`Server running on port ${PORT}`);\n});",
+      "exports": ""
+    },
+    {
+      "file_path": ".env",
+      "purpose": "Environment variables for the service.",
+      "imports_needed": [],
+      "exact_schema_fields_or_logic": "MONGO_URI=mongodb://localhost:27017/neighborly_booking_db\nAUTH_SERVICE_URL=http://localhost:5001",
+      "exports": ""
+    }
+  ]
+}

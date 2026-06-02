@@ -1,0 +1,109 @@
+{
+  "service_name": "Auth-Service",
+  "port": 5001,
+  "database_name": "neighborly_auth_db",
+  "files_to_create": [
+    {
+      "file_path": "src/models/User.js",
+      "file_type": "Model",
+      "purpose": "Define the User model with email and password fields.",
+      "imports_needed": [
+        "mongoose"
+      ],
+      "data_structure_or_endpoint_spec": {
+        "schema_fields": {
+          "email": {
+            "type": "String",
+            "required": true,
+            "unique": true
+          },
+          "password": {
+            "type": "String",
+            "required": true
+          }
+        }
+      },
+      "logic_steps_for_coder": [
+        "Step 1: Import mongoose.",
+        "Step 2: Define the User schema with email and password fields, ensuring email is unique and both are required.",
+        "Step 3: Create a model using the defined schema."
+      ],
+      "exports": "User"
+    },
+    {
+      "file_path": "src/controllers/authController.js",
+      "file_type": "Controller",
+      "purpose": "Handle user authentication logic for signup and login.",
+      "imports_needed": [
+        "bcrypt",
+        "jsonwebtoken"
+      ],
+      "data_structure_or_endpoint_spec": {
+        "signup_logic": {
+          "description": "Create a new user with hashed password."
+        },
+        "login_logic": {
+          "description": "Verify credentials and issue JWT token."
+        }
+      },
+      "logic_steps_for_coder": [
+        "Step 1: Import required dependencies (bcrypt, jsonwebtoken).",
+        "Step 2: Implement the signup function to hash the user's password before saving it to the database.",
+        "Step 3: Implement the login function to verify the provided credentials and issue a JWT token if valid."
+      ],
+      "exports": "signup, login"
+    },
+    {
+      "file_path": "src/routes/authRoutes.js",
+      "file_type": "Route",
+      "purpose": "Define routes for user authentication.",
+      "imports_needed": [
+        "express"
+      ],
+      "data_structure_or_endpoint_spec": {
+        "signup_route": {
+          "method": "POST",
+          "endpoint": "/api/auth/signup",
+          "handler": "signup"
+        },
+        "login_route": {
+          "method": "POST",
+          "endpoint": "/api/auth/login",
+          "handler": "login"
+        }
+      },
+      "logic_steps_for_coder": [
+        "Step 1: Import express.",
+        "Step 2: Create a router instance.",
+        "Step 3: Define the POST route for /api/auth/signup, which calls the signup controller function.",
+        "Step 4: Define the POST route for /api/auth/login, which calls the login controller function."
+      ],
+      "exports": "router"
+    },
+    {
+      "file_path": "src/config/index.js",
+      "file_type": "Config",
+      "purpose": "Load environment variables and configure middleware.",
+      "imports_needed": [
+        "dotenv",
+        "cors"
+      ],
+      "data_structure_or_endpoint_spec": {
+        "env_variables": [
+          "MONGO_URI",
+          "JWT_SECRET"
+        ],
+        "middleware": [
+          "cors",
+          "express.json()"
+        ]
+      },
+      "logic_steps_for_coder": [
+        "Step 1: Import required dependencies (dotenv, cors).",
+        "Step 2: Load environment variables using dotenv.",
+        "Step 3: Configure middleware for CORS and JSON parsing."
+      ],
+      "exports": "envVariables, middleware"
+    }
+  ]
+}

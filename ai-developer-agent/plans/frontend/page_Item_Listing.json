@@ -1,0 +1,29 @@
+{
+  "file_type": "Page",
+  "name": "ItemList.jsx",
+  "file_path": "src/pages/ItemList.jsx",
+  "allowed_role": "Customer",
+  "ui_layout_spec": {
+    "theme_style": "Modern Minimalist with a clean, white background and subtle shadows",
+    "sections": [
+      "Header with Search Bar",
+      "Item Grid Display",
+      "Pagination Controls"
+    ]
+  },
+  "data_bindings_and_forms": {
+    "form_name": "",
+    "fields_to_bind": []
+  },
+  "navigation_flow": {
+    "on_success": "/item-listing",
+    "on_cancel": "/"
+  },
+  "logic_steps_for_coder": [
+    "Step 1: Import core hooks like useState, useNavigate and axios.",
+    "Step 2: Explicitly mention using useNavigate() for routing instead of window.location.",
+    "Step 3: Fetch item data from the backend API on component mount or when search criteria changes.",
+    "Step 4: Implement pagination logic to handle loading more items as the user scrolls down.",
+    "Step 5: Render the item grid with each item's details and an 'Add to Cart' button."
+  ]
+}
