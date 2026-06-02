@@ -1,0 +1,29 @@
+{
+  "file_type": "Component",
+  "name": "GlassmorphicSidebar.jsx",
+  "file_path": "src/components/GlassmorphicSidebar.jsx",
+  "allowed_role": "All Users",
+  "ui_layout_spec": {
+    "theme_style": "Premium Glassmorphism with backdrop-blur",
+    "sections": [
+      "Logo and Brand Name",
+      "Navigation Links",
+      "User Profile Dropdown"
+    ]
+  },
+  "data_bindings_and_forms": {
+    "form_name": null,
+    "fields_to_bind": []
+  },
+  "navigation_flow": {
+    "on_success": null,
+    "on_cancel": null
+  },
+  "logic_steps_for_coder": [
+    "Step 1: Import necessary hooks like useState and useContext.",
+    "Step 2: Use the useContext hook to access any global state if needed (e.g., user authentication status).",
+    "Step 3: Implement the sidebar layout using a combination of divs, spans, and links styled with CSS-in-JS or inline styles for glassmorphism effect.",
+    "Step 4: Add interactivity to navigation links using onClick handlers that update the route using useNavigate().",
+    "Step 5: Optionally, add a dropdown menu for user profile which can be conditionally rendered based on user authentication status."
+  ]
+}
