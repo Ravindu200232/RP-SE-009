@@ -1,0 +1,102 @@
+{
+  "service_name": "Gig-Service",
+  "port": 5003,
+  "database_name": "neighborly_gig_db",
+  "files_to_create": [
+    {
+      "file_path": "src/models/Gig.js",
+      "file_type": "Model",
+      "purpose": "Define the Gig model with necessary fields and validation rules.",
+      "imports_needed": [
+        "mongoose"
+      ],
+      "data_structure_or_endpoint_spec": {
+        "schema_fields": {
+          "title": {
+            "type": "String",
+            "required": true
+          },
+          "description": {
+            "type": "String"
+          },
+          "owner": {
+            "type": "ObjectId",
+            "ref": "User",
+            "required": true
+          }
+        }
+      },
+      "logic_steps_for_coder": [
+        "Step 1: Import mongoose.",
+        "Step 2: Define the Gig schema with required fields and validation rules.",
+        "Step 3: Create a model using the defined schema."
+      ],
+      "exports": "Gig model"
+    },
+    {
+      "file_path": "src/controllers/GigController.js",
+      "file_type": "Controller",
+      "purpose": "Handle business logic for gig-related operations.",
+      "imports_needed": [
+        "Gig",
+        "User"
+      ],
+      "data_structure_or_endpoint_spec": {
+        "endpoint_methods": [
+          {
+            "method_name": "createGig",
+            "description": "Create a new gig"
+          },
+          {
+            "method_name": "getGigById",
+            "description": "Retrieve a gig by ID"
+          },
+          {
+            "method_name": "listGigs",
+            "description": "List all gigs"
+          }
+        ]
+      },
+      "logic_steps_for_coder": [
+        "Step 1: Import required models and dependencies.",
+        "Step 2: Implement the createGig method to handle creating a new gig, including validation and saving to the database.",
+        "Step 3: Implement the getGigById method to retrieve a gig by its ID from the database.",
+        "Step 4: Implement the listGigs method to fetch all gigs from the database."
+      ],
+      "exports": "createGig, getGigById, listGigs"
+    },
+    {
+      "file_path": "src/routes/GigRoutes.js",
+      "file_type": "Route",
+      "purpose": "Define API endpoints for gig-related operations.",
+      "imports_needed": [
+        "express",
+        "cors",
+        "dotenv",
+        "./controllers/GigController"
+      ],
+      "data_structure_or_endpoint_spec": {
+        "route_methods": [
+          {
+            "method_name": "POST /api/gigs",
+            "description": "Create a new gig"
+          },
+          {
+            "method_name": "GET /api/gigs/:id",
+            "description": "Retrieve a gig by ID"
+          },
+          {
+            "method_name": "GET /api/gigs",
+            "description": "List all gigs"
+          }
+        ]
+      },
+      "logic_steps_for_coder": [
+        "Step 1: Import required dependencies and controllers.",
+        "Step 2: Define routes for creating, retrieving, and listing gigs.",
+        "Step 3: Apply middleware for authentication if required."
+      ],
+      "exports": "gigRoutes"
+    }
+  ]
+}

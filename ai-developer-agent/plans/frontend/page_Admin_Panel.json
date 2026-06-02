@@ -1,0 +1,40 @@
+{
+  "file_type": "Page",
+  "name": "AdminPanel.jsx",
+  "file_path": "src/pages/AdminPanel.jsx",
+  "allowed_role": "Shop-Owner",
+  "ui_layout_spec": {
+    "theme_style": "Premium Glassmorphism with backdrop-blur",
+    "sections": [
+      "User Management Section",
+      "Dispute Handling Section"
+    ]
+  },
+  "data_bindings_and_forms": {
+    "form_name": "FlagProfileForm",
+    "fields_to_bind": [
+      {
+        "field_name": "userId",
+        "type": "text",
+        "validation": "required"
+      }
+    ],
+    "second_form_name": "HandleDisputeForm",
+    "second_fields_to_bind": [
+      {
+        "field_name": "reportId",
+        "type": "text",
+        "validation": "required"
+      }
+    ]
+  },
+  "navigation_flow": {
+    "on_success": "/admin-panel",
+    "on_cancel": "/"
+  },
+  "logic_steps_for_coder": [
+    "Step 1: Import core hooks like useState, useNavigate and axios.",
+    "Step 2: Explicitly mention using useNavigate() for routing instead of window.location.",
+    "Step 3: Map out the step-by-step logic to handle interactions or fetch backend endpoints for both forms."
+  ]
+}

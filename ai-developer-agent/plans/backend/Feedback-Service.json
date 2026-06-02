@@ -1,0 +1,94 @@
+{
+  "service_name": "Feedback-Service",
+  "port": 5004,
+  "database_name": "neighborly_feedback_db",
+  "files_to_create": [
+    {
+      "file_path": "src/models/Feedback.js",
+      "file_type": "Model",
+      "purpose": "Define the Feedback model with necessary fields and references to User and Item/Gig models.",
+      "imports_needed": [
+        "mongoose"
+      ],
+      "data_structure_or_endpoint_spec": {
+        "schema_fields": {
+          "content": {
+            "type": "String",
+            "required": true
+          },
+          "user": {
+            "type": "ObjectId",
+            "ref": "User",
+            "required": true
+          },
+          "target": {
+            "type": "ObjectId",
+            "ref": [
+              "Item",
+              "Gig"
+            ],
+            "required": true
+          }
+        }
+      },
+      "logic_steps_for_coder": [
+        "Step 1: Import mongoose.",
+        "Step 2: Define the Feedback schema with content, user (referencing User model), and target (referencing Item or Gig models).",
+        "Step 3: Create a Feedback model using the defined schema.",
+        "Step 4: Export the Feedback model."
+      ],
+      "exports": "Feedback"
+    },
+    {
+      "file_path": "src/controllers/submitFeedback.js",
+      "file_type": "Controller",
+      "purpose": "Handle the logic for submitting feedback.",
+      "imports_needed": [
+        "express",
+        "mongoose"
+      ],
+      "data_structure_or_endpoint_spec": {
+        "route_methods": {
+          "method": "POST",
+          "endpoint": "/api/feedback"
+        }
+      },
+      "logic_steps_for_coder": [
+        "Step 1: Import express and mongoose.",
+        "Step 2: Define the submitFeedback controller function that takes req, res, and next as parameters.",
+        "Step 3: Extract content, user ID, and target ID from the request body.",
+        "Step 4: Validate the extracted data (e.g., check if required fields are present).",
+        "Step 5: Find the User and Target documents using their IDs.",
+        "Step 6: Create a new Feedback document with the provided content, user, and target.",
+        "Step 7: Save the new Feedback document to the database.",
+        "Step 8: Respond with a success status (e.g., 201 Created) if the feedback is saved successfully.",
+        "Step 9: Handle errors appropriately (e.g., validation errors, database errors)."
+      ],
+      "exports": "submitFeedback"
+    },
+    {
+      "file_path": "src/routes/feedbackRoutes.js",
+      "file_type": "Route",
+      "purpose": "Define the route for submitting feedback.",
+      "imports_needed": [
+        "express",
+        "./controllers/submitFeedback"
+      ],
+      "data_structure_or_endpoint_spec": {
+        "route_methods": [
+          {
+            "method": "POST",
+            "endpoint": "/api/feedback"
+          }
+        ]
+      },
+      "logic_steps_for_coder": [
+        "Step 1: Import express and the submitFeedback controller.",
+        "Step 2: Create a router using express.Router().",
+        "Step 3: Define a POST route for /api/feedback that uses the submitFeedback controller function.",
+        "Step 4: Export the router."
+      ],
+      "exports": "router"
+    }
+  ]
+}
