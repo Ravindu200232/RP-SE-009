@@ -1,0 +1,22 @@
+[
+  {
+    "pid": "acc01",
+    "prompt": "A hospital management system. Roles: Admin, Doctor, Nurse. Manage Pati",
+    "pages": 25,
+    "entities": [
+      "PatientProfile",
+      "Appointment",
+      "DoctorProfile",
+      "Prescription"
+    ],
+    "app_name": "Hospital Management System",
+    "notes": [
+      "Page PatientProfileCreate generated. [auditor auto-fixed: unguarded-string-method-on-field]",
+      "Page AppointmentEdit generated. [auditor auto-fixed: unguarded-string-method-on-field]",
+      "Page PrescriptionList generated. [auditor auto-fixed: possible-null-controlled-input]",
+      "Page Profile generated. [auditor auto-fixed: unguarded-null-user-read]"
+    ],
+    "build_ok": true,
+    "secs": 1113.9
+  }
+]

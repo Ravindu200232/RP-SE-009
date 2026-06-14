@@ -1,0 +1,2677 @@
+{
+ "a-modern-school-management-system-for-students-courses-and-grades": {
+  "domain": "school-management",
+  "is_utility_tool": false,
+  "app_name": "EduSphere ERP",
+  "tagline": "A comprehensive digital ecosystem for seamless student lifecycle management and academic excellence.",
+  "theme_style": "minimal",
+  "roles": [
+   "Administrator",
+   "Teacher",
+   "Student"
+  ],
+  "entities": [
+   {
+    "name": "StudentProfile",
+    "fields": [
+     "student_id",
+     "personal_details",
+     "admission_status",
+     "attendance_records",
+     "health_info",
+     "academic_history"
+    ],
+    "crud_layout": "split-pane"
+   },
+   {
+    "name": "CourseCatalog",
+    "fields": [
+     "course_code",
+     "title",
+     "syllabus_content",
+     "credit_hours",
+     "department_id",
+     "enrollment_capacity"
+    ],
+    "crud_layout": "table"
+   },
+   {
+    "name": "AttendanceLog",
+    "fields": [
+     "date",
+     "student_id",
+     "status",
+     "period_type",
+     "remarks"
+    ],
+    "crud_layout": "timeline"
+   },
+   {
+    "name": "FeeTransaction",
+    "fields": [
+     "invoice_number",
+     "amount_due",
+     "payment_status",
+     "transaction_date",
+     "discount_applied",
+     "receipt_id"
+    ],
+    "crud_layout": "spreadsheet"
+   },
+   {
+    "name": "ExamResult",
+    "fields": [
+     "exam_id",
+     "student_id",
+     "score_obtained",
+     "max_marks",
+     "grade_point",
+     "remarks"
+    ],
+    "crud_layout": "table"
+   }
+  ],
+  "marketing_pages": [
+   {
+    "name": "Admissions",
+    "slug": "admissions",
+    "template": "content"
+   },
+   {
+    "name": "Curriculum",
+    "slug": "curriculum",
+    "template": "features"
+   },
+   {
+    "name": "StudentPortal",
+    "slug": "student-portal",
+    "template": "gallery"
+   },
+   {
+    "name": "Pricing",
+    "slug": "pricing",
+    "template": "pricing"
+   }
+  ],
+  "landing_sections": [
+   "hero",
+   "features",
+   "stats",
+   "whychoose",
+   "reviews",
+   "faq"
+  ],
+  "key_features": [
+   "Automated Enrollment & Admissions",
+   "Real-time Attendance Tracking",
+   "Online Fee Payment Integration",
+   "Comprehensive Student Information System (SIS)",
+   "Exam & Result Management",
+   "Dynamic Class Scheduling",
+   "Parent/Student Communication Portal",
+   "Automated Reporting & Analytics",
+   "Syllabus & Curriculum Management",
+   "Multi-department Data Sync"
+  ],
+  "terminology": [
+   "SIS",
+   "ERP",
+   "Curriculum",
+   "Enrollment",
+   "Attendance",
+   "Syllabus",
+   "Credit Hours",
+   "Transcript",
+   "Co-curricular",
+   "Pedagogy",
+   "Invoicing",
+   "Academic Calendar"
+  ],
+  "image_subjects": [
+   "Classroom interaction",
+   "Student dashboard on tablet",
+   "Administrative office desk",
+   "Graduation ceremony",
+   "Teacher using digital whiteboard",
+   "Parent-teacher meeting",
+   "Campus architecture"
+  ],
+  "sites_seen": [
+   "https://moderncampus.com/blog/the-top-student-management-systems-features-for-efficient-school-administration.html",
+   "https://medium.com/@schoolmanagement/key-features-every-modern-school-management-system-must-have-ec88636d4304",
+   "https://www.tads.com/blog/how-to-decide-and-understand-what-school-management-software-features-your-school-needs/",
+   "https://clast.io/blog/best-school-management-software",
+   "https://www.eskooly.com/",
+   "https://factsmgt.com/blog/k-12-school-management-101/"
+  ],
+  "engine": "ddgs+gemma"
+ },
+ "a-hospital-and-clinic-management-system-for-patients-appointments-and-": {
+  "domain": "healthcare-management",
+  "is_utility_tool": false,
+  "app_name": "DocPulse Pro",
+  "tagline": "A comprehensive digital ecosystem for seamless patient care, clinical operations, and pharmacy management.",
+  "theme_style": "minimal",
+  "roles": [
+   "Medical Practitioner",
+   "Hospital Administrat",
+   "Patient"
+  ],
+  "entities": [
+   {
+    "name": "PatientProfile",
+    "fields": [
+     "patient_id",
+     "full_name",
+     "contact_info",
+     "medical_history",
+     "insurance_details",
+     "emergency_contact"
+    ],
+    "crud_layout": "split-pane"
+   },
+   {
+    "name": "Appointment",
+    "fields": [
+     "appointment_id",
+     "patient_id",
+     "doctor_id",
+     "scheduled_time",
+     "status",
+     "department_tag"
+    ],
+    "crud_layout": "kanban"
+   },
+   {
+    "name": "Prescription",
+    "fields": [
+     "prescription_id",
+     "patient_id",
+     "doctor_id",
+     "medication_list",
+     "dosage_instructions",
+     "issued_date"
+    ],
+    "crud_layout": "table"
+   },
+   {
+    "name": "InventoryItem",
+    "fields": [
+     "item_id",
+     "medicine_name",
+     "stock_level",
+     "supplier_info",
+     "expiry_date",
+     "unit_price"
+    ],
+    "crud_layout": "spreadsheet"
+   },
+   {
+    "name": "BillingInvoice",
+    "fields": [
+     "invoice_id",
+     "patient_id",
+     "total_amount",
+     "payment_status",
+     "transaction_method",
+     "billing_date"
+    ],
+    "crud_layout": "table"
+   }
+  ],
+  "marketing_pages": [
+   {
+    "name": "Clinical Services",
+    "slug": "clinical-services",
+    "template": "features"
+   },
+   {
+    "name": "Patient Portal",
+    "slug": "patient-portal",
+    "template": "content"
+   },
+   {
+    "name": "Pharmacy Management",
+    "slug": "pharmacy-solutions",
+    "template": "features"
+   },
+   {
+    "name": "Enterprise Solutions",
+    "slug": "enterprise-solutions",
+    "template": "pricing"
+   }
+  ],
+  "landing_sections": [
+   "hero",
+   "features",
+   "whychoose",
+   "stats",
+   "reviews",
+   "faq"
+  ],
+  "key_features": [
+   "Paperless Patient Registration",
+   "Real-time Appointment Scheduling",
+   "Electronic Health Records (EHR)",
+   "Automated Billing & Invoicing",
+   "Pharmacy Inventory Tracking",
+   "Multi-facility Management",
+   "Telemedicine Integration",
+   "Prescription Management",
+   "Laboratory Information System (LIS)",
+   "Advanced Analytics Reporting"
+  ],
+  "terminology": [
+   "EHR",
+   "EMR",
+   "OPD",
+   "Inpatient",
+   "Pharmacy_Inventory",
+   "Dosage",
+   "Diagnostics",
+   "Triage",
+   "Billing_Cycle",
+   "Patient_History",
+   "Prescription_ID",
+   "Clinic_Flow"
+  ],
+  "image_subjects": [
+   "Doctors using tablets",
+   "Modern clinic reception",
+   "Pharmacy shelves",
+   "Patient check-in kiosks",
+   "Medical staff collaboration",
+   "Laboratory equipment",
+   "Mobile app dashboard"
+  ],
+  "sites_seen": [
+   "https://docpulse.com/",
+   "https://www.innoricsystems.com/hospital-clinic-management-software-a-complete-guide-for-healthcare-providers/",
+   "https://www.emedicalsystem.com/",
+   "https://adroitinfosystems.com/hospital-management-system",
+   "https://codecanyon.net/item/medicare-complete-hospital-clinic-appointment-system-with-admin-web-user-doctor-apps/56035885",
+   "https://smarthospitalmanager.com/"
+  ],
+  "engine": "ddgs+gemma"
+ },
+ "a-restaurant-management-system-for-menu-items-orders-tables-and-reserv": {
+  "domain": "restaurant-management",
+  "is_utility_tool": false,
+  "app_name": "BistroFlow Pro",
+  "tagline": "An all-in-one operations platform for seamless order management, floor planning, and real-time kitchen synchronization.",
+  "theme_style": "minimal",
+  "roles": [
+   "Server",
+   "Kitchen Manager",
+   "Restaurant Owner"
+  ],
+  "entities": [
+   {
+    "name": "MenuItem",
+    "fields": [
+     "item_name",
+     "category_type",
+     "base_price",
+     "inventory_status",
+     "is_active",
+     "modifiers_list"
+    ],
+    "crud_layout": "table"
+   },
+   {
+    "name": "Order",
+    "fields": [
+     "order_id",
+     "table_number",
+     "status_stage",
+     "total_amount",
+     "payment_method",
+     "items_list",
+     "preparation_time"
+    ],
+    "crud_layout": "kanban"
+   },
+   {
+    "name": "Table",
+    "fields": [
+     "table_id",
+     "floor_section",
+     "capacity",
+     "current_status",
+     "reservation_time"
+    ],
+    "crud_layout": "split-pane"
+   },
+   {
+    "name": "Reservation",
+    "fields": [
+     "guest_name",
+     "party_size",
+     "booking_time",
+     "special_requests",
+     "status"
+    ],
+    "crud_layout": "timeline"
+   },
+   {
+    "name": "InventoryItem",
+    "fields": [
+     "ingredient_name",
+     "stock_level",
+     "unit_measure",
+     "reorder_point",
+     "supplier_info"
+    ],
+    "crud_layout": "spreadsheet"
+   }
+  ],
+  "marketing_pages": [
+   {
+    "name": "Floor Plan & Tables",
+    "slug": "floor-plan",
+    "template": "gallery"
+   },
+   {
+    "name": "Menu Management",
+    "slug": "menu-builder",
+    "template": "features"
+   },
+   {
+    "name": "Analytics & Reporting",
+    "slug": "analytics",
+    "template": "content"
+   },
+   {
+    "name": "Pricing Plans",
+    "slug": "pricing",
+    "template": "pricing"
+   }
+  ],
+  "landing_sections": [
+   "hero",
+   "stats",
+   "features",
+   "whychoose",
+   "reviews",
+   "pricing"
+  ],
+  "key_features": [
+   "Real-time kitchen display system (KDS)",
+   "Dynamic menu management with instant sync",
+   "Interactive floor plan and table tracking",
+   "Automated reservation management",
+   "Multi-location inventory tracking",
+   "Split billing and mobile tableside ordering",
+   "Staff performance analytics",
+   "Loyalty program and gift card integration",
+   "Offline mode for stable transaction processing",
+   "Customizable reporting dashboard"
+  ],
+  "terminology": [
+   "POS",
+   "BOH",
+   "FOH",
+   "Table Turnover",
+   "Split Billing",
+   "KDS",
+   "Inventory Management",
+   "Floor Plan",
+   "Upsell",
+   "Cover",
+   "Modifier",
+   "Void"
+  ],
+  "image_subjects": [
+   "Chef in a busy kitchen",
+   "Server using tablet at table",
+   "Modern restaurant interior",
+   "Analytics dashboard on tablet",
+   "Close-up of gourmet plated dish",
+   "Busy dining floor plan map"
+  ],
+  "sites_seen": [
+   "https://www.touchbistro.com/blog/all-in-one-restaurant-management-system/",
+   "https://www.agilesoftlabs.com/products/travel-hospitality/restaurant-management",
+   "https://www.touchbistro.com/features/ipad-menu-management/",
+   "https://www.oracle.com/food-beverage/restaurant-pos-systems/restaurant-management-system-features/",
+   "https://codecanyon.net/item/saas-online-ordering-restaurant-management-reservation-system/31309089",
+   "https://tablescale.com/en"
+  ],
+  "engine": "ddgs+gemma"
+ },
+ "a-real-estate-agency-platform-for-property-listings-agents-and-client-": {
+  "domain": "real estate",
+  "is_utility_tool": false,
+  "app_name": "EstateFlow Pro",
+  "tagline": "A unified platform for property listings, lead nurturing, and seamless viewing management.",
+  "theme_style": "minimal",
+  "roles": [
+   "Real Estate Agent",
+   "Property Manager",
+   "Lead Coordinator"
+  ],
+  "entities": [
+   {
+    "name": "PropertyListing",
+    "fields": [
+     "listing_id",
+     "property_address",
+     "price_point",
+     "property_type",
+     "sq_footage",
+     "amenity_list",
+     "status_badge"
+    ],
+    "crud_layout": "table"
+   },
+   {
+    "name": "LeadProfile",
+    "fields": [
+     "lead_id",
+     "contact_info",
+     "source_channel",
+     "interest_level",
+     "assigned_agent_id",
+     "last_contact_date",
+     "follow_up_status"
+    ],
+    "crud_layout": "kanban"
+   },
+   {
+    "name": "ViewingSchedule",
+    "fields": [
+     "viewing_id",
+     "property_id",
+     "client_id",
+     "scheduled_time",
+     "status_type",
+     "notes_field"
+    ],
+    "crud_layout": "timeline"
+   },
+   {
+    "name": "TransactionRecord",
+    "fields": [
+     "transaction_id",
+     "contract_value",
+     "closing_date",
+     "commission_rate",
+     "legal_documents_url",
+     "payment_status"
+    ],
+    "crud_layout": "spreadsheet"
+   }
+  ],
+  "marketing_pages": [
+   {
+    "name": "Listing Management",
+    "slug": "listing-management",
+    "template": "features"
+   },
+   {
+    "name": "Lead Generation",
+    "slug": "lead-generation",
+    "template": "content"
+   },
+   {
+    "name": "Agent Tools",
+    "slug": "agent-tools",
+    "template": "features"
+   },
+   {
+    "name": "Pricing Plans",
+    "slug": "pricing",
+    "template": "pricing"
+   }
+  ],
+  "landing_sections": [
+   "hero",
+   "features",
+   "stats",
+   "whychoose",
+   "reviews",
+   "pricing"
+  ],
+  "key_features": [
+   "Automated lead routing from MLS integrations",
+   "Real-time property status updates",
+   "Automated email marketing campaigns",
+   "In-app messaging for tenant/client communication",
+   "Interactive viewing schedule management",
+   "AI-powered listing description generator",
+   "Centralized CRM for client relationship tracking",
+   "Multi-channel listing syndication",
+   "Contract and lease agreement e-signatures",
+   "Advanced analytics on lead conversion rates"
+  ],
+  "terminology": [
+   "MLS Integration",
+   "Lead Nurturing",
+   "Listing Syndication",
+   "Escrow Status",
+   "Property Portfolio",
+   "Closing Costs",
+   "Tenant Screening",
+   "Contract Management",
+   "Showing Schedule",
+   "Commission Tracking",
+   "Hot Leads",
+   "Property Amenities"
+  ],
+  "image_subjects": [
+   "Modern luxury apartments",
+   "Agents shaking hands with clients",
+   "Mobile app dashboard showing listings",
+   "Close-up of keys in a new home",
+   "City skyline views",
+   "Real estate office interior",
+   "Digital marketing analytics charts"
+  ],
+  "sites_seen": [
+   "https://www.bing.com/aclick?ld=e8IeJ3rv8c9LOdRAA4RcmX1zVUCUzhXskciPUAK9fQTWLmmO-RHI4q0Ugr9DpXzTJUdGqQDM4OGNbMmxkBfCh906c3K40IHOXg0OjaK7NUQMY1ihFhrvHu9xJ1Huzm5nb-fhaSGR6pKl6FaVkNQzpJykM6iyK1R1oC-20AAQq",
+   "https://www.bing.com/aclick?ld=e84IkmUoRpNmNu-brqj3uH7DVUCUw6jiyPAoCHGAxsLQnEP2ErrG77sFeUjISTCAyY31wxEZajT-EgBuXV4Y20tuDdoLTOAEEwRwlt8tbtvCotzMEyqKWWOwCzJM_UuoLFwB76krqGyz8H63A-SHXZcHhUuGGI7rvuHSK772n",
+   "https://www.bing.com/aclick?ld=e8-rk1iW30g8-M9tXn3nYFOjVUCUwNyUXIEo6CKzm9l1hua3dYzdhBorQkOmJP0UIhLy_wwI2-cvhH2eTe-nX-riiOAOU5BcvfXwjwdYv8hwHO8k4_rIrKp5jVb4bZWuaRgcqUinxxVgo5ewmhHFmFI-Knv4jriTQ72wzm3ds",
+   "https://qobrix.com/",
+   "https://anyone.com/agents",
+   "https://www.softwareworld.co/real-estate-agency-software/"
+  ],
+  "engine": "ddgs+gemma"
+ },
+ "an-agile-project-management-tool-for-tasks-sprints-and-team-workload": {
+  "domain": "project-management",
+  "is_utility_tool": false,
+  "app_name": "SprintFlow Agile",
+  "tagline": "Streamline your delivery cycle with integrated backlog management, sprint planning, and real-time team workload visualization.",
+  "theme_style": "minimal",
+  "roles": [
+   "Product Owner",
+   "Scrum Master",
+   "Development Team Mem"
+  ],
+  "entities": [
+   {
+    "name": "ProductBacklog",
+    "fields": [
+     "title",
+     "description",
+     "priority_score",
+     "estimated_effort",
+     "status",
+     "reporter_id"
+    ],
+    "crud_layout": "table"
+   },
+   {
+    "name": "Sprint",
+    "fields": [
+     "sprint_name",
+     "start_date",
+     "end_date",
+     "goal_description",
+     "capacity_limit",
+     "status"
+    ],
+    "crud_layout": "kanban"
+   },
+   {
+    "name": "Task",
+    "fields": [
+     "task_id",
+     "title",
+     "assigned_to",
+     "story_points",
+     "status_label",
+     "parent_sprint_id",
+     "time_logged"
+    ],
+    "crud_layout": "kanban"
+   },
+   {
+    "name": "TeamMember",
+    "fields": [
+     "full_name",
+     "role_title",
+     "current_load_percentage",
+     "availability_status",
+     "skill_tags"
+    ],
+    "crud_layout": "split-pane"
+   }
+  ],
+  "marketing_pages": [
+   {
+    "name": "Roadmap & Planning",
+    "slug": "planning",
+    "template": "content"
+   },
+   {
+    "name": "Sprint Management",
+    "slug": "sprints",
+    "template": "features"
+   },
+   {
+    "name": "Team Analytics",
+    "slug": "reporting",
+    "template": "gallery"
+   },
+   {
+    "name": "Pricing Plans",
+    "slug": "pricing",
+    "template": "pricing"
+   }
+  ],
+  "landing_sections": [
+   "hero",
+   "features",
+   "whychoose",
+   "reviews",
+   "pricing",
+   "faq"
+  ],
+  "key_features": [
+   "Dynamic Product Backlog Prioritization",
+   "Automated Sprint Planning Tools",
+   "Real-time Team Workload Balancing",
+   "Burndown Chart Analytics",
+   "Customizable Agile Workflows",
+   "Cross-functional Collaboration Spaces",
+   "Sprint Retrospective Reporting",
+   "Integrated Time Tracking"
+  ],
+  "terminology": [
+   "Backlog",
+   "Sprint",
+   "Story Points",
+   "Scrum",
+   "Velocity",
+   "Burn_down",
+   "Epic",
+   "User_Story",
+   "Retrospective",
+   "Capacity_Planning",
+   "Cycle_Time",
+   "Lead_Time"
+  ],
+  "image_subjects": [
+   "Team collaboration in office",
+   "Dashboard analytics charts",
+   "Kanban board visualization",
+   "Mobile app notifications",
+   "Developer coding at desk",
+   "Project roadmap timeline"
+  ],
+  "sites_seen": [
+   "https://www.atlassian.com/agile/project-management",
+   "https://www.atlassian.com/agile/project-management/tools",
+   "https://taiga.io/",
+   "https://thedigitalprojectmanager.com/tools/agile-project-management-software/",
+   "https://www.workstatus.io/tasks",
+   "https://alltena.com/en/products/task-management"
+  ],
+  "engine": "ddgs+gemma"
+ },
+ "public-hospital-website-public-hospital-website-patient-portal-admin-m": {
+  "domain": "healthcare",
+  "is_utility_tool": false,
+  "app_name": "MediConnect Portal",
+  "tagline": "A unified digital ecosystem for patient engagement, clinical management, and hospital administration.",
+  "theme_style": "minimal",
+  "roles": [
+   "Patient",
+   "Doctor",
+   "Hospital Administrat"
+  ],
+  "entities": [
+   {
+    "name": "PatientProfile",
+    "fields": [
+     "patient_id",
+     "full_name",
+     "date_of_birth",
+     "medical_history_summary",
+     "insurance_details",
+     "emergency_contact"
+    ],
+    "crud_layout": "split-pane"
+   },
+   {
+    "name": "Appointment",
+    "fields": [
+     "appointment_id",
+     "patient_id",
+     "doctor_id",
+     "scheduled_time",
+     "status",
+     "department_name",
+     "symptoms_reported"
+    ],
+    "crud_layout": "kanban"
+   },
+   {
+    "name": "MedicalRecord",
+    "fields": [
+     "record_id",
+     "patient_id",
+     "diagnosis_code",
+     "treatment_plan",
+     "lab_results_link",
+     "medication_list",
+     "visit_date"
+    ],
+    "crud_layout": "table"
+   },
+   {
+    "name": "BillingInvoice",
+    "fields": [
+     "invoice_id",
+     "patient_id",
+     "total_amount",
+     "payment_status",
+     "procedure_cost_breakdown",
+     "due_date"
+    ],
+    "crud_layout": "spreadsheet"
+   },
+   {
+    "name": "StaffSchedule",
+    "fields": [
+     "shift_id",
+     "staff_member_id",
+     "department_id",
+     "start_time",
+     "end_time",
+     "room_assignment"
+    ],
+    "crud_layout": "timeline"
+   }
+  ],
+  "marketing_pages": [
+   {
+    "name": "Patient Services",
+    "slug": "patient-services",
+    "template": "content"
+   },
+   {
+    "name": "Clinical Departments",
+    "slug": "departments",
+    "template": "gallery"
+   },
+   {
+    "name": "Provider Portal",
+    "slug": "provider-portal",
+    "template": "features"
+   },
+   {
+    "name": "Pricing & Plans",
+    "slug": "pricing",
+    "template": "pricing"
+   }
+  ],
+  "landing_sections": [
+   "hero",
+   "features",
+   "whychoose",
+   "reviews",
+   "faq"
+  ],
+  "key_features": [
+   "Online appointment scheduling and management",
+   "Secure access to medical records and lab results",
+   "Real-time medication tracking and refills",
+   "Transparent bill management with cost estimates",
+   "Remote patient monitoring integration",
+   "Automated clinic check-in system",
+   "Telemedicine and virtual consultation suite",
+   "Internal HMS for staff workflow automation"
+  ],
+  "terminology": [
+   "EMR",
+   "EHR",
+   "Prescription",
+   "Diagnosis",
+   "Triage",
+   "Patient Portal",
+   "Clinical Workflow",
+   "Telemedicine",
+   "Lab Results",
+   "Billing Cycle",
+   "Medical History",
+   "Symptom Checker"
+  ],
+  "image_subjects": [
+   "Doctors consulting patients",
+   "Modern hospital lobby",
+   "Patient using mobile app",
+   "Laboratory technicians",
+   "Nursing station",
+   "Medical equipment",
+   "Smiling healthcare staff"
+  ],
+  "sites_seen": [
+   "https://pmc.ncbi.nlm.nih.gov/articles/PMC4941855/",
+   "https://svitla.com/blog/patient-portal-development/",
+   "https://www.epic.com/",
+   "https://www.northwesternmedicalcenter.org/patients-visitors/patient-portal/",
+   "https://github.com/chandu1234678/hospital-management-platform",
+   "https://nextgen.ehospital.gov.in/"
+  ],
+  "engine": "ddgs+gemma"
+ },
+ "public-courier-website-public-courier-website-customer-portal-operatio": {
+  "domain": "logistics",
+  "is_utility_tool": false,
+  "app_name": "SwiftRoute Logistics",
+  "tagline": "End-to-end courier management with real-time tracking and automated dispatching.",
+  "theme_style": "minimal",
+  "roles": [
+   "Courier Driver",
+   "Customer",
+   "Operations Manager"
+  ],
+  "entities": [
+   {
+    "name": "Shipment",
+    "fields": [
+     "tracking_number",
+     "sender_details",
+     "recipient_address",
+     "parcel_weight",
+     "current_status",
+     "estimated_delivery_time",
+     "assigned_driver_id"
+    ],
+    "crud_layout": "kanban"
+   },
+   {
+    "name": "FleetVehicle",
+    "fields": [
+     "vehicle_id",
+     "license_plate",
+     "model_type",
+     "current_capacity",
+     "maintenance_status",
+     "fuel_level"
+    ],
+    "crud_layout": "table"
+   },
+   {
+    "name": "ServicePoint",
+    "fields": [
+     "location_name",
+     "gps_coordinates",
+     "operating_hours",
+     "warehouse_capacity",
+     "staff_count"
+    ],
+    "crud_layout": "table"
+   },
+   {
+    "name": "DeliveryLog",
+    "fields": [
+     "log_id",
+     "shipment_id",
+     "timestamp",
+     "location_checkpoint",
+     "driver_notes",
+     "proof_of_delivery_image"
+    ],
+    "crud_layout": "timeline"
+   }
+  ],
+  "marketing_pages": [
+   {
+    "name": "Tracking Portal",
+    "slug": "track-package",
+    "template": "content"
+   },
+   {
+    "name": "Fleet Management",
+    "slug": "fleet-solutions",
+    "template": "features"
+   },
+   {
+    "name": "Enterprise Services",
+    "slug": "enterprise",
+    "template": "pricing"
+   },
+   {
+    "name": "Service Areas",
+    "slug": "coverage-map",
+    "template": "gallery"
+   }
+  ],
+  "landing_sections": [
+   "hero",
+   "features",
+   "stats",
+   "whychoose",
+   "pricing",
+   "faq"
+  ],
+  "key_features": [
+   "Real-time GPS tracking for customers",
+   "Automated route optimization for drivers",
+   "Multi-carrier shipment integration",
+   "Proof of Delivery (PoD) photo capture",
+   "Dynamic courier dispatching system",
+   "Automated SMS/Email status updates",
+   "Warehouse inventory management",
+   "Customized client reporting dashboard"
+  ],
+  "terminology": [
+   "Waybill",
+   "Last-Mile",
+   "Proof of Delivery",
+   "Manifest",
+   "Consignment",
+   "Dispatch",
+   "Hub",
+   "Freight",
+   "Transit Time",
+   "Cross-Docking",
+   "SKU",
+   "Estimated Time of Arrival (ETA)"
+  ],
+  "image_subjects": [
+   "Delivery Van with Branding",
+   "Warehouse Operations",
+   "Courier Handing Package to Customer",
+   "Mobile App Interface",
+   "Logistics Hub Map",
+   "Package Scanning Device"
+  ],
+  "sites_seen": [
+   "https://slashdot.org/software/operations-management/?page=8",
+   "https://slashdot.org/software/operations-management/android/?page=5",
+   "https://slashdot.org/software/operations-management/iphone/?page=5",
+   "https://topbusinesssoftware.com/",
+   "https://www.courier.com/",
+   "https://www.adm.com/en-us/products-services/services/transportation-logistics/customer-portal/"
+  ],
+  "engine": "ddgs+gemma"
+ },
+ "public-clinic-website-public-clinic-website-pet-owner-portal-clinic-ad": {
+  "domain": "veterinary_management",
+  "is_utility_tool": false,
+  "app_name": "VetFlow Pro",
+  "tagline": "A comprehensive practice management suite connecting clinics, staff, and pet owners in one seamless ecosystem.",
+  "theme_style": "minimal",
+  "roles": [
+   "Veterinarian",
+   "Clinic Administrator",
+   "Pet Owner"
+  ],
+  "entities": [
+   {
+    "name": "PatientRecord",
+    "fields": [
+     "pet_name",
+     "species_breed",
+     "owner_id",
+     "medical_history_summary",
+     "vaccination_status",
+     "treatment_plan",
+     "last_visit_date"
+    ],
+    "crud_layout": "split-pane"
+   },
+   {
+    "name": "Appointment",
+    "fields": [
+     "patient_id",
+     "appointment_type",
+     "scheduled_time",
+     "status",
+     "notes",
+     "reminder_sent_flag"
+    ],
+    "crud_layout": "kanban"
+   },
+   {
+    "name": "InventoryItem",
+    "fields": [
+     "drug_name",
+     "sku_code",
+     "current_stock",
+     "reorder_level",
+     "dosage_guidelines",
+     "dea_compliance_status"
+    ],
+    "crud_layout": "spreadsheet"
+   },
+   {
+    "name": "Invoice",
+    "fields": [
+     "patient_id",
+     "total_amount",
+     "payment_status",
+     "insurance_claim_details",
+     "transaction_id",
+     "due_date"
+    ],
+    "crud_layout": "table"
+   },
+   {
+    "name": "CommunicationLog",
+    "fields": [
+     "pet_owner_id",
+     "message_content",
+     "channel_type",
+     "timestamp",
+     "resolution_status"
+    ],
+    "crud_layout": "timeline"
+   }
+  ],
+  "marketing_pages": [
+   {
+    "name": "Patient Portal",
+    "slug": "pet-owner-portal",
+    "template": "content"
+   },
+   {
+    "name": "Clinic Solutions",
+    "slug": "clinic-management",
+    "template": "features"
+   },
+   {
+    "name": "Pricing Plans",
+    "slug": "pricing",
+    "template": "pricing"
+   },
+   {
+    "name": "Training Academy",
+    "slug": "training",
+    "template": "content"
+   }
+  ],
+  "landing_sections": [
+   "hero",
+   "features",
+   "stats",
+   "whychoose",
+   "pricing",
+   "faq"
+  ],
+  "key_features": [
+   "Automated appointment reminders and SMS alerts",
+   "Real-time inventory tracking with auto-reorder alerts",
+   "Patient portal for prescription refills and record viewing",
+   "AI-powered SOAP note dictation and medical summaries",
+   "Digital drug logs with DEA compliance reporting",
+   "Integrated payment processing and insurance claims",
+   "Multi-user clinic workflows for technicians and vets",
+   "Automated marketing tools for client retention"
+  ],
+  "terminology": [
+   "PIMS",
+   "SOAP Notes",
+   "DEA Compliance",
+   "Treatment Plan",
+   "Prescription Refill",
+   "Vaccination Log",
+   "Patient Flow",
+   "E-Lobby Check-in",
+   "Dosage Guidelines",
+   "Inventory Management"
+  ],
+  "image_subjects": [
+   "Veterinarian examining a dog",
+   "Pet owner using mobile app",
+   "Clinic reception desk",
+   "Laboratory equipment",
+   "Surgery suite",
+   "Happy pets in waiting room"
+  ],
+  "sites_seen": [
+   "https://digitail.com/",
+   "https://clinichq.com/",
+   "https://petdesk.com/",
+   "https://www.allydvm.com/solutions/petpage-patient-portal",
+   "https://www.vetstoria.com/",
+   "https://dl.acm.org/doi/fullHtml/10.1145/3568923.3568927"
+  ],
+  "engine": "ddgs+gemma"
+ },
+ "public-gym-website-public-gym-website-member-portal-staff-admin": {
+  "domain": "gym-management",
+  "is_utility_tool": false,
+  "app_name": "FlexFlow Fitness",
+  "tagline": "All-in-one gym management software with integrated member portals and automated billing.",
+  "theme_style": "minimal",
+  "roles": [
+   "Gym Owner",
+   "Staff Member",
+   "Member"
+  ],
+  "entities": [
+   {
+    "name": "MemberProfile",
+    "fields": [
+     "first_name",
+     "membership_type",
+     "billing_status",
+     "attendance_history",
+     "contact_info",
+     "last_login"
+    ],
+    "crud_layout": "table"
+   },
+   {
+    "name": "ClassSchedule",
+    "fields": [
+     "class_name",
+     "trainer_id",
+     "start_time",
+     "capacity",
+     "room_location",
+     "status"
+    ],
+    "crud_layout": "kanban"
+   },
+   {
+    "name": "BillingInvoice",
+    "fields": [
+     "amount_due",
+     "payment_method",
+     "due_date",
+     "transaction_id",
+     "status",
+     "auto_renew_enabled"
+    ],
+    "crud_layout": "spreadsheet"
+   },
+   {
+    "name": "LeadPipeline",
+    "fields": [
+     "lead_source",
+     "interest_level",
+     "follow_up_date",
+     "assigned_staff",
+     "status"
+    ],
+    "crud_layout": "kanban"
+   },
+   {
+    "name": "AccessLog",
+    "fields": [
+     "member_id",
+     "entry_time",
+     "exit_time",
+     "gate_id",
+     "status_code"
+    ],
+    "crud_layout": "timeline"
+   }
+  ],
+  "marketing_pages": [
+   {
+    "name": "Member Portal",
+    "slug": "member-portal",
+    "template": "content"
+   },
+   {
+    "name": "Class Schedules",
+    "slug": "classes",
+    "template": "gallery"
+   },
+   {
+    "name": "Pricing Plans",
+    "slug": "pricing",
+    "template": "pricing"
+   },
+   {
+    "name": "Enterprise Solutions",
+    "slug": "solutions",
+    "template": "features"
+   }
+  ],
+  "landing_sections": [
+   "hero",
+   "features",
+   "stats",
+   "whychoose",
+   "pricing",
+   "faq"
+  ],
+  "key_features": [
+   "Automated Recurring Billing",
+   "24/7 Door Access Control",
+   "Mobile App for Members",
+   "Lead Management & CRM",
+   "Point of Sale (POS) Integration",
+   "Real-time Attendance Tracking",
+   "Online Class Booking",
+   "Customizable Membership Tiers",
+   "Automated Marketing Workflows",
+   "Staff Management Dashboard"
+  ],
+  "terminology": [
+   "Membership Tier",
+   "Lead Nurturing",
+   "Point of Sale",
+   "Recurring Billing",
+   "Access Control",
+   "Churn Rate",
+   "Class Capacity",
+   "Member Portal",
+   "Retention Tracking",
+   "On-demand Payment",
+   "Gymer",
+   "Training Session"
+  ],
+  "image_subjects": [
+   "Members using mobile app",
+   "Staff checking in clients",
+   "Modern gym interior",
+   "Dashboard analytics graphs",
+   "Member scanning entry badge",
+   "Group fitness class",
+   "Point of sale terminal"
+  ],
+  "sites_seen": [
+   "https://gymdesk.com/",
+   "https://www.gymmaster.com/",
+   "https://www.gymmaster.com/gym-website-integration/",
+   "https://gymdesk.com/software/gyms",
+   "https://www.bing.com/aclick?ld=e898-KAnZ4rFim8ksKwFmT-zVUCUwTdOyhMezI4loE-70-4BGTn5KiXsbnZ3c04orVTFN0AwLkjzCDrQb78axC7SNl37ZnhQvALIBaHhnKh-wQvlimD3-kOMjZV4aWCiNabD0K6J41q7Nthu6DdFSKO0IexJt7b7JZB8LP5zh",
+   "https://www.bing.com/aclick?ld=e8RuJoPTPf5gGTipcz7IUpSzVUCUzyFnfsjnPffwGQnuBgDuT_MnxW8Xy-BrZm3Dp5-3T6k1hRMAGMPp20YgmliglG0uIqSDvL6ZGUzVBtmNtc4esTXz3LuiVgM6HUb3zxSn72y65YiVnRM2EfutbjY9q7R1WX1KG2oKYoRjr"
+  ],
+  "engine": "ddgs+gemma"
+ },
+ "public-property-website-public-property-website-client-portal-agency-a": {
+  "domain": "real-estate",
+  "is_utility_tool": false,
+  "app_name": "PropGate Portal",
+  "tagline": "A unified ecosystem for property listings, client collaboration, and agency management.",
+  "theme_style": "minimal",
+  "roles": [
+   "Property Seeker",
+   "Real Estate Agent",
+   "Agency Administrator"
+  ],
+  "entities": [
+   {
+    "name": "PropertyListing",
+    "fields": [
+     "listing_id",
+     "property_address",
+     "price_point",
+     "sq_footage",
+     "amenity_list",
+     "status_badge",
+     "media_gallery_urls"
+    ],
+    "crud_layout": "table"
+   },
+   {
+    "name": "ClientProfile",
+    "fields": [
+     "client_id",
+     "full_name",
+     "contact_info",
+     "preferred_property_type",
+     "budget_range",
+     "active_contracts",
+     "onboarding_status"
+    ],
+    "crud_layout": "split-pane"
+   },
+   {
+    "name": "ProjectMilestone",
+    "fields": [
+     "project_id",
+     "client_reference",
+     "current_phase",
+     "next_action_item",
+     "deadline_date",
+     "document_links",
+     "status_history"
+    ],
+    "crud_layout": "kanban"
+   },
+   {
+    "name": "TransactionLog",
+    "fields": [
+     "transaction_id",
+     "payment_amount",
+     "payment_method",
+     "invoice_status",
+     "contract_signature_date",
+     "escrow_details"
+    ],
+    "crud_layout": "spreadsheet"
+   }
+  ],
+  "marketing_pages": [
+   {
+    "name": "Property Listings",
+    "slug": "properties",
+    "template": "gallery"
+   },
+   {
+    "name": "Client Portal",
+    "slug": "client-portal",
+    "template": "content"
+   },
+   {
+    "name": "Agency Solutions",
+    "slug": "agency-tools",
+    "template": "features"
+   },
+   {
+    "name": "Pricing Plans",
+    "slug": "pricing",
+    "template": "pricing"
+   }
+  ],
+  "landing_sections": [
+   "hero",
+   "features",
+   "whychoose",
+   "reviews",
+   "pricing",
+   "faq"
+  ],
+  "key_features": [
+   "Branded client experience portal",
+   "Secure document sharing and signing",
+   "Automated onboarding workflows",
+   "Real-time project status tracking",
+   "Centralized property management dashboard",
+   "Integrated billing and invoicing",
+   "Multi-user agency permissions",
+   "Advanced search filters for properties",
+   "Automated notification system",
+   "Secure file repository"
+  ],
+  "terminology": [
+   "Escrow",
+   "Listing",
+   "Lease Agreement",
+   "Property Management",
+   "Lead Generation",
+   "Contract Signing",
+   "Portfolio Tracking",
+   "Client Onboarding",
+   "Transaction Log",
+   "Site Visit",
+   "Closing Costs",
+   "Tenant Screening"
+  ],
+  "image_subjects": [
+   "Modern luxury apartments",
+   "Agents shaking hands with clients",
+   "Dashboard on a tablet",
+   "Close-up of signed contracts",
+   "Aerial view of suburban neighborhoods",
+   "Team collaborating in an office"
+  ],
+  "sites_seen": [
+   "https://assembly.com/blog/client-portal-software",
+   "https://www.cognitoforms.com/blog/4918/top-client-portal-software",
+   "https://www.exoplatform.com/blog/client-portal-software/",
+   "https://www.knack.com/blog/real-estate-client-portal-what-it-is-features-and-how-to-implement-one/",
+   "https://suitedash.com/use-cases/client-portal-software-real-estate-agents-brokers-agencies/",
+   "https://www.realpage.com/"
+  ],
+  "engine": "ddgs+gemma"
+ },
+ "public-bank-website-public-bank-website-customer-portal-back-office-ad": {
+  "domain": "banking",
+  "is_utility_tool": false,
+  "app_name": "FortressBank Digital",
+  "tagline": "Secure multi-channel banking with integrated customer portals and administrative oversight.",
+  "theme_style": "minimal",
+  "roles": [
+   "Retail Customer",
+   "Bank Administrator",
+   "Compliance Officer"
+  ],
+  "entities": [
+   {
+    "name": "CustomerAccount",
+    "fields": [
+     "account_number",
+     "customer_name",
+     "balance_amount",
+     "routing_number",
+     "kyc_status",
+     "linked_mobile_number",
+     "security_tier"
+    ],
+    "crud_layout": "table"
+   },
+   {
+    "name": "TransactionLog",
+    "fields": [
+     "transaction_id",
+     "source_account",
+     "destination_account",
+     "amount",
+     "timestamp",
+     "status_code",
+     "merchant_category"
+    ],
+    "crud_layout": "timeline"
+   },
+   {
+    "name": "SupportTicket",
+    "fields": [
+     "ticket_id",
+     "customer_id",
+     "issue_type",
+     "priority_level",
+     "status",
+     "assigned_agent"
+    ],
+    "crud_layout": "kanban"
+   },
+   {
+    "name": "ComplianceAudit",
+    "fields": [
+     "audit_id",
+     "flagged_reason",
+     "verification_date",
+     "regulatory_code",
+     "resolution_status"
+    ],
+    "crud_layout": "split-pane"
+   }
+  ],
+  "marketing_pages": [
+   {
+    "name": "Personal Banking",
+    "slug": "personal-banking",
+    "template": "content"
+   },
+   {
+    "name": "Business Solutions",
+    "slug": "business-solutions",
+    "template": "features"
+   },
+   {
+    "name": "Security Protocols",
+    "slug": "security-measures",
+    "template": "content"
+   },
+   {
+    "name": "Corporate Services",
+    "slug": "corporate-services",
+    "template": "pricing"
+   }
+  ],
+  "landing_sections": [
+   "hero",
+   "features",
+   "whychoose",
+   "reviews",
+   "faq"
+  ],
+  "key_features": [
+   "Multi-factor authentication (MFA) login",
+   "Real-time transaction monitoring",
+   "Automated bill payment scheduling",
+   "Internal admin dashboard for staff",
+   "KYC and AML compliance tracking",
+   "Instant mobile notification alerts",
+   "Cross-platform account synchronization",
+   "Secure internal wire transfers"
+  ],
+  "terminology": [
+   "E-Mandate",
+   "Routing Number",
+   "KYC",
+   "AML",
+   "OTP",
+   "Net Banking",
+   "Phishing Protection",
+   "Debit Card Management",
+   "Overdraft Protection",
+   "Fixed Deposit",
+   "Merchant Category",
+   "Security Certificate"
+  ],
+  "image_subjects": [
+   "Secure mobile app interface",
+   "Professional banking consultants",
+   "Modern bank branch interior",
+   "Digital transaction graphs",
+   "Encrypted data icons",
+   "Customer service representative"
+  ],
+  "sites_seen": [
+   "https://retail.sbi.bank.in/retail/login.htm",
+   "https://www.bankofamerica.com/online-banking/sign-in/",
+   "https://portal.office.com/AdminPortal/Home",
+   "https://onlinebanking.bk.rw/",
+   "https://www.go-globe.com/customer-portal.php",
+   "https://www.salesforce.com/service/customer-self-service/customer-portal/"
+  ],
+  "engine": "ddgs+gemma"
+ },
+ "an-online-tire-shop-with-products-cart-and-orders": {
+  "domain": "automotive e-commerce",
+  "is_utility_tool": false,
+  "app_name": "TreadMaster Pro",
+  "tagline": "The ultimate precision platform for selling tires, wheels, and performance parts with guaranteed fitment.",
+  "theme_style": "minimal",
+  "roles": [
+   "Customer",
+   "Shop Manager",
+   "Inventory Specialist"
+  ],
+  "entities": [
+   {
+    "name": "Product",
+    "fields": [
+     "sku_code",
+     "brand_name",
+     "model_name",
+     "tire_size",
+     "load_index",
+     "speed_rating",
+     "stock_level"
+    ],
+    "crud_layout": "table"
+   },
+   {
+    "name": "VehicleFitment",
+    "fields": [
+     "vin_number",
+     "year_make_model",
+     "compatible_skus",
+     "wheel_offset",
+     "bolt_pattern",
+     "last_verified_date"
+    ],
+    "crud_layout": "split-pane"
+   },
+   {
+    "name": "Order",
+    "fields": [
+     "order_id",
+     "customer_info",
+     "total_amount",
+     "payment_status",
+     "shipping_method",
+     "fulfillment_status"
+    ],
+    "crud_layout": "kanban"
+   },
+   {
+    "name": "InventoryLog",
+    "fields": [
+     "log_id",
+     "sku_affected",
+     "change_amount",
+     "timestamp",
+     "warehouse_location",
+     "supplier_source"
+    ],
+    "crud_layout": "timeline"
+   }
+  ],
+  "marketing_pages": [
+   {
+    "name": "Fitment Guide",
+    "slug": "fitment-guide",
+    "template": "content"
+   },
+   {
+    "name": "Inventory Management",
+    "slug": "inventory-management",
+    "template": "features"
+   },
+   {
+    "name": "Dealer Portal",
+    "slug": "dealer-portal",
+    "template": "pricing"
+   },
+   {
+    "name": "About Our Story",
+    "slug": "about-us",
+    "template": "about"
+   }
+  ],
+  "landing_sections": [
+   "hero",
+   "features",
+   "whychoose",
+   "stats",
+   "reviews",
+   "faq"
+  ],
+  "key_features": [
+   "Automated Inventory Management",
+   "VIN & MMY Fitment Lookup",
+   "Multi-Warehouse Fulfillment",
+   "Real-time Stock Syncing",
+   "Advanced Product Filtering",
+   "Bulk Order Processing",
+   "Custom Branding Options",
+   "Seamless Marketplace Integration"
+  ],
+  "terminology": [
+   "SKU",
+   "Load Index",
+   "Speed Rating",
+   "MMY (Make, Model, Year)",
+   "VIN Lookup",
+   "Bolt Pattern",
+   "Wheel Offset",
+   "Treadwear",
+   "Inventory Sync",
+   "Fitment Guarantee",
+   "Warehouse Management",
+   "Bulk Import"
+  ],
+  "image_subjects": [
+   "High-performance tires",
+   "Custom alloy wheels",
+   "Automotive warehouse",
+   "Customer using mobile app",
+   "Tire fitting service",
+   "Close-up of tire treads",
+   "Dashboard showing analytics"
+  ],
+  "sites_seen": [
+   "https://www.x-cart.com/blog/sell-wheels-and-tires-online.html",
+   "https://www.justalternativeto.com/discount-tire/",
+   "https://www.shoppingcartelite.com/articles/webshop-manager-vs-autopartsshoppingcart-apsc",
+   "https://www.webdesignarticles.net/tag/shopping-cart-software/page/2/",
+   "https://www.discounttire.com/",
+   "https://www.amazon.com/Automotive-Tires-Wheels/b?ie=UTF8&node=15706571"
+  ],
+  "engine": "ddgs+gemma"
+ },
+ "hotel-app-build": {
+  "domain": "hospitality-tech",
+  "is_utility_tool": false,
+  "app_name": "StaySync Pro",
+  "tagline": "A comprehensive mobile and web ecosystem for seamless hotel management, real-time inventory sync, and guest engagement.",
+  "theme_style": "glassmorphism",
+  "roles": [
+   "Hotel Manager",
+   "Guest",
+   "Housekeeping Staff"
+  ],
+  "entities": [
+   {
+    "name": "Property",
+    "fields": [
+     "property_name",
+     "location_coordinates",
+     "amenities_list",
+     "total_rooms",
+     "rating_score",
+     "virtual_tour_url"
+    ],
+    "crud_layout": "split-pane"
+   },
+   {
+    "name": "RoomInventory",
+    "fields": [
+     "room_type",
+     "base_price",
+     "current_status",
+     "availability_calendar",
+     "cleaning_status",
+     "last_inspected_at"
+    ],
+    "crud_layout": "kanban"
+   },
+   {
+    "name": "Booking",
+    "fields": [
+     "guest_id",
+     "check_in_date",
+     "check_out_date",
+     "payment_status",
+     "cancellation_policy_flag",
+     "total_amount"
+    ],
+    "crud_layout": "table"
+   },
+   {
+    "name": "GuestReview",
+    "fields": [
+     "guest_id",
+     "rating_score",
+     "comment_text",
+     "verification_status",
+     "reply_status"
+    ],
+    "crud_layout": "table"
+   },
+   {
+    "name": "ChannelSyncLog",
+    "fields": [
+     "channel_name",
+     "sync_timestamp",
+     "status_code",
+     "inventory_delta",
+     "error_message"
+    ],
+    "crud_layout": "timeline"
+   }
+  ],
+  "marketing_pages": [
+   {
+    "name": "Booking Engine",
+    "slug": "booking-engine",
+    "template": "features"
+   },
+   {
+    "name": "Channel Manager",
+    "slug": "channel-manager",
+    "template": "content"
+   },
+   {
+    "name": "Housekeeping Tools",
+    "slug": "housekeeping",
+    "template": "features"
+   },
+   {
+    "name": "Case Studies",
+    "slug": "success-stories",
+    "template": "gallery"
+   }
+  ],
+  "landing_sections": [
+   "hero",
+   "features",
+   "stats",
+   "whychoose",
+   "reviews",
+   "pricing"
+  ],
+  "key_features": [
+   "Real-time inventory synchronization across OTAs",
+   "Instant booking engine with mobile optimization",
+   "Automated housekeeping and maintenance workflows",
+   "Multi-channel reservation management",
+   "Guest loyalty rewards system",
+   "Virtual tour integration for property viewing",
+   "Seamless payment processing via PayPal/Stripe",
+   "Dynamic pricing based on seasonal demand",
+   "Automatic refund and cancellation handling",
+   "Review management and sentiment analysis"
+  ],
+  "terminology": [
+   "OTA Sync",
+   "Inventory Management",
+   "Booking Engine",
+   "Channel Manager",
+   "Room Type",
+   "Lead Time",
+   "No-Show Policy",
+   "Walk-in",
+   "PMS Integration",
+   "Dynamic Pricing",
+   "Occupancy Rate",
+   "RevPAR"
+  ],
+  "image_subjects": [
+   "Luxury hotel lobby",
+   "Mobile phone showing booking screen",
+   "Hotel staff using tablets",
+   "Modern guest room interior",
+   "Dashboard analytics graphs",
+   "Housekeeping team in hallway"
+  ],
+  "sites_seen": [
+   "https://www.youtube.com/watch?v=48PE-NK4S6s",
+   "https://qloapps.com/mobile-app-builder/",
+   "https://themindstudios.com/blog/cost-to-build-hotel-booking-website/",
+   "https://sirvoy.com/",
+   "https://www.squareinfosoft.com/cost-to-build-hotel-booking-app/",
+   "https://www.ptiwebtech.com/pages/hotel-app-development"
+  ],
+  "engine": "ddgs+gemma"
+ },
+ "a-hotel-booking-and-management-app": {
+  "domain": "hospitality-management",
+  "is_utility_tool": false,
+  "app_name": "LuminaStay PMS",
+  "tagline": "A unified property management system to automate bookings, housekeeping, and guest experiences.",
+  "theme_style": "minimal",
+  "roles": [
+   "Front Desk Agent",
+   "Revenue Manager",
+   "Housekeeping Staff"
+  ],
+  "entities": [
+   {
+    "name": "Reservation",
+    "fields": [
+     "booking_id",
+     "guest_name",
+     "check_in_date",
+     "check_out_date",
+     "room_type",
+     "total_price",
+     "payment_status"
+    ],
+    "crud_layout": "kanban"
+   },
+   {
+    "name": "RoomInventory",
+    "fields": [
+     "room_number",
+     "room_type",
+     "current_status",
+     "cleaning_status",
+     "base_rate",
+     "amenities_list"
+    ],
+    "crud_layout": "table"
+   },
+   {
+    "name": "GuestProfile",
+    "fields": [
+     "guest_id",
+     "contact_info",
+     "loyalty_status",
+     "previous_stays_count",
+     "special_requests",
+     "identity_verification"
+    ],
+    "crud_layout": "split-pane"
+   },
+   {
+    "name": "ChannelSync",
+    "fields": [
+     "platform_name",
+     "api_key",
+     "last_sync_time",
+     "active_inventory_count",
+     "error_logs"
+    ],
+    "crud_layout": "table"
+   },
+   {
+    "name": "HousekeepingTask",
+    "fields": [
+     "task_id",
+     "room_number",
+     "assigned_staff",
+     "priority_level",
+     "completion_status",
+     "inspection_notes"
+    ],
+    "crud_layout": "kanban"
+   }
+  ],
+  "marketing_pages": [
+   {
+    "name": "Channel Manager",
+    "slug": "channel-manager",
+    "template": "features"
+   },
+   {
+    "name": "Pricing Plans",
+    "slug": "pricing",
+    "template": "pricing"
+   },
+   {
+    "name": "Guest Experience",
+    "slug": "guest-experience",
+    "template": "content"
+   },
+   {
+    "name": "Case Studies",
+    "slug": "success-stories",
+    "template": "gallery"
+   }
+  ],
+  "landing_sections": [
+   "hero",
+   "features",
+   "stats",
+   "whychoose",
+   "pricing",
+   "faq"
+  ],
+  "key_features": [
+   "Real-time inventory synchronization across OTAs",
+   "Automated housekeeping task management",
+   "AI-driven dynamic pricing engine",
+   "Seamless guest check-in and digital keys",
+   "Multi-property dashboard for owners",
+   "Integrated point of sale (POS) system",
+   "Automated invoice generation and payment processing",
+   "Centralized guest CRM and communication logs"
+  ],
+  "terminology": [
+   "PMS",
+   "OTA",
+   "RevPAR",
+   "ADR",
+   "Overbooking",
+   "Channel Manager",
+   "Housekeeping Status",
+   "Booking Engine",
+   "Inventory Management",
+   "Yield Management",
+   "Walk-in",
+   "No-show"
+  ],
+  "image_subjects": [
+   "Front desk reception area",
+   "Mobile check-in interface",
+   "Housekeeping staff with tablets",
+   "Analytics dashboard on desktop",
+   "Luxury hotel lobby",
+   "Room availability calendar view"
+  ],
+  "sites_seen": [
+   "https://www.cloudbeds.com/hotel-management-software-guide/features-benefits/",
+   "https://aperfectstay.ai/blog/top-features-to-look-for-in-a-modern-hotel-management-software",
+   "https://www.mews.com/en/blog/hotel-management-software-features",
+   "https://minihotel.io/hotel-management-software-for-small-hotels/",
+   "https://apps.apple.com/in/app/djubo-hotel-management-app/id1183213268",
+   "http://www.codesensesoftsolutions.com/hotel-booking-app-development"
+  ],
+  "engine": "ddgs+gemma"
+ },
+ "an-online-sneaker-store-with-products-cart-and-orders": {
+  "domain": "e-commerce",
+  "is_utility_tool": false,
+  "app_name": "SoleStride Elite",
+  "tagline": "A premium marketplace for high-end sneakers with 3D customization and AI-driven recommendations.",
+  "theme_style": "minimal",
+  "roles": [
+   "Shoe Enthusiast",
+   "Store Manager",
+   "Inventory Specialist"
+  ],
+  "entities": [
+   {
+    "name": "Product",
+    "fields": [
+     "sku_code",
+     "brand_name",
+     "model_name",
+     "colorway",
+     "size_range",
+     "price_usd",
+     "stock_count"
+    ],
+    "crud_layout": "table"
+   },
+   {
+    "name": "CustomizationProfile",
+    "fields": [
+     "user_id",
+     "material_selection",
+     "custom_color_hex",
+     "3d_preview_url",
+     "modification_notes"
+    ],
+    "crud_layout": "split-pane"
+   },
+   {
+    "name": "Order",
+    "fields": [
+     "order_id",
+     "customer_id",
+     "total_amount",
+     "payment_status",
+     "shipping_tracking_number",
+     "fulfillment_status"
+    ],
+    "crud_layout": "kanban"
+   },
+   {
+    "name": "InventoryLog",
+    "fields": [
+     "log_id",
+     "product_id",
+     "change_amount",
+     "timestamp",
+     "warehouse_location"
+    ],
+    "crud_layout": "timeline"
+   }
+  ],
+  "marketing_pages": [
+   {
+    "name": "Collections",
+    "slug": "collections",
+    "template": "gallery"
+   },
+   {
+    "name": "Custom Studio",
+    "slug": "design-studio",
+    "template": "features"
+   },
+   {
+    "name": "Stockists",
+    "slug": "retailpartners",
+    "template": "content"
+   },
+   {
+    "name": "Track Order",
+    "slug": "track-order",
+    "template": "content"
+   }
+  ],
+  "landing_sections": [
+   "hero",
+   "features",
+   "gallery",
+   "whychoose",
+   "reviews",
+   "faq"
+  ],
+  "key_features": [
+   "3D Product Customization Engine",
+   "AI-Powered Style Recommendations",
+   "Real-time Inventory Sync",
+   "One-Click Apple Pay Integration",
+   "Automated Order Tracking",
+   "Multi-variant Size Selection",
+   "Exclusive Drop Notifications",
+   "Bulk Order Management for Retailers"
+  ],
+  "terminology": [
+   "Drop",
+   "Colorway",
+   "SKU",
+   "Deadstock",
+   "Hype",
+   "Consignment",
+   "Customization",
+   "Inventory_Sync",
+   "Fulfilment",
+   "Retailer_Portal"
+  ],
+  "image_subjects": [
+   "Close-up of sneaker textures",
+   "3D design interface",
+   "Warehouse fulfillment center",
+   "Customer unboxing experience",
+   "Sneaker lifestyle photography",
+   "Mobile app UI mockups"
+  ],
+  "sites_seen": [
+   "https://www.scribd.com/document/595227296/ONLINE-SHOE-STORE",
+   "https://www.goodbarber.com/industry-apps/retail/shoe-store-seller/",
+   "https://idesignibuy.com/sneaker-shoe-design-tool/",
+   "https://www.jetir.org/papers/JETIR2409472.pdf",
+   "https://www.aiobot.com/best-online-sneaker-stores/",
+   "https://www.aiobot.com/sneaker-consignment-stores/"
+  ],
+  "engine": "ddgs+gemma"
+ },
+ "a-restaurant-pos-and-inventory-management-system": {
+  "domain": "restaurant management",
+  "is_utility_tool": false,
+  "app_name": "ServeFlow POS",
+  "tagline": "A unified ecosystem for seamless order processing, real-time inventory tracking, and automated kitchen workflows.",
+  "theme_style": "minimal",
+  "roles": [
+   "Front of House Staff",
+   "Kitchen Manager",
+   "Restaurant Owner"
+  ],
+  "entities": [
+   {
+    "name": "MenuItem",
+    "fields": [
+     "item_name",
+     "category",
+     "base_price",
+     "recipe_ingredients",
+     "is_active",
+     "allergen_info"
+    ],
+    "crud_layout": "table"
+   },
+   {
+    "name": "InventoryStock",
+    "fields": [
+     "supplier_name",
+     "unit_measure",
+     "current_stock_level",
+     "reorder_point",
+     "cost_per_unit",
+     "expiry_date"
+    ],
+    "crud_layout": "spreadsheet"
+   },
+   {
+    "name": "OrderTransaction",
+    "fields": [
+     "order_id",
+     "table_number",
+     "status",
+     "total_amount",
+     "payment_method",
+     "timestamp"
+    ],
+    "crud_layout": "kanban"
+   },
+   {
+    "name": "SupplierLog",
+    "fields": [
+     "supplier_id",
+     "delivery_date",
+     "received_items",
+     "invoice_number",
+     "status"
+    ],
+    "crud_layout": "timeline"
+   }
+  ],
+  "marketing_pages": [
+   {
+    "name": "Menu Management",
+    "slug": "menu-configuration",
+    "template": "content"
+   },
+   {
+    "name": "Inventory Control",
+    "slug": "inventory-tracking",
+    "template": "features"
+   },
+   {
+    "name": "Reporting & Analytics",
+    "slug": "sales-reports",
+    "template": "content"
+   },
+   {
+    "name": "Pricing Plans",
+    "slug": "pricing",
+    "template": "pricing"
+   }
+  ],
+  "landing_sections": [
+   "hero",
+   "features",
+   "stats",
+   "whychoose",
+   "pricing",
+   "faq"
+  ],
+  "key_features": [
+   "Real-time inventory auto-deduction on sale",
+   "Multi-channel order integration (Online, Mobile, In-person)",
+   "Automated low-stock alerts and reordering",
+   "Recipe costing and waste tracking",
+   "Kitchen Display System (KDS) integration",
+   "Employee shift management and payroll sync",
+   "Dynamic menu configuration for seasonal changes",
+   "Detailed sales analytics and profit margin reporting"
+  ],
+  "terminology": [
+   "SKU",
+   "Point of Sale",
+   "Recipe Costing",
+   "Stockout",
+   "KDS",
+   "Waste Management",
+   "Turnover Rate",
+   "Inventory Audit",
+   "Lead Time",
+   "Unit of Measure",
+   "Modifier",
+   "Table Turnover"
+  ],
+  "image_subjects": [
+   "Chef preparing food in a busy kitchen",
+   "Waiter using a tablet at a table",
+   "Close-up of fresh ingredients",
+   "Dashboard showing sales analytics",
+   "Inventory shelves organized with labels",
+   "Customer paying via mobile device"
+  ],
+  "sites_seen": [
+   "https://limetray.com/blog/restaurant-pos-systems-for-inventory-management-essentials/",
+   "https://www.oracle.com/food-beverage/restaurant-pos-systems/restaurant-management-system-features/",
+   "https://squareup.com/us/en/point-of-sale/restaurants",
+   "https://www.netsuite.com/portal/resource/articles/inventory-management/restaurant-inventory-management.shtml",
+   "https://www.marketman.com/",
+   "https://pos.toasttab.com/products/inventory-management"
+  ],
+  "engine": "ddgs+gemma"
+ },
+ "a-school-lms-for-students-teachers-courses-and-exams": {
+  "domain": "education",
+  "is_utility_tool": false,
+  "app_name": "ScholarPath LMS",
+  "tagline": "A comprehensive learning management ecosystem for K-12 and higher education institutions.",
+  "theme_style": "minimal",
+  "roles": [
+   "Student",
+   "Instructor",
+   "Administrator"
+  ],
+  "entities": [
+   {
+    "name": "Course",
+    "fields": [
+     "course_title",
+     "description",
+     "instructor_id",
+     "enrollment_count",
+     "syllabus_content",
+     "category_tag"
+    ],
+    "crud_layout": "table"
+   },
+   {
+    "name": "Assignment",
+    "fields": [
+     "title",
+     "due_date",
+     "point_value",
+     "submission_link",
+     "rubric_criteria",
+     "status"
+    ],
+    "crud_layout": "kanban"
+   },
+   {
+    "name": "Exam",
+    "fields": [
+     "exam_name",
+     "time_limit",
+     "passing_score",
+     "question_count",
+     "scheduled_at",
+     "is_proctored"
+    ],
+    "crud_layout": "table"
+   },
+   {
+    "name": "StudentProgress",
+    "fields": [
+     "student_id",
+     "course_id",
+     "completion_percentage",
+     "last_login",
+     "grade_average",
+     "attendance_log"
+    ],
+    "crud_layout": "split-pane"
+   },
+   {
+    "name": "DiscussionForum",
+    "fields": [
+     "thread_title",
+     "post_content",
+     "author_id",
+     "reply_count",
+     "timestamp",
+     "is_pinned"
+    ],
+    "crud_layout": "table"
+   }
+  ],
+  "marketing_pages": [
+   {
+    "name": "Curriculum",
+    "slug": "curriculum",
+    "template": "content"
+   },
+   {
+    "name": "Faculty",
+    "slug": "faculty-directory",
+    "template": "gallery"
+   },
+   {
+    "name": "StudentSuccess",
+    "slug": "student-success",
+    "template": "features"
+   },
+   {
+    "name": "Pricing",
+    "slug": "pricing",
+    "template": "pricing"
+   }
+  ],
+  "landing_sections": [
+   "hero",
+   "features",
+   "stats",
+   "whychoose",
+   "reviews",
+   "faq"
+  ],
+  "key_features": [
+   "Automated Grading & Rubrics",
+   "Interactive Discussion Forums",
+   "Progress Tracking Analytics",
+   "Gamified Learning Modules",
+   "Proctored Exam Management",
+   "Multi-device Sync (Mobile/Web)",
+   "Bulk Grading Tools",
+   "In-line Feedback & Annotations",
+   "Conditional Content Unlocking",
+   "Real-time Attendance Tracking"
+  ],
+  "terminology": [
+   "Syllabus",
+   "Rubric",
+   "LMS",
+   "Pedagogy",
+   "Assessment",
+   "Module",
+   "Enrollment",
+   "Proctoring",
+   "Gamification",
+   "K-12",
+   "Higher Ed",
+   "Gradebook"
+  ],
+  "image_subjects": [
+   "Students in a classroom",
+   "Teacher using a tablet",
+   "Group study session",
+   "Digital dashboard interface",
+   "Graduation ceremony",
+   "Online lecture screen"
+  ],
+  "sites_seen": [
+   "https://softwareconnect.com/roundups/best-lms-for-schools/",
+   "https://www.softwareadvice.com/lms/education-comparison/",
+   "https://research.com/education/best-lms-for-schools",
+   "https://workinginschools.com/10-school-learning-management-systems-lms/",
+   "https://www.blackbaud.com/products/learning-management-system",
+   "https://www.instructure.com/lms-learning-management-system"
+  ],
+  "engine": "ddgs+gemma"
+ },
+ "a-dental-clinic-appointment-and-billing-app": {
+  "domain": "dental management",
+  "is_utility_tool": false,
+  "app_name": "DentixFlow",
+  "tagline": "A comprehensive cloud-based platform for seamless dental practice management, automated billing, and patient engagement.",
+  "theme_style": "minimal",
+  "roles": [
+   "Dentist",
+   "Clinic Administrator",
+   "Front Desk Staff"
+  ],
+  "entities": [
+   {
+    "name": "PatientRecord",
+    "fields": [
+     "patient_id",
+     "full_name",
+     "contact_info",
+     "medical_history",
+     "insurance_details",
+     "treatment_summary"
+    ],
+    "crud_layout": "split-pane"
+   },
+   {
+    "name": "Appointment",
+    "fields": [
+     "appointment_id",
+     "patient_id",
+     "scheduled_time",
+     "procedure_type",
+     "status",
+     "room_assignment"
+    ],
+    "crud_layout": "kanban"
+   },
+   {
+    "name": "BillingInvoice",
+    "fields": [
+     "invoice_id",
+     "patient_id",
+     "total_amount",
+     "insurance_coverage",
+     "payment_status",
+     "transaction_date"
+    ],
+    "crud_layout": "spreadsheet"
+   },
+   {
+    "name": "TreatmentPlan",
+    "fields": [
+     "plan_id",
+     "patient_id",
+     "procedure_steps",
+     "estimated_cost",
+     "completion_percentage",
+     "notes"
+    ],
+    "crud_layout": "timeline"
+   },
+   {
+    "name": "InventoryItem",
+    "fields": [
+     "item_id",
+     "stock_level",
+     "reorder_point",
+     "supplier_info",
+     "unit_cost"
+    ],
+    "crud_layout": "table"
+   }
+  ],
+  "marketing_pages": [
+   {
+    "name": "Clinical Services",
+    "slug": "clinical-services",
+    "template": "content"
+   },
+   {
+    "name": "Patient Portal",
+    "slug": "patient-portal",
+    "template": "features"
+   },
+   {
+    "name": "Billing & Insurance",
+    "slug": "billing-insurance",
+    "template": "content"
+   },
+   {
+    "name": "Pricing Plans",
+    "slug": "pricing",
+    "template": "pricing"
+   }
+  ],
+  "landing_sections": [
+   "hero",
+   "features",
+   "stats",
+   "whychoose",
+   "reviews",
+   "faq"
+  ],
+  "key_features": [
+   "Automated Appointment Reminders via WhatsApp",
+   "Digital Odontogram & Treatment Mapping",
+   "Insurance Claim Processing & Verification",
+   "AI-Powered Clinical Note Generation",
+   "Multi-Branch Practice Management",
+   "Secure Electronic Medical Records (EMR)",
+   "Real-time Inventory Tracking",
+   "Automated Invoicing & Payment Links",
+   "Digital Prescription Management",
+   "Patient Engagement Analytics"
+  ],
+  "terminology": [
+   "Odontogram",
+   "Prophylaxis",
+   "Periodontal Charting",
+   "Claim Submission",
+   "Treatment Plan",
+   "EMR",
+   "HIPAA Compliance",
+   "No-show Rate",
+   "Patient Portal",
+   "Insurance Co-pay",
+   "Digital X-Ray Integration",
+   "Prescription Management"
+  ],
+  "image_subjects": [
+   "Dentist using tablet for treatment planning",
+   "Front desk staff managing appointments",
+   "Modern dental clinic interior",
+   "Patient receiving consultation",
+   "Close up of digital x-ray on screen",
+   "Dashboard showing analytics charts"
+  ],
+  "sites_seen": [
+   "https://medevel.com/dental-apps-1907/",
+   "https://myclinicapp.co/",
+   "https://dentalpro.cloud/",
+   "https://www.selecthub.com/c/dental-practice-management-software/",
+   "https://missed.com/industries/dental-clinics",
+   "https://rc.missed.com/industries/dental-clinics"
+  ],
+  "engine": "ddgs+gemma"
+ },
+ "-srs-report-project-title-hospital-website-and-patient-portal-system-v": {
+  "domain": "healthcare",
+  "is_utility_tool": false,
+  "app_name": "MediConnect Portal",
+  "tagline": "A comprehensive patient management ecosystem connecting healthcare providers and patients seamlessly.",
+  "theme_style": "minimal",
+  "roles": [
+   "Patient",
+   "Medical Practitioner",
+   "Clinic Administrator"
+  ],
+  "entities": [
+   {
+    "name": "PatientProfile",
+    "fields": [
+     "patient_id",
+     "full_name",
+     "date_of_birth",
+     "medical_history_summary",
+     "insurance_provider",
+     "emergency_contact_info"
+    ],
+    "crud_layout": "split-pane"
+   },
+   {
+    "name": "Appointment",
+    "fields": [
+     "appointment_id",
+     "patient_id",
+     "doctor_id",
+     "scheduled_time",
+     "status_code",
+     "reason_for_visit"
+    ],
+    "crud_layout": "kanban"
+   },
+   {
+    "name": "MedicalRecord",
+    "fields": [
+     "record_id",
+     "patient_id",
+     "diagnosis_code",
+     "treatment_plan",
+     "medication_list",
+     "lab_results_link"
+    ],
+    "crud_layout": "table"
+   },
+   {
+    "name": "Prescription",
+    "fields": [
+     "prescription_id",
+     "patient_id",
+     "medication_name",
+     "dosage_instructions",
+     "refill_count",
+     "expiry_date"
+    ],
+    "crud_layout": "table"
+   },
+   {
+    "name": "BillingInvoice",
+    "fields": [
+     "invoice_id",
+     "patient_id",
+     "total_amount",
+     "payment_status",
+     "due_date",
+     "transaction_reference"
+    ],
+    "crud_layout": "spreadsheet"
+   }
+  ],
+  "marketing_pages": [
+   {
+    "name": "Patient Services",
+    "slug": "patient-services",
+    "template": "content"
+   },
+   {
+    "name": "Provider Portal",
+    "slug": "provider-portal",
+    "template": "features"
+   },
+   {
+    "name": "Clinic Management",
+    "slug": "clinic-management",
+    "template": "content"
+   },
+   {
+    "name": "Compliance & Security",
+    "slug": "security-compliance",
+    "template": "content"
+   }
+  ],
+  "landing_sections": [
+   "hero",
+   "features",
+   "whychoose",
+   "reviews",
+   "faq"
+  ],
+  "key_features": [
+   "Secure Patient Portal Access",
+   "Real-time Appointment Scheduling",
+   "Electronic Health Record (EHR) Integration",
+   "Automated Prescription Management",
+   "Secure Billing & Insurance Processing",
+   "Telemedicine Consultation Support",
+   "Patient Notification System",
+   "Multi-role Dashboard for Staff"
+  ],
+  "terminology": [
+   "EHR",
+   "HIPAA Compliance",
+   "Diagnosis Code",
+   "Prescription_ID",
+   "Triage",
+   "Telemedicine",
+   "Patient Portal",
+   "Clinical Notes",
+   "Medical History",
+   "Billing Cycle",
+   "Provider Network",
+   "Lab Results"
+  ],
+  "image_subjects": [
+   "Doctor using tablet",
+   "Patient on smartphone",
+   "Modern clinic interior",
+   "Medical staff collaborating",
+   "Secure data server room",
+   "Patient check-up scene"
+  ],
+  "sites_seen": [
+   "https://github.com/sprakhar12/PatientPortal-SRS-Scrum-Report",
+   "https://www.geeksforgeeks.org/software-engineering/software-requirement-specification-srs-format/",
+   "https://www.perforce.com/blog/alm/how-write-software-requirements-specification-srs-document",
+   "https://www.studocu.com/row/document/comsats-university-islamabad/software-requirement-engineering/software-requirements-specification/16716643",
+   "https://www.utdallas.edu/~chung/RE/Presentations07S/Team_1_Doc/Documents/SRS4.0.doc",
+   "https://asana.com/resources/software-requirement-document-template"
+  ],
+  "engine": "ddgs+gemma"
+ }
+}

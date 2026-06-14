@@ -1,0 +1,240 @@
+{
+  "srs_report": {
+    "system_name": "FinTrust Loan & Microfinance System",
+    "version": "1.0.0",
+    "scope_type": "Public Bank Website + Customer Portal + Back-office Admin",
+    "project_overview": {
+      "problem_statement": "Let customers apply for loans, view balances and make repayments",
+      "main_objectives": [
+        "Let customers apply for loans, view balances and make repayments",
+        "Help officers review applications, disburse and track repayments",
+        "Give the institution tools for accounts, transactions and reporting"
+      ]
+    },
+    "user_roles_and_permissions": [
+      {
+        "role": "Guest",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Customer",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Loan Officer",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Teller",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Risk Analyst",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Branch Manager",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Administrator",
+        "permissions": [
+          "manage"
+        ]
+      }
+    ],
+    "data_model": {
+      "entities": [
+        {
+          "name": "LoanApplication",
+          "fields": [
+            {
+              "name": "applicant",
+              "type": "string"
+            },
+            {
+              "name": "amount",
+              "type": "decimal"
+            },
+            {
+              "name": "term_months",
+              "type": "number"
+            },
+            {
+              "name": "purpose",
+              "type": "string"
+            },
+            {
+              "name": "applied_date",
+              "type": "date"
+            },
+            {
+              "name": "status",
+              "type": "enum"
+            }
+          ]
+        },
+        {
+          "name": "Customer",
+          "fields": [
+            {
+              "name": "full_name",
+              "type": "string"
+            },
+            {
+              "name": "national_id",
+              "type": "string"
+            },
+            {
+              "name": "email",
+              "type": "string"
+            },
+            {
+              "name": "phone",
+              "type": "string"
+            },
+            {
+              "name": "address",
+              "type": "text"
+            },
+            {
+              "name": "credit_score",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Repayment",
+          "fields": [
+            {
+              "name": "loan_ref",
+              "type": "string"
+            },
+            {
+              "name": "amount",
+              "type": "decimal"
+            },
+            {
+              "name": "due_date",
+              "type": "date"
+            },
+            {
+              "name": "paid_date",
+              "type": "date"
+            },
+            {
+              "name": "status",
+              "type": "enum"
+            }
+          ]
+        },
+        {
+          "name": "Account",
+          "fields": [
+            {
+              "name": "account_no",
+              "type": "string"
+            },
+            {
+              "name": "holder",
+              "type": "string"
+            },
+            {
+              "name": "balance",
+              "type": "decimal"
+            },
+            {
+              "name": "type",
+              "type": "string"
+            },
+            {
+              "name": "status",
+              "type": "enum"
+            }
+          ]
+        },
+        {
+          "name": "Transaction",
+          "fields": [
+            {
+              "name": "account_no",
+              "type": "string"
+            },
+            {
+              "name": "amount",
+              "type": "decimal"
+            },
+            {
+              "name": "kind",
+              "type": "string"
+            },
+            {
+              "name": "occurred_at",
+              "type": "datetime"
+            }
+          ]
+        }
+      ]
+    },
+    "ui_pages": [
+      {
+        "path": "/",
+        "name": "Home"
+      },
+      {
+        "path": "/loans",
+        "name": "Loan Products"
+      },
+      {
+        "path": "/calculator",
+        "name": "Repayment Calculator"
+      },
+      {
+        "path": "/branches",
+        "name": "Branches & ATMs"
+      },
+      {
+        "path": "/contact",
+        "name": "Contact Us"
+      }
+    ],
+    "functional_requirements": [
+      {
+        "module": "Public Website",
+        "title": "FR-001 Loan Products"
+      },
+      {
+        "module": "Public Website",
+        "title": "FR-002 Repayment Calculator"
+      },
+      {
+        "module": "Public Website",
+        "title": "FR-003 Branches and ATMs"
+      },
+      {
+        "module": "Customer Portal",
+        "title": "FR-011 Loan Application"
+      },
+      {
+        "module": "Finance",
+        "title": "FR-014 Repayments and Transactions"
+      },
+      {
+        "module": "Public Website",
+        "title": "FR-016 Contact and Inquiry"
+      }
+    ]
+  }
+}

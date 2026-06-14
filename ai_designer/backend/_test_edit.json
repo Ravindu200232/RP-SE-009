@@ -1,0 +1,33 @@
+{
+  "good": [
+    {
+      "cid": "navbar",
+      "prompt": "Add a small tagline that says exactly: Learn Anywhere",
+      "ok": true,
+      "marker_present": true,
+      "applied": true,
+      "error": null,
+      "secs": 80.9
+    },
+    {
+      "cid": "dashboard",
+      "prompt": "Change the main page heading to exactly: Control Center",
+      "ok": false,
+      "marker_present": false,
+      "applied": false,
+      "error": "the change did not compile, so it was reverted",
+      "secs": 159.7
+    },
+    {
+      "cid": "page-courses",
+      "prompt": "Change the big hero heading to exactly: Welcome Students",
+      "ok": true,
+      "marker_present": true,
+      "applied": true,
+      "error": null,
+      "secs": 94.5
+    }
+  ],
+  "revert_ok": false,
+  "accuracy": "2/3"
+}

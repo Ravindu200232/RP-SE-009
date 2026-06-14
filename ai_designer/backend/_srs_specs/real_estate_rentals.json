@@ -1,0 +1,238 @@
+{
+  "srs_report": {
+    "system_name": "HomeHub Property & Rental Portal",
+    "version": "1.0.0",
+    "scope_type": "Public Property Website + Client Portal + Agency Admin",
+    "project_overview": {
+      "problem_statement": "Let visitors browse listings, save favourites and request viewings",
+      "main_objectives": [
+        "Let visitors browse listings, save favourites and request viewings",
+        "Help agents manage listings, leads and viewing appointments",
+        "Give the agency tools for tenancies, agreements and payments"
+      ]
+    },
+    "user_roles_and_permissions": [
+      {
+        "role": "Guest",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Client",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Agent",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Property Manager",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Finance Officer",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Administrator",
+        "permissions": [
+          "manage"
+        ]
+      }
+    ],
+    "data_model": {
+      "entities": [
+        {
+          "name": "PropertyListing",
+          "fields": [
+            {
+              "name": "title",
+              "type": "string"
+            },
+            {
+              "name": "address",
+              "type": "string"
+            },
+            {
+              "name": "property_type",
+              "type": "string"
+            },
+            {
+              "name": "bedrooms",
+              "type": "number"
+            },
+            {
+              "name": "monthly_rent",
+              "type": "decimal"
+            },
+            {
+              "name": "status",
+              "type": "enum"
+            },
+            {
+              "name": "description",
+              "type": "text"
+            }
+          ]
+        },
+        {
+          "name": "Lead",
+          "fields": [
+            {
+              "name": "client_name",
+              "type": "string"
+            },
+            {
+              "name": "interested_in",
+              "type": "string"
+            },
+            {
+              "name": "phone",
+              "type": "string"
+            },
+            {
+              "name": "status",
+              "type": "enum"
+            }
+          ]
+        },
+        {
+          "name": "Viewing",
+          "fields": [
+            {
+              "name": "property",
+              "type": "string"
+            },
+            {
+              "name": "client_name",
+              "type": "string"
+            },
+            {
+              "name": "viewing_date",
+              "type": "datetime"
+            },
+            {
+              "name": "agent",
+              "type": "string"
+            },
+            {
+              "name": "status",
+              "type": "enum"
+            }
+          ]
+        },
+        {
+          "name": "RentalAgreement",
+          "fields": [
+            {
+              "name": "property",
+              "type": "string"
+            },
+            {
+              "name": "tenant",
+              "type": "string"
+            },
+            {
+              "name": "monthly_rent",
+              "type": "decimal"
+            },
+            {
+              "name": "deposit",
+              "type": "decimal"
+            },
+            {
+              "name": "start_date",
+              "type": "date"
+            },
+            {
+              "name": "status",
+              "type": "enum"
+            }
+          ]
+        },
+        {
+          "name": "Agent",
+          "fields": [
+            {
+              "name": "full_name",
+              "type": "string"
+            },
+            {
+              "name": "email",
+              "type": "string"
+            },
+            {
+              "name": "phone",
+              "type": "string"
+            },
+            {
+              "name": "region",
+              "type": "string"
+            },
+            {
+              "name": "listings_count",
+              "type": "number"
+            }
+          ]
+        }
+      ]
+    },
+    "ui_pages": [
+      {
+        "path": "/",
+        "name": "Home"
+      },
+      {
+        "path": "/listings",
+        "name": "Browse Listings"
+      },
+      {
+        "path": "/agents",
+        "name": "Our Agents"
+      },
+      {
+        "path": "/areas",
+        "name": "Areas We Cover"
+      },
+      {
+        "path": "/contact",
+        "name": "Contact & Enquiry"
+      }
+    ],
+    "functional_requirements": [
+      {
+        "module": "Public Website",
+        "title": "FR-001 Browse Listings"
+      },
+      {
+        "module": "Public Website",
+        "title": "FR-002 Agent Directory"
+      },
+      {
+        "module": "Public Website",
+        "title": "FR-003 Areas We Cover"
+      },
+      {
+        "module": "Client Portal",
+        "title": "FR-011 Request a Viewing"
+      },
+      {
+        "module": "Finance",
+        "title": "FR-014 Rental Payments"
+      },
+      {
+        "module": "Public Website",
+        "title": "FR-016 Contact and Enquiry"
+      }
+    ]
+  }
+}

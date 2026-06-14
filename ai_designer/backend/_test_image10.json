@@ -1,0 +1,112 @@
+[
+ {
+  "n": 1,
+  "cid": "page-courses",
+  "src": "/assets/hero.jpg",
+  "file": "src/app/(marketing)/courses/page.jsx",
+  "ok": true,
+  "mode": "upload",
+  "substituted": true,
+  "secs": 0.11,
+  "error": null
+ },
+ {
+  "n": 2,
+  "cid": "page-courses",
+  "src": "/assets/gallery1.jpg",
+  "file": "src/app/(marketing)/courses/page.jsx",
+  "ok": true,
+  "mode": "upload",
+  "substituted": true,
+  "secs": 0.09,
+  "error": null
+ },
+ {
+  "n": 3,
+  "cid": "page-courses",
+  "src": "/assets/about1.jpg",
+  "file": "src/app/(marketing)/courses/page.jsx",
+  "ok": true,
+  "mode": "upload",
+  "substituted": true,
+  "secs": 0.1,
+  "error": null
+ },
+ {
+  "n": 4,
+  "cid": "navbar",
+  "src": "/assets/logo.jpg",
+  "file": "src/components/shell/Navbar.jsx",
+  "ok": true,
+  "mode": "upload",
+  "substituted": true,
+  "secs": 0.1,
+  "error": null
+ },
+ {
+  "n": 5,
+  "cid": "hero",
+  "src": "/assets/banner.jpg",
+  "file": "src/app/(marketing)/page.jsx",
+  "ok": true,
+  "mode": "upload",
+  "substituted": true,
+  "secs": 0.11,
+  "error": null
+ },
+ {
+  "n": 6,
+  "cid": "hero",
+  "src": "/assets/about1.jpg",
+  "file": "src/app/(marketing)/page.jsx",
+  "ok": true,
+  "mode": "upload",
+  "substituted": true,
+  "secs": 0.1,
+  "error": null
+ },
+ {
+  "n": 7,
+  "cid": "page-events-calendar",
+  "src": "/assets/feature1.jpg",
+  "file": "src/app/(marketing)/events-calendar/page.jsx",
+  "ok": true,
+  "mode": "upload",
+  "substituted": true,
+  "secs": 0.1,
+  "error": null
+ },
+ {
+  "n": 8,
+  "cid": "page-exams",
+  "src": "/assets/about1.jpg",
+  "file": "src/app/(marketing)/exams/page.jsx",
+  "ok": true,
+  "mode": "upload",
+  "substituted": true,
+  "secs": 0.1,
+  "error": null
+ },
+ {
+  "n": 9,
+  "cid": "page-teacher-portal",
+  "src": "/assets/banner.jpg",
+  "file": "src/app/(marketing)/teacher-portal/page.jsx",
+  "ok": true,
+  "mode": "upload",
+  "substituted": true,
+  "secs": 0.09,
+  "error": null
+ },
+ {
+  "n": 10,
+  "cid": "sidebar",
+  "src": "/assets/logo.jpg",
+  "file": "src/components/shell/Sidebar.jsx",
+  "ok": true,
+  "mode": "upload",
+  "substituted": true,
+  "secs": 0.09,
+  "error": null
+ }
+]
