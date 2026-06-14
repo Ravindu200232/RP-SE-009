@@ -1,0 +1,207 @@
+[
+  {
+    "project_id": "prj_iv_store",
+    "app_type": "public",
+    "status": "Generation completed.",
+    "chose_nav": "pill",
+    "seconds": 364.2,
+    "phase": "done",
+    "paradigm": "minimal",
+    "accent": "rose",
+    "nav": "pill",
+    "app_name": "SneakerStore",
+    "entities": [
+      [
+        "Product",
+        "table"
+      ],
+      [
+        "User",
+        "table"
+      ],
+      [
+        "CartItem",
+        "table"
+      ],
+      [
+        "Order",
+        "kanban"
+      ],
+      [
+        "CustomizationProfile",
+        "split-pane"
+      ]
+    ],
+    "pages": [
+      "catalog",
+      "checkout",
+      "product-detail",
+      "size-guide"
+    ],
+    "reserved_leak": [],
+    "db_rows": 63
+  },
+  {
+    "project_id": "prj_iv_pos",
+    "app_type": "internal",
+    "status": "Generation completed.",
+    "chose_nav": "dark",
+    "seconds": 388.1,
+    "phase": "done",
+    "paradigm": "minimal",
+    "accent": "violet",
+    "nav": "dark",
+    "app_name": "RestoManager POS",
+    "entities": [
+      [
+        "Product",
+        "table"
+      ],
+      [
+        "Order",
+        "kanban"
+      ],
+      [
+        "Ingredient",
+        "table"
+      ],
+      [
+        "StaffMember",
+        "table"
+      ],
+      [
+        "MenuItem",
+        "table"
+      ]
+    ],
+    "pages": [],
+    "reserved_leak": [],
+    "db_rows": 64
+  },
+  {
+    "project_id": "prj_iv_school",
+    "app_type": "hybrid",
+    "status": "Generation completed.",
+    "chose_nav": "blur",
+    "seconds": 426.9,
+    "phase": "done",
+    "paradigm": "minimal",
+    "accent": "blue",
+    "nav": "blur",
+    "app_name": "EduLearn LMS",
+    "entities": [
+      [
+        "User",
+        "table"
+      ],
+      [
+        "Course",
+        "table"
+      ],
+      [
+        "Exam",
+        "table"
+      ],
+      [
+        "Enrollment",
+        "table"
+      ],
+      [
+        "Assignment",
+        "kanban"
+      ]
+    ],
+    "pages": [
+      "courses",
+      "events-calendar",
+      "exams",
+      "teacher-portal"
+    ],
+    "reserved_leak": [],
+    "db_rows": 64
+  },
+  {
+    "project_id": "prj_iv_clinic",
+    "app_type": "hybrid",
+    "status": "Generation completed.",
+    "chose_nav": "floating",
+    "seconds": 468.9,
+    "phase": "done",
+    "paradigm": "minimal",
+    "accent": "slate",
+    "nav": "floating",
+    "app_name": "DentalCare Pro",
+    "entities": [
+      [
+        "PatientProfile",
+        "table"
+      ],
+      [
+        "Appointment",
+        "kanban"
+      ],
+      [
+        "BillingRecord",
+        "table"
+      ],
+      [
+        "TreatmentPlan",
+        "timeline"
+      ],
+      [
+        "PatientRecord",
+        "split-pane"
+      ]
+    ],
+    "pages": [
+      "billing",
+      "insurance-help",
+      "portal",
+      "services"
+    ],
+    "reserved_leak": [],
+    "db_rows": 64
+  },
+  {
+    "project_id": "prj_iv_srs",
+    "app_type": "hybrid",
+    "status": "Generation completed.",
+    "chose_nav": "tinted",
+    "seconds": 494.4,
+    "phase": "done",
+    "paradigm": "minimal",
+    "accent": "violet",
+    "nav": "tinted",
+    "app_name": "Hospital Management & Patient Portal",
+    "entities": [
+      [
+        "PatientProfile",
+        "split-pane"
+      ],
+      [
+        "AppointmentRecord",
+        "kanban"
+      ],
+      [
+        "MedicalHistory",
+        "table"
+      ],
+      [
+        "StaffMember",
+        "table"
+      ],
+      [
+        "Appointment",
+        "kanban"
+      ]
+    ],
+    "pages": [
+      "departments",
+      "doctors",
+      "health-tips",
+      "portal"
+    ],
+    "reserved_leak": [],
+    "db_rows": 70
+  }
+]

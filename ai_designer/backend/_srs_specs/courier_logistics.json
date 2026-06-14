@@ -1,0 +1,236 @@
+{
+  "srs_report": {
+    "system_name": "SwiftShip Courier & Logistics Platform",
+    "version": "1.0.0",
+    "scope_type": "Public Courier Website + Customer Portal + Operations Admin",
+    "project_overview": {
+      "problem_statement": "Let customers book parcels, track shipments and pay online",
+      "main_objectives": [
+        "Let customers book parcels, track shipments and pay online",
+        "Give dispatchers a live view of fleet, routes and delivery status",
+        "Provide branches with pickup, manifest and proof-of-delivery tools"
+      ]
+    },
+    "user_roles_and_permissions": [
+      {
+        "role": "Guest",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Customer",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Dispatcher",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Driver",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Branch Manager",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Finance Officer",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Administrator",
+        "permissions": [
+          "manage"
+        ]
+      }
+    ],
+    "data_model": {
+      "entities": [
+        {
+          "name": "Shipment",
+          "fields": [
+            {
+              "name": "tracking_no",
+              "type": "string"
+            },
+            {
+              "name": "sender",
+              "type": "string"
+            },
+            {
+              "name": "recipient",
+              "type": "string"
+            },
+            {
+              "name": "destination",
+              "type": "string"
+            },
+            {
+              "name": "ship_date",
+              "type": "date"
+            },
+            {
+              "name": "status",
+              "type": "enum"
+            }
+          ]
+        },
+        {
+          "name": "Vehicle",
+          "fields": [
+            {
+              "name": "plate_no",
+              "type": "string"
+            },
+            {
+              "name": "type",
+              "type": "string"
+            },
+            {
+              "name": "capacity_kg",
+              "type": "number"
+            },
+            {
+              "name": "status",
+              "type": "enum"
+            }
+          ]
+        },
+        {
+          "name": "Driver",
+          "fields": [
+            {
+              "name": "full_name",
+              "type": "string"
+            },
+            {
+              "name": "license_no",
+              "type": "string"
+            },
+            {
+              "name": "phone",
+              "type": "string"
+            },
+            {
+              "name": "email",
+              "type": "string"
+            },
+            {
+              "name": "assigned_route",
+              "type": "string"
+            },
+            {
+              "name": "rating",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "name": "Invoice",
+          "fields": [
+            {
+              "name": "invoice_no",
+              "type": "string"
+            },
+            {
+              "name": "customer",
+              "type": "string"
+            },
+            {
+              "name": "amount",
+              "type": "decimal"
+            },
+            {
+              "name": "tax",
+              "type": "decimal"
+            },
+            {
+              "name": "status",
+              "type": "enum"
+            }
+          ]
+        },
+        {
+          "name": "DeliveryLog",
+          "fields": [
+            {
+              "name": "tracking_no",
+              "type": "string"
+            },
+            {
+              "name": "checkpoint",
+              "type": "string"
+            },
+            {
+              "name": "logged_at",
+              "type": "datetime"
+            },
+            {
+              "name": "note",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    },
+    "ui_pages": [
+      {
+        "path": "/",
+        "name": "Home"
+      },
+      {
+        "path": "/services",
+        "name": "Services & Rates"
+      },
+      {
+        "path": "/tracking",
+        "name": "Track a Parcel"
+      },
+      {
+        "path": "/coverage",
+        "name": "Coverage Network"
+      },
+      {
+        "path": "/contact",
+        "name": "Contact Us"
+      }
+    ],
+    "functional_requirements": [
+      {
+        "module": "Public Website",
+        "title": "FR-001 Services and Rates"
+      },
+      {
+        "module": "Public Website",
+        "title": "FR-002 Parcel Tracking"
+      },
+      {
+        "module": "Public Website",
+        "title": "FR-003 Coverage Network"
+      },
+      {
+        "module": "Operations",
+        "title": "FR-010 Dispatch Board"
+      },
+      {
+        "module": "Finance",
+        "title": "FR-014 Billing and Payments"
+      },
+      {
+        "module": "Public Website",
+        "title": "FR-016 Contact and Inquiry"
+      }
+    ]
+  }
+}

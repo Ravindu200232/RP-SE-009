@@ -1,0 +1,4770 @@
+[
+ {
+  "project": "ctse-foodapp",
+  "file": "App.jsx",
+  "tags": [
+   "app",
+   "booking",
+   "login",
+   "register"
+  ],
+  "headings": [],
+  "sections": [
+   "login",
+   "register",
+   "booking"
+  ],
+  "images": 0,
+  "size": 1986
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "components/bookingitem.jsx",
+  "tags": [
+   "booking",
+   "bookingitem",
+   "cart",
+   "components",
+   "form"
+  ],
+  "headings": [],
+  "sections": [
+   "cart",
+   "booking",
+   "form"
+  ],
+  "images": 1,
+  "size": 8694
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "components/footer.jsx",
+  "tags": [
+   "components",
+   "faq",
+   "footer"
+  ],
+  "headings": [
+   "Company",
+   "Support",
+   "Get in Touch",
+   "Follow Us"
+  ],
+  "sections": [
+   "faq",
+   "footer"
+  ],
+  "images": 0,
+  "size": 2976
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "components/header.jsx",
+  "tags": [
+   "cart",
+   "components",
+   "cta",
+   "form",
+   "header",
+   "login",
+   "profile"
+  ],
+  "headings": [],
+  "sections": [
+   "cta",
+   "login",
+   "cart",
+   "profile",
+   "form"
+  ],
+  "images": 3,
+  "size": 12813
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "components/imageSlider.jsx",
+  "tags": [
+   "components",
+   "imageslider",
+   "product"
+  ],
+  "headings": [],
+  "sections": [
+   "product"
+  ],
+  "images": 2,
+  "size": 957
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "components/productCard.jsx",
+  "tags": [
+   "components",
+   "cta",
+   "form",
+   "product",
+   "productcard"
+  ],
+  "headings": [],
+  "sections": [
+   "cta",
+   "product",
+   "form"
+  ],
+  "images": 1,
+  "size": 5230
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "components/skeleton.jsx",
+  "tags": [
+   "booking",
+   "components",
+   "skeleton"
+  ],
+  "headings": [],
+  "sections": [
+   "booking"
+  ],
+  "images": 0,
+  "size": 576
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "components/testing.jsx",
+  "tags": [
+   "components",
+   "testing"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 639
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/admin/adminbookingpage.jsx",
+  "tags": [
+   "admin",
+   "adminbookingpage",
+   "booking",
+   "product",
+   "table"
+  ],
+  "headings": [
+   "Order Management"
+  ],
+  "sections": [
+   "product",
+   "booking",
+   "table"
+  ],
+  "images": 1,
+  "size": 8214
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/admin/adminInquirypage.jsx",
+  "tags": [
+   "admin",
+   "admininquirypage"
+  ],
+  "headings": [
+   "Admin - Inquiries"
+  ],
+  "sections": [],
+  "images": 0,
+  "size": 4438
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/admin/adminItemPage.jsx",
+  "tags": [
+   "admin",
+   "adminitempage",
+   "product",
+   "table"
+  ],
+  "headings": [
+   "Collection Management"
+  ],
+  "sections": [
+   "product",
+   "table"
+  ],
+  "images": 2,
+  "size": 8309
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/admin/adminPage.jsx",
+  "tags": [
+   "admin",
+   "adminpage",
+   "booking",
+   "form",
+   "login",
+   "profile",
+   "review"
+  ],
+  "headings": [
+   "Admin Panel"
+  ],
+  "sections": [
+   "review",
+   "login",
+   "booking",
+   "profile",
+   "form"
+  ],
+  "images": 0,
+  "size": 4302
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/admin/adminpakage.jsx",
+  "tags": [
+   "admin",
+   "adminpakage"
+  ],
+  "headings": [
+   "Restaurants"
+  ],
+  "sections": [],
+  "images": 1,
+  "size": 6534
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/admin/adminPayment.jsx",
+  "tags": [
+   "admin",
+   "adminpayment",
+   "booking",
+   "table"
+  ],
+  "headings": [
+   "All Payment Records"
+  ],
+  "sections": [
+   "booking",
+   "table"
+  ],
+  "images": 0,
+  "size": 2363
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/admin/adminReviewpage.jsx",
+  "tags": [
+   "admin",
+   "adminreviewpage",
+   "profile",
+   "review",
+   "table"
+  ],
+  "headings": [
+   "Review Management"
+  ],
+  "sections": [
+   "review",
+   "profile",
+   "table"
+  ],
+  "images": 2,
+  "size": 7277
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/admin/profile.jsx",
+  "tags": [
+   "admin",
+   "form",
+   "login",
+   "profile"
+  ],
+  "headings": [
+   "Your Profile"
+  ],
+  "sections": [
+   "login",
+   "profile",
+   "form"
+  ],
+  "images": 1,
+  "size": 8890
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/admin/users.jsx",
+  "tags": [
+   "admin",
+   "profile",
+   "table",
+   "users"
+  ],
+  "headings": [
+   "User Management"
+  ],
+  "sections": [
+   "profile",
+   "table"
+  ],
+  "images": 2,
+  "size": 6361
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/driver/available.jsx.jsx",
+  "tags": [
+   "available",
+   "driver",
+   "form",
+   "profile"
+  ],
+  "headings": [
+   "Driver Availability Profile"
+  ],
+  "sections": [
+   "profile",
+   "form"
+  ],
+  "images": 1,
+  "size": 5556
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/driver/deliveryTrack.jsx",
+  "tags": [
+   "deliverytrack",
+   "driver",
+   "table"
+  ],
+  "headings": [
+   "Delivery Tracking"
+  ],
+  "sections": [
+   "table"
+  ],
+  "images": 0,
+  "size": 3583
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/driver/driverPage.jsx",
+  "tags": [
+   "driver",
+   "driverpage",
+   "form",
+   "login",
+   "review"
+  ],
+  "headings": [
+   "Driver Panel"
+  ],
+  "sections": [
+   "review",
+   "login",
+   "form"
+  ],
+  "images": 0,
+  "size": 3101
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/driver/profile.jsx",
+  "tags": [
+   "driver",
+   "form",
+   "login",
+   "profile"
+  ],
+  "headings": [
+   "Your Profile"
+  ],
+  "sections": [
+   "login",
+   "profile",
+   "form"
+  ],
+  "images": 2,
+  "size": 10677
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/driver signup/drregister.jsx",
+  "tags": [
+   "driver",
+   "drregister",
+   "form",
+   "login",
+   "profile",
+   "register",
+   "signup"
+  ],
+  "headings": [],
+  "sections": [
+   "login",
+   "register",
+   "profile",
+   "form"
+  ],
+  "images": 1,
+  "size": 7097
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/home/bookingConfirmation.jsx",
+  "tags": [
+   "booking",
+   "bookingconfirmation",
+   "form",
+   "hero",
+   "home"
+  ],
+  "headings": [
+   "Booking details not found",
+   "Booking"
+  ],
+  "sections": [
+   "hero",
+   "booking",
+   "form"
+  ],
+  "images": 2,
+  "size": 12584
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/home/bookingpage.jsx",
+  "tags": [
+   "booking",
+   "bookingpage",
+   "cart",
+   "form",
+   "hero",
+   "home",
+   "login",
+   "review"
+  ],
+  "headings": [
+   "Your",
+   "Order Items"
+  ],
+  "sections": [
+   "hero",
+   "review",
+   "login",
+   "cart",
+   "booking",
+   "form"
+  ],
+  "images": 1,
+  "size": 11769
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/home/contacts.jsx",
+  "tags": [
+   "banner",
+   "contacts",
+   "footer",
+   "form",
+   "hero",
+   "home",
+   "login"
+  ],
+  "headings": [
+   "Get in",
+   "Contact",
+   "Drop us a line"
+  ],
+  "sections": [
+   "hero",
+   "banner",
+   "footer",
+   "login",
+   "form"
+  ],
+  "images": 2,
+  "size": 18143
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/home/home.jsx",
+  "tags": [
+   "banner",
+   "cta",
+   "footer",
+   "form",
+   "hero",
+   "home",
+   "table",
+   "testimonial"
+  ],
+  "headings": [
+   "Extraordinary food,",
+   "Craving something",
+   "Need food for a party",
+   "Why choose FoodRush?"
+  ],
+  "sections": [
+   "hero",
+   "testimonial",
+   "banner",
+   "cta",
+   "footer",
+   "table",
+   "form"
+  ],
+  "images": 6,
+  "size": 16638
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/home/homePage.jsx",
+  "tags": [
+   "booking",
+   "cart",
+   "hero",
+   "home",
+   "homepage",
+   "product",
+   "profile"
+  ],
+  "headings": [],
+  "sections": [
+   "hero",
+   "cart",
+   "product",
+   "booking",
+   "profile"
+  ],
+  "images": 0,
+  "size": 1561
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/home/item.jsx",
+  "tags": [
+   "footer",
+   "form",
+   "hero",
+   "home",
+   "item",
+   "product"
+  ],
+  "headings": [
+   "All"
+  ],
+  "sections": [
+   "hero",
+   "footer",
+   "product",
+   "form"
+  ],
+  "images": 1,
+  "size": 12311
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/home/location.jsx",
+  "tags": [
+   "form",
+   "home",
+   "location"
+  ],
+  "headings": [],
+  "sections": [
+   "form"
+  ],
+  "images": 0,
+  "size": 4004
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/home/payment.jsx",
+  "tags": [
+   "booking",
+   "home",
+   "payment"
+  ],
+  "headings": [
+   "Payment"
+  ],
+  "sections": [
+   "booking"
+  ],
+  "images": 0,
+  "size": 4879
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/home/productOverview.jsx",
+  "tags": [
+   "cart",
+   "footer",
+   "form",
+   "hero",
+   "home",
+   "product",
+   "productoverview",
+   "profile",
+   "review"
+  ],
+  "headings": [
+   "",
+   "About the Restaurant",
+   "Customer Reviews"
+  ],
+  "sections": [
+   "hero",
+   "review",
+   "footer",
+   "cart",
+   "product",
+   "profile",
+   "form"
+  ],
+  "images": 3,
+  "size": 21898
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/home/profile.jsx",
+  "tags": [
+   "banner",
+   "form",
+   "hero",
+   "home",
+   "login",
+   "profile"
+  ],
+  "headings": [
+   "Edit Profile",
+   "Change Password",
+   "Delivery History"
+  ],
+  "sections": [
+   "hero",
+   "banner",
+   "login",
+   "profile",
+   "form"
+  ],
+  "images": 3,
+  "size": 23845
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/home/restaurant.jsx",
+  "tags": [
+   "cta",
+   "footer",
+   "form",
+   "hero",
+   "home",
+   "restaurant"
+  ],
+  "headings": [
+   "Our",
+   "Choose your"
+  ],
+  "sections": [
+   "hero",
+   "cta",
+   "footer",
+   "form"
+  ],
+  "images": 2,
+  "size": 9095
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/home/restaurantDetails.jsx",
+  "tags": [
+   "cta",
+   "footer",
+   "form",
+   "hero",
+   "home",
+   "product",
+   "restaurantdetails"
+  ],
+  "headings": [
+   "Restaurant not found",
+   "",
+   "Available"
+  ],
+  "sections": [
+   "hero",
+   "cta",
+   "footer",
+   "product",
+   "form"
+  ],
+  "images": 2,
+  "size": 15297
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/login/login.jsx",
+  "tags": [
+   "dashboard",
+   "form",
+   "login",
+   "register"
+  ],
+  "headings": [],
+  "sections": [
+   "login",
+   "register",
+   "dashboard",
+   "form"
+  ],
+  "images": 1,
+  "size": 6379
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/register/register.jsx",
+  "tags": [
+   "form",
+   "login",
+   "profile",
+   "register"
+  ],
+  "headings": [],
+  "sections": [
+   "login",
+   "register",
+   "profile",
+   "form"
+  ],
+  "images": 1,
+  "size": 5826
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/restaurant signup/resregister.jsx",
+  "tags": [
+   "form",
+   "login",
+   "profile",
+   "register",
+   "resregister",
+   "restaurant",
+   "signup"
+  ],
+  "headings": [],
+  "sections": [
+   "login",
+   "register",
+   "profile",
+   "form"
+  ],
+  "images": 1,
+  "size": 5709
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/restaurantant/addCollection.jsx",
+  "tags": [
+   "addcollection",
+   "login",
+   "restaurantant",
+   "review"
+  ],
+  "headings": [
+   "Add New Item"
+  ],
+  "sections": [
+   "review",
+   "login"
+  ],
+  "images": 1,
+  "size": 4935
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/restaurantant/addResturant.jsx",
+  "tags": [
+   "addresturant",
+   "form",
+   "restaurantant"
+  ],
+  "headings": [
+   "Add New Restaurant"
+  ],
+  "sections": [
+   "form"
+  ],
+  "images": 0,
+  "size": 3973
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/restaurantant/collectionPage.jsx",
+  "tags": [
+   "collectionpage",
+   "product",
+   "restaurantant",
+   "table"
+  ],
+  "headings": [
+   "Collection Management"
+  ],
+  "sections": [
+   "product",
+   "table"
+  ],
+  "images": 2,
+  "size": 7674
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/restaurantant/profile.jsx",
+  "tags": [
+   "form",
+   "login",
+   "profile",
+   "restaurantant"
+  ],
+  "headings": [
+   "Your Profile"
+  ],
+  "sections": [
+   "login",
+   "profile",
+   "form"
+  ],
+  "images": 1,
+  "size": 8890
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/restaurantant/restaurantCreate.jsx",
+  "tags": [
+   "restaurantant",
+   "restaurantcreate"
+  ],
+  "headings": [
+   "Restaurants"
+  ],
+  "sections": [],
+  "images": 1,
+  "size": 6601
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/restaurantant/restaurantOrder.jsx",
+  "tags": [
+   "booking",
+   "product",
+   "restaurantant",
+   "restaurantorder",
+   "table"
+  ],
+  "headings": [
+   "Order Management"
+  ],
+  "sections": [
+   "product",
+   "booking",
+   "table"
+  ],
+  "images": 1,
+  "size": 12548
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/restaurantant/restaurantPage.jsx",
+  "tags": [
+   "booking",
+   "form",
+   "login",
+   "profile",
+   "restaurantant",
+   "restaurantpage",
+   "review"
+  ],
+  "headings": [
+   "Restaurant Owner Panel"
+  ],
+  "sections": [
+   "review",
+   "login",
+   "booking",
+   "profile",
+   "form"
+  ],
+  "images": 0,
+  "size": 4244
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/restaurantant/restaurantReview.jsx",
+  "tags": [
+   "profile",
+   "restaurantant",
+   "restaurantreview",
+   "review",
+   "table"
+  ],
+  "headings": [
+   "Review Management"
+  ],
+  "sections": [
+   "review",
+   "profile",
+   "table"
+  ],
+  "images": 2,
+  "size": 4555
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/restaurantant/updateCollection.jsx",
+  "tags": [
+   "login",
+   "restaurantant",
+   "updatecollection"
+  ],
+  "headings": [
+   "Update Item"
+  ],
+  "sections": [
+   "login"
+  ],
+  "images": 1,
+  "size": 5200
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/restaurantant/updateRestaurant.jsx",
+  "tags": [
+   "form",
+   "restaurantant",
+   "updaterestaurant"
+  ],
+  "headings": [
+   "Update Restaurant"
+  ],
+  "sections": [
+   "form"
+  ],
+  "images": 0,
+  "size": 5416
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/restaurantant/users.jsx",
+  "tags": [
+   "profile",
+   "restaurantant",
+   "table",
+   "users"
+  ],
+  "headings": [
+   "User Management"
+  ],
+  "sections": [
+   "profile",
+   "table"
+  ],
+  "images": 2,
+  "size": 6345
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "pages/verifyEmail/verifyEmail.jsx",
+  "tags": [
+   "login",
+   "verifyemail"
+  ],
+  "headings": [
+   "Verify Your Email"
+  ],
+  "sections": [
+   "login"
+  ],
+  "images": 1,
+  "size": 5744
+ },
+ {
+  "project": "ctse-foodapp",
+  "file": "utils/card.jsx",
+  "tags": [
+   "card",
+   "cart",
+   "utils"
+  ],
+  "headings": [],
+  "sections": [
+   "cart"
+  ],
+  "images": 0,
+  "size": 972
+ },
+ {
+  "project": "audio-shop",
+  "file": "App.jsx",
+  "tags": [
+   "app",
+   "booking",
+   "login",
+   "register"
+  ],
+  "headings": [],
+  "sections": [
+   "login",
+   "register",
+   "booking"
+  ],
+  "images": 0,
+  "size": 1761
+ },
+ {
+  "project": "audio-shop",
+  "file": "components/bookingitem.jsx",
+  "tags": [
+   "booking",
+   "bookingitem",
+   "cart",
+   "components",
+   "product"
+  ],
+  "headings": [],
+  "sections": [
+   "cart",
+   "product",
+   "booking"
+  ],
+  "images": 1,
+  "size": 2935
+ },
+ {
+  "project": "audio-shop",
+  "file": "components/footer.jsx",
+  "tags": [
+   "components",
+   "faq",
+   "footer"
+  ],
+  "headings": [
+   "Company",
+   "Support",
+   "Get in Touch",
+   "Follow Us"
+  ],
+  "sections": [
+   "faq",
+   "footer"
+  ],
+  "images": 0,
+  "size": 2977
+ },
+ {
+  "project": "audio-shop",
+  "file": "components/header.jsx",
+  "tags": [
+   "cart",
+   "components",
+   "gallery",
+   "header",
+   "login",
+   "profile"
+  ],
+  "headings": [],
+  "sections": [
+   "gallery",
+   "login",
+   "cart",
+   "profile"
+  ],
+  "images": 2,
+  "size": 3467
+ },
+ {
+  "project": "audio-shop",
+  "file": "components/imageSlider.jsx",
+  "tags": [
+   "components",
+   "imageslider",
+   "product"
+  ],
+  "headings": [],
+  "sections": [
+   "product"
+  ],
+  "images": 2,
+  "size": 957
+ },
+ {
+  "project": "audio-shop",
+  "file": "components/productCard.jsx",
+  "tags": [
+   "components",
+   "product",
+   "productcard"
+  ],
+  "headings": [],
+  "sections": [
+   "product"
+  ],
+  "images": 1,
+  "size": 1269
+ },
+ {
+  "project": "audio-shop",
+  "file": "components/skeleton.jsx",
+  "tags": [
+   "booking",
+   "components",
+   "skeleton"
+  ],
+  "headings": [],
+  "sections": [
+   "booking"
+  ],
+  "images": 0,
+  "size": 576
+ },
+ {
+  "project": "audio-shop",
+  "file": "components/testing.jsx",
+  "tags": [
+   "components",
+   "testing"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 639
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/admin/addItemPage.jsx",
+  "tags": [
+   "additempage",
+   "admin",
+   "login",
+   "product",
+   "review"
+  ],
+  "headings": [
+   "Add New Item"
+  ],
+  "sections": [
+   "review",
+   "login",
+   "product"
+  ],
+  "images": 1,
+  "size": 5294
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/admin/addpackage.jsx",
+  "tags": [
+   "addpackage",
+   "admin",
+   "form"
+  ],
+  "headings": [
+   "Add New Package"
+  ],
+  "sections": [
+   "form"
+  ],
+  "images": 0,
+  "size": 4870
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/admin/adminbookingpage.jsx",
+  "tags": [
+   "admin",
+   "adminbookingpage",
+   "booking",
+   "product",
+   "table"
+  ],
+  "headings": [
+   "Order Management"
+  ],
+  "sections": [
+   "product",
+   "booking",
+   "table"
+  ],
+  "images": 2,
+  "size": 12882
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/admin/adminInquirypage.jsx",
+  "tags": [
+   "admin",
+   "admininquirypage"
+  ],
+  "headings": [
+   "Admin - Inquiries"
+  ],
+  "sections": [],
+  "images": 0,
+  "size": 4423
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/admin/adminItemPage.jsx",
+  "tags": [
+   "admin",
+   "adminitempage",
+   "product",
+   "table"
+  ],
+  "headings": [
+   "Item Management"
+  ],
+  "sections": [
+   "product",
+   "table"
+  ],
+  "images": 0,
+  "size": 6596
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/admin/adminPage.jsx",
+  "tags": [
+   "admin",
+   "adminpage",
+   "booking",
+   "form",
+   "login",
+   "review"
+  ],
+  "headings": [
+   "Admin Panel"
+  ],
+  "sections": [
+   "review",
+   "login",
+   "booking",
+   "form"
+  ],
+  "images": 0,
+  "size": 4516
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/admin/adminpakage.jsx",
+  "tags": [
+   "admin",
+   "adminpakage"
+  ],
+  "headings": [
+   "Packages"
+  ],
+  "sections": [],
+  "images": 0,
+  "size": 3234
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/admin/adminPayment.jsx",
+  "tags": [
+   "admin",
+   "adminpayment",
+   "booking",
+   "table"
+  ],
+  "headings": [
+   "All Payment Records"
+  ],
+  "sections": [
+   "booking",
+   "table"
+  ],
+  "images": 0,
+  "size": 2333
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/admin/adminReviewpage.jsx",
+  "tags": [
+   "admin",
+   "adminreviewpage",
+   "profile",
+   "review",
+   "table"
+  ],
+  "headings": [
+   "Review Management"
+  ],
+  "sections": [
+   "review",
+   "profile",
+   "table"
+  ],
+  "images": 2,
+  "size": 6957
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/admin/updateItemPage.jsx",
+  "tags": [
+   "admin",
+   "login",
+   "product",
+   "updateitempage"
+  ],
+  "headings": [
+   "Update Item"
+  ],
+  "sections": [
+   "login",
+   "product"
+  ],
+  "images": 0,
+  "size": 5257
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/admin/updatepackage.jsx",
+  "tags": [
+   "admin",
+   "form",
+   "updatepackage"
+  ],
+  "headings": [
+   "Update Package"
+  ],
+  "sections": [
+   "form"
+  ],
+  "images": 0,
+  "size": 5839
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/admin/users.jsx",
+  "tags": [
+   "admin",
+   "profile",
+   "table",
+   "users"
+  ],
+  "headings": [
+   "User Management"
+  ],
+  "sections": [
+   "profile",
+   "table"
+  ],
+  "images": 2,
+  "size": 6345
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/home/bookingConfirmation.jsx",
+  "tags": [
+   "booking",
+   "bookingconfirmation",
+   "home",
+   "product"
+  ],
+  "headings": [
+   "Booking Confirmed",
+   "Items Booked:"
+  ],
+  "sections": [
+   "product",
+   "booking"
+  ],
+  "images": 1,
+  "size": 2919
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/home/bookingpage.jsx",
+  "tags": [
+   "booking",
+   "bookingpage",
+   "cart",
+   "form",
+   "home",
+   "login"
+  ],
+  "headings": [
+   "Booking Page"
+  ],
+  "sections": [
+   "login",
+   "cart",
+   "booking",
+   "form"
+  ],
+  "images": 0,
+  "size": 4479
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/home/contacts.jsx",
+  "tags": [
+   "contacts",
+   "footer",
+   "form",
+   "home",
+   "login"
+  ],
+  "headings": [
+   "Contact Us",
+   "Get in Touch",
+   "Your Inquiries"
+  ],
+  "sections": [
+   "footer",
+   "login",
+   "form"
+  ],
+  "images": 0,
+  "size": 9941
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/home/gallery.jsx",
+  "tags": [
+   "footer",
+   "gallery",
+   "home"
+  ],
+  "headings": [],
+  "sections": [
+   "gallery",
+   "footer"
+  ],
+  "images": 1,
+  "size": 2633
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/home/home.jsx",
+  "tags": [
+   "booking",
+   "footer",
+   "form",
+   "gallery",
+   "home",
+   "pricing",
+   "testimonial"
+  ],
+  "headings": [
+   "We provide premiere audio and visual",
+   "equipment rentals",
+   "Corporate Events",
+   "Wedding & Party"
+  ],
+  "sections": [
+   "gallery",
+   "pricing",
+   "testimonial",
+   "footer",
+   "booking",
+   "form"
+  ],
+  "images": 4,
+  "size": 8607
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/home/homePage.jsx",
+  "tags": [
+   "booking",
+   "cart",
+   "footer",
+   "gallery",
+   "home",
+   "homepage",
+   "product",
+   "profile"
+  ],
+  "headings": [],
+  "sections": [
+   "gallery",
+   "footer",
+   "cart",
+   "product",
+   "booking",
+   "profile"
+  ],
+  "images": 0,
+  "size": 1349
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/home/item.jsx",
+  "tags": [
+   "footer",
+   "home",
+   "item",
+   "product"
+  ],
+  "headings": [],
+  "sections": [
+   "footer",
+   "product"
+  ],
+  "images": 0,
+  "size": 4402
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/home/package.jsx",
+  "tags": [
+   "booking",
+   "form",
+   "home",
+   "package",
+   "product"
+  ],
+  "headings": [],
+  "sections": [
+   "product",
+   "booking",
+   "form"
+  ],
+  "images": 1,
+  "size": 7107
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/home/payment.jsx",
+  "tags": [
+   "booking",
+   "home",
+   "payment"
+  ],
+  "headings": [
+   "Payment"
+  ],
+  "sections": [
+   "booking"
+  ],
+  "images": 0,
+  "size": 4566
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/home/pkgbookingConfirmation.jsx",
+  "tags": [
+   "booking",
+   "home",
+   "pkgbookingconfirmation"
+  ],
+  "headings": [
+   "Package Booking Confirmed"
+  ],
+  "sections": [
+   "booking"
+  ],
+  "images": 0,
+  "size": 2405
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/home/productOverview.jsx",
+  "tags": [
+   "cart",
+   "footer",
+   "home",
+   "product",
+   "productoverview",
+   "profile",
+   "review"
+  ],
+  "headings": [
+   "Customer Reviews"
+  ],
+  "sections": [
+   "review",
+   "footer",
+   "cart",
+   "product",
+   "profile"
+  ],
+  "images": 1,
+  "size": 6032
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/home/profile.jsx",
+  "tags": [
+   "footer",
+   "form",
+   "home",
+   "login",
+   "product",
+   "profile"
+  ],
+  "headings": [
+   "Your Profile"
+  ],
+  "sections": [
+   "footer",
+   "login",
+   "product",
+   "profile",
+   "form"
+  ],
+  "images": 2,
+  "size": 12939
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/login/login.jsx",
+  "tags": [
+   "form",
+   "login",
+   "register"
+  ],
+  "headings": [],
+  "sections": [
+   "login",
+   "register",
+   "form"
+  ],
+  "images": 1,
+  "size": 5122
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/register/register.jsx",
+  "tags": [
+   "form",
+   "login",
+   "profile",
+   "register"
+  ],
+  "headings": [],
+  "sections": [
+   "login",
+   "register",
+   "profile",
+   "form"
+  ],
+  "images": 1,
+  "size": 5453
+ },
+ {
+  "project": "audio-shop",
+  "file": "pages/verifyEmail/verifyEmail.jsx",
+  "tags": [
+   "login",
+   "verifyemail"
+  ],
+  "headings": [
+   "Verify Your Email"
+  ],
+  "sections": [
+   "login"
+  ],
+  "images": 1,
+  "size": 5750
+ },
+ {
+  "project": "audio-shop",
+  "file": "utils/card.jsx",
+  "tags": [
+   "card",
+   "cart",
+   "form",
+   "utils"
+  ],
+  "headings": [],
+  "sections": [
+   "cart",
+   "form"
+  ],
+  "images": 0,
+  "size": 1305
+ },
+ {
+  "project": "lms-ui",
+  "file": "App.jsx",
+  "tags": [
+   "app",
+   "cart",
+   "checkout",
+   "course",
+   "dashboard",
+   "gallery",
+   "login",
+   "profile",
+   "register"
+  ],
+  "headings": [],
+  "sections": [
+   "gallery",
+   "login",
+   "register",
+   "dashboard",
+   "cart",
+   "checkout",
+   "course",
+   "profile"
+  ],
+  "images": 0,
+  "size": 7174
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/CTAButton.jsx",
+  "tags": [
+   "components",
+   "cta",
+   "ctabutton"
+  ],
+  "headings": [],
+  "sections": [
+   "cta"
+  ],
+  "images": 0,
+  "size": 2312
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/FooterSection.jsx",
+  "tags": [
+   "components",
+   "course",
+   "footer",
+   "footersection",
+   "form",
+   "pricing"
+  ],
+  "headings": [],
+  "sections": [
+   "pricing",
+   "footer",
+   "course",
+   "form"
+  ],
+  "images": 1,
+  "size": 7993
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/Layout.jsx",
+  "tags": [
+   "components",
+   "course",
+   "layout"
+  ],
+  "headings": [],
+  "sections": [
+   "course"
+  ],
+  "images": 1,
+  "size": 1481
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/Loader.jsx",
+  "tags": [
+   "components",
+   "form",
+   "loader"
+  ],
+  "headings": [],
+  "sections": [
+   "form"
+  ],
+  "images": 2,
+  "size": 4965
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/Navbar.jsx",
+  "tags": [
+   "components",
+   "course",
+   "form",
+   "gallery",
+   "login",
+   "navbar",
+   "register"
+  ],
+  "headings": [],
+  "sections": [
+   "gallery",
+   "navbar",
+   "login",
+   "register",
+   "course",
+   "form"
+  ],
+  "images": 1,
+  "size": 22019
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ResponsiveImage.jsx",
+  "tags": [
+   "components",
+   "form",
+   "responsiveimage"
+  ],
+  "headings": [],
+  "sections": [
+   "form"
+  ],
+  "images": 1,
+  "size": 867
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/SectionTitle.jsx",
+  "tags": [
+   "components",
+   "sectiontitle"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 1576
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/admin/StatCard.jsx",
+  "tags": [
+   "admin",
+   "statcard"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 1108
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/common/PrivateCompanyAdsSection.jsx",
+  "tags": [
+   "banner",
+   "common",
+   "course",
+   "cta",
+   "footer",
+   "form",
+   "privatecompanyadssection",
+   "profile",
+   "register"
+  ],
+  "headings": [
+   ""
+  ],
+  "sections": [
+   "banner",
+   "cta",
+   "footer",
+   "register",
+   "course",
+   "profile",
+   "form"
+  ],
+  "images": 3,
+  "size": 20747
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/debug/ImageDebug.jsx",
+  "tags": [
+   "debug",
+   "imagedebug",
+   "review"
+  ],
+  "headings": [],
+  "sections": [
+   "review"
+  ],
+  "images": 1,
+  "size": 2087
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/exam/AdminExamUnblock.jsx",
+  "tags": [
+   "adminexamunblock",
+   "exam",
+   "form"
+  ],
+  "headings": [],
+  "sections": [
+   "form"
+  ],
+  "images": 0,
+  "size": 3777
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/exam/BrowserLockdownHeader.jsx",
+  "tags": [
+   "browserlockdownheader",
+   "exam",
+   "form"
+  ],
+  "headings": [],
+  "sections": [
+   "form"
+  ],
+  "images": 0,
+  "size": 3217
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/exam/ExamBlocked.jsx",
+  "tags": [
+   "exam",
+   "examblocked"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 4427
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/exam/Timer.jsx",
+  "tags": [
+   "exam",
+   "form",
+   "timer"
+  ],
+  "headings": [],
+  "sections": [
+   "form"
+  ],
+  "images": 0,
+  "size": 7327
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/layouts/HomeLayout.jsx",
+  "tags": [
+   "footer",
+   "form",
+   "gallery",
+   "hero",
+   "homelayout",
+   "layouts",
+   "review",
+   "stats"
+  ],
+  "headings": [],
+  "sections": [
+   "hero",
+   "stats",
+   "gallery",
+   "review",
+   "footer",
+   "form"
+  ],
+  "images": 1,
+  "size": 9798
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/sections/BenefitsSection.jsx",
+  "tags": [
+   "benefitssection",
+   "cta",
+   "form",
+   "sections"
+  ],
+  "headings": [
+   ""
+  ],
+  "sections": [
+   "cta",
+   "form"
+  ],
+  "images": 1,
+  "size": 16769
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/sections/BooksSection.jsx",
+  "tags": [
+   "bookssection",
+   "form",
+   "sections"
+  ],
+  "headings": [],
+  "sections": [
+   "form"
+  ],
+  "images": 1,
+  "size": 4467
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/sections/FooterSection.jsx",
+  "tags": [
+   "course",
+   "footer",
+   "footersection",
+   "form",
+   "pricing",
+   "register",
+   "sections"
+  ],
+  "headings": [],
+  "sections": [
+   "pricing",
+   "footer",
+   "register",
+   "course",
+   "form"
+  ],
+  "images": 1,
+  "size": 26812
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/sections/GallerySection.jsx",
+  "tags": [
+   "course",
+   "feature",
+   "form",
+   "gallery",
+   "gallerysection",
+   "sections"
+  ],
+  "headings": [
+   ""
+  ],
+  "sections": [
+   "gallery",
+   "feature",
+   "course",
+   "form"
+  ],
+  "images": 2,
+  "size": 26030
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/sections/HeroSection.jsx",
+  "tags": [
+   "banner",
+   "form",
+   "hero",
+   "herosection",
+   "register",
+   "sections",
+   "stats",
+   "table"
+  ],
+  "headings": [
+   ""
+  ],
+  "sections": [
+   "hero",
+   "stats",
+   "banner",
+   "register",
+   "table",
+   "form"
+  ],
+  "images": 5,
+  "size": 11104
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/sections/InstructorSection.jsx",
+  "tags": [
+   "form",
+   "instructorsection",
+   "sections",
+   "stats"
+  ],
+  "headings": [
+   ""
+  ],
+  "sections": [
+   "stats",
+   "form"
+  ],
+  "images": 3,
+  "size": 22820
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/sections/KoreaInfoSection.jsx",
+  "tags": [
+   "feature",
+   "gallery",
+   "koreainfosection",
+   "review",
+   "sections",
+   "table"
+  ],
+  "headings": [],
+  "sections": [
+   "gallery",
+   "review",
+   "feature",
+   "table"
+  ],
+  "images": 1,
+  "size": 12910
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/sections/LearningPathSection.jsx",
+  "tags": [
+   "cta",
+   "form",
+   "gallery",
+   "learningpathsection",
+   "profile",
+   "sections"
+  ],
+  "headings": [
+   ""
+  ],
+  "sections": [
+   "gallery",
+   "cta",
+   "profile",
+   "form"
+  ],
+  "images": 0,
+  "size": 18670
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/sections/StatsSection.jsx",
+  "tags": [
+   "course",
+   "form",
+   "register",
+   "sections",
+   "stats",
+   "statssection"
+  ],
+  "headings": [],
+  "sections": [
+   "stats",
+   "register",
+   "course",
+   "form"
+  ],
+  "images": 1,
+  "size": 3783
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/sections/StudentReviewsSection.jsx",
+  "tags": [
+   "course",
+   "cta",
+   "form",
+   "profile",
+   "review",
+   "sections",
+   "stats",
+   "studentreviewssection",
+   "testimonial"
+  ],
+  "headings": [
+   ""
+  ],
+  "sections": [
+   "stats",
+   "testimonial",
+   "review",
+   "cta",
+   "course",
+   "profile",
+   "form"
+  ],
+  "images": 2,
+  "size": 19302
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/sections/WhyChooseSection.jsx",
+  "tags": [
+   "form",
+   "gallery",
+   "sections",
+   "stats",
+   "whychoosesection"
+  ],
+  "headings": [
+   ""
+  ],
+  "sections": [
+   "stats",
+   "gallery",
+   "form"
+  ],
+  "images": 4,
+  "size": 17996
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/student/StatCard.jsx",
+  "tags": [
+   "statcard",
+   "student"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 425
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/alert-dialog.jsx",
+  "tags": [
+   "alert",
+   "dialog",
+   "footer"
+  ],
+  "headings": [],
+  "sections": [
+   "footer"
+  ],
+  "images": 0,
+  "size": 3182
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/alert.jsx",
+  "tags": [
+   "alert"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 1443
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/avatar.jsx",
+  "tags": [
+   "avatar"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 892
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/badge.jsx",
+  "tags": [
+   "badge"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 1519
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/button.jsx",
+  "tags": [
+   "button"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 2095
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/card.jsx",
+  "tags": [
+   "card",
+   "footer"
+  ],
+  "headings": [],
+  "sections": [
+   "footer"
+  ],
+  "images": 0,
+  "size": 1765
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/carousel.jsx",
+  "tags": [
+   "carousel"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 4471
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/checkbox.jsx",
+  "tags": [
+   "checkbox"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 1141
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/dialog.jsx",
+  "tags": [
+   "dialog",
+   "footer"
+  ],
+  "headings": [],
+  "sections": [
+   "footer"
+  ],
+  "images": 0,
+  "size": 3404
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/dropdown-menu.jsx",
+  "tags": [
+   "dropdown",
+   "form",
+   "menu"
+  ],
+  "headings": [],
+  "sections": [
+   "form"
+  ],
+  "images": 0,
+  "size": 7305
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/form.jsx",
+  "tags": [
+   "form"
+  ],
+  "headings": [],
+  "sections": [
+   "form"
+  ],
+  "images": 0,
+  "size": 2972
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/input.jsx",
+  "tags": [
+   "input"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 934
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/label.jsx",
+  "tags": [
+   "label"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 544
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/navigation-menu.jsx",
+  "tags": [
+   "menu",
+   "navigation"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 6078
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/progress.jsx",
+  "tags": [
+   "form",
+   "progress"
+  ],
+  "headings": [],
+  "sections": [
+   "form"
+  ],
+  "images": 0,
+  "size": 663
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/radio-group.jsx",
+  "tags": [
+   "group",
+   "radio"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 1338
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/select.jsx",
+  "tags": [
+   "form",
+   "select"
+  ],
+  "headings": [],
+  "sections": [
+   "form"
+  ],
+  "images": 0,
+  "size": 5583
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/separator.jsx",
+  "tags": [
+   "separator"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 628
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/sheet.jsx",
+  "tags": [
+   "footer",
+   "sheet"
+  ],
+  "headings": [],
+  "sections": [
+   "footer"
+  ],
+  "images": 0,
+  "size": 3550
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/switch.jsx",
+  "tags": [
+   "form",
+   "switch"
+  ],
+  "headings": [],
+  "sections": [
+   "form"
+  ],
+  "images": 0,
+  "size": 1102
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/table.jsx",
+  "tags": [
+   "footer",
+   "table"
+  ],
+  "headings": [],
+  "sections": [
+   "footer",
+   "table"
+  ],
+  "images": 0,
+  "size": 2154
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/tabs.jsx",
+  "tags": [
+   "tabs"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 1741
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/textarea.jsx",
+  "tags": [
+   "textarea"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 726
+ },
+ {
+  "project": "lms-ui",
+  "file": "components/ui/tooltip.jsx",
+  "tags": [
+   "form",
+   "tooltip"
+  ],
+  "headings": [],
+  "sections": [
+   "form"
+  ],
+  "images": 0,
+  "size": 1637
+ },
+ {
+  "project": "lms-ui",
+  "file": "context/LanguageContext.jsx",
+  "tags": [
+   "context",
+   "languagecontext"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 746
+ },
+ {
+  "project": "lms-ui",
+  "file": "contexts/AuthContext.jsx",
+  "tags": [
+   "authcontext",
+   "contexts",
+   "login",
+   "profile",
+   "register"
+  ],
+  "headings": [],
+  "sections": [
+   "login",
+   "register",
+   "profile"
+  ],
+  "images": 0,
+  "size": 3575
+ },
+ {
+  "project": "lms-ui",
+  "file": "contexts/CartContext.jsx",
+  "tags": [
+   "cart",
+   "cartcontext",
+   "contexts"
+  ],
+  "headings": [],
+  "sections": [
+   "cart"
+  ],
+  "images": 0,
+  "size": 2521
+ },
+ {
+  "project": "lms-ui",
+  "file": "lib/media.jsx",
+  "tags": [
+   "lib",
+   "media"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 1,
+  "size": 2737
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/admin/AdminLayout.jsx",
+  "tags": [
+   "admin",
+   "adminlayout",
+   "cart",
+   "course",
+   "dashboard",
+   "footer",
+   "form",
+   "login",
+   "profile"
+  ],
+  "headings": [
+   "EduAdmin"
+  ],
+  "sections": [
+   "footer",
+   "login",
+   "dashboard",
+   "cart",
+   "course",
+   "profile",
+   "form"
+  ],
+  "images": 0,
+  "size": 9382
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/admin/AdminTranslations.jsx",
+  "tags": [
+   "admin",
+   "admintranslations",
+   "course",
+   "feature",
+   "footer",
+   "form",
+   "gallery",
+   "hero",
+   "pricing",
+   "review",
+   "stats",
+   "testimonial"
+  ],
+  "headings": [
+   "Translations Management",
+   "All Translation Sections"
+  ],
+  "sections": [
+   "hero",
+   "stats",
+   "gallery",
+   "pricing",
+   "testimonial",
+   "review",
+   "feature",
+   "footer",
+   "course",
+   "form"
+  ],
+  "images": 0,
+  "size": 25655
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/admin/Books.jsx",
+  "tags": [
+   "admin",
+   "books",
+   "footer",
+   "form",
+   "review",
+   "stats",
+   "table"
+  ],
+  "headings": [
+   "Book Management",
+   "Book Catalog"
+  ],
+  "sections": [
+   "stats",
+   "review",
+   "footer",
+   "table",
+   "form"
+  ],
+  "images": 4,
+  "size": 44963
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/admin/CourseDetails.jsx",
+  "tags": [
+   "admin",
+   "chart",
+   "course",
+   "coursedetails",
+   "form",
+   "review",
+   "stats",
+   "table"
+  ],
+  "headings": [
+   "Lessons"
+  ],
+  "sections": [
+   "stats",
+   "review",
+   "course",
+   "table",
+   "form",
+   "chart"
+  ],
+  "images": 4,
+  "size": 48907
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/admin/Courses.jsx",
+  "tags": [
+   "admin",
+   "chart",
+   "course",
+   "courses",
+   "feature",
+   "form",
+   "review",
+   "stats",
+   "table"
+  ],
+  "headings": [
+   "Course Management"
+  ],
+  "sections": [
+   "stats",
+   "review",
+   "feature",
+   "course",
+   "table",
+   "form",
+   "chart"
+  ],
+  "images": 3,
+  "size": 56789
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/admin/Dashboard.jsx",
+  "tags": [
+   "admin",
+   "chart",
+   "course",
+   "dashboard",
+   "form",
+   "stats"
+  ],
+  "headings": [
+   "Dashboard Overview"
+  ],
+  "sections": [
+   "stats",
+   "dashboard",
+   "course",
+   "form",
+   "chart"
+  ],
+  "images": 0,
+  "size": 15422
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/admin/ExamQuestions.jsx",
+  "tags": [
+   "admin",
+   "chart",
+   "examquestions",
+   "form",
+   "review",
+   "stats"
+  ],
+  "headings": [
+   "Exam Questions",
+   "Questions List",
+   "Basic Information",
+   "Scoring & Order"
+  ],
+  "sections": [
+   "stats",
+   "review",
+   "form",
+   "chart"
+  ],
+  "images": 1,
+  "size": 55029
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/admin/Exams.jsx",
+  "tags": [
+   "admin",
+   "course",
+   "exams",
+   "form",
+   "stats"
+  ],
+  "headings": [
+   "Exam Management",
+   "Basic Information",
+   "Exam Settings",
+   "Advanced Settings"
+  ],
+  "sections": [
+   "stats",
+   "course",
+   "form"
+  ],
+  "images": 0,
+  "size": 34862
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/admin/Gallery.jsx",
+  "tags": [
+   "admin",
+   "feature",
+   "footer",
+   "form",
+   "gallery",
+   "table"
+  ],
+  "headings": [
+   "Korean Info Media"
+  ],
+  "sections": [
+   "gallery",
+   "feature",
+   "footer",
+   "table",
+   "form"
+  ],
+  "images": 1,
+  "size": 22104
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/admin/LessonDetails.jsx",
+  "tags": [
+   "admin",
+   "chart",
+   "course",
+   "form",
+   "lessondetails",
+   "review"
+  ],
+  "headings": [
+   "",
+   ""
+  ],
+  "sections": [
+   "review",
+   "course",
+   "form",
+   "chart"
+  ],
+  "images": 3,
+  "size": 70150
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/admin/Orders.jsx",
+  "tags": [
+   "admin",
+   "cart",
+   "chart",
+   "footer",
+   "form",
+   "orders",
+   "profile",
+   "review",
+   "stats",
+   "table"
+  ],
+  "headings": [
+   "Orders Management"
+  ],
+  "sections": [
+   "stats",
+   "review",
+   "footer",
+   "cart",
+   "profile",
+   "table",
+   "form",
+   "chart"
+  ],
+  "images": 1,
+  "size": 81991
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/admin/Payments.jsx",
+  "tags": [
+   "admin",
+   "course",
+   "payments",
+   "profile",
+   "review"
+  ],
+  "headings": [
+   "Payment Review"
+  ],
+  "sections": [
+   "review",
+   "course",
+   "profile"
+  ],
+  "images": 0,
+  "size": 13559
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/admin/Subscriptions.jsx",
+  "tags": [
+   "admin",
+   "course",
+   "form",
+   "stats",
+   "subscriptions",
+   "table"
+  ],
+  "headings": [
+   "Subscriptions Management",
+   "Filter Subscriptions"
+  ],
+  "sections": [
+   "stats",
+   "course",
+   "table",
+   "form"
+  ],
+  "images": 0,
+  "size": 31073
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/admin/Users.jsx",
+  "tags": [
+   "admin",
+   "footer",
+   "form",
+   "profile",
+   "stats",
+   "users"
+  ],
+  "headings": [
+   "",
+   "Filter Users",
+   "User List"
+  ],
+  "sections": [
+   "stats",
+   "footer",
+   "profile",
+   "form"
+  ],
+  "images": 0,
+  "size": 30342
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/admin/Videos.jsx",
+  "tags": [
+   "admin",
+   "course",
+   "form",
+   "review",
+   "videos"
+  ],
+  "headings": [],
+  "sections": [
+   "review",
+   "course",
+   "form"
+  ],
+  "images": 3,
+  "size": 35213
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/auth/Login.jsx",
+  "tags": [
+   "auth",
+   "feature",
+   "form",
+   "login",
+   "register"
+  ],
+  "headings": [],
+  "sections": [
+   "feature",
+   "login",
+   "register",
+   "form"
+  ],
+  "images": 1,
+  "size": 19767
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/auth/Register.jsx",
+  "tags": [
+   "auth",
+   "course",
+   "form",
+   "login",
+   "register",
+   "review"
+  ],
+  "headings": [],
+  "sections": [
+   "review",
+   "login",
+   "register",
+   "course",
+   "form"
+  ],
+  "images": 1,
+  "size": 20883
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/home/about.jsx",
+  "tags": [
+   "about",
+   "course",
+   "cta",
+   "feature",
+   "form",
+   "hero",
+   "home",
+   "stats"
+  ],
+  "headings": [],
+  "sections": [
+   "hero",
+   "stats",
+   "feature",
+   "cta",
+   "course",
+   "form"
+  ],
+  "images": 3,
+  "size": 19295
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/home/Books.jsx",
+  "tags": [
+   "banner",
+   "books",
+   "cart",
+   "feature",
+   "form",
+   "gallery",
+   "hero",
+   "home",
+   "pricing",
+   "review",
+   "stats"
+  ],
+  "headings": [],
+  "sections": [
+   "hero",
+   "stats",
+   "gallery",
+   "pricing",
+   "review",
+   "feature",
+   "banner",
+   "cart",
+   "form"
+  ],
+  "images": 8,
+  "size": 56569
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/home/ContactUsPage.jsx",
+  "tags": [
+   "banner",
+   "contactuspage",
+   "course",
+   "faq",
+   "form",
+   "hero",
+   "home",
+   "register"
+  ],
+  "headings": [
+   ""
+  ],
+  "sections": [
+   "hero",
+   "faq",
+   "banner",
+   "register",
+   "course",
+   "form"
+  ],
+  "images": 3,
+  "size": 42263
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/home/CourseDetails.jsx",
+  "tags": [
+   "course",
+   "coursedetails",
+   "form",
+   "home"
+  ],
+  "headings": [],
+  "sections": [
+   "course",
+   "form"
+  ],
+  "images": 2,
+  "size": 58945
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/home/Courses.jsx",
+  "tags": [
+   "course",
+   "courses",
+   "feature",
+   "form",
+   "home",
+   "stats"
+  ],
+  "headings": [],
+  "sections": [
+   "stats",
+   "feature",
+   "course",
+   "form"
+  ],
+  "images": 2,
+  "size": 32861
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/home/GalleryPage.jsx",
+  "tags": [
+   "feature",
+   "form",
+   "gallery",
+   "gallerypage",
+   "home",
+   "review",
+   "stats"
+  ],
+  "headings": [],
+  "sections": [
+   "stats",
+   "gallery",
+   "review",
+   "feature",
+   "form"
+  ],
+  "images": 3,
+  "size": 38029
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/home/HomeWithLoader.jsx",
+  "tags": [
+   "banner",
+   "home",
+   "homewithloader"
+  ],
+  "headings": [],
+  "sections": [
+   "banner"
+  ],
+  "images": 0,
+  "size": 2912
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/BookDetails.jsx",
+  "tags": [
+   "bookdetails",
+   "cart",
+   "checkout",
+   "form",
+   "gallery",
+   "review",
+   "student"
+  ],
+  "headings": [],
+  "sections": [
+   "gallery",
+   "review",
+   "cart",
+   "checkout",
+   "form"
+  ],
+  "images": 6,
+  "size": 49980
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/BookStore.jsx",
+  "tags": [
+   "bookstore",
+   "cart",
+   "checkout",
+   "form",
+   "stats",
+   "student"
+  ],
+  "headings": [
+   "Book Store",
+   "Direct Buy Flow",
+   "Store Stats"
+  ],
+  "sections": [
+   "stats",
+   "cart",
+   "checkout",
+   "form"
+  ],
+  "images": 2,
+  "size": 14995
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/CartPage.jsx",
+  "tags": [
+   "cart",
+   "cartpage",
+   "checkout",
+   "student"
+  ],
+  "headings": [],
+  "sections": [
+   "cart",
+   "checkout"
+  ],
+  "images": 1,
+  "size": 27552
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/Certificates.jsx",
+  "tags": [
+   "certificates",
+   "course",
+   "footer",
+   "form",
+   "stats",
+   "student"
+  ],
+  "headings": [],
+  "sections": [
+   "stats",
+   "footer",
+   "course",
+   "form"
+  ],
+  "images": 0,
+  "size": 20318
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/CheckoutPage.jsx",
+  "tags": [
+   "cart",
+   "checkout",
+   "checkoutpage",
+   "form",
+   "profile",
+   "review",
+   "student"
+  ],
+  "headings": [
+   "Your cart is empty",
+   "Book Checkout",
+   "Customer Information",
+   "Payment Slip Upload"
+  ],
+  "sections": [
+   "review",
+   "cart",
+   "checkout",
+   "profile",
+   "form"
+  ],
+  "images": 1,
+  "size": 22113
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/ColorBlindRunner.jsx",
+  "tags": [
+   "colorblindrunner",
+   "student"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 1,
+  "size": 9365
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/Dashboard.jsx",
+  "tags": [
+   "chart",
+   "course",
+   "dashboard",
+   "form",
+   "profile",
+   "review",
+   "stats",
+   "student"
+  ],
+  "headings": [
+   "",
+   "",
+   ""
+  ],
+  "sections": [
+   "stats",
+   "review",
+   "dashboard",
+   "course",
+   "profile",
+   "form",
+   "chart"
+  ],
+  "images": 0,
+  "size": 26534
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/ExamCenter.jsx",
+  "tags": [
+   "examcenter",
+   "student"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 6191
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/MyCourses.jsx",
+  "tags": [
+   "course",
+   "form",
+   "mycourses",
+   "stats",
+   "student"
+  ],
+  "headings": [],
+  "sections": [
+   "stats",
+   "course",
+   "form"
+  ],
+  "images": 1,
+  "size": 62759
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/Orders.jsx",
+  "tags": [
+   "form",
+   "orders",
+   "review",
+   "student"
+  ],
+  "headings": [
+   "My Orders"
+  ],
+  "sections": [
+   "review",
+   "form"
+  ],
+  "images": 1,
+  "size": 43894
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/OrderSuccess.jsx",
+  "tags": [
+   "form",
+   "ordersuccess",
+   "profile",
+   "student"
+  ],
+  "headings": [],
+  "sections": [
+   "profile",
+   "form"
+  ],
+  "images": 1,
+  "size": 29783
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/Paywall.jsx",
+  "tags": [
+   "course",
+   "paywall",
+   "student"
+  ],
+  "headings": [],
+  "sections": [
+   "course"
+  ],
+  "images": 0,
+  "size": 2941
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/Profile.jsx",
+  "tags": [
+   "form",
+   "profile",
+   "review",
+   "student"
+  ],
+  "headings": [
+   "Profile Settings"
+  ],
+  "sections": [
+   "review",
+   "profile",
+   "form"
+  ],
+  "images": 1,
+  "size": 24415
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/Progress.jsx",
+  "tags": [
+   "chart",
+   "course",
+   "progress",
+   "student",
+   "table"
+  ],
+  "headings": [],
+  "sections": [
+   "course",
+   "table",
+   "chart"
+  ],
+  "images": 0,
+  "size": 33238
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/StudentLayout.jsx",
+  "tags": [
+   "cart",
+   "course",
+   "dashboard",
+   "form",
+   "login",
+   "profile",
+   "student",
+   "studentlayout"
+  ],
+  "headings": [],
+  "sections": [
+   "login",
+   "dashboard",
+   "cart",
+   "course",
+   "profile",
+   "form"
+  ],
+  "images": 0,
+  "size": 24006
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/Subscriptions.jsx",
+  "tags": [
+   "cart",
+   "course",
+   "form",
+   "login",
+   "profile",
+   "review",
+   "student",
+   "subscriptions"
+  ],
+  "headings": [
+   "Manual Course Payment",
+   "Create Course Purchase",
+   "Course Purchase History",
+   "UBT Exam Login Details"
+  ],
+  "sections": [
+   "review",
+   "login",
+   "cart",
+   "course",
+   "profile",
+   "form"
+  ],
+  "images": 0,
+  "size": 28455
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/WatchLesson.jsx",
+  "tags": [
+   "course",
+   "form",
+   "student",
+   "watchlesson"
+  ],
+  "headings": [],
+  "sections": [
+   "course",
+   "form"
+  ],
+  "images": 0,
+  "size": 27095
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/exam/ExamCenter.jsx",
+  "tags": [
+   "exam",
+   "examcenter",
+   "login"
+  ],
+  "headings": [],
+  "sections": [
+   "login"
+  ],
+  "images": 0,
+  "size": 9413
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/exam/ExamList.jsx",
+  "tags": [
+   "chart",
+   "course",
+   "dashboard",
+   "exam",
+   "examlist",
+   "form",
+   "review",
+   "stats"
+  ],
+  "headings": [],
+  "sections": [
+   "stats",
+   "review",
+   "dashboard",
+   "course",
+   "form",
+   "chart"
+  ],
+  "images": 0,
+  "size": 40427
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/exam/screens/AudioScreen.jsx",
+  "tags": [
+   "audioscreen",
+   "screens"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 7318
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/exam/screens/BrightnessScreen.jsx",
+  "tags": [
+   "brightnessscreen",
+   "screens"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 3928
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/exam/screens/ColorExamScreen.jsx",
+  "tags": [
+   "colorexamscreen",
+   "screens"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 1,
+  "size": 17978
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/exam/screens/ColorRulesScreen.jsx",
+  "tags": [
+   "colorrulesscreen",
+   "screens"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 3167
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/exam/screens/ExamLoginAndRules.jsx",
+  "tags": [
+   "examloginandrules",
+   "form",
+   "login",
+   "profile",
+   "screens"
+  ],
+  "headings": [],
+  "sections": [
+   "login",
+   "profile",
+   "form"
+  ],
+  "images": 0,
+  "size": 13254
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/exam/screens/LoadingScreen.jsx",
+  "tags": [
+   "loadingscreen",
+   "screens"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 503
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/exam/screens/NormalExamScreen.jsx",
+  "tags": [
+   "normalexamscreen",
+   "screens"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 1,
+  "size": 30197
+ },
+ {
+  "project": "lms-ui",
+  "file": "pages/student/exam/screens/ResultsScreen.jsx",
+  "tags": [
+   "resultsscreen",
+   "screens"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 13999
+ },
+ {
+  "project": "lms-ui",
+  "file": "routes/AdminRoute.jsx",
+  "tags": [
+   "adminroute",
+   "login",
+   "routes"
+  ],
+  "headings": [],
+  "sections": [
+   "login"
+  ],
+  "images": 0,
+  "size": 461
+ },
+ {
+  "project": "lms-ui",
+  "file": "utils/toast.jsx",
+  "tags": [
+   "form",
+   "toast",
+   "utils"
+  ],
+  "headings": [],
+  "sections": [
+   "form"
+  ],
+  "images": 0,
+  "size": 11010
+ },
+ {
+  "project": "lms-ui",
+  "file": "utils/exam/examFlow.jsx",
+  "tags": [
+   "exam",
+   "examflow",
+   "form"
+  ],
+  "headings": [],
+  "sections": [
+   "form"
+  ],
+  "images": 0,
+  "size": 18114
+ },
+ {
+  "project": "lms-ui",
+  "file": "utils/exam/translations.jsx",
+  "tags": [
+   "course",
+   "exam",
+   "review",
+   "translations"
+  ],
+  "headings": [],
+  "sections": [
+   "review",
+   "course"
+  ],
+  "images": 0,
+  "size": 8279
+ },
+ {
+  "project": "lms-ui",
+  "file": "utils/exam/useBrowserLockdown.jsx",
+  "tags": [
+   "exam",
+   "register",
+   "usebrowserlockdown"
+  ],
+  "headings": [],
+  "sections": [
+   "register"
+  ],
+  "images": 0,
+  "size": 6173
+ },
+ {
+  "project": "photo-shop",
+  "file": "App.jsx",
+  "tags": [
+   "app",
+   "footer",
+   "form",
+   "gallery",
+   "navbar"
+  ],
+  "headings": [],
+  "sections": [
+   "gallery",
+   "footer",
+   "navbar",
+   "form"
+  ],
+  "images": 0,
+  "size": 1229
+ },
+ {
+  "project": "photo-shop",
+  "file": "components/banner.jsx",
+  "tags": [
+   "banner",
+   "components",
+   "form"
+  ],
+  "headings": [
+   ""
+  ],
+  "sections": [
+   "banner",
+   "form"
+  ],
+  "images": 1,
+  "size": 9747
+ },
+ {
+  "project": "photo-shop",
+  "file": "components/blog.jsx",
+  "tags": [
+   "blog",
+   "components",
+   "form",
+   "stats"
+  ],
+  "headings": [
+   "",
+   "",
+   "Maximizing the Value of Your Property Shoot"
+  ],
+  "sections": [
+   "stats",
+   "form"
+  ],
+  "images": 3,
+  "size": 14091
+ },
+ {
+  "project": "photo-shop",
+  "file": "components/calender.jsx",
+  "tags": [
+   "booking",
+   "calender",
+   "components",
+   "footer",
+   "form"
+  ],
+  "headings": [
+   ""
+  ],
+  "sections": [
+   "footer",
+   "booking",
+   "form"
+  ],
+  "images": 0,
+  "size": 10854
+ },
+ {
+  "project": "photo-shop",
+  "file": "components/fetaureCard.jsx",
+  "tags": [
+   "components",
+   "feature",
+   "fetaurecard",
+   "footer",
+   "form",
+   "gallery",
+   "pricing"
+  ],
+  "headings": [
+   ""
+  ],
+  "sections": [
+   "gallery",
+   "pricing",
+   "feature",
+   "footer",
+   "form"
+  ],
+  "images": 1,
+  "size": 13462
+ },
+ {
+  "project": "photo-shop",
+  "file": "components/footer.jsx",
+  "tags": [
+   "components",
+   "footer",
+   "form",
+   "stats",
+   "testimonial"
+  ],
+  "headings": [
+   "",
+   "",
+   "",
+   ""
+  ],
+  "sections": [
+   "stats",
+   "testimonial",
+   "footer",
+   "form"
+  ],
+  "images": 0,
+  "size": 18376
+ },
+ {
+  "project": "photo-shop",
+  "file": "components/gallery.jsx",
+  "tags": [
+   "components",
+   "feature",
+   "footer",
+   "form",
+   "gallery"
+  ],
+  "headings": [
+   ""
+  ],
+  "sections": [
+   "gallery",
+   "feature",
+   "footer",
+   "form"
+  ],
+  "images": 7,
+  "size": 19984
+ },
+ {
+  "project": "photo-shop",
+  "file": "components/navbar.jsx",
+  "tags": [
+   "cart",
+   "components",
+   "form",
+   "gallery",
+   "login",
+   "navbar"
+  ],
+  "headings": [],
+  "sections": [
+   "gallery",
+   "navbar",
+   "login",
+   "cart",
+   "form"
+  ],
+  "images": 1,
+  "size": 14570
+ },
+ {
+  "project": "photo-shop",
+  "file": "components/newsLetter.jsx",
+  "tags": [
+   "booking",
+   "components",
+   "form",
+   "newsletter",
+   "testimonial"
+  ],
+  "headings": [
+   ""
+  ],
+  "sections": [
+   "testimonial",
+   "booking",
+   "form"
+  ],
+  "images": 1,
+  "size": 16504
+ },
+ {
+  "project": "photo-shop",
+  "file": "components/review.jsx",
+  "tags": [
+   "components",
+   "review"
+  ],
+  "headings": [],
+  "sections": [
+   "review"
+  ],
+  "images": 1,
+  "size": 1077
+ },
+ {
+  "project": "photo-shop",
+  "file": "components/reviews.jsx",
+  "tags": [
+   "components",
+   "cta",
+   "form",
+   "hero",
+   "review",
+   "reviews",
+   "testimonial"
+  ],
+  "headings": [
+   ""
+  ],
+  "sections": [
+   "hero",
+   "testimonial",
+   "review",
+   "cta",
+   "form"
+  ],
+  "images": 2,
+  "size": 17700
+ },
+ {
+  "project": "photo-shop",
+  "file": "components/services.jsx",
+  "tags": [
+   "components",
+   "form",
+   "services"
+  ],
+  "headings": [
+   "",
+   ""
+  ],
+  "sections": [
+   "form"
+  ],
+  "images": 1,
+  "size": 14241
+ },
+ {
+  "project": "photo-shop",
+  "file": "components/singleCard.jsx",
+  "tags": [
+   "components",
+   "feature",
+   "form",
+   "singlecard"
+  ],
+  "headings": [],
+  "sections": [
+   "feature",
+   "form"
+  ],
+  "images": 1,
+  "size": 814
+ },
+ {
+  "project": "photo-shop",
+  "file": "components/team.jsx",
+  "tags": [
+   "components",
+   "form",
+   "team"
+  ],
+  "headings": [
+   ""
+  ],
+  "sections": [
+   "form"
+  ],
+  "images": 3,
+  "size": 15916
+ },
+ {
+  "project": "photo-shop",
+  "file": "pages/user/about.jsx",
+  "tags": [
+   "about",
+   "cta",
+   "form",
+   "profile",
+   "user"
+  ],
+  "headings": [
+   "",
+   "",
+   ""
+  ],
+  "sections": [
+   "cta",
+   "profile",
+   "form"
+  ],
+  "images": 1,
+  "size": 20437
+ },
+ {
+  "project": "photo-shop",
+  "file": "pages/user/csv.jsx",
+  "tags": [
+   "csv",
+   "form",
+   "table",
+   "user"
+  ],
+  "headings": [
+   "Inquiry Reports",
+   "Submitted Inquiries"
+  ],
+  "sections": [
+   "table",
+   "form"
+  ],
+  "images": 0,
+  "size": 9790
+ },
+ {
+  "project": "photo-shop",
+  "file": "pages/user/form.jsx",
+  "tags": [
+   "form",
+   "hero",
+   "user"
+  ],
+  "headings": [
+   "සුභ අලුත් අවුරුද්දක් වේවා!"
+  ],
+  "sections": [
+   "hero",
+   "form"
+  ],
+  "images": 2,
+  "size": 19336
+ },
+ {
+  "project": "photo-shop",
+  "file": "pages/user/gallery.jsx",
+  "tags": [
+   "footer",
+   "form",
+   "gallery",
+   "user"
+  ],
+  "headings": [
+   "",
+   ""
+  ],
+  "sections": [
+   "gallery",
+   "footer",
+   "form"
+  ],
+  "images": 1,
+  "size": 17877
+ },
+ {
+  "project": "photo-shop",
+  "file": "pages/user/home.jsx",
+  "tags": [
+   "banner",
+   "feature",
+   "footer",
+   "form",
+   "gallery",
+   "home",
+   "navbar",
+   "review",
+   "user"
+  ],
+  "headings": [],
+  "sections": [
+   "gallery",
+   "review",
+   "feature",
+   "banner",
+   "footer",
+   "navbar",
+   "form"
+  ],
+  "images": 0,
+  "size": 8400
+ },
+ {
+  "project": "photo-shop",
+  "file": "pages/user/package.jsx",
+  "tags": [
+   "form",
+   "package",
+   "user"
+  ],
+  "headings": [
+   ""
+  ],
+  "sections": [
+   "form"
+  ],
+  "images": 1,
+  "size": 18885
+ },
+ {
+  "project": "cleanmate",
+  "file": "app/layout.tsx",
+  "tags": [
+   "app",
+   "cta",
+   "faq",
+   "form",
+   "layout",
+   "product",
+   "review"
+  ],
+  "headings": [],
+  "sections": [
+   "faq",
+   "review",
+   "cta",
+   "product",
+   "form"
+  ],
+  "images": 0,
+  "size": 11567
+ },
+ {
+  "project": "cleanmate",
+  "file": "app/page.tsx",
+  "tags": [
+   "app",
+   "booking",
+   "faq",
+   "footer",
+   "hero",
+   "navbar",
+   "page",
+   "pricing"
+  ],
+  "headings": [],
+  "sections": [
+   "hero",
+   "pricing",
+   "faq",
+   "footer",
+   "navbar",
+   "booking"
+  ],
+  "images": 0,
+  "size": 969
+ },
+ {
+  "project": "cleanmate",
+  "file": "components/BookingFab.tsx",
+  "tags": [
+   "booking",
+   "bookingfab",
+   "components",
+   "form",
+   "table"
+  ],
+  "headings": [],
+  "sections": [
+   "booking",
+   "table",
+   "form"
+  ],
+  "images": 0,
+  "size": 16981
+ },
+ {
+  "project": "cleanmate",
+  "file": "components/FAQ.tsx",
+  "tags": [
+   "components",
+   "faq",
+   "form",
+   "product"
+  ],
+  "headings": [],
+  "sections": [
+   "faq",
+   "product",
+   "form"
+  ],
+  "images": 0,
+  "size": 3756
+ },
+ {
+  "project": "cleanmate",
+  "file": "components/Footer.tsx",
+  "tags": [
+   "components",
+   "footer"
+  ],
+  "headings": [],
+  "sections": [
+   "footer"
+  ],
+  "images": 0,
+  "size": 4268
+ },
+ {
+  "project": "cleanmate",
+  "file": "components/Hero.tsx",
+  "tags": [
+   "components",
+   "form",
+   "hero",
+   "product"
+  ],
+  "headings": [
+   "A"
+  ],
+  "sections": [
+   "hero",
+   "product",
+   "form"
+  ],
+  "images": 0,
+  "size": 6176
+ },
+ {
+  "project": "cleanmate",
+  "file": "components/Icon.tsx",
+  "tags": [
+   "components",
+   "icon"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 6258
+ },
+ {
+  "project": "cleanmate",
+  "file": "components/Navbar.tsx",
+  "tags": [
+   "booking",
+   "components",
+   "navbar",
+   "pricing"
+  ],
+  "headings": [],
+  "sections": [
+   "pricing",
+   "navbar",
+   "booking"
+  ],
+  "images": 0,
+  "size": 5049
+ },
+ {
+  "project": "cleanmate",
+  "file": "components/Pricing.tsx",
+  "tags": [
+   "components",
+   "pricing",
+   "table"
+  ],
+  "headings": [],
+  "sections": [
+   "pricing",
+   "table"
+  ],
+  "images": 0,
+  "size": 7758
+ },
+ {
+  "project": "cleanmate",
+  "file": "components/Process.tsx",
+  "tags": [
+   "components",
+   "form",
+   "process"
+  ],
+  "headings": [],
+  "sections": [
+   "form"
+  ],
+  "images": 0,
+  "size": 3234
+ },
+ {
+  "project": "cleanmate",
+  "file": "components/Reveal.tsx",
+  "tags": [
+   "components",
+   "reveal"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 0,
+  "size": 450
+ },
+ {
+  "project": "cleanmate",
+  "file": "components/Services.tsx",
+  "tags": [
+   "components",
+   "cta",
+   "services"
+  ],
+  "headings": [],
+  "sections": [
+   "cta"
+  ],
+  "images": 1,
+  "size": 9440
+ },
+ {
+  "project": "cleanmate",
+  "file": "components/Splash.tsx",
+  "tags": [
+   "components",
+   "form",
+   "splash"
+  ],
+  "headings": [],
+  "sections": [
+   "form"
+  ],
+  "images": 0,
+  "size": 3109
+ },
+ {
+  "project": "cleanmate",
+  "file": "components/Team.tsx",
+  "tags": [
+   "components",
+   "form",
+   "team"
+  ],
+  "headings": [],
+  "sections": [
+   "form"
+  ],
+  "images": 0,
+  "size": 21658
+ },
+ {
+  "project": "cleanmate",
+  "file": "components/WhyUs.tsx",
+  "tags": [
+   "components",
+   "form",
+   "pricing",
+   "product",
+   "whyus"
+  ],
+  "headings": [],
+  "sections": [
+   "pricing",
+   "product",
+   "form"
+  ],
+  "images": 1,
+  "size": 4597
+ },
+ {
+  "project": "cleanmate",
+  "file": "_handoff/cleanmate/project/src/app.jsx",
+  "tags": [
+   "app",
+   "booking",
+   "footer",
+   "hero",
+   "navbar",
+   "pricing",
+   "src"
+  ],
+  "headings": [],
+  "sections": [
+   "hero",
+   "pricing",
+   "footer",
+   "navbar",
+   "booking"
+  ],
+  "images": 0,
+  "size": 1710
+ },
+ {
+  "project": "cleanmate",
+  "file": "_handoff/cleanmate/project/src/App.tsx",
+  "tags": [
+   "app",
+   "footer",
+   "hero",
+   "navbar",
+   "pricing",
+   "src",
+   "table"
+  ],
+  "headings": [],
+  "sections": [
+   "hero",
+   "pricing",
+   "footer",
+   "navbar",
+   "table"
+  ],
+  "images": 0,
+  "size": 1102
+ },
+ {
+  "project": "cleanmate",
+  "file": "_handoff/cleanmate/project/src/features.jsx",
+  "tags": [
+   "features",
+   "form",
+   "hero",
+   "pricing",
+   "product",
+   "src",
+   "stats"
+  ],
+  "headings": [
+   "Built around the way your"
+  ],
+  "sections": [
+   "hero",
+   "stats",
+   "pricing",
+   "product",
+   "form"
+  ],
+  "images": 2,
+  "size": 6127
+ },
+ {
+  "project": "cleanmate",
+  "file": "_handoff/cleanmate/project/src/icons.jsx",
+  "tags": [
+   "icons",
+   "src"
+  ],
+  "headings": [],
+  "sections": [],
+  "images": 1,
+  "size": 5654
+ },
+ {
+  "project": "cleanmate",
+  "file": "_handoff/cleanmate/project/src/nav-hero.jsx",
+  "tags": [
+   "booking",
+   "cta",
+   "form",
+   "hero",
+   "nav",
+   "navbar",
+   "pricing",
+   "product",
+   "src"
+  ],
+  "headings": [
+   "A"
+  ],
+  "sections": [
+   "hero",
+   "pricing",
+   "cta",
+   "navbar",
+   "product",
+   "booking",
+   "form"
+  ],
+  "images": 1,
+  "size": 10536
+ },
+ {
+  "project": "cleanmate",
+  "file": "_handoff/cleanmate/project/src/process-footer.jsx",
+  "tags": [
+   "booking",
+   "cta",
+   "feature",
+   "footer",
+   "form",
+   "process",
+   "review",
+   "src"
+  ],
+  "headings": [
+   "From first call to first clean",
+   "Hamilton businesses,"
+  ],
+  "sections": [
+   "review",
+   "feature",
+   "cta",
+   "footer",
+   "booking",
+   "form"
+  ],
+  "images": 1,
+  "size": 19892
+ },
+ {
+  "project": "cleanmate",
+  "file": "_handoff/cleanmate/project/src/services-pricing.jsx",
+  "tags": [
+   "banner",
+   "cta",
+   "feature",
+   "pricing",
+   "services",
+   "src",
+   "table"
+  ],
+  "headings": [
+   "Four core verticals.",
+   "Transparent Pricing."
+  ],
+  "sections": [
+   "pricing",
+   "feature",
+   "banner",
+   "cta",
+   "table"
+  ],
+  "images": 1,
+  "size": 16608
+ },
+ {
+  "project": "cleanmate",
+  "file": "_handoff/cleanmate/project/src/team.jsx",
+  "tags": [
+   "form",
+   "src",
+   "team"
+  ],
+  "headings": [
+   "Comprehensive cleaning"
+  ],
+  "sections": [
+   "form"
+  ],
+  "images": 0,
+  "size": 20915
+ },
+ {
+  "project": "cleanmate",
+  "file": "_handoff/cleanmate/project/src/components/CleanMateLogo.tsx",
+  "tags": [
+   "cleanmatelogo",
+   "components",
+   "footer",
+   "form",
+   "hero",
+   "navbar"
+  ],
+  "headings": [],
+  "sections": [
+   "hero",
+   "footer",
+   "navbar",
+   "form"
+  ],
+  "images": 2,
+  "size": 10210
+ },
+ {
+  "project": "cleanmate",
+  "file": "_handoff/cleanmate/project/src/components/Footer.tsx",
+  "tags": [
+   "banner",
+   "booking",
+   "components",
+   "cta",
+   "footer",
+   "form",
+   "pricing"
+  ],
+  "headings": [
+   "Ready to Experience the"
+  ],
+  "sections": [
+   "pricing",
+   "banner",
+   "cta",
+   "footer",
+   "booking",
+   "form"
+  ],
+  "images": 0,
+  "size": 22426
+ },
+ {
+  "project": "cleanmate",
+  "file": "_handoff/cleanmate/project/src/components/Hero.tsx",
+  "tags": [
+   "banner",
+   "components",
+   "cta",
+   "form",
+   "hero",
+   "pricing"
+  ],
+  "headings": [
+   "Premium Commercial Cleaning Services"
+  ],
+  "sections": [
+   "hero",
+   "pricing",
+   "banner",
+   "cta",
+   "form"
+  ],
+  "images": 1,
+  "size": 14233
+ },
+ {
+  "project": "cleanmate",
+  "file": "_handoff/cleanmate/project/src/components/Highlights.tsx",
+  "tags": [
+   "components",
+   "form",
+   "highlights",
+   "pricing",
+   "product"
+  ],
+  "headings": [
+   "Built Around Your Business Needs"
+  ],
+  "sections": [
+   "pricing",
+   "product",
+   "form"
+  ],
+  "images": 0,
+  "size": 4776
+ },
+ {
+  "project": "cleanmate",
+  "file": "_handoff/cleanmate/project/src/components/HowItWorks.tsx",
+  "tags": [
+   "components",
+   "form",
+   "howitworks"
+  ],
+  "headings": [
+   "How It Works — 4 Simple Steps"
+  ],
+  "sections": [
+   "form"
+  ],
+  "images": 0,
+  "size": 4169
+ },
+ {
+  "project": "cleanmate",
+  "file": "_handoff/cleanmate/project/src/components/Navbar.tsx",
+  "tags": [
+   "components",
+   "cta",
+   "form",
+   "navbar",
+   "pricing"
+  ],
+  "headings": [],
+  "sections": [
+   "pricing",
+   "cta",
+   "navbar",
+   "form"
+  ],
+  "images": 0,
+  "size": 7873
+ },
+ {
+  "project": "cleanmate",
+  "file": "_handoff/cleanmate/project/src/components/Pricing.tsx",
+  "tags": [
+   "banner",
+   "components",
+   "footer",
+   "form",
+   "pricing",
+   "table"
+  ],
+  "headings": [
+   "Transparent Pricing. No Hidden Costs."
+  ],
+  "sections": [
+   "pricing",
+   "banner",
+   "footer",
+   "table",
+   "form"
+  ],
+  "images": 0,
+  "size": 7376
+ },
+ {
+  "project": "cleanmate",
+  "file": "_handoff/cleanmate/project/src/components/Services.tsx",
+  "tags": [
+   "components",
+   "form",
+   "product",
+   "services"
+  ],
+  "headings": [
+   "Comprehensive Cleaning Solutions for Every Space"
+  ],
+  "sections": [
+   "product",
+   "form"
+  ],
+  "images": 1,
+  "size": 9753
+ }
+]

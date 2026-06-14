@@ -1,0 +1,230 @@
+{
+  "srs_report": {
+    "system_name": "FlexFit Gym & Wellness Management",
+    "version": "1.0.0",
+    "scope_type": "Public Gym Website + Member Portal + Staff Admin",
+    "project_overview": {
+      "problem_statement": "Let members join, book classes and manage their plan online",
+      "main_objectives": [
+        "Let members join, book classes and manage their plan online",
+        "Help trainers manage schedules, classes and attendance",
+        "Give the gym tools for memberships, payments and reporting"
+      ]
+    },
+    "user_roles_and_permissions": [
+      {
+        "role": "Guest",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Member",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Trainer",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Front Desk",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Manager",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Administrator",
+        "permissions": [
+          "manage"
+        ]
+      }
+    ],
+    "data_model": {
+      "entities": [
+        {
+          "name": "Member",
+          "fields": [
+            {
+              "name": "full_name",
+              "type": "string"
+            },
+            {
+              "name": "email",
+              "type": "string"
+            },
+            {
+              "name": "phone",
+              "type": "string"
+            },
+            {
+              "name": "plan",
+              "type": "string"
+            },
+            {
+              "name": "join_date",
+              "type": "date"
+            },
+            {
+              "name": "status",
+              "type": "enum"
+            }
+          ]
+        },
+        {
+          "name": "MembershipPlan",
+          "fields": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "monthly_price",
+              "type": "decimal"
+            },
+            {
+              "name": "duration_months",
+              "type": "number"
+            },
+            {
+              "name": "status",
+              "type": "enum"
+            }
+          ]
+        },
+        {
+          "name": "ClassSchedule",
+          "fields": [
+            {
+              "name": "class_name",
+              "type": "string"
+            },
+            {
+              "name": "trainer",
+              "type": "string"
+            },
+            {
+              "name": "start_time",
+              "type": "datetime"
+            },
+            {
+              "name": "capacity",
+              "type": "number"
+            },
+            {
+              "name": "status",
+              "type": "enum"
+            }
+          ]
+        },
+        {
+          "name": "Payment",
+          "fields": [
+            {
+              "name": "member",
+              "type": "string"
+            },
+            {
+              "name": "amount",
+              "type": "decimal"
+            },
+            {
+              "name": "method",
+              "type": "string"
+            },
+            {
+              "name": "paid_on",
+              "type": "date"
+            },
+            {
+              "name": "status",
+              "type": "enum"
+            }
+          ]
+        },
+        {
+          "name": "Trainer",
+          "fields": [
+            {
+              "name": "full_name",
+              "type": "string"
+            },
+            {
+              "name": "specialty",
+              "type": "string"
+            },
+            {
+              "name": "email",
+              "type": "string"
+            },
+            {
+              "name": "phone",
+              "type": "string"
+            },
+            {
+              "name": "bio",
+              "type": "text"
+            }
+          ]
+        }
+      ]
+    },
+    "ui_pages": [
+      {
+        "path": "/",
+        "name": "Home"
+      },
+      {
+        "path": "/classes",
+        "name": "Classes & Timetable"
+      },
+      {
+        "path": "/trainers",
+        "name": "Our Trainers"
+      },
+      {
+        "path": "/pricing",
+        "name": "Membership Plans"
+      },
+      {
+        "path": "/contact",
+        "name": "Visit Us"
+      }
+    ],
+    "functional_requirements": [
+      {
+        "module": "Public Website",
+        "title": "FR-001 Classes and Timetable"
+      },
+      {
+        "module": "Public Website",
+        "title": "FR-002 Trainer Profiles"
+      },
+      {
+        "module": "Public Website",
+        "title": "FR-003 Membership Plans"
+      },
+      {
+        "module": "Member Portal",
+        "title": "FR-011 Class Booking"
+      },
+      {
+        "module": "Finance",
+        "title": "FR-014 Payments"
+      },
+      {
+        "module": "Public Website",
+        "title": "FR-016 Contact and Inquiry"
+      }
+    ]
+  }
+}
