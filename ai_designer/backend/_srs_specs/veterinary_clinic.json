@@ -1,0 +1,226 @@
+{
+  "srs_report": {
+    "system_name": "PawCare Veterinary Clinic Portal",
+    "version": "1.0.0",
+    "scope_type": "Public Clinic Website + Pet Owner Portal + Clinic Admin",
+    "project_overview": {
+      "problem_statement": "Let pet owners book visits, view records and pay invoices",
+      "main_objectives": [
+        "Let pet owners book visits, view records and pay invoices",
+        "Help vets manage appointments, treatments and vaccination history",
+        "Give the clinic tools for patients, inventory and billing"
+      ]
+    },
+    "user_roles_and_permissions": [
+      {
+        "role": "Guest",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Pet Owner",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Veterinarian",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Vet Technician",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Receptionist",
+        "permissions": [
+          "manage"
+        ]
+      },
+      {
+        "role": "Clinic Admin",
+        "permissions": [
+          "manage"
+        ]
+      }
+    ],
+    "data_model": {
+      "entities": [
+        {
+          "name": "Pet",
+          "fields": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "species",
+              "type": "string"
+            },
+            {
+              "name": "breed",
+              "type": "string"
+            },
+            {
+              "name": "age",
+              "type": "number"
+            },
+            {
+              "name": "owner_name",
+              "type": "string"
+            },
+            {
+              "name": "notes",
+              "type": "text"
+            }
+          ]
+        },
+        {
+          "name": "Appointment",
+          "fields": [
+            {
+              "name": "pet_name",
+              "type": "string"
+            },
+            {
+              "name": "vet",
+              "type": "string"
+            },
+            {
+              "name": "visit_date",
+              "type": "datetime"
+            },
+            {
+              "name": "reason",
+              "type": "string"
+            },
+            {
+              "name": "status",
+              "type": "enum"
+            }
+          ]
+        },
+        {
+          "name": "Vaccination",
+          "fields": [
+            {
+              "name": "pet_name",
+              "type": "string"
+            },
+            {
+              "name": "vaccine",
+              "type": "string"
+            },
+            {
+              "name": "given_date",
+              "type": "date"
+            },
+            {
+              "name": "next_due",
+              "type": "date"
+            }
+          ]
+        },
+        {
+          "name": "Invoice",
+          "fields": [
+            {
+              "name": "invoice_no",
+              "type": "string"
+            },
+            {
+              "name": "owner_name",
+              "type": "string"
+            },
+            {
+              "name": "amount",
+              "type": "decimal"
+            },
+            {
+              "name": "tax",
+              "type": "decimal"
+            },
+            {
+              "name": "status",
+              "type": "enum"
+            }
+          ]
+        },
+        {
+          "name": "Treatment",
+          "fields": [
+            {
+              "name": "pet_name",
+              "type": "string"
+            },
+            {
+              "name": "diagnosis",
+              "type": "string"
+            },
+            {
+              "name": "medication",
+              "type": "string"
+            },
+            {
+              "name": "treated_on",
+              "type": "date"
+            }
+          ]
+        }
+      ]
+    },
+    "ui_pages": [
+      {
+        "path": "/",
+        "name": "Home"
+      },
+      {
+        "path": "/services",
+        "name": "Our Services"
+      },
+      {
+        "path": "/team",
+        "name": "Meet the Vets"
+      },
+      {
+        "path": "/packages",
+        "name": "Care Packages"
+      },
+      {
+        "path": "/contact",
+        "name": "Book & Contact"
+      }
+    ],
+    "functional_requirements": [
+      {
+        "module": "Public Website",
+        "title": "FR-001 Services Overview"
+      },
+      {
+        "module": "Public Website",
+        "title": "FR-002 Veterinary Team"
+      },
+      {
+        "module": "Public Website",
+        "title": "FR-003 Care Packages"
+      },
+      {
+        "module": "Patient Portal",
+        "title": "FR-011 Appointment Booking"
+      },
+      {
+        "module": "Finance",
+        "title": "FR-014 Billing and Payments"
+      },
+      {
+        "module": "Public Website",
+        "title": "FR-016 Contact and Inquiry"
+      }
+    ]
+  }
+}
