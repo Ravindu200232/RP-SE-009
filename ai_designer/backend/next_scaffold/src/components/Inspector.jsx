@@ -43,6 +43,13 @@ export default function Inspector() {
       return t || 'element';
     };
 
+    // Fallback component id when the click is NOT inside a [data-component-id]
+    // wrapper (e.g. the home page): derive it from the route so the edit always
+    // resolves to a source file instead of sending null (which 422s the API).
+    // Send the raw route; the backend maps ANY path (app pages, CRUD list/detail/
+    // edit/new, marketing) to its source file via _route_to_file.
+    const routeComponentId = () => 'route:' + (window.location.pathname || '/');
+
     const onMove = (e) => {
       if (!active) return;
       const el = pick(e);
@@ -79,7 +86,7 @@ export default function Inspector() {
       try {
         window.parent.postMessage({
           type: 'VISUAL_ELEMENT_SELECTED',
-          componentId: container ? container.getAttribute('data-component-id') : null,
+          componentId: (container && container.getAttribute('data-component-id')) || routeComponentId(),
           label: (container && container.getAttribute('data-component-label')) || tagName(el),
           tag,
           className: typeof el.className === 'string' ? el.className.slice(0, 200) : '',
