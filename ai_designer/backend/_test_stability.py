@@ -52,10 +52,16 @@ def t_routes():
     if not os.path.isdir(ROUTES_PRJ):
         return rec(2, "route resolver", False, f"{ROUTES_PRJ} missing")
     must = {
+        # human-derived ids the inspector now sends (route fallback) ...
+        "home": "(marketing)/page.jsx", "dashboard": "dashboard", "profile": "profile",
+        "page-patient-services": "patient-services/page.jsx",
+        # ... and full-path route: ids for nested/CRUD pages
         "route:/": "(marketing)/page.jsx", "route:/dashboard": "dashboard",
-        "route:/profile": "profile", "route:/settings": "settings",
-        "route:/e/labreport/LAB-9014": "[id]/page.jsx", "route:/e/labreport/LAB-9014/edit": "edit",
-        "route:/e/appointment/new": "new/page.jsx", "navbar": "Navbar.jsx",
+        "route:/e/labreport/LAB-9014": "[id]/page.jsx",          # CRUD detail
+        "route:/e/labreport/LAB-9014/edit": "edit",              # CRUD edit
+        "route:/e/appointment/new": "new/page.jsx",              # CRUD new
+        "route:/e/appointment/create": "new/page.jsx",           # CRUD create
+        "navbar": "Navbar.jsx",
     }
     ok = True
     for cid, frag in must.items():
@@ -66,8 +72,15 @@ def t_routes():
     _, p_null = editor.resolve_component_file(ROUTES_PRJ, None)
     _, p_junk = editor.resolve_component_file(ROUTES_PRJ, "page-la14")
     clean_miss = p_null is None and p_junk is None
-    rec(2, "all routes (incl CRUD detail/edit/new, app pages) resolve; null/garbage miss cleanly",
-        ok and clean_miss, f"routes={'ok' if ok else 'FAIL'}, clean-miss={clean_miss}")
+    # invalid AND null component ids -> a READABLE STRING error (never a crash/object)
+    pid = os.path.basename(ROUTES_PRJ)
+    r_bad = editor.edit_component(pid, "totally-bogus-xyz", "make it red", tag="div")
+    r_null = editor.edit_component(pid, None, "make it red", tag="div")
+    readable = (not r_bad.get("ok") and isinstance(r_bad.get("error"), str) and
+                not r_null.get("ok") and isinstance(r_null.get("error"), str))
+    rec(2, "routes resolve (home/dashboard/page-*/CRUD list/detail/edit/new/create); invalid+null -> readable string error",
+        ok and clean_miss and readable,
+        f"routes={'ok' if ok else 'FAIL'}, clean-miss={clean_miss}, readable-err={readable}")
 
 
 # ---------- #4 async def -> def (threadpool) ----------

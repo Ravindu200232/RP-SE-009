@@ -96,7 +96,7 @@ def _route_to_file(pathname: str) -> str:
     if head in ("e", "entity", "entities") and len(seg) >= 2:
         if len(seg) == 2:
             return "src/app/(app)/e/[entity]/page.jsx"            # list
-        if seg[-1].lower() == "new":
+        if seg[-1].lower() in ("new", "create"):
             return "src/app/(app)/e/[entity]/new/page.jsx"
         if seg[-1].lower() == "edit":
             return "src/app/(app)/e/[entity]/[id]/edit/page.jsx"
