@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, Play, Send, RefreshCw, Smartphone, Tablet, Monitor, Download, FileText, ChevronRight, MessageSquare, Terminal, Crosshair, X, FileUp } from 'lucide-react';
+import { errText } from './lib/errText.js';
 
 const API_BASE_URL = 'http://localhost:8000';
 
@@ -138,7 +139,7 @@ function App() {
         body: JSON.stringify({ filename: file.name, data_b64: dataUrl }),
       });
       const data = await res.json();
-      if (!res.ok || !data.text) throw new Error(data.detail || 'could not read file');
+      if (!res.ok || !data.text) throw new Error(errText(data, 'could not read file'));
       // SRS is the single source of truth: NO questions - plan pages/flow/
       // functions/relations/CRUD from the spec and build straight away.
       runGeneration(data.text, null, true, aiSections);
@@ -322,16 +323,8 @@ function App() {
     return res.json();
   };
 
-  // Render ANY backend error as readable text — never "[object Object]".
-  // Handles plain strings, FastAPI 422 ({detail:[{msg,loc}]}), and bare objects.
-  const errText = (data, fallback) => {
-    const e = data?.error ?? data?.detail;
-    if (e == null) return fallback;
-    if (typeof e === 'string') return e;
-    if (Array.isArray(e)) return e.map(x => x?.msg || JSON.stringify(x)).join('; ') || fallback;
-    if (typeof e === 'object') return e.msg || JSON.stringify(e);
-    return String(e);
-  };
+  // errText() is imported from ./lib/errText.js (centralized + unit-tested) so the
+  // studio NEVER renders "[object Object]" for any backend error shape.
 
   // Select-Element: edit ONLY the pinned component (sends its tag + text so text
   // edits are deterministic; styling goes to Gemma, scoped to that element).
