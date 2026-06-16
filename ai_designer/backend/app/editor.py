@@ -67,15 +67,49 @@ _STATIC_MAP = {
     "navbar": "src/components/shell/Navbar.jsx",
     "sidebar": "src/components/shell/Sidebar.jsx",
     "dashboard": "src/app/(app)/dashboard/page.jsx",
+    "profile": "src/app/(app)/profile/page.jsx",
+    "settings": "src/app/(app)/settings/page.jsx",
+    "notifications": "src/app/(app)/notifications/page.jsx",
+    "workspace": "src/app/(app)/workspace/[role]/page.jsx",
+    "login": "src/app/login/page.jsx",
+    "register": "src/app/register/page.jsx",
     "hero": "src/app/(marketing)/page.jsx",
     "home": "src/app/(marketing)/page.jsx",
     "landing": "src/app/(marketing)/page.jsx",
 }
 
 
+def _route_to_file(pathname: str) -> str:
+    """Map a live URL path to its Next.js source file - covers the WHOLE app, so an
+    element can be selected & edited on ANY page (app pages, CRUD list/detail/edit/new,
+    marketing), not just the landing/dashboard."""
+    seg = [s for s in re.sub(r"[?#].*$", "", str(pathname or "/")).split("/") if s]
+    if not seg:
+        return "src/app/(marketing)/page.jsx"
+    head = seg[0].lower()
+    if head in ("dashboard", "profile", "settings", "notifications"):
+        return f"src/app/(app)/{head}/page.jsx"
+    if head == "workspace":
+        return "src/app/(app)/workspace/[role]/page.jsx"
+    if head in ("login", "register"):
+        return f"src/app/{head}/page.jsx"
+    if head in ("e", "entity", "entities") and len(seg) >= 2:
+        if len(seg) == 2:
+            return "src/app/(app)/e/[entity]/page.jsx"            # list
+        if seg[-1].lower() in ("new", "create"):
+            return "src/app/(app)/e/[entity]/new/page.jsx"
+        if seg[-1].lower() == "edit":
+            return "src/app/(app)/e/[entity]/[id]/edit/page.jsx"
+        return "src/app/(app)/e/[entity]/[id]/page.jsx"           # detail
+    slug = re.sub(r"[^a-z0-9-]", "", head)                        # a marketing sub-page
+    return f"src/app/(marketing)/{slug}/page.jsx"
+
+
 def resolve_component_file(out_dir: str, component_id: str):
     cid = str(component_id or "").strip()
-    if cid in _STATIC_MAP:
+    if cid.startswith("route:"):                  # inspector route fallback (any page)
+        rel = _route_to_file(cid[6:])
+    elif cid in _STATIC_MAP:
         rel = _STATIC_MAP[cid]
     elif cid.startswith("page:") or cid.startswith("page-"):
         slug = re.sub(r"[^a-z0-9-]", "", cid.split(":", 1)[-1].split("-", 1)[-1].lower())
@@ -249,6 +283,94 @@ def _commit(path, original, candidate, mode, rel):
     return {"ok": True, "file": rel, "mode": mode}
 
 
+def _extract_element(source: str, tag: str = None, class_name: str = None, text: str = None):
+    """Return the EXACT JSX of the selected element (its opening tag through its
+    matching closing tag, or the self-closing tag), or None if it can't be isolated.
+    Anchored by className first (the inspector always captures it), then by text.
+    Nested same-name tags are balanced so we grab the whole element, nothing more."""
+    start = -1
+    if class_name and class_name.strip():
+        cn = class_name.strip()
+        for needle in (f'className="{cn}"', f"className='{cn}'"):
+            j = source.find(needle)
+            if j != -1:
+                start = source.rfind("<", 0, j)
+                break
+        if start == -1 and len(cn) >= 24:        # inspector caps className at 200 -> anchor on a chunk
+            j = source.find(f'className="{cn[:40]}')
+            if j != -1:
+                start = source.rfind("<", 0, j)
+    if start == -1 and text and text.strip():
+        j = source.find(text.strip()[:60])
+        if j != -1:
+            start = source.rfind("<", 0, j)
+    if start == -1:
+        return None
+    m = re.match(r"<([A-Za-z][\w.]*)", source[start:])
+    if not m:
+        return None
+    name = m.group(1)
+    gt = source.find(">", start)
+    if gt == -1:
+        return None
+    if source[gt - 1] == "/":                     # self-closing element, e.g. <img .../>
+        return source[start:gt + 1]
+    open_re = re.compile(r"<" + re.escape(name) + r"(?=[\s/>])")
+    close_re = re.compile(r"</" + re.escape(name) + r"\s*>")
+    depth, pos = 0, start
+    while pos < len(source):
+        o = open_re.search(source, pos)
+        c = close_re.search(source, pos)
+        if not c:
+            return None
+        if o and o.start() < c.start():
+            og = source.find(">", o.start())
+            if og != -1 and source[og - 1] == "/":
+                pos = og + 1                       # nested self-closing: no depth change
+            else:
+                depth += 1
+                pos = (og + 1) if og != -1 else o.end()
+        else:
+            depth -= 1
+            pos = c.end()
+            if depth == 0:
+                return source[start:pos]
+        if pos - start > 24000:                    # element implausibly large -> bail to fallback
+            return None
+    return None
+
+
+_SNIPPET_SYS = (
+    "You edit ONE JSX element. You are given that element's exact code and a change request. "
+    "Return ONLY the COMPLETE updated element - the SAME outer tag with the change applied.\n"
+    "INTENT DECODING: the request may have typos, bad grammar, or be vague - infer what the user MEANS. "
+    "Fix obvious misspellings ('horizonal'->horizontal, 'bton'->button, 'colr'->color, 'beatiful'->beautiful). "
+    "Translate vague style words into concrete Tailwind: premium/beautiful/modern/clean -> subtle shadow "
+    "(shadow-sm/shadow-lg), generous rounded corners, balanced padding, refined spacing, smooth 'transition'; "
+    "'pop'/'eye-catching' -> stronger accent colour + shadow; 'minimal' -> less, more whitespace. "
+    "Use the element's tag + content as context for the true intent.\n"
+    "Hard rules: output raw JSX only (NO markdown, NO ``` fences, NO explanation, NO text before/after); "
+    "it must be a single valid JSX element; KEEP any data-component-id and the overall structure unless "
+    "the request says to change it; do NOT add imports or new component references; classNames stay Tailwind. "
+    "If the request truly can't apply, return the element unchanged."
+)
+
+
+def _edit_snippet_llm(snippet: str, prompt: str, tag: str = None, fix_error: str = "", attempt: int = 0) -> str:
+    """Send ONLY the selected element to the LLM and return ONLY the updated element.
+    Tiny input + tiny output => fast even on CPU (no whole-file context). `fix_error`
+    feeds the previous @babel compile error back for the self-healing retry (Step 7)."""
+    from app.agents import get_llm, _clean_code
+    from langchain_core.messages import SystemMessage, HumanMessage
+    user = f"ELEMENT (<{tag or 'element'}>):\n{snippet}\n\nCHANGE REQUEST: {prompt}\n\nReturn the full updated element only."
+    if fix_error:
+        user += ("\n\nYour PREVIOUS attempt did NOT compile. The validator reported:\n"
+                 f"{fix_error}\nReturn the SAME element with the change applied AND that syntax error fixed - valid JSX only, no fences.")
+    out = get_llm(temperature=0.15 + 0.2 * attempt, num_predict=2048, json_mode=False).invoke(
+        [SystemMessage(content=_SNIPPET_SYS), HumanMessage(content=user)]).content
+    return _clean_code(_strip_fences(out or "")).strip()
+
+
 def edit_component(project_id: str, component_id: str, prompt: str, tag: str = None,
                    text: str = None, class_name: str = None) -> dict:
     """Isolated Block Patch pipeline (sub-3s render, ~1s @babel validate):
@@ -270,49 +392,58 @@ def edit_component(project_id: str, component_id: str, prompt: str, tag: str = N
     with open(path, encoding="utf-8") as f:
         original = f.read()
 
-    # 0) STYLE_TWEAK - deterministic, no LLM. Map the words to Tailwind classes and
+    # 0) exact-text content replace - runs FIRST so a clear "change ... to X" wins
+    # over any incidental style word in the request (e.g. the "thin" inside
+    # "Everything"). Only fires when there's real new text to insert.
+    if text and text.strip() and text.strip() in original:
+        nt = _extract_new_text(prompt)
+        if nt:
+            r = _commit(path, original, original.replace(text.strip(), nt, 1), "TEXT_EDIT", rel)
+            if r and r["ok"]:
+                return r
+
+    # 1) STYLE_TWEAK - deterministic, no LLM. Map the words to Tailwind classes and
     # splice the literal className in source. Instant + reliable for everyday tweaks.
     if class_name:
         set_c, rem_c = nl_to_classes(prompt, tag)
         if set_c or rem_c:
             r = style_element(project_id, [{"component_id": component_id, "class_name": class_name}], set_c, rem_c)
             if r.get("ok"):
-                return {"ok": True, "file": rel, "mode": "STYLE_TWEAK", "classes": set_c}
+                return {"ok": True, "file": rel, "mode": "STYLE_TWEAK", "classes": set_c, "new_class_name": r.get("new_class_name")}
             # dynamic className (couldn't locate literally) -> fall through to the LLM patch
 
-    # 1) exact-text content replace
-    if text and text.strip() and text.strip() in original:
-        nt = _extract_new_text(prompt)
-        if nt:
-            r = _commit(path, original, original.replace(text.strip(), nt, 1), "STYLE_TWEAK", rel)
+    # 2) ELEMENT-ONLY ISOLATION (the fast path the user asked for): extract ONLY the
+    # selected element's JSX, send JUST that snippet to the LLM, and paste the returned
+    # element back exactly where it was. Tiny input + tiny output => seconds even when
+    # Fooocus holds the GPU (Gemma on CPU). The rest of the page is NEVER sent or
+    # rewritten. Runs under gpu_handoff so an active image batch yields for the call.
+    snippet = _extract_element(original, tag, class_name, text)
+    if snippet and original.count(snippet) == 1:
+        # SELF-HEALING LOOP (Step 7): generate the patched element, validate it; if it
+        # doesn't compile, feed the @babel error back to the model and retry. The live
+        # file is only ever swapped for a VALID result (validate-then-atomic in _commit).
+        err_ctx = ""
+        for attempt in range(3):
+            with gpu_handoff():
+                try:
+                    new_el = _edit_snippet_llm(snippet, prompt, tag, fix_error=err_ctx, attempt=attempt)
+                except Exception:
+                    new_el = ""
+            if not (new_el and "<" in new_el and new_el != snippet.strip()):
+                break
+            r = _commit(path, original, _clean_code(original.replace(snippet, new_el, 1)), "ELEMENT_PATCH", rel)
             if r and r["ok"]:
                 return r
+            err_ctx = (r or {}).get("detail") or ""   # compile error -> next attempt self-corrects
+            if not err_ctx:
+                break
+        # couldn't self-heal the isolated element -> scoped whole-file fallback below
 
-    # 2 + 3) LLM paths run under GPU HANDOFF: an active background image batch is
-    # suspended for the duration of the LLM call(s) and resumed when we leave the
-    # block (any return / exception triggers the context manager's finally).
+    # 3) FALLBACK (only when the element can't be isolated, e.g. a dynamic className or
+    # no anchor): scoped whole-file rewrite, validated + atomic. Two attempts; the
+    # second insists on a real change. A failure here is SAFE - the file is untouched.
     with gpu_handoff():
-        # 2) ISOLATED BLOCK PATCH - classify + verbatim {oldCodeBlock,newCodeBlock}
-        try:
-            sel = {"tag": tag, "className": (class_name or "")[:160], "text": (str(text) or "")[:80], "componentId": component_id}
-            user = f"SOURCE:\n{original}\n\nSELECTED_ELEMENT:\n{sel}\n\nREQUEST:\n{prompt}"
-            patch = extract_json(get_llm(temperature=0.1, num_predict=3072, json_mode=True).invoke(
-                [SystemMessage(content=_PATCH_SYS), HumanMessage(content=user)]).content) or {}
-            mode = patch.get("mode")
-            old, new = patch.get("oldCodeBlock"), patch.get("newCodeBlock")
-            if mode != "ERROR" and isinstance(old, str) and old and new is not None and original.count(old) == 1:
-                r = _commit(path, original, _clean_code(original.replace(old, str(new), 1)),
-                            mode if mode in ("STYLE_TWEAK", "SECTION_REDESIGN") else "SECTION_REDESIGN", rel)
-                if r and r["ok"]:
-                    return r
-                # ambiguous / not-unique / invalid -> fall through
-        except Exception:
-            pass
-
-        # 3) FALLBACK: scoped whole-file rewrite (validated + atomic). Two attempts -
-        # the second is hotter + insists on a real change, to catch "returned the file
-        # unchanged". A failure here is SAFE: the live file was never touched.
-        scope = f" Change ONLY the <{tag or 'element'}>" + (f' whose text is "{str(text).strip()[:60]}"' if text else "") + "." if (tag or text) else ""
+        scope = (f" Change ONLY the <{tag or 'element'}>" + (f' whose text is "{str(text).strip()[:60]}"' if text else "") + ".") if (tag or text) else ""
         base = f"FILE ({rel}):\n```\n{original}\n```\n\nCHANGE REQUESTED: {prompt}.{scope}\n\nReturn the full updated file."
         for attempt in range(2):
             try:
@@ -336,8 +467,32 @@ _TW_GROUPS = [
     ("text-size", re.compile(r"^text-(xs|sm|base|lg|xl|[2-9]xl)$")),
     ("text-align", re.compile(r"^text-(left|center|right|justify)$")),
     ("font-weight", re.compile(r"^font-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black)$")),
+    ("font-family", re.compile(r"^font-(sans|serif|mono)$")),
     ("text-color", re.compile(r"^text-(" + _COLORS + r")(-\d{2,3})?$|^text-(white|black)$")),
     ("bg-color", re.compile(r"^bg-(" + _COLORS + r")(-\d{2,3})?$|^bg-(white|black|transparent)$")),
+    ("border-color", re.compile(r"^border-(" + _COLORS + r")(-\d{2,3})?$|^border-(white|black)$")),
+    ("border-width", re.compile(r"^border(-(0|2|4|8))?$")),
+    ("ring-width", re.compile(r"^ring(-(0|1|2|4|8))?$")),
+    ("rounded", re.compile(r"^rounded(-(sm|md|lg|xl|2xl|3xl|full|none))?$")),
+    ("shadow", re.compile(r"^shadow(-(sm|md|lg|xl|2xl|inner|none))?$")),
+    ("opacity", re.compile(r"^opacity-\d")),
+    ("tracking", re.compile(r"^tracking-(tighter|tight|normal|wide|wider|widest)$")),
+    ("leading", re.compile(r"^leading-(none|tight|snug|normal|relaxed|loose|\d+)$")),
+    ("font-style", re.compile(r"^(italic|not-italic)$")),
+    ("text-transform", re.compile(r"^(uppercase|lowercase|capitalize|normal-case)$")),
+    ("text-decoration", re.compile(r"^(underline|line-through|no-underline|overline)$")),
+    ("display", re.compile(r"^(block|inline-block|inline|flex|inline-flex|grid|hidden|table)$")),
+    ("flex-dir", re.compile(r"^flex-(row|row-reverse|col|col-reverse)$")),
+    ("justify", re.compile(r"^justify-(start|center|end|between|around|evenly)$")),
+    ("items", re.compile(r"^items-(start|center|end|stretch|baseline)$")),
+    ("position", re.compile(r"^(static|relative|absolute|fixed|sticky)$")),
+    ("z", re.compile(r"^z-\d")),
+    ("w", re.compile(r"^w-")), ("h", re.compile(r"^h-")), ("max-w", re.compile(r"^max-w-")),
+    ("gap", re.compile(r"^gap-\d")),
+    ("rotate", re.compile(r"^-?rotate-\d")), ("scale", re.compile(r"^scale-\d")),
+    ("cursor", re.compile(r"^cursor-")),
+    ("overflow", re.compile(r"^overflow-(auto|hidden|scroll|visible|x-auto|x-hidden|y-auto)$")),
+    ("blur", re.compile(r"^blur(-\w+)?$")), ("backdrop", re.compile(r"^backdrop-blur(-\w+)?$")),
     ("rounded", re.compile(r"^rounded(-\w+)?$")),
     ("p", re.compile(r"^p-\d")), ("px", re.compile(r"^px-\d")), ("py", re.compile(r"^py-\d")),
     ("pt", re.compile(r"^pt-\d")), ("pr", re.compile(r"^pr-\d")), ("pb", re.compile(r"^pb-\d")), ("pl", re.compile(r"^pl-\d")),
@@ -381,87 +536,270 @@ _NL_COLORS = {
     "gray": "gray", "grey": "gray", "black": "black", "white": "white",
 }
 
+# common edit-vocabulary misspellings -> canonical (word-boundary normalised so the
+# deterministic engine still matches when the user mistypes; INTENT DECODING step 1).
+_EDIT_TYPOS = {
+    "roundd": "rounded", "rouded": "rounded", "rouned": "rounded", "rouned": "rounded",
+    "biger": "bigger", "bigr": "bigger", "smaler": "smaller", "smalller": "smaller",
+    "shadw": "shadow", "shaddow": "shadow", "shadow": "shadow",
+    "colr": "color", "colur": "color", "colour": "color", "coler": "color",
+    "padng": "padding", "paddin": "padding", "padidng": "padding", "margn": "margin",
+    "horizonal": "horizontal", "horizntal": "horizontal", "vertcal": "vertical",
+    "centre": "center", "centr": "center", "allign": "align", "aligne": "align",
+    "borderr": "border", "bordr": "border", "transparant": "transparent",
+    "beatiful": "beautiful", "beutiful": "beautiful", "gradiant": "gradient", "animaton": "animation",
+}
+
 
 def nl_to_classes(prompt, tag=None):
-    """Map a natural-language styling request to Tailwind classes - the
-    deterministic, no-LLM path. Returns (set_classes, remove_classes) or ([],[])
-    when the request isn't a recognised visual tweak (-> falls back to the LLM)."""
+    """Map a natural-language styling request to Tailwind classes (deterministic,
+    no-LLM path). PARAMETRIC across colour / size / weight / font / spacing (every
+    side) / radius / shadow / border / ring / opacity / width / height / flex+grid
+    layout / transform / animation - so a very wide range of edits apply instantly
+    and reliably. Anything it doesn't recognise returns ([],[]) -> element-only LLM."""
     p = " " + str(prompt).lower() + " "
+    for _bad, _good in _EDIT_TYPOS.items():     # typo-tolerant (INTENT DECODING)
+        if _bad != _good and _bad in p:
+            p = re.sub(r"\b" + _bad + r"\b", _good, p)
     s, r = [], []
-    is_bg = any(w in p for w in ("background", " bg ", "fill", "backdrop"))
-    # colour
-    for word, col in _NL_COLORS.items():
-        if re.search(r"\b" + word + r"\b", p):
-            if col in ("black", "white"):
-                s.append(("bg-" if is_bg else "text-") + col)
-            else:
-                shade = "700" if "dark" in p else ("300" if "light" in p else "500")
-                s.append(("bg-" if is_bg else "text-") + f"{col}-{shade}")
-            break
-    # bare "dark"/"light" (no colour word) -> a neutral dark/light surface
-    if not any(c.startswith("bg-") or c.startswith("text-") for c in s):
-        if "dark" in p:
-            s.append("bg-slate-900" if is_bg else "text-slate-900")
-        elif "light" in p and is_bg:
-            s.append("bg-slate-100")
-    # glassmorphism
-    if "glass" in p or "frosted" in p:
+    has = lambda *ws: any(w in p for w in ws)
+    wb = lambda w: bool(re.search(r"\b" + w + r"\b", p))
+
+    def shade():
+        m = re.search(r"\b([1-9]00)\b", p)
+        if m: return m.group(1)
+        if has("darkest"): return "900"
+        if has("darker", "deeper"): return "800"
+        if wb("dark") or has("deep "): return "700"
+        if has("lightest", "palest"): return "100"
+        if has("lighter", "paler", "softer"): return "200"
+        if wb("light") or wb("pale"): return "300"
+        return "500"
+
+    # ---- colour: text / background / border ----
+    want_border = wb("border") or wb("outline") or wb("stroke")
+    want_bg = (not want_border) and has("background", " bg ", "fill ", "backdrop", "behind it")
+    col = next((fam for word, fam in _NL_COLORS.items() if wb(word)), None)
+    if col:
+        tok = col if col in ("black", "white", "transparent") else f"{col}-{shade()}"
+        if want_border:
+            s += ["border", "border-" + tok]
+        elif want_bg:
+            s.append("bg-" + tok)
+        else:
+            s.append("text-" + tok)
+    elif wb("dark"):
+        s.append("bg-slate-900" if want_bg else "text-slate-900")
+    elif wb("light") and want_bg:
+        s.append("bg-slate-100")
+
+    # ---- glass / gradient ----
+    if has("glass", "frosted", "glassmorph"):
         s += ["bg-white/20", "backdrop-blur-lg", "border", "border-white/30", "shadow-xl"]
-    # font size
-    if any(w in p for w in ("huge", "massive", "biggest")):
-        s.append("text-5xl")
-    elif any(w in p for w in ("bigger", "larger", "large", "increase font", "increase size", "increase the size", "increase text")):
-        s.append("text-3xl")
-    elif any(w in p for w in ("smaller", "tiny", "decrease font", "decrease size", "decrease text", "reduce size")):
-        s.append("text-sm")
-    # weight
-    if "bolder" in p or "make it bold" in p or "bold" in p or "heavier" in p:
-        s.append("font-bold")
-    elif "lighter" in p or "thinner" in p or "thin" in p:
-        s.append("font-light")
-    # alignment
-    if "center" in p or "centre" in p or "middle" in p:
-        s.append("text-center")
-    elif "align right" in p or "to the right" in p or "right align" in p or "right-align" in p:
-        s.append("text-right")
-    elif "align left" in p or "to the left" in p or "left align" in p or "left-align" in p:
-        s.append("text-left")
-    # rounding
-    if "pill" in p or "fully round" in p:
-        s.append("rounded-full")
-    elif "rounded" in p or "round corner" in p or "round the corner" in p:
-        s.append("rounded-2xl")
-    elif "sharp" in p or "square corner" in p or "no rounding" in p:
-        s.append("rounded-none")
-    # shadow
-    if "big shadow" in p or "strong shadow" in p or "drop shadow" in p:
-        s.append("shadow-2xl")
-    elif "shadow" in p:
-        s.append("shadow-lg")
-    # spacing
-    if "more padding" in p or "more space inside" in p or ("padding" in p and "less" not in p and "no " not in p) or "more spacious" in p:
-        s.append("p-8")
-    elif "less padding" in p or "tighter" in p or "compact" in p:
-        s.append("p-2")
-    if "more margin" in p or "more space around" in p or "more space above" in p:
-        s.append("m-6")
-    # text transforms / misc
-    if "uppercase" in p or "all caps" in p or "capital" in p:
-        s.append("uppercase")
-    if "lowercase" in p:
-        s.append("lowercase")
-    if "italic" in p:
-        s.append("italic")
-    if "underline" in p:
-        s.append("underline")
-    if "hide" in p or "remove this" in p or "make it disappear" in p:
-        s.append("hidden")
-    if "full width" in p or "full-width" in p:
-        s.append("w-full")
-    # gradient text
-    if "gradient" in p and not is_bg:
+    if has("gradient") and not want_bg:
         s += ["bg-gradient-to-r", "from-primary", "to-primary/60", "bg-clip-text", "text-transparent"]
-    return s, r
+    elif has("gradient"):
+        s += ["bg-gradient-to-br", "from-primary", "to-primary/70"]
+
+    # ---- font size ----
+    msz = re.search(r"\btext-([2-9]xl|xs|sm|base|lg|xl)\b", p)
+    if msz:
+        s.append("text-" + msz.group(1))
+    elif has("massive", "giant", "enormous"):
+        s.append("text-7xl")
+    elif has("huge", "biggest", "hero text"):
+        s.append("text-6xl")
+    elif has("bigger", "larger", " large", "increase font", "increase size", "increase the text", "bigger text"):
+        s.append("text-3xl")
+    elif has("smaller", "tiny", "decrease font", "decrease size", "smaller text", "reduce text"):
+        s.append("text-sm")
+
+    # ---- font weight ----
+    if has("boldest", "heaviest", "extra bold", "extrabold"):
+        s.append("font-extrabold")
+    elif has("bolder", "make it bold", "heavier") or wb("bold"):
+        s.append("font-bold")
+    elif has("semibold", "semi bold", "semi-bold"):
+        s.append("font-semibold")
+    elif (has("lighter", "thinner") or wb("thin")) and not has("thin border", "thin line", "thin stroke", "thin outline"):
+        s.append("font-light")
+
+    # ---- font family ----
+    if has("serif", "elegant font"):
+        s.append("font-serif")
+    elif has("monospace", "mono font", "code font", "monospaced"):
+        s.append("font-mono")
+    elif has("sans serif", "sans-serif"):
+        s.append("font-sans")
+
+    # ---- alignment ----
+    if has("center", "centre", "middle align", "align middle"):
+        s.append("text-center")
+    elif has("align right", "to the right", "right align", "right-align"):
+        s.append("text-right")
+    elif has("align left", "to the left", "left align", "left-align"):
+        s.append("text-left")
+    elif has("justify text", "justified text"):
+        s.append("text-justify")
+
+    # ---- letter / line spacing ----
+    if has("more letter spacing", "wider letter", "spaced out", "wide tracking"):
+        s.append("tracking-wider")
+    elif has("less letter spacing", "tighter letter", "tight tracking"):
+        s.append("tracking-tight")
+    if has("more line height", "taller lines", "more line spacing", "relaxed line"):
+        s.append("leading-relaxed")
+    elif has("less line height", "tighter line", "compact line"):
+        s.append("leading-tight")
+
+    # ---- transform / decoration / style ----
+    if has("uppercase", "all caps", "capital letters"):
+        s.append("uppercase")
+    elif has("lowercase"):
+        s.append("lowercase")
+    elif has("capitalize", "title case"):
+        s.append("capitalize")
+    if wb("italic"):
+        s.append("italic")
+    if has("strikethrough", "line through", "line-through", "crossed out"):
+        s.append("line-through")
+    elif has("no underline", "remove underline"):
+        s.append("no-underline")
+    elif has("underline"):
+        s.append("underline")
+
+    # ---- rounding ----
+    if has("pill", "fully round", "circle", "circular", "round shape"):
+        s.append("rounded-full")
+    elif has("very rounded", "extra rounded", "more rounded"):
+        s.append("rounded-3xl")
+    elif has("slightly rounded", "small radius"):
+        s.append("rounded")
+    elif has("rounded", "round corner", "round the corner", "soft corner"):
+        s.append("rounded-2xl")
+    elif has("sharp corner", "square corner", "no rounding", "no radius", "no rounded"):
+        s.append("rounded-none")
+
+    # ---- shadow ----
+    if has("biggest shadow", "huge shadow"):
+        s.append("shadow-2xl")
+    elif has("big shadow", "strong shadow", "drop shadow", "large shadow"):
+        s.append("shadow-xl")
+    elif has("subtle shadow", "small shadow", "soft shadow", "light shadow"):
+        s.append("shadow-sm")
+    elif has("no shadow", "remove shadow", "flat look"):
+        s.append("shadow-none")
+    elif wb("shadow"):
+        s.append("shadow-lg")
+
+    # ---- border width / ring ----
+    if has("no border", "remove border", "remove the border", "without border", "borderless"):
+        s.append("border-0")
+    elif has("thick border", "thicker border", "bold border"):
+        s.append("border-4")
+    elif has("thin border", "1px border", "add a border", "add border") or (wb("border") and not col):
+        s.append("border")
+    if has("ring", "focus ring", "glow ring", "outline ring"):
+        s.append("ring-2")
+
+    # ---- opacity ----
+    mo = re.search(r"opacity\s*(?:of|to|=)?\s*(\d{1,3})", p) or re.search(r"\b(\d{1,3})\s*%\s*(?:opacity|opaque|transparent)", p)
+    if mo:
+        v = max(0, min(100, int(mo.group(1)))); s.append(f"opacity-{v if v in (0, 100) else (v // 5) * 5}")
+    elif has("semi transparent", "semi-transparent", "half transparent", "translucent"):
+        s.append("opacity-50")
+    elif has("faded", "more transparent", "see through", "see-through"):
+        s.append("opacity-60")
+    elif has("fully opaque", "no transparency"):
+        s.append("opacity-100")
+
+    # ---- padding ----
+    pad = None
+    if has("no padding"): pad = "0"
+    elif has("huge padding", "lots of padding", "very spacious"): pad = "12"
+    elif has("more padding", "more space inside", "more spacious", "bigger padding", "roomier"): pad = "8"
+    elif has("less padding", "tighter padding", "compact", "less space inside", "smaller padding"): pad = "2"
+    elif wb("padding"): pad = "6"
+    if pad is not None:
+        if has("horizontal padding", "left and right padding", "side padding"): s.append("px-" + pad)
+        elif has("vertical padding", "top and bottom padding"): s.append("py-" + pad)
+        elif has("top padding", "padding top", "padding above"): s.append("pt-" + pad)
+        elif has("bottom padding", "padding below"): s.append("pb-" + pad)
+        else: s.append("p-" + pad)
+
+    # ---- margin ----
+    marg = None
+    if has("no margin"): marg = "0"
+    elif has("more margin", "more space around", "more spacing outside"): marg = "8"
+    elif has("less margin", "tighter margin", "reduce margin"): marg = "2"
+    if marg is not None:
+        if has("top margin", "space above", "margin above", "margin top", "push down"): s.append("mt-" + marg)
+        elif has("bottom margin", "space below", "margin below"): s.append("mb-" + marg)
+        else: s.append("m-" + marg)
+    if has("center horizontally", "center it horizontally", "auto margin", "horizontally centered"):
+        s.append("mx-auto")
+
+    # ---- gap (flex/grid) ----
+    if has("more gap", "more space between", "bigger gap", "wider gap"): s.append("gap-8")
+    elif has("less gap", "smaller gap", "tighter gap", "less space between"): s.append("gap-2")
+
+    # ---- width / height ----
+    if has("full width", "full-width", "100% width", "edge to edge"): s.append("w-full")
+    elif has("half width"): s.append("w-1/2")
+    elif has("fit width", "shrink to fit", "auto width"): s.append("w-auto")
+    if has("full screen height", "screen height", "viewport height"): s.append("h-screen")
+    elif has("full height", "100% height"): s.append("h-full")
+    elif has("taller", "more height", "bigger height"): s.append("h-64")
+    elif has("shorter", "less height"): s.append("h-32")
+    if has("narrower content", "narrow container", "constrain width"): s.append("max-w-2xl")
+    elif has("wider content", "wide container"): s.append("max-w-7xl")
+
+    # ---- display / flex / layout ----
+    if has("hide", "remove this", "make it disappear", "make it invisible"): s.append("hidden")
+    elif has("show it", "make it visible", "unhide"): s.append("block")
+    if has("flex row", "in a row", "horizontal layout", "side by side", "two column", "2 column"): s += ["flex", "flex-row"]
+    elif has("flex column", "stack vertically", "vertical layout", "stacked"): s += ["flex", "flex-col"]
+    elif has("grid layout", "make a grid"): s.append("grid")
+    if has("space between", "spread out"): s.append("justify-between")
+    elif has("center horizontally", "justify center", "center the content"): s.append("justify-center")
+    if has("align center", "vertically center", "center vertically", "middle vertically"): s.append("items-center")
+
+    # ---- transform: rotate / scale ----
+    mrt = re.search(r"rotate\s*(?:by|to)?\s*(-?\d{1,3})", p)
+    if mrt:
+        deg = int(mrt.group(1)); s.append(f"rotate-{deg}" if deg >= 0 else f"-rotate-{abs(deg)}")
+    elif has("tilt", "rotate slightly", "rotate a bit", "skew it"):
+        s.append("rotate-3")
+    if has("bigger scale", "scale up", "zoom in", "enlarge it"): s.append("scale-110")
+    elif has("smaller scale", "scale down", "zoom out", "shrink it"): s.append("scale-90")
+
+    # ---- misc ----
+    if has("pointer cursor", "clickable cursor", "hand cursor"): s.append("cursor-pointer")
+    if has("clip overflow", "hide overflow"): s.append("overflow-hidden")
+    elif has("scrollable", "scroll overflow"): s.append("overflow-auto")
+    if has("blur it", "add blur", "blurry"): s.append("blur-sm")
+
+    # ---- animation (defined in globals.css so they render) ----
+    if has("marquee", "horizontal scroll", "auto scroll", "auto-scroll", "ticker") or ("scroll" in p and "anim" in p):
+        s += ["overflow-hidden", "animate-marquee"]
+    elif has("fade in", "fade-in"):
+        s.append("animate-fade-in")
+    elif has("slide up", "slide-up", "slide in"):
+        s.append("animate-slide-up")
+    elif has("float", "floating"):
+        s.append("animate-float")
+    elif has("spin", "rotating animation", "rotate animation"):
+        s.append("animate-spin-slow")
+    elif has("pulse", "blink", "breathe") and "anim" in p:
+        s.append("animate-pulse-slow")
+    elif wb("bounce"):
+        s.append("animate-bounce")
+
+    out, seen = [], set()
+    for c in s:
+        if c not in seen:
+            seen.add(c); out.append(c)
+    return out, r
 
 
 def style_element(project_id: str, targets, set_classes=None, remove_classes=None) -> dict:
@@ -482,7 +820,7 @@ def style_element(project_id: str, targets, set_classes=None, remove_classes=Non
             files[path][2] = files[path][1]
         by_file.setdefault(path, []).append(t)
 
-    applied, missed = 0, 0
+    applied, missed, new_cn = 0, 0, None
     for path, ts in by_file.items():
         rel, original, work = files[path]
         for t in ts:
@@ -491,7 +829,8 @@ def style_element(project_id: str, targets, set_classes=None, remove_classes=Non
             if not cn or target not in work:        # dynamic className / not literal
                 missed += 1
                 continue
-            work = work.replace(target, 'className="' + _apply_classes(cn, set_classes, remove_classes) + '"', 1)
+            new_cn = _apply_classes(cn, set_classes, remove_classes)
+            work = work.replace(target, 'className="' + new_cn + '"', 1)
             applied += 1
         files[path][2] = work
 
@@ -510,7 +849,7 @@ def style_element(project_id: str, targets, set_classes=None, remove_classes=Non
                 f.write(original)
             return {"ok": False, "reverted": True, "error": "the style change was invalid; reverted", "detail": err}
         touched.append(rel)
-    return {"ok": True, "applied": applied, "missed": missed, "files": touched}
+    return {"ok": True, "applied": applied, "missed": missed, "files": touched, "new_class_name": new_cn}
 
 
 def add_section(project_id: str, component_id: str, prompt: str, index: int = None) -> dict:
@@ -526,11 +865,22 @@ def add_section(project_id: str, component_id: str, prompt: str, index: int = No
     with open(path, encoding="utf-8") as f:
         original = f.read()
     section = page_sections.freeform_section(prompt)
-    marker = "\n    </div>\n  );"      # the page wrapper's closing tag
-    if marker not in original:
-        return {"ok": False, "error": "could not find where to insert the section"}
+    # Insert the new section BEFORE the footer so it lands in the body flow (not
+    # below the footer, which looked broken). Fall back to the page-wrapper close.
+    candidate = None
+    for anchor in ("{/* FOOTER */}", "<CtaFooter", "<footer", "{/* CTA */}", "<Footer"):
+        i = original.find(anchor)
+        if i != -1:
+            line_start = original.rfind("\n", 0, i) + 1   # keep the footer's own indentation
+            candidate = original[:line_start] + section + "\n" + original[line_start:]
+            break
+    if candidate is None:
+        marker = "\n    </div>\n  );"                       # the page wrapper's closing tag
+        if marker not in original:
+            return {"ok": False, "error": "could not find where to insert the section"}
+        candidate = original.replace(marker, "\n" + section + marker, 1)
     with open(path, "w", encoding="utf-8") as f:
-        f.write(original.replace(marker, "\n" + section + "    </div>\n  );", 1))
+        f.write(candidate)
     ok, err = _validate(path)         # fast ~1s validate (no full build)
     if not ok:
         with open(path, "w", encoding="utf-8") as f:

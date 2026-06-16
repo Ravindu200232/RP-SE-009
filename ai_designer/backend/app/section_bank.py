@@ -47,24 +47,31 @@ def _read(fname: str) -> str:
         return f.read()
 
 
-def compose_landing(rng: random.Random | None = None, hero_file: str | None = None) -> tuple[str, str]:
+def compose_landing(rng: random.Random | None = None, hero_file: str | None = None,
+                    prompt_text: str = "") -> tuple[str, str]:
     """Return (description, source) for a freshly remixed landing page.
-    `hero_file` (from the component bank's input-matched pick) overrides the
-    random hero choice."""
+
+    A page = one file-based HERO + 4-6 MIDDLE sections drawn from the 100+ entry
+    `section_catalog` (input-tag matched + randomised) + the file-based CtaFooter.
+    `hero_file` (from the component bank's input-matched pick) overrides the random
+    hero. The catalog renders each middle as a uniquely-named, function-scoped
+    component, so any combination stays valid JSX."""
+    from app import section_catalog
     rng = rng or random.Random()
     hero = _HERO_BY_FILE.get(hero_file) or rng.choice(HEROES)
-    pool = MIDDLES if hero[1] != "hero_stats_strip.jsx" else [m for m in MIDDLES if m[0] != "StatsAmbient"]
     count = rng.randint(4, 6)
-    middles = rng.sample(pool, min(count, len(pool)))
-    # FeatureTiles early reads better; FaqList late; keep sampled order otherwise.
-    middles.sort(key=lambda m: 0 if m[0] == "FeatureTiles" else (2 if m[0] == "FaqList" else 1))
+    middles = section_catalog.pick_middles(rng, count, prompt_text)
 
-    chosen = [hero] + middles + [CLOSER]
-    parts = [_HEADER]
-    for _, fname in chosen:
-        parts.append(_read(fname).rstrip() + "\n\n")
+    parts = [_HEADER, _read(hero[1]).rstrip() + "\n\n"]
+    mid_names = []
+    for i, entry in enumerate(middles):
+        nm = f"Section{i + 1}"
+        parts.append(section_catalog.render(entry, nm).rstrip() + "\n\n")
+        mid_names.append(nm)
+    parts.append(_read(CLOSER[1]).rstrip() + "\n\n")
 
-    render = "\n      ".join(f"<{name} />" for name, _ in chosen)
+    names = [hero[0]] + mid_names + [CLOSER[0]]
+    render = "\n      ".join(f"<{nm} />" for nm in names)
     parts.append(
         "export default function Home() {\n"
         "  return (\n"
@@ -74,5 +81,5 @@ def compose_landing(rng: random.Random | None = None, hero_file: str | None = No
         "  );\n"
         "}\n"
     )
-    desc = hero[0] + " + " + "/".join(m[0] for m in middles)
+    desc = hero[0] + " + " + "/".join(e["family"] for e in middles)
     return desc, "".join(parts)
