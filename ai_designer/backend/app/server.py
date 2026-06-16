@@ -366,8 +366,12 @@ def _restart_preview(pid: str):
         _time.sleep(0.5)
 
 
+# NOTE: these handlers are intentionally plain `def` (not `async def`). They call
+# blocking work (Gemma, the `node` validator subprocess, Fooocus). FastAPI runs a
+# `def` route in a worker thread, so a slow edit no longer freezes the event loop
+# for every other request (an `async def` here would block the whole server).
 @app.post("/api/edit-element")
-async def edit_element(req: EditElementRequest):
+def edit_element(req: EditElementRequest):
     """Select-Element: edit ONLY the clicked component (deterministic for text,
     Gemma for the rest), build it (auto-revert on failure), restart the preview."""
     from app import editor
@@ -376,7 +380,7 @@ async def edit_element(req: EditElementRequest):
 
 
 @app.post("/api/replace-image")
-async def replace_image(req: ReplaceImageRequest):
+def replace_image(req: ReplaceImageRequest):
     """Select-Element image modal: Option A upload (overwrite the asset, instant,
     no rebuild) or Option B AI-regenerate via Fooocus."""
     from app import editor
@@ -384,7 +388,7 @@ async def replace_image(req: ReplaceImageRequest):
 
 
 @app.post("/api/upload-image")
-async def upload_image(req: SetImageRequest):
+def upload_image(req: SetImageRequest):
     """Image modal Option A: save the uploaded file to a fresh asset and surgically
     repoint the clicked component's src at it (deterministic, no LLM, atomic)."""
     from app import editor
@@ -392,7 +396,7 @@ async def upload_image(req: SetImageRequest):
 
 
 @app.post("/api/generate-image")
-async def generate_image(req: SetImageRequest):
+def generate_image(req: SetImageRequest):
     """Image modal Option B: Fooocus-generate from the prompt, save to a fresh asset
     and repoint the component's src. GPU is coordinated inside generate_one (_unload_llm)."""
     from app import editor
@@ -400,7 +404,7 @@ async def generate_image(req: SetImageRequest):
 
 
 @app.post("/api/add-section")
-async def add_section(req: AddSectionRequest):
+def add_section(req: AddSectionRequest):
     """Add a brand-new, prompt-described section to the page the user pointed at."""
     from app import editor
     return editor.add_section(req.project_id, req.component_id, req.prompt)

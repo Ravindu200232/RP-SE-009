@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, Play, Send, RefreshCw, Smartphone, Tablet, Monitor, Download, FileText, ChevronRight, MessageSquare, Terminal, Crosshair, X, FileUp } from 'lucide-react';
+import { errText } from './lib/errText.js';
 
 const API_BASE_URL = 'http://localhost:8000';
 
@@ -38,6 +39,7 @@ function App() {
   const [imageModal, setImageModal] = useState(false); // "Update image" popup
   const [imgPrompt, setImgPrompt] = useState('');
   const imgFileRef = useRef(null);
+  const [vpFill, setVpFill] = useState(false); // Visual Parameter Map: colour target (false=text, true=background)
 
   const logsEndRef = useRef(null);
   const iframeRef = useRef(null);
@@ -137,7 +139,7 @@ function App() {
         body: JSON.stringify({ filename: file.name, data_b64: dataUrl }),
       });
       const data = await res.json();
-      if (!res.ok || !data.text) throw new Error(data.detail || 'could not read file');
+      if (!res.ok || !data.text) throw new Error(errText(data, 'could not read file'));
       // SRS is the single source of truth: NO questions - plan pages/flow/
       // functions/relations/CRUD from the spec and build straight away.
       runGeneration(data.text, null, true, aiSections);
@@ -211,6 +213,7 @@ function App() {
               if (data.project_id && isNew) setProjectId(data.project_id);
               if (data.status === 'completed') {
                 setStatus('completed');
+                if (currentPrompt) setPromptsHistory(prev => [...prev, currentPrompt]);  // version recorded ONLY on success
                 await fetchLatestCode(data.project_id || projectId);
                 setPreviewVersion(v => v + 1);
               } else if (data.status === 'failed') {
@@ -320,6 +323,9 @@ function App() {
     return res.json();
   };
 
+  // errText() is imported from ./lib/errText.js (centralized + unit-tested) so the
+  // studio NEVER renders "[object Object]" for any backend error shape.
+
   // Select-Element: edit ONLY the pinned component (sends its tag + text so text
   // edits are deterministic; styling goes to Gemma, scoped to that element).
   const editElement = async (instruction) => {
@@ -330,9 +336,30 @@ function App() {
         project_id: projectId, component_id: pinned.componentId, prompt: instruction,
         tag: pinned.tag, text: pinned.text, class_name: pinned.className,
       });
-      if (data.ok) { setLogs(prev => [...prev, `[AGENT]: Updated ${data.file} ✓ (${data.mode})`]); setPinned(null); setPreviewVersion(v => v + 1); }
-      else setLogs(prev => [...prev, `[AGENT]: ${data.error || data.detail || 'edit failed'}${data.reverted ? ' (reverted — app unchanged)' : ''}`]);
+      if (data.ok) { setLogs(prev => [...prev, `[AGENT]: Updated ${data.file} ✓ (${data.mode})`]); setPromptsHistory(prev => [...prev, instruction]); setPinned(null); /* next dev Fast Refresh (HMR) live-updates the element in place — no full reload, state preserved */ }
+      else setLogs(prev => [...prev, `[AGENT]: ${errText(data, 'edit failed')}${data.reverted ? ' (reverted — app unchanged)' : ''}`]);
     } catch (err) { setLogs(prev => [...prev, `Edit failed: ${err.message}`]); }
+    finally { setEditing(false); }
+  };
+
+  // Visual Parameter Map: a no-code property tweak fired by the floating panel
+  // buttons. Reuses the deterministic STYLE_TWEAK engine (instant), KEEPS the
+  // element pinned so the user can keep tweaking, and syncs pinned.className from
+  // the response so successive tweaks target the up-to-date class string.
+  const quickStyle = async (instruction) => {
+    if (!pinned || editing) return;
+    setEditing(true);
+    try {
+      const data = await apiPost('/api/edit-element', {
+        project_id: projectId, component_id: pinned.componentId, prompt: instruction,
+        tag: pinned.tag, text: null, class_name: pinned.className,
+      });
+      if (data.ok) {
+        setLogs(prev => [...prev, `[STYLE] ${pinned.tag}: ${instruction} ✓`]);
+        if (data.new_class_name) setPinned(pn => pn ? { ...pn, className: data.new_class_name } : pn);
+        // HMR updates the preview live; panel stays open for more tweaks
+      } else setLogs(prev => [...prev, `[AGENT]: ${errText(data, 'could not apply')}`]);
+    } catch (err) { setLogs(prev => [...prev, `Style failed: ${err.message}`]); }
     finally { setEditing(false); }
   };
 
@@ -342,8 +369,8 @@ function App() {
     setLogs(prev => [...prev, `[ADD SECTION on ${pinned?.label}]: ${instruction}`]);
     try {
       const data = await apiPost('/api/add-section', { project_id: projectId, component_id: pinned.componentId, prompt: instruction });
-      if (data.ok) { setLogs(prev => [...prev, `[AGENT]: Added a new section to ${data.file} ✓`]); setPinned(null); setEditMode('edit'); setPreviewVersion(v => v + 1); }
-      else setLogs(prev => [...prev, `[AGENT]: ${data.error || data.detail || 'could not add section'}${data.reverted ? ' (reverted)' : ''}`]);
+      if (data.ok) { setLogs(prev => [...prev, `[AGENT]: Added a new section to ${data.file} ✓`]); setPromptsHistory(prev => [...prev, instruction]); setPinned(null); setEditMode('edit'); /* HMR live-updates the page with the new section */ }
+      else setLogs(prev => [...prev, `[AGENT]: ${errText(data, 'could not add section')}${data.reverted ? ' (reverted)' : ''}`]);
     } catch (err) { setLogs(prev => [...prev, `Add-section failed: ${err.message}`]); }
     finally { setEditing(false); }
   };
@@ -354,7 +381,7 @@ function App() {
     setEditing(true);
     const dataUrl = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result || '')); r.onerror = rej; r.readAsDataURL(file); });
     const data = await apiPost('/api/upload-image', { project_id: projectId, component_id: pinned.componentId, src: pinned.src, data_b64: dataUrl });
-    setLogs(prev => [...prev, data.ok ? '[AGENT]: Image replaced ✓' : `[AGENT]: ${data.error || 'image upload failed'}`]);
+    setLogs(prev => [...prev, data.ok ? '[AGENT]: Image replaced ✓' : `[AGENT]: ${errText(data, 'image upload failed')}`]);
     if (data.ok) { setImageModal(false); setPinned(null); setPreviewVersion(v => v + 1); }
     setEditing(false);
   };
@@ -363,7 +390,7 @@ function App() {
     setEditing(true);
     setLogs(prev => [...prev, `[AGENT]: Generating a new image — “${imgPrompt}”…`]);
     const data = await apiPost('/api/generate-image', { project_id: projectId, component_id: pinned.componentId, src: pinned.src, prompt: imgPrompt });
-    setLogs(prev => [...prev, data.ok ? '[AGENT]: New image generated ✓' : `[AGENT]: ${data.error || 'image generation failed'}`]);
+    setLogs(prev => [...prev, data.ok ? '[AGENT]: New image generated ✓' : `[AGENT]: ${errText(data, 'image generation failed')}`]);
     if (data.ok) { setImageModal(false); setPinned(null); setImgPrompt(''); setPreviewVersion(v => v + 1); }
     setEditing(false);
   };
@@ -372,7 +399,8 @@ function App() {
     if (!prompt.trim()) return;
     const currentPrompt = prompt;
     setPrompt('');
-    setPromptsHistory(prev => [...prev, currentPrompt]);
+    // NOTE: a version is recorded ONLY on success, inside each handler below, so a
+    // failed edit never appears as a successful version in the history.
     if (projectId && pinned && editMode === 'add') addSection(currentPrompt);    // add a section here
     else if (projectId && pinned) editElement(currentPrompt);                    // edit the selected element
     else if (!projectId) runGeneration(currentPrompt, null, true, aiSections);   // direct generation
@@ -419,6 +447,24 @@ function App() {
     width: '100%', marginTop: '6px', padding: '6px 9px', fontSize: '12px', borderRadius: '8px',
     border: '1px solid var(--border-color, #3a3a3a)', background: 'transparent', color: 'inherit',
   };
+  // Visual Parameter Map button styles
+  const vpBtn = {
+    padding: '3px 8px', borderRadius: '7px', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap',
+    border: '1px solid var(--border-color, #3a3a3a)', background: 'rgba(255,255,255,.03)', color: 'var(--text-secondary, #cbd5e1)',
+  };
+  const vpMini = (active) => ({
+    padding: '1px 7px', borderRadius: '6px', fontSize: '10px', cursor: 'pointer',
+    border: '1px solid ' + (active ? 'var(--accent-color, #7c3aed)' : 'transparent'),
+    background: active ? 'rgba(124,58,237,.2)' : 'transparent', color: active ? '#a78bfa' : 'var(--text-secondary, #94a3b8)',
+  });
+  // each = [label, the canned instruction sent through the deterministic STYLE_TWEAK engine]
+  const VP_CONTROLS = [
+    ['Bold', 'make it bold'], ['Thin', 'make it thin'], ['A−', 'smaller text'], ['A+', 'bigger text'],
+    ['Left', 'align left'], ['Center', 'center the text'], ['Right', 'align right'], ['Italic', 'italic'],
+    ['Round', 'rounded corners'], ['Pill', 'pill shape'], ['Square', 'sharp corners'],
+    ['Pad −', 'less padding'], ['Pad +', 'more padding'], ['Shadow', 'add a big shadow'], ['Border', 'add a thin border'],
+  ];
+  const VP_SWATCHES = [['#0f172a', 'slate'], ['#ef4444', 'red'], ['#f59e0b', 'amber'], ['#10b981', 'emerald'], ['#3b82f6', 'blue'], ['#8b5cf6', 'violet'], ['#ec4899', 'pink'], ['#ffffff', 'white']];
 
   return (
     <div className="app-container">
@@ -574,6 +620,30 @@ function App() {
                     <span onClick={() => setEditMode('add')} style={{ ...chipStyle(editMode === 'add', true), cursor: 'pointer' }}>+ Add section here</span>
                     {pinned.isImage && <span onClick={() => setImageModal(true)} style={{ ...chipStyle(false, true), cursor: 'pointer' }}>🖼 Change image</span>}
                   </div>
+
+                  {/* Visual Parameter Map — no-code property tweaks (Step 4a); each
+                      fires the deterministic STYLE_TWEAK engine and keeps the panel open. */}
+                  {editMode === 'edit' && !pinned.isImage && (
+                    <div style={{ marginTop: '8px', borderTop: '1px solid rgba(124,58,237,.2)', paddingTop: '8px', opacity: editing ? 0.6 : 1, pointerEvents: editing ? 'none' : 'auto' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', fontSize: '10px', letterSpacing: '.06em', opacity: 0.65 }}>
+                        <span>COLOR</span>
+                        <span onClick={() => setVpFill(false)} style={vpMini(!vpFill)}>Text</span>
+                        <span onClick={() => setVpFill(true)} style={vpMini(vpFill)}>Fill</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                        {VP_SWATCHES.map(([hex, name]) => (
+                          <button key={name} title={`${name} ${vpFill ? 'background' : 'text'}`} disabled={editing}
+                            onClick={() => quickStyle(`${name}${vpFill ? ' background' : ' text'}`)}
+                            style={{ width: '18px', height: '18px', borderRadius: '50%', background: hex, border: '1px solid rgba(255,255,255,.35)', cursor: 'pointer', padding: 0 }} />
+                        ))}
+                      </div>
+                      <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                        {VP_CONTROLS.map(([label, instr]) => (
+                          <button key={label} disabled={editing} onClick={() => quickStyle(instr)} style={vpBtn}>{label}</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
               <textarea

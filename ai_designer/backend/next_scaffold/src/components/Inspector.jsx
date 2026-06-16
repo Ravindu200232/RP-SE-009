@@ -5,6 +5,7 @@
 // text and image src plus the nearest [data-component-id] (its source file), and
 // post VISUAL_ELEMENT_SELECTED to the studio for a targeted edit. Inert until on.
 import * as React from 'react';
+import { selectedComponentId } from '../lib/componentId';
 
 export default function Inspector() {
   React.useEffect(() => {
@@ -79,7 +80,7 @@ export default function Inspector() {
       try {
         window.parent.postMessage({
           type: 'VISUAL_ELEMENT_SELECTED',
-          componentId: container ? container.getAttribute('data-component-id') : null,
+          componentId: selectedComponentId(el, window.location.pathname),  // never null/undefined
           label: (container && container.getAttribute('data-component-label')) || tagName(el),
           tag,
           className: typeof el.className === 'string' ? el.className.slice(0, 200) : '',
