@@ -517,9 +517,15 @@ def code_generation_node(state: GraphState):
     nph = nextgen.seed_placeholder_images(output_dir)
     state["logs"].append(f"--- [AGENT: Image Studio] Seeded {nph} image placeholders; real photos generate in background ---")
 
-    # --- build (the ultimate guard: nothing broken can reach the preview) ----
+    # --- step 2: fast per-file JSX/TS validation BEFORE the (slow) build ----
+    from app import image_pipeline
+    v_ok, v_bad = image_pipeline.validate_all_pages(output_dir)
+    state["logs"].append("--- [VALIDATE] all pages pass JSX validation ---" if v_ok
+                         else f"--- [VALIDATE] {len(v_bad)} page(s) flagged: {', '.join(p for p, _ in v_bad[:3])} (build will guard) ---")
+
+    # --- step 3: first build (placeholders) - the guard that nothing broken ships ----
     nextgen.write_status(output_dir, "building", "Building the app")
-    state["logs"].append("--- [BUILD] next build ---")
+    state["logs"].append("--- [BUILD #1] next build (placeholders) ---")
     ok, out = nextgen.run_build(output_dir)
     if not ok:
         bad = nextgen.failing_page(out)
@@ -540,16 +546,20 @@ def code_generation_node(state: GraphState):
     state["logs"].append("--- [DONE] Next.js app built successfully - preview is ready ---")
     state["status"] = "Generation completed."
 
-    # Fire image generation in the BACKGROUND now that the app is built + shown.
-    # Images land in public/assets as they finish (the user reloads to see them);
-    # a hung/slow Fooocus can never block the preview again.
+    # Steps 4-9 in the BACKGROUND now that the placeholder app is built + shown:
+    # generate real images -> save as cache-busted files -> surgically swap each src
+    # -> validate -> BUILD #2 (proves the post-image app still compiles) -> rollback
+    # to placeholders on any failure. A hung/slow Fooocus can never block the preview.
     import threading
     pr = state.get("prompt", "")
 
     def _bg_images():
         try:
-            n = fooocus_images.generate_all_bg(output_dir, app_name, pr)
-            nextgen.write_status(output_dir, "done", f"Ready - {n} images")
+            r = image_pipeline.run_post_image_flow(output_dir, app_name, pr)
+            if r.get("ok"):
+                nextgen.write_status(output_dir, "done", f"Ready - {r['applied']} images")
+            else:
+                nextgen.write_status(output_dir, "done", "Ready - placeholders (image step rolled back)")
         except Exception:
             pass
     threading.Thread(target=_bg_images, daemon=True).start()
