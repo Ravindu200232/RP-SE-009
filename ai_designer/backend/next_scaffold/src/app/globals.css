@@ -57,3 +57,20 @@
   body { @apply bg-background text-foreground font-sans antialiased; }
   h1, h2, h3, h4 { @apply font-display; }
 }
+
+/* Animation utilities — so "add a horizontal scroll / fade / float animation" edits
+   actually render. Plain CSS (no tailwind.config needed); classes the editor or the
+   LLM apply (animate-marquee, animate-scroll, animate-fade-in, ...) resolve to these. */
+@keyframes ai-scroll-x { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes ai-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ai-slide-up { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes ai-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes ai-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+@keyframes ai-spin { to { transform: rotate(360deg); } }
+.animate-marquee, .animate-scroll { display: flex; width: max-content; animation: ai-scroll-x 22s linear infinite; }
+.animate-marquee:hover, .animate-scroll:hover { animation-play-state: paused; }
+.animate-fade-in { animation: ai-fade-in .8s ease both; }
+.animate-slide-up { animation: ai-slide-up .7s ease both; }
+.animate-float { animation: ai-float 4s ease-in-out infinite; }
+.animate-pulse-slow { animation: ai-pulse 3s ease-in-out infinite; }
+.animate-spin-slow { animation: ai-spin 8s linear infinite; }
