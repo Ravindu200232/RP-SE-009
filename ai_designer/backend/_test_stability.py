@@ -41,10 +41,15 @@ def t_frontend():
     rec(1, "frontend decodes errors with errText() (>=4 sites)", errtext_uses >= 4, f"{errtext_uses} uses")
     m = re.search(r"const handleSend = \(\) => \{.*?\n  \};", src, re.S)
     hs = m.group(0) if m else ""
-    no_uncond = "setPromptsHistory" not in hs
-    in_success = bool(re.search(r"data\.ok.*setPromptsHistory", src)) and "if (currentPrompt) setPromptsHistory" in src
-    rec(3, "version recorded ONLY on success (not unconditionally in handleSend)", no_uncond and in_success,
-        f"handleSend push={'absent' if no_uncond else 'PRESENT(bug)'}, success-push={'yes' if in_success else 'no'}")
+    no_uncond = "setPromptsHistory" not in hs                                   # handleSend never pushes
+    msrs = re.search(r"const handleSrsUpload = async \(e\) => \{.*?\n  \};", src, re.S)
+    srs_clean = bool(msrs) and "setPromptsHistory" not in msrs.group(0)         # SRS pushes nothing before success
+    uses_rule = "isVersionSuccess(data)" in src                                # edit/section gated by the central rule
+    gen_on_complete = "versionLabel || currentPrompt" in src                   # generation records only at completion
+    in_success = uses_rule and gen_on_complete and srs_clean
+    rec(3, "version recorded ONLY on success (isVersionSuccess gate; no unconditional / SRS push)",
+        no_uncond and in_success,
+        f"handleSend-clean={no_uncond}, srs-clean={srs_clean}, rule={uses_rule}, gen@complete={gen_on_complete}")
 
 
 # ---------- #2 component_id / route fallback / registry ----------
@@ -85,10 +90,12 @@ def t_routes():
 
 # ---------- #4 async def -> def (threadpool) ----------
 def t_async():
-    fns = ["edit_element", "replace_image", "upload_image", "generate_image", "add_section"]
+    fns = ["edit_element", "replace_image", "upload_image", "generate_image", "add_section",
+           "interview_start", "interview_step", "srs_extract"]   # all do blocking LLM/PDF work
     bad = [n for n in fns if inspect.iscoroutinefunction(getattr(server, n, None))]
-    rec(4, "blocking endpoints are sync def (run in threadpool, no event-loop freeze)",
-        not bad, "all sync" if not bad else f"still async: {bad}")
+    health_ok = inspect.iscoroutinefunction(getattr(server, "health", None))  # canary stays async+light
+    rec(4, "all blocking endpoints sync def (threadpool); /health async canary",
+        not bad and health_ok, "all sync + /health ok" if not bad and health_ok else f"async:{bad}, health={health_ok}")
 
 
 # ---------- #5 surgical image replacement ----------
@@ -101,8 +108,7 @@ def t_image_replace():
     if not m:
         return rec(5, "surgical image replace", False, "no /assets ref on page")
     old = m.group(0)
-    seed = next((p for p in glob.glob(os.path.join(BUILD_PRJ, "public", "assets", "*.jpg"))
-                 if not os.path.basename(p).startswith("img_")), None)
+    seed = REAL_IMG          # a genuine jpg (project placeholders are text stubs, now rejected by validation)
     b64 = base64.b64encode(open(seed, "rb").read()).decode()
     before = snap(page)
     made = set(glob.glob(os.path.join(BUILD_PRJ, "public", "assets", "img_*")))
@@ -275,11 +281,43 @@ def t_smoke5():
         nextgen.run_build(BUILD_PRJ)  # restore clean state
 
 
+# ---------- #10 component registry + resolution contract ----------
+def t_registry():
+    from app import component_registry as creg
+    P, pid = BUILD_PRJ, os.path.basename(BUILD_PRJ)
+    mkt = "src/app/(marketing)/page.jsx"
+    reg = creg.write_registry(P)
+    try:
+        built = len(reg) >= 5 and all("component_id" in e and "source_file" in e for e in reg)
+        r_rel, r_path = creg.resolve(P, "home")
+        e_rel, e_path = editor.resolve_component_file(P, "home")          # registry checked FIRST
+        resolves = bool(r_path) and "(marketing)/page.jsx" in r_rel.replace("\\", "/") and bool(e_path)
+        v_ok = creg.validate_registry(P, reg)[0]
+        dup = not creg.validate_registry(P, reg + [{"component_id": "home", "source_file": mkt, "image_refs": []}])[0]
+        miss = not creg.validate_registry(P, [{"component_id": "x", "source_file": "src/app/nope/page.jsx", "image_refs": []}])[0]
+        img_bad = not creg.validate_registry(P, [{"component_id": "y", "source_file": mkt, "image_refs": ["/assets/__missing__.png"]}])[0]
+        img_ok = creg.validate_registry(P, [{"component_id": "z", "source_file": mkt, "image_refs": ["/assets/hero.jpg"]}])[0]
+        r_bad = editor.edit_component(pid, "no-such-component-xyz", "make it red", tag="div")
+        readable = (not r_bad.get("ok")) and isinstance(r_bad.get("error"), str)
+        legacy = bool(editor.resolve_component_file(ROUTES_PRJ, "route:/dashboard")[1]) and \
+            bool(editor.resolve_component_file(ROUTES_PRJ, "home")[1])     # no-registry project still resolves
+        build_ok = True if FAST else nextgen.run_build(P)[0]              # app builds with the registry present
+        rec(10, "registry resolves (FIRST) + validates dup/missing-file/missing-img/placeholder; invalid readable; legacy fallback"
+            + ("" if FAST else "; builds"),
+            all([built, resolves, v_ok, dup, miss, img_bad, img_ok, readable, legacy, build_ok]),
+            f"n={len(reg)},resolve={resolves},dup={dup},miss={miss},img_bad={img_bad},img_ok={img_ok},readable={readable},legacy={legacy},build={build_ok}")
+    finally:
+        try:
+            os.remove(os.path.join(P, creg.REGISTRY_FILE))
+        except OSError:
+            pass
+
+
 def main():
     print("=" * 70)
     print(f"STABILITY SUITE  ({'FAST - build tests skipped' if FAST else 'FULL - includes next build'})")
     print("=" * 70)
-    for t in (t_frontend, t_routes, t_async, t_image_replace, t_edit_pipeline, t_catalog, t_image_pipeline, t_smoke5):
+    for t in (t_frontend, t_routes, t_async, t_image_replace, t_edit_pipeline, t_catalog, t_image_pipeline, t_smoke5, t_registry):
         try:
             t()
         except Exception as e:
