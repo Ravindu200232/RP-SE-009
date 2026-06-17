@@ -546,6 +546,17 @@ def code_generation_node(state: GraphState):
     state["logs"].append("--- [DONE] Next.js app built successfully - preview is ready ---")
     state["status"] = "Generation completed."
 
+    # Write the component registry (inert JSON in the project root; never affects the
+    # build) so the studio can resolve editable components via a validated manifest.
+    try:
+        from app import component_registry
+        reg = component_registry.write_registry(output_dir)
+        v_ok, v_issues = component_registry.validate_registry(output_dir, reg)
+        state["logs"].append(f"--- [AGENT: Registry] {len(reg)} editable components mapped"
+                             + (" + validated ---" if v_ok else f"; {len(v_issues)} issue(s) ---"))
+    except Exception:
+        pass
+
     # Steps 4-9 in the BACKGROUND now that the placeholder app is built + shown:
     # generate real images -> save as cache-busted files -> surgically swap each src
     # -> validate -> BUILD #2 (proves the post-image app still compiles) -> rollback
