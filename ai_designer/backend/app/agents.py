@@ -65,6 +65,10 @@ def get_llm(temperature: float = 0.0, num_predict: int = 4096, json_mode: bool =
         # pass a higher budget - a truncated JSON envelope can never parse, so
         # an undersized cap silently turns rich pages into fallback stubs.
         num_predict=num_predict,
+        # HARD request timeout (httpx, via the ollama client): a hung/dead Ollama
+        # raises instead of pinning the worker thread forever. Generous default so
+        # legitimate slow CPU generations aren't killed; override with OLLAMA_TIMEOUT.
+        client_kwargs={"timeout": float(os.getenv("OLLAMA_TIMEOUT", "600"))},
         **kwargs,
     )
 

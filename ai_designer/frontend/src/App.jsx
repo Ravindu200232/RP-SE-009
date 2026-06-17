@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, Play, Send, RefreshCw, Smartphone, Tablet, Monitor, Download, FileText, ChevronRight, MessageSquare, Terminal, Crosshair, X, FileUp } from 'lucide-react';
 import { errText } from './lib/errText.js';
+import { isVersionSuccess } from './lib/versioning.js';
 
 const API_BASE_URL = 'http://localhost:8000';
 
@@ -125,7 +126,8 @@ function App() {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
     e.target.value = '';
-    setPromptsHistory(prev => [...prev, `Uploaded ${file.name}`]);
+    // NOTE: no version is recorded here — only after generation completes (below),
+    // so a failed SRS read / failed build never leaves a false "Uploaded X" version.
     setLogs(prev => [...prev, `[USER]: uploaded ${file.name}`, '[AGENT]: Reading your SRS…']);
     try {
       const dataUrl = await new Promise((resolve, reject) => {
@@ -142,7 +144,7 @@ function App() {
       if (!res.ok || !data.text) throw new Error(errText(data, 'could not read file'));
       // SRS is the single source of truth: NO questions - plan pages/flow/
       // functions/relations/CRUD from the spec and build straight away.
-      runGeneration(data.text, null, true, aiSections);
+      runGeneration(data.text, null, true, aiSections, `Uploaded ${file.name}`);
     } catch (err) {
       setLogs(prev => [...prev, `SRS upload failed: ${err.message}`]);
     }
@@ -183,7 +185,7 @@ function App() {
   };
 
   // Run the actual generation/update SSE stream (optionally with interview answers).
-  const runGeneration = async (currentPrompt, intakeAnswers, isNew, aiSecs) => {
+  const runGeneration = async (currentPrompt, intakeAnswers, isNew, aiSecs, versionLabel) => {
     setStatus(isNew ? 'generating' : 'updating');
     if (isNew) { setPreviewUrl(null); setPhase('planning'); }
     setLogs(prev => [...prev, `[USER]: ${currentPrompt}`]);
@@ -213,7 +215,7 @@ function App() {
               if (data.project_id && isNew) setProjectId(data.project_id);
               if (data.status === 'completed') {
                 setStatus('completed');
-                if (currentPrompt) setPromptsHistory(prev => [...prev, currentPrompt]);  // version recorded ONLY on success
+                if (versionLabel || currentPrompt) setPromptsHistory(prev => [...prev, versionLabel || currentPrompt]);  // version recorded ONLY on success
                 await fetchLatestCode(data.project_id || projectId);
                 setPreviewVersion(v => v + 1);
               } else if (data.status === 'failed') {
@@ -336,7 +338,7 @@ function App() {
         project_id: projectId, component_id: pinned.componentId, prompt: instruction,
         tag: pinned.tag, text: pinned.text, class_name: pinned.className,
       });
-      if (data.ok) { setLogs(prev => [...prev, `[AGENT]: Updated ${data.file} ✓ (${data.mode})`]); setPromptsHistory(prev => [...prev, instruction]); setPinned(null); /* next dev Fast Refresh (HMR) live-updates the element in place — no full reload, state preserved */ }
+      if (isVersionSuccess(data)) { setLogs(prev => [...prev, `[AGENT]: Updated ${data.file} ✓ (${data.mode})`]); setPromptsHistory(prev => [...prev, instruction]); setPinned(null); /* next dev Fast Refresh (HMR) live-updates the element in place — no full reload, state preserved */ }
       else setLogs(prev => [...prev, `[AGENT]: ${errText(data, 'edit failed')}${data.reverted ? ' (reverted — app unchanged)' : ''}`]);
     } catch (err) { setLogs(prev => [...prev, `Edit failed: ${err.message}`]); }
     finally { setEditing(false); }
@@ -369,7 +371,7 @@ function App() {
     setLogs(prev => [...prev, `[ADD SECTION on ${pinned?.label}]: ${instruction}`]);
     try {
       const data = await apiPost('/api/add-section', { project_id: projectId, component_id: pinned.componentId, prompt: instruction });
-      if (data.ok) { setLogs(prev => [...prev, `[AGENT]: Added a new section to ${data.file} ✓`]); setPromptsHistory(prev => [...prev, instruction]); setPinned(null); setEditMode('edit'); /* HMR live-updates the page with the new section */ }
+      if (isVersionSuccess(data)) { setLogs(prev => [...prev, `[AGENT]: Added a new section to ${data.file} ✓`]); setPromptsHistory(prev => [...prev, instruction]); setPinned(null); setEditMode('edit'); /* HMR live-updates the page with the new section */ }
       else setLogs(prev => [...prev, `[AGENT]: ${errText(data, 'could not add section')}${data.reverted ? ' (reverted)' : ''}`]);
     } catch (err) { setLogs(prev => [...prev, `Add-section failed: ${err.message}`]); }
     finally { setEditing(false); }

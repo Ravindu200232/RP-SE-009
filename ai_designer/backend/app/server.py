@@ -27,6 +27,15 @@ app.add_middleware(
 os.makedirs("output", exist_ok=True)
 app.mount("/output", StaticFiles(directory="output"), name="output")
 
+
+@app.get("/health")
+async def health():
+    """Liveness canary. Stays async + does NO blocking work, so it answers instantly
+    even while edits/images/builds run in worker threads - proving the event loop is
+    never frozen by heavy endpoints."""
+    return {"ok": True}
+
+
 class PromptRequest(BaseModel):
     prompt: str
     project_id: Optional[str] = None
@@ -205,7 +214,7 @@ class SrsExtractRequest(BaseModel):
 
 
 @app.post("/api/srs/extract")
-async def srs_extract(req: SrsExtractRequest):
+def srs_extract(req: SrsExtractRequest):   # sync -> threadpool (CPU-bound PDF parse)
     """Read an uploaded SRS (PDF or JSON/text, sent as base64) and return its
     text for the interview. JSON body -> no python-multipart dependency."""
     name = (req.filename or "").lower()
@@ -231,7 +240,7 @@ async def srs_extract(req: SrsExtractRequest):
 
 
 @app.post("/api/interview/start")
-async def interview_start(req: InterviewRequest):
+def interview_start(req: InterviewRequest):   # sync -> threadpool (blocking Gemma planner)
     """LLM planner agent: build the tailored plan for this app + type + language,
     and return the FIRST question. The studio asks one question at a time."""
     from app import interview as _interview
@@ -244,7 +253,7 @@ async def interview_start(req: InterviewRequest):
 
 
 @app.post("/api/interview/step")
-async def interview_step(req: StepRequest):
+def interview_step(req: StepRequest):   # sync -> threadpool (may call blocking LLM)
     """Given the plan + answers so far, return the NEXT question (its options may
     be LLM-generated for custom pages) or {done, answers} when complete."""
     from app import interview as _interview
