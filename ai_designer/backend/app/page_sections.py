@@ -358,7 +358,7 @@ def freeform_section(prompt, app_name=""):
             '      </section>\n')
 
 
-def compose_marketing_page(page, bp, idx, app_name, ai_sections=False):
+def compose_marketing_page(page, bp, idx, app_name, ai_sections=False, section_order=None):
     """Build one full marketing page (server component) from a varied section pack.
     With ai_sections, each non-hero section is written by Gemma (validated; falls
     back to the deterministic builder when the AI output isn't safe to ship)."""
@@ -406,9 +406,17 @@ def compose_marketing_page(page, bp, idx, app_name, ai_sections=False):
             return custom_block(kind)
         return ""
 
-    # Explicit components (from the interview) win; else the template's default pack.
+    # Section order priority: explicit interview components > the genome's section_strategy
+    # (generic pages only) > the template's default pack. This is what makes section_strategy
+    # change the actual section TYPES + ORDER on generated pages.
     chosen = [k for k in (page.get("sections") or []) if k and k != "hero"]
-    kinds = chosen if chosen else _PACKS.get(template, _PACKS["content"])
+    default_pack = _PACKS.get(template, _PACKS["content"])
+    if chosen:
+        kinds = chosen
+    elif section_order and template in ("content", "features", "about"):
+        kinds = [k for k in section_order if k in _KNOWN_KINDS] or default_pack
+    else:
+        kinds = default_pack
     def one(k):
         if ai_sections:
             ai = _ai_section(k, name, app_name, kicker)

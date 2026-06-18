@@ -461,11 +461,12 @@ _RESERVED_MK = {"", "home", "index", "dashboard", "login", "register", "logout",
                 "workspace", "notifications", "profile", "settings", "api", "assets", "auth", "admin"}
 
 
-def write_marketing_pages(out_dir, pages, app_name, blueprint, ai_sections=False):
+def write_marketing_pages(out_dir, pages, app_name, blueprint, ai_sections=False, section_order=None):
     """Write each blueprint marketing page under (marketing)/<slug>/page.jsx.
     Each page is composed from a domain-driven, VARIED section pack (see
     page_sections) so no two domains - or two pages - look alike. With
     ai_sections, Gemma writes each section's JSX (validated, else fallback).
+    `section_order` (from the genome's section_strategy) reorders the default pack.
     Returns the list of written file paths."""
     from app import page_sections
     written, seen = [], set()
@@ -477,7 +478,8 @@ def write_marketing_pages(out_dir, pages, app_name, blueprint, ai_sections=False
         if p.get("template") == "contact":
             src = _contact_page_jsx(p.get("name", "Contact"), app_name)
         else:
-            src = page_sections.compose_marketing_page({**p, "slug": slug}, blueprint or {}, idx, app_name, ai_sections)
+            src = page_sections.compose_marketing_page({**p, "slug": slug}, blueprint or {}, idx, app_name,
+                                                       ai_sections, section_order)
         written.append(write_page(out_dir, f"(marketing)/{slug}", src))
     return written
 
