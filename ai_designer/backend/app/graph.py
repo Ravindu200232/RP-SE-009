@@ -248,6 +248,23 @@ def planning_node(state: GraphState):
     )
     if state.get("marketing_pages"):
         state["logs"].append("Public pages: " + ", ".join(p["name"] for p in state["marketing_pages"]))
+
+    # --- [AGENT: Domain Modeler] universal fallback: if research + planner produced no
+    # data model (offline / unknown domain), infer entities/roles/workflows from the
+    # prompt's own nouns + verbs so EVERY app ships a meaningful, domain-shaped model.
+    if not state.get("entities"):
+        try:
+            from app import design_genome
+            dm = design_genome.infer_domain_model(state.get("prompt", ""))
+            state["entities"] = dm["entities"]
+            if not state.get("roles") or [r.lower() for r in state["roles"]] == ["admin", "user"]:
+                state["roles"] = dm["roles"]
+            state["logs"].append("--- [AGENT: Domain Modeler] inferred entities "
+                                 + ", ".join(e["name"] for e in dm["entities"])
+                                 + " | workflows " + ", ".join(dm["workflows"]) + " ---")
+        except Exception:
+            pass
+
     _apply_intake(state)
     return state
 
@@ -361,6 +378,31 @@ def code_generation_node(state: GraphState):
             pass
 
     ents = _entities_meta(state)
+
+    # --- [AGENT: Design Genome] make the genome NOW (was post-build) so it actually
+    # DRIVES structure: per-entity CRUD layout (real kanban/timeline/split-pane/table
+    # components), nav/dashboard/list presets, app-shell orientation and marketing
+    # section order. Seeded + anti-similar vs recent runs => same prompt twice differs.
+    from app import design_genome
+    genome, genome_styles = {}, {}        # safe defaults: a genome error must never break generation
+    try:
+        genome = design_genome.make_genome(state.get("prompt", ""), history=design_genome.load_history("output"))
+        state["genome"] = genome
+        genome_styles = design_genome.genome_to_styles(genome)
+        # CRUD layouts come from the genome UNLESS the interview pinned the app explicitly
+        # (the interview is the user's own intent and stays authoritative).
+        if not (state.get("intake") or {}).get("active"):
+            for e, lay in zip(ents, design_genome.genome_crud_layouts(genome, len(ents))):
+                e["crud_layout"] = lay
+        genome["structure_signature"] = design_genome.structure_signature(
+            genome, genome_styles, [e["crud_layout"] for e in ents])
+        state["logs"].append(
+            f"--- [AGENT: Design Genome] {genome.get('app_category')} | layout={genome.get('layout_family')} "
+            f"shell={genome_styles.get('appNav')} dash={genome_styles.get('dashLayout')} nav={genome_styles.get('nav')} "
+            f"crud={[e['crud_layout'] for e in ents]} sections={genome.get('section_strategy')} ---")
+    except Exception as _ge:
+        state["logs"].append(f"--- [AGENT: Design Genome] skipped ({str(_ge)[:80]}); using default styles ---")
+
     roles = state.get("roles", ["Admin", "User"])
     # Public nav comes from the Deep Research blueprint (domain-specific, variable
     # in number). A utility tool has no marketing tier at all - just the workspace.
@@ -428,7 +470,8 @@ def code_generation_node(state: GraphState):
 
     auth_enabled = intake.get("auth", True) if intake.get("active") else True
     styles = {fam: e["name"] for fam, e in comps.items() if fam in ("nav", "footer", "dash", "list")}
-    styles.update({k: v for k, v in (intake.get("styles") or {}).items() if v})  # user-picked navbar/dash/list designs win
+    styles.update(genome_styles)   # GENOME drives nav/dash/dashLayout/list/appNav (real structure, anti-repeat)
+    styles.update({k: v for k, v in (intake.get("styles") or {}).items() if v})  # explicit user picks still win
     nextgen.write_site(output_dir, app_name, tagline, marketing_links, sidebar_links, ents, roles, styles, auth_enabled)
     nextgen.write_theme(output_dir, accent, theme["font_display"], theme["font_body"], paradigm)
     nextgen.write_layout_meta(output_dir, app_name, tagline, fonts_url(theme), paradigm)
@@ -476,7 +519,10 @@ def code_generation_node(state: GraphState):
     if mk_pages:
         bp_full = dict(state.get("blueprint") or {})
         bp_full.setdefault("entities", [{"name": e["label"]} for e in ents])
-        mk_paths = nextgen.write_marketing_pages(output_dir, mk_pages, app_name, bp_full, state.get("ai_sections"))
+        # the genome's section_strategy reorders each page's section pack (real structural diff)
+        genome_sections = design_genome.genome_section_order(genome, [])
+        mk_paths = nextgen.write_marketing_pages(output_dir, mk_pages, app_name, bp_full,
+                                                 state.get("ai_sections"), genome_sections)
         pages_written.extend(mk_paths)
         state["logs"].append("Marketing pages written: Home, " + ", ".join(p["name"] for p in mk_pages) + ".")
     else:
@@ -554,6 +600,15 @@ def code_generation_node(state: GraphState):
         v_ok, v_issues = component_registry.validate_registry(output_dir, reg)
         state["logs"].append(f"--- [AGENT: Registry] {len(reg)} editable components mapped"
                              + (" + validated ---" if v_ok else f"; {len(v_issues)} issue(s) ---"))
+    except Exception:
+        pass
+
+    # Persist the SAME genome that drove this build (incl. its structure signature) and
+    # append it to the shared history, so the next run is anti-similar to this real structure.
+    try:
+        design_genome.write_genome(output_dir, state.get("prompt", ""), genome=state.get("genome"))
+        state["logs"].append(f"--- [AGENT: Design Genome] stored structure "
+                             f"'{(state.get('genome') or {}).get('structure_signature', '')}' ---")
     except Exception:
         pass
 

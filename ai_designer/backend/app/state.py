@@ -21,3 +21,4 @@ class GraphState(TypedDict):
     srs: Dict[str, Any]            # parsed SRS when the input was an SRS JSON
     intake: Dict[str, Any]         # answers from the requirements interview (pages, components, auth, roles, theme)
     ai_sections: bool              # opt-in: let Gemma write each marketing section's JSX (validate + fallback)
+    genome: Dict[str, Any]         # Design Genome that DRIVES structure (styles, crud layouts, section order)

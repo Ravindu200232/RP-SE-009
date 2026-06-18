@@ -82,6 +82,9 @@ class AddSectionRequest(BaseModel):
     project_id: str
     component_id: str              # an element on the page to add the section to
     prompt: str
+    insert_position: str = "after"     # before | after | inside the selected anchor
+    selected_text: str | None = None   # the selected element's text (to locate the anchor)
+    selected_class: str | None = None  # the selected element's className (anchor fallback)
 
 def load_local_files(project_id: str) -> dict:
     """Reads all files in output/{project_id} and loads them into a dictionary."""
@@ -414,9 +417,13 @@ def generate_image(req: SetImageRequest):
 
 @app.post("/api/add-section")
 def add_section(req: AddSectionRequest):
-    """Add a brand-new, prompt-described section to the page the user pointed at."""
+    """Add a brand-new, prompt-described section RELATIVE to the selected element
+    (before / after / inside it), falling back to the page body only if no anchor."""
     from app import editor
-    return editor.add_section(req.project_id, req.component_id, req.prompt)
+    return editor.add_section(req.project_id, req.component_id, req.prompt,
+                              insert_position=req.insert_position,
+                              selected_text=req.selected_text,
+                              selected_class=req.selected_class)
 
 
 @app.get("/api/latest-code")
