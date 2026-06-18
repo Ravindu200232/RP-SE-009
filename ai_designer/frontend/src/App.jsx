@@ -37,6 +37,7 @@ function App() {
   const [aiSections, setAiSections] = useState(false); // opt-in: Gemma writes each section
   const [editing, setEditing] = useState(false); // a Select-Element edit is in flight
   const [editMode, setEditMode] = useState('edit'); // 'edit' | 'add' (add a section here)
+  const [insertPosition, setInsertPosition] = useState('after'); // before | after | inside the selected anchor
   const [imageModal, setImageModal] = useState(false); // "Update image" popup
   const [imgPrompt, setImgPrompt] = useState('');
   const imgFileRef = useRef(null);
@@ -339,6 +340,7 @@ function App() {
         tag: pinned.tag, text: pinned.text, class_name: pinned.className,
       });
       if (isVersionSuccess(data)) { setLogs(prev => [...prev, `[AGENT]: Updated ${data.file} ✓ (${data.mode})`]); setPromptsHistory(prev => [...prev, instruction]); setPinned(null); /* next dev Fast Refresh (HMR) live-updates the element in place — no full reload, state preserved */ }
+      else if (data.needs_clarification) { setLogs(prev => [...prev, `[AGENT ❓]: ${data.question || 'Could you clarify that edit?'} (the element was left unchanged — reply with the detail and try again)`]); /* keep pinned so the user can refine */ }
       else setLogs(prev => [...prev, `[AGENT]: ${errText(data, 'edit failed')}${data.reverted ? ' (reverted — app unchanged)' : ''}`]);
     } catch (err) { setLogs(prev => [...prev, `Edit failed: ${err.message}`]); }
     finally { setEditing(false); }
@@ -370,8 +372,12 @@ function App() {
     setEditing(true);
     setLogs(prev => [...prev, `[ADD SECTION on ${pinned?.label}]: ${instruction}`]);
     try {
-      const data = await apiPost('/api/add-section', { project_id: projectId, component_id: pinned.componentId, prompt: instruction });
-      if (isVersionSuccess(data)) { setLogs(prev => [...prev, `[AGENT]: Added a new section to ${data.file} ✓`]); setPromptsHistory(prev => [...prev, instruction]); setPinned(null); setEditMode('edit'); /* HMR live-updates the page with the new section */ }
+      const data = await apiPost('/api/add-section', {
+        project_id: projectId, component_id: pinned.componentId, prompt: instruction,
+        insert_position: insertPosition,          // before | after | inside the selected element (user choice)
+        selected_text: pinned.text, selected_class: pinned.className,
+      });
+      if (isVersionSuccess(data)) { setLogs(prev => [...prev, `[AGENT]: Added a new section to ${data.file} ✓${data.placement ? ` (${data.placement})` : ''}`]); setPromptsHistory(prev => [...prev, instruction]); setPinned(null); setEditMode('edit'); /* HMR live-updates the page with the new section */ }
       else setLogs(prev => [...prev, `[AGENT]: ${errText(data, 'could not add section')}${data.reverted ? ' (reverted)' : ''}`]);
     } catch (err) { setLogs(prev => [...prev, `Add-section failed: ${err.message}`]); }
     finally { setEditing(false); }
@@ -622,6 +628,19 @@ function App() {
                     <span onClick={() => setEditMode('add')} style={{ ...chipStyle(editMode === 'add', true), cursor: 'pointer' }}>+ Add section here</span>
                     {pinned.isImage && <span onClick={() => setImageModal(true)} style={{ ...chipStyle(false, true), cursor: 'pointer' }}>🖼 Change image</span>}
                   </div>
+
+                  {/* Add-section POSITION (Part 4): place the new section relative to the
+                      selected element — before / after / inside it (not at the page bottom). */}
+                  {editMode === 'add' && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '7px' }}>
+                      <span style={{ fontSize: '10px', letterSpacing: '.06em', opacity: 0.65 }}>POSITION</span>
+                      {['before', 'after', 'inside'].map((pos) => (
+                        <span key={pos} onClick={() => setInsertPosition(pos)}
+                          title={pos === 'inside' ? 'Insert inside the selected container (if valid)' : `Insert ${pos} the selected element`}
+                          style={{ ...chipStyle(insertPosition === pos, true), cursor: 'pointer', textTransform: 'capitalize' }}>{pos}</span>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Visual Parameter Map — no-code property tweaks (Step 4a); each
                       fires the deterministic STYLE_TWEAK engine and keeps the panel open. */}

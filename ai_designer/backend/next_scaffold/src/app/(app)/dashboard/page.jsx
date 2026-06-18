@@ -47,6 +47,17 @@ const DASH_STYLES = {
   mono: { card: 'rounded-md shadow-none', header: 'border-l-4 border-l-primary pl-4' },
 };
 
+// Dashboard COMPOSITION (genome dashboard_style -> site.styles.dashLayout): the order of
+// the three widget blocks [stats, charts, recent] genuinely changes per app. Literal
+// order-* classes (not interpolated) so Tailwind's JIT keeps them.
+const DASH_ORDER = {
+  'kpi-cards':     ['order-1', 'order-2', 'order-3'],   // stat cards first
+  'analytics':     ['order-2', 'order-1', 'order-3'],   // charts first
+  'activity-feed': ['order-2', 'order-3', 'order-1'],   // recent/activity first
+  'table-first':   ['order-3', 'order-2', 'order-1'],   // records table first
+  'operations':    ['order-1', 'order-3', 'order-2'],   // stats, then recent, then charts
+};
+
 export default function Dashboard() {
   const router = useRouter();
   const entities = allEntities();
@@ -76,6 +87,8 @@ export default function Dashboard() {
   const first = entities[0];
   const cols = first ? listColumns(first, 3) : [];
   const hasStatus = first && (first.fields || []).some((f) => f.name === 'status');
+  const dashLayout = (site.styles && site.styles.dashLayout) || 'kpi-cards';
+  const [oStats, oCharts, oRecent] = DASH_ORDER[dashLayout] || DASH_ORDER['kpi-cards'];
 
   return (
     <div data-component-id="dashboard" data-component-label="Dashboard" className="mx-auto max-w-7xl p-6 md:p-8">
@@ -110,8 +123,9 @@ export default function Dashboard() {
         </div>
       </div>
 
+      <div className="flex flex-col">
       {/* stat cards */}
-      <div className="mb-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className={"mb-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4 " + oStats}>
         {entities.map((e, i) => (
           <Link key={e.name} href={`/e/${e.slug}`}>
             <Card className={"transition hover:-translate-y-0.5 hover:shadow-md " + dashStyle.card}>
@@ -134,7 +148,7 @@ export default function Dashboard() {
       </div>
 
       {/* chart row */}
-      <div className="mb-8 grid gap-6 lg:grid-cols-3">
+      <div className={"mb-8 grid gap-6 lg:grid-cols-3 " + oCharts}>
         <Card className={"lg:col-span-2 " + dashStyle.card}>
           <CardHeader className="flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle className="text-base">Overview</CardTitle>
@@ -171,7 +185,7 @@ export default function Dashboard() {
       </div>
 
       {/* recent + quick actions */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className={"mb-8 grid gap-6 lg:grid-cols-3 " + oRecent}>
         <Card className={"lg:col-span-2 " + dashStyle.card}>
           <CardHeader className="flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle className="text-base">Recent {first?.label || 'records'}</CardTitle>
@@ -229,6 +243,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+      </div>
       </div>
     </div>
   );
