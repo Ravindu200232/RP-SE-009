@@ -411,22 +411,49 @@ _PLAN_SYS = (
     "You convert ONE UI edit request into a STRICT JSON edit plan. Output ONLY raw JSON "
     "(no markdown, no prose). Schema:\n"
     '{"action":"text_replace"|"style_update"|"class_add_remove"|"section_add"|"section_remove"|"layout_update",'
+    '"target_property":"background"|"text"|"border"|"size"|"spacing"|"radius"|"shadow"|"layout"|"content"|"other",'
     '"class_add":[tailwind classes to ADD],"class_remove":[tailwind classes to REMOVE],'
-    '"text_replace":"new visible text" or null}\n'
+    '"text_replace":"new visible text" or null,'
+    '"confidence":0.0-1.0,"clarify":"a SHORT question to ask the user IF ambiguous, else null"}\n'
     "Rules: for colour/background/text-size/weight/alignment/spacing/radius/shadow/opacity use class_add + "
-    "class_remove (valid Tailwind only) with action style_update or class_add_remove. To change the visible "
-    "text use action text_replace with the new text. Use section_add to add a new block, section_remove to "
-    "delete this element, and layout_update ONLY when the element's INTERNAL STRUCTURE must change "
-    "(columns / reorder / new children). Keep class lists minimal. Never invent text."
+    "class_remove (valid Tailwind only) with action style_update or class_add_remove, and set target_property to the "
+    "ONE thing being changed. To change the visible text use action text_replace with the new text. Use section_add "
+    "to add a new block, section_remove to delete this element, and layout_update ONLY when the element's INTERNAL "
+    "STRUCTURE must change (columns / reorder / new children). Keep class lists minimal. Never invent text.\n"
+    "Set confidence HONESTLY: ~1.0 when the request clearly maps to ONE property and value; below 0.5 when the target "
+    "OR the value is unclear (e.g. 'make it pop', 'improve this', 'change it', 'make it nicer'). When confidence < 0.5, "
+    "put a specific question in clarify (e.g. 'Did you mean the background colour or the text colour?')."
 )
 
 
-def _llm_edit_plan(snippet: str, prompt: str, tag: str = None) -> dict:
-    """LLM = INTENT only: turn the request into a STRUCTURED edit plan (JSON). The plan is
-    applied DETERMINISTICALLY by _apply_plan - the model never writes file code here."""
+def _edit_context(out_dir: str, tag: str, text: str, class_name: str) -> str:
+    """A short context string for the intent model: the app's genome/theme + the selected
+    element's metadata, so the plan reflects THIS app's design language and the real target."""
+    bits = []
+    try:
+        from app import design_genome
+        g = design_genome.load_genome(out_dir) or {}
+        if g:
+            bits.append(f"app={g.get('app_category','?')}/{g.get('visual_style','?')}, density={g.get('density','?')}")
+    except Exception:
+        pass
+    sel = f"<{tag or 'element'}>"
+    if text and str(text).strip():
+        sel += f" text='{str(text).strip()[:40]}'"
+    if class_name:
+        sel += f" class='{str(class_name)[:60]}'"
+    bits.append("selected " + sel)
+    return "; ".join(bits)
+
+
+def _llm_edit_plan(snippet: str, prompt: str, tag: str = None, ctx: str = "") -> dict:
+    """LLM = INTENT only: turn the request into a STRUCTURED edit plan (JSON) WITH a confidence
+    score. The plan is applied DETERMINISTICALLY by _apply_plan - the model never writes file
+    code here. Low confidence -> the caller asks the user to clarify instead of guessing."""
     from app.agents import get_llm, extract_json
     from langchain_core.messages import SystemMessage, HumanMessage
-    user = f"ELEMENT (<{tag or 'element'}>):\n{snippet[:1200]}\n\nEDIT REQUEST: {prompt}\n\nReturn the JSON edit plan."
+    user = (f"CONTEXT: {ctx}\n\n" if ctx else "") + \
+        f"ELEMENT (<{tag or 'element'}>):\n{snippet[:1200]}\n\nEDIT REQUEST: {prompt}\n\nReturn the JSON edit plan."
     raw = get_llm(temperature=0.1, num_predict=512, json_mode=True).invoke(
         [SystemMessage(content=_PLAN_SYS), HumanMessage(content=user)]).content
     plan = extract_json(raw)
@@ -516,12 +543,24 @@ def edit_component(project_id: str, component_id: str, prompt: str, tag: str = N
         # each validated + atomic. (Simple edits already returned at 0/1 with NO LLM.)
         with gpu_handoff():
             try:
-                plan = _llm_edit_plan(snippet, prompt, tag)
+                plan = _llm_edit_plan(snippet, prompt, tag, ctx=_edit_context(out_dir, tag, text, class_name))
             except Exception:
                 plan = {}
         r = _apply_plan(project_id, component_id, class_name, text, original, path, rel, snippet, plan, prompt)
         if r and r.get("ok"):
             return r
+
+        # 2b) CONFIDENCE GATE: the plan didn't map to a deterministic edit AND the model is
+        # unsure what was meant -> ASK rather than guess with a risky whole-element rewrite.
+        # (Confident/clear requests already applied above; this only catches true ambiguity.)
+        try:
+            conf = float(plan.get("confidence")) if plan.get("confidence") is not None else 1.0
+        except (TypeError, ValueError):
+            conf = 1.0
+        clarify = str(plan.get("clarify") or "").strip()
+        if conf < 0.45 and clarify:
+            return {"ok": False, "needs_clarification": True, "question": clarify[:200],
+                    "file": rel, "error": "I need one detail first: " + clarify[:200]}
 
         # 3) ELEMENT-ONLY CODE PATCH - only for layout_update / structural changes the
         # plan can't express as classes. Rewrites ONLY this element's JSX, self-healing:
@@ -681,9 +720,21 @@ def nl_to_classes(prompt, tag=None):
         if wb("light") or wb("pale"): return "300"
         return "500"
 
-    # ---- colour: text / background / border ----
+    # ---- colour TARGET (Part E): explicit words first, else the SELECTED ELEMENT ROLE.
+    #   "fill / background / card / box / container / panel" -> bg
+    #   "text / font / wording"                              -> text
+    #   "border / outline / stroke"                          -> border
+    # With NO explicit target word, a CONTAINER/BUTTON element defaults to BACKGROUND
+    # ("button blue", "card color", "change box fill") and a TEXT element to text colour.
+    _t = (tag or "").lower()
+    _container_role = _t in ("div", "section", "button", "a", "article", "aside", "header",
+                             "footer", "nav", "main", "form", "li", "ul", "card")
     want_border = wb("border") or wb("outline") or wb("stroke")
-    want_bg = (not want_border) and has("background", " bg ", "fill ", "backdrop", "behind it")
+    want_text = (wb("text") or wb("font") or has("wording", "typography")) \
+        and not has("background", " bg ", "fill", "backdrop")
+    want_bg = (not want_border and not want_text) and (
+        has("background", " bg ", "fill", "backdrop", "behind", "card color", "box color",
+            "container", "panel", "tile", "surface") or _container_role)
     col = next((fam for word, fam in _NL_COLORS.items() if wb(word)), None)
     if col:
         tok = col if col in ("black", "white", "transparent") else f"{col}-{shade()}"
@@ -957,9 +1008,13 @@ def style_element(project_id: str, targets, set_classes=None, remove_classes=Non
     return {"ok": True, "applied": applied, "missed": missed, "files": touched, "new_class_name": new_cn}
 
 
-def add_section(project_id: str, component_id: str, prompt: str, index: int = None) -> dict:
-    """Insert a brand-new section into the public page the user pointed at,
-    generated from a natural-language prompt. Build-validated; auto-reverts."""
+def add_section(project_id: str, component_id: str, prompt: str, index: int = None,
+                insert_position: str = "after", selected_text: str = None,
+                selected_class: str = None) -> dict:
+    """Insert a NEW section into the public page (Part F: SELECTION-AWARE). When the
+    selected element can be located (by its text/className), the section is placed
+    before / after / inside it per `insert_position`. Only when no anchor is found do we
+    fall back to before-the-footer (logged via `placement`). Build-validated; auto-reverts."""
     out_dir = os.path.join("output", project_id)
     if not os.path.isdir(out_dir):
         return {"ok": False, "error": "project not found"}
@@ -970,20 +1025,40 @@ def add_section(project_id: str, component_id: str, prompt: str, index: int = No
     with open(path, encoding="utf-8") as f:
         original = f.read()
     section = page_sections.freeform_section(prompt)
-    # Insert the new section BEFORE the footer so it lands in the body flow (not
-    # below the footer, which looked broken). Fall back to the page-wrapper close.
-    candidate = None
-    for anchor in ("{/* FOOTER */}", "<CtaFooter", "<footer", "{/* CTA */}", "<Footer"):
-        i = original.find(anchor)
-        if i != -1:
-            line_start = original.rfind("\n", 0, i) + 1   # keep the footer's own indentation
-            candidate = original[:line_start] + section + "\n" + original[line_start:]
-            break
+    candidate, placement = None, "footer-fallback"
+
+    # 1) SELECTION-AWARE: place relative to the selected anchor element (before/after/inside)
+    anchor = _extract_element(original, tag=None, class_name=selected_class, text=selected_text) \
+        if (selected_text or selected_class) else None
+    if anchor and original.count(anchor) == 1:
+        idx = original.find(anchor)
+        pos = (insert_position or "after").lower()
+        if pos == "before":
+            ls = original.rfind("\n", 0, idx) + 1                 # keep indentation
+            candidate, placement = original[:ls] + section + "\n" + original[ls:], "before-selected"
+        elif pos == "inside":
+            m = re.search(r"</[A-Za-z][\w.]*>\s*$", anchor)        # before the anchor's closing tag
+            if m:
+                cut = idx + m.start()
+                candidate, placement = original[:cut] + "\n" + section + "\n" + original[cut:], "inside-selected"
+        if candidate is None:                                      # default / "after"
+            end = idx + len(anchor)
+            candidate, placement = original[:end] + "\n" + section + original[end:], "after-selected"
+
+    # 2) FALLBACK (no valid anchor): before the footer so it lands in the body flow
     if candidate is None:
-        marker = "\n    </div>\n  );"                       # the page wrapper's closing tag
+        for a in ("{/* FOOTER */}", "<CtaFooter", "<footer", "{/* CTA */}", "<Footer"):
+            i = original.find(a)
+            if i != -1:
+                ls = original.rfind("\n", 0, i) + 1
+                candidate, placement = original[:ls] + section + "\n" + original[ls:], "before-footer-fallback"
+                break
+    if candidate is None:
+        marker = "\n    </div>\n  );"                              # the page wrapper's closing tag
         if marker not in original:
             return {"ok": False, "error": "could not find where to insert the section"}
-        candidate = original.replace(marker, "\n" + section + marker, 1)
+        candidate, placement = original.replace(marker, "\n" + section + marker, 1), "wrapper-close-fallback"
+
     with open(path, "w", encoding="utf-8") as f:
         f.write(candidate)
     ok, err = _validate(path)         # fast ~1s validate (no full build)
@@ -992,4 +1067,4 @@ def add_section(project_id: str, component_id: str, prompt: str, index: int = No
             f.write(original)
         return {"ok": False, "reverted": True, "file": rel,
                 "error": "the new section was invalid, so it was reverted", "detail": err}
-    return {"ok": True, "file": rel, "mode": "add-section"}
+    return {"ok": True, "file": rel, "mode": "add-section", "placement": placement}
