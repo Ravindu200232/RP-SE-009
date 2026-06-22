@@ -1,14 +1,16 @@
 'use client';
-// Rich admin dashboard - entirely driven by site.js entity metadata:
-// stat cards with trend pills, 12-month bar chart, weekly mini chart,
-// recent-records table, quick actions, working notifications dropdown.
+// Rich admin dashboard - driven by the planned data model (@/lib/models) and
+// role-filtered via @/lib/access: stat cards with trend pills, 12-month bar
+// chart, weekly mini chart, recent-records table, quick actions, notifications.
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Bell, Plus, TrendingUp, CheckCircle2, UserPlus, FileEdit } from 'lucide-react';
-import { api, auth } from '@/lib/api';
+import { auth } from '@/lib/api';
 import { site } from '@/lib/site';
-import { allEntities, listColumns, fieldLabel, statusVariant } from '@/lib/entities';
+import { listColumns, fieldLabel, statusVariant } from '@/lib/entities';
+import { Models } from '@/lib/models';
+import { canAccess } from '@/lib/access';
 import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,35 +49,68 @@ const DASH_STYLES = {
   mono: { card: 'rounded-md shadow-none', header: 'border-l-4 border-l-primary pl-4' },
 };
 
+// Dashboard COMPOSITION (genome dashboard_style -> site.styles.dashLayout): the order of
+// the three widget blocks [stats, charts, recent] genuinely changes per app. Literal
+// order-* classes (not interpolated) so Tailwind's JIT keeps them.
+const DASH_ORDER = {
+  'kpi-cards':     ['order-1', 'order-2', 'order-3'],   // stat cards first
+  'analytics':     ['order-2', 'order-1', 'order-3'],   // charts first
+  'activity-feed': ['order-2', 'order-3', 'order-1'],   // recent/activity first
+  'table-first':   ['order-3', 'order-2', 'order-1'],   // records table first
+  'operations':    ['order-1', 'order-3', 'order-2'],   // stats, then recent, then charts
+};
+
+const ENTITY_ICONS = ['Database', 'Users', 'Package', 'CalendarDays', 'Star', 'Layers'];
+
 export default function Dashboard() {
   const router = useRouter();
-  const entities = allEntities();
   const dashStyle = DASH_STYLES[(site.styles && site.styles.dash) || 'classic'] || DASH_STYLES.classic;
   const [user, setUser] = React.useState(null);
   const [counts, setCounts] = React.useState({});
   const [recent, setRecent] = React.useState([]);
   const [notifOpen, setNotifOpen] = React.useState(false);
 
+  // Role-aware: every model is relationship-aware (refs/access from the planned
+  // data model); a model with no access rule is open to everyone, otherwise
+  // only the roles canAccess() allows for that collection can see it here.
+  const entities = Object.values(Models)
+    .filter((m) => m.collection !== 'users' && (!user || canAccess(user.role, m.collection)))
+    .map((m, i) => ({
+      name: m.collection, label: m.label, slug: m.collection,
+      icon: ENTITY_ICONS[i % ENTITY_ICONS.length], fields: m.fields,
+    }));
+
   React.useEffect(() => {
     setUser(auth.currentUser());
+  }, []);
+
+  React.useEffect(() => {
     let on = true;
     (async () => {
       const out = {};
       for (const e of entities) {
-        try { out[e.name] = (await api.list(e.name)).length; } catch (err) { out[e.name] = 0; }
+        try {
+          const d = await (await fetch('/api/' + e.name)).json();
+          out[e.name] = d.total != null ? d.total : (Array.isArray(d.rows) ? d.rows.length : 0);
+        } catch (err) { out[e.name] = 0; }
       }
       if (!on) return;
       setCounts(out);
       if (entities[0]) {
-        try { setRecent((await api.list(entities[0].name)).slice(0, 5)); } catch (err) { setRecent([]); }
+        try {
+          const d = await (await fetch('/api/' + entities[0].name)).json();
+          setRecent((d.rows || []).slice(0, 5));
+        } catch (err) { setRecent([]); }
       }
     })();
     return () => { on = false; };
-  }, []);
+  }, [user]);
 
   const first = entities[0];
   const cols = first ? listColumns(first, 3) : [];
   const hasStatus = first && (first.fields || []).some((f) => f.name === 'status');
+  const dashLayout = (site.styles && site.styles.dashLayout) || 'kpi-cards';
+  const [oStats, oCharts, oRecent] = DASH_ORDER[dashLayout] || DASH_ORDER['kpi-cards'];
 
   return (
     <div data-component-id="dashboard" data-component-label="Dashboard" className="mx-auto max-w-7xl p-6 md:p-8">
@@ -110,10 +145,11 @@ export default function Dashboard() {
         </div>
       </div>
 
+      <div className="flex flex-col">
       {/* stat cards */}
-      <div className="mb-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className={"mb-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4 " + oStats}>
         {entities.map((e, i) => (
-          <Link key={e.name} href={`/e/${e.slug}`}>
+          <Link key={e.name} href={`/manage/${e.slug}`}>
             <Card className={"transition hover:-translate-y-0.5 hover:shadow-md " + dashStyle.card}>
               <CardContent className="p-5">
                 <div className="mb-3 flex items-center justify-between">
@@ -134,7 +170,7 @@ export default function Dashboard() {
       </div>
 
       {/* chart row */}
-      <div className="mb-8 grid gap-6 lg:grid-cols-3">
+      <div className={"mb-8 grid gap-6 lg:grid-cols-3 " + oCharts}>
         <Card className={"lg:col-span-2 " + dashStyle.card}>
           <CardHeader className="flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle className="text-base">Overview</CardTitle>
@@ -171,11 +207,11 @@ export default function Dashboard() {
       </div>
 
       {/* recent + quick actions */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className={"mb-8 grid gap-6 lg:grid-cols-3 " + oRecent}>
         <Card className={"lg:col-span-2 " + dashStyle.card}>
           <CardHeader className="flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle className="text-base">Recent {first?.label || 'records'}</CardTitle>
-            {first && <Link href={`/e/${first.slug}`} className="text-xs font-semibold text-primary hover:underline">View all</Link>}
+            {first && <Link href={`/manage/${first.slug}`} className="text-xs font-semibold text-primary hover:underline">View all</Link>}
           </CardHeader>
           <CardContent className="pt-0">
             <Table>
@@ -206,7 +242,7 @@ export default function Dashboard() {
             <CardHeader className="pb-3"><CardTitle className="text-base">Quick actions</CardTitle></CardHeader>
             <CardContent className="space-y-2.5 pt-0">
               {entities.slice(0, 3).map((e) => (
-                <Button key={e.name} className="w-full justify-start" onClick={() => router.push(`/e/${e.slug}/new`)}>
+                <Button key={e.name} className="w-full justify-start" onClick={() => router.push(`/manage/${e.slug}/new`)}>
                   <Plus /> Add {e.label}
                 </Button>
               ))}
@@ -229,6 +265,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+      </div>
       </div>
     </div>
   );

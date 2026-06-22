@@ -1,0 +1,3280 @@
+{
+  "srs_document": {
+    "document_title": "Software Requirements Specification",
+    "project_name": "EduSphere School Management and LMS Platform",
+    "version": "1.0.0",
+    "document_language": "English",
+    "system_category": "School Management, LMS, Fees, Transport, Parent Portal and Admin Dashboard Web Application",
+    "prepared_for": "Full App Build Requirement",
+    "app_summary": {
+      "app_name": "EduSphere School Management Platform",
+      "short_description": "A complete school management platform with public landing website, student admission portal, parent portal, teacher dashboard, admin dashboard, LMS, attendance, timetable, exams, assignments, fee management, transport management, library management, notifications, reports, and staff management.",
+      "business_goal": "To digitally manage school operations including admissions, student records, classes, subjects, teachers, attendance, learning materials, assignments, exams, marks, fees, transport, parent communication, and administrative reports.",
+      "target_users": [
+        "Public visitors",
+        "Students",
+        "Parents",
+        "Teachers",
+        "Class teachers",
+        "Academic coordinators",
+        "School administrators",
+        "Accountants",
+        "Transport managers",
+        "Librarians",
+        "Principals",
+        "System administrators"
+      ]
+    },
+    "app_type": {
+      "primary_type": "School Management System and Learning Management System",
+      "supported_types": [
+        "Public Landing Website",
+        "SPA Web Application",
+        "PWA Mobile-Friendly Web App",
+        "Student Portal",
+        "Parent Portal",
+        "Teacher Dashboard",
+        "Admin Dashboard",
+        "LMS Platform",
+        "Fee Management System",
+        "Transport Management System"
+      ],
+      "frontend_type": "Responsive SPA with optional PWA support",
+      "backend_type": "REST API or GraphQL API",
+      "database_type": "Relational database recommended",
+      "example_stack": {
+        "frontend": "Next.js / React",
+        "backend": "Node.js / Laravel / NestJS",
+        "database": "PostgreSQL / MySQL",
+        "authentication": "JWT / Session Auth",
+        "file_storage": "Cloud storage or local server storage",
+        "realtime": "WebSocket optional for live notifications and classroom updates"
+      }
+    },
+    "authentication_requirement": {
+      "login_required": true,
+      "public_landing_pages_required": true,
+      "guest_admission_inquiry_without_login": true,
+      "student_account_required": true,
+      "parent_account_required": true,
+      "teacher_dashboard_login_required": true,
+      "admin_dashboard_login_required": true,
+      "multi_role_access_required": true,
+      "password_reset_required": true,
+      "email_verification_required": false,
+      "two_factor_authentication_optional": true
+    },
+    "roles": [
+      {
+        "role_key": "super_admin",
+        "role_name": "Super Admin",
+        "description": "Full system owner with access to all schools, branches, settings, users, reports, permissions, and audit logs."
+      },
+      {
+        "role_key": "admin",
+        "role_name": "School Admin",
+        "description": "Manages school setup, users, students, teachers, classes, subjects, timetables, fees, and system configuration."
+      },
+      {
+        "role_key": "principal",
+        "role_name": "Principal",
+        "description": "Views complete school operations, academic progress, reports, staff performance, financial summaries, and approvals."
+      },
+      {
+        "role_key": "academic_coordinator",
+        "role_name": "Academic Coordinator",
+        "description": "Manages academic structure, classes, subjects, timetables, exams, grading, learning materials, and academic reports."
+      },
+      {
+        "role_key": "teacher",
+        "role_name": "Teacher",
+        "description": "Manages assigned classes, subjects, lessons, attendance, assignments, marks, student feedback, and LMS content."
+      },
+      {
+        "role_key": "class_teacher",
+        "role_name": "Class Teacher",
+        "description": "Manages assigned classroom students, daily attendance, class notices, behavior notes, and parent communication."
+      },
+      {
+        "role_key": "student",
+        "role_name": "Student",
+        "description": "Can view lessons, assignments, timetable, attendance, marks, notices, fee status, and submit assignments."
+      },
+      {
+        "role_key": "parent",
+        "role_name": "Parent",
+        "description": "Can view child attendance, marks, timetable, notices, fees, payments, transport details, and communicate with school."
+      },
+      {
+        "role_key": "accountant",
+        "role_name": "Accountant",
+        "description": "Manages fee invoices, payments, discounts, refunds, expenses, receipts, and financial reports."
+      },
+      {
+        "role_key": "transport_manager",
+        "role_name": "Transport Manager",
+        "description": "Manages school buses, routes, drivers, student transport allocation, pickup points, and transport fees."
+      },
+      {
+        "role_key": "librarian",
+        "role_name": "Librarian",
+        "description": "Manages library books, borrowing, returns, overdue fines, and library reports."
+      },
+      {
+        "role_key": "guest",
+        "role_name": "Public Guest",
+        "description": "Can browse public school pages, view programs, submit admission inquiry, and contact the school."
+      }
+    ],
+    "main_modules": [
+      "Public Website",
+      "Authentication",
+      "Student Portal",
+      "Parent Portal",
+      "Teacher Dashboard",
+      "Admin Dashboard",
+      "Admission Management",
+      "Student Management",
+      "Parent Management",
+      "Teacher and Staff Management",
+      "Class and Section Management",
+      "Subject Management",
+      "Timetable Management",
+      "Attendance Management",
+      "Learning Management System",
+      "Assignment Management",
+      "Exam Management",
+      "Marks and Grading",
+      "Fee Management",
+      "Payment Management",
+      "Transport Management",
+      "Library Management",
+      "Notice and Announcement Management",
+      "Reports and Analytics",
+      "Notifications",
+      "Settings",
+      "Audit Logs"
+    ],
+    "database_design": {
+      "data_type_standards": {
+        "uuid": "Unique identifier for records",
+        "string": "Short text value",
+        "text": "Long text value",
+        "integer": "Whole number",
+        "decimal": "Money or numeric value with decimals",
+        "boolean": "True or false value",
+        "date": "Date only",
+        "datetime": "Date and time",
+        "enum": "Fixed allowed values",
+        "json": "Structured object data",
+        "foreign_key": "Reference to another table ID"
+      },
+      "tables": [
+        {
+          "table_name": "users",
+          "description": "Stores login accounts for students, parents, teachers, and staff.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true,
+              "nullable": false
+            },
+            {
+              "name": "full_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "email",
+              "type": "string",
+              "unique": true,
+              "nullable": false
+            },
+            {
+              "name": "phone",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "password_hash",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "role_id",
+              "type": "foreign_key",
+              "references": "roles.id",
+              "nullable": false
+            },
+            {
+              "name": "school_id",
+              "type": "foreign_key",
+              "references": "schools.id",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive",
+                "blocked"
+              ],
+              "default": "active"
+            },
+            {
+              "name": "last_login_at",
+              "type": "datetime",
+              "nullable": true
+            },
+            {
+              "name": "created_at",
+              "type": "datetime",
+              "nullable": false
+            },
+            {
+              "name": "updated_at",
+              "type": "datetime",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "table_name": "roles",
+          "description": "Stores user roles.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "role_key",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "role_name",
+              "type": "string"
+            },
+            {
+              "name": "description",
+              "type": "text",
+              "nullable": true
+            }
+          ]
+        },
+        {
+          "table_name": "permissions",
+          "description": "Stores system permissions.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "permission_key",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "module",
+              "type": "string"
+            },
+            {
+              "name": "action",
+              "type": "enum",
+              "values": [
+                "view",
+                "create",
+                "edit",
+                "delete",
+                "approve",
+                "export",
+                "publish",
+                "grade"
+              ]
+            }
+          ]
+        },
+        {
+          "table_name": "role_permissions",
+          "description": "Many-to-many relationship between roles and permissions.",
+          "fields": [
+            {
+              "name": "role_id",
+              "type": "foreign_key",
+              "references": "roles.id"
+            },
+            {
+              "name": "permission_id",
+              "type": "foreign_key",
+              "references": "permissions.id"
+            }
+          ]
+        },
+        {
+          "table_name": "schools",
+          "description": "Stores school profile and branch information.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "school_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "school_code",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "description",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "address",
+              "type": "text",
+              "nullable": false
+            },
+            {
+              "name": "city",
+              "type": "string"
+            },
+            {
+              "name": "country",
+              "type": "string"
+            },
+            {
+              "name": "phone",
+              "type": "string"
+            },
+            {
+              "name": "email",
+              "type": "string"
+            },
+            {
+              "name": "logo_url",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "principal_id",
+              "type": "foreign_key",
+              "references": "users.id",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "academic_years",
+          "description": "Stores academic years such as 2026/2027.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "school_id",
+              "type": "foreign_key",
+              "references": "schools.id"
+            },
+            {
+              "name": "year_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "start_date",
+              "type": "date"
+            },
+            {
+              "name": "end_date",
+              "type": "date"
+            },
+            {
+              "name": "is_current",
+              "type": "boolean",
+              "default": false
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "closed"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "classes",
+          "description": "Stores school grades or classes such as Grade 1, Grade 2, Grade 10.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "school_id",
+              "type": "foreign_key",
+              "references": "schools.id"
+            },
+            {
+              "name": "class_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "class_level",
+              "type": "integer",
+              "nullable": true
+            },
+            {
+              "name": "description",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "sections",
+          "description": "Stores class sections such as Grade 6-A and Grade 6-B.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "class_id",
+              "type": "foreign_key",
+              "references": "classes.id"
+            },
+            {
+              "name": "section_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "class_teacher_id",
+              "type": "foreign_key",
+              "references": "users.id",
+              "nullable": true
+            },
+            {
+              "name": "room_number",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "capacity",
+              "type": "integer",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "subjects",
+          "description": "Stores subjects such as Mathematics, Science, English, ICT, and History.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "school_id",
+              "type": "foreign_key",
+              "references": "schools.id"
+            },
+            {
+              "name": "subject_code",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "subject_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "description",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "students",
+          "description": "Stores student profile information.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "user_id",
+              "type": "foreign_key",
+              "references": "users.id",
+              "nullable": true
+            },
+            {
+              "name": "school_id",
+              "type": "foreign_key",
+              "references": "schools.id"
+            },
+            {
+              "name": "admission_number",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "full_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "gender",
+              "type": "enum",
+              "values": [
+                "male",
+                "female",
+                "other"
+              ],
+              "nullable": true
+            },
+            {
+              "name": "date_of_birth",
+              "type": "date",
+              "nullable": true
+            },
+            {
+              "name": "class_id",
+              "type": "foreign_key",
+              "references": "classes.id"
+            },
+            {
+              "name": "section_id",
+              "type": "foreign_key",
+              "references": "sections.id"
+            },
+            {
+              "name": "admission_date",
+              "type": "date"
+            },
+            {
+              "name": "blood_group",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "address",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "profile_image_url",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "graduated",
+                "transferred",
+                "inactive"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "parents",
+          "description": "Stores parent or guardian information.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "user_id",
+              "type": "foreign_key",
+              "references": "users.id",
+              "nullable": true
+            },
+            {
+              "name": "full_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "email",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "phone",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "occupation",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "address",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "student_parents",
+          "description": "Many-to-many relationship between students and parents.",
+          "fields": [
+            {
+              "name": "student_id",
+              "type": "foreign_key",
+              "references": "students.id"
+            },
+            {
+              "name": "parent_id",
+              "type": "foreign_key",
+              "references": "parents.id"
+            },
+            {
+              "name": "relationship",
+              "type": "enum",
+              "values": [
+                "father",
+                "mother",
+                "guardian",
+                "other"
+              ]
+            },
+            {
+              "name": "is_primary_contact",
+              "type": "boolean",
+              "default": false
+            }
+          ]
+        },
+        {
+          "table_name": "teachers",
+          "description": "Stores teacher profile information.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "user_id",
+              "type": "foreign_key",
+              "references": "users.id"
+            },
+            {
+              "name": "employee_code",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "department",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "qualification",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "joined_date",
+              "type": "date"
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive",
+                "resigned"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "teacher_subjects",
+          "description": "Maps teachers to subjects and classes.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "teacher_id",
+              "type": "foreign_key",
+              "references": "teachers.id"
+            },
+            {
+              "name": "subject_id",
+              "type": "foreign_key",
+              "references": "subjects.id"
+            },
+            {
+              "name": "class_id",
+              "type": "foreign_key",
+              "references": "classes.id"
+            },
+            {
+              "name": "section_id",
+              "type": "foreign_key",
+              "references": "sections.id",
+              "nullable": true
+            },
+            {
+              "name": "academic_year_id",
+              "type": "foreign_key",
+              "references": "academic_years.id"
+            }
+          ]
+        },
+        {
+          "table_name": "timetables",
+          "description": "Stores class timetable records.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "class_id",
+              "type": "foreign_key",
+              "references": "classes.id"
+            },
+            {
+              "name": "section_id",
+              "type": "foreign_key",
+              "references": "sections.id"
+            },
+            {
+              "name": "subject_id",
+              "type": "foreign_key",
+              "references": "subjects.id"
+            },
+            {
+              "name": "teacher_id",
+              "type": "foreign_key",
+              "references": "teachers.id"
+            },
+            {
+              "name": "day_of_week",
+              "type": "enum",
+              "values": [
+                "monday",
+                "tuesday",
+                "wednesday",
+                "thursday",
+                "friday",
+                "saturday",
+                "sunday"
+              ]
+            },
+            {
+              "name": "start_time",
+              "type": "string"
+            },
+            {
+              "name": "end_time",
+              "type": "string"
+            },
+            {
+              "name": "room_number",
+              "type": "string",
+              "nullable": true
+            }
+          ]
+        },
+        {
+          "table_name": "attendance_records",
+          "description": "Stores daily student attendance records.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "student_id",
+              "type": "foreign_key",
+              "references": "students.id"
+            },
+            {
+              "name": "class_id",
+              "type": "foreign_key",
+              "references": "classes.id"
+            },
+            {
+              "name": "section_id",
+              "type": "foreign_key",
+              "references": "sections.id"
+            },
+            {
+              "name": "attendance_date",
+              "type": "date"
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "present",
+                "absent",
+                "late",
+                "excused"
+              ]
+            },
+            {
+              "name": "remarks",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "marked_by",
+              "type": "foreign_key",
+              "references": "users.id"
+            },
+            {
+              "name": "created_at",
+              "type": "datetime"
+            }
+          ]
+        },
+        {
+          "table_name": "lessons",
+          "description": "Stores LMS lesson content.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "subject_id",
+              "type": "foreign_key",
+              "references": "subjects.id"
+            },
+            {
+              "name": "class_id",
+              "type": "foreign_key",
+              "references": "classes.id"
+            },
+            {
+              "name": "teacher_id",
+              "type": "foreign_key",
+              "references": "teachers.id"
+            },
+            {
+              "name": "lesson_title",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "lesson_description",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "content_type",
+              "type": "enum",
+              "values": [
+                "text",
+                "video",
+                "pdf",
+                "link",
+                "mixed"
+              ]
+            },
+            {
+              "name": "content_url",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "attachments",
+              "type": "json",
+              "nullable": true
+            },
+            {
+              "name": "publish_status",
+              "type": "enum",
+              "values": [
+                "draft",
+                "published",
+                "archived"
+              ],
+              "default": "draft"
+            },
+            {
+              "name": "published_at",
+              "type": "datetime",
+              "nullable": true
+            }
+          ]
+        },
+        {
+          "table_name": "assignments",
+          "description": "Stores assignment details created by teachers.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "title",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "description",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "class_id",
+              "type": "foreign_key",
+              "references": "classes.id"
+            },
+            {
+              "name": "section_id",
+              "type": "foreign_key",
+              "references": "sections.id",
+              "nullable": true
+            },
+            {
+              "name": "subject_id",
+              "type": "foreign_key",
+              "references": "subjects.id"
+            },
+            {
+              "name": "teacher_id",
+              "type": "foreign_key",
+              "references": "teachers.id"
+            },
+            {
+              "name": "due_date",
+              "type": "datetime"
+            },
+            {
+              "name": "total_marks",
+              "type": "decimal",
+              "default": 100
+            },
+            {
+              "name": "attachments",
+              "type": "json",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "draft",
+                "published",
+                "closed"
+              ],
+              "default": "draft"
+            }
+          ]
+        },
+        {
+          "table_name": "assignment_submissions",
+          "description": "Stores student assignment submissions.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "assignment_id",
+              "type": "foreign_key",
+              "references": "assignments.id"
+            },
+            {
+              "name": "student_id",
+              "type": "foreign_key",
+              "references": "students.id"
+            },
+            {
+              "name": "submission_text",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "submitted_files",
+              "type": "json",
+              "nullable": true
+            },
+            {
+              "name": "submitted_at",
+              "type": "datetime"
+            },
+            {
+              "name": "marks_obtained",
+              "type": "decimal",
+              "nullable": true
+            },
+            {
+              "name": "teacher_feedback",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "submitted",
+                "late",
+                "graded",
+                "resubmission_required"
+              ],
+              "default": "submitted"
+            }
+          ]
+        },
+        {
+          "table_name": "exams",
+          "description": "Stores exam details.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "exam_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "academic_year_id",
+              "type": "foreign_key",
+              "references": "academic_years.id"
+            },
+            {
+              "name": "class_id",
+              "type": "foreign_key",
+              "references": "classes.id"
+            },
+            {
+              "name": "start_date",
+              "type": "date"
+            },
+            {
+              "name": "end_date",
+              "type": "date"
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "draft",
+                "scheduled",
+                "completed",
+                "published"
+              ],
+              "default": "draft"
+            }
+          ]
+        },
+        {
+          "table_name": "exam_results",
+          "description": "Stores student marks for exams.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "exam_id",
+              "type": "foreign_key",
+              "references": "exams.id"
+            },
+            {
+              "name": "student_id",
+              "type": "foreign_key",
+              "references": "students.id"
+            },
+            {
+              "name": "subject_id",
+              "type": "foreign_key",
+              "references": "subjects.id"
+            },
+            {
+              "name": "marks_obtained",
+              "type": "decimal"
+            },
+            {
+              "name": "total_marks",
+              "type": "decimal",
+              "default": 100
+            },
+            {
+              "name": "grade",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "remarks",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "entered_by",
+              "type": "foreign_key",
+              "references": "users.id"
+            }
+          ]
+        },
+        {
+          "table_name": "fee_invoices",
+          "description": "Stores student fee invoices.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "invoice_number",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "student_id",
+              "type": "foreign_key",
+              "references": "students.id"
+            },
+            {
+              "name": "fee_type",
+              "type": "enum",
+              "values": [
+                "admission",
+                "tuition",
+                "exam",
+                "transport",
+                "library",
+                "activity",
+                "other"
+              ]
+            },
+            {
+              "name": "billing_month",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "subtotal",
+              "type": "decimal"
+            },
+            {
+              "name": "discount_amount",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "late_fee",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "grand_total",
+              "type": "decimal"
+            },
+            {
+              "name": "paid_amount",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "payment_status",
+              "type": "enum",
+              "values": [
+                "unpaid",
+                "partial",
+                "paid",
+                "cancelled"
+              ],
+              "default": "unpaid"
+            },
+            {
+              "name": "due_date",
+              "type": "date"
+            },
+            {
+              "name": "created_by",
+              "type": "foreign_key",
+              "references": "users.id"
+            },
+            {
+              "name": "created_at",
+              "type": "datetime"
+            }
+          ]
+        },
+        {
+          "table_name": "payments",
+          "description": "Stores fee payment transactions.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "fee_invoice_id",
+              "type": "foreign_key",
+              "references": "fee_invoices.id"
+            },
+            {
+              "name": "student_id",
+              "type": "foreign_key",
+              "references": "students.id"
+            },
+            {
+              "name": "payment_method",
+              "type": "enum",
+              "values": [
+                "cash",
+                "card",
+                "bank_transfer",
+                "online_gateway",
+                "cheque"
+              ]
+            },
+            {
+              "name": "amount",
+              "type": "decimal"
+            },
+            {
+              "name": "payment_status",
+              "type": "enum",
+              "values": [
+                "pending",
+                "paid",
+                "failed",
+                "refunded"
+              ],
+              "default": "paid"
+            },
+            {
+              "name": "transaction_reference",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "paid_at",
+              "type": "datetime"
+            },
+            {
+              "name": "received_by",
+              "type": "foreign_key",
+              "references": "users.id",
+              "nullable": true
+            }
+          ]
+        },
+        {
+          "table_name": "transport_routes",
+          "description": "Stores school transport routes.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "route_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "route_code",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "start_location",
+              "type": "string"
+            },
+            {
+              "name": "end_location",
+              "type": "string"
+            },
+            {
+              "name": "monthly_fee",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "vehicles",
+          "description": "Stores school bus and transport vehicle details.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "vehicle_number",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "route_id",
+              "type": "foreign_key",
+              "references": "transport_routes.id",
+              "nullable": true
+            },
+            {
+              "name": "driver_name",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "driver_phone",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "capacity",
+              "type": "integer"
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "maintenance",
+                "inactive"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "student_transport_allocations",
+          "description": "Stores student transport route allocation.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "student_id",
+              "type": "foreign_key",
+              "references": "students.id"
+            },
+            {
+              "name": "route_id",
+              "type": "foreign_key",
+              "references": "transport_routes.id"
+            },
+            {
+              "name": "vehicle_id",
+              "type": "foreign_key",
+              "references": "vehicles.id",
+              "nullable": true
+            },
+            {
+              "name": "pickup_point",
+              "type": "string"
+            },
+            {
+              "name": "drop_point",
+              "type": "string"
+            },
+            {
+              "name": "start_date",
+              "type": "date"
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "library_books",
+          "description": "Stores library book master records.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "book_code",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "title",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "author",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "category",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "isbn",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "total_copies",
+              "type": "integer",
+              "default": 1
+            },
+            {
+              "name": "available_copies",
+              "type": "integer",
+              "default": 1
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "available",
+                "unavailable",
+                "archived"
+              ],
+              "default": "available"
+            }
+          ]
+        },
+        {
+          "table_name": "book_borrowings",
+          "description": "Stores library book borrow and return records.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "book_id",
+              "type": "foreign_key",
+              "references": "library_books.id"
+            },
+            {
+              "name": "student_id",
+              "type": "foreign_key",
+              "references": "students.id"
+            },
+            {
+              "name": "borrowed_at",
+              "type": "date"
+            },
+            {
+              "name": "due_date",
+              "type": "date"
+            },
+            {
+              "name": "returned_at",
+              "type": "date",
+              "nullable": true
+            },
+            {
+              "name": "fine_amount",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "borrowed",
+                "returned",
+                "overdue",
+                "lost"
+              ],
+              "default": "borrowed"
+            }
+          ]
+        },
+        {
+          "table_name": "notices",
+          "description": "Stores school notices and announcements.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "title",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "message",
+              "type": "text",
+              "nullable": false
+            },
+            {
+              "name": "target_audience",
+              "type": "enum",
+              "values": [
+                "all",
+                "students",
+                "parents",
+                "teachers",
+                "staff",
+                "class_specific"
+              ]
+            },
+            {
+              "name": "class_id",
+              "type": "foreign_key",
+              "references": "classes.id",
+              "nullable": true
+            },
+            {
+              "name": "section_id",
+              "type": "foreign_key",
+              "references": "sections.id",
+              "nullable": true
+            },
+            {
+              "name": "attachments",
+              "type": "json",
+              "nullable": true
+            },
+            {
+              "name": "publish_status",
+              "type": "enum",
+              "values": [
+                "draft",
+                "published",
+                "archived"
+              ],
+              "default": "draft"
+            },
+            {
+              "name": "published_at",
+              "type": "datetime",
+              "nullable": true
+            },
+            {
+              "name": "created_by",
+              "type": "foreign_key",
+              "references": "users.id"
+            }
+          ]
+        },
+        {
+          "table_name": "staff_profiles",
+          "description": "Stores non-teaching staff employee details.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "user_id",
+              "type": "foreign_key",
+              "references": "users.id"
+            },
+            {
+              "name": "employee_code",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "department",
+              "type": "enum",
+              "values": [
+                "admin",
+                "finance",
+                "transport",
+                "library",
+                "maintenance",
+                "security",
+                "management"
+              ]
+            },
+            {
+              "name": "job_title",
+              "type": "string"
+            },
+            {
+              "name": "salary",
+              "type": "decimal",
+              "nullable": true
+            },
+            {
+              "name": "joined_date",
+              "type": "date"
+            }
+          ]
+        },
+        {
+          "table_name": "audit_logs",
+          "description": "Stores important system actions for security tracking.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "user_id",
+              "type": "foreign_key",
+              "references": "users.id",
+              "nullable": true
+            },
+            {
+              "name": "action",
+              "type": "string"
+            },
+            {
+              "name": "module",
+              "type": "string"
+            },
+            {
+              "name": "record_id",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "old_values",
+              "type": "json",
+              "nullable": true
+            },
+            {
+              "name": "new_values",
+              "type": "json",
+              "nullable": true
+            },
+            {
+              "name": "ip_address",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "created_at",
+              "type": "datetime"
+            }
+          ]
+        }
+      ],
+      "relationships": [
+        {
+          "from": "users.role_id",
+          "to": "roles.id",
+          "type": "many_to_one",
+          "description": "Each user belongs to one role."
+        },
+        {
+          "from": "roles.id",
+          "to": "permissions.id",
+          "type": "many_to_many",
+          "via": "role_permissions",
+          "description": "Each role can have many permissions."
+        },
+        {
+          "from": "schools.id",
+          "to": "classes.school_id",
+          "type": "one_to_many",
+          "description": "One school has many classes."
+        },
+        {
+          "from": "classes.id",
+          "to": "sections.class_id",
+          "type": "one_to_many",
+          "description": "One class has many sections."
+        },
+        {
+          "from": "sections.id",
+          "to": "students.section_id",
+          "type": "one_to_many",
+          "description": "One section has many students."
+        },
+        {
+          "from": "students.id",
+          "to": "parents.id",
+          "type": "many_to_many",
+          "via": "student_parents",
+          "description": "One student can have many parents or guardians, and one parent can have multiple children."
+        },
+        {
+          "from": "teachers.id",
+          "to": "subjects.id",
+          "type": "many_to_many",
+          "via": "teacher_subjects",
+          "description": "Teachers can teach multiple subjects and subjects can be taught by multiple teachers."
+        },
+        {
+          "from": "classes.id",
+          "to": "timetables.class_id",
+          "type": "one_to_many",
+          "description": "One class has many timetable entries."
+        },
+        {
+          "from": "students.id",
+          "to": "attendance_records.student_id",
+          "type": "one_to_many",
+          "description": "One student has many attendance records."
+        },
+        {
+          "from": "subjects.id",
+          "to": "lessons.subject_id",
+          "type": "one_to_many",
+          "description": "One subject has many LMS lessons."
+        },
+        {
+          "from": "assignments.id",
+          "to": "assignment_submissions.assignment_id",
+          "type": "one_to_many",
+          "description": "One assignment can have many student submissions."
+        },
+        {
+          "from": "exams.id",
+          "to": "exam_results.exam_id",
+          "type": "one_to_many",
+          "description": "One exam has many student result records."
+        },
+        {
+          "from": "students.id",
+          "to": "fee_invoices.student_id",
+          "type": "one_to_many",
+          "description": "One student can have many fee invoices."
+        },
+        {
+          "from": "fee_invoices.id",
+          "to": "payments.fee_invoice_id",
+          "type": "one_to_many",
+          "description": "One fee invoice can have many payment records."
+        },
+        {
+          "from": "transport_routes.id",
+          "to": "student_transport_allocations.route_id",
+          "type": "one_to_many",
+          "description": "One transport route can have many student allocations."
+        },
+        {
+          "from": "library_books.id",
+          "to": "book_borrowings.book_id",
+          "type": "one_to_many",
+          "description": "One library book can have many borrow records."
+        }
+      ]
+    },
+    "public_landing_website": {
+      "required": true,
+      "pages": [
+        {
+          "page_name": "Home Page",
+          "route": "/",
+          "login_required": false,
+          "sections": [
+            "Hero section with school name, headline, admission CTA, and background image",
+            "School highlights section",
+            "Programs and grade levels section",
+            "Why choose us section",
+            "Facilities preview section",
+            "Principal message section",
+            "Latest notices section",
+            "Student achievements section",
+            "Parent testimonials section",
+            "Location and map section",
+            "Footer with contact details and quick links"
+          ]
+        },
+        {
+          "page_name": "About Page",
+          "route": "/about",
+          "login_required": false,
+          "sections": [
+            "School story",
+            "Mission and vision",
+            "Principal message",
+            "Management team",
+            "Achievements",
+            "Rules and values"
+          ]
+        },
+        {
+          "page_name": "Admissions Page",
+          "route": "/admissions",
+          "login_required": false,
+          "sections": [
+            "Admission process section",
+            "Required documents section",
+            "Grade availability section",
+            "Admission inquiry form",
+            "Fee information summary",
+            "FAQ section"
+          ]
+        },
+        {
+          "page_name": "Academics Page",
+          "route": "/academics",
+          "login_required": false,
+          "sections": [
+            "Curriculum overview",
+            "Primary school section",
+            "Middle school section",
+            "Advanced level section",
+            "Subject streams",
+            "Academic calendar preview"
+          ]
+        },
+        {
+          "page_name": "Facilities Page",
+          "route": "/facilities",
+          "login_required": false,
+          "sections": [
+            "Classrooms section",
+            "Science lab section",
+            "Computer lab section",
+            "Library section",
+            "Sports facilities section",
+            "Transport section",
+            "Health and safety section"
+          ]
+        },
+        {
+          "page_name": "Gallery Page",
+          "route": "/gallery",
+          "login_required": false,
+          "sections": [
+            "School images",
+            "Event images",
+            "Sports images",
+            "Lab and classroom images",
+            "Filter by category"
+          ]
+        },
+        {
+          "page_name": "News and Notices Page",
+          "route": "/notices",
+          "login_required": false,
+          "sections": [
+            "Published notices",
+            "School news",
+            "Event announcements",
+            "Download attachments",
+            "Search notices"
+          ]
+        },
+        {
+          "page_name": "Contact Page",
+          "route": "/contact",
+          "login_required": false,
+          "sections": [
+            "Contact form",
+            "Phone and email details",
+            "School address",
+            "Google map",
+            "Opening hours",
+            "Social media links"
+          ]
+        }
+      ]
+    },
+    "application_pages": [
+      {
+        "page_name": "Login",
+        "route": "/login",
+        "page_type": "auth",
+        "login_required": false,
+        "functions": [
+          "Login with email and password",
+          "Remember me",
+          "Forgot password link",
+          "Role-based redirect after login"
+        ]
+      },
+      {
+        "page_name": "Student Dashboard",
+        "route": "/student/dashboard",
+        "page_type": "portal",
+        "login_required": true,
+        "allowed_roles": [
+          "student"
+        ],
+        "functions": [
+          "View timetable",
+          "View attendance summary",
+          "View lessons",
+          "View assignments",
+          "Submit assignments",
+          "View exam results",
+          "View notices",
+          "View fee status"
+        ]
+      },
+      {
+        "page_name": "Parent Dashboard",
+        "route": "/parent/dashboard",
+        "page_type": "portal",
+        "login_required": true,
+        "allowed_roles": [
+          "parent"
+        ],
+        "functions": [
+          "View child profile",
+          "View child attendance",
+          "View child timetable",
+          "View child exam results",
+          "View fee invoices",
+          "Make payment",
+          "View transport details",
+          "View notices",
+          "Contact class teacher"
+        ]
+      },
+      {
+        "page_name": "Teacher Dashboard",
+        "route": "/teacher/dashboard",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "teacher",
+          "class_teacher"
+        ],
+        "functions": [
+          "View assigned classes",
+          "Mark attendance",
+          "Create lessons",
+          "Create assignments",
+          "Grade submissions",
+          "Enter exam marks",
+          "Publish class notices"
+        ]
+      },
+      {
+        "page_name": "Admin Dashboard",
+        "route": "/admin/dashboard",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "principal",
+          "academic_coordinator"
+        ],
+        "functions": [
+          "View student count",
+          "View teacher count",
+          "View attendance summary",
+          "View fee collection summary",
+          "View exam performance summary",
+          "View pending admissions",
+          "View latest notices"
+        ]
+      },
+      {
+        "page_name": "Admission Management",
+        "route": "/admin/admissions",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "principal"
+        ],
+        "functions": [
+          "View admission inquiries",
+          "Create admission record",
+          "Approve admission",
+          "Reject admission",
+          "Convert admission to student",
+          "Upload admission documents"
+        ]
+      },
+      {
+        "page_name": "Student Management",
+        "route": "/admin/students",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "principal",
+          "academic_coordinator",
+          "class_teacher"
+        ],
+        "functions": [
+          "Create student",
+          "Edit student",
+          "Assign class and section",
+          "Assign parent",
+          "Upload student photo",
+          "View student profile",
+          "Deactivate student"
+        ]
+      },
+      {
+        "page_name": "Class and Subject Management",
+        "route": "/admin/academics",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "principal",
+          "academic_coordinator"
+        ],
+        "functions": [
+          "Create class",
+          "Create section",
+          "Assign class teacher",
+          "Create subject",
+          "Assign teacher to subject",
+          "Manage academic year"
+        ]
+      },
+      {
+        "page_name": "Timetable Management",
+        "route": "/admin/timetable",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "academic_coordinator"
+        ],
+        "functions": [
+          "Create timetable",
+          "Edit timetable",
+          "Assign teacher",
+          "Assign subject",
+          "Check timetable conflicts",
+          "Publish timetable"
+        ]
+      },
+      {
+        "page_name": "Attendance Management",
+        "route": "/attendance",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "principal",
+          "academic_coordinator",
+          "teacher",
+          "class_teacher"
+        ],
+        "functions": [
+          "Mark daily attendance",
+          "Edit attendance",
+          "View attendance report",
+          "Export attendance",
+          "Notify parents about absence"
+        ]
+      },
+      {
+        "page_name": "LMS Lessons",
+        "route": "/lms/lessons",
+        "page_type": "lms",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "academic_coordinator",
+          "teacher",
+          "student"
+        ],
+        "functions": [
+          "Create lesson",
+          "Upload lesson material",
+          "Publish lesson",
+          "View lessons",
+          "Download attachments",
+          "Archive lesson"
+        ]
+      },
+      {
+        "page_name": "Assignments",
+        "route": "/lms/assignments",
+        "page_type": "lms",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "academic_coordinator",
+          "teacher",
+          "student"
+        ],
+        "functions": [
+          "Create assignment",
+          "Publish assignment",
+          "Submit assignment",
+          "Grade assignment",
+          "Give teacher feedback",
+          "View submission status"
+        ]
+      },
+      {
+        "page_name": "Exam and Marks Management",
+        "route": "/admin/exams",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "principal",
+          "academic_coordinator",
+          "teacher"
+        ],
+        "functions": [
+          "Create exam",
+          "Schedule exam",
+          "Enter marks",
+          "Generate grades",
+          "Publish results",
+          "View result analysis"
+        ]
+      },
+      {
+        "page_name": "Fee Management",
+        "route": "/admin/fees",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "principal",
+          "accountant"
+        ],
+        "functions": [
+          "Create fee invoice",
+          "Generate monthly fee invoices",
+          "Apply discount",
+          "Add late fee",
+          "Record payment",
+          "Print receipt",
+          "Export fee report"
+        ]
+      },
+      {
+        "page_name": "Transport Management",
+        "route": "/admin/transport",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "transport_manager"
+        ],
+        "functions": [
+          "Create route",
+          "Create vehicle",
+          "Assign driver",
+          "Allocate student to route",
+          "Set pickup point",
+          "View transport student list",
+          "Generate transport fee"
+        ]
+      },
+      {
+        "page_name": "Library Management",
+        "route": "/admin/library",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "librarian"
+        ],
+        "functions": [
+          "Create book",
+          "Edit book",
+          "Issue book",
+          "Return book",
+          "Calculate overdue fine",
+          "View borrowed books",
+          "Export library report"
+        ]
+      },
+      {
+        "page_name": "Notice Management",
+        "route": "/admin/notices",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "principal",
+          "academic_coordinator",
+          "class_teacher"
+        ],
+        "functions": [
+          "Create notice",
+          "Select target audience",
+          "Attach files",
+          "Publish notice",
+          "Archive notice",
+          "Notify users"
+        ]
+      },
+      {
+        "page_name": "Staff Management",
+        "route": "/admin/staff",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "principal"
+        ],
+        "functions": [
+          "Create staff user",
+          "Assign role",
+          "Update staff profile",
+          "Deactivate staff account",
+          "View staff performance summary"
+        ]
+      },
+      {
+        "page_name": "Reports",
+        "route": "/admin/reports",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "principal",
+          "academic_coordinator",
+          "accountant"
+        ],
+        "functions": [
+          "Student report",
+          "Attendance report",
+          "Exam result report",
+          "Fee collection report",
+          "Transport report",
+          "Library report",
+          "Teacher performance report",
+          "Export PDF",
+          "Export Excel"
+        ]
+      },
+      {
+        "page_name": "Settings",
+        "route": "/admin/settings",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin"
+        ],
+        "functions": [
+          "School profile settings",
+          "Academic year settings",
+          "Fee settings",
+          "Grade settings",
+          "Notification settings",
+          "Role permission settings"
+        ]
+      }
+    ],
+    "role_access_matrix": [
+      {
+        "role": "guest",
+        "allowed_pages": [
+          "Home Page",
+          "About Page",
+          "Admissions Page",
+          "Academics Page",
+          "Facilities Page",
+          "Gallery Page",
+          "News and Notices Page",
+          "Contact Page"
+        ],
+        "allowed_functions": [
+          "Browse public website",
+          "View school information",
+          "Submit admission inquiry",
+          "Submit contact form"
+        ],
+        "restricted_functions": [
+          "Access dashboards",
+          "View student data",
+          "View fee data",
+          "Submit assignments"
+        ]
+      },
+      {
+        "role": "student",
+        "allowed_pages": [
+          "Student Dashboard",
+          "Lessons",
+          "Assignments",
+          "Timetable",
+          "Attendance",
+          "Exam Results",
+          "Notices"
+        ],
+        "allowed_functions": [
+          "View lessons",
+          "Submit assignments",
+          "View own attendance",
+          "View own marks",
+          "View timetable",
+          "View notices"
+        ],
+        "restricted_functions": [
+          "Create exam",
+          "Enter marks",
+          "Manage fees",
+          "Manage students"
+        ]
+      },
+      {
+        "role": "parent",
+        "allowed_pages": [
+          "Parent Dashboard",
+          "Child Profile",
+          "Attendance",
+          "Exam Results",
+          "Fee Invoices",
+          "Transport",
+          "Notices"
+        ],
+        "allowed_functions": [
+          "View child records",
+          "View fee invoices",
+          "Make payments",
+          "Download receipts",
+          "View transport route",
+          "Contact teacher"
+        ],
+        "restricted_functions": [
+          "View other students",
+          "Enter marks",
+          "Manage attendance",
+          "Manage school settings"
+        ]
+      },
+      {
+        "role": "teacher",
+        "allowed_pages": [
+          "Teacher Dashboard",
+          "Attendance",
+          "Lessons",
+          "Assignments",
+          "Exam Marks",
+          "Class Notices"
+        ],
+        "allowed_functions": [
+          "Mark attendance",
+          "Create lessons",
+          "Create assignments",
+          "Grade submissions",
+          "Enter marks for assigned subjects"
+        ],
+        "restricted_functions": [
+          "Manage fees",
+          "Manage users",
+          "Change school settings",
+          "View finance reports"
+        ]
+      },
+      {
+        "role": "class_teacher",
+        "allowed_pages": [
+          "Teacher Dashboard",
+          "Class Students",
+          "Attendance",
+          "Class Notices",
+          "Parent Communication"
+        ],
+        "allowed_functions": [
+          "Manage class attendance",
+          "View class student profiles",
+          "Publish class notices",
+          "Communicate with parents"
+        ],
+        "restricted_functions": [
+          "Manage school-wide settings",
+          "Process payments",
+          "Delete student records"
+        ]
+      },
+      {
+        "role": "academic_coordinator",
+        "allowed_pages": [
+          "Admin Dashboard",
+          "Classes",
+          "Subjects",
+          "Timetable",
+          "LMS",
+          "Assignments",
+          "Exams",
+          "Academic Reports"
+        ],
+        "allowed_functions": [
+          "Manage academic structure",
+          "Assign teachers",
+          "Manage timetable",
+          "Publish exam results",
+          "View academic reports"
+        ],
+        "restricted_functions": [
+          "Process fee refunds",
+          "Change super admin settings",
+          "Delete audit logs"
+        ]
+      },
+      {
+        "role": "accountant",
+        "allowed_pages": [
+          "Fee Management",
+          "Payments",
+          "Receipts",
+          "Finance Reports"
+        ],
+        "allowed_functions": [
+          "Generate invoices",
+          "Record payments",
+          "Apply approved discounts",
+          "Print receipts",
+          "Export fee reports"
+        ],
+        "restricted_functions": [
+          "Enter exam marks",
+          "Manage lessons",
+          "Change role permissions"
+        ]
+      },
+      {
+        "role": "transport_manager",
+        "allowed_pages": [
+          "Transport Management",
+          "Routes",
+          "Vehicles",
+          "Student Allocations",
+          "Transport Reports"
+        ],
+        "allowed_functions": [
+          "Create routes",
+          "Manage vehicles",
+          "Assign students to routes",
+          "View transport reports"
+        ],
+        "restricted_functions": [
+          "View exam marks",
+          "Process fees",
+          "Manage users"
+        ]
+      },
+      {
+        "role": "librarian",
+        "allowed_pages": [
+          "Library Management",
+          "Books",
+          "Borrowings",
+          "Library Reports"
+        ],
+        "allowed_functions": [
+          "Create books",
+          "Issue books",
+          "Return books",
+          "Calculate fines",
+          "Export library reports"
+        ],
+        "restricted_functions": [
+          "Manage fees",
+          "Enter marks",
+          "Change settings"
+        ]
+      },
+      {
+        "role": "principal",
+        "allowed_pages": [
+          "Admin Dashboard",
+          "Students",
+          "Teachers",
+          "Academics",
+          "Attendance",
+          "Exams",
+          "Fees Summary",
+          "Reports"
+        ],
+        "allowed_functions": [
+          "View all operational reports",
+          "Approve admissions",
+          "View finance summaries",
+          "Monitor academic progress",
+          "Monitor staff performance"
+        ],
+        "restricted_functions": [
+          "Delete audit logs",
+          "Change super admin account"
+        ]
+      },
+      {
+        "role": "admin",
+        "allowed_pages": [
+          "All Admin Pages"
+        ],
+        "allowed_functions": [
+          "Manage school setup",
+          "Manage users",
+          "Manage students",
+          "Manage teachers",
+          "Manage academics",
+          "Manage fees",
+          "Manage transport",
+          "Manage settings"
+        ],
+        "restricted_functions": [
+          "Access super admin only global controls"
+        ]
+      },
+      {
+        "role": "super_admin",
+        "allowed_pages": [
+          "All Pages"
+        ],
+        "allowed_functions": [
+          "Full system access",
+          "Manage all schools",
+          "Manage all users",
+          "Manage permissions",
+          "View audit logs",
+          "Export all data",
+          "System configuration"
+        ],
+        "restricted_functions": []
+      }
+    ],
+    "functional_requirements": [
+      {
+        "id": "FR-001",
+        "module": "Public Website",
+        "requirement": "The system shall display a public school website with home, about, admissions, academics, facilities, gallery, notices, and contact pages.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-002",
+        "module": "Admission",
+        "requirement": "The system shall allow public users to submit admission inquiries without mandatory login.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-003",
+        "module": "Authentication",
+        "requirement": "The system shall authenticate students, parents, teachers, and staff using email and password.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-004",
+        "module": "Authorization",
+        "requirement": "The system shall restrict pages and actions based on user role and permission.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-005",
+        "module": "Student Management",
+        "requirement": "Authorized users shall be able to create, update, assign class, assign parent, deactivate, and view student profiles.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-006",
+        "module": "Academic Management",
+        "requirement": "Academic coordinators shall be able to manage classes, sections, subjects, teachers, academic years, and timetables.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-007",
+        "module": "Attendance",
+        "requirement": "Teachers shall be able to mark and update daily student attendance.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-008",
+        "module": "LMS",
+        "requirement": "Teachers shall be able to create lessons, upload learning materials, and publish LMS content to assigned classes.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-009",
+        "module": "Assignments",
+        "requirement": "Teachers shall be able to create assignments and students shall be able to submit assignments online.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-010",
+        "module": "Exams",
+        "requirement": "The system shall allow exam creation, mark entry, grade calculation, result publishing, and student result viewing.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-011",
+        "module": "Fees",
+        "requirement": "Accountants shall be able to generate fee invoices, record payments, apply discounts, add late fees, and print receipts.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-012",
+        "module": "Parent Portal",
+        "requirement": "Parents shall be able to view their children's attendance, marks, timetable, fees, notices, and transport details.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-013",
+        "module": "Transport",
+        "requirement": "Transport managers shall be able to manage routes, vehicles, drivers, student allocations, and transport fees.",
+        "priority": "medium"
+      },
+      {
+        "id": "FR-014",
+        "module": "Library",
+        "requirement": "Librarians shall be able to manage books, issue books, return books, calculate fines, and generate library reports.",
+        "priority": "medium"
+      },
+      {
+        "id": "FR-015",
+        "module": "Notifications",
+        "requirement": "The system shall send notices, attendance alerts, assignment alerts, exam result alerts, and fee payment alerts.",
+        "priority": "medium"
+      },
+      {
+        "id": "FR-016",
+        "module": "Reports",
+        "requirement": "The system shall generate student, attendance, exam, fee, teacher, transport, and library reports.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-017",
+        "module": "Audit Logs",
+        "requirement": "The system shall record important create, update, delete, login, payment, marks, attendance, and permission change actions.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-018",
+        "module": "PWA",
+        "requirement": "The system should support mobile-friendly PWA behavior for students, parents, teachers, and staff.",
+        "priority": "medium"
+      }
+    ],
+    "business_workflows": [
+      {
+        "workflow_name": "Admission Inquiry to Student Enrollment Workflow",
+        "steps": [
+          "Guest opens admissions page",
+          "Guest submits admission inquiry form",
+          "Admin reviews inquiry",
+          "Principal or admin approves admission",
+          "Admin creates student profile",
+          "Admin assigns class and section",
+          "Admin creates parent account",
+          "System generates admission fee invoice",
+          "Parent receives login details and fee notification"
+        ]
+      },
+      {
+        "workflow_name": "Daily Attendance Workflow",
+        "steps": [
+          "Teacher opens attendance page",
+          "Teacher selects class and section",
+          "System displays student list",
+          "Teacher marks present, absent, late, or excused",
+          "System saves attendance records",
+          "System notifies parent if student is absent",
+          "Attendance report updates automatically"
+        ]
+      },
+      {
+        "workflow_name": "LMS Assignment Workflow",
+        "steps": [
+          "Teacher creates assignment",
+          "Teacher attaches files and sets due date",
+          "Teacher publishes assignment",
+          "Students view assignment in portal",
+          "Students submit answer and files",
+          "Teacher reviews submissions",
+          "Teacher enters marks and feedback",
+          "Students and parents view graded result"
+        ]
+      },
+      {
+        "workflow_name": "Exam Result Workflow",
+        "steps": [
+          "Academic coordinator creates exam",
+          "Teachers enter marks for assigned subjects",
+          "System calculates grades",
+          "Academic coordinator reviews results",
+          "Principal approves result publishing",
+          "System publishes results to student and parent portals"
+        ]
+      },
+      {
+        "workflow_name": "Fee Payment Workflow",
+        "steps": [
+          "Accountant generates fee invoice",
+          "Parent views invoice in parent portal",
+          "Parent pays online or school records manual payment",
+          "System updates payment status",
+          "System generates receipt",
+          "Parent downloads receipt",
+          "Fee report updates automatically"
+        ]
+      },
+      {
+        "workflow_name": "Library Borrowing Workflow",
+        "steps": [
+          "Librarian searches student",
+          "Librarian searches book",
+          "System checks available copies",
+          "Librarian issues book",
+          "System reduces available copy count",
+          "Student returns book",
+          "System calculates overdue fine if late",
+          "System updates book status"
+        ]
+      }
+    ],
+    "validation_rules": [
+      {
+        "field": "email",
+        "rule": "Must be valid email format and unique in users table."
+      },
+      {
+        "field": "password",
+        "rule": "Minimum 8 characters with at least one letter and one number."
+      },
+      {
+        "field": "admission_number",
+        "rule": "Must be unique for each student."
+      },
+      {
+        "field": "employee_code",
+        "rule": "Must be unique for each teacher or staff member."
+      },
+      {
+        "field": "class_section_capacity",
+        "rule": "Student count should not exceed section capacity unless override permission is granted."
+      },
+      {
+        "field": "assignment_due_date",
+        "rule": "Must be greater than assignment publish date."
+      },
+      {
+        "field": "marks_obtained",
+        "rule": "Cannot be greater than total marks."
+      },
+      {
+        "field": "fee_payment_amount",
+        "rule": "Cannot be negative and cannot exceed invoice balance unless overpayment is allowed."
+      },
+      {
+        "field": "book_issue",
+        "rule": "Book cannot be issued if available copies are zero."
+      }
+    ],
+    "non_functional_requirements": [
+      {
+        "id": "NFR-001",
+        "category": "Performance",
+        "requirement": "Dashboard pages should load within 3 seconds under normal network conditions."
+      },
+      {
+        "id": "NFR-002",
+        "category": "Security",
+        "requirement": "Passwords must be securely hashed before storing in the database."
+      },
+      {
+        "id": "NFR-003",
+        "category": "Security",
+        "requirement": "All protected API endpoints must validate authentication and role permissions."
+      },
+      {
+        "id": "NFR-004",
+        "category": "Privacy",
+        "requirement": "Students and parents must only access their own academic and fee records."
+      },
+      {
+        "id": "NFR-005",
+        "category": "Reliability",
+        "requirement": "The system should prevent duplicate attendance records for the same student and date."
+      },
+      {
+        "id": "NFR-006",
+        "category": "Auditability",
+        "requirement": "Critical operations such as marks changes, fee payment changes, student updates, and permission changes must be saved in audit logs."
+      },
+      {
+        "id": "NFR-007",
+        "category": "Backup",
+        "requirement": "Database backup should be scheduled daily."
+      },
+      {
+        "id": "NFR-008",
+        "category": "Scalability",
+        "requirement": "The system should support multiple schools, branches, academic years, and large student counts."
+      },
+      {
+        "id": "NFR-009",
+        "category": "Usability",
+        "requirement": "The system must be responsive for desktop, tablet, and mobile screens."
+      },
+      {
+        "id": "NFR-010",
+        "category": "Maintainability",
+        "requirement": "Code should be modular by feature: auth, students, academics, LMS, attendance, exams, fees, transport, library, reports, and settings."
+      }
+    ],
+    "api_requirements": {
+      "auth_apis": [
+        "POST /api/auth/login",
+        "POST /api/auth/register",
+        "POST /api/auth/logout",
+        "POST /api/auth/forgot-password",
+        "POST /api/auth/reset-password",
+        "GET /api/auth/me"
+      ],
+      "student_apis": [
+        "GET /api/students",
+        "POST /api/students",
+        "GET /api/students/{id}",
+        "PUT /api/students/{id}",
+        "PATCH /api/students/{id}/status",
+        "POST /api/students/{id}/parents"
+      ],
+      "academic_apis": [
+        "GET /api/classes",
+        "POST /api/classes",
+        "GET /api/sections",
+        "POST /api/sections",
+        "GET /api/subjects",
+        "POST /api/subjects",
+        "POST /api/teacher-subjects",
+        "GET /api/timetable",
+        "POST /api/timetable"
+      ],
+      "attendance_apis": [
+        "GET /api/attendance",
+        "POST /api/attendance",
+        "PUT /api/attendance/{id}",
+        "GET /api/attendance/report"
+      ],
+      "lms_apis": [
+        "GET /api/lessons",
+        "POST /api/lessons",
+        "PUT /api/lessons/{id}",
+        "PATCH /api/lessons/{id}/publish",
+        "GET /api/assignments",
+        "POST /api/assignments",
+        "POST /api/assignments/{id}/submit",
+        "PATCH /api/assignment-submissions/{id}/grade"
+      ],
+      "exam_apis": [
+        "GET /api/exams",
+        "POST /api/exams",
+        "PUT /api/exams/{id}",
+        "POST /api/exams/{id}/results",
+        "PATCH /api/exams/{id}/publish-results",
+        "GET /api/students/{id}/results"
+      ],
+      "fee_apis": [
+        "GET /api/fee-invoices",
+        "POST /api/fee-invoices",
+        "POST /api/fee-invoices/generate-monthly",
+        "POST /api/payments",
+        "GET /api/payments",
+        "GET /api/fee-reports",
+        "POST /api/receipts/{paymentId}/print"
+      ],
+      "transport_apis": [
+        "GET /api/transport/routes",
+        "POST /api/transport/routes",
+        "GET /api/transport/vehicles",
+        "POST /api/transport/vehicles",
+        "POST /api/transport/allocations",
+        "GET /api/transport/reports"
+      ],
+      "library_apis": [
+        "GET /api/library/books",
+        "POST /api/library/books",
+        "POST /api/library/borrow",
+        "PATCH /api/library/borrowings/{id}/return",
+        "GET /api/library/reports"
+      ],
+      "report_apis": [
+        "GET /api/reports/students",
+        "GET /api/reports/attendance",
+        "GET /api/reports/exams",
+        "GET /api/reports/fees",
+        "GET /api/reports/transport",
+        "GET /api/reports/library",
+        "GET /api/reports/export"
+      ]
+    },
+    "reporting_requirements": [
+      {
+        "report_name": "Student Report",
+        "filters": [
+          "academic year",
+          "class",
+          "section",
+          "gender",
+          "status"
+        ],
+        "exports": [
+          "PDF",
+          "Excel"
+        ]
+      },
+      {
+        "report_name": "Attendance Report",
+        "filters": [
+          "date range",
+          "class",
+          "section",
+          "student",
+          "attendance status"
+        ],
+        "exports": [
+          "PDF",
+          "Excel"
+        ]
+      },
+      {
+        "report_name": "Exam Result Report",
+        "filters": [
+          "exam",
+          "class",
+          "section",
+          "subject",
+          "student"
+        ],
+        "exports": [
+          "PDF",
+          "Excel"
+        ]
+      },
+      {
+        "report_name": "Fee Collection Report",
+        "filters": [
+          "date range",
+          "class",
+          "payment status",
+          "fee type",
+          "payment method"
+        ],
+        "exports": [
+          "PDF",
+          "Excel"
+        ]
+      },
+      {
+        "report_name": "Transport Report",
+        "filters": [
+          "route",
+          "vehicle",
+          "student",
+          "status"
+        ],
+        "exports": [
+          "PDF",
+          "Excel"
+        ]
+      },
+      {
+        "report_name": "Library Report",
+        "filters": [
+          "book category",
+          "borrow status",
+          "student",
+          "date range"
+        ],
+        "exports": [
+          "PDF",
+          "Excel"
+        ]
+      },
+      {
+        "report_name": "Teacher Performance Report",
+        "filters": [
+          "teacher",
+          "subject",
+          "class",
+          "date range"
+        ],
+        "exports": [
+          "PDF",
+          "Excel"
+        ]
+      }
+    ],
+    "notification_requirements": [
+      {
+        "event": "Admission Inquiry Created",
+        "recipients": [
+          "admin",
+          "principal"
+        ],
+        "channels": [
+          "email",
+          "dashboard"
+        ]
+      },
+      {
+        "event": "Student Absent",
+        "recipients": [
+          "parent"
+        ],
+        "channels": [
+          "sms_optional",
+          "email",
+          "dashboard"
+        ]
+      },
+      {
+        "event": "Assignment Published",
+        "recipients": [
+          "student",
+          "parent"
+        ],
+        "channels": [
+          "dashboard",
+          "email_optional"
+        ]
+      },
+      {
+        "event": "Exam Result Published",
+        "recipients": [
+          "student",
+          "parent"
+        ],
+        "channels": [
+          "dashboard",
+          "email"
+        ]
+      },
+      {
+        "event": "Fee Invoice Created",
+        "recipients": [
+          "parent",
+          "accountant"
+        ],
+        "channels": [
+          "email",
+          "dashboard"
+        ]
+      },
+      {
+        "event": "Payment Successful",
+        "recipients": [
+          "parent",
+          "accountant"
+        ],
+        "channels": [
+          "email",
+          "dashboard"
+        ]
+      },
+      {
+        "event": "Notice Published",
+        "recipients": [
+          "selected_audience"
+        ],
+        "channels": [
+          "dashboard",
+          "email_optional",
+          "sms_optional"
+        ]
+      },
+      {
+        "event": "Library Book Overdue",
+        "recipients": [
+          "student",
+          "parent",
+          "librarian"
+        ],
+        "channels": [
+          "dashboard",
+          "email_optional"
+        ]
+      }
+    ],
+    "security_requirements": [
+      "Use role-based access control for all protected pages and API endpoints.",
+      "Store passwords using strong hashing.",
+      "Validate all user input on frontend and backend.",
+      "Protect against SQL injection or NoSQL injection.",
+      "Protect against XSS attacks.",
+      "Protect against CSRF if session authentication is used.",
+      "Use HTTPS in production.",
+      "Log important user actions in audit logs.",
+      "Prevent unauthorized access to student academic records.",
+      "Prevent unauthorized access to fee payment records.",
+      "Restrict financial reports to accountant, principal, admin, and super admin roles.",
+      "Restrict marks entry to assigned teachers and academic coordinators.",
+      "Parents must only access records of their linked children.",
+      "Students must only access their own records."
+    ],
+    "ui_ux_requirements": {
+      "design_style": "Modern educational platform design",
+      "theme": "Clean, trustworthy, student-friendly, professional, responsive",
+      "dashboard_layout": "Sidebar navigation, top bar, summary cards, tables, filters, charts, calendar widgets, and notification cards",
+      "student_portal_layout": "Simple student-friendly layout with lessons, assignments, timetable, results, and notices",
+      "parent_portal_layout": "Child-focused dashboard with attendance, marks, fees, transport, and notices",
+      "mobile_support": true,
+      "pwa_support": true,
+      "required_components": [
+        "Data tables with search and filters",
+        "Student profile cards",
+        "Parent-child switcher",
+        "Attendance marking grid",
+        "Timetable calendar",
+        "Lesson content viewer",
+        "Assignment upload component",
+        "Marks entry table",
+        "Report card print view",
+        "Fee invoice print view",
+        "Receipt print view",
+        "Notice board",
+        "Modal forms",
+        "Confirmation dialogs",
+        "Status badges",
+        "Charts",
+        "File upload component",
+        "Role-based sidebar menu",
+        "Export buttons"
+      ]
+    },
+    "acceptance_criteria": [
+      "Public users can browse school pages and submit admission inquiries.",
+      "Admins can create students, parents, teachers, classes, sections, and subjects.",
+      "Teachers can mark attendance for assigned classes.",
+      "Students can view lessons, submit assignments, and view results.",
+      "Parents can view linked child attendance, marks, fee invoices, payments, transport details, and notices.",
+      "Academic coordinators can manage timetable, subjects, exams, and result publishing.",
+      "Accountants can generate fee invoices, record payments, and print receipts.",
+      "Transport managers can manage routes, vehicles, and student allocations.",
+      "Librarians can manage books, issue books, return books, and calculate fines.",
+      "The system prevents unauthorized access to student and fee records.",
+      "The system applies role-based access correctly.",
+      "All important actions are recorded in audit logs.",
+      "Reports can be filtered and exported.",
+      "The application works properly on desktop, tablet, and mobile."
+    ],
+    "future_enhancements": [
+      "Online payment gateway integration",
+      "AI student performance prediction",
+      "AI attendance risk detection",
+      "AI lesson plan generator",
+      "Online live classes",
+      "QR code student attendance",
+      "RFID attendance integration",
+      "WhatsApp parent notification integration",
+      "Mobile app for parents and students",
+      "Transport GPS tracking",
+      "Digital ID cards",
+      "Online exam module",
+      "Behavior and discipline management",
+      "Hostel management module",
+      "Cafeteria POS module",
+      "Multi-language portal"
+    ]
+  }
+}

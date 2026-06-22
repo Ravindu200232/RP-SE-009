@@ -70,7 +70,6 @@ _STATIC_MAP = {
     "profile": "src/app/(app)/profile/page.jsx",
     "settings": "src/app/(app)/settings/page.jsx",
     "notifications": "src/app/(app)/notifications/page.jsx",
-    "workspace": "src/app/(app)/workspace/[role]/page.jsx",
     "login": "src/app/login/page.jsx",
     "register": "src/app/register/page.jsx",
     "hero": "src/app/(marketing)/page.jsx",
@@ -89,8 +88,6 @@ def _route_to_file(pathname: str) -> str:
     head = seg[0].lower()
     if head in ("dashboard", "profile", "settings", "notifications"):
         return f"src/app/(app)/{head}/page.jsx"
-    if head == "workspace":
-        return "src/app/(app)/workspace/[role]/page.jsx"
     if head in ("login", "register"):
         return f"src/app/{head}/page.jsx"
     if head in ("e", "entity", "entities") and len(seg) >= 2:
@@ -106,9 +103,22 @@ def _route_to_file(pathname: str) -> str:
 
 
 def resolve_component_file(out_dir: str, component_id: str):
+    """Resolution order: (1) per-project component registry, (2) route fallback
+    resolver, (3) legacy _STATIC_MAP / page- / crud, (4) clean (None, None) miss
+    -> the caller surfaces a readable 'can't resolve component ...' error."""
     cid = str(component_id or "").strip()
+    # 1) component registry (per-project manifest), if present + it has this id
+    try:
+        from app import component_registry
+        reg_rel, reg_path = component_registry.resolve(out_dir, cid)
+        if reg_rel and reg_path:
+            return reg_rel, reg_path
+    except Exception:
+        pass                                       # registry must never break resolution
+    # 2) route fallback resolver
     if cid.startswith("route:"):                  # inspector route fallback (any page)
         rel = _route_to_file(cid[6:])
+    # 3) legacy _STATIC_MAP / page- / crud
     elif cid in _STATIC_MAP:
         rel = _STATIC_MAP[cid]
     elif cid.startswith("page:") or cid.startswith("page-"):
@@ -196,7 +206,20 @@ def set_component_image(project_id: str, component_id: str, old_src: str,
     else:
         return {"ok": False, "error": "nothing to do (no file or prompt)"}
 
-    # 2) deterministic src substitution in the component source (preferred)
+    # VALIDATE the materialised image (magic-number + non-trivial size) BEFORE any src
+    # change, so a 0-byte / text-stub / corrupt upload or a broken Fooocus output can
+    # never reach the app. Invalid -> drop the new asset, touch nothing, readable error.
+    from app import image_pipeline
+    if not image_pipeline.validate_image_file(new_file):
+        try:
+            os.remove(new_file)
+        except OSError:
+            pass
+        return {"ok": False, "error": "the new image is invalid (empty/corrupt) - nothing changed"}
+
+    # 2) PREFERRED: deterministic, surgical src substitution in the component source.
+    # Only the selected old_src changes; the original asset is left untouched; _commit
+    # is validate-then-atomic, so an invalid result rolls the source back automatically.
     old_path = "/assets/" + old_base
     rel, path = resolve_component_file(out_dir, component_id)
     if path:
@@ -207,11 +230,21 @@ def set_component_image(project_id: str, component_id: str, old_src: str,
             if r and r.get("ok"):
                 return {"ok": True, "mode": mode, "src": new_path, "file": rel}
 
-    # 3) fallback: overwrite the original asset in place (always works, src unchanged)
+    # 3) FALLBACK (only when old_src is NOT a literal in source - dynamic/computed src):
+    # overwrite the asset in place. The image is already validated above; write to a temp
+    # then os.replace so the original is never left partial (atomic, rollback-safe).
     try:
         import shutil
-        shutil.copyfile(new_file, os.path.join(assets, old_base))
-        return {"ok": True, "mode": mode + "-overwrite", "src": old_path}
+        dst = os.path.join(assets, old_base)
+        tmp = dst + ".tmp"
+        shutil.copyfile(new_file, tmp)
+        os.replace(tmp, dst)
+        try:
+            os.remove(new_file)            # cache-busted copy now redundant
+        except OSError:
+            pass
+        return {"ok": True, "mode": mode + "-overwrite", "src": old_path,
+                "note": "src not a literal in source; overwrote the asset in place (validated, atomic)"}
     except Exception as e:
         return {"ok": False, "error": f"could not apply image: {str(e)[:100]}"}
 
@@ -371,6 +404,91 @@ def _edit_snippet_llm(snippet: str, prompt: str, tag: str = None, fix_error: str
     return _clean_code(_strip_fences(out or "")).strip()
 
 
+_PLAN_SYS = (
+    "You convert ONE UI edit request into a STRICT JSON edit plan. Output ONLY raw JSON "
+    "(no markdown, no prose). Schema:\n"
+    '{"action":"text_replace"|"style_update"|"class_add_remove"|"section_add"|"section_remove"|"layout_update",'
+    '"target_property":"background"|"text"|"border"|"size"|"spacing"|"radius"|"shadow"|"layout"|"content"|"other",'
+    '"class_add":[tailwind classes to ADD],"class_remove":[tailwind classes to REMOVE],'
+    '"text_replace":"new visible text" or null,'
+    '"confidence":0.0-1.0,"clarify":"a SHORT question to ask the user IF ambiguous, else null"}\n'
+    "Rules: for colour/background/text-size/weight/alignment/spacing/radius/shadow/opacity use class_add + "
+    "class_remove (valid Tailwind only) with action style_update or class_add_remove, and set target_property to the "
+    "ONE thing being changed. To change the visible text use action text_replace with the new text. Use section_add "
+    "to add a new block, section_remove to delete this element, and layout_update ONLY when the element's INTERNAL "
+    "STRUCTURE must change (columns / reorder / new children). Keep class lists minimal. Never invent text.\n"
+    "Set confidence HONESTLY: ~1.0 when the request clearly maps to ONE property and value; below 0.5 when the target "
+    "OR the value is unclear (e.g. 'make it pop', 'improve this', 'change it', 'make it nicer'). When confidence < 0.5, "
+    "put a specific question in clarify (e.g. 'Did you mean the background colour or the text colour?')."
+)
+
+
+def _edit_context(out_dir: str, tag: str, text: str, class_name: str) -> str:
+    """A short context string for the intent model: the app's genome/theme + the selected
+    element's metadata, so the plan reflects THIS app's design language and the real target."""
+    bits = []
+    try:
+        from app import design_genome
+        g = design_genome.load_genome(out_dir) or {}
+        if g:
+            bits.append(f"app={g.get('app_category','?')}/{g.get('visual_style','?')}, density={g.get('density','?')}")
+    except Exception:
+        pass
+    sel = f"<{tag or 'element'}>"
+    if text and str(text).strip():
+        sel += f" text='{str(text).strip()[:40]}'"
+    if class_name:
+        sel += f" class='{str(class_name)[:60]}'"
+    bits.append("selected " + sel)
+    return "; ".join(bits)
+
+
+def _llm_edit_plan(snippet: str, prompt: str, tag: str = None, ctx: str = "") -> dict:
+    """LLM = INTENT only: turn the request into a STRUCTURED edit plan (JSON) WITH a confidence
+    score. The plan is applied DETERMINISTICALLY by _apply_plan - the model never writes file
+    code here. Low confidence -> the caller asks the user to clarify instead of guessing."""
+    from app.agents import get_llm, extract_json
+    from langchain_core.messages import SystemMessage, HumanMessage
+    user = (f"CONTEXT: {ctx}\n\n" if ctx else "") + \
+        f"ELEMENT (<{tag or 'element'}>):\n{snippet[:1200]}\n\nEDIT REQUEST: {prompt}\n\nReturn the JSON edit plan."
+    raw = get_llm(temperature=0.1, num_predict=512, json_mode=True).invoke(
+        [SystemMessage(content=_PLAN_SYS), HumanMessage(content=user)]).content
+    plan = extract_json(raw)
+    return plan if isinstance(plan, dict) else {}
+
+
+def _apply_plan(project_id, component_id, class_name, text, original, path, rel, snippet, plan, prompt):
+    """Apply a structured edit plan DETERMINISTICALLY (no LLM-authored file code). Returns a
+    result dict on success, or None to fall through (layout_update / unusable plan)."""
+    if not isinstance(plan, dict):
+        return None
+    action = str(plan.get("action") or "").strip()
+    add = [c for c in (plan.get("class_add") or []) if isinstance(c, str) and c.strip()]
+    rem = [c for c in (plan.get("class_remove") or []) if isinstance(c, str) and c.strip()]
+    newtext = plan.get("text_replace")
+    # class / style -> deterministic className splice (validated atomic inside style_element)
+    if action in ("style_update", "class_add_remove") and (add or rem) and class_name:
+        r = style_element(project_id, [{"component_id": component_id, "class_name": class_name}], add, rem)
+        if r.get("ok"):
+            return {"ok": True, "file": rel, "mode": "PLAN_STYLE", "classes": add, "removed": rem,
+                    "new_class_name": r.get("new_class_name")}
+    # text -> deterministic exact-text replace (validate-then-atomic in _commit)
+    if action == "text_replace" and isinstance(newtext, str) and newtext.strip() \
+            and text and text.strip() and text.strip() in original:
+        r = _commit(path, original, original.replace(text.strip(), newtext.strip(), 1), "PLAN_TEXT", rel)
+        if r and r.get("ok"):
+            return r
+    # delete this element deterministically
+    if action == "section_remove" and snippet and original.count(snippet) == 1:
+        r = _commit(path, original, original.replace(snippet, "", 1), "PLAN_SECTION_REMOVE", rel)
+        if r and r.get("ok"):
+            return r
+    # add a new section via the deterministic builder
+    if action == "section_add":
+        return add_section(project_id, component_id, prompt)
+    return None   # layout_update or unusable -> caller falls to the element-only code patch
+
+
 def edit_component(project_id: str, component_id: str, prompt: str, tag: str = None,
                    text: str = None, class_name: str = None) -> dict:
     """Isolated Block Patch pipeline (sub-3s render, ~1s @babel validate):
@@ -412,16 +530,39 @@ def edit_component(project_id: str, component_id: str, prompt: str, tag: str = N
                 return {"ok": True, "file": rel, "mode": "STYLE_TWEAK", "classes": set_c, "new_class_name": r.get("new_class_name")}
             # dynamic className (couldn't locate literally) -> fall through to the LLM patch
 
-    # 2) ELEMENT-ONLY ISOLATION (the fast path the user asked for): extract ONLY the
-    # selected element's JSX, send JUST that snippet to the LLM, and paste the returned
-    # element back exactly where it was. Tiny input + tiny output => seconds even when
-    # Fooocus holds the GPU (Gemma on CPU). The rest of the page is NEVER sent or
-    # rewritten. Runs under gpu_handoff so an active image batch yields for the call.
+    # The LLM paths operate ONLY on the isolated element (never the whole file for a
+    # simple edit). Runs under gpu_handoff so an active image batch yields for the call.
     snippet = _extract_element(original, tag, class_name, text)
     if snippet and original.count(snippet) == 1:
-        # SELF-HEALING LOOP (Step 7): generate the patched element, validate it; if it
-        # doesn't compile, feed the @babel error back to the model and retry. The live
-        # file is only ever swapped for a VALID result (validate-then-atomic in _commit).
+        # 2) STRUCTURED LLM PLAN -> DETERMINISTIC apply. The LLM only classifies the
+        # intent + lists Tailwind classes / new text; the actual file change is done by
+        # the deterministic appliers (style_element / exact-text / add_section / delete),
+        # each validated + atomic. (Simple edits already returned at 0/1 with NO LLM.)
+        with gpu_handoff():
+            try:
+                plan = _llm_edit_plan(snippet, prompt, tag, ctx=_edit_context(out_dir, tag, text, class_name))
+            except Exception:
+                plan = {}
+        r = _apply_plan(project_id, component_id, class_name, text, original, path, rel, snippet, plan, prompt)
+        if r and r.get("ok"):
+            return r
+
+        # 2b) CONFIDENCE GATE: the plan didn't map to a deterministic edit AND the model is
+        # unsure what was meant -> ASK rather than guess with a risky whole-element rewrite.
+        # (Confident/clear requests already applied above; this only catches true ambiguity.)
+        try:
+            conf = float(plan.get("confidence")) if plan.get("confidence") is not None else 1.0
+        except (TypeError, ValueError):
+            conf = 1.0
+        clarify = str(plan.get("clarify") or "").strip()
+        if conf < 0.45 and clarify:
+            return {"ok": False, "needs_clarification": True, "question": clarify[:200],
+                    "file": rel, "error": "I need one detail first: " + clarify[:200]}
+
+        # 3) ELEMENT-ONLY CODE PATCH - only for layout_update / structural changes the
+        # plan can't express as classes. Rewrites ONLY this element's JSX, self-healing:
+        # validate, and on a compile error feed it back and retry. The rest of the page is
+        # never sent or rewritten; the file is only swapped for a VALID result.
         err_ctx = ""
         for attempt in range(3):
             with gpu_handoff():
@@ -437,7 +578,7 @@ def edit_component(project_id: str, component_id: str, prompt: str, tag: str = N
             err_ctx = (r or {}).get("detail") or ""   # compile error -> next attempt self-corrects
             if not err_ctx:
                 break
-        # couldn't self-heal the isolated element -> scoped whole-file fallback below
+        # couldn't isolate-and-patch the element -> scoped whole-file fallback below
 
     # 3) FALLBACK (only when the element can't be isolated, e.g. a dynamic className or
     # no anchor): scoped whole-file rewrite, validated + atomic. Two attempts; the
@@ -576,9 +717,21 @@ def nl_to_classes(prompt, tag=None):
         if wb("light") or wb("pale"): return "300"
         return "500"
 
-    # ---- colour: text / background / border ----
+    # ---- colour TARGET (Part E): explicit words first, else the SELECTED ELEMENT ROLE.
+    #   "fill / background / card / box / container / panel" -> bg
+    #   "text / font / wording"                              -> text
+    #   "border / outline / stroke"                          -> border
+    # With NO explicit target word, a CONTAINER/BUTTON element defaults to BACKGROUND
+    # ("button blue", "card color", "change box fill") and a TEXT element to text colour.
+    _t = (tag or "").lower()
+    _container_role = _t in ("div", "section", "button", "a", "article", "aside", "header",
+                             "footer", "nav", "main", "form", "li", "ul", "card")
     want_border = wb("border") or wb("outline") or wb("stroke")
-    want_bg = (not want_border) and has("background", " bg ", "fill ", "backdrop", "behind it")
+    want_text = (wb("text") or wb("font") or has("wording", "typography")) \
+        and not has("background", " bg ", "fill", "backdrop")
+    want_bg = (not want_border and not want_text) and (
+        has("background", " bg ", "fill", "backdrop", "behind", "card color", "box color",
+            "container", "panel", "tile", "surface") or _container_role)
     col = next((fam for word, fam in _NL_COLORS.items() if wb(word)), None)
     if col:
         tok = col if col in ("black", "white", "transparent") else f"{col}-{shade()}"
@@ -852,9 +1005,13 @@ def style_element(project_id: str, targets, set_classes=None, remove_classes=Non
     return {"ok": True, "applied": applied, "missed": missed, "files": touched, "new_class_name": new_cn}
 
 
-def add_section(project_id: str, component_id: str, prompt: str, index: int = None) -> dict:
-    """Insert a brand-new section into the public page the user pointed at,
-    generated from a natural-language prompt. Build-validated; auto-reverts."""
+def add_section(project_id: str, component_id: str, prompt: str, index: int = None,
+                insert_position: str = "after", selected_text: str = None,
+                selected_class: str = None) -> dict:
+    """Insert a NEW section into the public page (Part F: SELECTION-AWARE). When the
+    selected element can be located (by its text/className), the section is placed
+    before / after / inside it per `insert_position`. Only when no anchor is found do we
+    fall back to before-the-footer (logged via `placement`). Build-validated; auto-reverts."""
     out_dir = os.path.join("output", project_id)
     if not os.path.isdir(out_dir):
         return {"ok": False, "error": "project not found"}
@@ -865,20 +1022,40 @@ def add_section(project_id: str, component_id: str, prompt: str, index: int = No
     with open(path, encoding="utf-8") as f:
         original = f.read()
     section = page_sections.freeform_section(prompt)
-    # Insert the new section BEFORE the footer so it lands in the body flow (not
-    # below the footer, which looked broken). Fall back to the page-wrapper close.
-    candidate = None
-    for anchor in ("{/* FOOTER */}", "<CtaFooter", "<footer", "{/* CTA */}", "<Footer"):
-        i = original.find(anchor)
-        if i != -1:
-            line_start = original.rfind("\n", 0, i) + 1   # keep the footer's own indentation
-            candidate = original[:line_start] + section + "\n" + original[line_start:]
-            break
+    candidate, placement = None, "footer-fallback"
+
+    # 1) SELECTION-AWARE: place relative to the selected anchor element (before/after/inside)
+    anchor = _extract_element(original, tag=None, class_name=selected_class, text=selected_text) \
+        if (selected_text or selected_class) else None
+    if anchor and original.count(anchor) == 1:
+        idx = original.find(anchor)
+        pos = (insert_position or "after").lower()
+        if pos == "before":
+            ls = original.rfind("\n", 0, idx) + 1                 # keep indentation
+            candidate, placement = original[:ls] + section + "\n" + original[ls:], "before-selected"
+        elif pos == "inside":
+            m = re.search(r"</[A-Za-z][\w.]*>\s*$", anchor)        # before the anchor's closing tag
+            if m:
+                cut = idx + m.start()
+                candidate, placement = original[:cut] + "\n" + section + "\n" + original[cut:], "inside-selected"
+        if candidate is None:                                      # default / "after"
+            end = idx + len(anchor)
+            candidate, placement = original[:end] + "\n" + section + original[end:], "after-selected"
+
+    # 2) FALLBACK (no valid anchor): before the footer so it lands in the body flow
     if candidate is None:
-        marker = "\n    </div>\n  );"                       # the page wrapper's closing tag
+        for a in ("{/* FOOTER */}", "<CtaFooter", "<footer", "{/* CTA */}", "<Footer"):
+            i = original.find(a)
+            if i != -1:
+                ls = original.rfind("\n", 0, i) + 1
+                candidate, placement = original[:ls] + section + "\n" + original[ls:], "before-footer-fallback"
+                break
+    if candidate is None:
+        marker = "\n    </div>\n  );"                              # the page wrapper's closing tag
         if marker not in original:
             return {"ok": False, "error": "could not find where to insert the section"}
-        candidate = original.replace(marker, "\n" + section + marker, 1)
+        candidate, placement = original.replace(marker, "\n" + section + marker, 1), "wrapper-close-fallback"
+
     with open(path, "w", encoding="utf-8") as f:
         f.write(candidate)
     ok, err = _validate(path)         # fast ~1s validate (no full build)
@@ -887,4 +1064,4 @@ def add_section(project_id: str, component_id: str, prompt: str, index: int = No
             f.write(original)
         return {"ok": False, "reverted": True, "file": rel,
                 "error": "the new section was invalid, so it was reverted", "detail": err}
-    return {"ok": True, "file": rel, "mode": "add-section"}
+    return {"ok": True, "file": rel, "mode": "add-section", "placement": placement}
