@@ -252,7 +252,7 @@ def t_smoke5():
     made = []
     try:
         for slug, prompt in domains:
-            _desc, code = section_bank.compose_landing(prompt_text=prompt)
+            _desc, code, _used = section_bank.compose_landing(prompt_text=prompt)
             code = code.replace("ACCENT", design_library.accent_family(theme))
             d = os.path.join(mkt, slug); os.makedirs(d, exist_ok=True)
             open(os.path.join(d, "page.jsx"), "w", encoding="utf-8").write(code)
