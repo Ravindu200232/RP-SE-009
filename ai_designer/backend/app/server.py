@@ -40,7 +40,7 @@ class PromptRequest(BaseModel):
     prompt: str
     project_id: Optional[str] = None
     intake: Optional[dict] = None   # answers from the requirements interview
-    ai_sections: Optional[bool] = False   # opt-in: Gemma writes each section's JSX
+    ai_sections: Optional[bool] = False   # legacy UI flag; ignored in generation for reliability
 
 
 class InterviewRequest(BaseModel):
@@ -112,7 +112,9 @@ def load_local_files(project_id: str) -> dict:
 async def sse_creation_stream(prompt: str, project_id: str, intake: dict = None, ai_sections: bool = False):
     from app import interview as _interview
     state = {
-        "ai_sections": bool(ai_sections),
+        # The Design Genome + deterministic section composer now provide structural
+        # uniqueness. Do not let stale clients opt into fragile LLM-authored JSX.
+        "ai_sections": False,
         "project_id": project_id,
         "prompt": prompt,
         "history": [],
@@ -270,7 +272,7 @@ def interview_step(req: StepRequest):   # sync -> threadpool (may call blocking 
 async def generate_prototype(req: PromptRequest):
     project_id = f"prj_{uuid.uuid4().hex[:8]}"
     return StreamingResponse(
-        sse_creation_stream(req.prompt, project_id, req.intake, req.ai_sections),
+        sse_creation_stream(req.prompt, project_id, req.intake, False),
         media_type="text/event-stream"
     )
 

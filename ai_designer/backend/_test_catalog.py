@@ -44,7 +44,7 @@ comp_bad, n_comp = [], 0
 for seed in range(24):
     rng = random.Random(seed)
     hero = rng.choice(section_bank.HEROES)[1]
-    desc, src = section_bank.compose_landing(rng=rng, hero_file=hero, prompt_text=rng.choice(prompts))
+    desc, src, _used = section_bank.compose_landing(rng=rng, hero_file=hero, prompt_text=rng.choice(prompts))
     n_comp += 1
     ok, err = valid_jsx(src)
     if not ok:
@@ -57,7 +57,7 @@ for s, d, err in comp_bad[:8]:
 print("\nSample compositions (note how middles change with the prompt):")
 for p in prompts[:4]:
     rng = random.Random(7)
-    desc, _ = section_bank.compose_landing(rng=rng, prompt_text=p)
+    desc, _, _used = section_bank.compose_landing(rng=rng, prompt_text=p)
     print(f"  [{p[:34]:34}] -> {desc}")
 
 print("\n" + "=" * 64)

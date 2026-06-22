@@ -1,0 +1,48 @@
+{
+  "apps": {
+    "grandvista": {
+      "app_name": "GrandVista Hotel Management Platform",
+      "hero_composition": "booking-panel",
+      "listing_variant": "horizontal-media-cards",
+      "filter_placement": "top-search-bar",
+      "page_layout_variant": "booking-catalog"
+    },
+    "megamart": {
+      "app_name": "MegaMart Retail POS and Inventory Platform",
+      "hero_composition": "product-showcase",
+      "listing_variant": "large-featured-grid",
+      "filter_placement": "left-sidebar",
+      "page_layout_variant": "product-catalog"
+    },
+    "mediplus": {
+      "app_name": "MediPlus Pharmacy Management Platform",
+      "hero_composition": "centered-text",
+      "listing_variant": "compact-catalog",
+      "filter_placement": "inline-chips",
+      "page_layout_variant": "centered-catalog"
+    },
+    "edusphere": {
+      "app_name": "EduSphere School Management Platform",
+      "hero_composition": "centered-text",
+      "listing_variant": "large-featured-grid",
+      "filter_placement": "inline-chips",
+      "page_layout_variant": "centered-catalog"
+    },
+    "autohub": {
+      "app_name": "AutoHub Vehicle Business Platform",
+      "hero_composition": "search-first",
+      "listing_variant": "table-catalog",
+      "filter_placement": "left-sidebar",
+      "page_layout_variant": "product-catalog"
+    },
+    "fitzone": {
+      "app_name": "FitZone Gym Management Platform",
+      "hero_composition": "full-screen-image",
+      "listing_variant": "schedule-grid",
+      "filter_placement": "inline-chips",
+      "page_layout_variant": "schedule-catalog"
+    }
+  },
+  "max_cross_app_similarity": 0.385,
+  "threshold": 0.75
+}

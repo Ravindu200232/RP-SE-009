@@ -70,7 +70,6 @@ _STATIC_MAP = {
     "profile": "src/app/(app)/profile/page.jsx",
     "settings": "src/app/(app)/settings/page.jsx",
     "notifications": "src/app/(app)/notifications/page.jsx",
-    "workspace": "src/app/(app)/workspace/[role]/page.jsx",
     "login": "src/app/login/page.jsx",
     "register": "src/app/register/page.jsx",
     "hero": "src/app/(marketing)/page.jsx",
@@ -89,8 +88,6 @@ def _route_to_file(pathname: str) -> str:
     head = seg[0].lower()
     if head in ("dashboard", "profile", "settings", "notifications"):
         return f"src/app/(app)/{head}/page.jsx"
-    if head == "workspace":
-        return "src/app/(app)/workspace/[role]/page.jsx"
     if head in ("login", "register"):
         return f"src/app/{head}/page.jsx"
     if head in ("e", "entity", "entities") and len(seg) >= 2:

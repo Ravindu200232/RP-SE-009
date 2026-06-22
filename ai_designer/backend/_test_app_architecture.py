@@ -21,7 +21,7 @@ Run:  python _test_app_architecture.py            (full, includes one build)
 import os, sys, re, glob, tempfile, shutil
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from app import design_genome as dg
-from app import editor, nextgen
+from app import design_research, editor, inspiration_library, nextgen, page_sections
 
 FAST = "fast" in sys.argv or os.getenv("FAST") == "1"
 RESULTS = []
@@ -102,6 +102,101 @@ def main():
     rec("category bias is visible yet still varied (finance: biased>=8 & many distinct)",
         biased >= 8 and varied >= 20, f"biased={biased}/40, distinct={varied}/40")
 
+    # ---------------- PART C: curated inspiration library ----------------
+    print("-- Part C: curated inspiration library --")
+    required = {"name", "url", "category", "design_family", "hero_patterns", "navigation_patterns",
+                "section_patterns", "card_patterns", "typography_style", "spacing_style",
+                "color_palette_family", "image_strategy", "CTA_patterns", "footer_patterns",
+                "best_for_domains"}
+    refs = inspiration_library.CURATED_REFERENCES
+    rec("curated library contains 100 complete metadata-only references",
+        len(refs) == 100 and all(required <= set(r) for r in refs),
+        f"{len(refs)} references")
+
+    expected = {
+        "hospital management website": ("healthcare-trust-saas", ("SaaS", "Finance", "POS")),
+        "vehicle sales website with inventory and financing": ("ecommerce-product", ("Ecommerce",)),
+        "POS inventory app for restaurants": ("operational-business", ("POS", "SaaS")),
+        "portfolio site for a creative agency": ("creative-agency", ("Portfolio", "Marketing")),
+        "AI developer tool landing page": ("ai-devtools", ("AI", "SaaS")),
+        "fintech wallet and invoice dashboard": ("fintech-trust", ("Finance", "SaaS")),
+        "online course platform for students": ("education-media", ("Education", "Marketing")),
+    }
+    picked = {}
+    for prompt, (family, category_bits) in expected.items():
+        ins = inspiration_library.select_curated_inspiration(prompt)
+        picked[prompt] = ins
+        cats = [r["category"] for r in ins["selected_inspirations"]]
+        rec(f"inspiration: {family} selected for {prompt[:18]}...",
+            ins["inspiration_family"] == family and any(any(bit in c for bit in category_bits) for c in cats),
+            f"{ins['inspiration_family']} / {cats[:3]}")
+
+    fams = {ins["inspiration_family"] for ins in picked.values()}
+    rec("generated inspiration_family differs across domains", len(fams) >= 6, sorted(fams))
+
+    genomes = [dg.make_genome(p) for p in expected]
+    visual_sigs = {dg.visual_structure_signature(g, dg.genome_to_styles(g), dg.genome_crud_layouts(g, 3)) for g in genomes}
+    rec("inspiration changes visual_structure_signature across domains",
+        len(visual_sigs) >= 6, f"{len(visual_sigs)}/7")
+
+    g_h = dg.make_genome("hospital management website")
+    g_v = dg.make_genome("vehicle sales website with inventory and financing")
+    src_h = page_sections.compose_marketing_page({"name": "Home", "slug": "home", "template": "content"},
+                                                 {"domain": "hospital management"}, 0, "CareOS", False, [],
+                                                 dg.genome_visual_composition(g_h))
+    src_v = page_sections.compose_marketing_page({"name": "Home", "slug": "home", "template": "content"},
+                                                 {"domain": "vehicle sales"}, 0, "AutoDesk", False, [],
+                                                 dg.genome_visual_composition(g_v))
+    leak_terms = []
+    for r in (g_h.get("selected_inspirations") or []) + (g_v.get("selected_inspirations") or []):
+        leak_terms.extend([r.get("name", ""), r.get("url", "")])
+    rec("inspiration affects generated JSX hero/cards/sections",
+        src_h != src_v and "data-inspiration-family" in src_h and "data-page-card-style" in src_h,
+        f"{g_h.get('inspiration_family')} vs {g_v.get('inspiration_family')}")
+    rec("generated page JSX does not include copied reference names or URLs",
+        all((not t) or (t not in src_h and t not in src_v) for t in leak_terms),
+        f"checked={len(leak_terms)} terms")
+
+    old_env = {k: os.environ.get(k) for k in (
+        "DESIGN_RESEARCH_ENABLED", "DESIGN_INSPIRATION_MODE", "DESIGN_SEARCH_PROVIDER",
+        "DESIGN_SEARCH_API_KEY", "DESIGN_GOOGLE_CSE_ID", "DESIGN_RESEARCH_MAX_RESULTS",
+        "DESIGN_RESEARCH_TIMEOUT_SECONDS")}
+    try:
+        os.environ["DESIGN_RESEARCH_ENABLED"] = "false"
+        os.environ["DESIGN_INSPIRATION_MODE"] = "curated"
+        off = inspiration_library.select_inspiration("AI developer tool landing page")
+        os.environ["DESIGN_RESEARCH_ENABLED"] = "true"
+        os.environ["DESIGN_INSPIRATION_MODE"] = "hybrid"
+        os.environ["DESIGN_SEARCH_PROVIDER"] = "serpapi"
+        os.environ.pop("DESIGN_SEARCH_API_KEY", None)
+        fail = inspiration_library.select_inspiration("AI developer tool landing page")
+        os.environ["DESIGN_SEARCH_PROVIDER"] = "google"
+        os.environ["DESIGN_SEARCH_API_KEY"] = "test-key-redacted"
+        os.environ.pop("DESIGN_GOOGLE_CSE_ID", None)
+        google_missing_cx = design_research.fetch_online_design_dna("hospital management website")
+        os.environ["DESIGN_SEARCH_PROVIDER"] = "local"
+        local_online = inspiration_library.select_inspiration("online course platform")
+    finally:
+        for k, v in old_env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+    rec("generation works with online research disabled", off["mode"] == "curated" and off["selected_inspirations"])
+    rec("online research failure falls back to curated DNA",
+        fail["selected_inspirations"] and not fail.get("online_research", {}).get("ok"),
+        fail.get("online_research", {}).get("reason", ""))
+    rec("google design search requires DESIGN_GOOGLE_CSE_ID and fails clearly",
+        not google_missing_cx.get("ok")
+        and google_missing_cx.get("reason") == "Google search disabled: missing DESIGN_GOOGLE_CSE_ID"
+        and google_missing_cx.get("provider") == "google",
+        google_missing_cx.get("reason", ""))
+    rec("hybrid local research merges abstract DNA when online path succeeds",
+        local_online.get("mode") == "hybrid"
+        and local_online.get("online_research", {}).get("ok")
+        and local_online.get("online_research", {}).get("queries"),
+        local_online.get("online_research", {}).get("provider", ""))
+
     # ---------------- PART E: target property (fill vs text vs border) ----------------
     print("-- Part E: fill-vs-text target --")
     rec("'change box fill color to blue' on a div -> BACKGROUND",
@@ -127,6 +222,12 @@ def main():
         orig = open(pg, encoding="utf-8").read()
         m = re.search(r">([A-Za-z][A-Za-z ]{6,40})<", orig)
         anchor = m.group(1).strip() if m else None
+        orig_freeform = page_sections.freeform_section
+        page_sections.freeform_section = lambda prompt, app_name="": (
+            '\n      <section className="mx-auto max-w-5xl px-6 py-16">\n'
+            '        <h2 className="font-display text-3xl font-bold">Architecture Test Section</h2>\n'
+            '        <p className="mt-3 max-w-2xl text-muted-foreground">Deterministic test section.</p>\n'
+            '      </section>\n')
 
         def land(**kw):
             r = editor.add_section(PID, "home", "a pricing band with three tiers", **kw)
@@ -170,6 +271,7 @@ def main():
         rec("invalid section -> reverted, source file unchanged",
             (not r4.get("ok")) and r4.get("reverted") and open(pg, encoding="utf-8").read() == orig,
             r4.get("error"))
+        page_sections.freeform_section = orig_freeform
 
     # ---------------- PART G: genome DRIVES real generated structure ----------------
     print("-- Part G: genome drives structure --")
