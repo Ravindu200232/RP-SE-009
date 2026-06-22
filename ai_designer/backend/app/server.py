@@ -27,11 +27,20 @@ app.add_middleware(
 os.makedirs("output", exist_ok=True)
 app.mount("/output", StaticFiles(directory="output"), name="output")
 
+
+@app.get("/health")
+async def health():
+    """Liveness canary. Stays async + does NO blocking work, so it answers instantly
+    even while edits/images/builds run in worker threads - proving the event loop is
+    never frozen by heavy endpoints."""
+    return {"ok": True}
+
+
 class PromptRequest(BaseModel):
     prompt: str
     project_id: Optional[str] = None
     intake: Optional[dict] = None   # answers from the requirements interview
-    ai_sections: Optional[bool] = False   # opt-in: Gemma writes each section's JSX
+    ai_sections: Optional[bool] = False   # legacy UI flag; ignored in generation for reliability
 
 
 class InterviewRequest(BaseModel):
@@ -73,6 +82,9 @@ class AddSectionRequest(BaseModel):
     project_id: str
     component_id: str              # an element on the page to add the section to
     prompt: str
+    insert_position: str = "after"     # before | after | inside the selected anchor
+    selected_text: str | None = None   # the selected element's text (to locate the anchor)
+    selected_class: str | None = None  # the selected element's className (anchor fallback)
 
 def load_local_files(project_id: str) -> dict:
     """Reads all files in output/{project_id} and loads them into a dictionary."""
@@ -100,7 +112,9 @@ def load_local_files(project_id: str) -> dict:
 async def sse_creation_stream(prompt: str, project_id: str, intake: dict = None, ai_sections: bool = False):
     from app import interview as _interview
     state = {
-        "ai_sections": bool(ai_sections),
+        # The Design Genome + deterministic section composer now provide structural
+        # uniqueness. Do not let stale clients opt into fragile LLM-authored JSX.
+        "ai_sections": False,
         "project_id": project_id,
         "prompt": prompt,
         "history": [],
@@ -205,7 +219,7 @@ class SrsExtractRequest(BaseModel):
 
 
 @app.post("/api/srs/extract")
-async def srs_extract(req: SrsExtractRequest):
+def srs_extract(req: SrsExtractRequest):   # sync -> threadpool (CPU-bound PDF parse)
     """Read an uploaded SRS (PDF or JSON/text, sent as base64) and return its
     text for the interview. JSON body -> no python-multipart dependency."""
     name = (req.filename or "").lower()
@@ -231,7 +245,7 @@ async def srs_extract(req: SrsExtractRequest):
 
 
 @app.post("/api/interview/start")
-async def interview_start(req: InterviewRequest):
+def interview_start(req: InterviewRequest):   # sync -> threadpool (blocking Gemma planner)
     """LLM planner agent: build the tailored plan for this app + type + language,
     and return the FIRST question. The studio asks one question at a time."""
     from app import interview as _interview
@@ -244,7 +258,7 @@ async def interview_start(req: InterviewRequest):
 
 
 @app.post("/api/interview/step")
-async def interview_step(req: StepRequest):
+def interview_step(req: StepRequest):   # sync -> threadpool (may call blocking LLM)
     """Given the plan + answers so far, return the NEXT question (its options may
     be LLM-generated for custom pages) or {done, answers} when complete."""
     from app import interview as _interview
@@ -258,7 +272,7 @@ async def interview_step(req: StepRequest):
 async def generate_prototype(req: PromptRequest):
     project_id = f"prj_{uuid.uuid4().hex[:8]}"
     return StreamingResponse(
-        sse_creation_stream(req.prompt, project_id, req.intake, req.ai_sections),
+        sse_creation_stream(req.prompt, project_id, req.intake, False),
         media_type="text/event-stream"
     )
 
@@ -405,9 +419,13 @@ def generate_image(req: SetImageRequest):
 
 @app.post("/api/add-section")
 def add_section(req: AddSectionRequest):
-    """Add a brand-new, prompt-described section to the page the user pointed at."""
+    """Add a brand-new, prompt-described section RELATIVE to the selected element
+    (before / after / inside it), falling back to the page body only if no anchor."""
     from app import editor
-    return editor.add_section(req.project_id, req.component_id, req.prompt)
+    return editor.add_section(req.project_id, req.component_id, req.prompt,
+                              insert_position=req.insert_position,
+                              selected_text=req.selected_text,
+                              selected_class=req.selected_class)
 
 
 @app.get("/api/latest-code")

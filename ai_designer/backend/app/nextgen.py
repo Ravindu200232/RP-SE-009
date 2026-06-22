@@ -19,8 +19,10 @@ import time
 BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCAFFOLD = os.path.join(BACKEND_DIR, "next_scaffold")
 
-# Phases the studio is allowed to show the user (hidden QA reports as "qa").
-PHASES = ("planning", "pages", "images", "qa", "building", "done", "error")
+# Phases the studio is allowed to show the user. The preview endpoint only
+# opens once phase == "done", after generated images are integrated and built.
+PHASES = ("planning", "genome", "scaffold", "pages", "qa", "image_generating",
+          "image_integrating", "validating", "building", "done", "error")
 
 
 def write_status(out_dir: str, phase: str, detail: str = "") -> None:
@@ -39,18 +41,72 @@ def read_status(out_dir: str) -> dict:
 
 def create_project(out_dir: str) -> None:
     """Copy the scaffold (sans node_modules/.next) and junction node_modules."""
+    _ignore = shutil.ignore_patterns("node_modules", ".next", "out")
     if os.path.exists(out_dir):
         shutil.rmtree(out_dir, ignore_errors=True)
-    shutil.copytree(SCAFFOLD, out_dir, ignore=shutil.ignore_patterns("node_modules", ".next", "out"))
+    if os.path.exists(out_dir):
+        # rmtree silently failed (locked files) — copy over the existing dir
+        shutil.copytree(SCAFFOLD, out_dir, ignore=_ignore, dirs_exist_ok=True)
+    else:
+        shutil.copytree(SCAFFOLD, out_dir, ignore=_ignore)
     link = os.path.join(out_dir, "node_modules")
     target = os.path.join(SCAFFOLD, "node_modules")
-    subprocess.run(["cmd", "/c", "mklink", "/J", link, target], capture_output=True, shell=False)
+    if not os.path.exists(link):
+        subprocess.run(["cmd", "/c", "mklink", "/J", link, target], capture_output=True, shell=False)
     if not os.path.exists(link):  # junction failed -> fall back to a copy (slow but works)
         shutil.copytree(target, link)
 
 
 def _js(obj) -> str:
     return json.dumps(obj, ensure_ascii=False, indent=2)
+
+
+# Labels whose pages belong in the right-side action area, not the primary nav.
+_NAV_ACTION_SLUGS = {
+    "cart-page", "checkout-page", "cart", "checkout",
+    "shopping-cart", "payment-page",
+}
+
+# Nav labels that should never appear in the primary links list.
+_NAV_HIDDEN_SLUGS = {
+    "medicine-details-page", "medicine-detail-page",
+}
+
+
+def normalize_nav_label(name: str) -> str:
+    """Strip trailing ' Page' suffix and clean up public nav labels."""
+    name = name.strip()
+    name = re.sub(r"\s+[Pp]age$", "", name).strip()
+    return name
+
+
+def build_marketing_links(mk_pages: list, max_primary: int = 7) -> list:
+    """Build a clean marketingLinks list from SRS/template page list.
+
+    Rules:
+    - Always start with Home at /
+    - Apply normalize_nav_label() to every page name
+    - Pages in _NAV_ACTION_SLUGS get navGroup='right'
+    - Pages in _NAV_HIDDEN_SLUGS are omitted from nav
+    - Primary links (no navGroup) capped at max_primary
+    """
+    links = [{"label": "Home", "href": "/"}]
+    primary_count = 0
+    for p in mk_pages:
+        slug = str(p.get("slug") or "").strip("/")
+        name = normalize_nav_label(str(p.get("name") or slug.replace("-", " ").title()))
+        href = "/" + slug
+        # Skip the root/home page — already represented by the leading "Home" entry
+        if not slug or slug in ("home", "home-page", "index", "landing"):
+            continue
+        if slug in _NAV_HIDDEN_SLUGS:
+            continue
+        if slug in _NAV_ACTION_SLUGS:
+            links.append({"label": name, "href": href, "navGroup": "right"})
+        elif primary_count < max_primary:
+            links.append({"label": name, "href": href})
+            primary_count += 1
+    return links
 
 
 def write_site(out_dir: str, app_name: str, tagline: str, marketing_links, sidebar_links, entities_meta, roles, styles=None, auth=True) -> None:
@@ -81,6 +137,7 @@ ACCENT_HSL = {
     "fuchsia": ("293 69% 49%", "293 69% 49%"),
     "rose":    ("347 77% 50%", "347 77% 50%"),
     "emerald": ("160 84% 39%", "160 84% 39%"),
+    "teal":    ("173 80% 40%", "173 80% 40%"),
     "lime":    ("84 81% 44%", "84 81% 44%"),
     "amber":   ("38 92% 50%", "38 92% 50%"),
     "slate":   ("215 25% 27%", "215 25% 27%"),
@@ -272,6 +329,155 @@ def write_page(out_dir: str, route_dir: str, code: str) -> str:
     return path
 
 
+def materialize_genome_structure(out_dir: str, genome: dict, styles: dict, entities_meta: list) -> None:
+    """Stamp the Design Genome into generated source files, not just site.js.
+
+    The scaffold can consume site.styles dynamically, but users inspecting or
+    previewing fresh projects should see real generated structure change app to
+    app. These rewrites are intentionally deterministic and build-safe:
+      - app layout is emitted as a concrete sidebar OR topnav shell;
+      - dashboard widget blocks are physically reordered in the JSX source;
+      - CRUD list route carries a concrete per-entity genome layout map.
+    """
+    genome = genome or {}
+    styles = styles or {}
+    entities_meta = entities_meta or []
+
+    def _write(path, src):
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(src)
+
+    # 1) App shell: concrete source, not a runtime branch.
+    layout_path = os.path.join(out_dir, "src", "app", "(app)", "layout.jsx")
+    app_nav = styles.get("appNav", "sidebar")
+    if os.path.exists(layout_path):
+        nav_import = "import TopNav from '@/components/shell/TopNav';" if app_nav == "topnav" else "import Sidebar from '@/components/shell/Sidebar';"
+        shell = (
+            "'use client';\n"
+            "// Generated app shell materialized from the Design Genome.\n"
+            "// Client auth guard + ROLE guard: canAccessPage(role, pathname) reads\n"
+            "// lib/access.js pageAccess (from the SRS role_access_matrix) and shows a\n"
+            "// 403 for roles not permitted on a route - pages never re-implement this.\n"
+            "import * as React from 'react';\n"
+            "import { usePathname, useRouter } from 'next/navigation';\n"
+            f"{nav_import}\n"
+            "import { auth } from '@/lib/api';\n"
+            "import { site } from '@/lib/site';\n"
+            "import { canAccessPage } from '@/lib/access';\n\n"
+            "export default function AppLayout({ children }) {\n"
+            "  const router = useRouter();\n"
+            "  const pathname = usePathname();\n"
+            "  const [ready, setReady] = React.useState(false);\n"
+            "  const [denied, setDenied] = React.useState(false);\n\n"
+            "  React.useEffect(() => {\n"
+            "    if (site.auth === false) { setReady(true); return; }\n"
+            "    const user = auth.currentUser();\n"
+            "    if (!user) { router.replace('/login?next=' + encodeURIComponent(pathname)); return; }\n"
+            "    if (!canAccessPage(user.role, pathname)) { setDenied(true); setReady(true); return; }\n"
+            "    setReady(true);\n"
+            "  }, [router, pathname]);\n\n"
+            "  if (!ready) {\n"
+            "    return <div className=\"flex min-h-screen items-center justify-center text-sm text-muted-foreground\">Loading...</div>;\n"
+            "  }\n\n"
+            "  if (denied) {\n"
+            "    return (\n"
+            "      <div className=\"flex min-h-screen flex-col items-center justify-center gap-4 text-center px-4\">\n"
+            "        <p className=\"text-6xl font-bold text-muted-foreground/30\">403</p>\n"
+            "        <h1 className=\"text-2xl font-bold\">Access Denied</h1>\n"
+            "        <p className=\"text-sm text-muted-foreground\">You do not have permission to view this page.</p>\n"
+            "        <a href=\"/dashboard\" className=\"rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90\">Go to Dashboard</a>\n"
+            "      </div>\n"
+            "    );\n"
+            "  }\n\n"
+        )
+        if app_nav == "topnav":
+            shell += (
+                "  return (\n"
+                "    <div data-genome-app-nav=\"topnav\" className=\"flex min-h-screen flex-col\">\n"
+                "      <TopNav />\n"
+                "      <main className=\"min-w-0 flex-1 overflow-x-hidden\">{children}</main>\n"
+                "    </div>\n"
+                "  );\n"
+                "}\n"
+            )
+        else:
+            shell += (
+                "  return (\n"
+                "    <div data-genome-app-nav=\"sidebar\" className=\"flex min-h-screen\">\n"
+                "      <Sidebar />\n"
+                "      <main className=\"min-w-0 flex-1 overflow-x-hidden\">{children}</main>\n"
+                "    </div>\n"
+                "  );\n"
+                "}\n"
+            )
+        _write(layout_path, shell)
+
+    # 2) Dashboard: physically reorder the three large blocks in source.
+    dash_path = os.path.join(out_dir, "src", "app", "(app)", "dashboard", "page.jsx")
+    dash_layout = styles.get("dashLayout", "kpi-cards")
+    dash_orders = {
+        "kpi-cards": ["stats", "charts", "recent"],
+        "analytics": ["charts", "stats", "recent"],
+        "activity-feed": ["recent", "charts", "stats"],
+        "table-first": ["recent", "charts", "stats"],
+        "operations": ["stats", "recent", "charts"],
+    }
+    markers = {
+        "stats": "      {/* stat cards */}",
+        "charts": "      {/* chart row */}",
+        "recent": "      {/* recent + quick actions */}",
+    }
+    if os.path.exists(dash_path):
+        src = open(dash_path, encoding="utf-8").read()
+        try:
+            positions = {k: src.index(v) for k, v in markers.items()}
+            tail_marker = "\n      </div>\n    </div>\n  );"
+            tail_start = src.index(tail_marker, positions["recent"])
+            spans = {
+                "stats": src[positions["stats"]:positions["charts"]],
+                "charts": src[positions["charts"]:positions["recent"]],
+                "recent": src[positions["recent"]:tail_start],
+            }
+            prefix = src[:positions["stats"]]
+            suffix = src[tail_start:]
+            ordered = "".join(spans[k] for k in dash_orders.get(dash_layout, dash_orders["kpi-cards"]))
+            src = prefix + ordered + suffix
+        except ValueError:
+            pass
+        src = src.replace(
+            'data-component-id="dashboard" data-component-label="Dashboard"',
+            f'data-component-id="dashboard" data-component-label="Dashboard" data-genome-dash-layout="{dash_layout}"',
+            1,
+        )
+        _write(dash_path, src)
+
+    # 3) CRUD route: concrete slug -> layout map in generated source.
+    crud_path = os.path.join(out_dir, "src", "app", "(app)", "e", "[entity]", "page.jsx")
+    if os.path.exists(crud_path):
+        src = open(crud_path, encoding="utf-8").read()
+        layout_map = {str(e.get("slug", "")): e.get("crud_layout", "table") for e in entities_meta if e.get("slug")}
+        map_src = json.dumps(layout_map, ensure_ascii=False, indent=2)
+        if "const GENOME_CRUD_LAYOUTS =" not in src:
+            src = src.replace(
+                "const LAYOUTS = { kanban: KanbanBoard, 'split-pane': SplitPane, spreadsheet: SpreadsheetGrid, timeline: TimelineFeed };\n",
+                "const LAYOUTS = { kanban: KanbanBoard, 'split-pane': SplitPane, spreadsheet: SpreadsheetGrid, timeline: TimelineFeed };\n"
+                f"const GENOME_CRUD_LAYOUTS = {map_src};\n",
+                1,
+            )
+        src = src.replace(
+            "  const Custom = LAYOUTS[entity.crud_layout];\n"
+            "  if (Custom) return <Custom entity={entity} slug={slug} />;\n"
+            "  return <TableView entity={entity} slug={slug} />;\n",
+            "  const genomeLayout = GENOME_CRUD_LAYOUTS[String(slug)] || entity.crud_layout;\n"
+            "  const effectiveEntity = { ...entity, crud_layout: genomeLayout };\n"
+            "  const Custom = LAYOUTS[genomeLayout];\n"
+            "  if (Custom) return <Custom entity={effectiveEntity} slug={slug} />;\n"
+            "  return <TableView entity={effectiveEntity} slug={slug} />;\n",
+            1,
+        )
+        _write(crud_path, src)
+
+
 # --- PHASE 1-2: domain marketing pages -----------------------------------
 # The Deep Research blueprint decides the secondary public pages (a school gets
 # Admissions / Curriculum / Faculty - NOT Features / About / Contact). These
@@ -461,13 +667,19 @@ _RESERVED_MK = {"", "home", "index", "dashboard", "login", "register", "logout",
                 "workspace", "notifications", "profile", "settings", "api", "assets", "auth", "admin"}
 
 
-def write_marketing_pages(out_dir, pages, app_name, blueprint, ai_sections=False):
+def write_marketing_pages(out_dir, pages, app_name, blueprint, ai_sections=False, section_order=None,
+                          visual_grammar=None, exclude_families=None):
     """Write each blueprint marketing page under (marketing)/<slug>/page.jsx.
     Each page is composed from a domain-driven, VARIED section pack (see
     page_sections) so no two domains - or two pages - look alike. With
     ai_sections, Gemma writes each section's JSX (validated, else fallback).
+    `section_order` (from the genome's section_strategy) reorders the default pack.
+    `visual_grammar` selects the real component families (hero/card/image/rhythm).
+    `exclude_families` is the set of section families used by the home page — sub-pages
+    will not repeat these, ensuring each page contributes unique visual sections.
     Returns the list of written file paths."""
     from app import page_sections
+    used = set(exclude_families or [])   # accumulates across sub-pages too
     written, seen = [], set()
     for idx, p in enumerate(pages):
         slug = re.sub(r"[^a-z0-9-]+", "-", str(p.get("slug") or "").lower()).strip("-")[:32]
@@ -477,7 +689,9 @@ def write_marketing_pages(out_dir, pages, app_name, blueprint, ai_sections=False
         if p.get("template") == "contact":
             src = _contact_page_jsx(p.get("name", "Contact"), app_name)
         else:
-            src = page_sections.compose_marketing_page({**p, "slug": slug}, blueprint or {}, idx, app_name, ai_sections)
+            src = page_sections.compose_marketing_page({**p, "slug": slug}, blueprint or {}, idx, app_name,
+                                                       ai_sections, section_order, visual_grammar,
+                                                       exclude_families=used)
         written.append(write_page(out_dir, f"(marketing)/{slug}", src))
     return written
 

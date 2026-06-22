@@ -1,0 +1,3435 @@
+{
+  "srs_document": {
+    "document_title": "Software Requirements Specification",
+    "project_name": "AutoHub Vehicle Sales, Rental, Service and Spare Parts Platform",
+    "version": "1.0.0",
+    "document_language": "English",
+    "system_category": "Vehicle Sales, Rental, Service Center, Spare Parts POS and Admin Dashboard Web Application",
+    "prepared_for": "Full App Build Requirement",
+    "app_summary": {
+      "app_name": "AutoHub Vehicle Business Platform",
+      "short_description": "A complete vehicle business management platform with public vehicle listing website, customer portal, admin dashboard, vehicle sales CRM, rental booking, service appointment management, workshop job cards, spare parts POS, inventory, billing, payments, reports, and staff management.",
+      "business_goal": "To manage a vehicle dealership, rental service, repair workshop, spare parts shop, customer inquiries, invoices, payments, inventory, and business reports from one centralized digital system.",
+      "target_users": [
+        "Public visitors",
+        "Registered customers",
+        "Vehicle buyers",
+        "Rental customers",
+        "Sales agents",
+        "Rental officers",
+        "Service advisors",
+        "Mechanics",
+        "Spare parts cashiers",
+        "Inventory managers",
+        "Accountants",
+        "Branch managers",
+        "System administrators"
+      ]
+    },
+    "app_type": {
+      "primary_type": "Vehicle Sales, Rental, Service and Spare Parts Management System",
+      "supported_types": [
+        "Public Landing Website",
+        "Vehicle Listing Portal",
+        "Customer Portal",
+        "SPA Web Application",
+        "PWA Mobile-Friendly Web App",
+        "POS System",
+        "Admin Dashboard",
+        "Workshop Management System",
+        "Inventory Management System",
+        "CRM System"
+      ],
+      "frontend_type": "Responsive SPA with optional PWA support",
+      "backend_type": "REST API or GraphQL API",
+      "database_type": "Relational database recommended",
+      "example_stack": {
+        "frontend": "Next.js / React",
+        "backend": "Node.js / Laravel / NestJS",
+        "database": "PostgreSQL / MySQL",
+        "authentication": "JWT / Session Auth",
+        "file_storage": "Cloud storage or local server storage",
+        "realtime": "WebSocket optional for live inquiry, job card, and rental status updates"
+      }
+    },
+    "authentication_requirement": {
+      "login_required": true,
+      "public_landing_pages_required": true,
+      "guest_inquiry_without_login": true,
+      "guest_service_booking_without_login": true,
+      "guest_rental_request_without_login": true,
+      "customer_account_optional": true,
+      "admin_dashboard_login_required": true,
+      "pos_login_required": true,
+      "workshop_login_required": true,
+      "multi_role_access_required": true,
+      "password_reset_required": true,
+      "email_verification_required": false,
+      "two_factor_authentication_optional": true
+    },
+    "roles": [
+      {
+        "role_key": "super_admin",
+        "role_name": "Super Admin",
+        "description": "Full system owner with access to all branches, vehicles, rentals, services, POS, inventory, users, settings, reports, and audit logs."
+      },
+      {
+        "role_key": "admin",
+        "role_name": "System Admin",
+        "description": "Manages system settings, users, roles, branches, vehicle categories, service types, payment settings, and permissions."
+      },
+      {
+        "role_key": "branch_manager",
+        "role_name": "Branch Manager",
+        "description": "Manages branch operations, staff, vehicle sales, rentals, service center operations, inventory, approvals, and reports."
+      },
+      {
+        "role_key": "sales_agent",
+        "role_name": "Vehicle Sales Agent",
+        "description": "Handles vehicle inquiries, leads, quotations, test drives, sales follow-ups, and customer communication."
+      },
+      {
+        "role_key": "rental_officer",
+        "role_name": "Rental Officer",
+        "description": "Handles vehicle rental availability, rental reservations, rental agreements, deposits, pickups, and returns."
+      },
+      {
+        "role_key": "service_advisor",
+        "role_name": "Service Advisor",
+        "description": "Handles service appointments, job card creation, customer vehicle intake, estimates, and service invoices."
+      },
+      {
+        "role_key": "mechanic",
+        "role_name": "Mechanic / Technician",
+        "description": "Views assigned job cards, updates repair progress, adds labor notes, requests spare parts, and completes service tasks."
+      },
+      {
+        "role_key": "parts_cashier",
+        "role_name": "Spare Parts Cashier / POS Operator",
+        "description": "Handles spare parts POS sales, customer billing, payments, receipts, and returns."
+      },
+      {
+        "role_key": "inventory_manager",
+        "role_name": "Inventory Manager",
+        "description": "Manages spare parts stock, vehicle stock, suppliers, purchase orders, stock movements, and low-stock alerts."
+      },
+      {
+        "role_key": "accountant",
+        "role_name": "Accountant",
+        "description": "Manages invoices, payments, refunds, expenses, tax summaries, deposits, commissions, and financial reports."
+      },
+      {
+        "role_key": "customer",
+        "role_name": "Registered Customer",
+        "description": "Can browse vehicles, submit inquiries, book test drives, request rentals, book service appointments, view invoices, and manage profile."
+      },
+      {
+        "role_key": "guest",
+        "role_name": "Public Guest",
+        "description": "Can browse public pages, view vehicle listings, submit inquiries, request test drives, request rentals, and submit contact forms."
+      }
+    ],
+    "main_modules": [
+      "Public Website",
+      "Authentication",
+      "Customer Portal",
+      "Admin Dashboard",
+      "Vehicle Sales Management",
+      "Vehicle Inventory Management",
+      "Customer Lead Management",
+      "Test Drive Management",
+      "Quotation Management",
+      "Vehicle Rental Management",
+      "Rental Agreement Management",
+      "Service Appointment Management",
+      "Workshop Job Card Management",
+      "Mechanic Task Management",
+      "Spare Parts POS",
+      "Spare Parts Inventory Management",
+      "Supplier Management",
+      "Purchase Order Management",
+      "Billing and Invoicing",
+      "Payments and Refunds",
+      "Expense Management",
+      "Staff Management",
+      "Reports and Analytics",
+      "Notifications",
+      "Settings",
+      "Audit Logs"
+    ],
+    "database_design": {
+      "data_type_standards": {
+        "uuid": "Unique identifier for records",
+        "string": "Short text value",
+        "text": "Long text value",
+        "integer": "Whole number",
+        "decimal": "Money or numeric value with decimals",
+        "boolean": "True or false value",
+        "date": "Date only",
+        "datetime": "Date and time",
+        "enum": "Fixed allowed values",
+        "json": "Structured object data",
+        "foreign_key": "Reference to another table ID"
+      },
+      "tables": [
+        {
+          "table_name": "users",
+          "description": "Stores login accounts for staff and customers.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true,
+              "nullable": false
+            },
+            {
+              "name": "full_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "email",
+              "type": "string",
+              "unique": true,
+              "nullable": false
+            },
+            {
+              "name": "phone",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "password_hash",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "role_id",
+              "type": "foreign_key",
+              "references": "roles.id",
+              "nullable": false
+            },
+            {
+              "name": "branch_id",
+              "type": "foreign_key",
+              "references": "branches.id",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive",
+                "blocked"
+              ],
+              "default": "active"
+            },
+            {
+              "name": "last_login_at",
+              "type": "datetime",
+              "nullable": true
+            },
+            {
+              "name": "created_at",
+              "type": "datetime",
+              "nullable": false
+            },
+            {
+              "name": "updated_at",
+              "type": "datetime",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "table_name": "roles",
+          "description": "Stores user roles.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "role_key",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "role_name",
+              "type": "string"
+            },
+            {
+              "name": "description",
+              "type": "text",
+              "nullable": true
+            }
+          ]
+        },
+        {
+          "table_name": "permissions",
+          "description": "Stores system permissions.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "permission_key",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "module",
+              "type": "string"
+            },
+            {
+              "name": "action",
+              "type": "enum",
+              "values": [
+                "view",
+                "create",
+                "edit",
+                "delete",
+                "approve",
+                "export",
+                "refund",
+                "assign",
+                "close"
+              ]
+            }
+          ]
+        },
+        {
+          "table_name": "role_permissions",
+          "description": "Many-to-many relationship between roles and permissions.",
+          "fields": [
+            {
+              "name": "role_id",
+              "type": "foreign_key",
+              "references": "roles.id"
+            },
+            {
+              "name": "permission_id",
+              "type": "foreign_key",
+              "references": "permissions.id"
+            }
+          ]
+        },
+        {
+          "table_name": "branches",
+          "description": "Stores dealership, rental, service center, and parts shop branches.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "branch_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "branch_code",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "address",
+              "type": "text",
+              "nullable": false
+            },
+            {
+              "name": "city",
+              "type": "string"
+            },
+            {
+              "name": "phone",
+              "type": "string"
+            },
+            {
+              "name": "email",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "manager_id",
+              "type": "foreign_key",
+              "references": "users.id",
+              "nullable": true
+            },
+            {
+              "name": "branch_type",
+              "type": "enum",
+              "values": [
+                "sales",
+                "rental",
+                "service",
+                "parts",
+                "combined"
+              ],
+              "default": "combined"
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "customers",
+          "description": "Stores customer profile information.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "user_id",
+              "type": "foreign_key",
+              "references": "users.id",
+              "nullable": true
+            },
+            {
+              "name": "customer_code",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "full_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "email",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "phone",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "nic_or_passport",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "driving_license_number",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "address",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "customer_type",
+              "type": "enum",
+              "values": [
+                "buyer",
+                "rental_customer",
+                "service_customer",
+                "parts_customer",
+                "business"
+              ],
+              "default": "buyer"
+            }
+          ]
+        },
+        {
+          "table_name": "vehicle_brands",
+          "description": "Stores vehicle brands such as Toyota, Honda, Nissan, BMW, and Mercedes-Benz.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "brand_name",
+              "type": "string",
+              "unique": true,
+              "nullable": false
+            },
+            {
+              "name": "logo_url",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "vehicle_models",
+          "description": "Stores vehicle model information under each brand.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "brand_id",
+              "type": "foreign_key",
+              "references": "vehicle_brands.id"
+            },
+            {
+              "name": "model_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "vehicle_type",
+              "type": "enum",
+              "values": [
+                "car",
+                "van",
+                "suv",
+                "pickup",
+                "truck",
+                "bus",
+                "motorbike",
+                "other"
+              ]
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "vehicles",
+          "description": "Stores vehicle stock for sale and rental.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "vehicle_code",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "branch_id",
+              "type": "foreign_key",
+              "references": "branches.id"
+            },
+            {
+              "name": "brand_id",
+              "type": "foreign_key",
+              "references": "vehicle_brands.id"
+            },
+            {
+              "name": "model_id",
+              "type": "foreign_key",
+              "references": "vehicle_models.id"
+            },
+            {
+              "name": "registration_number",
+              "type": "string",
+              "unique": true,
+              "nullable": true
+            },
+            {
+              "name": "chassis_number",
+              "type": "string",
+              "unique": true,
+              "nullable": true
+            },
+            {
+              "name": "engine_number",
+              "type": "string",
+              "unique": true,
+              "nullable": true
+            },
+            {
+              "name": "manufacture_year",
+              "type": "integer"
+            },
+            {
+              "name": "fuel_type",
+              "type": "enum",
+              "values": [
+                "petrol",
+                "diesel",
+                "hybrid",
+                "electric",
+                "other"
+              ]
+            },
+            {
+              "name": "transmission",
+              "type": "enum",
+              "values": [
+                "manual",
+                "automatic",
+                "semi_automatic"
+              ]
+            },
+            {
+              "name": "mileage",
+              "type": "integer",
+              "default": 0
+            },
+            {
+              "name": "color",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "condition",
+              "type": "enum",
+              "values": [
+                "brand_new",
+                "used",
+                "reconditioned"
+              ]
+            },
+            {
+              "name": "sale_price",
+              "type": "decimal",
+              "nullable": true
+            },
+            {
+              "name": "daily_rental_rate",
+              "type": "decimal",
+              "nullable": true
+            },
+            {
+              "name": "vehicle_usage_type",
+              "type": "enum",
+              "values": [
+                "for_sale",
+                "for_rent",
+                "for_sale_and_rent",
+                "internal_use"
+              ]
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "available",
+                "reserved",
+                "sold",
+                "rented",
+                "service",
+                "inactive"
+              ],
+              "default": "available"
+            },
+            {
+              "name": "image_urls",
+              "type": "json",
+              "nullable": true
+            },
+            {
+              "name": "features",
+              "type": "json",
+              "nullable": true
+            },
+            {
+              "name": "description",
+              "type": "text",
+              "nullable": true
+            }
+          ]
+        },
+        {
+          "table_name": "vehicle_inquiries",
+          "description": "Stores customer inquiries for vehicle sales.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "inquiry_code",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "vehicle_id",
+              "type": "foreign_key",
+              "references": "vehicles.id"
+            },
+            {
+              "name": "customer_id",
+              "type": "foreign_key",
+              "references": "customers.id",
+              "nullable": true
+            },
+            {
+              "name": "guest_name",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "guest_phone",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "guest_email",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "message",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "assigned_sales_agent_id",
+              "type": "foreign_key",
+              "references": "users.id",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "new",
+                "contacted",
+                "follow_up",
+                "converted",
+                "lost",
+                "closed"
+              ],
+              "default": "new"
+            },
+            {
+              "name": "created_at",
+              "type": "datetime"
+            }
+          ]
+        },
+        {
+          "table_name": "test_drives",
+          "description": "Stores customer test drive bookings.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "test_drive_code",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "vehicle_id",
+              "type": "foreign_key",
+              "references": "vehicles.id"
+            },
+            {
+              "name": "customer_id",
+              "type": "foreign_key",
+              "references": "customers.id",
+              "nullable": true
+            },
+            {
+              "name": "scheduled_at",
+              "type": "datetime"
+            },
+            {
+              "name": "assigned_sales_agent_id",
+              "type": "foreign_key",
+              "references": "users.id",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "requested",
+                "confirmed",
+                "completed",
+                "cancelled",
+                "no_show"
+              ],
+              "default": "requested"
+            },
+            {
+              "name": "notes",
+              "type": "text",
+              "nullable": true
+            }
+          ]
+        },
+        {
+          "table_name": "vehicle_sales",
+          "description": "Stores vehicle sale transactions.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "sale_number",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "vehicle_id",
+              "type": "foreign_key",
+              "references": "vehicles.id"
+            },
+            {
+              "name": "customer_id",
+              "type": "foreign_key",
+              "references": "customers.id"
+            },
+            {
+              "name": "sales_agent_id",
+              "type": "foreign_key",
+              "references": "users.id",
+              "nullable": true
+            },
+            {
+              "name": "sale_date",
+              "type": "date"
+            },
+            {
+              "name": "selling_price",
+              "type": "decimal"
+            },
+            {
+              "name": "discount_amount",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "tax_amount",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "grand_total",
+              "type": "decimal"
+            },
+            {
+              "name": "paid_amount",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "payment_status",
+              "type": "enum",
+              "values": [
+                "unpaid",
+                "partial",
+                "paid",
+                "refunded"
+              ],
+              "default": "unpaid"
+            },
+            {
+              "name": "sale_status",
+              "type": "enum",
+              "values": [
+                "draft",
+                "confirmed",
+                "delivered",
+                "cancelled"
+              ],
+              "default": "draft"
+            }
+          ]
+        },
+        {
+          "table_name": "rental_bookings",
+          "description": "Stores vehicle rental bookings and reservations.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "rental_code",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "vehicle_id",
+              "type": "foreign_key",
+              "references": "vehicles.id"
+            },
+            {
+              "name": "customer_id",
+              "type": "foreign_key",
+              "references": "customers.id"
+            },
+            {
+              "name": "pickup_branch_id",
+              "type": "foreign_key",
+              "references": "branches.id"
+            },
+            {
+              "name": "return_branch_id",
+              "type": "foreign_key",
+              "references": "branches.id"
+            },
+            {
+              "name": "pickup_datetime",
+              "type": "datetime"
+            },
+            {
+              "name": "return_datetime",
+              "type": "datetime"
+            },
+            {
+              "name": "daily_rate",
+              "type": "decimal"
+            },
+            {
+              "name": "deposit_amount",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "total_amount",
+              "type": "decimal"
+            },
+            {
+              "name": "paid_amount",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "requested",
+                "confirmed",
+                "picked_up",
+                "returned",
+                "cancelled",
+                "overdue"
+              ],
+              "default": "requested"
+            }
+          ]
+        },
+        {
+          "table_name": "service_appointments",
+          "description": "Stores customer service appointment requests.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "appointment_code",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "customer_id",
+              "type": "foreign_key",
+              "references": "customers.id",
+              "nullable": true
+            },
+            {
+              "name": "customer_vehicle_id",
+              "type": "foreign_key",
+              "references": "customer_vehicles.id",
+              "nullable": true
+            },
+            {
+              "name": "branch_id",
+              "type": "foreign_key",
+              "references": "branches.id"
+            },
+            {
+              "name": "service_type",
+              "type": "enum",
+              "values": [
+                "general_service",
+                "repair",
+                "inspection",
+                "oil_change",
+                "body_work",
+                "diagnostic",
+                "other"
+              ]
+            },
+            {
+              "name": "requested_date",
+              "type": "date"
+            },
+            {
+              "name": "requested_time",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "problem_description",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "requested",
+                "confirmed",
+                "checked_in",
+                "in_progress",
+                "completed",
+                "cancelled"
+              ],
+              "default": "requested"
+            }
+          ]
+        },
+        {
+          "table_name": "customer_vehicles",
+          "description": "Stores vehicles owned by customers for service history.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "customer_id",
+              "type": "foreign_key",
+              "references": "customers.id"
+            },
+            {
+              "name": "brand_id",
+              "type": "foreign_key",
+              "references": "vehicle_brands.id",
+              "nullable": true
+            },
+            {
+              "name": "model_id",
+              "type": "foreign_key",
+              "references": "vehicle_models.id",
+              "nullable": true
+            },
+            {
+              "name": "registration_number",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "chassis_number",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "engine_number",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "manufacture_year",
+              "type": "integer",
+              "nullable": true
+            },
+            {
+              "name": "current_mileage",
+              "type": "integer",
+              "nullable": true
+            }
+          ]
+        },
+        {
+          "table_name": "job_cards",
+          "description": "Stores workshop job cards for vehicle service and repair.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "job_card_number",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "appointment_id",
+              "type": "foreign_key",
+              "references": "service_appointments.id",
+              "nullable": true
+            },
+            {
+              "name": "customer_id",
+              "type": "foreign_key",
+              "references": "customers.id"
+            },
+            {
+              "name": "customer_vehicle_id",
+              "type": "foreign_key",
+              "references": "customer_vehicles.id"
+            },
+            {
+              "name": "service_advisor_id",
+              "type": "foreign_key",
+              "references": "users.id"
+            },
+            {
+              "name": "assigned_mechanic_id",
+              "type": "foreign_key",
+              "references": "users.id",
+              "nullable": true
+            },
+            {
+              "name": "opened_at",
+              "type": "datetime"
+            },
+            {
+              "name": "estimated_completion_at",
+              "type": "datetime",
+              "nullable": true
+            },
+            {
+              "name": "actual_completion_at",
+              "type": "datetime",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "open",
+                "diagnosis",
+                "waiting_parts",
+                "in_progress",
+                "quality_check",
+                "completed",
+                "delivered",
+                "cancelled"
+              ],
+              "default": "open"
+            },
+            {
+              "name": "customer_complaint",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "technician_notes",
+              "type": "text",
+              "nullable": true
+            }
+          ]
+        },
+        {
+          "table_name": "job_card_items",
+          "description": "Stores labor, service, and spare part items used in a job card.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "job_card_id",
+              "type": "foreign_key",
+              "references": "job_cards.id"
+            },
+            {
+              "name": "item_type",
+              "type": "enum",
+              "values": [
+                "labor",
+                "service",
+                "spare_part"
+              ]
+            },
+            {
+              "name": "spare_part_id",
+              "type": "foreign_key",
+              "references": "spare_parts.id",
+              "nullable": true
+            },
+            {
+              "name": "description",
+              "type": "string"
+            },
+            {
+              "name": "quantity",
+              "type": "decimal",
+              "default": 1
+            },
+            {
+              "name": "unit_price",
+              "type": "decimal"
+            },
+            {
+              "name": "line_total",
+              "type": "decimal"
+            }
+          ]
+        },
+        {
+          "table_name": "spare_parts",
+          "description": "Stores spare parts master data for POS and workshop usage.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "part_code",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "barcode",
+              "type": "string",
+              "unique": true,
+              "nullable": true
+            },
+            {
+              "name": "part_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "category",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "brand",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "compatible_models",
+              "type": "json",
+              "nullable": true
+            },
+            {
+              "name": "cost_price",
+              "type": "decimal"
+            },
+            {
+              "name": "selling_price",
+              "type": "decimal"
+            },
+            {
+              "name": "reorder_level",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "image_url",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive",
+                "discontinued"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "part_stocks",
+          "description": "Stores spare parts stock by branch.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "spare_part_id",
+              "type": "foreign_key",
+              "references": "spare_parts.id"
+            },
+            {
+              "name": "branch_id",
+              "type": "foreign_key",
+              "references": "branches.id"
+            },
+            {
+              "name": "current_quantity",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "reserved_quantity",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "available_quantity",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "last_updated_at",
+              "type": "datetime"
+            }
+          ]
+        },
+        {
+          "table_name": "stock_movements",
+          "description": "Stores spare parts stock in, stock out, sale, service usage, return, adjustment, and wastage movements.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "spare_part_id",
+              "type": "foreign_key",
+              "references": "spare_parts.id"
+            },
+            {
+              "name": "branch_id",
+              "type": "foreign_key",
+              "references": "branches.id"
+            },
+            {
+              "name": "movement_type",
+              "type": "enum",
+              "values": [
+                "stock_in",
+                "stock_out",
+                "pos_sale",
+                "service_usage",
+                "return",
+                "adjustment",
+                "transfer_in",
+                "transfer_out",
+                "wastage"
+              ]
+            },
+            {
+              "name": "quantity",
+              "type": "decimal"
+            },
+            {
+              "name": "quantity_before",
+              "type": "decimal"
+            },
+            {
+              "name": "quantity_after",
+              "type": "decimal"
+            },
+            {
+              "name": "reference_type",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "reference_id",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "reason",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "created_by",
+              "type": "foreign_key",
+              "references": "users.id"
+            },
+            {
+              "name": "created_at",
+              "type": "datetime"
+            }
+          ]
+        },
+        {
+          "table_name": "pos_sales",
+          "description": "Stores spare parts POS sales invoices.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "invoice_number",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "branch_id",
+              "type": "foreign_key",
+              "references": "branches.id"
+            },
+            {
+              "name": "customer_id",
+              "type": "foreign_key",
+              "references": "customers.id",
+              "nullable": true
+            },
+            {
+              "name": "subtotal",
+              "type": "decimal"
+            },
+            {
+              "name": "tax_amount",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "discount_amount",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "grand_total",
+              "type": "decimal"
+            },
+            {
+              "name": "paid_amount",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "payment_status",
+              "type": "enum",
+              "values": [
+                "unpaid",
+                "partial",
+                "paid",
+                "refunded"
+              ],
+              "default": "unpaid"
+            },
+            {
+              "name": "created_by",
+              "type": "foreign_key",
+              "references": "users.id"
+            },
+            {
+              "name": "created_at",
+              "type": "datetime"
+            }
+          ]
+        },
+        {
+          "table_name": "pos_sale_items",
+          "description": "Stores spare parts sold in POS invoices.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "pos_sale_id",
+              "type": "foreign_key",
+              "references": "pos_sales.id"
+            },
+            {
+              "name": "spare_part_id",
+              "type": "foreign_key",
+              "references": "spare_parts.id"
+            },
+            {
+              "name": "quantity",
+              "type": "decimal"
+            },
+            {
+              "name": "unit_price",
+              "type": "decimal"
+            },
+            {
+              "name": "discount_amount",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "line_total",
+              "type": "decimal"
+            }
+          ]
+        },
+        {
+          "table_name": "suppliers",
+          "description": "Stores vehicle and spare parts supplier information.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "supplier_code",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "supplier_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "supplier_type",
+              "type": "enum",
+              "values": [
+                "vehicle_supplier",
+                "parts_supplier",
+                "service_supplier",
+                "mixed"
+              ]
+            },
+            {
+              "name": "contact_person",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "phone",
+              "type": "string"
+            },
+            {
+              "name": "email",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "address",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "purchase_orders",
+          "description": "Stores purchase orders for vehicles and spare parts.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "po_number",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "supplier_id",
+              "type": "foreign_key",
+              "references": "suppliers.id"
+            },
+            {
+              "name": "branch_id",
+              "type": "foreign_key",
+              "references": "branches.id"
+            },
+            {
+              "name": "purchase_type",
+              "type": "enum",
+              "values": [
+                "vehicle",
+                "spare_parts",
+                "service_items"
+              ]
+            },
+            {
+              "name": "order_date",
+              "type": "date"
+            },
+            {
+              "name": "expected_delivery_date",
+              "type": "date",
+              "nullable": true
+            },
+            {
+              "name": "subtotal",
+              "type": "decimal"
+            },
+            {
+              "name": "tax_amount",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "grand_total",
+              "type": "decimal"
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "draft",
+                "pending_approval",
+                "approved",
+                "ordered",
+                "partially_received",
+                "received",
+                "cancelled"
+              ],
+              "default": "draft"
+            },
+            {
+              "name": "created_by",
+              "type": "foreign_key",
+              "references": "users.id"
+            },
+            {
+              "name": "approved_by",
+              "type": "foreign_key",
+              "references": "users.id",
+              "nullable": true
+            }
+          ]
+        },
+        {
+          "table_name": "invoices",
+          "description": "Stores invoices for vehicle sales, rentals, services, and POS sales.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "invoice_number",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "customer_id",
+              "type": "foreign_key",
+              "references": "customers.id",
+              "nullable": true
+            },
+            {
+              "name": "reference_type",
+              "type": "enum",
+              "values": [
+                "vehicle_sale",
+                "rental",
+                "service",
+                "pos_sale"
+              ]
+            },
+            {
+              "name": "reference_id",
+              "type": "string"
+            },
+            {
+              "name": "subtotal",
+              "type": "decimal"
+            },
+            {
+              "name": "tax_amount",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "discount_amount",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "grand_total",
+              "type": "decimal"
+            },
+            {
+              "name": "invoice_status",
+              "type": "enum",
+              "values": [
+                "draft",
+                "issued",
+                "paid",
+                "cancelled",
+                "refunded"
+              ],
+              "default": "issued"
+            },
+            {
+              "name": "created_by",
+              "type": "foreign_key",
+              "references": "users.id"
+            },
+            {
+              "name": "created_at",
+              "type": "datetime"
+            }
+          ]
+        },
+        {
+          "table_name": "payments",
+          "description": "Stores payments for all business modules.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "invoice_id",
+              "type": "foreign_key",
+              "references": "invoices.id",
+              "nullable": true
+            },
+            {
+              "name": "payment_method",
+              "type": "enum",
+              "values": [
+                "cash",
+                "card",
+                "bank_transfer",
+                "online_gateway",
+                "cheque",
+                "finance_company"
+              ]
+            },
+            {
+              "name": "amount",
+              "type": "decimal"
+            },
+            {
+              "name": "payment_status",
+              "type": "enum",
+              "values": [
+                "pending",
+                "paid",
+                "failed",
+                "refunded"
+              ],
+              "default": "paid"
+            },
+            {
+              "name": "transaction_reference",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "paid_at",
+              "type": "datetime",
+              "nullable": true
+            }
+          ]
+        },
+        {
+          "table_name": "staff_profiles",
+          "description": "Stores staff employee details.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "user_id",
+              "type": "foreign_key",
+              "references": "users.id"
+            },
+            {
+              "name": "employee_code",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "branch_id",
+              "type": "foreign_key",
+              "references": "branches.id",
+              "nullable": true
+            },
+            {
+              "name": "department",
+              "type": "enum",
+              "values": [
+                "sales",
+                "rental",
+                "service",
+                "workshop",
+                "parts",
+                "inventory",
+                "finance",
+                "management",
+                "admin"
+              ]
+            },
+            {
+              "name": "job_title",
+              "type": "string"
+            },
+            {
+              "name": "salary",
+              "type": "decimal",
+              "nullable": true
+            },
+            {
+              "name": "joined_date",
+              "type": "date"
+            }
+          ]
+        },
+        {
+          "table_name": "audit_logs",
+          "description": "Stores important system actions for security tracking.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "user_id",
+              "type": "foreign_key",
+              "references": "users.id",
+              "nullable": true
+            },
+            {
+              "name": "action",
+              "type": "string"
+            },
+            {
+              "name": "module",
+              "type": "string"
+            },
+            {
+              "name": "record_id",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "old_values",
+              "type": "json",
+              "nullable": true
+            },
+            {
+              "name": "new_values",
+              "type": "json",
+              "nullable": true
+            },
+            {
+              "name": "ip_address",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "created_at",
+              "type": "datetime"
+            }
+          ]
+        }
+      ],
+      "relationships": [
+        {
+          "from": "users.role_id",
+          "to": "roles.id",
+          "type": "many_to_one",
+          "description": "Each user belongs to one role."
+        },
+        {
+          "from": "roles.id",
+          "to": "permissions.id",
+          "type": "many_to_many",
+          "via": "role_permissions",
+          "description": "Each role can have many permissions."
+        },
+        {
+          "from": "branches.manager_id",
+          "to": "users.id",
+          "type": "many_to_one",
+          "description": "Each branch can have one assigned manager."
+        },
+        {
+          "from": "customers.user_id",
+          "to": "users.id",
+          "type": "one_to_one_optional",
+          "description": "A customer may have a login account."
+        },
+        {
+          "from": "vehicle_brands.id",
+          "to": "vehicle_models.brand_id",
+          "type": "one_to_many",
+          "description": "One vehicle brand has many vehicle models."
+        },
+        {
+          "from": "vehicle_models.id",
+          "to": "vehicles.model_id",
+          "type": "one_to_many",
+          "description": "One vehicle model can be used by many vehicles."
+        },
+        {
+          "from": "branches.id",
+          "to": "vehicles.branch_id",
+          "type": "one_to_many",
+          "description": "One branch can have many vehicles."
+        },
+        {
+          "from": "vehicles.id",
+          "to": "vehicle_inquiries.vehicle_id",
+          "type": "one_to_many",
+          "description": "One vehicle can have many customer inquiries."
+        },
+        {
+          "from": "vehicles.id",
+          "to": "test_drives.vehicle_id",
+          "type": "one_to_many",
+          "description": "One vehicle can have many test drive requests."
+        },
+        {
+          "from": "vehicles.id",
+          "to": "vehicle_sales.vehicle_id",
+          "type": "one_to_one",
+          "description": "One vehicle can be sold once."
+        },
+        {
+          "from": "vehicles.id",
+          "to": "rental_bookings.vehicle_id",
+          "type": "one_to_many",
+          "description": "One rental vehicle can have many rental bookings across different dates."
+        },
+        {
+          "from": "customers.id",
+          "to": "customer_vehicles.customer_id",
+          "type": "one_to_many",
+          "description": "One customer can own many vehicles."
+        },
+        {
+          "from": "service_appointments.id",
+          "to": "job_cards.appointment_id",
+          "type": "one_to_one_optional",
+          "description": "One service appointment can generate one job card."
+        },
+        {
+          "from": "job_cards.id",
+          "to": "job_card_items.job_card_id",
+          "type": "one_to_many",
+          "description": "One job card can contain many labor, service, and spare part items."
+        },
+        {
+          "from": "spare_parts.id",
+          "to": "part_stocks.spare_part_id",
+          "type": "one_to_many",
+          "description": "One spare part can have stock records in different branches."
+        },
+        {
+          "from": "spare_parts.id",
+          "to": "stock_movements.spare_part_id",
+          "type": "one_to_many",
+          "description": "One spare part can have many stock movements."
+        },
+        {
+          "from": "pos_sales.id",
+          "to": "pos_sale_items.pos_sale_id",
+          "type": "one_to_many",
+          "description": "One POS sale has many spare part items."
+        },
+        {
+          "from": "invoices.id",
+          "to": "payments.invoice_id",
+          "type": "one_to_many",
+          "description": "One invoice can have many payment records."
+        }
+      ]
+    },
+    "public_landing_website": {
+      "required": true,
+      "pages": [
+        {
+          "page_name": "Home Page",
+          "route": "/",
+          "login_required": false,
+          "sections": [
+            "Hero section with vehicle business name, headline, search bar, and CTA buttons",
+            "Vehicle search section with brand, model, year, price range, and vehicle type",
+            "Featured vehicles for sale section",
+            "Rental vehicles highlight section",
+            "Service center promotion section",
+            "Spare parts promotion section",
+            "Why choose us section",
+            "Customer reviews section",
+            "Branch locations section",
+            "Contact CTA section",
+            "Footer with contact details and quick links"
+          ]
+        },
+        {
+          "page_name": "Vehicles for Sale Page",
+          "route": "/vehicles",
+          "login_required": false,
+          "sections": [
+            "Vehicle listing grid",
+            "Brand filter",
+            "Model filter",
+            "Vehicle type filter",
+            "Year range filter",
+            "Price range filter",
+            "Fuel type filter",
+            "Transmission filter",
+            "Vehicle detail cards",
+            "Inquiry button",
+            "Book test drive button"
+          ]
+        },
+        {
+          "page_name": "Vehicle Details Page",
+          "route": "/vehicles/:vehicleId",
+          "login_required": false,
+          "sections": [
+            "Vehicle image gallery",
+            "Vehicle specifications",
+            "Price and financing information",
+            "Feature list",
+            "Vehicle condition information",
+            "Inquiry form",
+            "Book test drive form",
+            "Similar vehicles section"
+          ]
+        },
+        {
+          "page_name": "Rental Vehicles Page",
+          "route": "/rentals",
+          "login_required": false,
+          "sections": [
+            "Rental vehicle listing",
+            "Pickup and return date selection",
+            "Vehicle type filter",
+            "Daily rate filter",
+            "Rental policy summary",
+            "Rental request button"
+          ]
+        },
+        {
+          "page_name": "Service Center Page",
+          "route": "/service",
+          "login_required": false,
+          "sections": [
+            "Service center hero section",
+            "Available service types",
+            "Service package cards",
+            "Book service appointment form",
+            "Workshop process section",
+            "Customer service benefits section"
+          ]
+        },
+        {
+          "page_name": "Spare Parts Page",
+          "route": "/spare-parts",
+          "login_required": false,
+          "sections": [
+            "Spare parts categories",
+            "Featured parts",
+            "Search by part name or vehicle model",
+            "Availability information",
+            "Contact for quotation button"
+          ]
+        },
+        {
+          "page_name": "About Page",
+          "route": "/about",
+          "login_required": false,
+          "sections": [
+            "Company story",
+            "Mission and vision",
+            "Vehicle business experience",
+            "Branches and facilities",
+            "Why choose us section"
+          ]
+        },
+        {
+          "page_name": "Contact Page",
+          "route": "/contact",
+          "login_required": false,
+          "sections": [
+            "Contact form",
+            "Phone and email details",
+            "Branch address list",
+            "Google map",
+            "Opening hours",
+            "Social media links"
+          ]
+        }
+      ]
+    },
+    "application_pages": [
+      {
+        "page_name": "Login",
+        "route": "/login",
+        "page_type": "auth",
+        "login_required": false,
+        "functions": [
+          "Login with email and password",
+          "Remember me",
+          "Forgot password link",
+          "Role-based redirect after login"
+        ]
+      },
+      {
+        "page_name": "Register",
+        "route": "/register",
+        "page_type": "auth",
+        "login_required": false,
+        "functions": [
+          "Customer account registration",
+          "Basic customer profile creation",
+          "Optional email verification"
+        ]
+      },
+      {
+        "page_name": "Customer Dashboard",
+        "route": "/customer/dashboard",
+        "page_type": "portal",
+        "login_required": true,
+        "allowed_roles": [
+          "customer"
+        ],
+        "functions": [
+          "View own vehicle inquiries",
+          "View test drive bookings",
+          "View rental bookings",
+          "View service appointments",
+          "View service history",
+          "Download invoices",
+          "Update profile"
+        ]
+      },
+      {
+        "page_name": "Admin Dashboard",
+        "route": "/admin/dashboard",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "branch_manager"
+        ],
+        "functions": [
+          "View sales summary",
+          "View rental summary",
+          "View service summary",
+          "View POS sales summary",
+          "View pending inquiries",
+          "View pending service appointments",
+          "View low-stock spare parts",
+          "View revenue summary"
+        ]
+      },
+      {
+        "page_name": "Vehicle Management",
+        "route": "/admin/vehicles",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "branch_manager",
+          "sales_agent",
+          "rental_officer"
+        ],
+        "functions": [
+          "Create vehicle",
+          "Edit vehicle",
+          "Upload vehicle images",
+          "Set sale price",
+          "Set rental rate",
+          "Change vehicle status",
+          "Manage vehicle features",
+          "Publish or unpublish vehicle"
+        ]
+      },
+      {
+        "page_name": "Vehicle Inquiries",
+        "route": "/admin/inquiries",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "branch_manager",
+          "sales_agent"
+        ],
+        "functions": [
+          "View inquiries",
+          "Assign inquiry to sales agent",
+          "Update inquiry status",
+          "Add follow-up note",
+          "Convert inquiry to quotation",
+          "Close inquiry"
+        ]
+      },
+      {
+        "page_name": "Test Drive Management",
+        "route": "/admin/test-drives",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "branch_manager",
+          "sales_agent"
+        ],
+        "functions": [
+          "View test drive requests",
+          "Confirm test drive",
+          "Assign sales agent",
+          "Update test drive status",
+          "Add test drive feedback"
+        ]
+      },
+      {
+        "page_name": "Vehicle Sales",
+        "route": "/admin/vehicle-sales",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "branch_manager",
+          "sales_agent",
+          "accountant"
+        ],
+        "functions": [
+          "Create vehicle sale",
+          "Generate quotation",
+          "Apply discount with approval",
+          "Generate invoice",
+          "Record payment",
+          "Mark vehicle as sold",
+          "Print sale agreement"
+        ]
+      },
+      {
+        "page_name": "Rental Management",
+        "route": "/admin/rentals",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "branch_manager",
+          "rental_officer",
+          "accountant"
+        ],
+        "functions": [
+          "Create rental booking",
+          "Check vehicle availability",
+          "Confirm rental",
+          "Record deposit",
+          "Generate rental agreement",
+          "Mark vehicle picked up",
+          "Mark vehicle returned",
+          "Calculate late fee",
+          "Generate rental invoice"
+        ]
+      },
+      {
+        "page_name": "Service Appointments",
+        "route": "/admin/service-appointments",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "branch_manager",
+          "service_advisor"
+        ],
+        "functions": [
+          "View appointment requests",
+          "Confirm appointment",
+          "Create customer vehicle",
+          "Create job card",
+          "Update appointment status",
+          "Notify customer"
+        ]
+      },
+      {
+        "page_name": "Workshop Job Cards",
+        "route": "/admin/job-cards",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "branch_manager",
+          "service_advisor",
+          "mechanic"
+        ],
+        "functions": [
+          "Create job card",
+          "Assign mechanic",
+          "Add customer complaint",
+          "Add diagnosis notes",
+          "Add labor items",
+          "Request spare parts",
+          "Update job status",
+          "Complete quality check",
+          "Generate service invoice"
+        ]
+      },
+      {
+        "page_name": "Spare Parts POS",
+        "route": "/pos",
+        "page_type": "pos",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "branch_manager",
+          "parts_cashier"
+        ],
+        "functions": [
+          "Search spare part",
+          "Scan barcode",
+          "Add part to cart",
+          "Update quantity",
+          "Apply discount",
+          "Select customer",
+          "Accept cash payment",
+          "Accept card payment",
+          "Print receipt",
+          "Process return"
+        ]
+      },
+      {
+        "page_name": "Spare Parts Inventory",
+        "route": "/admin/parts-inventory",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "branch_manager",
+          "inventory_manager"
+        ],
+        "functions": [
+          "Create spare part",
+          "Edit spare part",
+          "Update stock",
+          "Record stock in",
+          "Record stock out",
+          "Transfer stock",
+          "View low-stock alerts",
+          "View stock movement history"
+        ]
+      },
+      {
+        "page_name": "Supplier Management",
+        "route": "/admin/suppliers",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "branch_manager",
+          "inventory_manager"
+        ],
+        "functions": [
+          "Create supplier",
+          "Edit supplier",
+          "Deactivate supplier",
+          "View supplier purchase history",
+          "Manage supplier contact details"
+        ]
+      },
+      {
+        "page_name": "Purchase Orders",
+        "route": "/admin/purchase-orders",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "branch_manager",
+          "inventory_manager"
+        ],
+        "functions": [
+          "Create purchase order",
+          "Add vehicle or spare part items",
+          "Submit for approval",
+          "Approve purchase order",
+          "Cancel purchase order",
+          "Print purchase order"
+        ]
+      },
+      {
+        "page_name": "Billing and Finance",
+        "route": "/admin/billing",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "branch_manager",
+          "accountant"
+        ],
+        "functions": [
+          "View invoices",
+          "Create invoice",
+          "Record payment",
+          "Process refund",
+          "View deposits",
+          "View tax summary",
+          "Export financial report"
+        ]
+      },
+      {
+        "page_name": "Staff Management",
+        "route": "/admin/staff",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "branch_manager"
+        ],
+        "functions": [
+          "Create staff user",
+          "Assign role",
+          "Assign branch",
+          "Update staff profile",
+          "Deactivate staff account",
+          "View staff performance summary"
+        ]
+      },
+      {
+        "page_name": "Reports",
+        "route": "/admin/reports",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "branch_manager",
+          "accountant"
+        ],
+        "functions": [
+          "Vehicle sales report",
+          "Rental report",
+          "Service revenue report",
+          "Spare parts POS sales report",
+          "Inventory report",
+          "Low-stock report",
+          "Customer report",
+          "Staff performance report",
+          "Export PDF",
+          "Export Excel"
+        ]
+      },
+      {
+        "page_name": "Settings",
+        "route": "/admin/settings",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin"
+        ],
+        "functions": [
+          "Business profile settings",
+          "Branch settings",
+          "Tax settings",
+          "Payment settings",
+          "Invoice template settings",
+          "Rental policy settings",
+          "Service package settings",
+          "Role permission settings"
+        ]
+      }
+    ],
+    "role_access_matrix": [
+      {
+        "role": "guest",
+        "allowed_pages": [
+          "Home Page",
+          "Vehicles for Sale Page",
+          "Vehicle Details Page",
+          "Rental Vehicles Page",
+          "Service Center Page",
+          "Spare Parts Page",
+          "About Page",
+          "Contact Page"
+        ],
+        "allowed_functions": [
+          "Browse public website",
+          "Search vehicles",
+          "View vehicle details",
+          "Submit vehicle inquiry",
+          "Request test drive",
+          "Request rental booking",
+          "Submit service appointment request",
+          "Submit contact form"
+        ],
+        "restricted_functions": [
+          "Access admin dashboard",
+          "Access POS",
+          "Manage vehicles",
+          "View reports",
+          "Manage job cards"
+        ]
+      },
+      {
+        "role": "customer",
+        "allowed_pages": [
+          "Customer Dashboard",
+          "My Inquiries",
+          "My Test Drives",
+          "My Rentals",
+          "My Service Appointments",
+          "My Invoices",
+          "Profile"
+        ],
+        "allowed_functions": [
+          "Submit inquiry",
+          "Book test drive",
+          "Request rental",
+          "Book service appointment",
+          "View own invoices",
+          "Download own invoices",
+          "Update own profile"
+        ],
+        "restricted_functions": [
+          "Access staff dashboard",
+          "Access POS",
+          "Manage vehicle stock",
+          "View business reports"
+        ]
+      },
+      {
+        "role": "sales_agent",
+        "allowed_pages": [
+          "Vehicle Management Limited",
+          "Vehicle Inquiries",
+          "Test Drive Management",
+          "Vehicle Sales Limited",
+          "Customer Management Limited"
+        ],
+        "allowed_functions": [
+          "View vehicles",
+          "Handle assigned inquiries",
+          "Create quotations",
+          "Schedule test drives",
+          "Create vehicle sale draft",
+          "Follow up customers"
+        ],
+        "restricted_functions": [
+          "Approve high discounts",
+          "Delete vehicles",
+          "Access full finance reports",
+          "Change system settings"
+        ]
+      },
+      {
+        "role": "rental_officer",
+        "allowed_pages": [
+          "Rental Management",
+          "Rental Vehicles",
+          "Customer Management Limited",
+          "Rental Invoices Limited"
+        ],
+        "allowed_functions": [
+          "Create rental booking",
+          "Check rental availability",
+          "Confirm rental",
+          "Record pickup",
+          "Record return",
+          "Generate rental agreement"
+        ],
+        "restricted_functions": [
+          "Sell vehicles",
+          "Access spare parts POS",
+          "Change role permissions",
+          "View full profit reports"
+        ]
+      },
+      {
+        "role": "service_advisor",
+        "allowed_pages": [
+          "Service Appointments",
+          "Workshop Job Cards",
+          "Customer Vehicles",
+          "Service Invoices Limited"
+        ],
+        "allowed_functions": [
+          "Confirm service appointment",
+          "Create job card",
+          "Assign mechanic",
+          "Add service estimate",
+          "Generate service invoice",
+          "Update customer service status"
+        ],
+        "restricted_functions": [
+          "Change spare parts stock manually",
+          "Approve refunds",
+          "Change system settings"
+        ]
+      },
+      {
+        "role": "mechanic",
+        "allowed_pages": [
+          "Assigned Job Cards",
+          "Mechanic Task Board"
+        ],
+        "allowed_functions": [
+          "View assigned job cards",
+          "Update repair progress",
+          "Add diagnosis notes",
+          "Request spare parts",
+          "Mark task completed"
+        ],
+        "restricted_functions": [
+          "Create invoice",
+          "Record payment",
+          "Approve discount",
+          "Manage users"
+        ]
+      },
+      {
+        "role": "parts_cashier",
+        "allowed_pages": [
+          "Spare Parts POS",
+          "POS Sales",
+          "POS Receipts",
+          "Returns Limited"
+        ],
+        "allowed_functions": [
+          "Create POS sale",
+          "Scan spare parts",
+          "Accept payments",
+          "Print receipts",
+          "Process allowed returns"
+        ],
+        "restricted_functions": [
+          "Manage vehicle sales",
+          "Approve high discounts",
+          "Edit system settings",
+          "View full finance reports"
+        ]
+      },
+      {
+        "role": "inventory_manager",
+        "allowed_pages": [
+          "Spare Parts Inventory",
+          "Vehicle Inventory Limited",
+          "Suppliers",
+          "Purchase Orders",
+          "Stock Movements",
+          "Low Stock Alerts"
+        ],
+        "allowed_functions": [
+          "Create spare part",
+          "Update stock",
+          "Record stock movements",
+          "Manage suppliers",
+          "Create purchase orders",
+          "Transfer stock",
+          "Export inventory report"
+        ],
+        "restricted_functions": [
+          "Process customer refunds",
+          "Close vehicle sale",
+          "Change role permissions"
+        ]
+      },
+      {
+        "role": "accountant",
+        "allowed_pages": [
+          "Billing and Finance",
+          "Invoices",
+          "Payments",
+          "Refunds",
+          "Reports"
+        ],
+        "allowed_functions": [
+          "View invoices",
+          "Record payments",
+          "Process refunds",
+          "View deposits",
+          "Generate financial reports",
+          "Export finance reports"
+        ],
+        "restricted_functions": [
+          "Edit vehicle technical details",
+          "Update mechanic tasks",
+          "Change system permissions"
+        ]
+      },
+      {
+        "role": "branch_manager",
+        "allowed_pages": [
+          "Admin Dashboard",
+          "Vehicles",
+          "Inquiries",
+          "Test Drives",
+          "Sales",
+          "Rentals",
+          "Service Appointments",
+          "Job Cards",
+          "POS",
+          "Inventory",
+          "Billing",
+          "Reports",
+          "Staff"
+        ],
+        "allowed_functions": [
+          "Manage branch operations",
+          "Approve discounts",
+          "Approve purchase orders",
+          "Approve refunds",
+          "Monitor staff",
+          "View operational reports",
+          "Manage daily workflow"
+        ],
+        "restricted_functions": [
+          "Delete audit logs",
+          "Change super admin account",
+          "Modify global system configuration"
+        ]
+      },
+      {
+        "role": "admin",
+        "allowed_pages": [
+          "All Admin Pages"
+        ],
+        "allowed_functions": [
+          "Manage branches",
+          "Manage users",
+          "Manage vehicles",
+          "Manage rentals",
+          "Manage services",
+          "Manage POS",
+          "Manage inventory",
+          "View reports",
+          "Change settings"
+        ],
+        "restricted_functions": [
+          "Access super admin only global controls"
+        ]
+      },
+      {
+        "role": "super_admin",
+        "allowed_pages": [
+          "All Pages"
+        ],
+        "allowed_functions": [
+          "Full system access",
+          "Manage all branches",
+          "Manage all users",
+          "Manage all permissions",
+          "View audit logs",
+          "Export all data",
+          "System configuration"
+        ],
+        "restricted_functions": []
+      }
+    ],
+    "functional_requirements": [
+      {
+        "id": "FR-001",
+        "module": "Public Website",
+        "requirement": "The system shall display a public vehicle business website with home, vehicles, rentals, service center, spare parts, about, and contact pages.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-002",
+        "module": "Vehicle Search",
+        "requirement": "The system shall allow public users to search vehicles by brand, model, vehicle type, year, price range, fuel type, transmission, and availability.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-003",
+        "module": "Vehicle Inquiry",
+        "requirement": "The system shall allow guests and customers to submit vehicle inquiries without mandatory login.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-004",
+        "module": "Authentication",
+        "requirement": "The system shall authenticate staff and customers using email and password.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-005",
+        "module": "Authorization",
+        "requirement": "The system shall restrict pages and actions based on user role and permission.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-006",
+        "module": "Vehicle Sales",
+        "requirement": "Sales agents shall be able to manage inquiries, create quotations, schedule test drives, create vehicle sales, and generate invoices.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-007",
+        "module": "Rental Management",
+        "requirement": "Rental officers shall be able to check rental availability, create rental bookings, manage pickup, manage return, calculate late fees, and generate rental invoices.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-008",
+        "module": "Service Appointments",
+        "requirement": "Customers shall be able to request vehicle service appointments and service advisors shall be able to confirm them.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-009",
+        "module": "Workshop Job Cards",
+        "requirement": "Service advisors shall be able to create job cards, assign mechanics, add labor items, add spare parts, update status, and generate service invoices.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-010",
+        "module": "Mechanic Tasks",
+        "requirement": "Mechanics shall be able to view assigned job cards, update progress, add notes, and request spare parts.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-011",
+        "module": "Spare Parts POS",
+        "requirement": "Parts cashiers shall be able to create spare parts POS sales using barcode scanning, product search, cart, payment, and receipt printing.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-012",
+        "module": "Inventory",
+        "requirement": "The system shall track spare parts stock, stock-in, stock-out, service usage, POS sale, return, wastage, and low-stock alerts.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-013",
+        "module": "Supplier Management",
+        "requirement": "Inventory managers shall be able to manage vehicle and spare parts suppliers.",
+        "priority": "medium"
+      },
+      {
+        "id": "FR-014",
+        "module": "Purchase Orders",
+        "requirement": "The system shall allow authorized users to create, approve, cancel, print, and receive purchase orders.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-015",
+        "module": "Billing",
+        "requirement": "The system shall generate invoices for vehicle sales, rentals, services, and spare parts POS sales.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-016",
+        "module": "Payments",
+        "requirement": "The system shall support cash, card, bank transfer, online gateway, cheque, and finance company payment methods.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-017",
+        "module": "Reports",
+        "requirement": "The system shall generate vehicle sales, rental, service, POS sales, inventory, customer, staff, and finance reports.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-018",
+        "module": "Notifications",
+        "requirement": "The system shall send inquiry, test drive, rental, service appointment, job card, payment, and low-stock notifications.",
+        "priority": "medium"
+      },
+      {
+        "id": "FR-019",
+        "module": "Audit Logs",
+        "requirement": "The system shall record important create, update, delete, login, payment, refund, vehicle status, stock, and permission change actions.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-020",
+        "module": "PWA",
+        "requirement": "The system should support mobile-friendly PWA behavior for customer portal, sales agent pages, mechanic task board, rental officer pages, and POS.",
+        "priority": "medium"
+      }
+    ],
+    "business_workflows": [
+      {
+        "workflow_name": "Vehicle Sales Inquiry Workflow",
+        "steps": [
+          "Guest opens public vehicle listing page",
+          "Guest filters vehicles by brand, model, year, and price",
+          "Guest opens vehicle details page",
+          "Guest submits inquiry or test drive request",
+          "System creates new inquiry record",
+          "Branch manager or sales agent assigns inquiry",
+          "Sales agent contacts customer",
+          "Sales agent creates quotation",
+          "Customer confirms purchase",
+          "Sales agent creates vehicle sale record",
+          "Accountant records payment",
+          "System generates invoice",
+          "System marks vehicle as sold"
+        ]
+      },
+      {
+        "workflow_name": "Vehicle Rental Workflow",
+        "steps": [
+          "Customer searches rental vehicles",
+          "Customer selects pickup and return dates",
+          "System checks vehicle availability",
+          "Customer submits rental request",
+          "Rental officer confirms booking",
+          "Customer pays deposit",
+          "System generates rental agreement",
+          "Rental officer marks vehicle as picked up",
+          "Customer returns vehicle",
+          "System calculates extra charges or late fees",
+          "Accountant records final payment",
+          "System marks rental as returned"
+        ]
+      },
+      {
+        "workflow_name": "Service Appointment and Job Card Workflow",
+        "steps": [
+          "Customer submits service appointment request",
+          "Service advisor confirms appointment",
+          "Customer brings vehicle to service center",
+          "Service advisor creates customer vehicle record if needed",
+          "Service advisor opens job card",
+          "Service advisor assigns mechanic",
+          "Mechanic diagnoses issue",
+          "Mechanic adds repair notes and requests spare parts",
+          "Service advisor adds labor and spare part charges",
+          "Job card moves to quality check",
+          "Service advisor completes job card",
+          "System generates service invoice",
+          "Customer pays and collects vehicle"
+        ]
+      },
+      {
+        "workflow_name": "Spare Parts POS Workflow",
+        "steps": [
+          "Parts cashier opens POS page",
+          "Cashier scans spare part barcode or searches part",
+          "System adds spare part to POS cart",
+          "Cashier updates quantity if needed",
+          "System calculates subtotal, tax, discount, and grand total",
+          "Cashier selects customer if available",
+          "Cashier records payment",
+          "System reduces spare parts stock",
+          "System generates invoice and receipt",
+          "Cashier prints receipt"
+        ]
+      },
+      {
+        "workflow_name": "Spare Parts Inventory Workflow",
+        "steps": [
+          "Inventory manager creates spare part",
+          "Inventory manager records stock-in from supplier",
+          "System updates part stock",
+          "Service job card or POS sale consumes stock",
+          "System records stock movement",
+          "System generates low-stock alert when stock reaches reorder level"
+        ]
+      }
+    ],
+    "validation_rules": [
+      {
+        "field": "email",
+        "rule": "Must be valid email format and unique in users table."
+      },
+      {
+        "field": "password",
+        "rule": "Minimum 8 characters with at least one letter and one number."
+      },
+      {
+        "field": "vehicle_code",
+        "rule": "Must be unique for each vehicle."
+      },
+      {
+        "field": "registration_number",
+        "rule": "Must be unique when provided."
+      },
+      {
+        "field": "chassis_number",
+        "rule": "Must be unique when provided."
+      },
+      {
+        "field": "engine_number",
+        "rule": "Must be unique when provided."
+      },
+      {
+        "field": "sale_price",
+        "rule": "Must be greater than or equal to zero."
+      },
+      {
+        "field": "rental_return_datetime",
+        "rule": "Must be greater than pickup_datetime."
+      },
+      {
+        "field": "rental_booking",
+        "rule": "The same rental vehicle cannot be double-booked for overlapping dates."
+      },
+      {
+        "field": "spare_part_sale_quantity",
+        "rule": "Cannot be greater than available stock unless negative stock is enabled in settings."
+      },
+      {
+        "field": "discount_amount",
+        "rule": "Must require manager approval if above configured discount limit."
+      },
+      {
+        "field": "payment_amount",
+        "rule": "Cannot be negative and must be linked to a valid invoice."
+      }
+    ],
+    "non_functional_requirements": [
+      {
+        "id": "NFR-001",
+        "category": "Performance",
+        "requirement": "Vehicle search and spare parts POS search should respond within 1 second under normal operating conditions."
+      },
+      {
+        "id": "NFR-002",
+        "category": "Performance",
+        "requirement": "Dashboard pages should load within 3 seconds under normal network conditions."
+      },
+      {
+        "id": "NFR-003",
+        "category": "Security",
+        "requirement": "Passwords must be securely hashed before storing in the database."
+      },
+      {
+        "id": "NFR-004",
+        "category": "Security",
+        "requirement": "All protected API endpoints must validate authentication and role permissions."
+      },
+      {
+        "id": "NFR-005",
+        "category": "Reliability",
+        "requirement": "The system should prevent duplicate rental bookings for the same vehicle in overlapping date ranges."
+      },
+      {
+        "id": "NFR-006",
+        "category": "Auditability",
+        "requirement": "Critical operations such as payment changes, vehicle sale confirmation, rental return, job card close, stock adjustment, and permission changes must be saved in audit logs."
+      },
+      {
+        "id": "NFR-007",
+        "category": "Backup",
+        "requirement": "Database backup should be scheduled daily."
+      },
+      {
+        "id": "NFR-008",
+        "category": "Scalability",
+        "requirement": "The system should support multiple branches, multiple service bays, and multiple POS counters."
+      },
+      {
+        "id": "NFR-009",
+        "category": "Usability",
+        "requirement": "The POS interface and mechanic task board must be fast, simple, mobile-friendly, and touch-friendly."
+      },
+      {
+        "id": "NFR-010",
+        "category": "Maintainability",
+        "requirement": "Code should be modular by feature: auth, vehicles, sales, rentals, service, job cards, POS, inventory, billing, reports, and settings."
+      }
+    ],
+    "api_requirements": {
+      "auth_apis": [
+        "POST /api/auth/login",
+        "POST /api/auth/register",
+        "POST /api/auth/logout",
+        "POST /api/auth/forgot-password",
+        "POST /api/auth/reset-password",
+        "GET /api/auth/me"
+      ],
+      "vehicle_apis": [
+        "GET /api/vehicles",
+        "POST /api/vehicles",
+        "GET /api/vehicles/{id}",
+        "PUT /api/vehicles/{id}",
+        "DELETE /api/vehicles/{id}",
+        "PATCH /api/vehicles/{id}/status",
+        "POST /api/vehicles/{id}/images",
+        "GET /api/vehicles/search"
+      ],
+      "inquiry_apis": [
+        "GET /api/inquiries",
+        "POST /api/inquiries",
+        "GET /api/inquiries/{id}",
+        "PATCH /api/inquiries/{id}/assign",
+        "PATCH /api/inquiries/{id}/status",
+        "POST /api/inquiries/{id}/follow-up"
+      ],
+      "sales_apis": [
+        "GET /api/vehicle-sales",
+        "POST /api/vehicle-sales",
+        "GET /api/vehicle-sales/{id}",
+        "PATCH /api/vehicle-sales/{id}/confirm",
+        "PATCH /api/vehicle-sales/{id}/deliver",
+        "POST /api/vehicle-sales/{id}/invoice",
+        "POST /api/vehicle-sales/{id}/payment"
+      ],
+      "rental_apis": [
+        "GET /api/rentals",
+        "POST /api/rentals",
+        "GET /api/rentals/{id}",
+        "GET /api/rentals/availability",
+        "PATCH /api/rentals/{id}/confirm",
+        "PATCH /api/rentals/{id}/pickup",
+        "PATCH /api/rentals/{id}/return",
+        "POST /api/rentals/{id}/agreement",
+        "POST /api/rentals/{id}/invoice"
+      ],
+      "service_apis": [
+        "GET /api/service-appointments",
+        "POST /api/service-appointments",
+        "PATCH /api/service-appointments/{id}/confirm",
+        "POST /api/job-cards",
+        "GET /api/job-cards",
+        "GET /api/job-cards/{id}",
+        "PATCH /api/job-cards/{id}/assign-mechanic",
+        "PATCH /api/job-cards/{id}/status",
+        "POST /api/job-cards/{id}/items",
+        "POST /api/job-cards/{id}/invoice"
+      ],
+      "pos_apis": [
+        "GET /api/spare-parts",
+        "POST /api/spare-parts",
+        "GET /api/spare-parts/barcode/{barcode}",
+        "POST /api/pos/sales",
+        "GET /api/pos/sales",
+        "GET /api/pos/sales/{id}",
+        "POST /api/pos/sales/{id}/payment",
+        "POST /api/pos/sales/{id}/print-receipt"
+      ],
+      "inventory_apis": [
+        "GET /api/parts-inventory/stocks",
+        "POST /api/parts-inventory/adjust",
+        "GET /api/parts-inventory/movements",
+        "POST /api/parts-inventory/transfer",
+        "GET /api/parts-inventory/low-stock"
+      ],
+      "billing_apis": [
+        "GET /api/invoices",
+        "GET /api/invoices/{id}",
+        "POST /api/invoices",
+        "POST /api/payments",
+        "GET /api/payments",
+        "POST /api/refunds"
+      ],
+      "report_apis": [
+        "GET /api/reports/vehicle-sales",
+        "GET /api/reports/rentals",
+        "GET /api/reports/service-revenue",
+        "GET /api/reports/pos-sales",
+        "GET /api/reports/inventory",
+        "GET /api/reports/customers",
+        "GET /api/reports/staff",
+        "GET /api/reports/export"
+      ]
+    },
+    "reporting_requirements": [
+      {
+        "report_name": "Vehicle Sales Report",
+        "filters": [
+          "date range",
+          "branch",
+          "sales agent",
+          "brand",
+          "model",
+          "payment status"
+        ],
+        "exports": [
+          "PDF",
+          "Excel"
+        ]
+      },
+      {
+        "report_name": "Rental Report",
+        "filters": [
+          "date range",
+          "branch",
+          "vehicle",
+          "rental status",
+          "customer"
+        ],
+        "exports": [
+          "PDF",
+          "Excel"
+        ]
+      },
+      {
+        "report_name": "Service Revenue Report",
+        "filters": [
+          "date range",
+          "branch",
+          "service advisor",
+          "mechanic",
+          "service type",
+          "job card status"
+        ],
+        "exports": [
+          "PDF",
+          "Excel"
+        ]
+      },
+      {
+        "report_name": "Spare Parts POS Sales Report",
+        "filters": [
+          "date range",
+          "branch",
+          "cashier",
+          "payment method",
+          "part category"
+        ],
+        "exports": [
+          "PDF",
+          "Excel"
+        ]
+      },
+      {
+        "report_name": "Inventory Report",
+        "filters": [
+          "branch",
+          "spare part category",
+          "low stock",
+          "movement type"
+        ],
+        "exports": [
+          "PDF",
+          "Excel"
+        ]
+      },
+      {
+        "report_name": "Customer Report",
+        "filters": [
+          "customer type",
+          "date range",
+          "inquiry status",
+          "purchase amount",
+          "service history"
+        ],
+        "exports": [
+          "PDF",
+          "Excel"
+        ]
+      },
+      {
+        "report_name": "Staff Performance Report",
+        "filters": [
+          "date range",
+          "branch",
+          "role",
+          "sales agent",
+          "mechanic",
+          "cashier"
+        ],
+        "exports": [
+          "PDF",
+          "Excel"
+        ]
+      }
+    ],
+    "notification_requirements": [
+      {
+        "event": "Vehicle Inquiry Created",
+        "recipients": [
+          "sales_agent",
+          "branch_manager"
+        ],
+        "channels": [
+          "dashboard",
+          "email"
+        ]
+      },
+      {
+        "event": "Test Drive Confirmed",
+        "recipients": [
+          "customer",
+          "sales_agent"
+        ],
+        "channels": [
+          "email",
+          "sms_optional",
+          "dashboard"
+        ]
+      },
+      {
+        "event": "Rental Booking Confirmed",
+        "recipients": [
+          "customer",
+          "rental_officer"
+        ],
+        "channels": [
+          "email",
+          "sms_optional",
+          "dashboard"
+        ]
+      },
+      {
+        "event": "Service Appointment Confirmed",
+        "recipients": [
+          "customer",
+          "service_advisor"
+        ],
+        "channels": [
+          "email",
+          "sms_optional",
+          "dashboard"
+        ]
+      },
+      {
+        "event": "Job Card Assigned",
+        "recipients": [
+          "mechanic"
+        ],
+        "channels": [
+          "dashboard"
+        ]
+      },
+      {
+        "event": "Payment Successful",
+        "recipients": [
+          "customer",
+          "accountant"
+        ],
+        "channels": [
+          "email",
+          "dashboard"
+        ]
+      },
+      {
+        "event": "Low Stock Alert",
+        "recipients": [
+          "inventory_manager",
+          "branch_manager"
+        ],
+        "channels": [
+          "dashboard",
+          "email_optional"
+        ]
+      }
+    ],
+    "security_requirements": [
+      "Use role-based access control for all protected pages and API endpoints.",
+      "Store passwords using strong hashing.",
+      "Validate all user input on frontend and backend.",
+      "Protect against SQL injection or NoSQL injection.",
+      "Protect against XSS attacks.",
+      "Protect against CSRF if session authentication is used.",
+      "Use HTTPS in production.",
+      "Log important user actions in audit logs.",
+      "Prevent unauthorized invoice, payment, refund, vehicle sale, rental, job card, and stock access.",
+      "Restrict financial reports to branch manager, accountant, admin, and super admin roles.",
+      "Require manager approval for high discounts, refunds, purchase orders, and major stock adjustments.",
+      "Prevent unauthorized POS access outside assigned branch if branch-level access is enabled."
+    ],
+    "ui_ux_requirements": {
+      "design_style": "Modern automotive business design",
+      "theme": "Premium, clean, professional, fast, responsive",
+      "dashboard_layout": "Sidebar navigation, top bar, summary cards, tables, filters, charts, and status boards",
+      "pos_layout": "Fast touch-friendly spare parts POS layout with barcode input, part search, cart, totals, payment panel, and receipt actions",
+      "workshop_layout": "Job card board with status columns, mechanic task cards, progress badges, and parts request actions",
+      "mobile_support": true,
+      "pwa_support": true,
+      "required_components": [
+        "Data tables with search and filters",
+        "Vehicle listing cards",
+        "Vehicle image gallery",
+        "Vehicle specification panel",
+        "Date range picker",
+        "Rental availability calendar",
+        "Service appointment calendar",
+        "Job card Kanban board",
+        "Barcode scanner input",
+        "POS cart",
+        "Stock status badges",
+        "Low-stock alert cards",
+        "Modal forms",
+        "Confirmation dialogs",
+        "Charts",
+        "Invoice print view",
+        "Receipt print view",
+        "Agreement print view",
+        "Image upload component",
+        "Role-based sidebar menu",
+        "Export buttons",
+        "Payment method selector"
+      ]
+    },
+    "acceptance_criteria": [
+      "Public users can browse vehicle listings, rental vehicles, service information, and spare parts information.",
+      "Guests can submit vehicle inquiries, test drive requests, rental requests, and service appointment requests.",
+      "Customers can register, login, view inquiries, view rentals, view service appointments, and download invoices.",
+      "Sales agents can manage inquiries, schedule test drives, create quotations, and create vehicle sale records.",
+      "Rental officers can manage rental bookings, pickup, return, deposits, late fees, and rental invoices.",
+      "Service advisors can confirm appointments, create job cards, assign mechanics, and generate service invoices.",
+      "Mechanics can view assigned job cards, update repair progress, and request spare parts.",
+      "Parts cashiers can create POS sales, accept payments, and print receipts.",
+      "POS sales automatically reduce spare parts stock.",
+      "Inventory managers can manage spare parts, stock movements, suppliers, and purchase orders.",
+      "Low-stock alerts are generated when spare parts reach reorder level.",
+      "Accountants can view invoices, record payments, process refunds, and export financial reports.",
+      "The system prevents double booking of rental vehicles for overlapping dates.",
+      "The system applies role-based access correctly.",
+      "All important actions are recorded in audit logs.",
+      "Reports can be filtered and exported.",
+      "The application works properly on desktop, tablet, and mobile."
+    ],
+    "future_enhancements": [
+      "Online payment gateway integration",
+      "Vehicle finance company integration",
+      "Insurance quotation integration",
+      "AI vehicle recommendation engine",
+      "AI service cost estimator",
+      "Predictive spare parts stock planning",
+      "Customer mobile app",
+      "Mechanic mobile app",
+      "QR code job card tracking",
+      "WhatsApp notification integration",
+      "Vehicle auction module",
+      "Vehicle import management module",
+      "GPS tracking integration for rental vehicles",
+      "Digital signature for rental and sale agreements",
+      "Multi-language public website"
+    ]
+  }
+}

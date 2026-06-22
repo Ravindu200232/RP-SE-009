@@ -1,0 +1,154 @@
+{
+  "project_title": "YourApp Name",
+
+  "srs_report": {
+
+    "system_name": "YourApp",
+
+    "scope_type": "restaurant",
+
+    "project_overview": {
+      "main_objectives": [
+        "Allow customers to book tables and view menus online",
+        "Let managers track reservations and kitchen inventory",
+        "Reward repeat guests with a loyalty points system"
+      ]
+    },
+
+    "user_roles_and_permissions": [
+      {
+        "role": "Admin",
+        "description": "Full access — manages staff, menu, and settings",
+        "permissions": ["create", "read", "update", "delete"]
+      },
+      {
+        "role": "Staff",
+        "description": "Can view and update reservations; cannot delete data",
+        "permissions": ["read", "update"]
+      },
+      {
+        "role": "Customer",
+        "description": "Can book tables, view menu, and track loyalty points",
+        "permissions": ["create_own", "read"]
+      }
+    ],
+
+    "data_model": {
+
+      "entities": [
+        {
+          "name": "Reservation",
+          "description": "A table booking made by a customer",
+          "fields": [
+            { "name": "customer_name",    "type": "text",     "required": true  },
+            { "name": "email",            "type": "email",    "required": true  },
+            { "name": "date",             "type": "date",     "required": true  },
+            { "name": "time",             "type": "text",     "required": true  },
+            { "name": "party_size",       "type": "number",   "required": true  },
+            { "name": "status",           "type": "select",   "required": true,
+              "options": ["Pending", "Confirmed", "Cancelled"]                  },
+            { "name": "special_requests", "type": "textarea", "required": false }
+          ]
+        },
+        {
+          "name": "MenuItem",
+          "description": "A dish or drink on the seasonal menu",
+          "fields": [
+            { "name": "name",             "type": "text",     "required": true  },
+            { "name": "description",      "type": "textarea", "required": false },
+            { "name": "price",            "type": "number",   "required": true  },
+            { "name": "category",         "type": "select",   "required": true,
+              "options": ["Appetizer", "Main", "Dessert", "Drink"]              },
+            { "name": "availability",     "type": "select",   "required": true,
+              "options": ["Available", "Seasonal", "Unavailable"]               }
+          ]
+        },
+        {
+          "name": "LoyaltyAccount",
+          "description": "Tracks points earned and redeemed by each customer",
+          "fields": [
+            { "name": "customer_name",  "type": "text",   "required": true  },
+            { "name": "email",          "type": "email",  "required": true  },
+            { "name": "points_balance", "type": "number", "required": true  },
+            { "name": "tier",           "type": "select", "required": false,
+              "options": ["Bronze", "Silver", "Gold"]                        },
+            { "name": "joined_date",    "type": "date",   "required": false }
+          ]
+        }
+      ],
+
+      "relationships": [
+        {
+          "from": "Reservation",
+          "to": "LoyaltyAccount",
+          "type": "many-to-one",
+          "description": "Each reservation is linked to one loyalty account"
+        },
+        {
+          "from": "Reservation",
+          "to": "MenuItem",
+          "type": "many-to-many",
+          "description": "A reservation can pre-select multiple menu items"
+        }
+      ]
+
+    },
+
+    "ui_pages": [
+      {
+        "name": "Home",
+        "path": "/",
+        "purpose": "Hero section with restaurant story, featured dishes, and book-a-table CTA"
+      },
+      {
+        "name": "Menu",
+        "path": "/menu",
+        "purpose": "Seasonal menu with category filters and dish details"
+      },
+      {
+        "name": "Reservations",
+        "path": "/reservations",
+        "purpose": "Online booking form — date, time, party size, special requests"
+      },
+      {
+        "name": "Loyalty Program",
+        "path": "/loyalty",
+        "purpose": "Explain how to earn and redeem points; show tier benefits"
+      },
+      {
+        "name": "About Us",
+        "path": "/about",
+        "purpose": "Our story, head chefs, and culinary philosophy"
+      }
+    ],
+
+    "functional_requirements": [
+      {
+        "title": "Online Table Reservations",
+        "module": "public website",
+        "description": "Customers can book a table by choosing date, time, and party size. Confirmation email is sent automatically."
+      },
+      {
+        "title": "Reservation Management Dashboard",
+        "module": "app",
+        "description": "Staff can view all reservations by date, confirm or cancel bookings, and add notes."
+      },
+      {
+        "title": "Menu Management",
+        "module": "app",
+        "description": "Admin can add, edit, and mark menu items as seasonal or unavailable. Supports bulk upload."
+      },
+      {
+        "title": "Loyalty Points Tracking",
+        "module": "app",
+        "description": "System awards points per reservation. Admin can view, adjust, and redeem customer balances."
+      },
+      {
+        "title": "Customer Loyalty Portal",
+        "module": "public website",
+        "description": "Customers can log in to check their points balance and tier status."
+      }
+    ]
+
+  }
+}
