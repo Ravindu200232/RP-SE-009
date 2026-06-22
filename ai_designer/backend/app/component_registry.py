@@ -18,7 +18,7 @@ import re
 
 REGISTRY_FILE = "_component_registry.json"
 _EDITABLE = ["text", "className", "image"]
-_IMG_RE = re.compile(r"/assets/[A-Za-z0-9_.-]+")
+_IMG_RE = re.compile(r"/(?:assets|generated)/[A-Za-z0-9_.-]+")
 
 
 def _scan_image_refs(abs_path: str) -> list:
@@ -115,6 +115,7 @@ def validate_registry(out_dir: str, registry=None):
     reg = registry if registry is not None else (load_registry(out_dir) or build_registry(out_dir))
     issues, seen = [], set()
     assets = os.path.join(out_dir, "public", "assets")
+    generated = os.path.join(out_dir, "public", "generated")
     for e in reg:
         cid = e.get("component_id")
         if not cid:
@@ -128,8 +129,10 @@ def validate_registry(out_dir: str, registry=None):
             issues.append(f"missing source_file for '{cid}': {rel}")
         for ref in e.get("image_refs", []):
             base = os.path.basename(str(ref).split("?")[0])
-            exists = bool(base) and os.path.exists(os.path.join(assets, base))
-            placeholder_ok = base in V2_NAMES or base.startswith("img_") or base == "placeholder.jpg"
+            is_generated = str(ref).startswith("/generated/")
+            root = generated if is_generated else assets
+            exists = bool(base) and os.path.exists(os.path.join(root, base))
+            placeholder_ok = (not is_generated) and (base in V2_NAMES or base.startswith("img_") or base == "placeholder.jpg")
             if not exists and not placeholder_ok:
                 issues.append(f"image_ref unresolved + not a placeholder slot: {ref} ('{cid}')")
     return (len(issues) == 0, issues)

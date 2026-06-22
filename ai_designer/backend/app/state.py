@@ -22,3 +22,11 @@ class GraphState(TypedDict):
     intake: Dict[str, Any]         # answers from the requirements interview (pages, components, auth, roles, theme)
     ai_sections: bool              # opt-in: let Gemma write each marketing section's JSX (validate + fallback)
     genome: Dict[str, Any]         # Design Genome that DRIVES structure (styles, crud layouts, section order)
+    app_classification: Dict[str, Any]  # Taxonomy classification (category, app_type, design_family, visual_style)
+    design_plane: Dict[str, Any]        # World-class design plane (section_sequence, pools, min_sections)
+    # PART 5 (Full-app intelligence) - MUST be declared here or LangGraph drops it
+    # between planning_node and code_generation_node (same gotcha as above).
+    data_model: Dict[str, Any]     # plan_data_model() output: relationship-aware entities,
+                                    # per-entity role access, workflows - drives CRUD/API/dashboard
+    # HYBRID DESIGN AGENT - MUST be declared here or LangGraph drops it.
+    design_blueprint: Dict[str, Any]  # LLM visual identity blueprint (mood, palette, hero, navbar, etc.)
