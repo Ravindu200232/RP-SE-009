@@ -2,10 +2,22 @@
 // Client data layer - the ONLY way generated pages talk to the backend.
 // Wraps the generic CRUD API + mock auth; session lives in localStorage.
 
+// The only "session" this prototype-grade auth has. Sent as a header so API
+// routes can enforce the planned per-collection role rules (@/lib/access) -
+// not a cryptographic session, just enough to make role rules actually hold.
+export function authHeader() {
+  try {
+    const s = JSON.parse(localStorage.getItem('session'));
+    return s && s.role ? { 'x-user-role': s.role } : {};
+  } catch (e) {
+    return {};
+  }
+}
+
 async function http(method, url, body) {
   const res = await fetch(url, {
     method,
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    headers: { ...authHeader(), ...(body ? { 'Content-Type': 'application/json' } : {}) },
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = await res.json().catch(() => null);

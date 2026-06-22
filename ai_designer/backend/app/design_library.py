@@ -142,13 +142,26 @@ def load_next(filename: str, theme: dict) -> str:
     return src.replace("ACCENT", accent_family(theme))
 
 
-def load_landing(entry: dict, theme: dict, hero_file: str | None = None) -> tuple[str, str]:
-    """Return (detail, source) for a landing entry - file-based or composed."""
+def load_landing(entry: dict, theme: dict, hero_file: str | None = None,
+                  prompt_text: str = "", design_plane: dict | None = None,
+                  category_id: str = "") -> tuple[str, str]:
+    """Return (detail, source) for a landing entry - file-based or composed.
+
+    When `design_plane` is provided (from the new classification pipeline), the
+    compose path uses the plane's world-class section sequence (12-16 sections)
+    instead of random 4-6 sections. `category_id` enables domain-specific
+    heading substitution so section copy matches the app type.
+    """
     if entry.get("compose"):
         from app import section_bank
-        desc, src = section_bank.compose_landing(hero_file=hero_file)
-        return desc, src.replace("ACCENT", accent_family(theme))
-    return entry["name"], load_next(entry["file"], theme)
+        desc, src, used_families = section_bank.compose_landing(
+            hero_file=hero_file,
+            prompt_text=prompt_text,
+            design_plane=design_plane,
+            category_id=category_id,
+        )
+        return desc, src.replace("ACCENT", accent_family(theme)), used_families
+    return entry["name"], load_next(entry["file"], theme), set()
 
 
 _FAMILY = re.compile(r"(?:text|bg|from|to|ring|border)-([a-z]+)-\d")
