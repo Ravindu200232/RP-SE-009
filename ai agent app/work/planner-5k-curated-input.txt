@@ -1,0 +1,42 @@
+﻿You are an expert senior full-stack Next.js engineer. Build a production-style Next.js App Router application.
+
+Project Name: MegaMart Pro - Retail POS, Inventory, E-commerce, and Admin Management System.
+
+Goal: Build a complete retail business platform supporting public shopping, customer checkout, cashier POS billing, branch stock tracking, inventory receiving, stock adjustments, supplier purchasing, admin dashboards, reports, settings, and role-based access.
+
+Tech stack: Next.js App Router, TypeScript, Tailwind CSS, shadcn/ui primitives, MongoDB with Mongoose, Route Handlers under app/api, Server Components by default, Client Components only for interactivity, responsive desktop/tablet/mobile UI, validation, loading/empty/error states, search/filter/sort/pagination where useful.
+
+Roles:
+- Super Admin: full access, users, roles, branches, settings, all reports.
+- Admin: manage products, categories, customers, suppliers, orders, inventory.
+- Branch Manager: branch stock, staff, sales and branch reports.
+- Cashier: POS billing, invoices, customers.
+- Inventory Staff: stock, GRN, stock adjustments, low-stock alerts.
+- Customer: browse products, cart, checkout, order history.
+- Guest: public website only.
+
+Auth requirements: login page, register page for customers, protected dashboard routes, role-based navigation, role-based page access, logout, session state, seeded demo users if real auth is not finished.
+
+Public pages: home with hero, featured categories, featured products, deals, why choose us, testimonials, footer; product listing with category filter, search, price filter, sort, product cards; product details with images, price, stock, add to cart, related products; cart; checkout; order success; about; contact.
+
+Dashboard pages: dashboard overview with KPI cards, revenue chart, recent orders, low stock products, top products; products management with product table/add/edit/delete/image/category/brand; categories with parent category support; brands; customers; suppliers; branches; staff/users; POS billing with product search, barcode input, cart, quantity, discount, tax, payment method, invoice generation; inventory with current stock, branch stock, low stock alerts, expiry/batch support; GRN purchase receiving; stock adjustment; online orders; invoice/sales history; reports for sales/product/inventory/customer; settings for business info, tax, invoice settings.
+
+Database Collections:
+User: name, email unique, passwordHash, role enum, branchId optional ref Branch, status active/inactive, createdAt, updatedAt.
+Branch: name, code unique, address, phone, status.
+Category: name, slug unique, parentId optional ref Category, description, status.
+Brand: name, slug unique, description, status.
+Product: name, sku unique, barcode optional, slug unique, description, categoryId ref Category, brandId ref Brand, sellingPrice, costPrice, discountPrice optional, images array, unit, reorderLevel, status, timestamps.
+Stock: productId ref Product, branchId ref Branch, quantity, reservedQuantity, reorderLevel, unique compound index productId+branchId.
+Customer: name, email optional unique, phone unique, address, loyaltyPoints, status.
+Supplier: name, contactPerson, phone, email, address, status.
+PurchaseOrder: supplierId ref Supplier, branchId ref Branch, items array productId/quantity/costPrice, status draft/ordered/received/cancelled, totalAmount, createdBy ref User.
+GRN: purchaseOrderId optional ref PurchaseOrder, supplierId ref Supplier, branchId ref Branch, items productId/quantity/costPrice, receivedBy ref User, receivedAt, totalAmount.
+Sale: invoiceNo unique, branchId ref Branch, customerId optional ref Customer, cashierId ref User, items productId/quantity/price/discount/total, subtotal, discountTotal, taxTotal, grandTotal, paymentMethod cash/card/upi/credit, paymentStatus.
+OnlineOrder: orderNo unique, customerId ref User, items productId/quantity/price/total, shippingAddress, status pending/confirmed/packed/shipped/delivered/cancelled, paymentStatus, totalAmount.
+Payment: referenceNo unique, saleId optional ref Sale, orderId optional ref OnlineOrder, amount, method, status.
+StockMovement: productId ref Product, branchId ref Branch, type purchase/sale/adjustment/return/transfer, quantity positive/negative, referenceId optional, note, createdBy ref User.
+
+Expected APIs: auth register/login/logout/me; CRUD for products/categories/brands/customers/suppliers/branches/users; stock list, low-stock and stock adjust; sales create/list/detail; online orders create/list/status update; GRN receiving; reports dashboard/sales/inventory/customer; settings get/update.
+
+Build quality: no placeholder pages, no dead buttons, no fake backend arrays for MongoDB pages, seed realistic records when DB is empty, all forms validate, all tables handle loading/empty/error, visible View/Edit/Delete where CRUD is required.

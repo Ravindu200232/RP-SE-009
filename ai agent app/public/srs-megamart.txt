@@ -1,0 +1,3113 @@
+```json
+{
+  "srs_document": {
+    "document_title": "Software Requirements Specification",
+    "project_name": "MegaMart Retail POS and Inventory Platform",
+    "version": "1.0.0",
+    "document_language": "English",
+    "system_category": "Retail POS, Inventory, E-commerce and Admin Dashboard Web Application",
+    "prepared_for": "Full App Build Requirement",
+    "app_summary": {
+      "app_name": "MegaMart Retail POS and Inventory Platform",
+      "short_description": "A complete supermarket and retail business management platform with public landing website, customer shopping portal, POS system, inventory management, supplier management, purchase orders, billing, staff management, reports, and admin dashboard.",
+      "business_goal": "To digitally manage supermarket sales, inventory, customers, suppliers, purchase orders, stock movements, POS billing, online orders, and business reports from one centralized system.",
+      "target_users": [
+        "Public customers",
+        "Registered customers",
+        "Cashiers",
+        "Store managers",
+        "Inventory managers",
+        "Purchase officers",
+        "Accountants",
+        "Delivery staff",
+        "System administrators",
+        "Supermarket owners"
+      ]
+    },
+    "app_type": {
+      "primary_type": "Retail POS and Inventory Management System",
+      "supported_types": [
+        "POS System",
+        "SPA Web Application",
+        "PWA Mobile-Friendly Web App",
+        "Customer Shopping Portal",
+        "Admin Dashboard",
+        "Public Landing Website",
+        "Inventory ERP",
+        "Supplier Management Portal"
+      ],
+      "frontend_type": "Responsive SPA with optional PWA support",
+      "backend_type": "REST API or GraphQL API",
+      "database_type": "Relational database recommended",
+      "example_stack": {
+        "frontend": "Next.js / React",
+        "backend": "Node.js / Laravel / NestJS",
+        "database": "PostgreSQL / MySQL",
+        "authentication": "JWT / Session Auth",
+        "file_storage": "Cloud storage or local server storage",
+        "realtime": "WebSocket optional for live stock and order updates"
+      }
+    },
+    "authentication_requirement": {
+      "login_required": true,
+      "public_landing_pages_required": true,
+      "guest_shopping_without_login": true,
+      "customer_account_optional": true,
+      "admin_dashboard_login_required": true,
+      "pos_login_required": true,
+      "multi_role_access_required": true,
+      "password_reset_required": true,
+      "email_verification_required": false,
+      "two_factor_authentication_optional": true
+    },
+    "roles": [
+      {
+        "role_key": "super_admin",
+        "role_name": "Super Admin",
+        "description": "Full system owner with access to all stores, users, settings, reports, permissions, and audit logs."
+      },
+      {
+        "role_key": "admin",
+        "role_name": "System Admin",
+        "description": "Manages business settings, users, roles, stores, products, categories, pricing, and system configuration."
+      },
+      {
+        "role_key": "store_manager",
+        "role_name": "Store Manager",
+        "description": "Manages daily supermarket operations, sales, staff, inventory, purchase requests, and reports."
+      },
+      {
+        "role_key": "cashier",
+        "role_name": "Cashier / POS Operator",
+        "description": "Handles POS sales, customer billing, discounts, payments, returns, and receipt printing."
+      },
+      {
+        "role_key": "inventory_manager",
+        "role_name": "Inventory Manager",
+        "description": "Manages product stock, stock adjustments, warehouse stock, low-stock alerts, and stock transfers."
+      },
+      {
+        "role_key": "purchase_officer",
+        "role_name": "Purchase Officer",
+        "description": "Manages suppliers, purchase orders, goods received notes, and supplier invoices."
+      },
+      {
+        "role_key": "accountant",
+        "role_name": "Accountant",
+        "description": "Manages sales invoices, payments, expenses, refunds, tax reports, and financial summaries."
+      },
+      {
+        "role_key": "delivery_staff",
+        "role_name": "Delivery Staff",
+        "description": "Views assigned online orders, updates delivery status, and confirms successful delivery."
+      },
+      {
+        "role_key": "customer",
+        "role_name": "Registered Customer",
+        "description": "Can browse products, place online orders, view order history, make payments, download invoices, and manage profile."
+      },
+      {
+        "role_key": "guest",
+        "role_name": "Public Guest",
+        "description": "Can browse public pages, view products, search products, add to cart, and place guest checkout orders if enabled."
+      }
+    ],
+    "main_modules": [
+      "Public Website",
+      "Authentication",
+      "Customer Shopping Portal",
+      "Admin Dashboard",
+      "POS Billing",
+      "Product Management",
+      "Category and Brand Management",
+      "Inventory Management",
+      "Warehouse Management",
+      "Stock Movement Management",
+      "Supplier Management",
+      "Purchase Order Management",
+      "Goods Received Notes",
+      "Customer Management",
+      "Online Order Management",
+      "Delivery Management",
+      "Billing and Invoicing",
+      "Returns and Refunds",
+      "Discount and Promotion Management",
+      "Staff Management",
+      "Reports and Analytics",
+      "Notifications",
+      "Settings",
+      "Audit Logs"
+    ],
+    "database_design": {
+      "data_type_standards": {
+        "uuid": "Unique identifier for records",
+        "string": "Short text value",
+        "text": "Long text value",
+        "integer": "Whole number",
+        "decimal": "Money or numeric value with decimals",
+        "boolean": "True or false value",
+        "date": "Date only",
+        "datetime": "Date and time",
+        "enum": "Fixed allowed values",
+        "json": "Structured object data",
+        "foreign_key": "Reference to another table ID"
+      },
+      "tables": [
+        {
+          "table_name": "users",
+          "description": "Stores login accounts for staff and customers.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true,
+              "nullable": false
+            },
+            {
+              "name": "full_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "email",
+              "type": "string",
+              "unique": true,
+              "nullable": false
+            },
+            {
+              "name": "phone",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "password_hash",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "role_id",
+              "type": "foreign_key",
+              "references": "roles.id",
+              "nullable": false
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive",
+                "blocked"
+              ],
+              "default": "active"
+            },
+            {
+              "name": "last_login_at",
+              "type": "datetime",
+              "nullable": true
+            },
+            {
+              "name": "created_at",
+              "type": "datetime",
+              "nullable": false
+            },
+            {
+              "name": "updated_at",
+              "type": "datetime",
+              "nullable": false
+            }
+          ]
+        },
+        {
+          "table_name": "roles",
+          "description": "Stores user roles.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "role_key",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "role_name",
+              "type": "string"
+            },
+            {
+              "name": "description",
+              "type": "text",
+              "nullable": true
+            }
+          ]
+        },
+        {
+          "table_name": "permissions",
+          "description": "Stores system permissions.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "permission_key",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "module",
+              "type": "string"
+            },
+            {
+              "name": "action",
+              "type": "enum",
+              "values": [
+                "view",
+                "create",
+                "edit",
+                "delete",
+                "approve",
+                "export",
+                "refund",
+                "discount"
+              ]
+            }
+          ]
+        },
+        {
+          "table_name": "role_permissions",
+          "description": "Many-to-many relationship between roles and permissions.",
+          "fields": [
+            {
+              "name": "role_id",
+              "type": "foreign_key",
+              "references": "roles.id"
+            },
+            {
+              "name": "permission_id",
+              "type": "foreign_key",
+              "references": "permissions.id"
+            }
+          ]
+        },
+        {
+          "table_name": "stores",
+          "description": "Stores supermarket branches or retail stores.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "store_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "store_code",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "address",
+              "type": "text",
+              "nullable": false
+            },
+            {
+              "name": "city",
+              "type": "string"
+            },
+            {
+              "name": "phone",
+              "type": "string"
+            },
+            {
+              "name": "email",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "manager_id",
+              "type": "foreign_key",
+              "references": "users.id",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "customers",
+          "description": "Stores customer profile information.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "user_id",
+              "type": "foreign_key",
+              "references": "users.id",
+              "nullable": true
+            },
+            {
+              "name": "customer_code",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "full_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "email",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "phone",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "address",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "loyalty_points",
+              "type": "integer",
+              "default": 0
+            },
+            {
+              "name": "customer_type",
+              "type": "enum",
+              "values": [
+                "regular",
+                "vip",
+                "wholesale"
+              ],
+              "default": "regular"
+            }
+          ]
+        },
+        {
+          "table_name": "categories",
+          "description": "Stores product categories such as Grocery, Dairy, Beverage, Household, and Personal Care.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "parent_category_id",
+              "type": "foreign_key",
+              "references": "categories.id",
+              "nullable": true
+            },
+            {
+              "name": "category_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "slug",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "description",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "image_url",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "brands",
+          "description": "Stores product brand information.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "brand_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "description",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "logo_url",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "products",
+          "description": "Stores master product details.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "product_code",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "barcode",
+              "type": "string",
+              "unique": true,
+              "nullable": true
+            },
+            {
+              "name": "product_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "category_id",
+              "type": "foreign_key",
+              "references": "categories.id"
+            },
+            {
+              "name": "brand_id",
+              "type": "foreign_key",
+              "references": "brands.id",
+              "nullable": true
+            },
+            {
+              "name": "description",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "unit",
+              "type": "enum",
+              "values": [
+                "pcs",
+                "kg",
+                "g",
+                "l",
+                "ml",
+                "box",
+                "pack",
+                "bottle"
+              ],
+              "default": "pcs"
+            },
+            {
+              "name": "cost_price",
+              "type": "decimal",
+              "nullable": false
+            },
+            {
+              "name": "selling_price",
+              "type": "decimal",
+              "nullable": false
+            },
+            {
+              "name": "tax_rate",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "reorder_level",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "image_urls",
+              "type": "json",
+              "nullable": true
+            },
+            {
+              "name": "is_online_visible",
+              "type": "boolean",
+              "default": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive",
+                "discontinued"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "product_variants",
+          "description": "Stores product variations such as size, color, pack size, or flavor.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "product_id",
+              "type": "foreign_key",
+              "references": "products.id"
+            },
+            {
+              "name": "variant_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "sku",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "barcode",
+              "type": "string",
+              "unique": true,
+              "nullable": true
+            },
+            {
+              "name": "additional_price",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "warehouses",
+          "description": "Stores warehouses or stock storage locations.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "store_id",
+              "type": "foreign_key",
+              "references": "stores.id",
+              "nullable": true
+            },
+            {
+              "name": "warehouse_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "warehouse_code",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "address",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "inventory_stocks",
+          "description": "Stores current stock quantity by product, variant, store, and warehouse.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "product_id",
+              "type": "foreign_key",
+              "references": "products.id"
+            },
+            {
+              "name": "variant_id",
+              "type": "foreign_key",
+              "references": "product_variants.id",
+              "nullable": true
+            },
+            {
+              "name": "store_id",
+              "type": "foreign_key",
+              "references": "stores.id"
+            },
+            {
+              "name": "warehouse_id",
+              "type": "foreign_key",
+              "references": "warehouses.id",
+              "nullable": true
+            },
+            {
+              "name": "current_quantity",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "reserved_quantity",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "available_quantity",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "last_updated_at",
+              "type": "datetime"
+            }
+          ]
+        },
+        {
+          "table_name": "stock_movements",
+          "description": "Stores product stock in, stock out, adjustment, transfer, wastage, and return movements.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "product_id",
+              "type": "foreign_key",
+              "references": "products.id"
+            },
+            {
+              "name": "variant_id",
+              "type": "foreign_key",
+              "references": "product_variants.id",
+              "nullable": true
+            },
+            {
+              "name": "store_id",
+              "type": "foreign_key",
+              "references": "stores.id"
+            },
+            {
+              "name": "movement_type",
+              "type": "enum",
+              "values": [
+                "stock_in",
+                "stock_out",
+                "sale",
+                "return",
+                "adjustment",
+                "transfer_in",
+                "transfer_out",
+                "wastage"
+              ]
+            },
+            {
+              "name": "quantity",
+              "type": "decimal"
+            },
+            {
+              "name": "quantity_before",
+              "type": "decimal"
+            },
+            {
+              "name": "quantity_after",
+              "type": "decimal"
+            },
+            {
+              "name": "reference_type",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "reference_id",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "reason",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "created_by",
+              "type": "foreign_key",
+              "references": "users.id"
+            },
+            {
+              "name": "created_at",
+              "type": "datetime"
+            }
+          ]
+        },
+        {
+          "table_name": "suppliers",
+          "description": "Stores supplier details.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "supplier_code",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "supplier_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "contact_person",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "phone",
+              "type": "string"
+            },
+            {
+              "name": "email",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "address",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "payment_terms",
+              "type": "text",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "purchase_orders",
+          "description": "Stores purchase orders sent to suppliers.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "po_number",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "supplier_id",
+              "type": "foreign_key",
+              "references": "suppliers.id"
+            },
+            {
+              "name": "store_id",
+              "type": "foreign_key",
+              "references": "stores.id"
+            },
+            {
+              "name": "order_date",
+              "type": "date"
+            },
+            {
+              "name": "expected_delivery_date",
+              "type": "date",
+              "nullable": true
+            },
+            {
+              "name": "subtotal",
+              "type": "decimal"
+            },
+            {
+              "name": "tax_amount",
+              "type": "decimal"
+            },
+            {
+              "name": "discount_amount",
+              "type": "decimal"
+            },
+            {
+              "name": "grand_total",
+              "type": "decimal"
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "draft",
+                "pending_approval",
+                "approved",
+                "ordered",
+                "partially_received",
+                "received",
+                "cancelled"
+              ],
+              "default": "draft"
+            },
+            {
+              "name": "created_by",
+              "type": "foreign_key",
+              "references": "users.id"
+            },
+            {
+              "name": "approved_by",
+              "type": "foreign_key",
+              "references": "users.id",
+              "nullable": true
+            }
+          ]
+        },
+        {
+          "table_name": "purchase_order_items",
+          "description": "Stores product items inside a purchase order.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "purchase_order_id",
+              "type": "foreign_key",
+              "references": "purchase_orders.id"
+            },
+            {
+              "name": "product_id",
+              "type": "foreign_key",
+              "references": "products.id"
+            },
+            {
+              "name": "variant_id",
+              "type": "foreign_key",
+              "references": "product_variants.id",
+              "nullable": true
+            },
+            {
+              "name": "ordered_quantity",
+              "type": "decimal"
+            },
+            {
+              "name": "received_quantity",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "unit_cost",
+              "type": "decimal"
+            },
+            {
+              "name": "line_total",
+              "type": "decimal"
+            }
+          ]
+        },
+        {
+          "table_name": "goods_received_notes",
+          "description": "Stores GRN records when stock is received from suppliers.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "grn_number",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "purchase_order_id",
+              "type": "foreign_key",
+              "references": "purchase_orders.id",
+              "nullable": true
+            },
+            {
+              "name": "supplier_id",
+              "type": "foreign_key",
+              "references": "suppliers.id"
+            },
+            {
+              "name": "store_id",
+              "type": "foreign_key",
+              "references": "stores.id"
+            },
+            {
+              "name": "received_date",
+              "type": "date"
+            },
+            {
+              "name": "invoice_number",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "total_amount",
+              "type": "decimal"
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "draft",
+                "posted",
+                "cancelled"
+              ],
+              "default": "draft"
+            },
+            {
+              "name": "created_by",
+              "type": "foreign_key",
+              "references": "users.id"
+            }
+          ]
+        },
+        {
+          "table_name": "grn_items",
+          "description": "Stores products received in a GRN.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "grn_id",
+              "type": "foreign_key",
+              "references": "goods_received_notes.id"
+            },
+            {
+              "name": "product_id",
+              "type": "foreign_key",
+              "references": "products.id"
+            },
+            {
+              "name": "variant_id",
+              "type": "foreign_key",
+              "references": "product_variants.id",
+              "nullable": true
+            },
+            {
+              "name": "batch_number",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "expiry_date",
+              "type": "date",
+              "nullable": true
+            },
+            {
+              "name": "received_quantity",
+              "type": "decimal"
+            },
+            {
+              "name": "unit_cost",
+              "type": "decimal"
+            },
+            {
+              "name": "selling_price",
+              "type": "decimal"
+            },
+            {
+              "name": "line_total",
+              "type": "decimal"
+            }
+          ]
+        },
+        {
+          "table_name": "sales",
+          "description": "Stores POS and online sales invoices.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "invoice_number",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "store_id",
+              "type": "foreign_key",
+              "references": "stores.id"
+            },
+            {
+              "name": "customer_id",
+              "type": "foreign_key",
+              "references": "customers.id",
+              "nullable": true
+            },
+            {
+              "name": "sale_type",
+              "type": "enum",
+              "values": [
+                "pos",
+                "online",
+                "wholesale"
+              ],
+              "default": "pos"
+            },
+            {
+              "name": "subtotal",
+              "type": "decimal"
+            },
+            {
+              "name": "tax_amount",
+              "type": "decimal"
+            },
+            {
+              "name": "discount_amount",
+              "type": "decimal"
+            },
+            {
+              "name": "grand_total",
+              "type": "decimal"
+            },
+            {
+              "name": "paid_amount",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "balance_amount",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "payment_status",
+              "type": "enum",
+              "values": [
+                "unpaid",
+                "partial",
+                "paid",
+                "refunded"
+              ],
+              "default": "unpaid"
+            },
+            {
+              "name": "sale_status",
+              "type": "enum",
+              "values": [
+                "draft",
+                "completed",
+                "cancelled",
+                "returned"
+              ],
+              "default": "completed"
+            },
+            {
+              "name": "created_by",
+              "type": "foreign_key",
+              "references": "users.id"
+            },
+            {
+              "name": "created_at",
+              "type": "datetime"
+            }
+          ]
+        },
+        {
+          "table_name": "sale_items",
+          "description": "Stores individual products sold in each sale.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "sale_id",
+              "type": "foreign_key",
+              "references": "sales.id"
+            },
+            {
+              "name": "product_id",
+              "type": "foreign_key",
+              "references": "products.id"
+            },
+            {
+              "name": "variant_id",
+              "type": "foreign_key",
+              "references": "product_variants.id",
+              "nullable": true
+            },
+            {
+              "name": "quantity",
+              "type": "decimal"
+            },
+            {
+              "name": "unit_price",
+              "type": "decimal"
+            },
+            {
+              "name": "discount_amount",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "tax_amount",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "line_total",
+              "type": "decimal"
+            }
+          ]
+        },
+        {
+          "table_name": "payments",
+          "description": "Stores payment transactions for POS and online orders.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "sale_id",
+              "type": "foreign_key",
+              "references": "sales.id",
+              "nullable": true
+            },
+            {
+              "name": "online_order_id",
+              "type": "foreign_key",
+              "references": "online_orders.id",
+              "nullable": true
+            },
+            {
+              "name": "payment_method",
+              "type": "enum",
+              "values": [
+                "cash",
+                "card",
+                "bank_transfer",
+                "online_gateway",
+                "wallet",
+                "credit"
+              ]
+            },
+            {
+              "name": "amount",
+              "type": "decimal"
+            },
+            {
+              "name": "payment_status",
+              "type": "enum",
+              "values": [
+                "pending",
+                "paid",
+                "failed",
+                "refunded"
+              ]
+            },
+            {
+              "name": "transaction_reference",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "paid_at",
+              "type": "datetime",
+              "nullable": true
+            }
+          ]
+        },
+        {
+          "table_name": "online_orders",
+          "description": "Stores customer online shopping orders.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "order_number",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "customer_id",
+              "type": "foreign_key",
+              "references": "customers.id",
+              "nullable": true
+            },
+            {
+              "name": "guest_name",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "guest_phone",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "delivery_address",
+              "type": "text",
+              "nullable": false
+            },
+            {
+              "name": "subtotal",
+              "type": "decimal"
+            },
+            {
+              "name": "delivery_fee",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "discount_amount",
+              "type": "decimal",
+              "default": 0
+            },
+            {
+              "name": "grand_total",
+              "type": "decimal"
+            },
+            {
+              "name": "order_status",
+              "type": "enum",
+              "values": [
+                "pending",
+                "confirmed",
+                "packing",
+                "ready_for_delivery",
+                "out_for_delivery",
+                "delivered",
+                "cancelled"
+              ],
+              "default": "pending"
+            },
+            {
+              "name": "payment_status",
+              "type": "enum",
+              "values": [
+                "unpaid",
+                "paid",
+                "failed",
+                "refunded"
+              ],
+              "default": "unpaid"
+            },
+            {
+              "name": "assigned_delivery_staff_id",
+              "type": "foreign_key",
+              "references": "users.id",
+              "nullable": true
+            },
+            {
+              "name": "created_at",
+              "type": "datetime"
+            }
+          ]
+        },
+        {
+          "table_name": "online_order_items",
+          "description": "Stores products inside online orders.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "online_order_id",
+              "type": "foreign_key",
+              "references": "online_orders.id"
+            },
+            {
+              "name": "product_id",
+              "type": "foreign_key",
+              "references": "products.id"
+            },
+            {
+              "name": "variant_id",
+              "type": "foreign_key",
+              "references": "product_variants.id",
+              "nullable": true
+            },
+            {
+              "name": "quantity",
+              "type": "decimal"
+            },
+            {
+              "name": "unit_price",
+              "type": "decimal"
+            },
+            {
+              "name": "line_total",
+              "type": "decimal"
+            }
+          ]
+        },
+        {
+          "table_name": "returns",
+          "description": "Stores sales return and refund records.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "return_number",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "sale_id",
+              "type": "foreign_key",
+              "references": "sales.id",
+              "nullable": true
+            },
+            {
+              "name": "online_order_id",
+              "type": "foreign_key",
+              "references": "online_orders.id",
+              "nullable": true
+            },
+            {
+              "name": "customer_id",
+              "type": "foreign_key",
+              "references": "customers.id",
+              "nullable": true
+            },
+            {
+              "name": "return_reason",
+              "type": "text",
+              "nullable": false
+            },
+            {
+              "name": "refund_amount",
+              "type": "decimal"
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "requested",
+                "approved",
+                "rejected",
+                "refunded"
+              ],
+              "default": "requested"
+            },
+            {
+              "name": "approved_by",
+              "type": "foreign_key",
+              "references": "users.id",
+              "nullable": true
+            },
+            {
+              "name": "created_at",
+              "type": "datetime"
+            }
+          ]
+        },
+        {
+          "table_name": "promotions",
+          "description": "Stores discount campaigns and promotional offers.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "promotion_name",
+              "type": "string",
+              "nullable": false
+            },
+            {
+              "name": "promotion_type",
+              "type": "enum",
+              "values": [
+                "percentage",
+                "fixed_amount",
+                "buy_one_get_one",
+                "coupon"
+              ]
+            },
+            {
+              "name": "discount_value",
+              "type": "decimal"
+            },
+            {
+              "name": "start_date",
+              "type": "date"
+            },
+            {
+              "name": "end_date",
+              "type": "date"
+            },
+            {
+              "name": "applicable_products",
+              "type": "json",
+              "nullable": true
+            },
+            {
+              "name": "applicable_categories",
+              "type": "json",
+              "nullable": true
+            },
+            {
+              "name": "status",
+              "type": "enum",
+              "values": [
+                "active",
+                "inactive",
+                "expired"
+              ],
+              "default": "active"
+            }
+          ]
+        },
+        {
+          "table_name": "staff_profiles",
+          "description": "Stores staff employee details.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "user_id",
+              "type": "foreign_key",
+              "references": "users.id"
+            },
+            {
+              "name": "employee_code",
+              "type": "string",
+              "unique": true
+            },
+            {
+              "name": "store_id",
+              "type": "foreign_key",
+              "references": "stores.id",
+              "nullable": true
+            },
+            {
+              "name": "department",
+              "type": "enum",
+              "values": [
+                "sales",
+                "cashier",
+                "inventory",
+                "purchase",
+                "finance",
+                "delivery",
+                "management",
+                "admin"
+              ]
+            },
+            {
+              "name": "job_title",
+              "type": "string"
+            },
+            {
+              "name": "salary",
+              "type": "decimal",
+              "nullable": true
+            },
+            {
+              "name": "joined_date",
+              "type": "date"
+            }
+          ]
+        },
+        {
+          "table_name": "audit_logs",
+          "description": "Stores important system actions for security tracking.",
+          "fields": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "primary_key": true
+            },
+            {
+              "name": "user_id",
+              "type": "foreign_key",
+              "references": "users.id",
+              "nullable": true
+            },
+            {
+              "name": "action",
+              "type": "string"
+            },
+            {
+              "name": "module",
+              "type": "string"
+            },
+            {
+              "name": "record_id",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "old_values",
+              "type": "json",
+              "nullable": true
+            },
+            {
+              "name": "new_values",
+              "type": "json",
+              "nullable": true
+            },
+            {
+              "name": "ip_address",
+              "type": "string",
+              "nullable": true
+            },
+            {
+              "name": "created_at",
+              "type": "datetime"
+            }
+          ]
+        }
+      ],
+      "relationships": [
+        {
+          "from": "users.role_id",
+          "to": "roles.id",
+          "type": "many_to_one",
+          "description": "Each user belongs to one role."
+        },
+        {
+          "from": "roles.id",
+          "to": "permissions.id",
+          "type": "many_to_many",
+          "via": "role_permissions",
+          "description": "Each role can have many permissions."
+        },
+        {
+          "from": "stores.manager_id",
+          "to": "users.id",
+          "type": "many_to_one",
+          "description": "Each store can have one assigned manager."
+        },
+        {
+          "from": "customers.user_id",
+          "to": "users.id",
+          "type": "one_to_one_optional",
+          "description": "A customer may have a login account."
+        },
+        {
+          "from": "categories.parent_category_id",
+          "to": "categories.id",
+          "type": "self_reference",
+          "description": "A category may have child categories."
+        },
+        {
+          "from": "products.category_id",
+          "to": "categories.id",
+          "type": "many_to_one",
+          "description": "Each product belongs to one category."
+        },
+        {
+          "from": "products.brand_id",
+          "to": "brands.id",
+          "type": "many_to_one",
+          "description": "Each product may belong to one brand."
+        },
+        {
+          "from": "products.id",
+          "to": "product_variants.product_id",
+          "type": "one_to_many",
+          "description": "One product can have many variants."
+        },
+        {
+          "from": "stores.id",
+          "to": "inventory_stocks.store_id",
+          "type": "one_to_many",
+          "description": "One store has many stock records."
+        },
+        {
+          "from": "products.id",
+          "to": "inventory_stocks.product_id",
+          "type": "one_to_many",
+          "description": "One product can have stock records in different stores or warehouses."
+        },
+        {
+          "from": "suppliers.id",
+          "to": "purchase_orders.supplier_id",
+          "type": "one_to_many",
+          "description": "One supplier can have many purchase orders."
+        },
+        {
+          "from": "purchase_orders.id",
+          "to": "purchase_order_items.purchase_order_id",
+          "type": "one_to_many",
+          "description": "One purchase order has many purchase order items."
+        },
+        {
+          "from": "purchase_orders.id",
+          "to": "goods_received_notes.purchase_order_id",
+          "type": "one_to_many",
+          "description": "One purchase order can have one or more GRNs."
+        },
+        {
+          "from": "goods_received_notes.id",
+          "to": "grn_items.grn_id",
+          "type": "one_to_many",
+          "description": "One GRN contains many received items."
+        },
+        {
+          "from": "sales.id",
+          "to": "sale_items.sale_id",
+          "type": "one_to_many",
+          "description": "One sale invoice has many sale items."
+        },
+        {
+          "from": "customers.id",
+          "to": "sales.customer_id",
+          "type": "one_to_many",
+          "description": "One customer can have many sales."
+        },
+        {
+          "from": "online_orders.id",
+          "to": "online_order_items.online_order_id",
+          "type": "one_to_many",
+          "description": "One online order has many order items."
+        },
+        {
+          "from": "sales.id",
+          "to": "payments.sale_id",
+          "type": "one_to_many",
+          "description": "One sale can have many payments."
+        }
+      ]
+    },
+    "public_landing_website": {
+      "required": true,
+      "pages": [
+        {
+          "page_name": "Home Page",
+          "route": "/",
+          "login_required": false,
+          "sections": [
+            "Hero section with supermarket name, headline, search bar, and promotional banner",
+            "Featured categories section",
+            "Best-selling products section",
+            "Daily deals section",
+            "New arrivals section",
+            "Online shopping call-to-action section",
+            "Delivery area information section",
+            "Customer reviews section",
+            "Store location and opening hours section",
+            "Footer with contact details and quick links"
+          ]
+        },
+        {
+          "page_name": "Products Page",
+          "route": "/products",
+          "login_required": false,
+          "sections": [
+            "Product listing grid",
+            "Category filter",
+            "Brand filter",
+            "Price range filter",
+            "Availability filter",
+            "Search by product name or barcode",
+            "Add to cart button",
+            "Product quick view"
+          ]
+        },
+        {
+          "page_name": "Product Details Page",
+          "route": "/products/:productId",
+          "login_required": false,
+          "sections": [
+            "Product image gallery",
+            "Product name and description",
+            "Price and discount display",
+            "Stock availability",
+            "Variant selection",
+            "Quantity selector",
+            "Add to cart button",
+            "Related products section"
+          ]
+        },
+        {
+          "page_name": "Offers Page",
+          "route": "/offers",
+          "login_required": false,
+          "sections": [
+            "Current promotions",
+            "Coupon offers",
+            "Bundle offers",
+            "Buy-one-get-one offers",
+            "Limited-time deals",
+            "Offer product listing"
+          ]
+        },
+        {
+          "page_name": "About Page",
+          "route": "/about",
+          "login_required": false,
+          "sections": [
+            "Company story",
+            "Mission and vision",
+            "Why shop with us",
+            "Quality guarantee",
+            "Store branches",
+            "Customer service promise"
+          ]
+        },
+        {
+          "page_name": "Contact Page",
+          "route": "/contact",
+          "login_required": false,
+          "sections": [
+            "Contact form",
+            "Phone and email details",
+            "Store address",
+            "Google map",
+            "Opening hours",
+            "Social media links"
+          ]
+        },
+        {
+          "page_name": "Cart Page",
+          "route": "/cart",
+          "login_required": false,
+          "sections": [
+            "Cart item list",
+            "Quantity update controls",
+            "Remove item button",
+            "Coupon code input",
+            "Cart totals",
+            "Checkout button"
+          ]
+        },
+        {
+          "page_name": "Checkout Page",
+          "route": "/checkout",
+          "login_required": false,
+          "sections": [
+            "Customer information form",
+            "Delivery address form",
+            "Order summary",
+            "Payment method selection",
+            "Place order button"
+          ]
+        }
+      ]
+    },
+    "application_pages": [
+      {
+        "page_name": "Login",
+        "route": "/login",
+        "page_type": "auth",
+        "login_required": false,
+        "functions": [
+          "Login with email and password",
+          "Remember me",
+          "Forgot password link",
+          "Role-based redirect after login"
+        ]
+      },
+      {
+        "page_name": "Register",
+        "route": "/register",
+        "page_type": "auth",
+        "login_required": false,
+        "functions": [
+          "Customer account registration",
+          "Basic customer profile creation",
+          "Optional email verification"
+        ]
+      },
+      {
+        "page_name": "Customer Dashboard",
+        "route": "/customer/dashboard",
+        "page_type": "portal",
+        "login_required": true,
+        "allowed_roles": [
+          "customer"
+        ],
+        "functions": [
+          "View recent orders",
+          "View order history",
+          "Track online orders",
+          "Download invoices",
+          "Update profile",
+          "Manage delivery addresses",
+          "View loyalty points"
+        ]
+      },
+      {
+        "page_name": "Admin Dashboard",
+        "route": "/admin/dashboard",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "store_manager"
+        ],
+        "functions": [
+          "View today sales summary",
+          "View monthly revenue summary",
+          "View low-stock alerts",
+          "View pending online orders",
+          "View pending purchase orders",
+          "View top-selling products",
+          "View cashier performance"
+        ]
+      },
+      {
+        "page_name": "POS System",
+        "route": "/pos",
+        "page_type": "pos",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "store_manager",
+          "cashier"
+        ],
+        "functions": [
+          "Scan barcode",
+          "Search product",
+          "Add product to cart",
+          "Update item quantity",
+          "Apply discount",
+          "Select customer",
+          "Accept cash payment",
+          "Accept card payment",
+          "Split payment",
+          "Print receipt",
+          "Hold sale",
+          "Resume held sale",
+          "Process return"
+        ]
+      },
+      {
+        "page_name": "Product Management",
+        "route": "/admin/products",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "store_manager",
+          "inventory_manager"
+        ],
+        "functions": [
+          "Create product",
+          "Edit product",
+          "Deactivate product",
+          "Manage product variants",
+          "Upload product images",
+          "Set cost price",
+          "Set selling price",
+          "Set reorder level",
+          "Generate barcode"
+        ]
+      },
+      {
+        "page_name": "Category and Brand Management",
+        "route": "/admin/catalog",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "store_manager"
+        ],
+        "functions": [
+          "Create category",
+          "Edit category",
+          "Create subcategory",
+          "Create brand",
+          "Edit brand",
+          "Deactivate category or brand"
+        ]
+      },
+      {
+        "page_name": "Inventory Management",
+        "route": "/admin/inventory",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "store_manager",
+          "inventory_manager"
+        ],
+        "functions": [
+          "View current stock",
+          "Adjust stock",
+          "Record stock in",
+          "Record stock out",
+          "View stock movement history",
+          "View low-stock products",
+          "View expiry alerts",
+          "Transfer stock between stores"
+        ]
+      },
+      {
+        "page_name": "Supplier Management",
+        "route": "/admin/suppliers",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "store_manager",
+          "purchase_officer"
+        ],
+        "functions": [
+          "Create supplier",
+          "Edit supplier",
+          "Deactivate supplier",
+          "View supplier purchase history",
+          "View supplier payment terms"
+        ]
+      },
+      {
+        "page_name": "Purchase Orders",
+        "route": "/admin/purchase-orders",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "store_manager",
+          "purchase_officer"
+        ],
+        "functions": [
+          "Create purchase order",
+          "Add purchase order items",
+          "Submit purchase order for approval",
+          "Approve purchase order",
+          "Send purchase order to supplier",
+          "Cancel purchase order",
+          "Print purchase order"
+        ]
+      },
+      {
+        "page_name": "Goods Received Notes",
+        "route": "/admin/grn",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "store_manager",
+          "purchase_officer",
+          "inventory_manager"
+        ],
+        "functions": [
+          "Create GRN",
+          "Receive stock against purchase order",
+          "Record batch number",
+          "Record expiry date",
+          "Update inventory stock",
+          "Print GRN"
+        ]
+      },
+      {
+        "page_name": "Online Orders",
+        "route": "/admin/online-orders",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "store_manager",
+          "cashier",
+          "delivery_staff"
+        ],
+        "functions": [
+          "View online orders",
+          "Confirm order",
+          "Pack order",
+          "Assign delivery staff",
+          "Update delivery status",
+          "Cancel order",
+          "Print online order invoice"
+        ]
+      },
+      {
+        "page_name": "Customer Management",
+        "route": "/admin/customers",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "store_manager",
+          "cashier"
+        ],
+        "functions": [
+          "Create customer",
+          "Edit customer",
+          "View customer purchase history",
+          "View loyalty points",
+          "Assign customer type"
+        ]
+      },
+      {
+        "page_name": "Billing and Finance",
+        "route": "/admin/billing",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "store_manager",
+          "accountant"
+        ],
+        "functions": [
+          "View invoices",
+          "View payments",
+          "Record manual payment",
+          "Process refund",
+          "View tax summary",
+          "Export financial report"
+        ]
+      },
+      {
+        "page_name": "Returns and Refunds",
+        "route": "/admin/returns",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "store_manager",
+          "cashier",
+          "accountant"
+        ],
+        "functions": [
+          "Create return request",
+          "Approve return",
+          "Reject return",
+          "Process refund",
+          "Return item to stock",
+          "Print return receipt"
+        ]
+      },
+      {
+        "page_name": "Promotion Management",
+        "route": "/admin/promotions",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "store_manager"
+        ],
+        "functions": [
+          "Create promotion",
+          "Edit promotion",
+          "Set promotion products",
+          "Set promotion categories",
+          "Set coupon code",
+          "Activate or deactivate promotion"
+        ]
+      },
+      {
+        "page_name": "Staff Management",
+        "route": "/admin/staff",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "store_manager"
+        ],
+        "functions": [
+          "Create staff user",
+          "Assign role",
+          "Assign store",
+          "Update staff profile",
+          "Deactivate staff account",
+          "View staff performance summary"
+        ]
+      },
+      {
+        "page_name": "Reports",
+        "route": "/admin/reports",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin",
+          "store_manager",
+          "accountant"
+        ],
+        "functions": [
+          "Sales report",
+          "Profit report",
+          "Inventory report",
+          "Low-stock report",
+          "Purchase report",
+          "Supplier report",
+          "Cashier report",
+          "Customer report",
+          "Export PDF",
+          "Export Excel"
+        ]
+      },
+      {
+        "page_name": "Settings",
+        "route": "/admin/settings",
+        "page_type": "dashboard",
+        "login_required": true,
+        "allowed_roles": [
+          "super_admin",
+          "admin"
+        ],
+        "functions": [
+          "Business profile settings",
+          "Store settings",
+          "Tax settings",
+          "Payment settings",
+          "Receipt template settings",
+          "Invoice number settings",
+          "Role permission settings"
+        ]
+      }
+    ],
+    "role_access_matrix": [
+      {
+        "role": "guest",
+        "allowed_pages": [
+          "Home Page",
+          "Products Page",
+          "Product Details Page",
+          "Offers Page",
+          "About Page",
+          "Contact Page",
+          "Cart Page",
+          "Checkout Page"
+        ],
+        "allowed_functions": [
+          "Browse website",
+          "Search products",
+          "View product details",
+          "Add products to cart",
+          "Place guest checkout order if enabled",
+          "Submit contact form"
+        ],
+        "restricted_functions": [
+          "Access dashboard",
+          "Access POS",
+          "View reports",
+          "Manage products",
+          "Manage inventory"
+        ]
+      },
+      {
+        "role": "customer",
+        "allowed_pages": [
+          "Customer Dashboard",
+          "Order History",
+          "Cart",
+          "Checkout",
+          "Profile",
+          "Invoices",
+          "Loyalty Points"
+        ],
+        "allowed_functions": [
+          "Place online order",
+          "View own orders",
+          "Cancel pending own order",
+          "Make online payment",
+          "Download own invoice",
+          "Update own profile"
+        ],
+        "restricted_functions": [
+          "Access admin dashboard",
+          "Access POS",
+          "Manage products",
+          "View business reports"
+        ]
+      },
+      {
+        "role": "cashier",
+        "allowed_pages": [
+          "POS System",
+          "POS Sales",
+          "Customers",
+          "Returns Limited",
+          "Online Orders Limited"
+        ],
+        "allowed_functions": [
+          "Create POS sale",
+          "Scan products",
+          "Apply allowed discount",
+          "Accept payments",
+          "Print receipts",
+          "Create basic customer",
+          "Process allowed returns"
+        ],
+        "restricted_functions": [
+          "Delete products",
+          "Change system settings",
+          "Approve large discounts",
+          "View full profit reports"
+        ]
+      },
+      {
+        "role": "inventory_manager",
+        "allowed_pages": [
+          "Product Management",
+          "Inventory Management",
+          "Stock Movements",
+          "GRN",
+          "Low Stock Alerts"
+        ],
+        "allowed_functions": [
+          "Create product",
+          "Update product stock",
+          "Record stock adjustments",
+          "View stock movement history",
+          "Receive stock",
+          "Transfer stock"
+        ],
+        "restricted_functions": [
+          "Access financial profit reports",
+          "Process refunds",
+          "Change user roles"
+        ]
+      },
+      {
+        "role": "purchase_officer",
+        "allowed_pages": [
+          "Supplier Management",
+          "Purchase Orders",
+          "Goods Received Notes"
+        ],
+        "allowed_functions": [
+          "Create supplier",
+          "Create purchase order",
+          "Submit purchase order",
+          "Receive goods",
+          "View supplier history"
+        ],
+        "restricted_functions": [
+          "Access POS",
+          "Process customer refunds",
+          "Change system permissions"
+        ]
+      },
+      {
+        "role": "accountant",
+        "allowed_pages": [
+          "Billing and Finance",
+          "Payments",
+          "Invoices",
+          "Returns and Refunds",
+          "Reports"
+        ],
+        "allowed_functions": [
+          "View invoices",
+          "Record payments",
+          "Process refunds",
+          "Generate tax reports",
+          "Export financial reports"
+        ],
+        "restricted_functions": [
+          "Change product stock",
+          "Edit product pricing without permission",
+          "Manage role permissions"
+        ]
+      },
+      {
+        "role": "delivery_staff",
+        "allowed_pages": [
+          "Assigned Deliveries",
+          "Online Orders Limited"
+        ],
+        "allowed_functions": [
+          "View assigned orders",
+          "Update delivery status",
+          "Mark order delivered",
+          "Contact customer"
+        ],
+        "restricted_functions": [
+          "Access POS",
+          "View financial reports",
+          "Manage products",
+          "Change order pricing"
+        ]
+      },
+      {
+        "role": "store_manager",
+        "allowed_pages": [
+          "Admin Dashboard",
+          "POS Summary",
+          "Products",
+          "Inventory",
+          "Suppliers",
+          "Purchase Orders",
+          "Online Orders",
+          "Customers",
+          "Returns",
+          "Reports",
+          "Staff"
+        ],
+        "allowed_functions": [
+          "Manage daily operations",
+          "Approve discounts",
+          "Approve purchase orders",
+          "Approve returns",
+          "Monitor stock",
+          "View operational reports",
+          "Manage staff tasks"
+        ],
+        "restricted_functions": [
+          "Delete audit logs",
+          "Change super admin account",
+          "Modify global system configuration"
+        ]
+      },
+      {
+        "role": "admin",
+        "allowed_pages": [
+          "All Admin Pages"
+        ],
+        "allowed_functions": [
+          "Manage stores",
+          "Manage users",
+          "Manage products",
+          "Manage inventory",
+          "Manage POS",
+          "Manage suppliers",
+          "Manage reports",
+          "Change settings"
+        ],
+        "restricted_functions": [
+          "Access super admin only global controls"
+        ]
+      },
+      {
+        "role": "super_admin",
+        "allowed_pages": [
+          "All Pages"
+        ],
+        "allowed_functions": [
+          "Full system access",
+          "Manage all stores",
+          "Manage all users",
+          "Manage all permissions",
+          "View audit logs",
+          "Export all data",
+          "System configuration"
+        ],
+        "restricted_functions": []
+      }
+    ],
+    "functional_requirements": [
+      {
+        "id": "FR-001",
+        "module": "Public Website",
+        "requirement": "The system shall display a public supermarket website with home, products, offers, about, contact, cart, and checkout pages.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-002",
+        "module": "Product Search",
+        "requirement": "The system shall allow users to search products by name, barcode, category, brand, price range, and availability.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-003",
+        "module": "Online Shopping",
+        "requirement": "The system shall allow customers and guests to add products to cart and place online orders.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-004",
+        "module": "Authentication",
+        "requirement": "The system shall authenticate staff and customers using email and password.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-005",
+        "module": "Authorization",
+        "requirement": "The system shall restrict pages and actions based on user role and permission.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-006",
+        "module": "POS",
+        "requirement": "Cashiers shall be able to create POS sales using barcode scanning, product search, cart, discount, payment, and receipt printing.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-007",
+        "module": "Product Management",
+        "requirement": "Authorized users shall be able to create, update, deactivate, categorize, price, and upload images for products.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-008",
+        "module": "Inventory",
+        "requirement": "The system shall track product stock quantities by store and warehouse.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-009",
+        "module": "Stock Movements",
+        "requirement": "The system shall record all stock-in, stock-out, sale, return, adjustment, transfer, and wastage movements.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-010",
+        "module": "Supplier Management",
+        "requirement": "Purchase officers shall be able to manage suppliers and supplier purchase history.",
+        "priority": "medium"
+      },
+      {
+        "id": "FR-011",
+        "module": "Purchase Orders",
+        "requirement": "The system shall allow users to create, approve, send, cancel, and print purchase orders.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-012",
+        "module": "GRN",
+        "requirement": "The system shall allow users to receive stock through goods received notes and update inventory automatically.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-013",
+        "module": "Billing",
+        "requirement": "The system shall generate invoices and receipts for POS sales and online orders.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-014",
+        "module": "Payments",
+        "requirement": "The system shall support cash, card, bank transfer, wallet, online gateway, and credit payment methods.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-015",
+        "module": "Returns",
+        "requirement": "The system shall support product returns, approval workflow, refund processing, and stock return handling.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-016",
+        "module": "Promotions",
+        "requirement": "The system shall support discounts, coupons, bundle offers, and limited-time promotions.",
+        "priority": "medium"
+      },
+      {
+        "id": "FR-017",
+        "module": "Reports",
+        "requirement": "The system shall generate sales, profit, inventory, purchase, supplier, cashier, customer, and tax reports.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-018",
+        "module": "Notifications",
+        "requirement": "The system shall send online order confirmation, low-stock, purchase approval, payment, and delivery status notifications.",
+        "priority": "medium"
+      },
+      {
+        "id": "FR-019",
+        "module": "Audit Logs",
+        "requirement": "The system shall record important create, update, delete, login, payment, refund, stock, and permission change actions.",
+        "priority": "high"
+      },
+      {
+        "id": "FR-020",
+        "module": "PWA",
+        "requirement": "The system should support mobile-friendly PWA behavior for POS, inventory, customer portal, and delivery staff pages.",
+        "priority": "medium"
+      }
+    ],
+    "business_workflows": [
+      {
+        "workflow_name": "POS Sale Workflow",
+        "steps": [
+          "Cashier opens POS page",
+          "Cashier scans product barcode or searches product",
+          "System adds product to POS cart",
+          "Cashier updates quantity if needed",
+          "System calculates subtotal, discount, tax, and grand total",
+          "Cashier selects customer if available",
+          "Cashier selects payment method",
+          "System records payment",
+          "System reduces inventory stock",
+          "System generates invoice and receipt",
+          "Cashier prints receipt"
+        ]
+      },
+      {
+        "workflow_name": "Online Order Workflow",
+        "steps": [
+          "Customer opens public website",
+          "Customer searches or browses products",
+          "Customer adds products to cart",
+          "Customer opens checkout page",
+          "Customer enters delivery information",
+          "Customer selects payment method",
+          "System creates pending online order",
+          "Store staff confirms order",
+          "Inventory stock is reserved",
+          "Order is packed and assigned to delivery staff",
+          "Delivery staff delivers order",
+          "System marks order as delivered"
+        ]
+      },
+      {
+        "workflow_name": "Purchase Order Workflow",
+        "steps": [
+          "Purchase officer creates purchase order",
+          "Purchase officer selects supplier",
+          "Purchase officer adds products and quantities",
+          "System calculates purchase total",
+          "Purchase officer submits for approval",
+          "Store manager approves purchase order",
+          "Purchase order is sent to supplier",
+          "Supplier delivers items",
+          "Inventory manager creates GRN",
+          "System updates stock"
+        ]
+      },
+      {
+        "workflow_name": "Inventory Stock Adjustment Workflow",
+        "steps": [
+          "Inventory manager opens inventory page",
+          "Inventory manager selects product",
+          "Inventory manager enters stock adjustment quantity",
+          "Inventory manager selects reason",
+          "System records stock movement",
+          "System updates current stock",
+          "System stores audit log"
+        ]
+      },
+      {
+        "workflow_name": "Product Return Workflow",
+        "steps": [
+          "Cashier searches original invoice",
+          "Cashier selects returned items",
+          "Cashier enters return reason",
+          "Manager approves return if required",
+          "System calculates refund amount",
+          "System processes refund",
+          "System updates inventory stock if item is resellable",
+          "System prints return receipt"
+        ]
+      }
+    ],
+    "validation_rules": [
+      {
+        "field": "email",
+        "rule": "Must be valid email format and unique in users table."
+      },
+      {
+        "field": "password",
+        "rule": "Minimum 8 characters with at least one letter and one number."
+      },
+      {
+        "field": "product_code",
+        "rule": "Must be unique for each product."
+      },
+      {
+        "field": "barcode",
+        "rule": "Must be unique when provided."
+      },
+      {
+        "field": "selling_price",
+        "rule": "Must be greater than or equal to zero."
+      },
+      {
+        "field": "cost_price",
+        "rule": "Must be greater than or equal to zero."
+      },
+      {
+        "field": "sale_quantity",
+        "rule": "Cannot be greater than available stock unless negative stock is allowed in settings."
+      },
+      {
+        "field": "discount_amount",
+        "rule": "Must require manager approval if above configured discount limit."
+      },
+      {
+        "field": "payment_amount",
+        "rule": "Cannot be negative and must match invoice balance unless split payment is used."
+      },
+      {
+        "field": "purchase_order_total",
+        "rule": "Must be calculated from purchase order item quantities, unit costs, taxes, and discounts."
+      },
+      {
+        "field": "expiry_date",
+        "rule": "Must be greater than received date when applicable."
+      },
+      {
+        "field": "return_quantity",
+        "rule": "Cannot be greater than originally sold quantity."
+      }
+    ],
+    "non_functional_requirements": [
+      {
+        "id": "NFR-001",
+        "category": "Performance",
+        "requirement": "POS product search and barcode scan result should respond within 1 second under normal operating conditions."
+      },
+      {
+        "id": "NFR-002",
+        "category": "Performance",
+        "requirement": "Dashboard pages should load within 3 seconds under normal network conditions."
+      },
+      {
+        "id": "NFR-003",
+        "category": "Security",
+        "requirement": "Passwords must be securely hashed before storing in the database."
+      },
+      {
+        "id": "NFR-004",
+        "category": "Security",
+        "requirement": "All protected API endpoints must validate authentication and role permissions."
+      },
+      {
+        "id": "NFR-005",
+        "category": "Reliability",
+        "requirement": "The system should prevent stock from becoming negative unless explicitly enabled in settings."
+      },
+      {
+        "id": "NFR-006",
+        "category": "Auditability",
+        "requirement": "Critical operations such as stock changes, payment changes, refunds, and permission changes must be saved in audit logs."
+      },
+      {
+        "id": "NFR-007",
+        "category": "Backup",
+        "requirement": "Database backup should be scheduled daily."
+      },
+      {
+        "id": "NFR-008",
+        "category": "Scalability",
+        "requirement": "The system should support multiple stores, warehouses, and POS terminals."
+      },
+      {
+        "id": "NFR-009",
+        "category": "Usability",
+        "requirement": "The POS interface must be fast, simple, keyboard-friendly, and touch-friendly."
+      },
+      {
+        "id": "NFR-010",
+        "category": "Maintainability",
+        "requirement": "Code should be modular by feature: auth, POS, products, inventory, purchases, suppliers, orders, billing, reports, and settings."
+      }
+    ],
+    "api_requirements": {
+      "auth_apis": [
+        "POST /api/auth/login",
+        "POST /api/auth/register",
+        "POST /api/auth/logout",
+        "POST /api/auth/forgot-password",
+        "POST /api/auth/reset-password",
+        "GET /api/auth/me"
+      ],
+      "product_apis": [
+        "GET /api/products",
+        "POST /api/products",
+        "GET /api/products/{id}",
+        "PUT /api/products/{id}",
+        "DELETE /api/products/{id}",
+        "GET /api/products/search",
+        "GET /api/products/barcode/{barcode}",
+        "POST /api/products/{id}/images"
+      ],
+      "pos_apis": [
+        "POST /api/pos/sales",
+        "GET /api/pos/sales",
+        "GET /api/pos/sales/{id}",
+        "POST /api/pos/sales/{id}/payment",
+        "POST /api/pos/sales/{id}/print-receipt",
+        "POST /api/pos/hold-sale",
+        "GET /api/pos/held-sales",
+        "POST /api/pos/resume-sale/{id}"
+      ],
+      "inventory_apis": [
+        "GET /api/inventory/stocks",
+        "POST /api/inventory/adjust",
+        "GET /api/inventory/movements",
+        "POST /api/inventory/transfer",
+        "GET /api/inventory/low-stock",
+        "GET /api/inventory/expiry-alerts"
+      ],
+      "purchase_apis": [
+        "GET /api/suppliers",
+        "POST /api/suppliers",
+        "PUT /api/suppliers/{id}",
+        "GET /api/purchase-orders",
+        "POST /api/purchase-orders",
+        "PATCH /api/purchase-orders/{id}/approve",
+        "PATCH /api/purchase-orders/{id}/cancel",
+        "POST /api/grn",
+        "GET /api/grn"
+      ],
+      "online_order_apis": [
+        "POST /api/online-orders",
+        "GET /api/online-orders",
+        "GET /api/online-orders/{id}",
+        "PATCH /api/online-orders/{id}/confirm",
+        "PATCH /api/online-orders/{id}/pack",
+        "PATCH /api/online-orders/{id}/assign-delivery",
+        "PATCH /api/online-orders/{id}/delivery-status",
+        "PATCH /api/online-orders/{id}/cancel"
+      ],
+      "billing_apis": [
+        "GET /api/invoices",
+        "GET /api/invoices/{id}",
+        "POST /api/payments",
+        "GET /api/payments",
+        "POST /api/refunds",
+        "GET /api/returns",
+        "POST /api/returns",
+        "PATCH /api/returns/{id}/approve",
+        "PATCH /api/returns/{id}/reject"
+      ],
+      "report_apis": [
+        "GET /api/reports/sales",
+        "GET /api/reports/profit",
+        "GET /api/reports/inventory",
+        "GET /api/reports/low-stock",
+        "GET /api/reports/purchases",
+        "GET /api/reports/suppliers",
+        "GET /api/reports/cashiers",
+        "GET /api/reports/customers",
+        "GET /api/reports/export"
+      ]
+    },
+    "reporting_requirements": [
+      {
+        "report_name": "Sales Report",
+        "filters": [
+          "date range",
+          "store",
+          "cashier",
+          "payment method",
+          "sale type"
+        ],
+        "exports": [
+          "PDF",
+          "Excel"
+        ]
+      },
+      {
+        "report_name": "Profit Report",
+        "filters": [
+          "date range",
+          "store",
+          "category",
+          "brand",
+          "product"
+        ],
+        "exports": [
+          "PDF",
+          "Excel"
+        ]
+      },
+      {
+        "report_name": "Inventory Report",
+        "filters": [
+          "store",
+          "warehouse",
+          "category",
+          "brand",
+          "low stock",
+          "expiry status"
+        ],
+        "exports": [
+          "PDF",
+          "Excel"
+        ]
+      },
+      {
+        "report_name": "Purchase Report",
+        "filters": [
+          "date range",
+          "supplier",
+          "purchase order status",
+          "store"
+        ],
+        "exports": [
+          "PDF",
+          "Excel"
+        ]
+      },
+      {
+        "report_name": "Supplier Report",
+        "filters": [
+          "supplier",
+          "date range",
+          "purchase volume",
+          "payment status"
+        ],
+        "exports": [
+          "PDF",
+          "Excel"
+        ]
+      },
+      {
+        "report_name": "Cashier Report",
+        "filters": [
+          "date range",
+          "cashier",
+          "store",
+          "payment method"
+        ],
+        "exports": [
+          "PDF",
+          "Excel"
+        ]
+      },
+      {
+        "report_name": "Customer Report",
+        "filters": [
+          "customer type",
+          "date range",
+          "loyalty points",
+          "purchase amount"
+        ],
+        "exports": [
+          "PDF",
+          "Excel"
+        ]
+      }
+    ],
+    "notification_requirements": [
+      {
+        "event": "Online Order Created",
+        "recipients": [
+          "customer",
+          "store_manager",
+          "cashier"
+        ],
+        "channels": [
+          "email",
+          "dashboard"
+        ]
+      },
+      {
+        "event": "Online Order Confirmed",
+        "recipients": [
+          "customer"
+        ],
+        "channels": [
+          "email",
+          "sms_optional"
+        ]
+      },
+      {
+        "event": "Payment Successful",
+        "recipients": [
+          "customer",
+          "accountant"
+        ],
+        "channels": [
+          "email",
+          "dashboard"
+        ]
+      },
+      {
+        "event": "Low Stock Alert",
+        "recipients": [
+          "inventory_manager",
+          "store_manager"
+        ],
+        "channels": [
+          "dashboard",
+          "email_optional"
+        ]
+      },
+      {
+        "event": "Purchase Order Approval Required",
+        "recipients": [
+          "store_manager",
+          "admin"
+        ],
+        "channels": [
+          "dashboard",
+          "email_optional"
+        ]
+      },
+      {
+        "event": "Delivery Assigned",
+        "recipients": [
+          "delivery_staff"
+        ],
+        "channels": [
+          "dashboard",
+          "sms_optional"
+        ]
+      },
+      {
+        "event": "Return Request Created",
+        "recipients": [
+          "store_manager",
+          "accountant"
+        ],
+        "channels": [
+          "dashboard"
+        ]
+      }
+    ],
+    "security_requirements": [
+      "Use role-based access control for all protected pages and API endpoints.",
+      "Store passwords using strong hashing.",
+      "Validate all user input on frontend and backend.",
+      "Protect against SQL injection or NoSQL injection.",
+      "Protect against XSS attacks.",
+      "Protect against CSRF if session authentication is used.",
+      "Use HTTPS in production.",
+      "Log important user actions in audit logs.",
+      "Prevent unauthorized invoice, payment, refund, and stock access.",
+      "Restrict financial reports to manager, accountant, admin, and super admin roles.",
+      "Require manager approval for high discounts, refunds, stock adjustments, and purchase orders.",
+      "Prevent unauthorized POS access outside assigned store if store-level access is enabled."
+    ],
+    "ui_ux_requirements": {
+      "design_style": "Modern supermarket and retail dashboard design",
+      "theme": "Clean, fast, colorful, professional, responsive",
+      "dashboard_layout": "Sidebar navigation, top bar, summary cards, tables, filters, charts",
+      "pos_layout": "Fast touch-friendly POS layout with barcode input, product grid, cart, totals, payment panel, and receipt actions",
+      "mobile_support": true,
+      "pwa_support": true,
+      "required_components": [
+        "Data tables with search and filters",
+        "Barcode scanner input",
+        "Product grid",
+        "POS cart",
+        "Date range picker",
+        "Stock status badges",
+        "Low-stock alert cards",
+        "Modal forms",
+        "Confirmation dialogs",
+        "Charts",
+        "Invoice print view",
+        "Receipt print view",
+        "Product image upload component",
+        "Role-based sidebar menu",
+        "Online order status timeline",
+        "Export buttons",
+        "Payment method selector"
+      ]
+    },
+    "acceptance_criteria": [
+      "Public users can browse products, offers, and store information.",
+      "Guests can place online orders if guest checkout is enabled.",
+      "Customers can register, login, view orders, track deliveries, and download invoices.",
+      "Cashiers can create POS sales, accept payments, and print receipts.",
+      "POS sales automatically reduce inventory stock.",
+      "Authorized users can create and manage products, categories, brands, and variants.",
+      "Inventory managers can adjust stock, transfer stock, and view stock movement history.",
+      "Low-stock alerts are generated when stock reaches reorder level.",
+      "Purchase officers can create purchase orders and GRNs.",
+      "GRNs automatically increase inventory stock.",
+      "Store managers can approve high discounts, purchase orders, and returns.",
+      "Accountants can view invoices, payments, refunds, and financial reports.",
+      "Delivery staff can view assigned online orders and update delivery status.",
+      "The system applies role-based access correctly.",
+      "All important actions are recorded in audit logs.",
+      "Reports can be filtered and exported.",
+      "The application works properly on desktop, tablet, and mobile."
+    ],
+    "future_enhancements": [
+      "Online payment gateway integration",
+      "Loyalty rewards system",
+      "AI-based stock prediction",
+      "AI product recommendation engine",
+      "Supplier portal",
+      "Multi-branch advanced stock transfer",
+      "Mobile app for delivery staff",
+      "QR code self-checkout",
+      "Kitchen or bakery production module",
+      "Accounting software integration",
+      "WhatsApp order notifications",
+      "Customer mobile app",
+      "Advanced promotion engine",
+      "Demand forecasting dashboard"
+    ]
+  }
+}
+```
