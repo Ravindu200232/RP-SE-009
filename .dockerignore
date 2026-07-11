@@ -1,0 +1,13 @@
+**/node_modules
+**/.venv
+**/.next
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+generated/*
+!generated/.gitkeep
+.git
+*.log
+.env
+.env.local

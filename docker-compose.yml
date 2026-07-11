@@ -1,0 +1,63 @@
+version: "3.9"
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: agentforge-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: agentforge-api
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/agentforge
+      - MONGODB_DB=agentforge
+      # On Docker Desktop, host Ollama is reachable at host.docker.internal.
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - OLLAMA_PRIMARY_MODEL=${OLLAMA_PRIMARY_MODEL:-nemotron-3-super:cloud}
+      - OLLAMA_FALLBACK_MODEL=${OLLAMA_FALLBACK_MODEL:-nemotron-3-super:cloud}
+      - STORAGE_DIR=/data/generated
+      - SAMPLES_DIR=/app/samples
+      - CORS_ORIGINS=http://localhost:3000
+      - LLM_ALLOW_OFFLINE_FALLBACK=true
+      - MONGODB_ALLOW_MEMORY_FALLBACK=true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./samples:/app/samples:ro
+      - generated-data:/data/generated
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: agentforge-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      # Browser talks to the API on the host-published port.
+      - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+    ports:
+      - "3000:3000"
+
+volumes:
+  mongo-data:
+  generated-data:
