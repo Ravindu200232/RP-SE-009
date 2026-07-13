@@ -8,9 +8,13 @@ import os
 from .models import JobResult, resolve_path
 
 
+def _default_data_dir() -> Path:
+    return Path(__file__).resolve().parents[2] / "data"
+
+
 class JobStore:
     def __init__(self, base_dir: str | None = None) -> None:
-        root = base_dir or os.getenv("AGENT4_DATA_DIR") or "./data"
+        root = base_dir or os.getenv("AGENT4_DATA_DIR") or str(_default_data_dir())
         self.base_dir = resolve_path(root)
         self.base_dir.mkdir(parents=True, exist_ok=True)
         self.jobs_dir = self.base_dir / "jobs"

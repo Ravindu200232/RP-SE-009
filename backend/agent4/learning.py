@@ -9,11 +9,19 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from dataclasses import dataclass, asdict, field
 from pathlib import Path
+import os
 import json
 import logging
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+
+def _default_data_root() -> Path:
+    base_dir = os.getenv("AGENT4_DATA_DIR")
+    if base_dir:
+        return Path(base_dir).expanduser().resolve() / "jobs"
+    return Path(__file__).resolve().parents[2] / "data" / "jobs"
 
 
 @dataclass
@@ -41,7 +49,7 @@ class LearningEngine:
     """
 
     def __init__(self, data_root: Path | None = None):
-        self.data_root = data_root or Path("/Users/malith_bandara/Desktop/final_research_agentic/data/jobs")
+        self.data_root = data_root or _default_data_root()
         self.insights: LearningInsight | None = None
         self._last_loaded_count = 0
 
