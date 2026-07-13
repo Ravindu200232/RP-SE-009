@@ -25,7 +25,7 @@ from .validators import Validator
 logger = logging.getLogger(__name__)
 
 
-AGENT4_FIXED_INPUT_ROOT = Path("/Users/malith_bandara/Desktop/AGENT4_Research/Microservice_input")
+AGENT4_FIXED_INPUT_ROOT = Path("/Users/malith_bandara/Desktop/All Folders/AGENT4_Research")
 
 
 class Agent4Service:
