@@ -1,8 +1,0 @@
-allowBuilds:
-  sharp: true
-# pnpm 11 reads these settings here (no longer from package.json / .npmrc).
-# Approve sharp's install script (used by Next.js image optimization).
-onlyBuiltDependencies:
-  - sharp
-# Don't block `pnpm dev` on the deps-status pre-check.
-verifyDepsBeforeRun: false

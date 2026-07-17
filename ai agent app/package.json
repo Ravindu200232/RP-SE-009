@@ -1,46 +1,69 @@
 {
-  "name": "ai-web-builder",
+  "name": "codegenai",
   "version": "0.1.0",
+  "description": "A fully local AI app builder powered by Ollama.",
+  "author": "ravindu b subasinha",
+  "license": "MIT",
   "private": true,
-  "description": "AI Web Builder - a local, Ollama/Gemma powered builder that generates full Next.js + MongoDB apps from a prompt.",
-  "type": "module",
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "typecheck": "tsc --noEmit"
-  },
+  "main": "electron/main.cjs",
   "dependencies": {
-    "@lottiefiles/dotlottie-react": "^0.19.6",
-    "@types/bcryptjs": "^3.0.0",
-    "bcryptjs": "^3.0.3",
-    "clsx": "^2.1.1",
-    "jszip": "^3.10.1",
-    "lucide-react": "^0.469.0",
-    "mongoose": "^8.9.5",
-    "nanoid": "^5.0.9",
-    "next": "^15.1.4",
-    "prism-react-renderer": "^2.4.1",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-markdown": "^9.0.3",
-    "react-resizable-panels": "^2.1.9",
-    "remark-gfm": "^4.0.0",
-    "tailwind-merge": "^2.6.0",
-    "undici": "^7.2.0",
-    "zustand": "^5.0.3"
+    "playwright": "^1.58.2"
   },
   "devDependencies": {
-    "@types/node": "^22.10.5",
-    "@types/react": "^19.0.6",
-    "@types/react-dom": "^19.0.3",
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.49",
-    "tailwindcss": "^3.4.17",
-    "typescript": "^5.7.3"
+    "electron": "^40.6.0",
+    "electron-builder": "^26.8.1",
+    "wait-on": "^9.0.4"
   },
-  "engines": {
-    "node": ">=18.18.0"
+  "scripts": {
+    "electron:dev": "pkill -f locode || true && lsof -ti :7824,7825 | xargs kill -9 || true && electron .",
+    "dist": "electron-builder --mac dmg",
+    "prep:node": "./scripts/download-node-macos.sh",
+    "build:backend": "lsof -ti :7824,7825 | xargs kill -9 || true && rm -rf build dist dist-backend && python3 -m PyInstaller --clean locode-backend-mac.spec --noconfirm",
+    "prep:backend": "rm -rf dist-backend && mkdir -p dist-backend && cp dist/locode-backend-v4 dist-backend/locode-backend-v4 && chmod +x dist-backend/locode-backend-v4",
+    "package:all": "npm run build:backend && npm run prep:node && npm run prep:backend && npm run dist"
+  },
+  "build": {
+    "appId": "com.codegenai.app",
+    "productName": "codegenAI",
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.developer-tools",
+      "icon": "assets/locode.icns",
+      "hardenedRuntime": false
+    },
+    "files": [
+      "electron/**/*",
+      "electron/main.cjs",
+      "electron/ollama-bootstrap.cjs"
+    ],
+    "extraResources": [
+      {
+        "from": "dist-backend",
+        "to": "backend"
+      },
+      {
+        "from": "vendor/node",
+        "to": "node"
+      },
+      {
+        "from": "vendor/ms-playwright",
+        "to": "ms-playwright"
+      },
+      {
+        "from": "ui",
+        "to": "ui"
+      },
+      {
+        "from": "assets/locode.png",
+        "to": "locode.png"
+      }
+    ],
+    "asar": false,
+    "directories": {
+      "output": "release",
+      "buildResources": "assets"
+    }
   }
 }

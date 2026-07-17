@@ -1,0 +1,1245 @@
+{
+  "app": {
+    "name": "EduCore School Management System",
+    "summary": "A role-based school management application for users, students, classes, attendance, assignments, exams, fees and parent access.",
+    "app_type": "School Management Web Application"
+  },
+  "roles": [
+    {
+      "role_key": "admin",
+      "role_name": "School Administrator",
+      "summary": "Manages users, students, classes, subjects, settings and reports.",
+      "components": [
+        {
+          "name": "AdminSidebar",
+          "type": "navigation",
+          "items": [
+            "Dashboard",
+            "Users",
+            "Students",
+            "Classes",
+            "Subjects",
+            "Reports"
+          ]
+        },
+        {
+          "name": "AdminLayout",
+          "type": "layout",
+          "features": [
+            "Sidebar",
+            "Top header",
+            "Breadcrumb",
+            "Protected content"
+          ]
+        },
+        {
+          "name": "UserTable",
+          "type": "data_table",
+          "features": [
+            "Search",
+            "Role filter",
+            "Status filter",
+            "Edit",
+            "Deactivate"
+          ]
+        },
+        {
+          "name": "StudentTable",
+          "type": "data_table",
+          "features": [
+            "Search",
+            "Class filter",
+            "Edit",
+            "Archive"
+          ]
+        },
+        {
+          "name": "SummaryCard",
+          "type": "dashboard_card",
+          "variants": [
+            "Students",
+            "Teachers",
+            "Classes",
+            "Outstanding fees"
+          ]
+        }
+      ],
+      "pages": [
+        {
+          "page_name": "Admin Dashboard",
+          "route": "/admin/dashboard",
+          "sections": [
+            {
+              "section_name": "Overview",
+              "components": [
+                "SummaryCard"
+              ],
+              "content": [
+                "Total students",
+                "Teachers",
+                "Classes",
+                "Attendance rate"
+              ]
+            },
+            {
+              "section_name": "Charts",
+              "components": [
+                "AttendanceChart",
+                "FeeChart"
+              ]
+            },
+            {
+              "section_name": "Recent Activity",
+              "components": [
+                "ActivityList"
+              ]
+            }
+          ],
+          "functions": [
+            "View school KPIs",
+            "Filter by academic year",
+            "Open management modules"
+          ]
+        },
+        {
+          "page_name": "Create User",
+          "route": "/admin/users/create",
+          "sections": [
+            {
+              "section_name": "Account Details",
+              "components": [
+                "NameInput",
+                "EmailInput",
+                "PasswordInput",
+                "RoleSelect"
+              ]
+            },
+            {
+              "section_name": "Employment Details",
+              "components": [
+                "PhoneInput",
+                "DepartmentSelect",
+                "StatusSwitch"
+              ]
+            }
+          ],
+          "functions": [
+            "Create admin",
+            "Create teacher",
+            "Create accountant",
+            "Validate unique email",
+            "Hash password"
+          ]
+        },
+        {
+          "page_name": "User Management",
+          "route": "/admin/users",
+          "sections": [
+            {
+              "section_name": "Filters",
+              "components": [
+                "SearchInput",
+                "RoleFilter",
+                "StatusFilter"
+              ]
+            },
+            {
+              "section_name": "User List",
+              "components": [
+                "UserTable"
+              ]
+            }
+          ],
+          "functions": [
+            "Search users",
+            "Edit user",
+            "Deactivate user",
+            "Reset password"
+          ]
+        },
+        {
+          "page_name": "Student Management",
+          "route": "/admin/students",
+          "sections": [
+            {
+              "section_name": "Student Filters",
+              "components": [
+                "SearchInput",
+                "ClassFilter",
+                "StatusFilter"
+              ]
+            },
+            {
+              "section_name": "Student List",
+              "components": [
+                "StudentTable"
+              ]
+            },
+            {
+              "section_name": "Student Form",
+              "components": [
+                "StudentForm",
+                "GuardianSelect"
+              ]
+            }
+          ],
+          "functions": [
+            "Create student",
+            "Edit student",
+            "Assign class",
+            "Link guardian",
+            "Archive student"
+          ]
+        },
+        {
+          "page_name": "Academic Setup",
+          "route": "/admin/academic",
+          "sections": [
+            {
+              "section_name": "Classes",
+              "components": [
+                "ClassTable",
+                "ClassForm"
+              ]
+            },
+            {
+              "section_name": "Subjects",
+              "components": [
+                "SubjectTable",
+                "SubjectForm"
+              ]
+            },
+            {
+              "section_name": "Teacher Assignment",
+              "components": [
+                "TeacherAssignmentForm"
+              ]
+            }
+          ],
+          "functions": [
+            "Create class",
+            "Create subject",
+            "Assign class teacher",
+            "Assign subject teacher"
+          ]
+        },
+        {
+          "page_name": "Reports",
+          "route": "/admin/reports",
+          "sections": [
+            {
+              "section_name": "Filters",
+              "components": [
+                "DateRangeFilter",
+                "ClassFilter",
+                "ReportTypeSelect"
+              ]
+            },
+            {
+              "section_name": "Results",
+              "components": [
+                "ReportTable",
+                "ReportChart"
+              ]
+            }
+          ],
+          "functions": [
+            "Student report",
+            "Attendance report",
+            "Exam report",
+            "Fee report",
+            "Export CSV"
+          ]
+        }
+      ],
+      "role_functions": [
+        "Manage staff accounts",
+        "Manage students",
+        "Manage classes and subjects",
+        "Assign teachers",
+        "View all reports"
+      ]
+    },
+    {
+      "role_key": "teacher",
+      "role_name": "Teacher",
+      "summary": "Manages assigned classes, attendance, assignments, exams and marks.",
+      "components": [
+        {
+          "name": "TeacherSidebar",
+          "type": "navigation",
+          "items": [
+            "Dashboard",
+            "My Classes",
+            "Attendance",
+            "Assignments",
+            "Exams"
+          ]
+        },
+        {
+          "name": "TeacherLayout",
+          "type": "layout",
+          "features": [
+            "Sidebar",
+            "Top header",
+            "Class selector"
+          ]
+        },
+        {
+          "name": "AttendanceGrid",
+          "type": "interactive_table",
+          "features": [
+            "Present",
+            "Absent",
+            "Late",
+            "Excused"
+          ]
+        },
+        {
+          "name": "MarksEntryTable",
+          "type": "editable_table",
+          "features": [
+            "Student",
+            "Marks",
+            "Grade preview",
+            "Validation"
+          ]
+        }
+      ],
+      "pages": [
+        {
+          "page_name": "Teacher Dashboard",
+          "route": "/teacher/dashboard",
+          "sections": [
+            {
+              "section_name": "Today Schedule",
+              "components": [
+                "TimetableList"
+              ]
+            },
+            {
+              "section_name": "Assigned Classes",
+              "components": [
+                "ClassCardGrid"
+              ]
+            },
+            {
+              "section_name": "Pending Work",
+              "components": [
+                "TaskList"
+              ]
+            }
+          ],
+          "functions": [
+            "View schedule",
+            "Open assigned class",
+            "View pending attendance"
+          ]
+        },
+        {
+          "page_name": "Attendance",
+          "route": "/teacher/attendance",
+          "sections": [
+            {
+              "section_name": "Selection",
+              "components": [
+                "ClassSelect",
+                "DatePicker"
+              ]
+            },
+            {
+              "section_name": "Mark Attendance",
+              "components": [
+                "AttendanceGrid"
+              ]
+            },
+            {
+              "section_name": "Summary",
+              "components": [
+                "AttendanceSummary"
+              ]
+            }
+          ],
+          "functions": [
+            "Mark attendance",
+            "Update same-day attendance",
+            "Submit attendance"
+          ]
+        },
+        {
+          "page_name": "Assignments",
+          "route": "/teacher/assignments",
+          "sections": [
+            {
+              "section_name": "Create Assignment",
+              "components": [
+                "AssignmentForm"
+              ]
+            },
+            {
+              "section_name": "Assignment List",
+              "components": [
+                "AssignmentTable"
+              ]
+            },
+            {
+              "section_name": "Submission Status",
+              "components": [
+                "SubmissionTable"
+              ]
+            }
+          ],
+          "functions": [
+            "Create assignment",
+            "Edit assignment",
+            "Set due date",
+            "View submissions"
+          ]
+        },
+        {
+          "page_name": "Exams and Marks",
+          "route": "/teacher/exams",
+          "sections": [
+            {
+              "section_name": "Exam Setup",
+              "components": [
+                "ExamForm"
+              ]
+            },
+            {
+              "section_name": "Marks Entry",
+              "components": [
+                "MarksEntryTable"
+              ]
+            },
+            {
+              "section_name": "Result Preview",
+              "components": [
+                "ResultSummary"
+              ]
+            }
+          ],
+          "functions": [
+            "Create exam",
+            "Enter marks",
+            "Calculate grades",
+            "Publish results"
+          ]
+        }
+      ],
+      "role_functions": [
+        "View assigned classes",
+        "Mark attendance",
+        "Create assignments",
+        "Create exams",
+        "Publish marks"
+      ]
+    },
+    {
+      "role_key": "accountant",
+      "role_name": "School Accountant",
+      "summary": "Manages fees, payments, balances, receipts and finance reports.",
+      "components": [
+        {
+          "name": "AccountantSidebar",
+          "type": "navigation",
+          "items": [
+            "Dashboard",
+            "Student Fees",
+            "Payments",
+            "Reports"
+          ]
+        },
+        {
+          "name": "FeeTable",
+          "type": "data_table",
+          "features": [
+            "Student search",
+            "Term filter",
+            "Status",
+            "Balance"
+          ]
+        },
+        {
+          "name": "PaymentForm",
+          "type": "form",
+          "features": [
+            "Invoice",
+            "Amount",
+            "Method",
+            "Reference"
+          ]
+        }
+      ],
+      "pages": [
+        {
+          "page_name": "Finance Dashboard",
+          "route": "/accountant/dashboard",
+          "sections": [
+            {
+              "section_name": "Financial Cards",
+              "components": [
+                "SummaryCard"
+              ]
+            },
+            {
+              "section_name": "Recent Payments",
+              "components": [
+                "PaymentTable"
+              ]
+            },
+            {
+              "section_name": "Collection Chart",
+              "components": [
+                "FeeChart"
+              ]
+            }
+          ],
+          "functions": [
+            "View collected amount",
+            "View outstanding amount",
+            "View recent payments"
+          ]
+        },
+        {
+          "page_name": "Student Fees",
+          "route": "/accountant/fees",
+          "sections": [
+            {
+              "section_name": "Filters",
+              "components": [
+                "StudentSearch",
+                "ClassFilter",
+                "TermFilter",
+                "StatusFilter"
+              ]
+            },
+            {
+              "section_name": "Fee Records",
+              "components": [
+                "FeeTable"
+              ]
+            }
+          ],
+          "functions": [
+            "Create fee invoice",
+            "View balance",
+            "Open payment form"
+          ]
+        },
+        {
+          "page_name": "Record Payment",
+          "route": "/accountant/payments/create",
+          "sections": [
+            {
+              "section_name": "Invoice Summary",
+              "components": [
+                "InvoiceSummary"
+              ]
+            },
+            {
+              "section_name": "Payment Details",
+              "components": [
+                "PaymentForm"
+              ]
+            }
+          ],
+          "functions": [
+            "Record partial payment",
+            "Record full payment",
+            "Update balance",
+            "Print receipt"
+          ]
+        }
+      ],
+      "role_functions": [
+        "Create fee invoices",
+        "Record payments",
+        "Print receipts",
+        "Generate fee reports"
+      ]
+    },
+    {
+      "role_key": "parent",
+      "role_name": "Parent",
+      "summary": "Views linked children, attendance, assignments, results and fees.",
+      "components": [
+        {
+          "name": "ParentSidebar",
+          "type": "navigation",
+          "items": [
+            "Dashboard",
+            "My Children",
+            "Attendance",
+            "Assignments",
+            "Results",
+            "Fees"
+          ]
+        },
+        {
+          "name": "ChildSelector",
+          "type": "selector",
+          "features": [
+            "Switch linked child"
+          ]
+        },
+        {
+          "name": "ProgressCard",
+          "type": "card",
+          "features": [
+            "Attendance",
+            "Average marks",
+            "Pending assignments",
+            "Fee balance"
+          ]
+        }
+      ],
+      "pages": [
+        {
+          "page_name": "Parent Dashboard",
+          "route": "/parent/dashboard",
+          "sections": [
+            {
+              "section_name": "Child Selector",
+              "components": [
+                "ChildSelector"
+              ]
+            },
+            {
+              "section_name": "Progress",
+              "components": [
+                "ProgressCard"
+              ]
+            },
+            {
+              "section_name": "Recent Updates",
+              "components": [
+                "AnnouncementList",
+                "AssignmentList"
+              ]
+            }
+          ],
+          "functions": [
+            "Switch child",
+            "View attendance summary",
+            "View latest results",
+            "View fee balance"
+          ]
+        },
+        {
+          "page_name": "Child Details",
+          "route": "/parent/children/[studentId]",
+          "sections": [
+            {
+              "section_name": "Profile",
+              "components": [
+                "StudentProfileCard"
+              ]
+            },
+            {
+              "section_name": "Attendance",
+              "components": [
+                "AttendanceChart"
+              ]
+            },
+            {
+              "section_name": "Results",
+              "components": [
+                "ResultTable"
+              ]
+            },
+            {
+              "section_name": "Assignments",
+              "components": [
+                "AssignmentList"
+              ]
+            }
+          ],
+          "functions": [
+            "View linked child only",
+            "View attendance history",
+            "View published results",
+            "View assignments"
+          ]
+        },
+        {
+          "page_name": "Fees",
+          "route": "/parent/fees",
+          "sections": [
+            {
+              "section_name": "Fee Summary",
+              "components": [
+                "FeeSummaryCard"
+              ]
+            },
+            {
+              "section_name": "Payment History",
+              "components": [
+                "PaymentHistoryTable"
+              ]
+            }
+          ],
+          "functions": [
+            "View invoices",
+            "View balance",
+            "Download receipt"
+          ]
+        }
+      ],
+      "role_functions": [
+        "View linked children only",
+        "View attendance",
+        "View assignments",
+        "View results",
+        "View fees"
+      ]
+    }
+  ],
+  "data_types": {
+    "ObjectId": "MongoDB document reference",
+    "string": "Text value",
+    "number": "Integer or decimal",
+    "boolean": "True or false",
+    "date": "ISO date and time",
+    "enum": "Fixed list value",
+    "array": "List of values",
+    "object": "Embedded structured object"
+  },
+  "tables": [
+    {
+      "table_name": "users",
+      "fields": [
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "constraints": [
+            "primary_key"
+          ]
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "constraints": [
+            "required"
+          ]
+        },
+        {
+          "name": "email",
+          "type": "string",
+          "constraints": [
+            "required",
+            "unique"
+          ]
+        },
+        {
+          "name": "passwordHash",
+          "type": "string",
+          "constraints": [
+            "required"
+          ]
+        },
+        {
+          "name": "role",
+          "type": "enum",
+          "values": [
+            "admin",
+            "teacher",
+            "accountant",
+            "parent"
+          ]
+        },
+        {
+          "name": "active",
+          "type": "boolean",
+          "default": true
+        }
+      ]
+    },
+    {
+      "table_name": "guardians",
+      "fields": [
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "constraints": [
+            "primary_key"
+          ]
+        },
+        {
+          "name": "userId",
+          "type": "ObjectId",
+          "references": "users._id",
+          "constraints": [
+            "optional"
+          ]
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "constraints": [
+            "required"
+          ]
+        },
+        {
+          "name": "phone",
+          "type": "string",
+          "constraints": [
+            "required"
+          ]
+        },
+        {
+          "name": "email",
+          "type": "string",
+          "constraints": [
+            "optional"
+          ]
+        }
+      ]
+    },
+    {
+      "table_name": "classes",
+      "fields": [
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "constraints": [
+            "primary_key"
+          ]
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "constraints": [
+            "required"
+          ]
+        },
+        {
+          "name": "grade",
+          "type": "string",
+          "constraints": [
+            "required"
+          ]
+        },
+        {
+          "name": "academicYear",
+          "type": "number",
+          "constraints": [
+            "required"
+          ]
+        },
+        {
+          "name": "classTeacherId",
+          "type": "ObjectId",
+          "references": "users._id"
+        }
+      ]
+    },
+    {
+      "table_name": "students",
+      "fields": [
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "constraints": [
+            "primary_key"
+          ]
+        },
+        {
+          "name": "admissionNo",
+          "type": "string",
+          "constraints": [
+            "required",
+            "unique"
+          ]
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "constraints": [
+            "required"
+          ]
+        },
+        {
+          "name": "dateOfBirth",
+          "type": "date",
+          "constraints": [
+            "required"
+          ]
+        },
+        {
+          "name": "classId",
+          "type": "ObjectId",
+          "references": "classes._id"
+        },
+        {
+          "name": "guardianId",
+          "type": "ObjectId",
+          "references": "guardians._id"
+        },
+        {
+          "name": "status",
+          "type": "enum",
+          "values": [
+            "active",
+            "inactive"
+          ]
+        }
+      ]
+    },
+    {
+      "table_name": "subjects",
+      "fields": [
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "constraints": [
+            "primary_key"
+          ]
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "constraints": [
+            "required"
+          ]
+        },
+        {
+          "name": "code",
+          "type": "string",
+          "constraints": [
+            "required",
+            "unique"
+          ]
+        },
+        {
+          "name": "classIds",
+          "type": "array<ObjectId>",
+          "references": "classes._id"
+        },
+        {
+          "name": "teacherIds",
+          "type": "array<ObjectId>",
+          "references": "users._id"
+        }
+      ]
+    },
+    {
+      "table_name": "attendance",
+      "fields": [
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "constraints": [
+            "primary_key"
+          ]
+        },
+        {
+          "name": "studentId",
+          "type": "ObjectId",
+          "references": "students._id"
+        },
+        {
+          "name": "classId",
+          "type": "ObjectId",
+          "references": "classes._id"
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "constraints": [
+            "required"
+          ]
+        },
+        {
+          "name": "status",
+          "type": "enum",
+          "values": [
+            "present",
+            "absent",
+            "late",
+            "excused"
+          ]
+        },
+        {
+          "name": "markedBy",
+          "type": "ObjectId",
+          "references": "users._id"
+        }
+      ]
+    },
+    {
+      "table_name": "assignments",
+      "fields": [
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "constraints": [
+            "primary_key"
+          ]
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "constraints": [
+            "required"
+          ]
+        },
+        {
+          "name": "classId",
+          "type": "ObjectId",
+          "references": "classes._id"
+        },
+        {
+          "name": "subjectId",
+          "type": "ObjectId",
+          "references": "subjects._id"
+        },
+        {
+          "name": "teacherId",
+          "type": "ObjectId",
+          "references": "users._id"
+        },
+        {
+          "name": "dueDate",
+          "type": "date",
+          "constraints": [
+            "required"
+          ]
+        }
+      ]
+    },
+    {
+      "table_name": "exams",
+      "fields": [
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "constraints": [
+            "primary_key"
+          ]
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "constraints": [
+            "required"
+          ]
+        },
+        {
+          "name": "classId",
+          "type": "ObjectId",
+          "references": "classes._id"
+        },
+        {
+          "name": "subjectId",
+          "type": "ObjectId",
+          "references": "subjects._id"
+        },
+        {
+          "name": "maxMarks",
+          "type": "number",
+          "constraints": [
+            "required"
+          ]
+        },
+        {
+          "name": "published",
+          "type": "boolean",
+          "default": false
+        }
+      ]
+    },
+    {
+      "table_name": "marks",
+      "fields": [
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "constraints": [
+            "primary_key"
+          ]
+        },
+        {
+          "name": "examId",
+          "type": "ObjectId",
+          "references": "exams._id"
+        },
+        {
+          "name": "studentId",
+          "type": "ObjectId",
+          "references": "students._id"
+        },
+        {
+          "name": "marks",
+          "type": "number",
+          "constraints": [
+            "required"
+          ]
+        },
+        {
+          "name": "grade",
+          "type": "string",
+          "constraints": [
+            "required"
+          ]
+        }
+      ]
+    },
+    {
+      "table_name": "studentFees",
+      "fields": [
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "constraints": [
+            "primary_key"
+          ]
+        },
+        {
+          "name": "studentId",
+          "type": "ObjectId",
+          "references": "students._id"
+        },
+        {
+          "name": "term",
+          "type": "string",
+          "constraints": [
+            "required"
+          ]
+        },
+        {
+          "name": "total",
+          "type": "number",
+          "constraints": [
+            "required"
+          ]
+        },
+        {
+          "name": "paid",
+          "type": "number",
+          "default": 0
+        },
+        {
+          "name": "balance",
+          "type": "number",
+          "constraints": [
+            "required"
+          ]
+        },
+        {
+          "name": "status",
+          "type": "enum",
+          "values": [
+            "unpaid",
+            "partial",
+            "paid"
+          ]
+        }
+      ]
+    },
+    {
+      "table_name": "feePayments",
+      "fields": [
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "constraints": [
+            "primary_key"
+          ]
+        },
+        {
+          "name": "studentFeeId",
+          "type": "ObjectId",
+          "references": "studentFees._id"
+        },
+        {
+          "name": "amount",
+          "type": "number",
+          "constraints": [
+            "required"
+          ]
+        },
+        {
+          "name": "method",
+          "type": "enum",
+          "values": [
+            "cash",
+            "card",
+            "bank"
+          ]
+        },
+        {
+          "name": "paidAt",
+          "type": "date"
+        },
+        {
+          "name": "receivedBy",
+          "type": "ObjectId",
+          "references": "users._id"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "from": "users._id",
+      "to": "guardians.userId",
+      "type": "one_to_one_optional"
+    },
+    {
+      "from": "classes._id",
+      "to": "students.classId",
+      "type": "one_to_many"
+    },
+    {
+      "from": "guardians._id",
+      "to": "students.guardianId",
+      "type": "one_to_many"
+    },
+    {
+      "from": "users._id",
+      "to": "classes.classTeacherId",
+      "type": "one_to_many"
+    },
+    {
+      "from": "classes._id",
+      "to": "subjects.classIds",
+      "type": "many_to_many"
+    },
+    {
+      "from": "users._id",
+      "to": "subjects.teacherIds",
+      "type": "many_to_many"
+    },
+    {
+      "from": "students._id",
+      "to": "attendance.studentId",
+      "type": "one_to_many"
+    },
+    {
+      "from": "classes._id",
+      "to": "assignments.classId",
+      "type": "one_to_many"
+    },
+    {
+      "from": "exams._id",
+      "to": "marks.examId",
+      "type": "one_to_many"
+    },
+    {
+      "from": "students._id",
+      "to": "marks.studentId",
+      "type": "one_to_many"
+    },
+    {
+      "from": "students._id",
+      "to": "studentFees.studentId",
+      "type": "one_to_many"
+    },
+    {
+      "from": "studentFees._id",
+      "to": "feePayments.studentFeeId",
+      "type": "one_to_many"
+    }
+  ]
+}
