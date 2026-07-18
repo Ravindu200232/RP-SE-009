@@ -40,10 +40,10 @@ class RepairHarness:
         self._regen_tried: set[str] = set()
         # Files whose LLM patch made the build worse — don't hand them the same knife twice.
         self._patch_banned: set[str] = set()
-        # Repair uses the code-specialised model (qwen2.5-coder); generation stays on `model` (gemma),
-        # used only by the `regen` fallback. Keeping them separate is the whole point.
-        self.gen_model = model or llm.GEN_MODEL
-        self.repair_model = repair_model or llm.REPAIR_MODEL
+        # Generation, repair, and hard repair use the same pinned local Gemma model;
+        # stages differ only in reasoning and output budgets.
+        self.gen_model = llm.pinned_model(model or llm.GEN_MODEL)
+        self.repair_model = llm.pinned_model(repair_model or llm.REPAIR_MODEL)
         self.bf = BugFixAgent(project_dir, self.emit, self.repair_model, regen=regen)
         self.ckpt = Checkpoint(project_dir)
 
@@ -112,9 +112,9 @@ class RepairHarness:
             return
         errors = cluster["errors"]
         self._deterministic(rel, errors)
-        combined = "; ".join(dict.fromkeys(e["message"] for e in errors[:5]))
+        combined = "; ".join(dict.fromkeys(e["message"] for e in errors))
         # Escalation ladder: rounds 0-1 = gemma first-pass (fast/local). Round >=2 (still stuck) =
-        # cloud model (nemotron, max ctx + thinking); if even that can't fix it, regenerate the file.
+        # local Gemma with bounded thinking; if even that cannot fix it, stop publication.
         if rnd >= 2:
             if self._guarded_llm(rel, errors[0]["line"], combined, hard=True):
                 return
@@ -144,7 +144,7 @@ class RepairHarness:
             self.on_revert(rel)
             self._log(f"regen of {rel} did not reduce blockers ({before_b}->{after_b}); reverted file")
         else:
-            self._log(f"regenerated {rel} (cloud repair exhausted; blockers {before_b}->{after_b})")
+            self._log(f"regenerated {rel} (local repair exhausted; blockers {before_b}->{after_b})")
 
     def _cluster_build(self, findings: list[dict]) -> list[dict]:
         """Group build findings by file, producers-first (same ordering as the tsc diagnose pass)."""
@@ -212,7 +212,7 @@ class RepairHarness:
                     patched[rel] = (self.dir / rel).read_text(encoding="utf-8")
                 except Exception:  # noqa: BLE001
                     patched.pop(rel, None)
-                # early passes = gemma first-pass; later passes escalate to the cloud model (rnd>=2).
+                # Every pass stays on the same local Gemma model.
                 self._repair_cluster(c, rnd=0 if it == 0 else 2)
         # final measure after exhausting the loop
         ok, _ = self.bf.build()
@@ -220,12 +220,7 @@ class RepairHarness:
 
     # ── driver ──────────────────────────────────────────────────────────────────
     def run(self, max_rounds: int = 3) -> bool:
-        # Free VRAM so the 14B repair model loads 100% on GPU (a CPU-spilled repair model is unusably
-        # slow). Generation is done by now; regen (round 3) will transparently reload gemma if needed.
-        if self.repair_model != self.gen_model:
-            llm.unload(self.gen_model)
-            llm.ensure_loaded(self.repair_model, llm.REPAIR_OPTS)
-            self._log(f"repair model: {self.repair_model} (full-GPU; unloaded {self.gen_model})")
+        # Generation and repair share the already-warm, fully GPU-resident Gemma instance.
         # deterministic import repair up front (one-shot module-not-found cure)
         module_gate.repair_imports(self.dir)
         prev = None
@@ -249,6 +244,7 @@ class RepairHarness:
         # regen). Runs ONLY the NON-DESTRUCTIVE fixers (no-ops on clean files), ONLY on files that still
         # have a blocker, and is GUARDED: if it regresses the blocker count it is rolled back.
         final = diagnose(self.dir, self.runner, self.registry)
+        preflight = final
         if final["blockers"]:
             self.ckpt.snapshot("pre-sweep")
             swept = 0
@@ -259,18 +255,23 @@ class RepairHarness:
                 if self.bf.fix_bad_closing_tags(rel) | self.bf.fix_import_syntax(rel):
                     swept += 1
             if swept:
-                after = diagnose(self.dir, self.runner, self.registry)["blockers"]
+                after_report = diagnose(self.dir, self.runner, self.registry)
+                after = after_report["blockers"]
                 if after > final["blockers"]:
                     self.ckpt.restore()
                     self._log(f"final sweep regressed {final['blockers']}->{after}; reverted")
                 else:
+                    preflight = after_report
                     self._log(f"final deterministic sweep fixed {final['blockers'] - after} blocker(s)")
 
         # tsc-clean is necessary but not sufficient — next build also runs SWC parse + route checks.
         # A BOUNDED, oscillation-guarded build-fix loop reads the real `next build` errors, feeds each
         # (with file location + `.locode` memory) to the repair LLM, and rebuilds. This is deliberately
         # small and guarded — the unguarded 8-pass loop is what let bad fixes mask/regress other files.
-        ok = self._build_fix_loop(max_iters=4)
-        self._log("next build GREEN" if ok else
-                  "next build NOT green after the repair + build-fix loop — unresolved (release blocked)")
+        if preflight["blockers"]:
+            self._log(f"preflight NOT clean: {preflight['blockers']} blocker(s); release blocked")
+            return False
+        ok, _ = self.bf.build()
+        self._log("next build GREEN on first invocation" if ok else
+                  "next build failed on first invocation; release blocked")
         return ok

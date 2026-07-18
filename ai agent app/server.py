@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """
-WebForge Server  —  HTTP :7824  |  WebSocket :7825
-- Dual model selection (refine + build)
-- Auto-pull Ollama models if missing
-- Stop/unload model immediately after each stage (VRAM conservation)
-- Fix loop uses npm run build for real errors + full codebase context
+Locode Server — HTTP :7824 | WebSocket :7825
+- Every LLM stage is pinned to local Gemma 4 12B
+- Full product-context/v1 is persisted and reused for generation/update/repair
+- Fix loop uses npm run build for real errors
 """
 import atexit
 import signal
-import sys, json, asyncio, logging, threading, time, re, subprocess, os, urllib3
+import sys, json, asyncio, hashlib, logging, threading, time, re, subprocess, os, posixpath, urllib3
 urllib3.disable_warnings()
 from pathlib import Path
 from http.server import HTTPServer, SimpleHTTPRequestHandler
@@ -101,12 +100,11 @@ print(f"DEBUG: UI_DIR = {BASE_DIR / 'ui'}")
 PROD_DIR = BASE_DIR / "production-ready"
 LOGS_DIR = BASE_DIR / "logs"
 OLLAMA_URL = "http://localhost:11434"
-# Single Gemma 4 12B model drives every stage (~98K context, thinking low —
-# all configured in agents/llm.py). The two names are kept because the UI still
-# sends refine_model / build_model fields.
-DEFAULT_REFINE = llm.GEN_MODEL
+# Legacy request fields retain these names, but strict routing in agents/llm.py
+# pins both to local Gemma and ignores any client override.
+DEFAULT_REFINE = llm.ARCHITECT_MODEL
 DEFAULT_BUILD  = llm.GEN_MODEL
-MAX_FIX    = 3
+MAX_FIX    = 1
 DEV_PORT   = 3000          # Next.js dev server
 UI_PORT    = 7824
 WS_PORT    = 7825
@@ -124,6 +122,7 @@ _TOKENS = {"prompt": 0, "completion": 0, "calls": 0}
 
 def _reset_tokens():
     _TOKENS.update(prompt=0, completion=0, calls=0)
+    llm.reset_metrics()
 
 def _add_tokens(p, c):
     _TOKENS["prompt"] += int(p or 0)
@@ -187,16 +186,20 @@ def on_token(token: str):
 # ── Ollama model management ───────────────────────────────────────────────────
 
 def ensure_model(model: str) -> bool:
-    """Check Ollama tags; pull model if missing. Returns True if ready."""
+    """Require the exact installed local tag; never pull or substitute another model."""
+    model = llm.pinned_model(model)
     import requests as req
     try:
         r = req.get(f"{OLLAMA_URL}/api/tags", timeout=5)
         names = [m["name"] for m in r.json().get("models", [])]
-        if any(model == n or model.split(":")[0] == n.split(":")[0] for n in names):
+        if model in names:
             elog("INFO", f"   ✅ Model ready: {model}")
             return True
     except Exception as e:
         elog("WARN", f"   Ollama check failed: {e}")
+
+    elog("ERROR", f"   Required local model is not installed: {model}")
+    return False
 
     elog("INFO", f"   📥 Pulling {model} from Ollama (first time only)…")
     try:
@@ -223,7 +226,8 @@ def ensure_model(model: str) -> bool:
         return False
 
 def stop_model(model: str):
-    """Unload model from VRAM immediately after use."""
+    """Compatibility no-op: keep Gemma resident for the configured 30 minutes."""
+    return None
     import requests as req
     try:
         req.post(f"{OLLAMA_URL}/api/generate",
@@ -409,23 +413,67 @@ class UIBuilder(BuilderAgent):
 
 # ── Pipeline ──────────────────────────────────────────────────────────────────
 
+def _safe_product_child(path: Path) -> Path:
+    root = PROD_DIR.resolve()
+    resolved = path.resolve()
+    if resolved.parent != root:
+        raise ValueError(f"Refusing project operation outside {root}: {resolved}")
+    return resolved
+
+
+def _prepare_staging(project_name: str) -> Path:
+    stage = _safe_product_child(PROD_DIR / f".{project_name}.locode-staging")
+    stage.mkdir(parents=True, exist_ok=True)
+    for child in list(stage.iterdir()):
+        if child.name in {"node_modules", "package-lock.json"}:
+            continue
+        shutil.rmtree(child) if child.is_dir() else child.unlink()
+    return stage
+
+
+def _publish_staging(project_name: str, stage: Path) -> Path:
+    """Swap a green staged build into place while retaining rollback until the move succeeds."""
+    stage = _safe_product_child(stage)
+    target = _safe_product_child(PROD_DIR / project_name)
+    backup = _safe_product_child(PROD_DIR / f".{project_name}.locode-backup")
+    from agents.publish import publish_stage
+    published, _residual = publish_stage(stage, target, backup)
+    return published
+
+
+def _prepare_update_staging(project_name: str, source: Path) -> Path:
+    stage = _prepare_staging(project_name)
+    shutil.copytree(
+        _safe_product_child(source), stage, dirs_exist_ok=True,
+        ignore=shutil.ignore_patterns("node_modules", ".next"),
+    )
+    return stage
+
 def run_pipeline(prompt: str = "", refine_model: str = None, build_model: str = None,
                  srs: dict = None):
     """v2 rule-based multi-agent pipeline: fixed core + LLM agents + line-level bug-fix.
     Accepts a role-wise SRS, an AutoHub SRS, or a free-text prompt. No templates."""
     from agents import orchestrator, rolewise
-    model = build_model or DEFAULT_BUILD
+    llm.pinned_architect_model(refine_model)
+    llm.pinned_model(build_model)
+    model = llm.LOCAL_MODEL
+    architect_model = llm.ARCHITECT_MODEL
     set_stream_callback(on_token)
     _reset_tokens()
     llm.log_config(model)
     try:
         elog("INFO", "━" * 40)
         elog("INFO", f"💡 {(prompt or 'structured SRS input')[:90]}")
-        elog("INFO", f"🧠 Model: {model}  (gemma only — rule-based agents)")
+        elog("INFO", f"🧠 Model: {model}  (Gemma 4 12B Local · 98K · 100% GPU)")
         elog("INFO", "━" * 40)
         eprog("Checking model…", 3)
         if not ensure_model(model):
             eerr(f"Cannot load model: {model}"); return {"status": "failed"}
+        profile = llm.runtime_profile(prewarm=True)
+        cloud = llm.cloud_profile(prewarm=True)
+        elog("INFO", f"   Planning: {cloud['model']} / {cloud['processor']}")
+        elog("INFO", f"   GPU preflight: {profile['quantization']} · "
+                     f"{profile['context']:,} tokens · {profile['processor']}")
 
         # ── Stage 1: input → spec (deterministic for SRS; refiner for free text) ──
         estep("refine", "active")
@@ -451,29 +499,39 @@ def run_pipeline(prompt: str = "", refine_model: str = None, build_model: str = 
             elif srs_adapter.is_srs(srs):
                 elog("INFO", "🧠 Agent 1 — SRS adapter")
                 spec = srs_adapter.adapt(srs)
+            if spec is not None:
+                from agents.architect import ArchitectAgent
+                elog("INFO", "🧠 Agent 1b — Gemma design enrichment (SRS inventory locked)")
+                raw_srs = prompt if prompt and prompt.lstrip().startswith("{") else json.dumps(
+                    srs, ensure_ascii=False, indent=2)
+                spec = ArchitectAgent(architect_model).enrich_structured(raw_srs, spec)
         if spec is None and prompt:
             elog("INFO", "🧠 Agent 1 — Architect (free text)")
-            refined = RefinerAgent(OLLAMA_URL, model).refine(prompt)
+            refined = RefinerAgent(OLLAMA_URL, architect_model).refine(prompt)
             try: spec = json.loads(refined)
             except Exception: spec = None
-        if not spec or not spec.get("data_model"):
+        if not spec or not spec.get("pages"):
             eerr("Could not derive an app spec from the input"); return {"status": "failed"}
         estep("refine", "done")
         spec["build_model"] = model
+        # Full-context guarantee is checked before an existing generated project
+        # is cleared or any new source file is written.
+        from agents.design import planner as design_planner
+        from agents.product_context import build_product_context, prompt_block
+        _contract = build_contract(spec)
+        _issues = validate_spec(spec, _contract)
+        if _issues:
+            eerr("Invalid product plan: " + "; ".join(_issues))
+            return {"status": "failed", "errors": _issues}
+        prompt_block(build_product_context(
+            spec, design_plan=design_planner.plan(spec), quality_contract=_contract))
         edetect(spec.get("site_type", "app"), "fullstack-next")
         elog("INFO", f"   collections={[m.get('name') for m in spec.get('data_model', [])]}")
 
         pname = re.sub(r"[^a-z0-9]", "", str(spec.get("project_name", "")).replace("-", ""))[:24] \
             or re.sub(r"[^a-z]", "", (prompt or "app")[:15].lower()) or "app"
-        proj_dir = PROD_DIR / pname
-        if proj_dir.exists():
-            for c in list(proj_dir.iterdir()):
-                if c.name in ("node_modules", "package-lock.json"):
-                    continue
-                try: shutil.rmtree(c) if c.is_dir() else c.unlink()
-                except Exception: pass
-        proj_dir.mkdir(parents=True, exist_ok=True)
-        elog("INFO", f"   📁 {proj_dir}")
+        proj_dir = _prepare_staging(pname)
+        elog("INFO", f"   📁 staging: {proj_dir}")
 
         # ── emit adapter: orchestrator events → UI stream ──
         def oemit(ev, payload=None):
@@ -509,11 +567,16 @@ def run_pipeline(prompt: str = "", refine_model: str = None, build_model: str = 
         # ── Stages 2-8: fixed core + agents + line-level bug-fix loop ──
         # Prevention over repair: tight rules + component-wise small files + the per-file
         # validation gate keep the residual bug count inside a small fix loop (3 rounds).
-        result = orchestrator.generate_app(spec, proj_dir, oemit, install=True, fix=True, fix_iters=3)
-        stop_model(model)  # free VRAM for serve/browser
+        result = orchestrator.generate_app(spec, proj_dir, oemit, install=True, fix=True,
+                                           fix_iters=1, runtime_checked=True)
 
         if not result.get("built"):
-            eerr("Build did not reach green after the fix loop — serving current candidate")
+            eerr("Preflight/build did not reach green; the existing project was left unchanged")
+            return {"status": "failed", "project": pname,
+                    "errors": ["staged candidate did not pass all final gates"]}
+
+        proj_dir = _publish_staging(pname, proj_dir)
+        elog("INFO", f"   ✅ Published clean project: {proj_dir}")
 
         # ── Serve ──
         estep("serve", "active")
@@ -543,7 +606,7 @@ def list_projects() -> list:
     if not PROD_DIR.exists():
         return projects
     for d in sorted(PROD_DIR.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
-        if not d.is_dir():
+        if not d.is_dir() or d.name.startswith("."):
             continue
         pkg = d / "package.json"
         title = d.name
@@ -597,8 +660,12 @@ def get_project_files(proj_name: str) -> dict:
                      ("models", "*.ts"), ("models", "*.js")]:
         d = proj_dir / sub
         if d.exists():
-            for fp in sorted(d.glob(pat)):
-                _add(f"{sub}/{fp.name}")
+            for fp in sorted(d.rglob(pat)):
+                _add(fp.relative_to(proj_dir).as_posix())
+    app_dir = proj_dir / "app"
+    if app_dir.exists():
+        for fp in sorted(app_dir.rglob("page.tsx")):
+            _add(fp.relative_to(proj_dir).as_posix())
     api_dir = proj_dir / "app" / "api"
     if api_dir.exists():
         for fp in sorted(list(api_dir.rglob("route.ts")) + list(api_dir.rglob("route.js"))):
@@ -629,29 +696,40 @@ def _existing_api_contract(proj_dir: Path) -> str:
     return "\n".join(lines)
 
 
-def _decide_targets(update_prompt: str, components: list, codebase_ctx: str,
+def _decide_targets(update_prompt: str, components: list, product_ctx: str,
                     model: str) -> list:
-    """Ask the model which section component(s) to modify or create. Tiny, fast call."""
+    """Ask the cloud planner which exact existing component(s) to modify."""
+    llm.pinned_architect_model(model)
+    model = llm.ARCHITECT_MODEL
     comp_list = ", ".join(components) if components else "(none)"
+    schema = {"type": "object", "properties": {
+        "targets": {"type": "array", "items": {"type": "string"}, "maxItems": 3}},
+        "required": ["targets"]}
     prompt = (
+        f"{product_ctx}"
         f"A Next.js project has these page section components: {comp_list}\n\n"
         f"The user wants to: {update_prompt}\n\n"
-        f"CODEBASE SUMMARY:\n{codebase_ctx[:1200]}\n\n"
-        "Which component(s) must be MODIFIED or CREATED to fulfil the request?\n"
-        "Reply with ONLY a JSON array of component names, e.g.: [\"Hero\", \"Navbar\"]\n"
+        "Which existing component(s) must be MODIFIED to fulfil the request?\n"
+        "Reply with ONLY a JSON object, e.g. {\"targets\":[\"Hero\",\"Navbar\"]}\n"
         "Rules:\n"
-        "- Use existing names exactly as listed above when modifying\n"
-        "- Use a new PascalCase name when a new component is needed\n"
+        "- Use existing names exactly as listed above; never invent a target\n"
         "- Maximum 3 components per update\n"
-        "- Reply with ONLY the JSON array. No explanation."
+        "- Reply with ONLY the JSON object. No explanation.\n"
+        f"Exact output schema: {json.dumps(schema, separators=(',', ':'))}"
     )
     try:
+        from agents.product_context import ensure_fits
+        ensure_fits(prompt, output_tokens=500,
+                    context_tokens=llm.CLOUD_CONTEXT_TOKENS,
+                    model_label="Nemotron Cloud")
         raw = llm.chat([{"role": "user", "content": prompt}], model=model,
-                       num_predict=80, extra_opts={"temperature": 0.0}, timeout=45)
-        m = re.search(r'\[([^\]]+)\]', raw)
-        if m:
-            names = json.loads(f"[{m.group(1)}]")
-            return [n.strip() for n in names if isinstance(n, str) and n.strip()]
+                       system="You select exact files for one local code update. Return JSON only.",
+                       num_predict=500, think=False, route="architect",
+                       extra_opts={"temperature": 0.0, "seed": int(hashlib.sha256(
+                           (update_prompt + comp_list).encode("utf-8")).hexdigest()[:8], 16)},
+                       timeout=120)
+        names = json.loads(raw).get("targets") or []
+        return [n.strip() for n in names if isinstance(n, str) and n.strip()]
     except Exception as e:
         log.warning(f"   _decide_targets failed: {e}")
     return []
@@ -659,11 +737,12 @@ def _decide_targets(update_prompt: str, components: list, codebase_ctx: str,
 
 def _build_update_prompt(component_name: str, existing_code: str,
                          update_request: str, codebase_ctx: str,
-                         is_new: bool, contract: str = "") -> str:
+                         is_new: bool, contract: str = "", product_ctx: str = "") -> str:
     """Targeted per-component update prompt — runs through builder._gen() like a fresh gen."""
     import textwrap as tw
     if is_new:
         return tw.dedent(f"""\
+            {product_ctx}
             Add a NEW section component called '{component_name}' to an existing Next.js page.
 
             USER REQUEST: {update_request}
@@ -672,17 +751,17 @@ def _build_update_prompt(component_name: str, existing_code: str,
             {contract}
 
             EXISTING CODEBASE (imports, styles, data patterns):
-            {codebase_ctx[:1500]}
+            {codebase_ctx}
 
             Requirements:
             - First line: 'use client'
-            - <section id="{component_name.lower()}"> full-bleed band, explicit dark background,
-              max-w-7xl inner container, framer-motion whileInView reveals, real copy
+            - Follow the Architect design and use semantic Tailwind + installed shadcn primitives
             - For data, fetch the RELATIVE API routes above (records keyed by _id)
             - export default function {component_name}()
             - Output ONLY the complete JSX starting with 'use client'
             """)
     return tw.dedent(f"""\
+        {product_ctx}
         Modify the existing '{component_name}' Next.js client component as requested.
 
         USER REQUEST: {update_request}
@@ -694,7 +773,7 @@ def _build_update_prompt(component_name: str, existing_code: str,
         {existing_code}
 
         OTHER FILES FOR CONTEXT (do NOT modify these):
-        {codebase_ctx[:1200]}
+        {codebase_ctx}
 
         Requirements:
         - Apply ONLY the requested changes — preserve all other functionality
@@ -705,22 +784,68 @@ def _build_update_prompt(component_name: str, existing_code: str,
         """)
 
 
-def run_update_pipeline(proj_name: str, update_prompt: str, build_model: str = None):
+def _related_source_context(target_rel: str, existing_code: str, built_files: dict) -> str:
+    """Full affected dependencies, without attaching the unrelated source tree."""
+    candidates = {"app/layout.tsx", "app/globals.css", "types/index.ts", "lib/api.ts"}
+    for module in re.findall(r"from\s+['\"]([^'\"]+)['\"]", existing_code or ""):
+        if module.startswith("@/"):
+            base = module[2:]
+        elif module.startswith("."):
+            base = posixpath.normpath(posixpath.join(posixpath.dirname(target_rel), module))
+        else:
+            continue
+        for suffix in ("", ".ts", ".tsx", "/index.ts", "/index.tsx"):
+            candidates.add(base + suffix)
+    target_base = re.sub(r"\.(?:tsx?|jsx?)$", "", target_rel)
+    for dependent_rel, dependent_source in built_files.items():
+        if dependent_rel == target_rel:
+            continue
+        for module in re.findall(r"from\s+['\"]([^'\"]+)['\"]", dependent_source or ""):
+            if module.startswith("@/"):
+                resolved = module[2:]
+            elif module.startswith("."):
+                resolved = posixpath.normpath(posixpath.join(
+                    posixpath.dirname(dependent_rel), module))
+            else:
+                continue
+            if re.sub(r"\.(?:tsx?|jsx?)$", "", resolved) == target_base:
+                candidates.add(dependent_rel)
+    parts = []
+    for rel in sorted(candidates):
+        source = built_files.get(rel)
+        if source:
+            parts.append(f"── {rel} ──\n{source}")
+    return "\n\n".join(parts) or "No additional source dependency was required."
+
+
+def _run_update_pipeline_legacy_disabled(proj_name: str, update_prompt: str,
+                                         build_model: str = None):
     """
     Load an existing Next.js project, decide which section component(s) to change,
     re-generate each through builder._gen() → _write_one(), then test and fix.
     """
-    model = build_model or DEFAULT_BUILD
+    llm.pinned_model(build_model)
+    model = llm.LOCAL_MODEL
     set_stream_callback(on_token)
     set_tester_emit(emit)
     _reset_tokens()
     llm.log_config(model)
 
-    proj_dir = PROD_DIR / proj_name
-    if not proj_dir.exists():
+    source_dir = PROD_DIR / proj_name
+    if not source_dir.exists():
         eerr(f"Project not found: {proj_name}"); return
 
     try:
+        if not ensure_model(model):
+            eerr(f"Cannot load model: {model}"); return
+        profile = llm.runtime_profile(prewarm=True)
+        elog("INFO", f"   GPU preflight: {profile['context']:,} tokens · {profile['processor']}")
+        proj_dir = _prepare_update_staging(proj_name, source_dir)
+        from agents.product_context import load_product_context, prompt_block, ProductContextError
+        try:
+            product_ctx = prompt_block(load_product_context(proj_dir), output_tokens=10000)
+        except ProductContextError as exc:
+            eerr(str(exc)); return
         elog("INFO", "━" * 40)
         elog("INFO", f"✏️  Updating: {proj_name}")
         elog("INFO", f"📝 Request: {update_prompt[:80]}")
@@ -739,18 +864,20 @@ def run_update_pipeline(proj_name: str, update_prompt: str, build_model: str = N
             builder.built_files[rel] = info["content"]
             efile(rel, info["size"], info["content"])
 
-        comp_dir   = proj_dir / "components"
-        components = sorted({f.stem for pat in ("*.jsx", "*.tsx")
-                             for f in comp_dir.glob(pat)}) if comp_dir.exists() else []
+        component_paths = {
+            Path(rel).stem: rel for rel in builder.built_files
+            if rel.startswith("components/") and rel.endswith((".tsx", ".jsx"))
+            and not rel.startswith("components/ui/")
+            and Path(rel).stem not in {"Sidebar", "TopNav", "DashboardSidebar"}
+        }
+        components = sorted(component_paths)
         contract   = _existing_api_contract(proj_dir)
 
         def _comp_path(name: str) -> str:
             # Resolve a component's real key (legacy .jsx or current .tsx); new
             # components default to .tsx.
-            for ext in (".tsx", ".jsx"):
-                k = f"components/{name}{ext}"
-                if k in builder.built_files:
-                    return k
+            if name in component_paths:
+                return component_paths[name]
             return f"components/{name}.tsx"
         elog("INFO", f"   📂 Loaded {len(file_data)} files | Components: {components}")
 
@@ -758,33 +885,15 @@ def run_update_pipeline(proj_name: str, update_prompt: str, build_model: str = N
         eprog("Analysing request…", 15)
 
         # ── Step 2: Load model + decide which components to touch ─────────────
-        if not ensure_model(model):
-            eerr(f"Cannot load model: {model}"); return
-
-        codebase_ctx = builder._build_codebase_context()
-
         estep("build", "active")
         eprog("Deciding targets…", 22)
 
-        targets = _decide_targets(update_prompt, components, codebase_ctx, model)
+        targets = _decide_targets(update_prompt, components, product_ctx, model)
         targets = [t for t in targets if re.match(r"^[A-Z][A-Za-z0-9_]*$", t)]
 
         if not targets:
-            # Fallback: ask the user's prompt to name the component directly,
-            # or default to regenerating the component whose name appears in the request.
-            for comp in components:
-                if comp.lower() in update_prompt.lower():
-                    targets = [comp]
-                    break
-            if not targets and components:
-                # Last resort: pick the most content-heavy component (most likely to be the one)
-                targets = [max(
-                    components,
-                    key=lambda c: len(builder.built_files.get(_comp_path(c), ""))
-                )]
-                elog("WARN", f"   Could not infer target — defaulting to largest component: {targets}")
-            elif not targets:
-                eerr("No components found in project"); return
+            eerr("Gemma could not select an exact update target; no project files were changed")
+            return
 
         elog("INFO", f"   🎯 Targets: {targets}")
 
@@ -796,6 +905,7 @@ def run_update_pipeline(proj_name: str, update_prompt: str, build_model: str = N
             fpath    = _comp_path(comp_name)
             is_new   = comp_name not in components
             existing = builder.built_files.get(fpath, "")
+            related_ctx = _related_source_context(fpath, existing, builder.built_files)
 
             if is_new:
                 elog("INFO", f"   ➕ Creating new component: {comp_name}")
@@ -805,7 +915,7 @@ def run_update_pipeline(proj_name: str, update_prompt: str, build_model: str = N
             eprog(f"Generating {comp_name}…", 25 + i * pct_per_comp)
 
             prompt = _build_update_prompt(
-                comp_name, existing, update_prompt, codebase_ctx, is_new, contract
+                comp_name, existing, update_prompt, related_ctx, is_new, contract, product_ctx
             )
 
             # _gen() handles: streaming to UI, token emission, extraction, raw output caching
@@ -839,8 +949,6 @@ def run_update_pipeline(proj_name: str, update_prompt: str, build_model: str = N
                    for t in targets if builder.built_files.get(_comp_path(t))}
         IntegratorAgent(builder._write_one, valid).review(touched)
 
-        stop_model(model)
-
         estep("build", "done")
         eprog("Components updated", 58)
         elog("INFO", f"   ✅ {updated_count}/{len(targets)} component(s) updated")
@@ -852,10 +960,6 @@ def run_update_pipeline(proj_name: str, update_prompt: str, build_model: str = N
         if not ensure_node_deps(proj_dir):
             eerr("Dependency install failed")
             return
-        try:
-            builder.suppress_type_errors()
-        except Exception as e:
-            elog("WARN", f"   type-error suppression skipped: {e}")
         start_vite(proj_dir)
         wait_for_vite(60)
 
@@ -868,6 +972,7 @@ def run_update_pipeline(proj_name: str, update_prompt: str, build_model: str = N
         tester = TesterAgent(proj_dir, DEV_PORT)
         npm_errors = ""
 
+        green = False
         for attempt in range(1, MAX_FIX + 2):
             elog("INFO", f"   🔬 Test run #{attempt}")
             emit({"type": "test_run", "attempt": attempt})
@@ -877,26 +982,11 @@ def run_update_pipeline(proj_name: str, update_prompt: str, build_model: str = N
             if not errors:
                 elog("INFO", "   🎉 All tests passed!")
                 estep("test", "done")
+                green = True
                 break
 
             if attempt > MAX_FIX:
-                elog("WARN", f"   ⚠ Max fix attempts reached — applying targeted fallbacks")
-                from agents.builder import _safe_component
-                # Targeted: only replace components named in the still-red build;
-                # keep innocent components. Fall back to all only if unlocalizable.
-                npm_errors = builder._npm_build_errors()
-                broken = set(builder._identify_broken(npm_errors)) if npm_errors.strip() else set()
-                nuke_all = bool(npm_errors.strip()) and not broken
-                for fpath_s, src in list(builder.built_files.items()):
-                    if not (fpath_s.startswith("components/") and fpath_s.endswith((".jsx", ".tsx"))):
-                        continue
-                    comp_name_s = fpath_s.split("/")[-1].replace(".jsx", "").replace(".tsx", "")
-                    if len(src.strip()) < 400 or fpath_s in broken or nuke_all:
-                        safe = _safe_component(comp_name_s)
-                        (proj_dir / fpath_s).write_text(safe, encoding="utf-8")
-                        builder.built_files[fpath_s] = safe
-                        elog("WARN", f"   🛟 Safe fallback → {fpath_s}")
-                estep("test", "done")
+                eerr("Bounded update repair did not reach green; existing project is unchanged")
                 break
 
             npm_errors = builder._npm_build_errors()
@@ -912,14 +1002,19 @@ def run_update_pipeline(proj_name: str, update_prompt: str, build_model: str = N
                 break
 
             builder.fix_with_errors(all_errors)
-            stop_model(model)
-
             elog("INFO", "   🔄 Restarting Next.js after fix…")
             if not ensure_node_deps(proj_dir):
                 eerr("Dependency install failed")
                 return
             start_vite(proj_dir)
             wait_for_vite(35)
+
+        if not green:
+            return
+
+        proj_dir = _publish_staging(proj_name, proj_dir)
+        start_vite(proj_dir)
+        wait_for_vite(60)
 
         # ── Done ──────────────────────────────────────────────────────────────
         url = f"http://localhost:{DEV_PORT}"
@@ -977,6 +1072,145 @@ def _inject_component_into_app(builder, proj_dir: Path, comp_name: str):
         log.info(f"   ✓ Injected {comp_name} into {page_rel}")
     except Exception as e:
         log.warning(f"   _inject_component_into_app failed: {e}")
+
+
+# Supersedes the legacy BuilderAgent updater above. Updates now use the same complete-file,
+# full-context, in-memory compiler preflight as first generation and publish only a green stage.
+def run_update_pipeline(proj_name: str, update_prompt: str, build_model: str = None):
+    from agents.analyzer import Analyzer
+    from agents.contract import build_registry
+    from agents.gen_agents import UpdateAgent
+    from agents.memory import Memory
+    from agents.product_context import ProductContextError, load_product_context, prompt_block
+    from agents.repair import contract_scan
+    from agents.repair.harness import RepairHarness
+    from agents import module_gate
+
+    llm.pinned_model(build_model)
+    model = llm.LOCAL_MODEL
+    source_dir = PROD_DIR / proj_name
+    set_stream_callback(on_token)
+    _reset_tokens()
+    analyzer = None
+    try:
+        if not source_dir.exists():
+            eerr(f"Project not found: {proj_name}")
+            return
+        try:
+            context = load_product_context(source_dir)
+            product_prompt = prompt_block(context, output_tokens=2_800)
+        except ProductContextError as exc:
+            eerr(str(exc))
+            return
+
+        eprog("Checking Gemma GPU runtime…", 5)
+        if not ensure_model(model):
+            eerr(f"Cannot load model: {model}")
+            return
+        profile = llm.runtime_profile(prewarm=True)
+        elog("INFO", f"🧠 Gemma 4 12B Local · 98K · {profile['processor']}")
+
+        proj_dir = _prepare_update_staging(proj_name, source_dir)
+        if not ensure_node_deps(proj_dir):
+            eerr("Dependency install failed in the staging workspace")
+            return
+
+        spec = context["normalizedSpec"]
+        file_data = get_project_files(proj_name)
+        built_files = {rel: info["content"] for rel, info in file_data.items()}
+        for source_path in proj_dir.rglob("*"):
+            if (not source_path.is_file() or source_path.suffix not in
+                    {".ts", ".tsx", ".js", ".jsx", ".css", ".json"}):
+                continue
+            rel = source_path.relative_to(proj_dir).as_posix()
+            if rel.startswith(("node_modules/", ".next/", ".locode/")):
+                continue
+            built_files.setdefault(rel, source_path.read_text(encoding="utf-8", errors="replace"))
+        component_entries = [(Path(rel).stem, rel) for rel in built_files
+                             if rel.startswith("components/") and rel.endswith((".tsx", ".jsx"))
+                             and not rel.startswith("components/ui/")]
+        component_paths = dict(component_entries)
+        if len(component_paths) != len(component_entries):
+            eerr("Component basenames are ambiguous; regenerate with a valid product-context/v1 plan")
+            return
+        components = sorted(component_paths)
+        if not components:
+            eerr("No input-driven page components are available to update")
+            return
+
+        cloud = llm.cloud_profile(prewarm=True)
+        elog("INFO", f"   Planning preflight: {cloud['model']} / {cloud['processor']}")
+        estep("refine", "active")
+        eprog("Selecting exact targets…", 18)
+        targets = _decide_targets(update_prompt, components, product_prompt, llm.ARCHITECT_MODEL)
+        targets = [target for target in targets if target in component_paths]
+        if not targets:
+            eerr("Gemma did not select an exact existing target; the project is unchanged")
+            return
+        elog("INFO", f"🎯 Exact update targets: {targets}")
+
+        memory = Memory(proj_dir, spec)
+        memory.set_product_context(context)
+        contract_md = proj_dir / ".locode" / "CONTRACT.md"
+        if contract_md.exists():
+            memory.set_contract(contract_md.read_text(encoding="utf-8"))
+        analyzer = Analyzer(proj_dir, lambda ev, payload=None: None)
+        contract = context["routeApiFieldContract"]
+        updater = UpdateAgent(proj_dir, memory, emit=lambda ev, payload=None: (
+            on_token(payload) if ev == "token" and isinstance(payload, str) else
+            efile(payload.get("path", ""), len(payload.get("content", "")),
+                  payload.get("content", "")) if ev == "file" and isinstance(payload, dict) else None
+        ), model=model, get_analyzer=lambda: analyzer, contract=contract)
+
+        estep("build", "active")
+        for index, name in enumerate(targets):
+            rel = component_paths[name]
+            existing = built_files[rel]
+            dependencies = _related_source_context(rel, existing, built_files)
+            eprog(f"Preflighting {name}…", 28 + index * max(1, 30 // len(targets)))
+            updater.generate_update(rel, update_prompt, existing, dependencies)
+            produced = (proj_dir / rel).read_text(encoding="utf-8")
+            if len(produced.splitlines()) > 180:
+                raise ValueError(f"{rel} exceeds the Architect-approved 180-line component limit")
+            built_files[rel] = produced
+
+        analyzer.close()
+        analyzer = None
+        unresolved = module_gate.repair_imports(proj_dir)
+        drift = contract_scan.scan_project(proj_dir, build_registry(spec))
+        findings = quality.static_scan(proj_dir, contract)
+        memory_issues = memory.validate_memory()
+        if unresolved or drift or findings or memory_issues:
+            counts = (f"imports={len(unresolved)}, contracts={len(drift)}, "
+                      f"quality={len(findings)}, memory={len(memory_issues)}")
+            eerr(f"Update preflight is not clean ({counts}); existing project is unchanged")
+            return
+
+        estep("test", "active")
+        eprog("Running the one final build gate…", 75)
+        harness = RepairHarness(proj_dir, lambda ev, payload=None: None, model,
+                                registry=build_registry(spec), regen=None,
+                                on_revert=memory.note_reverted)
+        if not harness.run(max_rounds=1):
+            eerr("Final next build was not green on its first invocation; existing project is unchanged")
+            return
+
+        proj_dir = _publish_staging(proj_name, proj_dir)
+        start_vite(proj_dir)
+        if not wait_for_vite(120):
+            eerr("Published build passed but Next.js did not start")
+            return
+        url = f"http://localhost:{DEV_PORT}"
+        estep("serve", "done")
+        eprog("Done!", 100)
+        edone(url, proj_name)
+    except Exception as exc:
+        eerr(f"Update error: {exc}")
+        log.exception("Gemma preflight update failed")
+    finally:
+        if analyzer is not None:
+            analyzer.close()
+        set_stream_callback(None)
 
 
 # ── WebSocket handler ─────────────────────────────────────────────────────────
@@ -1147,24 +1381,19 @@ async def main():
 import signal
 
 def shutdown_all():
-    print("\n🛑 Shutting down Locode backend...")
+    print("\nShutting down Locode backend...")
 
     # Kill Vite
     if active_vite.get("proc"):
         try:
             active_vite["proc"].terminate()
             active_vite["proc"].wait(timeout=5)
-            print("   ✅ Vite stopped")
+            print("   Vite stopped")
         except:
             pass
 
-    # Unload models (best effort)
-    try:
-        stop_model(DEFAULT_REFINE)
-        stop_model(DEFAULT_BUILD)
-        print("   ✅ Ollama models unloaded")
-    except:
-        pass
+    # Request-level keep_alive retains Gemma for 30 minutes after generation.
+    print("   Gemma keep-alive retained")
 
 atexit.register(shutdown_all)
 

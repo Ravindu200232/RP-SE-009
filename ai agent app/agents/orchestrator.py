@@ -19,14 +19,16 @@ import re
 import shutil
 import subprocess
 import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from agents import core, llm, module_gate, quality, scaffold
-from agents.analyzer import Analyzer
+from agents.analyzer import Analyzer, format_diagnostics
 from agents.memory import Memory
 from agents.scaffold import pascal, route_name
-from agents.gen_agents import (ModelAgent, RouteAgent, PageAgent, SectionAgent,
-                               LogicAgent, ComponentAgent)
+from agents.gen_agents import (PageAgent, SectionAgent, LogicAgent, ComponentAgent, preflight_metrics,
+                               reset_preflight_metrics)
 from agents.planner import _component_target
 from agents.bugfix_agent import BugFixAgent
 
@@ -42,6 +44,9 @@ INLINE_COMPONENT_TYPES = {"navigation", "layout", "form_control", "display", "ov
 
 def _contract_target(contract: dict) -> str:
     """Stable file path for a declared component (reuses the planner's feature layout)."""
+    explicit = str(contract.get("path") or "").replace("\\", "/").lstrip("/")
+    if explicit:
+        return explicit
     pseudo_page = {"owner_role": (contract.get("roles") or ["shared"])[0]}
     return _component_target(pseudo_page, contract.get("name"), contract)
 
@@ -118,12 +123,8 @@ def page_file(path: str) -> str:
 def _install(project_dir: Path, emit) -> bool:
     """Install dependencies, and make sure what lands is actually complete.
 
-    npm on Windows extracts tens of thousands of tiny files (`@mui/icons-material` alone ships ~21k)
-    and loses races with the virus scanner: `TAR_ENTRY_ERROR ENOENT …`, a non-zero exit, and a
-    HALF-EXTRACTED tree. npm reconciles packages and versions, not file contents, so a re-run reports
-    success and leaves the holes — one app sat on an icons package missing ~6k files, passed the old
-    "is next installed?" check on every later run, and failed every build on a real icon. A wipe is
-    the only repair."""
+    npm on Windows can lose races with virus scanners and leave a half-extracted tree. npm reconciles
+    package versions rather than every file, so a clean reinstall is the only reliable repair."""
     nm = project_dir / "node_modules"
     next_bin = nm / ".bin" / ("next.cmd" if os.name == "nt" else "next")
     if next_bin.exists() and _deps_intact(project_dir):
@@ -210,10 +211,7 @@ def _page_chunks(page: dict, existing: list) -> list[dict]:
 def _deps_intact(project_dir: Path) -> bool:
     """Is node_modules actually usable, or just present?
 
-    Every declared dependency must have a package.json, and `@mui/icons-material` — the package the
-    Windows extraction races truncate, since it is ~21k one-file-per-icon modules — must still hold a
-    canonical icon. A half-extracted tree keeps its package.json, so npm calls it installed and the
-    failure only surfaces as `Module not found: '@mui/icons-material/<Icon>'` at build time."""
+    Every declared dependency must have a package.json."""
     nm = project_dir / "node_modules"
     try:
         pkg = json.loads((project_dir / "package.json").read_text(encoding="utf-8"))
@@ -222,47 +220,27 @@ def _deps_intact(project_dir: Path) -> bool:
     for name in (pkg.get("dependencies") or {}):
         if not (nm.joinpath(*name.split("/")) / "package.json").exists():
             return False
-    icons = nm / "@mui" / "icons-material"
-    if icons.exists() and not all((icons / f"{i}.js").exists()
-                                  for i in ("Add", "Edit", "Delete", "Favorite", "Search")):
-        return False
     return True
 
 
-def _synthesize_single_page(spec: dict, models: list) -> None:
-    """Give a single-page spec the one page it implies, so it plans like any other app.
-
-    The whole file plan is built from `spec['pages']`, which the refiner fills for multipage apps
-    only — a single-page spec therefore planned models + routes and NO UI at all. It went unnoticed
-    because the old keyword scan classified nearly every idea as multipage. The refiner already
-    describes the page in `spec['sections']` (Hero, QuickAdd, EntryList, …); SectionAgent already
-    renders plain-string sections under its `landing` kind. Only the page entry was missing.
-    """
-    if spec.get("pages") or spec.get("app_kind") == "multipage-app":
-        return
-    resource = next((pascal(m["name"]) for m in models
-                     if m.get("name") and pascal(m["name"]) != "User"), "")
-    page = {
-        "path": "/",
-        "title": spec.get("title") or spec.get("brand_name") or "Home",
-        "kind": "landing",
-        "access": "public",
-        "sections": [str(s) for s in (spec.get("sections") or []) if str(s).strip()],
-    }
-    if resource:
-        page["resource"] = resource
-    spec["pages"] = [page]
-
-
 def generate_app(spec: dict, project_dir, emit=None, *, install=True, fix=True,
-                 fix_iters=3) -> dict:
+                 fix_iters=3, runtime_checked=False, resume_context_hash: str | None = None) -> dict:
+    started_at = time.perf_counter()
     emit = emit or (lambda *a, **k: None)
     project_dir = Path(project_dir)
-    project_dir.mkdir(parents=True, exist_ok=True)
-    model = spec.get("build_model") or llm.GEN_MODEL
+    llm.pinned_model(spec.get("build_model"))
+    model = llm.LOCAL_MODEL
+    if not runtime_checked:
+        llm.reset_metrics()
+    reset_preflight_metrics()
+
+    # Hardware/model failures are terminal and happen before the project directory is created.
+    emit("phase", {"name": "runtime-preflight"})
+    profile = llm.runtime_profile(prewarm=not runtime_checked)
+    emit("log", {"text": f"runtime: {profile['model']} {profile['quantization']} "
+                         f"{profile['context']:,} context {profile['processor']}"})
 
     models = list(spec.get("data_model") or [])
-    _synthesize_single_page(spec, models)
     pages = [p for p in (spec.get("pages") or [])
              if p.get("path") and str(p.get("kind")) != "auth"
              and str(p.get("path")) not in SKIP_PATHS]
@@ -277,8 +255,17 @@ def generate_app(spec: dict, project_dir, emit=None, *, install=True, fix=True,
     for issue in spec_issues:
         emit("log", {"text": f"spec check: {issue}"})
     if spec_issues:
-        emit("log", {"text": f"spec check: {len(spec_issues)} issue(s) — generating anyway, "
-                             f"they are reported above"})
+        raise ValueError(f"Refusing to generate an invalid product spec: {'; '.join(spec_issues)}")
+
+    # Resolve and size-check the complete canonical context before writing any
+    # generated source. Locode never falls back to a sliced prompt.
+    from agents.design import planner as design_planner
+    from agents.product_context import build_product_context, prompt_block, write_product_context
+    design = design_planner.plan(spec)
+    preflight_context = build_product_context(spec, design_plan=design,
+                                              quality_contract=quality_contract)
+    prompt_block(preflight_context)
+    project_dir.mkdir(parents=True, exist_ok=True)
 
     # ── 1. fixed core ─────────────────────────────────────────────────────────
     emit("phase", {"name": "core"})
@@ -330,15 +317,9 @@ def generate_app(spec: dict, project_dir, emit=None, *, install=True, fix=True,
         emit("log", {"text": f"contract: {len(registry)} entity DTO(s) → types/*.ts"})
 
     # ── 1c. human-like design plan — per-page ARCHETYPE so pages look like what they ARE ──
-    from agents.design import planner as design_planner
-    design = design_planner.plan(spec)
     locdir = project_dir / ".locode"
     locdir.mkdir(parents=True, exist_ok=True)
     import json as _json
-    (locdir / "design-brief.json").write_text(_json.dumps(design["brief"], indent=2, default=str),
-                                              encoding="utf-8")
-    (locdir / "page-contracts.json").write_text(_json.dumps(design["pages"], indent=2, default=str),
-                                               encoding="utf-8")
     emit("log", {"text": "design: archetypes " + ", ".join(
         sorted({c["archetype"] for c in design["pages"]}))})
 
@@ -359,8 +340,6 @@ def generate_app(spec: dict, project_dir, emit=None, *, install=True, fix=True,
             analyzer_box["a"] = Analyzer(project_dir, emit)
         return analyzer_box["a"]
 
-    ma = ModelAgent(project_dir, mem, emit, model, get_analyzer, quality_contract)
-    ra = RouteAgent(project_dir, mem, emit, model, get_analyzer, quality_contract)
     la = LogicAgent(project_dir, mem, emit, model, get_analyzer, quality_contract)
     pa = PageAgent(project_dir, mem, emit, model, get_analyzer, quality_contract)
     sa = SectionAgent(project_dir, mem, emit, model, get_analyzer, quality_contract)
@@ -371,21 +350,53 @@ def generate_app(spec: dict, project_dir, emit=None, *, install=True, fix=True,
     # NOTE: the per-role SIDEBAR is provided by the fixed auth section layout (app/<seg>/layout.tsx →
     # components/Sidebar.tsx); page bodies must NOT render their own sidebar/workspace (that caused the
     # double-sidebar bug), so there is no LayoutAgent/Workspace here.
-    contracts = list(spec.get("component_contracts") or [])
+    declared_contracts = list(spec.get("component_contracts") or [])
+    generation = spec.get("generation_plan") or {}
+    generation_contracts = []
+    for item in generation.get("components") or []:
+        generation_contracts.append({
+            **item,
+            "task": item.get("responsibility", ""),
+            "roles": ([str(item.get("page", "/")).strip("/").split("/")[0]]
+                      if str(item.get("page", "/")).strip("/") else ["shared"]),
+            "_architect_planned": True,
+        })
+    contracts = declared_contracts + generation_contracts
     feature_targets: dict[str, str] = {}   # component name → file path
     for c in contracts:
-        if not c.get("name") or str(c.get("type")) in INLINE_COMPONENT_TYPES:
+        if (not c.get("name") or
+                (not c.get("_architect_planned") and str(c.get("type")) in INLINE_COMPONENT_TYPES)):
             continue
         feature_targets[c["name"]] = _contract_target(c)
 
     def page_imports(p: dict) -> list[tuple[str, str]]:
-        """(ComponentName, module path) for this page's declared components that have files."""
+        """Top-level (ComponentName, module path) pairs for this page.
+
+        A dependency is rendered by its owning component, not again by the page. Importing every
+        planned leaf made the page invent props and duplicate TeaCard/CopyButton beside the grid that
+        already composed them. Only dependency roots belong in the page-body wiring contract.
+        """
         out, seen = [], set()
+        page_contracts = [contract for contract in generation_contracts
+                          if contract.get("page") == p.get("path")]
+        consumed = set()
+        for contract in page_contracts:
+            for dependency in contract.get("dependencies") or []:
+                dependency = str(dependency).replace("\\", "/")
+                consumed.add(feature_targets.get(dependency, dependency))
+        for contract in generation_contracts:
+            cn = contract.get("name")
+            target = feature_targets.get(cn)
+            if (contract.get("page") == p.get("path") and cn in feature_targets and cn not in seen
+                    and target not in consumed):
+                seen.add(cn)
+                out.append((cn, _module_path(target)))
         for sec in (p.get("sections") or []):
             if not isinstance(sec, dict):
                 continue          # a plain-string label (single-page/AutoHub specs) declares no components
             for cn in (sec.get("components") or []):
-                if cn in feature_targets and cn not in seen:
+                if (cn in feature_targets and cn not in seen
+                        and feature_targets[cn] not in consumed):
                     seen.add(cn)
                     out.append((cn, _module_path(feature_targets[cn])))
         return out
@@ -393,12 +404,6 @@ def generate_app(spec: dict, project_dir, emit=None, *, install=True, fix=True,
     # Explicit file plan → every declared artifact, so none is missed. Each entry maps an
     # output path to (kind, payload) used both to generate and to REGENERATE if missing.
     plan: dict[str, tuple] = {}
-    for m in models:
-        name = pascal(m.get("name", "Item"))
-        seg = route_name(name)
-        plan[f"models/{name}.ts"] = ("model", m)
-        plan[f"app/api/{seg}/route.ts"] = ("route", m)
-        plan[f"app/api/{seg}/[id]/route.ts"] = ("route", m)
     logic_plan = []
     names = {pascal(m["name"]) for m in models}
     if "pos" in kits:
@@ -424,7 +429,7 @@ def generate_app(spec: dict, project_dir, emit=None, *, install=True, fix=True,
         # the thread and truncates mid-JSX — measured at ~5% of files, and the only failure a
         # regeneration cannot fix (the rewrite is just as long: 4 diagnostics → 4 → 4). Split the two
         # heavy pieces out; each lands ~90-110 lines and the page keeps the state that drives them.
-        for chunk in _page_chunks(p, contracts):
+        for chunk in ([] if generation_contracts else _page_chunks(p, contracts)):
             rel = _contract_target(chunk)
             feature_targets[chunk["name"]] = rel
             contracts.append(chunk)
@@ -435,8 +440,25 @@ def generate_app(spec: dict, project_dir, emit=None, *, install=True, fix=True,
         plan[f"components/pages/{comp}.tsx"] = ("section", (p, comp))
 
     emit("phase", {"name": "planner"})
+    product_context = build_product_context(
+        spec, design_plan=design, quality_contract=quality_contract,
+        component_inventory=[str(c.get("name")) for c in contracts
+                             if isinstance(c, dict) and c.get("name")],
+    )
+    write_product_context(project_dir, product_context)
+    mem.set_product_context(product_context)
+    resume_enabled = bool(resume_context_hash and
+                          resume_context_hash == product_context.get("contextHash"))
+    if resume_context_hash and not resume_enabled:
+        emit("log", {"text": "resume: cached artifacts ignored because product context changed"})
+    emit("file", {"path": ".locode/product-context.json",
+                  "content": _json.dumps(product_context, ensure_ascii=False, indent=2, default=str)})
     mem.write_all(tasks=list(plan.keys()))
     mem.write_locations(plan)   # .locode/LOCATIONS.md — path map the bug-fixer feeds to the repair LLM
+    memory_issues = mem.validate_memory()
+    if memory_issues:
+        raise ValueError("Canonical memory validation failed after planning: " + "; ".join(memory_issues))
+    emit("log", {"text": "memory: canonical JSON, Markdown views, and manifest hashes agree"})
     # Surface the planner + memory in the UI (TASKS.md is the authoritative file checklist).
     locdir = project_dir / ".locode"
     for md in (sorted(locdir.glob("*.md")) if locdir.exists() else []):
@@ -456,19 +478,33 @@ def generate_app(spec: dict, project_dir, emit=None, *, install=True, fix=True,
         fp.write_text(content, encoding="utf-8")
         emit("file", {"path": rel, "content": content})
 
-    # With a strong hosted model (Gemini), the LLM generates the app-specific files — models, CRUD
+    # Gemma generates the app-specific files — models, CRUD
     # routes, components, pages. Only the common framework boilerplate (db, api helpers, tailwind/config,
     # auth, UI primitives, reports) stays deterministic (see core.core_files) so no API tokens are spent
     # regenerating identical-across-apps files.
     def dispatch(kind, payload):
-        if kind == "model":
-            ma.generate(payload)
-        elif kind == "route":
-            ra.generate(payload)
-        elif kind == "logic":
+        if kind == "logic":
             la.generate(payload[0], payload[1])
         elif kind == "component":
-            ca.generate_contract(payload, _contract_target(payload))
+            rel = _contract_target(payload)
+            existing = project_dir / rel
+            if resume_enabled and existing.is_file():
+                try:
+                    code = existing.read_text(encoding="utf-8")
+                except OSError:
+                    code = ""
+                if code.strip():
+                    diagnostics = (get_analyzer().check(rel, code)
+                                   + ca._contract_diagnostics(rel, code))
+                    if not diagnostics:
+                        mem.note_component(rel)
+                        mem.note_progress(f"- component: resumed {rel} from matching context hash")
+                        emit("file", {"path": rel, "content": code})
+                        emit("log", {"text": f"preflight: {rel} reused clean from matching context hash"})
+                        return
+                    emit("log", {"text": f"resume: {rel} failed current preflight; regenerating"})
+                    get_analyzer().release(rel)
+            ca.generate_contract(payload, rel)
         elif kind == "page":
             pa.generate(payload[0], payload[1])
         elif kind == "section":
@@ -477,31 +513,60 @@ def generate_app(spec: dict, project_dir, emit=None, *, install=True, fix=True,
             sa.generate(p, comp, imports=page_imports(p),
                         archetype=dc.get("archetype", ""), pattern=dc.get("pattern", ""))
 
+    def parallel(items, fn):
+        """Run one dependency wave with the measured two-slot Ollama profile."""
+        items = list(items)
+        if len(items) < 2:
+            return [fn(item) for item in items]
+        with ThreadPoolExecutor(max_workers=2, thread_name_prefix="locode-gemma") as pool:
+            return list(pool.map(fn, items))
+
     # ── 3-6. generate everything in plan order (deps resolve: models→routes→logic→
     #         declared components→role layouts→page bodies compose them→page wrappers) ──
-    emit("phase", {"name": "models"})
-    for m in models:
-        ma.generate(m)
-    emit("phase", {"name": "routes"})
-    for m in models:
-        ra.generate(m)
+    emit("phase", {"name": "infrastructure-preflight"})
+    az = get_analyzer()
+    infrastructure = sorted(
+        rel for rel in core_map
+        if rel.startswith(("models/", "lib/validators/", "app/api/"))
+        and rel.endswith((".ts", ".tsx"))
+    )
+    for rel in infrastructure:
+        diagnostics = az.check(rel, core_map[rel])
+        az.release(rel)
+        if diagnostics:
+            raise ValueError(
+                f"Deterministic infrastructure emitter produced invalid {rel}: "
+                f"{format_diagnostics(diagnostics, limit=4)}"
+            )
+    emit("log", {"text": f"infrastructure: {len(infrastructure)} typed file(s) clean"})
     if logic_plan:
         emit("phase", {"name": "logic"})
         for pth, task in logic_plan:
             la.generate(pth, task)
     if feature_targets:
         emit("phase", {"name": "components"})
-        for name, rel in feature_targets.items():
-            dispatch("component", next(c for c in contracts if c.get("name") == name))
+        by_path = {_contract_target(contract): contract for contract in contracts
+                   if contract.get("name") in feature_targets}
+        scheduled = set()
+        component_waves = generation.get("dependencyWaves") or []
+        for wave in component_waves:
+            contracts_in_wave = [by_path[path] for path in wave
+                                 if path in by_path and path not in scheduled]
+            parallel(contracts_in_wave, lambda contract: dispatch("component", contract))
+            scheduled.update(_contract_target(contract) for contract in contracts_in_wave)
+        remaining = [contract for path, contract in by_path.items() if path not in scheduled]
+        for offset in range(0, len(remaining), 2):
+            parallel(remaining[offset:offset + 2], lambda contract: dispatch("component", contract))
     # Body BEFORE its wrapper: the wrapper imports `@/components/pages/<Comp>`, so generating it first
     # meant importing a file that did not exist yet. The compiler in the loop makes that visible and
     # expensive — every wrapper burned its full regeneration budget on a module the model could not
     # have created. Producers before consumers; the wrapper is now checked against a real body.
     emit("phase", {"name": "pages"})
-    for p in pages:
+    def generate_page(p):
         comp = comp_by_path[str(p.get("path"))]
         dispatch("section", (p, comp))
         pa.generate(p, comp)
+    parallel(pages, generate_page)
 
     # ── 7. completeness / quality gates — SHARED regen budget ─────────────────
     # Every post-generation gate below (missing, truncated, unresolved-import, field-drift) draws from
@@ -509,7 +574,7 @@ def generate_app(spec: dict, project_dir, emit=None, *, install=True, fix=True,
     # with no "did that help?" check, so a file that a regen couldn't fix was rewritten 6–8× (the
     # `app/api/<x>/route.ts` ×6/×8 bug). Now: at most PREBUILD_REGEN_CAP regens per file across all
     # gates, and the import/drift gates FREEZE a file the moment a regen fails to reduce its own issues.
-    PREBUILD_REGEN_CAP = 2
+    PREBUILD_REGEN_CAP = 0
     regen_used: dict[str, int] = {}
 
     def _regen(rel: str) -> bool:
@@ -615,7 +680,13 @@ def generate_app(spec: dict, project_dir, emit=None, *, install=True, fix=True,
     else:
         emit("log", {"text": "static scan: clean"})
 
-    # ── 8. install + bug-fix loop ─────────────────────────────────────────────
+    memory_issues = mem.validate_memory()
+    if memory_issues:
+        emit("log", {"text": "memory validation failed: " + "; ".join(memory_issues)})
+
+    preflight_failures = bool(miss or leftover or drift_left or scan_findings or memory_issues)
+
+    # ── 8. install + bounded preflight, then one final build ──────────────────
     result = {"models": len(models), "pages": len(pages), "planned": len(plan),
               "missing": miss, "built": None, "static_findings": len(scan_findings)}
     # Generation is over — the analyzer's work is done. Close it here rather than leaking a node
@@ -630,6 +701,11 @@ def generate_app(spec: dict, project_dir, emit=None, *, install=True, fix=True,
             emit("done", {"ok": False})
             result["built"] = False
             return result
+    if preflight_failures:
+        emit("log", {"text": "publication blocked: deterministic preflight is not clean"})
+        emit("done", {"ok": False})
+        result["built"] = False
+        return result
     if fix:
         emit("phase", {"name": "build+fix"})
 
@@ -662,4 +738,19 @@ def generate_app(spec: dict, project_dir, emit=None, *, install=True, fix=True,
         result["visual_notes"] = total
     else:
         emit("log", {"text": "visual review: no layout issues detected"})
+    metrics = {
+        "version": "generation-metrics/v1",
+        "durationSeconds": round(time.perf_counter() - started_at, 3),
+        "runtime": profile,
+        "llm": llm.metrics_snapshot(),
+        "preflight": preflight_metrics(),
+        "finalGate": {"nextBuildInvocations": 1 if fix else 0,
+                      "greenOnFirstInvocation": bool(result.get("built")) if fix else None},
+    }
+    metrics_path = project_dir / ".locode" / "generation-metrics.json"
+    metrics_path.write_text(json.dumps(metrics, ensure_ascii=False, indent=2) + "\n",
+                            encoding="utf-8")
+    emit("file", {"path": ".locode/generation-metrics.json",
+                  "content": json.dumps(metrics, ensure_ascii=False, indent=2)})
+    result["metrics"] = metrics
     return result

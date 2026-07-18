@@ -95,12 +95,9 @@ function killPortsMac(ports = [5173, 7824, 7825]) {
     } catch (_) { }
 }
 
-// Optional: unload all models quickly on quit (does NOT stop Ollama daemon, just unloads VRAM)
+// Gemma uses request-level keep_alive=30m; quitting the UI must not unload it early.
 function unloadOllamaModelsBestEffort() {
-    try {
-        const curl = spawn("bash", ["-lc", `curl -s http://127.0.0.1:11434/api/generate -d '{"model":"llama3.1:8b","keep_alive":0}' >/dev/null 2>&1 || true; curl -s http://127.0.0.1:11434/api/generate -d '{"model":"qwen2.5-coder:14b","keep_alive":0}' >/dev/null 2>&1 || true`], { stdio: "ignore" });
-        curl.on("error", () => { });
-    } catch (_) { }
+    return;
 }
 
 function createSplash() {

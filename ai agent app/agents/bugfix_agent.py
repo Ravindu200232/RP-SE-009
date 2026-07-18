@@ -78,7 +78,7 @@ class BugFixAgent:
     def __init__(self, project_dir, emit=None, model=None, window=5, regen=None):
         self.project_dir = Path(project_dir)
         self.emit = emit or (lambda *a, **k: None)
-        self.model = model or llm.GEN_MODEL
+        self.model = llm.pinned_model(model or llm.REPAIR_MODEL)
         self.window = window
         # regen(rel) -> bool: last-resort single-file regeneration when surgical + deterministic
         # fixes can't converge on one leaf component. Provided by the orchestrator.
@@ -733,35 +733,39 @@ class BugFixAgent:
         return caret_num or last_num, msg
 
     # ── short project memory (entities / models / routes / api / components + locations) ──────
-    def _repair_memory(self, budget: int = 6000) -> str:
-        """Compact `.locode` memory so the repair LLM fixes WITH project context (the real entity
-        names, model fields, valid routes/api, components, and where each lives on disk) instead of
-        only the single failing file. Read from disk — the generator already wrote `.locode/*.md`."""
-        loc = self.project_dir / ".locode"
-        if not loc.is_dir():
-            return ""
-        parts: list[str] = []
-        used = 0
-        for name in ("LOCATIONS.md", "MODELS.md", "CONTRACT.md", "ROUTES.md",
-                     "API.md", "ENTITIES.md", "COMPONENTS.md"):
-            try:
-                txt = (loc / name).read_text(encoding="utf-8").strip()
-            except Exception:
-                continue
-            if not txt:
-                continue
-            if used + len(txt) > budget:
-                txt = txt[: max(0, budget - used)]
-            parts.append(txt)
-            used += len(txt)
-            if used >= budget:
-                break
-        return "\n\n".join(parts)
+    def _repair_memory(self, output_tokens: int = 2200) -> str:
+        """Lossless product-context/v1 used by every repair call."""
+        from agents.product_context import load_product_context, prompt_block
+        return prompt_block(load_product_context(self.project_dir), output_tokens=output_tokens)
 
     def _memory_block(self) -> str:
         mem = self._repair_memory()
-        return (f"PROJECT MEMORY (real entities, model fields, valid routes/API, components + their "
-                f"on-disk locations — use these EXACT names/paths, never invent):\n{mem}\n\n") if mem else ""
+        return mem
+
+    def _dependency_signatures(self, rel: str, content: str) -> str:
+        """Exact exports/types for dependencies imported by the failing file."""
+        blocks = []
+        for module in re.findall(r"from\s+['\"]([^'\"]+)['\"]", content or ""):
+            if module.startswith("@/"):
+                base = module[2:]
+            elif module.startswith("."):
+                base = (Path(rel).parent / module).as_posix()
+            else:
+                continue
+            found = None
+            for suffix in ("", ".ts", ".tsx", "/index.ts", "/index.tsx"):
+                candidate = self.project_dir / (base + suffix)
+                if candidate.is_file():
+                    found = candidate
+                    break
+            if not found:
+                continue
+            source = found.read_text(encoding="utf-8", errors="replace")
+            signatures = [line for line in source.splitlines()
+                          if re.match(r"\s*export\s+(default\s+)?(type|interface|class|function|const|let|var|\{)", line)]
+            blocks.append(f"-- {found.relative_to(self.project_dir).as_posix()} --\n" +
+                          ("\n".join(signatures) or "(module has no explicit export signature)"))
+        return "\n\n".join(blocks) or "(no local dependency signatures)"
 
     # ── fix one (full file in, search/replace hunks out) ──────────────────────
     def fix_one(self, rel: str, line: int, message: str) -> bool:
@@ -770,19 +774,23 @@ class BugFixAgent:
             content = fp.read_text(encoding="utf-8")
         except Exception:
             return False
+        budget = max(800, min(2200, len(content.splitlines()) * 10))
         numbered = "\n".join(f"{i+1}: {ln}" for i, ln in enumerate(content.splitlines()))
         user = (
+            f"{self._repair_memory(output_tokens=budget)}"
             f"File: {rel}\nBuild error at line {line}:\n{message}\n\n"
-            f"{self._memory_block()}"
+            f"DEPENDENCY/EXPORT SIGNATURES:\n{self._dependency_signatures(rel, content)}\n\n"
             f"FULL FILE (line-numbered — copy SEARCH text WITHOUT the `N: ` prefix):\n{numbered}\n\n"
             f"Return search/replace block(s) that fix the error."
         )
+        from agents.product_context import ensure_fits
+        ensure_fits(user, output_tokens=budget)
         self.emit("start", {"label": f"fix {rel}:{line}"})
         out = ""
         try:
             for tok in llm.stream_chat([{"role": "user", "content": user}],
                                        model=self.model, system=FIX_SYSTEM,
-                                       num_predict=2200, think=False, extra_opts=llm.REPAIR_OPTS):
+                                       num_predict=budget, think=False, extra_opts=llm.REPAIR_OPTS):
                 out += tok
                 self.emit("token", tok)
         except Exception as e:  # noqa: BLE001
@@ -802,28 +810,32 @@ class BugFixAgent:
         return True
 
     def fix_hard(self, rel: str, line: int, message: str) -> bool:
-        """Escalation repair with the powerful cloud model (max context + thinking). The real answer
+        """Difficult local Gemma repair with the full context and bounded thinking. The real answer
         may land in the model's thinking channel, so extract SEARCH/REPLACE from content, then thinking."""
         fp = self.project_dir / rel
         try:
             content = fp.read_text(encoding="utf-8")
         except Exception:
             return False
+        budget = max(1400, min(3600, len(content.splitlines()) * 14))
         numbered = "\n".join(f"{i+1}: {ln}" for i, ln in enumerate(content.splitlines()))
         user = (
+            f"{self._repair_memory(output_tokens=budget)}"
             f"File: {rel}\nBuild error(s):\n{message}\n\n"
-            f"{self._memory_block()}"
+            f"DEPENDENCY/EXPORT SIGNATURES:\n{self._dependency_signatures(rel, content)}\n\n"
             f"FULL FILE (line-numbered — copy SEARCH text WITHOUT the `N: ` prefix):\n{numbered}\n\n"
             f"Reason about the type error, then return search/replace block(s) that GENUINELY fix it "
             f"(never `as any` / suppression)."
         )
-        self.emit("start", {"label": f"fix(cloud) {rel}:{line}"})
+        from agents.product_context import ensure_fits
+        ensure_fits(user, output_tokens=budget)
+        self.emit("start", {"label": f"fix(difficult-local) {rel}:{line}"})
         try:
             ct, th = llm.stream_capture([{"role": "user", "content": user}],
-                                        model=llm.REMAINING_MODEL, system=FIX_SYSTEM, num_predict=6000,
+                                        model=llm.REMAINING_MODEL, system=FIX_SYSTEM, num_predict=budget,
                                         think=llm.REMAINING_THINK, extra_opts=llm.REMAINING_OPTS, timeout=600)
         except Exception as e:  # noqa: BLE001
-            self.emit("log", {"text": f"fix(cloud) error: {e}"})
+            self.emit("log", {"text": f"difficult local fix error: {e}"})
             self.emit("end", {})
             return False
         self.emit("end", {})
@@ -831,11 +843,11 @@ class BugFixAgent:
         src = ct if has_edit(ct) else th if has_edit(th) else ct
         new, applied = self._apply_edits(content, src)
         if applied == 0 or new == content:
-            self.emit("log", {"text": f"no applicable cloud edit for {rel}"})
+            self.emit("log", {"text": f"no applicable difficult-local edit for {rel}"})
             return False
         fp.write_text(new, encoding="utf-8")
         self.emit("file", {"path": rel, "content": new})
-        self.emit("log", {"text": f"applied {applied} cloud edit(s) to {rel}"})
+        self.emit("log", {"text": f"applied {applied} difficult-local edit(s) to {rel}"})
         return True
 
     def _apply_edits(self, content: str, model_out: str) -> tuple[str, int]:

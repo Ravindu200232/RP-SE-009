@@ -54,7 +54,8 @@ def _entity_vars(text: str, entity: str) -> set[str]:
         vs.add(m.group(1))
     # any Entity var that is .map()'d binds its callback param to Entity too
     for base in list(vs):
-        for m in re.finditer(re.escape(base) + r"\.(?:map|filter|find|forEach|some|every)\(\s*\(?\s*(\w+)", text):
+        for m in re.finditer(r"(?<![\w$])" + re.escape(base) +
+                             r"\.(?:map|filter|find|forEach|some|every)\(\s*\(?\s*(\w+)", text):
             vs.add(m.group(1))
     return vs
 
@@ -72,7 +73,10 @@ def scan_text(rel: str, text: str, registry: dict) -> list[dict]:
     for entity in imported:
         allowed = _allowed(registry[entity])
         for v in _entity_vars(text, entity):
-            for m in re.finditer(re.escape(v) + r"(?:\?\.|\.)(\w+)", text):
+            # `t` is a common map parameter. Without the identifier boundary below it matched the
+            # tail of unrelated names (`result.success`, `React.useEffect`) and reported their
+            # members as Tea fields.
+            for m in re.finditer(r"(?<![\w$])" + re.escape(v) + r"(?:\?\.|\.)(\w+)", text):
                 prop = m.group(1)
                 if prop in allowed or prop in _MEMBERS:
                     continue

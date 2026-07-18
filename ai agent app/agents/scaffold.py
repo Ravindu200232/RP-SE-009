@@ -28,21 +28,10 @@ VERSIONS = {
     "mongoose": "8.24.1",
     "mongodb-memory-server": "9.4.0",
     "framer-motion": "12.42.2",
-    "react-icons": "5.7.0",
     "zod": "3.23.8",
-    # Material UI (v7 — React 19 compatible) is the component library the generated PAGES/SECTIONS use.
-    # gemma writes MUI far more reliably than shadcn (huge training presence, single-package imports),
-    # so all LLM-authored UI imports `@mui/material` + `@mui/icons-material`. Emotion is MUI's styling
-    # engine; @mui/material-nextjs supplies the App Router SSR cache provider.
-    "@mui/material": "^7.1.0",
-    "@mui/icons-material": "^7.1.0",
-    "@mui/material-nextjs": "^7.1.0",
-    "@emotion/react": "^11.13.5",
-    "@emotion/styled": "^11.13.5",
-    "@emotion/cache": "^11.13.5",
-    # shadcn primitives remain installed ONLY for the fixed, deterministic auth/dashboard stack in
-    # core.py/scaffold.py (login, sidebar, admin) — the model never imports them.
+    # Pinned shadcn-compatible primitives are emitted from component_registry.py.
     "@radix-ui/react-slot": "1.3.0",
+    "@radix-ui/react-select": "2.2.6",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "tailwind-merge": "3.6.0",
@@ -449,6 +438,7 @@ def crud_routes(model: dict, auth: bool = False) -> dict:
         return _staff_crud_routes(name, seg, model)
 
     collection_route = (
+        "import { NextRequest } from 'next/server'\n"
         "import dbConnect from '@/lib/mongodb'\n"
         f"import {name} from '@/models/{name}'\n"
         "import { ok, created, serverError } from '@/lib/api'\n\n"
@@ -459,7 +449,7 @@ def crud_routes(model: dict, auth: bool = False) -> dict:
         "    return ok(items)\n"
         "  } catch (e) { return serverError(e) }\n"
         "}\n\n"
-        "export async function POST(req) {\n"
+        "export async function POST(req: NextRequest) {\n"
         "  try {\n"
         "    await dbConnect()\n"
         "    const body = await req.json()\n"
@@ -470,10 +460,12 @@ def crud_routes(model: dict, auth: bool = False) -> dict:
     )
 
     item_route = (
+        "import { NextRequest } from 'next/server'\n"
         "import dbConnect from '@/lib/mongodb'\n"
         f"import {name} from '@/models/{name}'\n"
         "import { ok, fail, serverError } from '@/lib/api'\n\n"
-        "export async function GET(_req, { params }) {\n"
+        "type Ctx = { params: Promise<{ id: string }> }\n\n"
+        "export async function GET(_req: NextRequest, { params }: Ctx) {\n"
         "  try {\n"
         "    const { id } = await params\n"
         "    await dbConnect()\n"
@@ -482,7 +474,7 @@ def crud_routes(model: dict, auth: bool = False) -> dict:
         "    return ok(item)\n"
         "  } catch (e) { return serverError(e) }\n"
         "}\n\n"
-        "export async function PUT(req, { params }) {\n"
+        "export async function PUT(req: NextRequest, { params }: Ctx) {\n"
         "  try {\n"
         "    const { id } = await params\n"
         "    await dbConnect()\n"
@@ -492,7 +484,7 @@ def crud_routes(model: dict, auth: bool = False) -> dict:
         "    return ok(item)\n"
         "  } catch (e) { return serverError(e) }\n"
         "}\n\n"
-        "export async function DELETE(_req, { params }) {\n"
+        "export async function DELETE(_req: NextRequest, { params }: Ctx) {\n"
         "  try {\n"
         "    const { id } = await params\n"
         "    await dbConnect()\n"
@@ -543,12 +535,13 @@ def api_contract(spec: dict) -> str:
     if auth_enabled(spec):
         lines.extend([
             "Authentication contract:",
-            "  - POST /api/auth/register -> { name, email, password, role }; sets an httpOnly session cookie",
             "  - POST /api/auth/login    -> { email, password }; sets an httpOnly session cookie",
             "  - POST /api/auth/logout   -> clears the session cookie",
             "  - GET  /api/auth/me       -> { user } when logged in, otherwise 401",
-            "Never put a user id or owner id in a mutation body; the server derives ownership from the signed session.",
         ])
+        if (spec.get("auth") or {}).get("signup"):
+            lines.append("  - POST /api/auth/register -> { name, email, password, role }; sets an httpOnly session cookie")
+        lines.append("Never put a user id or owner id in a mutation body; the server derives ownership from the signed session.")
     lines.append(
         "Rules: use relative URLs only (never http://localhost). "
         "After POST/PUT/DELETE, re-fetch the list. Every record's id is `_id`."
@@ -567,15 +560,9 @@ def _package_json(app_name: str, auth: bool = False) -> str:
         "mongoose": v["mongoose"],
         "mongodb-memory-server": v["mongodb-memory-server"],
         "framer-motion": v["framer-motion"],
-        "react-icons": v["react-icons"],
         "zod": v["zod"],
-        "@mui/material": v["@mui/material"],
-        "@mui/icons-material": v["@mui/icons-material"],
-        "@mui/material-nextjs": v["@mui/material-nextjs"],
-        "@emotion/react": v["@emotion/react"],
-        "@emotion/styled": v["@emotion/styled"],
-        "@emotion/cache": v["@emotion/cache"],
         "@radix-ui/react-slot": v["@radix-ui/react-slot"],
+        "@radix-ui/react-select": v["@radix-ui/react-select"],
         "class-variance-authority": v["class-variance-authority"],
         "clsx": v["clsx"],
         "tailwind-merge": v["tailwind-merge"],
@@ -750,6 +737,12 @@ def _palette(spec: dict):
     3. Otherwise the accent is derived deterministically from the app seed, so every app
        gets a distinct hue instead of the fixed indigo/cyan default.
     """
+    design_palette = (spec.get("design") or {}).get("palette") or {}
+    acc = _hex(design_palette.get("primary"))
+    acc2 = _hex(design_palette.get("secondary"))
+    if acc:
+        return acc, (acc2 or acc)
+
     theme = spec.get("theme") or {}
     if isinstance(theme, dict):
         acc = _hex(theme.get("accent")) or _hex(theme.get("primary")) or _hex(theme.get("brand"))
@@ -769,7 +762,47 @@ def _palette(spec: dict):
     return _hsl_to_hex(hue, 0.72, 0.58), _hsl_to_hex((hue + 32) % 360, 0.75, 0.56)
 
 
-def _tailwind_config(acc: str = "#6366f1", acc2: str = "#22d3ee") -> str:
+def _design_tokens(spec: dict) -> dict:
+    """Complete semantic token set. Architect values win; legacy SRS values receive safe compatibility tokens."""
+    design = spec.get("design") or {}
+    raw = design.get("palette") or {}
+    primary, secondary = _palette(spec)
+    mode = design.get("mode") if design.get("mode") in ("light", "dark") else "dark"
+    legacy = ({
+        "background": "#ffffff", "surface": "#f8fafc", "text": "#0f172a",
+        "textSecondary": "#64748b", "border": "#e2e8f0",
+    } if mode == "light" else {
+        "background": "#0a0a0f", "surface": "#17171f", "text": "#f8fafc",
+        "textSecondary": "#94a3b8", "border": "#2a2a35",
+    })
+    return {
+        "primary": _hex(raw.get("primary")) or primary,
+        "secondary": _hex(raw.get("secondary")) or secondary,
+        "accent": _hex(raw.get("accent")) or secondary,
+        "background": _hex(raw.get("background")) or legacy["background"],
+        "surface": _hex(raw.get("surface")) or legacy["surface"],
+        "text": _hex(raw.get("text")) or legacy["text"],
+        "textSecondary": _hex(raw.get("textSecondary")) or legacy["textSecondary"],
+        "border": _hex(raw.get("border")) or legacy["border"],
+        "success": _hex(raw.get("success")) or "#10b981",
+        "warning": _hex(raw.get("warning")) or "#f59e0b",
+        "error": _hex(raw.get("error")) or "#ef4444",
+        "mode": mode,
+        "heading": str((design.get("typography") or {}).get("heading") or "Inter"),
+        "body": str((design.get("typography") or {}).get("body") or "Inter"),
+        "radius": {"none": "0px", "sm": "0.25rem", "md": "0.5rem", "lg": "0.75rem",
+                   "xl": "1rem"}.get(str(design.get("radius")), "0.75rem"),
+        "shadow": {"none": "none", "sm": "0 1px 2px rgb(0 0 0 / .08)",
+                   "md": "0 8px 24px rgb(0 0 0 / .12)", "lg": "0 16px 40px rgb(0 0 0 / .16)",
+                   "xl": "0 24px 64px rgb(0 0 0 / .22)"}.get(str(design.get("shadow")),
+                                                                         "0 8px 24px rgb(0 0 0 / .12)"),
+    }
+
+
+def _tailwind_config(spec: dict) -> str:
+    tok = _design_tokens(spec)
+    heading = tok["heading"].replace("'", "")
+    body = tok["body"].replace("'", "")
     return (
         "import type { Config } from 'tailwindcss'\n\n"
         "const config: Config = {\n"
@@ -780,13 +813,20 @@ def _tailwind_config(acc: str = "#6366f1", acc2: str = "#22d3ee") -> str:
         "  theme: {\n"
         "    extend: {\n"
         "      colors: {\n"
-        f"        accent:  '{acc}',\n"
-        f"        accent2: '{acc2}',\n"
-        "        dark:    '#0a0a0f',\n"
-        "        dark2:   '#12121a',\n"
-        "        card:    '#1e1e2e',\n"
+        "        background: 'var(--background)', foreground: 'var(--foreground)',\n"
+        "        card: { DEFAULT: 'var(--card)', foreground: 'var(--card-foreground)' },\n"
+        "        primary: { DEFAULT: 'var(--primary)', foreground: 'var(--primary-foreground)' },\n"
+        "        secondary: { DEFAULT: 'var(--secondary)', foreground: 'var(--secondary-foreground)' },\n"
+        "        muted: { DEFAULT: 'var(--muted)', foreground: 'var(--muted-foreground)' },\n"
+        "        accent: { DEFAULT: 'var(--accent)', foreground: 'var(--accent-foreground)' },\n"
+        "        destructive: { DEFAULT: 'var(--destructive)', foreground: 'var(--destructive-foreground)' },\n"
+        "        border: 'var(--border)', input: 'var(--input)', ring: 'var(--ring)',\n"
+        "        success: 'var(--success)', warning: 'var(--warning)',\n"
         "      },\n"
-        "      fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },\n"
+        f"      fontFamily: {{ sans: ['{body}', 'system-ui', 'sans-serif'], "
+        f"heading: ['{heading}', 'system-ui', 'sans-serif'] }},\n"
+        "      borderRadius: { theme: 'var(--radius)' },\n"
+        "      boxShadow: { theme: 'var(--shadow)' },\n"
         "    },\n"
         "  },\n"
         "  plugins: [],\n"
@@ -795,95 +835,67 @@ def _tailwind_config(acc: str = "#6366f1", acc2: str = "#22d3ee") -> str:
     )
 
 
-def _globals_css(acc: str = "#6366f1", acc2: str = "#22d3ee") -> str:
+def _globals_css(spec: dict) -> str:
+    tok = _design_tokens(spec)
     return (
         "@tailwind base;\n@tailwind components;\n@tailwind utilities;\n\n"
-        f":root {{ --accent: {acc}; --accent2: {acc2}; }}\n\n"
+        ":root {\n"
+        f"  color-scheme: {tok['mode']};\n"
+        f"  --background: {tok['background']}; --foreground: {tok['text']};\n"
+        f"  --card: {tok['surface']}; --card-foreground: {tok['text']};\n"
+        f"  --primary: {tok['primary']}; --primary-foreground: {tok['background']};\n"
+        f"  --secondary: {tok['secondary']}; --secondary-foreground: {tok['background']};\n"
+        f"  --muted: {tok['surface']}; --muted-foreground: {tok['textSecondary']};\n"
+        f"  --accent: {tok['accent']}; --accent-foreground: {tok['background']};\n"
+        f"  --destructive: {tok['error']}; --destructive-foreground: {tok['background']};\n"
+        f"  --border: {tok['border']}; --input: {tok['border']}; --ring: {tok['primary']};\n"
+        f"  --success: {tok['success']}; --warning: {tok['warning']};\n"
+        f"  --radius: {tok['radius']}; --shadow: {tok['shadow']};\n"
+        "}\n\n"
         "@layer base {\n"
-        "  * { scroll-behavior: smooth; box-sizing: border-box; }\n"
-        "  /* Dark-first safety net: pages never render blank-white even if a\n"
-        "     component forgets its own background. */\n"
-        "  html, body { min-height: 100vh; background-color: #0a0a0f; color: #e2e8f0; }\n"
-        "  body { @apply font-sans antialiased; }\n"
-        "  ::-webkit-scrollbar { width: 6px; }\n"
-        "  ::-webkit-scrollbar-track { background: #12121a; }\n"
-        f"  ::-webkit-scrollbar-thumb {{ background: {acc}; border-radius: 99px; }}\n"
+        "  * { box-sizing: border-box; @apply border-border; }\n"
+        "  html { scroll-behavior: smooth; }\n"
+        "  body { min-height: 100vh; @apply bg-background font-sans text-foreground antialiased; }\n"
+        "  h1, h2, h3, h4 { @apply font-heading; }\n"
+        "  :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }\n"
         "}\n"
         "@layer utilities {\n"
         "  .gradient-text {\n"
-        f"    background: linear-gradient(135deg, {acc}, {acc2});\n"
+        "    background: linear-gradient(135deg, var(--primary), var(--accent));\n"
         "    -webkit-background-clip: text; background-clip: text;\n"
         "    -webkit-text-fill-color: transparent;\n"
         "  }\n"
-        "  .glass {\n"
-        "    backdrop-filter: blur(20px);\n"
-        "    background: rgba(30,30,46,0.55);\n"
-        "    border: 1px solid rgba(255,255,255,0.08);\n"
-        "  }\n"
-        f"  .glow {{ box-shadow: 0 0 30px {acc}33; border: 1px solid {acc}44; }}\n"
+        "  .theme-shadow { box-shadow: var(--shadow); }\n"
         "}\n"
+        "@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }\n"
     )
 
 
-def _root_layout(title: str, description: str) -> str:
+def _root_layout(title: str, description: str, spec: dict) -> str:
     t = title.replace("'", "\\'")
     d = (description or title).replace("'", "\\'")[:160]
+    tok = _design_tokens(spec)
+    fonts = sorted({tok["heading"], tok["body"]})
+    family = "&family=".join(f.replace(" ", "+") + ":wght@300;400;500;600;700;800;900" for f in fonts)
     return (
         "import './globals.css'\n"
-        "import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter'\n"
-        "import Providers from './providers'\n\n"
+        "\n"
         "export const metadata = {\n"
         f"  title: '{t}',\n"
         f"  description: '{d}',\n"
         "}\n\n"
         "export default function RootLayout({ children }) {\n"
         "  return (\n"
-        "    <html lang=\"en\" data-scroll-behavior=\"smooth\">\n"
+        f"    <html lang=\"en\" className=\"{tok['mode']}\" data-theme=\"{(spec.get('design') or {}).get('preset', 'custom')}\">\n"
         "      <head>\n"
         "        <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\" />\n"
         "        <link\n"
-        "          href=\"https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap\"\n"
+        f"          href=\"https://fonts.googleapis.com/css2?family={family}&display=swap\"\n"
         "          rel=\"stylesheet\"\n"
         "        />\n"
         "      </head>\n"
-        "      <body>\n"
-        "        <AppRouterCacheProvider options={{ key: 'mui' }}>\n"
-        "          <Providers>{children}</Providers>\n"
-        "        </AppRouterCacheProvider>\n"
-        "      </body>\n"
+        "      <body>{children}</body>\n"
         "    </html>\n"
-        "  )\n"
-        "}\n"
-    )
-
-
-# MUI theme + dark-mode provider (client). Wrapped by AppRouterCacheProvider in the root layout so
-# Emotion styles are SSR-safe under the App Router (no hydration flash). CssBaseline applies the dark
-# background globally; the model styles components with the `sx` prop against this theme.
-def _providers(acc: str = "#6366f1", acc2: str = "#22d3ee") -> str:
-    """The theme is built from the app's OWN palette. It used to hard-code indigo/cyan, and since every
-    LLM-authored surface is now a themed MUI component, that made every generated app look identical
-    no matter what palette the spec asked for."""
-    return (
-        "'use client'\n\n"
-        "import { ThemeProvider, createTheme } from '@mui/material/styles'\n"
-        "import CssBaseline from '@mui/material/CssBaseline'\n\n"
-        "const theme = createTheme({\n"
-        "  palette: {\n"
-        "    mode: 'dark',\n"
-        f"    primary: {{ main: '{acc}' }},\n"
-        f"    secondary: {{ main: '{acc2}' }},\n"
-        "    background: { default: '#0a0a0f', paper: '#1e1e2e' },\n"
-        "  },\n"
-        "  shape: { borderRadius: 12 },\n"
-        "  typography: { fontFamily: 'Inter, system-ui, sans-serif' },\n"
-        "})\n\n"
-        "export default function Providers({ children }: { children: React.ReactNode }) {\n"
-        "  return (\n"
-        "    <ThemeProvider theme={theme}>\n"
-        "      <CssBaseline />\n"
-        "      {children}\n"
-        "    </ThemeProvider>\n"
         "  )\n"
         "}\n"
     )
@@ -942,30 +954,28 @@ _API_LIB = (
 
 
 def auth_enabled(spec: dict) -> bool:
-    """True when the spec is a multipage-app that needs authentication."""
+    """The Architect's explicit auth decision is the only source of truth."""
     a = spec.get("auth") or {}
-    return bool(a.get("enabled")) or spec.get("app_kind") == "multipage-app"
+    return bool(a.get("enabled"))
 
 
 def base_files(spec: dict) -> dict:
     """Config, layout shell and the design-system CSS (owned by the frontend agent)."""
     title = spec.get("title") or spec.get("brand_name") or "My App"
     description = spec.get("description", title)
-    acc, acc2 = _palette(spec)
     app_name = re.sub(r"[^a-z0-9-]", "-", title.lower())[:40].strip("-") or "app"
     return {
         "package.json": _package_json(app_name, auth=auth_enabled(spec)),
         "next.config.mjs": _NEXT_CONFIG,
         "tsconfig.json": _TSCONFIG,
         "next-env.d.ts": _NEXT_ENV_DTS,
-        "tailwind.config.ts": _tailwind_config(acc, acc2),
+        "tailwind.config.ts": _tailwind_config(spec),
         "postcss.config.mjs": _POSTCSS,
         ".gitignore": _GITIGNORE,
         "eslint.config.mjs": _ESLINT_CONFIG,
         ".env.example": _ENV_EXAMPLE,
-        "app/layout.tsx": _root_layout(title, description),
-        "app/providers.tsx": _providers(acc, acc2),
-        "app/globals.css": _globals_css(acc, acc2),
+        "app/layout.tsx": _root_layout(title, description, spec),
+        "app/globals.css": _globals_css(spec),
     }
 
 

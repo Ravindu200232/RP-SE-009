@@ -1,409 +1,400 @@
-"""
-agents/llm.py — Central Ollama access for every Locode agent.
+"""Single, strict Gemma 4 runtime for every Locode LLM operation.
 
-WHY THIS EXISTS
-    Previously each agent called Ollama's /api/chat directly and never set
-    `num_ctx`, so generation ran at Ollama's ~2-4K default context. Once we
-    inject codebase context (models, API contract, sibling components) the
-    prompt silently truncates and the model produces broken code. Routing every
-    call through here guarantees a ~98K context window and a consistent thinking
-    level on all stages.
-
-USAGE
-    from agents import llm
-    text = llm.chat([{"role": "user", "content": "..."}], system=SYS)
-    for tok in llm.stream_chat(msgs, num_predict=6144):
-        emit(tok)
+All callers use the installed local ``gemma4:12b`` model through Ollama.  The
+runtime profile was measured on the target RTX 3060: a 98,304-token context and
+two server-side slots remain fully GPU resident.  No caller may change the
+model, context size, or introduce a cloud/local fallback.
 """
+from __future__ import annotations
+
 import json
 import logging
 import os
 import re
-import time
+import threading
+from typing import Any, Iterable
 
 import requests
 
 log = logging.getLogger("llm")
 
 OLLAMA_URL = "http://localhost:11434"
+PROVIDER = "ollama"
+LOCAL_MODEL = "gemma4:12b"
+CLOUD_MODEL = "nemotron-3-super:cloud"
 
-# ── Provider selection ─────────────────────────────────────────────────────────
-# The whole engine routes LLM calls through this module. `LOCODE_PROVIDER` picks the backend:
-#   "ollama" (default) → local Ollama /api/chat (gemma etc.)
-#   "gemini"           → Google Gemini free API (native generateContent, OpenAI-key-free)
-# Everything else in the engine is provider-agnostic — only the three public functions below branch.
-PROVIDER = os.environ.get("LOCODE_PROVIDER", "ollama").lower()
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
+# Compatibility names used by older agents and request contracts. Planning is
+# cloud-only; every source-writing, update, and repair call remains local-only.
+ARCHITECT_MODEL = CLOUD_MODEL
+GEN_MODEL = LOCAL_MODEL
+FALLBACK_MODEL = LOCAL_MODEL
+REPAIR_MODEL = LOCAL_MODEL
+REMAINING_MODEL = LOCAL_MODEL
 
-# One model drives every stage. Configurable per-call, but the whole pipeline
-# is tuned for Gemma 4 12B. `gemma3:12b` is the documented fallback if the
-# gemma4 tag has not been pulled yet.
-GEN_MODEL = "gemma4:12b"
-FALLBACK_MODEL = "gemma3:12b"
+CONTEXT_TOKENS = 98_304
+CLOUD_CONTEXT_TOKENS = 262_144
+KEEP_ALIVE = "30m"
+EXPECTED_FAMILY = "gemma4"
+EXPECTED_QUANTIZATION = "Q4_K_M"
 
-# First-pass repair runs on gemma (same model as generation → no VRAM swap), full-GPU.
-REPAIR_MODEL = "gemma4:12b"
-REPAIR_OPTS = {"num_gpu": 999, "num_ctx": 16384}
-
-# Stubborn / remaining bugs escalate to a powerful CLOUD model — nemotron-3-super:cloud — with maximum
-# context and thinking enabled (cloud → no local VRAM/speed limit, so give it the whole file + reasoning).
-REMAINING_MODEL = "nemotron-3-super:cloud"
-REMAINING_OPTS = {"num_ctx": 65536}   # cloud: max context, no num_gpu
-REMAINING_THINK = "high"
-
-# When the Gemini provider is active, every stage uses a Gemini model by default (overridable by env).
-# `gemini-flash-latest` = Gemini 2.5 Flash: 1M context, strong at code, generous free tier.
-if PROVIDER == "gemini":
-    GEN_MODEL = os.environ.get("LOCODE_MODEL", "gemini-flash-latest")
-    FALLBACK_MODEL = GEN_MODEL
-    REPAIR_MODEL = GEN_MODEL
-    REMAINING_MODEL = os.environ.get("LOCODE_HARD_MODEL", GEN_MODEL)
-
-# Options sent on EVERY call. num_ctx is the headline fix — 98K as requested.
-# NOTE: 98K KV-cache on a 12B model is VRAM-heavy. num_gpu:999 forces max GPU offload; if the
-# machine can't hold the cache it spills to CPU and generation gets slow — tune num_ctx down then.
 BASE_OPTS = {
-    "num_ctx": 98304,      # ~98K context window (long full-stack codebase context)
-    "temperature": 0.12,   # low temp → predictable code, fewer hallucinations
+    "num_ctx": CONTEXT_TOKENS,
+    "temperature": 0.0,
     "top_p": 0.9,
-    "num_gpu": 999,        # force max GPU offload → full speed, never spill to CPU
 }
-
-# Gemma 4 thinking level. Kept LOW for code generation: less latency, fewer
-# wasted tokens, still enough reasoning to wire a component correctly.
-THINK = "low"
+ARCHITECT_OPTS = {"num_ctx": CONTEXT_TOKENS, "temperature": 0.1, "top_p": 0.9}
+REPAIR_OPTS = {"num_ctx": CONTEXT_TOKENS, "temperature": 0.0, "top_p": 0.9}
+REMAINING_OPTS = dict(REPAIR_OPTS)
+THINK = False
+REMAINING_THINK = False
 
 _THINK_TAG = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
-
-# Optional token accounting hook (wired by server for the savings calculator).
 _token_cb = None
+_metrics_lock = threading.Lock()
+_metrics = {"calls": 0, "promptTokens": 0, "outputTokens": 0,
+            "evalDurationNs": 0, "loadDurationNs": 0}
+
+
+class LLMError(RuntimeError):
+    pass
+
+
+class LLMTruncatedError(LLMError):
+    pass
+
+
+class RuntimeProfileError(LLMError):
+    pass
 
 
 def set_token_callback(fn):
-    """Register a callback(prompt_tokens, completion_tokens) for usage tracking."""
+    """Register ``callback(prompt_tokens, completion_tokens)`` for telemetry."""
     global _token_cb
     _token_cb = fn
 
 
-def _track(resp_json: dict):
-    if _token_cb and isinstance(resp_json, dict):
-        try:
-            _token_cb(resp_json.get("prompt_eval_count", 0),
-                      resp_json.get("eval_count", 0))
-        except Exception:
-            pass
+def pinned_model(requested: str | None = None) -> str:
+    """Return the only generation model and ignore legacy overrides."""
+    if requested and requested != LOCAL_MODEL:
+        log.warning("Ignoring model override %r; Locode is pinned to local %s",
+                    requested, LOCAL_MODEL)
+    return LOCAL_MODEL
 
 
-def log_config(model: str = None):
-    """Log the outgoing Ollama options once at the start of a pipeline run."""
-    log.info(
-        "🧠 Ollama config → model=%s num_ctx=%s temp=%s top_p=%s think=%s",
-        model or GEN_MODEL, BASE_OPTS["num_ctx"], BASE_OPTS["temperature"],
-        BASE_OPTS["top_p"], THINK,
-    )
+def pinned_architect_model(requested: str | None = None) -> str:
+    """Return the only planning model and ignore legacy overrides."""
+    if requested and requested != CLOUD_MODEL:
+        log.warning("Ignoring Architect model override %r; planning is pinned to %s",
+                    requested, CLOUD_MODEL)
+    return CLOUD_MODEL
+
+
+def _resolve_model(requested: str | None, route: str) -> str:
+    if route == "architect":
+        return pinned_architect_model(requested)
+    if route != "generation":
+        raise LLMError(f"Unknown LLM route {route!r}")
+    return pinned_model(requested)
+
+
+def _track(data: dict[str, Any]) -> None:
+    if not isinstance(data, dict):
+        return
+    with _metrics_lock:
+        _metrics["calls"] += 1
+        _metrics["promptTokens"] += int(data.get("prompt_eval_count") or 0)
+        _metrics["outputTokens"] += int(data.get("eval_count") or 0)
+        _metrics["evalDurationNs"] += int(data.get("eval_duration") or 0)
+        _metrics["loadDurationNs"] += int(data.get("load_duration") or 0)
+    if not _token_cb:
+        return
+    try:
+        _token_cb(int(data.get("prompt_eval_count") or 0), int(data.get("eval_count") or 0))
+    except Exception:
+        pass
+
+
+def reset_metrics() -> None:
+    with _metrics_lock:
+        for key in _metrics:
+            _metrics[key] = 0
+
+
+def metrics_snapshot() -> dict[str, Any]:
+    with _metrics_lock:
+        value = dict(_metrics)
+    seconds = value["evalDurationNs"] / 1_000_000_000
+    value["tokensPerSecond"] = round(value["outputTokens"] / seconds, 2) if seconds else 0.0
+    value["evalDurationSeconds"] = round(seconds, 3)
+    value["loadDurationSeconds"] = round(value.pop("loadDurationNs") / 1_000_000_000, 3)
+    value.pop("evalDurationNs", None)
+    return value
+
+
+def log_config(model: str | None = None) -> None:
+    pinned_model(model)
+    log.info("Locode routing -> architect=%s (%s ctx), generation=%s (%s ctx), think=%s",
+             CLOUD_MODEL, CLOUD_CONTEXT_TOKENS, LOCAL_MODEL, CONTEXT_TOKENS, THINK)
 
 
 def strip_think(text: str) -> str:
-    """Remove any <think>...</think> block a model may embed in its content."""
     return _THINK_TAG.sub("", text or "").strip()
 
 
-def unload(model: str):
-    """Evict a model from VRAM (keep_alive=0) so the next model gets full GPU. Best-effort."""
-    if PROVIDER != "ollama":
-        return
+def _request(method: str, path: str, *, timeout: int = 120, **kwargs):
     try:
-        requests.post(f"{OLLAMA_URL}/api/generate",
-                      json={"model": model, "keep_alive": 0}, timeout=30)
-    except Exception:
-        pass
+        response = requests.request(method, f"{OLLAMA_URL}{path}", timeout=timeout, **kwargs)
+        response.raise_for_status()
+        return response
+    except requests.RequestException as exc:
+        response = getattr(exc, "response", None)
+        detail = ""
+        if response is not None:
+            try:
+                detail = str(response.text or "").strip()
+            except Exception:
+                detail = ""
+        suffix = f" — {detail}" if detail else ""
+        raise LLMError(f"Ollama request failed: {exc}{suffix}") from exc
 
 
-def ensure_loaded(model: str, extra_opts: dict | None = None):
-    """Warm a model into VRAM with the given options (so the first real call isn't a cold load)."""
-    if PROVIDER != "ollama":
-        return
-    try:
-        opts = dict(BASE_OPTS)
-        if extra_opts:
-            opts.update(extra_opts)
-        requests.post(f"{OLLAMA_URL}/api/chat",
-                      json={"model": model, "messages": [{"role": "user", "content": "ok"}],
-                            "options": opts, "stream": False, "keep_alive": "10m"}, timeout=120)
-    except Exception:
-        pass
+def cloud_profile(*, prewarm: bool = True) -> dict[str, Any]:
+    """Verify the pinned cloud planner tag and optionally make a tiny live call."""
+    tags = _request("GET", "/api/tags", timeout=30).json().get("models") or []
+    names = {str(item.get("name") or item.get("model") or "") for item in tags}
+    if CLOUD_MODEL not in names:
+        raise RuntimeProfileError(
+            f"Required planning model {CLOUD_MODEL!r} is not installed. "
+            f"Run `ollama pull {CLOUD_MODEL}`."
+        )
+    if prewarm:
+        body = _payload(CLOUD_MODEL, [{"role": "user", "content": "Reply OK."}],
+                        num_predict=4, think=False, extra_opts={"temperature": 0.0},
+                        route="architect")
+        body.update({"stream": False, "keep_alive": KEEP_ALIVE})
+        checked = _request("POST", "/api/chat", json=body, timeout=120).json()
+        _track(checked)
+        if checked.get("error"):
+            raise RuntimeProfileError(f"Cloud planner unavailable: {checked['error']}")
+    return {"model": CLOUD_MODEL, "context": CLOUD_CONTEXT_TOKENS,
+            "processor": "Ollama Cloud", "thinking": False}
 
 
-# ── Internals ────────────────────────────────────────────────────────────────
+def runtime_profile(*, prewarm: bool = True) -> dict[str, Any]:
+    """Verify the exact model and its all-GPU 98K allocation.
 
-def _payload(model, messages, num_predict, think, extra_opts):
+    This is deliberately strict.  A missing model, different quantization, smaller
+    context, or partial CPU offload aborts generation before project files change.
+    """
+    flash = str(os.environ.get("OLLAMA_FLASH_ATTENTION", "")).lower()
+    kv_cache = str(os.environ.get("OLLAMA_KV_CACHE_TYPE", "")).lower()
+    parallel = str(os.environ.get("OLLAMA_NUM_PARALLEL", ""))
+    runtime_errors = []
+    if flash not in {"1", "true"}:
+        runtime_errors.append("OLLAMA_FLASH_ATTENTION must be 1")
+    if kv_cache not in {"q8", "q8_0"}:
+        runtime_errors.append("OLLAMA_KV_CACHE_TYPE must be q8_0")
+    if parallel != "2":
+        runtime_errors.append("OLLAMA_NUM_PARALLEL must be 2")
+    if runtime_errors:
+        raise RuntimeProfileError("Invalid Ollama runtime: " + "; ".join(runtime_errors))
+
+    tags = _request("GET", "/api/tags", timeout=30).json().get("models") or []
+    names = {str(item.get("name") or item.get("model") or "") for item in tags}
+    if LOCAL_MODEL not in names:
+        raise RuntimeProfileError(
+            f"Required local model {LOCAL_MODEL!r} is not installed. Run `ollama pull {LOCAL_MODEL}`."
+        )
+
+    shown = _request("POST", "/api/show", json={"model": LOCAL_MODEL}, timeout=30).json()
+    details = shown.get("details") or {}
+    family = str(details.get("family") or "")
+    quantization = str(details.get("quantization_level") or "")
+    if family != EXPECTED_FAMILY or quantization.upper() != EXPECTED_QUANTIZATION:
+        raise RuntimeProfileError(
+            f"{LOCAL_MODEL} must be {EXPECTED_FAMILY} {EXPECTED_QUANTIZATION}; "
+            f"Ollama reports family={family!r}, quantization={quantization!r}."
+        )
+
+    load_duration = 0
+    if prewarm:
+        body = _payload(
+            LOCAL_MODEL,
+            [{"role": "user", "content": "Reply with OK only."}],
+            num_predict=2,
+            think=False,
+            extra_opts={"temperature": 0.0},
+        )
+        body.update({"stream": False, "keep_alive": KEEP_ALIVE})
+        warmed = _request("POST", "/api/chat", json=body, timeout=300).json()
+        load_duration = int(warmed.get("load_duration") or 0)
+        _track(warmed)
+        _reject_truncation(warmed, "runtime prewarm")
+
+    running = _request("GET", "/api/ps", timeout=30).json().get("models") or []
+    loaded = next((item for item in running
+                   if str(item.get("name") or item.get("model")) == LOCAL_MODEL), None)
+    if not loaded:
+        raise RuntimeProfileError(f"{LOCAL_MODEL} did not remain loaded after prewarm")
+    context = int(loaded.get("context_length") or 0)
+    size = int(loaded.get("size") or 0)
+    size_vram = int(loaded.get("size_vram") or 0)
+    if context != CONTEXT_TOKENS:
+        raise RuntimeProfileError(
+            f"Gemma context allocation is {context:,}, expected exactly {CONTEXT_TOKENS:,}."
+        )
+    if not size or size_vram < size:
+        cpu_pct = 100 if not size else round(max(0.0, 1.0 - size_vram / size) * 100)
+        raise RuntimeProfileError(
+            f"Gemma is partially CPU-offloaded ({cpu_pct}% CPU). Free VRAM and retry; "
+            "Locode requires `ollama ps` to report 100% GPU before writing a project."
+        )
+    return {
+        "model": LOCAL_MODEL,
+        "family": family,
+        "quantization": quantization,
+        "context": context,
+        "size": size,
+        "sizeVram": size_vram,
+        "processor": "100% GPU",
+        "flashAttention": True,
+        "kvCache": kv_cache,
+        "parallel": 2,
+        "prewarmLoadSeconds": round(load_duration / 1_000_000_000, 3),
+        "warmStart": load_duration < 1_000_000_000,
+    }
+
+
+def ensure_loaded(model: str | None = None, extra_opts: dict | None = None):
+    """Compatibility entrypoint; the profile is intentionally not caller-configurable."""
+    pinned_model(model)
+    if extra_opts and int(extra_opts.get("num_ctx", CONTEXT_TOKENS)) != CONTEXT_TOKENS:
+        log.warning("Ignoring context override; Gemma runtime is pinned to %s", CONTEXT_TOKENS)
+    return runtime_profile(prewarm=True)
+
+
+def unload(model: str | None = None) -> None:
+    """Compatibility no-op; Gemma stays resident for its configured keep-alive."""
+    pinned_model(model)
+
+
+def _payload(model: str, messages: Iterable[dict[str, Any]], num_predict: int,
+              think: bool | None, extra_opts: dict | None,
+              format_schema: dict | str | None = None,
+              route: str = "generation") -> dict[str, Any]:
     opts = dict(BASE_OPTS)
-    opts["num_predict"] = num_predict
     if extra_opts:
         opts.update(extra_opts)
-    body = {"model": model, "messages": messages, "options": opts}
-    if think is not None:
-        body["think"] = think
-    return body
-
-
-def _think_ladder(think):
-    """
-    Ordered `think` values to try, most-desired first. If the model or the
-    installed Ollama version rejects a thinking level we degrade gracefully:
-    requested level → disabled → omit the field entirely.
-    """
-    ladder = []
-    for v in (think, False, None):
-        if v not in ladder:
-            ladder.append(v)
-    return ladder
-
-
-def _is_think_error(txt: str) -> bool:
-    t = (txt or "").lower()
-    return "think" in t or "thinking" in t
-
-
-# ── Gemini provider (native generateContent / streamGenerateContent) ───────────
-
-def _gemini_body(messages, system, num_predict):
-    """Map role/content messages → Gemini `contents`; system → `systemInstruction`; thinking OFF."""
-    contents = []
-    for m in messages:
-        role = "model" if m.get("role") == "assistant" else "user"
-        contents.append({"role": role, "parts": [{"text": m.get("content", "")}]})
-    body = {
-        "contents": contents,
-        "generationConfig": {
-            "temperature": BASE_OPTS["temperature"],
-            "topP": BASE_OPTS["top_p"],
-            "maxOutputTokens": max(int(num_predict), 2048),
-            "thinkingConfig": {"thinkingBudget": 0},   # code gen — no reasoning tokens
-        },
+    # Model/context/GPU policy is not overridable by agents.
+    opts.pop("num_gpu", None)
+    opts["num_ctx"] = (CLOUD_CONTEXT_TOKENS if route == "architect" else CONTEXT_TOKENS)
+    opts["num_predict"] = int(num_predict)
+    body: dict[str, Any] = {
+        "model": _resolve_model(model, route),
+        "messages": list(messages),
+        "options": opts,
+        "keep_alive": KEEP_ALIVE,
     }
-    if system:
-        body["systemInstruction"] = {"parts": [{"text": system}]}
+    if think is not None:
+        body["think"] = bool(think)
+    if format_schema is not None:
+        body["format"] = format_schema
     return body
 
 
-# Free-tier RPM throttle: keep at least this many seconds between Gemini calls (≈ under 15 RPM).
-GEMINI_MIN_INTERVAL = float(os.environ.get("GEMINI_MIN_INTERVAL", "5.0"))
-_gemini_last = [0.0]
+def _messages(messages, system: str | None) -> list[dict[str, Any]]:
+    # Gemma 4 supports a native system role and Ollama's renderer owns all model
+    # control tokens.  Never hand-build tokenizer markers here.
+    return ([{"role": "system", "content": system}] if system else []) + list(messages)
 
 
-def _gemini_retry_delay(resp) -> float:
-    """Gemini returns the retry hint in the error body (details[].retryDelay: '30s'), not a header."""
-    try:
-        for d in (resp.json().get("error", {}).get("details", []) or []):
-            rd = d.get("retryDelay")
-            if rd:
-                return float(str(rd).rstrip("s"))
-    except Exception:
-        pass
-    return 0.0
+def _reject_truncation(data: dict[str, Any], label: str) -> None:
+    reason = str(data.get("done_reason") or "")
+    if reason == "length":
+        message = data.get("message") or {}
+        partial = str(message.get("content") or "")
+        thinking = str(message.get("thinking") or "")
+        tail_source = partial or thinking
+        tail = " ".join(tail_source[-180:].split())
+        raise LLMTruncatedError(
+            f"{label} exhausted its {data.get('eval_count', '?')} output tokens; "
+            f"partial content={len(partial)} chars, thinking={len(thinking)} chars, "
+            f"stopped near {tail!r}; the incomplete result was rejected and will not be written."
+        )
 
 
-def _gemini_post(url, body, timeout, stream):
-    """POST with a min-interval throttle + retry/backoff on 429 (free-tier rate limit)."""
-    headers = {"Content-Type": "application/json", "X-goog-api-key": GEMINI_API_KEY}
-    last = None
-    for attempt in range(8):
-        gap = GEMINI_MIN_INTERVAL - (time.time() - _gemini_last[0])
-        if gap > 0:
-            time.sleep(gap)
-        _gemini_last[0] = time.time()
-        resp = requests.post(url, headers=headers, json=body, timeout=timeout, stream=stream)
-        if resp.status_code == 429:
-            wait = _gemini_retry_delay(resp) or float(resp.headers.get("Retry-After", 0)) or min(2 ** attempt, 30)
-            wait = min(max(wait, 2), 65)   # free-tier RPM resets per minute → wait up to ~65s
-            log.warning("   gemini 429 — backing off %.0fs (attempt %d)", wait, attempt + 1)
-            time.sleep(wait)
-            last = resp
-            continue
-        resp.raise_for_status()
-        return resp
-    if last is not None:
-        last.raise_for_status()
-    raise RuntimeError("gemini: exhausted retries")
-
-
-def _gemini_track(data):
-    if _token_cb and isinstance(data, dict):
-        u = data.get("usageMetadata", {}) or {}
-        try:
-            _token_cb(u.get("promptTokenCount", 0), u.get("candidatesTokenCount", 0))
-        except Exception:
-            pass
-
-
-def _gemini_chat(model, messages, system, num_predict, timeout=120) -> str:
-    url = f"{GEMINI_BASE}/{model}:generateContent"
-    resp = _gemini_post(url, _gemini_body(messages, system, num_predict), timeout, stream=False)
-    data = resp.json()
-    _gemini_track(data)
-    try:
-        parts = data["candidates"][0]["content"]["parts"]
-        return "".join(p.get("text", "") for p in parts)
-    except Exception:
-        return ""
-
-
-def _gemini_stream(model, messages, system, num_predict, timeout=300):
-    url = f"{GEMINI_BASE}/{model}:streamGenerateContent?alt=sse"
-    resp = _gemini_post(url, _gemini_body(messages, system, num_predict), timeout, stream=True)
-    for raw in resp.iter_lines():
-        if not raw:
-            continue
-        line = raw.decode("utf-8") if isinstance(raw, (bytes, bytearray)) else raw
-        if not line.startswith("data:"):
-            continue
-        payload = line[5:].strip()
-        if payload == "[DONE]":
-            break
-        try:
-            chunk = json.loads(payload)
-        except Exception:
-            continue
-        for cand in chunk.get("candidates", []) or []:
-            for p in (cand.get("content", {}) or {}).get("parts", []) or []:
-                t = p.get("text", "")
-                if t:
-                    yield t
-        if chunk.get("usageMetadata"):
-            _gemini_track(chunk)
-
-
-# ── Public API ───────────────────────────────────────────────────────────────
-
-def chat(messages, *, model=None, num_predict=1024, think=THINK,
-         system=None, extra_opts=None, timeout=120) -> str:
-    """Non-streaming chat. Returns the assistant message content (think stripped)."""
-    model = model or GEN_MODEL
-    if PROVIDER == "gemini":
-        return strip_think(_gemini_chat(model, list(messages), system, num_predict, timeout))
-    msgs = ([{"role": "system", "content": system}] if system else []) + list(messages)
-    last_err = None
-    for tv in _think_ladder(think):
-        body = _payload(model, msgs, num_predict, tv, extra_opts)
-        body["stream"] = False
-        try:
-            resp = requests.post(f"{OLLAMA_URL}/api/chat", json=body, timeout=timeout)
-            if resp.status_code >= 400:
-                if tv is not None and _is_think_error(resp.text):
-                    last_err = resp.text[:200]
-                    continue
-                resp.raise_for_status()
-            data = resp.json()
-            _track(data)
-            content = strip_think(data.get("message", {}).get("content", ""))
-            # gemma4:12b in thinking mode spends the whole num_predict budget in the (separate)
-            # thinking channel and answers with an EMPTY content — a 200 OK carrying nothing. The
-            # ladder below only caught models that REJECT thinking, so the empty string flowed
-            # straight through: the architect's spec "failed to parse" and every app silently fell
-            # back to the generic `Entry` placeholder. An empty answer is a thinking failure too.
-            if content.strip():
-                return content
-            if tv is None:
-                return content          # last rung — nothing left to try
-            last_err = f"empty content with think={tv!r}"
-            log.warning("   chat returned empty content with think=%r — retrying without it", tv)
-            continue
-        except requests.RequestException as e:
-            last_err = str(e)
-            log.error("   chat error: %s", e)
-            break
-    raise RuntimeError(f"llm.chat failed: {last_err}")
+def chat(messages, *, model=None, num_predict=1024, think=THINK, system=None,
+         extra_opts=None, timeout=300, format_schema: dict | str | None = None,
+         route: str = "generation") -> str:
+    """Non-streaming Gemma chat with optional Ollama JSON-schema output."""
+    model = _resolve_model(model, route)
+    body = _payload(model, _messages(messages, system), num_predict, think,
+                    extra_opts, format_schema, route)
+    body["stream"] = False
+    data = _request("POST", "/api/chat", json=body, timeout=timeout).json()
+    _track(data)
+    label = "Nemotron Cloud response" if route == "architect" else "Gemma response"
+    _reject_truncation(data, label)
+    content = strip_think((data.get("message") or {}).get("content", ""))
+    if not content:
+        raise LLMError("Gemma returned no final content")
+    return content
 
 
 def stream_chat(messages, *, model=None, num_predict=4096, think=THINK,
-                system=None, extra_opts=None, timeout=300):
-    """
-    Streaming chat generator. Yields content token strings as they arrive.
-    Thinking tokens (message.thinking) are never yielded — only the final answer.
-    Retries with reduced `think` settings if the level is rejected.
-    """
-    model = model or GEN_MODEL
-    if PROVIDER == "gemini":
-        yield from _gemini_stream(model, list(messages), system, num_predict, timeout)
-        return
-    msgs = ([{"role": "system", "content": system}] if system else []) + list(messages)
-    last_err = None
-    for tv in _think_ladder(think):
-        body = _payload(model, msgs, num_predict, tv, extra_opts)
-        body["stream"] = True
+                system=None, extra_opts=None, timeout=600,
+                format_schema: dict | str | None = None,
+                route: str = "generation"):
+    """Yield final-answer tokens only and reject any length-stopped completion."""
+    model = _resolve_model(model, route)
+    body = _payload(model, _messages(messages, system), num_predict, think,
+                    extra_opts, format_schema, route)
+    body["stream"] = True
+    response = _request("POST", "/api/chat", json=body, stream=True, timeout=timeout)
+    usage: dict[str, Any] = {}
+    for line in response.iter_lines():
+        if not line:
+            continue
         try:
-            resp = requests.post(f"{OLLAMA_URL}/api/chat", json=body,
-                                 stream=True, timeout=timeout)
-            if resp.status_code >= 400:
-                txt = resp.text[:200]
-                if tv is not None and _is_think_error(txt):
-                    last_err = txt
-                    log.warning("   think=%s rejected — retrying lower", tv)
-                    continue
-                resp.raise_for_status()
-            usage = {}
-            for line in resp.iter_lines():
-                if not line:
-                    continue
-                try:
-                    chunk = json.loads(line)
-                except Exception:
-                    continue
-                tok = chunk.get("message", {}).get("content", "")
-                if tok:
-                    yield tok
-                if chunk.get("done"):
-                    usage = chunk
-                    break
-            _track(usage)
-            return
-        except requests.RequestException as e:
-            last_err = str(e)
-            log.error("   stream_chat error: %s", e)
+            chunk = json.loads(line)
+        except (TypeError, json.JSONDecodeError):
+            continue
+        token = (chunk.get("message") or {}).get("content", "") or ""
+        if token:
+            yield token
+        if chunk.get("done"):
+            usage = chunk
             break
-    raise RuntimeError(f"llm.stream_chat failed: {last_err}")
+    _track(usage)
+    label = "Nemotron Cloud streamed response" if route == "architect" else "Gemma streamed response"
+    _reject_truncation(usage, label)
 
 
 def stream_capture(messages, *, model=None, num_predict=4096, think=THINK,
-                   system=None, extra_opts=None, timeout=600) -> tuple[str, str]:
-    """Like stream_chat but RETURNS `(content, thinking)` — captures BOTH channels. For a repair with a
-    thinking model (nemotron) whose real answer may land in `message.thinking` instead of `content`."""
-    model = model or GEN_MODEL
-    if PROVIDER == "gemini":
-        text = "".join(_gemini_stream(model, list(messages), system, num_predict, timeout))
-        return text, ""
-    msgs = ([{"role": "system", "content": system}] if system else []) + list(messages)
-    last_err = None
-    for tv in _think_ladder(think):
-        body = _payload(model, msgs, num_predict, tv, extra_opts)
-        body["stream"] = True
+                   system=None, extra_opts=None, timeout=600,
+                   format_schema: dict | str | None = None,
+                   route: str = "generation") -> tuple[str, str]:
+    """Return ``(content, thinking)`` for the bounded hard-repair path."""
+    model = _resolve_model(model, route)
+    body = _payload(model, _messages(messages, system), num_predict, think,
+                    extra_opts, format_schema, route)
+    body["stream"] = True
+    response = _request("POST", "/api/chat", json=body, stream=True, timeout=timeout)
+    content, thinking, usage = "", "", {}
+    for line in response.iter_lines():
+        if not line:
+            continue
         try:
-            resp = requests.post(f"{OLLAMA_URL}/api/chat", json=body, stream=True, timeout=timeout)
-            if resp.status_code >= 400:
-                if tv is not None and _is_think_error(resp.text[:200]):
-                    last_err = resp.text[:200]
-                    continue
-                resp.raise_for_status()
-            content, thinking, usage = "", "", {}
-            for line in resp.iter_lines():
-                if not line:
-                    continue
-                try:
-                    chunk = json.loads(line)
-                except Exception:
-                    continue
-                m = chunk.get("message", {})
-                content += m.get("content", "") or ""
-                thinking += m.get("thinking", "") or ""
-                if chunk.get("done"):
-                    usage = chunk
-                    break
-            _track(usage)
-            return content, thinking
-        except requests.RequestException as e:
-            last_err = str(e)
-            log.error("   stream_capture error: %s", e)
+            chunk = json.loads(line)
+        except (TypeError, json.JSONDecodeError):
+            continue
+        message = chunk.get("message") or {}
+        content += message.get("content", "") or ""
+        thinking += message.get("thinking", "") or ""
+        if chunk.get("done"):
+            usage = chunk
             break
-    raise RuntimeError(f"llm.stream_capture failed: {last_err}")
+    _track(usage)
+    label = "Nemotron Cloud repair response" if route == "architect" else "Gemma repair response"
+    _reject_truncation(usage, label)
+    return strip_think(content), thinking

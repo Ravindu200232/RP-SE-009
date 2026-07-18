@@ -8,7 +8,7 @@ from agents import scaffold
 
 SPEC = {
     "app_kind": "multipage-app",
-    "auth": {"enabled": True},
+    "auth": {"enabled": True, "signup": True},
     "title": "Test Market",
     "roles": [
         {"name": "owner", "label": "Owner", "home": "/owner", "selfSignup": True},

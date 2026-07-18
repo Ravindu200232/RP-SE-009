@@ -50,7 +50,7 @@ def build_contract(spec: dict) -> dict:
         pages.append(entry)
         routes.add(path)
     auth = spec.get("auth") or {}
-    if auth.get("signup", True):
+    if auth_enabled(spec) and auth.get("signup"):
         routes.add("/signup")
     # Only shared-dashboard SRS apps expose /dashboard. Role-wise inputs use exact
     # per-role homes such as /teacher/dashboard and /front-desk/dashboard.
@@ -58,13 +58,17 @@ def build_contract(spec: dict) -> dict:
     if "/dashboard" in role_homes or any(p.get("path") == "/dashboard" for p in pages):
         routes.add("/dashboard")
 
-    api = {
-        "/api/auth/register": ["POST"],
-        "/api/auth/login": ["POST"],
-        "/api/auth/logout": ["POST"],
-        "/api/auth/me": ["GET"],
-    }
-    if spec.get("app_kind") == "multipage-app":
+    api = {}
+    if auth_enabled(spec):
+        api.update({
+            "/api/auth/login": ["POST"],
+            "/api/auth/logout": ["POST"],
+            "/api/auth/me": ["GET"],
+        })
+        if auth.get("signup"):
+            api["/api/auth/register"] = ["POST"]
+    if auth_enabled(spec) and any(str(r.get("name")) == "admin" for r in (spec.get("roles") or [])
+                                  if isinstance(r, dict)):
         api.update({"/api/admin/users": ["GET"], "/api/admin/users/[id]/role": ["PUT"]})
     kits = set(spec.get("kits") or [])
     if "inventory" in kits:
@@ -73,11 +77,7 @@ def build_contract(spec: dict) -> dict:
         api["/api/invoices/[id]/payments"] = ["POST"]
     if "pos" in kits:
         api["/api/pos/checkout"] = ["POST"]
-    # `/api/reports` is emitted by core.core_files for EVERY app that has a non-User model (see
-    # scaffold.reports_route), and the dashboard rule tells the model to fetch it. Declaring it only
-    # for `kits` apps made the dashboard's own required call look undeclared.
-    if "reports" in kits or any(str(m.get("name", "")).lower() not in ("", "user")
-                                for m in (spec.get("data_model") or [])):
+    if "reports" in kits:
         api["/api/reports"] = ["GET"]
     collections = []
     for model in spec.get("data_model") or []:
@@ -99,7 +99,6 @@ def build_contract(spec: dict) -> dict:
     return {
         "version": QUALITY_VERSION,
         "strict": True,
-        "max_pages": 19,
         "routes": sorted(routes),
         "pages": pages,
         "source_pages": spec.get("pages") or [],
@@ -111,6 +110,8 @@ def build_contract(spec: dict) -> dict:
         "relationships": spec.get("relationships") or [],
         "input_schema": spec.get("input_schema"),
         "input_hash": spec.get("input_hash"),
+        "raw_input": spec.get("_raw_idea") or spec.get("raw_input") or "",
+        "design": spec.get("design") or {},
         "allowed_links": allowed_links,
         "rules": [
             "no-invented-routes", "no-invented-api", "records-use-_id",
@@ -145,8 +146,6 @@ def validate_spec(spec: dict, contract: dict | None = None) -> list[str]:
     contract = contract or build_contract(spec)
     errors.extend(str(x) for x in ((spec.get("analysis") or {}).get("errors") or []))
     pages = contract.get("pages") or []
-    if len(pages) > int(contract.get("max_pages", 19)):
-        errors.append(f"page-count-exceeds-{contract['max_pages']}")
     paths = [p["path"] for p in pages]
     duplicates = sorted({p for p in paths if paths.count(p) > 1})
     if duplicates:
@@ -277,6 +276,19 @@ def static_scan(project_dir: Path, contract: dict) -> list[dict]:
     # Cross-file checks can only run once every file exists.
     for item in component_graph_scan(project_dir, contract):
         unique[(item["signature"], item["file"])] = item
+    if (contract.get("design") or {}).get("navStyle") == "topnav":
+        ui_sources = []
+        for path in _source_files(project_dir):
+            rel = path.relative_to(project_dir).as_posix()
+            if rel.startswith(("components/", "app/")):
+                try:
+                    ui_sources.append(path.read_text(encoding="utf-8", errors="replace"))
+                except Exception:
+                    pass
+        if not any(re.search(r"<nav\b", source, re.I) for source in ui_sources):
+            item = {"signature": "missing-top-navigation", "file": "components/pages/HomePage.tsx",
+                    "message": "design.navStyle=topnav requires an accessible <nav> surface"}
+            unique[(item["signature"], item["file"])] = item
     return list(unique.values())
 
 
@@ -299,6 +311,67 @@ def scan_source(rel: str, text: str, contract: dict) -> list[dict]:
         findings.append({"signature": "records-use-_id", "file": rel, "message": "mixed id/_id record contract"})
     if re.search(r"Active Users\s*[:=]\s*['\"]?\d", text, re.I):
         findings.append({"signature": "hardcoded-business-metric", "file": rel, "message": "metric is not API/report backed"})
+    generated_ui = (rel.startswith(("components/features/", "components/pages/")) or
+                    bool(re.fullmatch(r"app(?:/[^/]+)*/(?:page|layout)\.tsx", rel)))
+    if generated_ui and re.search(r"#[0-9a-fA-F]{3,8}\b", text):
+        findings.append({"signature": "nonsemantic-hex-color", "file": rel,
+                         "message": "generated UI must use semantic theme tokens, not literal hex colours"})
+    if generated_ui and re.search(r"\b(?:rgb|rgba|hsl|hsla)\s*\(", text, re.I):
+        findings.append({"signature": "nonsemantic-functional-color", "file": rel,
+                         "message": "generated UI must use semantic theme tokens, not literal CSS colours"})
+    fixed_colour = re.compile(
+        r"\b(?:bg|text|border|ring|from|via|to)-(?:white|black|slate|gray|zinc|neutral|stone|red|"
+        r"orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|"
+        r"pink|rose)(?:-\d{2,3})?(?:/\d{1,3})?\b"
+    )
+    if generated_ui and fixed_colour.search(text):
+        findings.append({"signature": "nonsemantic-tailwind-color", "file": rel,
+                         "message": "generated UI must use primary/muted/destructive semantic tokens"})
+    raw_input = str(contract.get("raw_input") or "")
+    external_images_forbidden = bool(re.search(
+        r"\b(?:no|without)\s+external\s+(?:image|images|asset|assets|image dependency)\b",
+        raw_input, re.I))
+    external_image = re.search(
+        r"(?:url\(\s*['\"]?https?://|(?:src|backgroundImage)\s*=\s*"
+        r"(?:\{\s*)?['\"]https?://)", text, re.I)
+    if generated_ui and external_images_forbidden and external_image:
+        findings.append({"signature": "forbidden-external-image", "file": rel,
+                         "message": "raw product request forbids external image dependencies"})
+    if (generated_ui and re.search(r"<button\b", text) and
+            re.search(r"\b(?:active|selected|current)[A-Z_a-z]*\s*===", text) and
+            "aria-pressed" not in text):
+        findings.append({"signature": "toggle-missing-aria-pressed", "file": rel,
+                         "message": "stateful filter/toggle buttons must expose aria-pressed"})
+    if generated_ui and re.search(r"(?:Â[©°]|â(?:€“|€”|€™|€œ|€|€¢|€¦))", text):
+        findings.append({"signature": "visible-mojibake", "file": rel,
+                         "message": "visible copy contains a known UTF-8 mojibake sequence"})
+    decorative_overlay = re.search(r"<div\b(?P<attrs>[^>]*\babsolute\s+inset-0[^>]*)/>",
+                                    text, re.DOTALL)
+    if (generated_ui and decorative_overlay and
+            "pointer-events-none" not in decorative_overlay.group(0)):
+        findings.append({"signature": "decorative-overlay-intercepts-controls", "file": rel,
+                         "message": "a full-surface decorative overlay must use pointer-events-none"})
+    if (generated_ui and re.search(r"const\s+INITIAL_[A-Z0-9_]+\s*:", text) and
+            re.search(r"if\s*\(\s*(\w+)\.success\s*&&\s*\1\.data\s*\)", text)):
+        findings.append({"signature": "reference-empty-array-overrides-content", "file": rel,
+                         "message": "an empty successful API array must retain required first-load reference content"})
+    if (generated_ui and "filter={null}" in text and
+            re.search(r"onFilterChange=\{\s*\(\w+\)\s*=>\s*\{\s*(?://[^\r\n]*\s*)*\}\s*\}",
+                      text, re.DOTALL)):
+        findings.append({"signature": "filter-control-not-wired", "file": rel,
+                         "message": "filter callback is empty while the consumer receives a constant null filter"})
+    if (generated_ui and re.search(
+            r"on(?:Select|Choose|Pick)=\{\s*\([^)]*\)\s*=>\s*\{\s*"
+            r"(?:(?://[^\r\n]*)|(?:/\*.*?\*/))*\s*\}\s*\}", text, re.DOTALL)):
+        findings.append({"signature": "selection-control-not-wired", "file": rel,
+                         "message": "selection callback is empty; selected/detail state must be wired"})
+    if (generated_ui and (contract.get("design") or {}).get("navStyle") == "topnav" and
+            set(contract.get("routes") or []) == {"/"}):
+        nav = re.search(r"<nav\b[^>]*>(.*?)</nav>", text, re.DOTALL | re.I)
+        if nav and (len(re.findall(r"<a\b[^>]*href=['\"]/['\"]", nav.group(1), re.I)) > 1 or
+                    re.search(r"<a\b[^>]*href=['\"]#['\"]", nav.group(1), re.I)):
+            findings.append({"signature": "topnav-duplicate-home-links", "file": rel,
+                             "message": "a one-route topnav must use useful in-page anchors, not repeated home links"})
     if re.search(r"const\s+Link\s*=|type\s+Link\s*=", text) and re.search(r"import\s+Link\s+from\s+['\"]next/link", text):
         findings.append({"signature": "duplicate-link-identifier", "file": rel, "message": "Link import/type collision"})
     imported = []
@@ -311,8 +384,24 @@ def scan_source(rel: str, text: str, contract: dict) -> list[dict]:
     duplicates = sorted({x for x in imported if imported.count(x) > 1})
     if duplicates:
         findings.append({"signature": "duplicate-imports:" + ",".join(duplicates), "file": rel, "message": "identifier imported more than once"})
-    if re.search(r"const\s+\w+\s*=\s*\[[^\]]*['\"][^\]]*['\"]\s*\]", text) and re.search(r"\b\w+\.(?:value|label)\b", text):
-        findings.append({"signature": "malformed-form-options", "file": rel, "message": "string option array used as object options"})
+    string_arrays = re.findall(
+        r"const\s+([A-Za-z_$][\w$]*)\s*=\s*\[[^\]]*['\"][^\]]*['\"]\s*\]", text)
+    malformed_options = False
+    for array_name in string_arrays:
+        mappings = re.finditer(
+            r"\b" + re.escape(array_name)
+            + r"\.map\(\s*\(?\s*([A-Za-z_$][\w$]*)\s*\)?\s*=>", text)
+        for mapping in mappings:
+            item = mapping.group(1)
+            callback_window = text[mapping.end():mapping.end() + 1_500]
+            if re.search(r"\b" + re.escape(item) + r"\.(?:value|label)\b", callback_window):
+                malformed_options = True
+                break
+        if malformed_options:
+            break
+    if malformed_options:
+        findings.append({"signature": "malformed-form-options", "file": rel,
+                         "message": "string option array used as object options"})
 
     # Literal internal links must target a declared route. Dynamic [id] links
     # are checked against the route shape and accepted with __id__.

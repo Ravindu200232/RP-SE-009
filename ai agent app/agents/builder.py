@@ -399,9 +399,21 @@ SYSTEM_PROMPT = textwrap.dedent("""\
     """)
 
 
+# The legacy BuilderAgent is retained for existing-project updates. Its original
+# prompt encoded the old fixed dark template; active calls use this context-first
+# shadcn contract instead.
+SYSTEM_PROMPT = (
+    "You update one complete Next.js 16 + React 19 TypeScript component. Output code only. "
+    "The supplied product-context/v1 is authoritative. Preserve all behaviour not requested, use only "
+    "declared routes/APIs/fields, and follow the Architect's design. Use semantic Tailwind classes, "
+    "installed @/components/ui shadcn primitives, and lucide-react icons. Never use MUI, Emotion, "
+    "react-icons, fixed slate/dark themes, invented packages, markdown, TODOs, or incomplete code."
+)
+
+
 class BuilderAgent:
     def __init__(self, ollama_url: str = None, model: str = None, project_dir: Path = None):
-        self.model        = model or llm.GEN_MODEL
+        self.model        = llm.pinned_model(model or llm.GEN_MODEL)
         self.project_dir  = Path(project_dir)
         self._component_fallbacks: dict[str, str] = {}
         self._allowed_routes: set[str] = set()
@@ -601,7 +613,7 @@ class BuilderAgent:
             full = ""
             for tok in llm.stream_chat(
                 [{"role": "user", "content": user_prompt}],
-                model=self.model, system=SYSTEM_PROMPT, num_predict=num_predict,
+                model=self.model, system=SYSTEM_PROMPT, num_predict=num_predict, think=False,
             ):
                 full += tok
                 _emit(tok)
@@ -618,6 +630,11 @@ class BuilderAgent:
 
     def _fix_component(self, name: str, broken: str, errors: str, codebase: str, raw_context: str = "") -> str:
         """Ask LLM to fix a component, giving it full error context + full codebase."""
+        try:
+            from agents.product_context import load_product_context, prompt_block
+            product_ctx = prompt_block(load_product_context(self.project_dir), output_tokens=4096)
+        except Exception:
+            product_ctx = ""
 
         # Extract console/browser runtime errors separately — these are often the real cause
         console_errors = []
@@ -651,9 +668,8 @@ class BuilderAgent:
         # Blank page / invisible content fixes
         if "appears blank" in errors or "no visible content" in errors or "readable text" in errors:
             specific_fixes.append(
-                "- The page renders BLANK. The component must have an EXPLICIT dark background. "
-                "Add className='min-h-screen bg-gray-900 text-white' to your outermost div. "
-                "Do NOT rely on tailwind defaults or transparent containers."
+                "- The page renders blank. Restore visible semantic `bg-background text-foreground` "
+                "content while preserving the Architect's light/dark mode."
             )
 
         console_section = ""
@@ -677,30 +693,26 @@ class BuilderAgent:
         if raw_context:
             raw_section = (
                 f"\n═══ PREVIOUS FULL OUTPUT (contains logic to merge into one function) ═══\n"
-                f"{raw_context[:2000]}\n"
+                f"{raw_context}\n"
             )
 
         prompt = textwrap.dedent(f"""\
+            {product_ctx}
             Fix the broken React component below.
             {console_section}{fixes_section}
             ═══ ALL ERRORS ═══
-            {errors[:400]}
+            {errors}
 
             ═══ CODEBASE CONTEXT ═══
-            {codebase[:1800]}
+            {codebase}
 
             ═══ BROKEN COMPONENT: {name} ═══
-            {broken[:2500]}
+            {broken}
             {raw_section}
             ═══ INSTRUCTIONS ═══
             - Fix EVERY error listed above — the browser console errors are the true cause
-            - ONLY import from: react, react-dom, framer-motion, react-icons/*
-            - BANNED packages (not installed, will crash): react-leaflet, react-router-dom,
-              axios, lodash, chart.js, d3, three, @mui/material, @chakra-ui/react,
-              react-query, zustand, styled-components, react-hot-toast, react-helmet
-            - If you were using react-leaflet: replace with a <div> map placeholder
-            - Only use icons that actually exist: FiHome, FiX, FiCircle, FiGrid, FiStar, FiMenu, etc.
-            - Do NOT invent icon names — if unsure, use FiBox or FiSquare as a safe fallback
+            - Use only packages and installed shadcn components in PRODUCT CONTEXT
+            - Use semantic Tailwind and real `lucide-react` icons; never MUI, Emotion, or react-icons
             - NEVER write /regex/ literals inside JSX — hoist them to const before return()
             - ALL logic must go inside the single export default function {name}() — no split components
             - Keep the same visual design and structure
@@ -713,7 +725,7 @@ class BuilderAgent:
             for tok in llm.stream_chat(
                 [{"role": "user", "content": prompt}],
                 model=self.model, system=SYSTEM_PROMPT,
-                num_predict=4096, extra_opts={"temperature": 0.05},
+                num_predict=4096, think=False, extra_opts={"temperature": 0.05},
             ):
                 full += tok
                 _emit(tok)

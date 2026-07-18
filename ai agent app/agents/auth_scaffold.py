@@ -23,7 +23,6 @@ import secrets
 # ── Role normalisation ────────────────────────────────────────────────────────
 
 _DEFAULT_ROLES = [
-    {"name": "admin", "label": "Administrator", "rank": 100, "selfSignup": False},
     {"name": "user", "label": "User", "rank": 10, "selfSignup": True},
 ]
 
@@ -43,7 +42,8 @@ def _home_for(name: str) -> str:
 
 def normalize_roles(spec: dict) -> list[dict]:
     """Return a clean, sorted (ascending rank) list of role dicts with name/label/rank/
-    selfSignup/home. Always guarantees an 'admin' role (seeded, non-self-signup)."""
+    selfSignup/home. It never invents an admin role; a single internal user role is used only when
+    authentication is enabled without distinct product roles."""
     raw = spec.get("roles")
     if not raw:
         a = spec.get("auth") or {}
@@ -68,9 +68,6 @@ def normalize_roles(spec: dict) -> list[dict]:
         })
     if not roles:
         roles = [dict(x, home=_home_for(x["name"])) for x in _DEFAULT_ROLES]
-    if not any(x["name"] == "admin" for x in roles):
-        roles.append({"name": "admin", "label": "Administrator", "rank": 100,
-                      "selfSignup": False, "home": "/admin"})
     roles.sort(key=lambda x: x["rank"])
     return roles
 
@@ -79,6 +76,10 @@ def base_role(roles: list[dict]) -> str:
     ss = [r for r in roles if r["selfSignup"]]
     ss.sort(key=lambda x: x["rank"])
     return (ss[0] if ss else roles[0])["name"]
+
+
+def _has_admin(roles: list[dict]) -> bool:
+    return any(role.get("name") == "admin" for role in roles)
 
 
 def _ts_arr(items: list[str]) -> str:
@@ -488,11 +489,11 @@ _SIDEBAR = (
     "  }\n"
     "  return (\n"
     "    <>\n"
-    "    <aside className='hidden w-64 shrink-0 min-h-[calc(100vh-4rem)] bg-slate-900 border-r border-white/10 p-6 md:flex md:flex-col'>\n"
+    "    <aside className='hidden w-64 shrink-0 min-h-screen bg-card border-r border-border p-6 md:flex md:flex-col'>\n"
     "      <div className='mb-8'>\n"
-    "        <span className='text-xs uppercase tracking-wider text-slate-500'>Dashboard</span>\n"
-    "        <h2 className='text-lg font-bold text-white'>{label}</h2>\n"
-    "        <span className='text-xs text-accent'>{role}</span>\n"
+    "        <span className='text-xs uppercase tracking-wider text-muted-foreground'>Workspace</span>\n"
+    "        <h2 className='text-lg font-bold text-foreground'>{label}</h2>\n"
+    "        <span className='text-xs text-primary'>{role}</span>\n"
     "      </div>\n"
     "      <nav className='flex flex-col gap-1 flex-1'>\n"
     "        {links.map((l) => {\n"
@@ -503,7 +504,7 @@ _SIDEBAR = (
     "              href={l.href}\n"
     "              className={\n"
     "                'px-3 py-2 rounded-lg text-sm transition ' +\n"
-    "                (active ? 'bg-accent text-white' : 'text-slate-300 hover:bg-white/5')\n"
+    "                (active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground')\n"
     "              }\n"
     "            >\n"
     "              {l.label}\n"
@@ -513,24 +514,24 @@ _SIDEBAR = (
     "      </nav>\n"
     "      <button\n"
     "        onClick={logout}\n"
-    "        className='mt-4 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-white/5 text-left'\n"
+    "        className='mt-4 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted text-left'\n"
     "      >\n"
     "        Log out\n"
     "      </button>\n"
     "    </aside>\n"
-    "    <button type='button' aria-label='Open role navigation' onClick={() => setOpen(true)} className='fixed bottom-5 right-5 z-50 rounded-full bg-accent px-4 py-3 text-sm font-semibold text-white shadow-xl md:hidden'>Menu</button>\n"
+    "    <button type='button' aria-label='Open role navigation' onClick={() => setOpen(true)} className='fixed bottom-5 right-5 z-50 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-theme md:hidden'>Menu</button>\n"
     "    {open && (\n"
     "      <>\n"
-    "        <button type='button' aria-label='Close role navigation' onClick={() => setOpen(false)} className='fixed inset-0 z-[60] bg-black/70 md:hidden' />\n"
-    "        <aside className='fixed inset-y-0 left-0 z-[70] flex w-[min(82vw,20rem)] flex-col border-r border-white/10 bg-slate-900 p-6 shadow-2xl md:hidden'>\n"
+    "        <button type='button' aria-label='Close role navigation' onClick={() => setOpen(false)} className='fixed inset-0 z-[60] bg-background/80 backdrop-blur-sm md:hidden' />\n"
+    "        <aside className='fixed inset-y-0 left-0 z-[70] flex w-[min(82vw,20rem)] flex-col border-r border-border bg-card p-6 shadow-theme md:hidden'>\n"
     "          <div className='mb-8 flex items-start justify-between gap-4'>\n"
-    "            <div><span className='text-xs uppercase tracking-wider text-slate-500'>Dashboard</span><h2 className='text-lg font-bold text-white'>{label}</h2><span className='text-xs text-accent'>{role}</span></div>\n"
-    "            <button type='button' aria-label='Close menu' onClick={() => setOpen(false)} className='rounded-lg border border-white/10 px-3 py-1 text-slate-300'>Close</button>\n"
+    "            <div><span className='text-xs uppercase tracking-wider text-muted-foreground'>Workspace</span><h2 className='text-lg font-bold text-foreground'>{label}</h2><span className='text-xs text-primary'>{role}</span></div>\n"
+    "            <button type='button' aria-label='Close menu' onClick={() => setOpen(false)} className='rounded-lg border border-border px-3 py-1 text-foreground'>Close</button>\n"
     "          </div>\n"
     "          <nav className='flex flex-1 flex-col gap-1'>\n"
-    "            {links.map((link) => <Link key={link.href} href={link.href} onClick={() => setOpen(false)} className={'rounded-lg px-3 py-2 text-sm transition ' + (pathname === link.href ? 'bg-accent text-white' : 'text-slate-300 hover:bg-white/5')}>{link.label}</Link>)}\n"
+    "            {links.map((link) => <Link key={link.href} href={link.href} onClick={() => setOpen(false)} className={'rounded-lg px-3 py-2 text-sm transition ' + (pathname === link.href ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>{link.label}</Link>)}\n"
     "          </nav>\n"
-    "          <button onClick={logout} className='mt-4 rounded-lg px-3 py-2 text-left text-sm text-slate-400 hover:bg-white/5 hover:text-white'>Log out</button>\n"
+    "          <button onClick={logout} className='mt-4 rounded-lg px-3 py-2 text-left text-sm text-muted-foreground hover:bg-muted hover:text-foreground'>Log out</button>\n"
     "        </aside>\n"
     "      </>\n"
     "    )}\n"
@@ -540,16 +541,55 @@ _SIDEBAR = (
 )
 
 
-def _section_layout(role: dict, links: list[dict]) -> str:
+_TOPNAV = (
+    "'use client'\n"
+    "import Link from 'next/link'\n"
+    "import { usePathname, useRouter } from 'next/navigation'\n"
+    "import type { SidebarLink } from '@/components/Sidebar'\n\n"
+    "export default function TopNav({ label, links }: { label: string; links: SidebarLink[] }) {\n"
+    "  const pathname = usePathname()\n"
+    "  const router = useRouter()\n"
+    "  const logout = async () => { await fetch('/api/auth/logout', { method: 'POST' }); router.push('/login'); router.refresh() }\n"
+    "  return (\n"
+    "    <header className='sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur'>\n"
+    "      <div className='mx-auto flex min-h-16 max-w-7xl flex-wrap items-center gap-4 px-4 py-3 sm:px-6'>\n"
+    "        <strong className='mr-auto text-foreground'>{label}</strong>\n"
+    "        <nav className='flex flex-wrap items-center gap-1'>\n"
+    "          {links.map(link => <Link key={link.href} href={link.href} className={'rounded-[var(--radius)] px-3 py-2 text-sm transition ' + (pathname === link.href ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>{link.label}</Link>)}\n"
+    "        </nav>\n"
+    "        <button onClick={logout} className='rounded-[var(--radius)] border border-border px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground'>Log out</button>\n"
+    "      </div>\n"
+    "    </header>\n"
+    "  )\n"
+    "}\n"
+)
+
+
+def _section_layout(role: dict, links: list[dict], nav_style: str = "sidebar") -> str:
     links_ts = ",\n".join(
         f"  {{ href: {json.dumps(l['href'])}, label: {json.dumps(l['label'])} }}"
         for l in links
     )
     comp = re.sub(r"[^A-Za-z0-9]", "", role["label"]) or role["name"].title()
+    if nav_style == "topnav":
+        nav_import = "import TopNav from '@/components/TopNav'\n"
+        shell_open = "    <div className='min-h-screen bg-background'>\n      <TopNav label={'%s'} links={LINKS} />\n" % role["label"]
+        content = "      <main className='mx-auto max-w-7xl p-4 sm:p-6 lg:p-8'>{children}</main>\n"
+    elif nav_style == "none":
+        nav_import = ""
+        shell_open = "    <div className='min-h-screen bg-background'>\n"
+        content = "      <main className='mx-auto max-w-7xl p-4 sm:p-6 lg:p-8'>{children}</main>\n"
+    else:
+        nav_import = "import Sidebar, { type SidebarLink } from '@/components/Sidebar'\n"
+        shell_open = ("    <div className='flex min-h-screen bg-background'>\n"
+                      f"      <Sidebar role={{'{role['name']}'}} label={{'{role['label']}'}} links={{LINKS}} />\n")
+        content = "      <main className='min-w-0 flex-1 p-4 sm:p-6 lg:p-8'>{children}</main>\n"
+    link_type = ("import type { SidebarLink } from '@/components/Sidebar'\n"
+                 if nav_style in ("topnav", "none") else "")
     return (
         "import { redirect } from 'next/navigation'\n"
         "import { getSession } from '@/lib/auth'\n"
-        "import Sidebar, { type SidebarLink } from '@/components/Sidebar'\n\n"
+        f"{nav_import}{link_type}\n"
         f"const LINKS: SidebarLink[] = [\n{links_ts},\n]\n\n"
         f"export default async function {comp}DashboardLayout({{\n"
         "  children,\n"
@@ -560,9 +600,8 @@ def _section_layout(role: dict, links: list[dict]) -> str:
         "  if (!session) redirect('/login')\n"
         f"  if (session.role !== '{role['name']}') redirect('/')\n"
         "  return (\n"
-        "    <div className='flex min-h-screen bg-dark'>\n"
-        f"      <Sidebar role={{'{role['name']}'}} label={{'{role['label']}'}} links={{LINKS}} />\n"
-        "      <main className='flex-1 p-8'>{children}</main>\n"
+        f"{shell_open}"
+        f"{content}"
         "    </div>\n"
         "  )\n"
         "}\n"
@@ -574,8 +613,8 @@ def _placeholder_page(title: str, subtitle: str = "") -> str:
         "export default function Page() {\n"
         "  return (\n"
         "    <section className='max-w-4xl'>\n"
-        f"      <h1 className='text-3xl font-bold text-white mb-2'>{title}</h1>\n"
-        f"      <p className='text-slate-400'>{subtitle}</p>\n"
+        f"      <h1 className='mb-2 text-3xl font-bold text-foreground'>{title}</h1>\n"
+        f"      <p className='text-muted-foreground'>{subtitle}</p>\n"
         "    </section>\n"
         "  )\n"
         "}\n"
@@ -615,18 +654,18 @@ _MANAGE_USERS_PAGE = (
     "  }\n"
     "  return (\n"
     "    <section className='max-w-4xl'>\n"
-    "      <h1 className='text-3xl font-bold text-white mb-6'>Manage Users</h1>\n"
+    "      <h1 className='text-3xl font-bold text-foreground mb-6'>Manage Users</h1>\n"
     "      <div className='space-y-2'>\n"
     "        {rows.map((u) => (\n"
-    "          <div key={u._id} className='flex items-center justify-between bg-slate-900 border border-white/10 rounded-lg px-4 py-3'>\n"
+    "          <div key={u._id} className='flex items-center justify-between bg-card border border-border rounded-[var(--radius)] px-4 py-3'>\n"
     "            <div>\n"
-    "              <p className='text-white text-sm'>{u.name || u.email}</p>\n"
-    "              <p className='text-slate-500 text-xs'>{u.email}</p>\n"
+    "              <p className='text-foreground text-sm'>{u.name || u.email}</p>\n"
+    "              <p className='text-muted-foreground text-xs'>{u.email}</p>\n"
     "            </div>\n"
     "            <select\n"
     "              value={u.role}\n"
     "              onChange={(e) => changeRole(u._id, e.target.value)}\n"
-    "              className='bg-slate-800 text-white text-sm rounded-lg px-3 py-2 border border-white/10'\n"
+    "              className='bg-background text-foreground text-sm rounded-[var(--radius)] px-3 py-2 border border-border'\n"
     "            >\n"
     "              {roles.map((r) => (\n"
     "                <option key={r} value={r}>\n"
@@ -647,8 +686,8 @@ def _login_page(roles: list[dict], signup_enabled: bool = True) -> str:
     role_home = {r["name"]: r["home"] for r in roles}
     link_import = "import Link from 'next/link'\n" if signup_enabled else ""
     signup_prompt = (
-        "        <p className='text-slate-500 text-sm mt-4 text-center'>\n"
-        "          No account? <Link href='/signup' className='text-accent'>Sign up</Link>\n"
+        "        <p className='text-muted-foreground text-sm mt-4 text-center'>\n"
+        "          No account? <Link href='/signup' className='text-primary'>Sign up</Link>\n"
         "        </p>\n"
         if signup_enabled else ""
     )
@@ -683,18 +722,18 @@ def _login_page(roles: list[dict], signup_enabled: bool = True) -> str:
         "    router.refresh()\n"
         "  }\n"
         "  return (\n"
-        "    <main className='min-h-[calc(100vh-4rem)] flex items-center justify-center bg-dark px-6'>\n"
-        "      <form onSubmit={submit} className='w-full max-w-md bg-slate-900 border border-white/10 rounded-2xl p-8'>\n"
-        "        <h1 className='text-2xl font-bold text-white mb-6'>Welcome back</h1>\n"
+        "    <main className='min-h-screen flex items-center justify-center bg-background px-6'>\n"
+        "      <form onSubmit={submit} className='w-full max-w-md bg-card border border-border rounded-[var(--radius)] p-8 shadow-theme'>\n"
+        "        <h1 className='text-2xl font-bold text-foreground mb-6'>Welcome back</h1>\n"
         "        {error && <p className='text-red-400 text-sm mb-4'>{error}</p>}\n"
-        "        <label className='block text-sm text-slate-400 mb-1'>Email</label>\n"
+        "        <label className='block text-sm text-foreground mb-1'>Email</label>\n"
         "        <input type='email' value={email} onChange={(e) => setEmail(e.target.value)} required\n"
-        "          className='w-full mb-4 bg-slate-800 border border-white/10 rounded-lg px-4 py-2 text-white' />\n"
-        "        <label className='block text-sm text-slate-400 mb-1'>Password</label>\n"
+        "          className='w-full mb-4 bg-background border border-border rounded-[var(--radius)] px-4 py-3 text-foreground' />\n"
+        "        <label className='block text-sm text-foreground mb-1'>Password</label>\n"
         "        <input type='password' value={password} onChange={(e) => setPassword(e.target.value)} required\n"
-        "          className='w-full mb-6 bg-slate-800 border border-white/10 rounded-lg px-4 py-2 text-white' />\n"
+        "          className='w-full mb-6 bg-background border border-border rounded-[var(--radius)] px-4 py-3 text-foreground' />\n"
         "        <button type='submit' disabled={loading}\n"
-        "          className='w-full bg-accent text-white rounded-lg py-2 font-medium disabled:opacity-60'>\n"
+        "          className='w-full bg-primary text-primary-foreground rounded-[var(--radius)] py-3 font-medium disabled:opacity-60'>\n"
         "          {loading ? 'Signing in…' : 'Sign in'}\n"
         "        </button>\n"
         f"{signup_prompt}"
@@ -743,24 +782,24 @@ def _signup_page(roles: list[dict]) -> str:
         "    router.refresh()\n"
         "  }\n"
         "  return (\n"
-        "    <main className='min-h-[calc(100vh-4rem)] flex items-center justify-center bg-dark px-6'>\n"
-        "      <form onSubmit={submit} className='w-full max-w-md bg-slate-900 border border-white/10 rounded-2xl p-8'>\n"
-        "        <h1 className='text-2xl font-bold text-white mb-6'>Create your account</h1>\n"
+        "    <main className='min-h-screen flex items-center justify-center bg-background px-6'>\n"
+        "      <form onSubmit={submit} className='w-full max-w-md bg-card border border-border rounded-[var(--radius)] p-8 shadow-theme'>\n"
+        "        <h1 className='text-2xl font-bold text-foreground mb-6'>Create your account</h1>\n"
         "        {error && <p className='text-red-400 text-sm mb-4'>{error}</p>}\n"
-        "        <label className='block text-sm text-slate-400 mb-1'>Name</label>\n"
+        "        <label className='block text-sm text-foreground mb-1'>Name</label>\n"
         "        <input value={name} onChange={(e) => setName(e.target.value)}\n"
-        "          className='w-full mb-4 bg-slate-800 border border-white/10 rounded-lg px-4 py-2 text-white' />\n"
-        "        <label className='block text-sm text-slate-400 mb-1'>Email</label>\n"
+        "          className='w-full mb-4 bg-background border border-border rounded-[var(--radius)] px-4 py-3 text-foreground' />\n"
+        "        <label className='block text-sm text-foreground mb-1'>Email</label>\n"
         "        <input type='email' value={email} onChange={(e) => setEmail(e.target.value)} required\n"
-        "          className='w-full mb-4 bg-slate-800 border border-white/10 rounded-lg px-4 py-2 text-white' />\n"
-        "        <label className='block text-sm text-slate-400 mb-1'>Password</label>\n"
+        "          className='w-full mb-4 bg-background border border-border rounded-[var(--radius)] px-4 py-3 text-foreground' />\n"
+        "        <label className='block text-sm text-foreground mb-1'>Password</label>\n"
         "        <input type='password' value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6}\n"
-        "          className='w-full mb-4 bg-slate-800 border border-white/10 rounded-lg px-4 py-2 text-white' />\n"
+        "          className='w-full mb-4 bg-background border border-border rounded-[var(--radius)] px-4 py-3 text-foreground' />\n"
         "        {SELF_ROLES.length > 1 && (\n"
         "          <div className='mb-6'>\n"
-        "            <label className='block text-sm text-slate-400 mb-1'>I am a…</label>\n"
+        "            <label className='block text-sm text-foreground mb-1'>I am a…</label>\n"
         "            <select value={role} onChange={(e) => setRole(e.target.value)}\n"
-        "              className='w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-2 text-white'>\n"
+        "              className='w-full bg-background border border-border rounded-[var(--radius)] px-4 py-3 text-foreground'>\n"
         "              {SELF_ROLES.map((r) => (\n"
         "                <option key={r.name} value={r.name}>{r.label}</option>\n"
         "              ))}\n"
@@ -768,11 +807,11 @@ def _signup_page(roles: list[dict]) -> str:
         "          </div>\n"
         "        )}\n"
         "        <button type='submit' disabled={loading}\n"
-        "          className='w-full bg-accent text-white rounded-lg py-2 font-medium disabled:opacity-60'>\n"
+        "          className='w-full bg-primary text-primary-foreground rounded-[var(--radius)] py-3 font-medium disabled:opacity-60'>\n"
         "          {loading ? 'Creating…' : 'Create account'}\n"
         "        </button>\n"
-        "        <p className='text-slate-500 text-sm mt-4 text-center'>\n"
-        "          Already have an account? <Link href='/login' className='text-accent'>Sign in</Link>\n"
+        "        <p className='text-muted-foreground text-sm mt-4 text-center'>\n"
+        "          Already have an account? <Link href='/login' className='text-primary'>Sign in</Link>\n"
         "        </p>\n"
         "      </form>\n"
         "    </main>\n"
@@ -834,7 +873,7 @@ def _shared_dashboard(spec: dict, roles: list[dict]) -> bool:
 
 
 def _signup_enabled(spec: dict) -> bool:
-    return bool((spec.get("auth") or {}).get("signup", True))
+    return bool((spec.get("auth") or {}).get("signup"))
 
 
 def _protected_pages(spec: dict) -> list[dict]:
@@ -902,18 +941,18 @@ def _dashboard_sidebar(spec: dict) -> str:
         "  }\n"
         "  const visible = LINKS.filter((l) => !l.roles || (role && l.roles.includes(role)))\n"
         "  return (\n"
-        "    <aside className='w-64 shrink-0 min-h-screen bg-slate-900 border-r border-white/10 p-5 flex flex-col'>\n"
-        "      <span className='text-xs uppercase tracking-wider text-slate-500 mb-4'>Menu</span>\n"
+        "    <aside className='w-64 shrink-0 min-h-screen bg-card border-r border-border p-5 flex flex-col'>\n"
+        "      <span className='text-xs uppercase tracking-wider text-muted-foreground mb-4'>Menu</span>\n"
         "      <nav className='flex flex-col gap-1 flex-1'>\n"
         "        {visible.map((l) => (\n"
         "          <NextLink key={l.href} href={l.href}\n"
-        "            className={'px-3 py-2 rounded-lg text-sm ' + (pathname === l.href ? 'bg-accent text-white' : 'text-slate-300 hover:bg-white/5')}>\n"
+        "            className={'px-3 py-2 rounded-lg text-sm ' + (pathname === l.href ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>\n"
         "            {l.label}\n"
         "          </NextLink>\n"
         "        ))}\n"
         "      </nav>\n"
-        "      <div className='text-xs text-slate-500 mt-3'>{role}</div>\n"
-        "      <button onClick={logout} className='mt-2 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white text-left'>Log out</button>\n"
+        "      <div className='text-xs text-muted-foreground mt-3'>{role}</div>\n"
+        "      <button onClick={logout} className='mt-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground text-left'>Log out</button>\n"
         "    </aside>\n"
         "  )\n"
         "}\n"
@@ -928,7 +967,7 @@ _SHARED_DASHBOARD_LAYOUT = (
     "  const session = await getSession()\n"
     "  if (!session) redirect('/login')\n"
     "  return (\n"
-    "    <div className='flex min-h-screen bg-dark'>\n"
+    "    <div className='flex min-h-screen bg-background'>\n"
     "      <DashboardSidebar />\n"
     "      <main className='flex-1 p-6 md:p-8'>{children}</main>\n"
     "    </div>\n"
@@ -992,6 +1031,7 @@ def _srs_seed_lib(spec: dict, roles: list[dict]) -> str:
 def auth_files(spec: dict) -> dict:
     """Every deterministic auth/role/dashboard file for a multipage-app spec."""
     roles = normalize_roles(spec)
+    nav_style = str((spec.get("design") or {}).get("navStyle") or "sidebar")
     if spec.get("input_schema") == "role-wise-srs/v1":
         return _auth_files_rolewise(spec, roles)
     if _shared_dashboard(spec, roles):
@@ -1005,18 +1045,22 @@ def auth_files(spec: dict) -> dict:
     files["lib/seed.ts"] = _SEED_LIB
 
     # Auth API (force-dynamic: never statically pre-rendered — they hit the DB/session)
-    files["app/api/auth/register/route.ts"] = _force_dynamic(_register_route(roles))
+    if _signup_enabled(spec):
+        files["app/api/auth/register/route.ts"] = _force_dynamic(_register_route(roles))
     files["app/api/auth/login/route.ts"] = _force_dynamic(_LOGIN_ROUTE)
     files["app/api/auth/logout/route.ts"] = _force_dynamic(_LOGOUT_ROUTE)
     files["app/api/auth/me/route.ts"] = _force_dynamic(_ME_ROUTE)
 
     # Admin user management API
-    files["app/api/admin/users/route.ts"] = _force_dynamic(_admin_users_route(roles))
-    files["app/api/admin/users/[id]/role/route.ts"] = _force_dynamic(_admin_user_role_route(roles))
+    if _has_admin(roles):
+        files["app/api/admin/users/route.ts"] = _force_dynamic(_admin_users_route(roles))
+        files["app/api/admin/users/[id]/role/route.ts"] = _force_dynamic(_admin_user_role_route(roles))
 
     # Middleware + auth pages + sidebar
     files["proxy.ts"] = _middleware(roles)
     files["components/Sidebar.tsx"] = _SIDEBAR
+    if nav_style == "topnav":
+        files["components/TopNav.tsx"] = _TOPNAV
     files["app/login/page.tsx"] = _login_page(roles, _signup_enabled(spec))
     if _signup_enabled(spec):
         files["app/signup/page.tsx"] = _signup_page(roles)
@@ -1032,7 +1076,7 @@ def auth_files(spec: dict) -> dict:
         seen_sections.add(home)
         links = _links_for_role(role, spec)
         seg = home.strip("/")
-        files[f"app/{seg}/layout.tsx"] = _section_layout(role, links)
+        files[f"app/{seg}/layout.tsx"] = _section_layout(role, links, nav_style)
         files[f"app/{seg}/page.tsx"] = _placeholder_page(
             f"{role['label']} Dashboard", "Welcome to your dashboard.")
 
@@ -1047,18 +1091,23 @@ def auth_files(spec: dict) -> dict:
 def _auth_files_rolewise(spec: dict, roles: list[dict]) -> dict:
     """Exact page-map RBAC plus per-role top-level layouts for role-wise inputs."""
     files: dict[str, str] = {}
+    nav_style = str((spec.get("design") or {}).get("navStyle") or "sidebar")
     files["models/User.ts"] = _user_model(roles)
     files["lib/session.ts"] = _SESSION_LIB
     files["lib/auth.ts"] = _AUTH_LIB
     files["lib/seed.ts"] = _srs_seed_lib(spec, roles)
-    files["app/api/auth/register/route.ts"] = _force_dynamic(_register_route(roles))
+    if _signup_enabled(spec):
+        files["app/api/auth/register/route.ts"] = _force_dynamic(_register_route(roles))
     files["app/api/auth/login/route.ts"] = _force_dynamic(_LOGIN_ROUTE)
     files["app/api/auth/logout/route.ts"] = _force_dynamic(_LOGOUT_ROUTE)
     files["app/api/auth/me/route.ts"] = _force_dynamic(_ME_ROUTE)
-    files["app/api/admin/users/route.ts"] = _force_dynamic(_admin_users_route(roles))
-    files["app/api/admin/users/[id]/role/route.ts"] = _force_dynamic(_admin_user_role_route(roles))
+    if _has_admin(roles):
+        files["app/api/admin/users/route.ts"] = _force_dynamic(_admin_users_route(roles))
+        files["app/api/admin/users/[id]/role/route.ts"] = _force_dynamic(_admin_user_role_route(roles))
     files["proxy.ts"] = _page_access_middleware(spec)
     files["components/Sidebar.tsx"] = _SIDEBAR
+    if nav_style == "topnav":
+        files["components/TopNav.tsx"] = _TOPNAV
     files["app/login/page.tsx"] = _login_page(roles, _signup_enabled(spec))
     if _signup_enabled(spec):
         files["app/signup/page.tsx"] = _signup_page(roles)
@@ -1071,7 +1120,7 @@ def _auth_files_rolewise(spec: dict, roles: list[dict]) -> dict:
             continue
         top = str(role_pages[0]["path"]).strip("/").split("/", 1)[0]
         links = _links_for_role(role, spec)
-        files[f"app/{top}/layout.tsx"] = _section_layout(role, links)
+        files[f"app/{top}/layout.tsx"] = _section_layout(role, links, nav_style)
     return files
 
 
@@ -1084,12 +1133,14 @@ def _auth_files_shared(spec: dict, roles: list[dict]) -> dict:
     files["lib/auth.ts"] = _AUTH_LIB
     files["lib/seed.ts"] = _srs_seed_lib(spec, roles)
 
-    files["app/api/auth/register/route.ts"] = _force_dynamic(_register_route(roles))
+    if _signup_enabled(spec):
+        files["app/api/auth/register/route.ts"] = _force_dynamic(_register_route(roles))
     files["app/api/auth/login/route.ts"] = _force_dynamic(_LOGIN_ROUTE)
     files["app/api/auth/logout/route.ts"] = _force_dynamic(_LOGOUT_ROUTE)
     files["app/api/auth/me/route.ts"] = _force_dynamic(_ME_ROUTE)
-    files["app/api/admin/users/route.ts"] = _force_dynamic(_admin_users_route(roles))
-    files["app/api/admin/users/[id]/role/route.ts"] = _force_dynamic(_admin_user_role_route(roles))
+    if _has_admin(roles):
+        files["app/api/admin/users/route.ts"] = _force_dynamic(_admin_users_route(roles))
+        files["app/api/admin/users/[id]/role/route.ts"] = _force_dynamic(_admin_user_role_route(roles))
 
     files["proxy.ts"] = _page_access_middleware(spec)
     files["components/DashboardSidebar.tsx"] = _dashboard_sidebar(spec)

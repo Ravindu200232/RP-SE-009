@@ -52,7 +52,7 @@ class IdeaFileHandler(FileSystemEventHandler):
             log.info("=" * 60)
             log.info("🚀 Building: %s", idea[:120])
             log.info("=" * 60)
-            # One Gemma model drives every stage (~98K ctx, thinking low).
+            # Every stage is pinned to local Gemma 4 with the verified 98K context.
             server.run_pipeline(idea, llm.GEN_MODEL, llm.GEN_MODEL)
         finally:
             self.processing.discard(p)
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     IDEAS_DIR.mkdir(parents=True, exist_ok=True)
     log.info("🤖 Locode headless pipeline — Next.js + MongoDB edition")
     log.info("   👁️  Watching : %s", IDEAS_DIR)
-    log.info("   🧠 Model    : %s (~98K ctx, thinking %s)", llm.GEN_MODEL, llm.THINK)
+    log.info("   🧠 Model    : %s (98K local GPU context, thinking %s)", llm.LOCAL_MODEL, llm.THINK)
     log.info("   Drop a .txt file into ideas/ to build. Ctrl-C to stop.\n")
 
     observer = Observer()

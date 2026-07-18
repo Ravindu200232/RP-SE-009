@@ -166,6 +166,27 @@ function iface({ path: rel }) {
   let props = null
   const checker = prog.getTypeChecker()
   for (const st of sf.statements) {
+    // `export default Name` is an ExportAssignment without a DefaultKeyword modifier.
+    if (ts.isExportAssignment(st) && ts.isIdentifier(st.expression)) {
+      name = st.expression.getText(sf)
+      const declaration = sf.statements.find((candidate) =>
+        ts.isFunctionDeclaration(candidate) && candidate.name?.text === name)
+      const variable = sf.statements
+        .filter((candidate) => ts.isVariableStatement(candidate))
+        .flatMap((candidate) => [...candidate.declarationList.declarations])
+        .find((candidate) => ts.isIdentifier(candidate.name) && candidate.name.text === name)
+      const callable = declaration || ((variable?.initializer &&
+        (ts.isArrowFunction(variable.initializer) || ts.isFunctionExpression(variable.initializer)))
+        ? variable.initializer : null)
+      const p = callable?.parameters?.[0]
+      if (p) {
+        const t = checker.getTypeAtLocation(p)
+        props = p.type ? p.type.getText(sf) : checker.typeToString(t)
+      } else if (callable?.parameters) {
+        props = ''
+      }
+      continue
+    }
     const isDefault = st.modifiers?.some((m) => m.kind === ts.SyntaxKind.DefaultKeyword)
     if (!isDefault) continue
     if (ts.isFunctionDeclaration(st)) {

@@ -130,7 +130,7 @@ Please include:
 | OS + version | macOS 15.3 (arm64) |
 | Python version | 3.11.4 |
 | Node version | 20.11.0 |
-| Ollama model(s) | refine: llama3.1:8b · build: qwen2.5-coder:14b |
+| Ollama model | gemma4:12b (Q4_K_M, 98,304 context, 100% GPU) |
 | Full error logs | complete stack trace from terminal |
 | Exact prompt used | the input that triggered the issue |
 | Mode | first build / reprompt / feature / fix |

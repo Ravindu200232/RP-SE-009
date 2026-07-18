@@ -89,7 +89,9 @@ def test_disabled_signup_never_emits_a_dead_signup_link():
     files = auth_files(spec)
     assert "app/signup/page.tsx" not in files
     assert "href='/signup'" not in files["app/login/page.tsx"]
-    assert "min-h-[calc(100vh-4rem)]" in files["app/login/page.tsx"]
+    assert "min-h-screen" in files["app/login/page.tsx"]
+    assert "bg-background" in files["app/login/page.tsx"]
+    assert "bg-slate" not in files["app/login/page.tsx"]
     assert "hidden w-64" in files["components/Sidebar.tsx"]
     assert "Open role navigation" in files["components/Sidebar.tsx"]
 

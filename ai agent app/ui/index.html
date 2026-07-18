@@ -1995,35 +1995,35 @@
                 <span id="stxt">connecting…</span>
             </div>
 
-            <div class="sb-section">Models</div>
+            <div class="sb-section">GPU runtime</div>
             <div class="model-row">
                 <div class="model-wrap" id="refineWrap">
-                    <button class="model-trigger" id="refineTrigger" onclick="toggleDrop('refine')">
+                    <button class="model-trigger" id="refineTrigger" disabled>
                         <div class="mt-dot-r"></div>
                         <span class="mt-role">Refine</span>
-                        <span class="mt-name" id="refineLabel">gemma4:12b</span>
+                        <span class="mt-name" id="refineLabel">Nemotron 3 Super Cloud · Planning</span>
                         <span class="mt-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="6 9 12 15 18 9" />
                             </svg></span>
                     </button>
-                    <div class="model-dropdown" id="refineDrop">
+                    <div class="model-dropdown" id="refineDrop" style="display:none">
                         <div class="md-section">Idea refinement</div>
                         <div id="refineOpts"></div>
                     </div>
                 </div>
 
                 <div class="model-wrap" id="buildWrap">
-                    <button class="model-trigger" id="buildTrigger" onclick="toggleDrop('build')">
+                    <button class="model-trigger" id="buildTrigger" disabled>
                         <div class="mt-dot-b"></div>
                         <span class="mt-role">Build</span>
-                        <span class="mt-name" id="buildLabel">gemma4:12b</span>
+                        <span class="mt-name" id="buildLabel">Gemma 4 12B Local · 98K · 100% GPU</span>
                         <span class="mt-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="6 9 12 15 18 9" />
                             </svg></span>
                     </button>
-                    <div class="model-dropdown" id="buildDrop">
+                    <div class="model-dropdown" id="buildDrop" style="display:none">
                         <div class="md-section">Code generation</div>
                         <div id="buildOpts"></div>
                     </div>
@@ -2128,8 +2128,8 @@
                     </div>
 
                     <div class="home-logo-sub">
-                        Describe your app. Get production-ready React — powered entirely by your local Ollama models.
-                        No cloud. No keys.
+                        Describe your app. Get production-ready React from GPU-resident Gemma 4 with full product context.
+                        Local only. No cloud. No keys.
                     </div>
 
                     <div class="prompt-wrap" style="margin-top:8px">
@@ -2651,19 +2651,12 @@
 
         // ── MODELS ───────────────────────────────────────────────────────────────────
         const MODELS = [
-            { id: 'gemma4:12b', label: 'Gemma 4 12B', icon: '💎', tag: 'recommended', desc: 'Google. Default — ~98K context, thinking low', role: 'both' },
-            { id: 'gemma3:12b', label: 'Gemma 3 12B', icon: '💎', tag: 'quality', desc: 'Google. Fallback if Gemma 4 is not pulled', role: 'both' },
-            { id: 'qwen2.5-coder:14b', label: 'Qwen 2.5 Coder 14B', icon: '⚛', tag: 'code', desc: 'Strong local coding model', role: 'both' },
-            { id: 'qwen2.5-coder:7b', label: 'Qwen 2.5 Coder 7B', icon: '⚛', tag: 'code', desc: 'Lighter code model, still capable', role: 'both' },
-            { id: 'deepseek-coder-v2:16b', label: 'DeepSeek Coder V2 16B', icon: '🔍', tag: 'code', desc: 'Excellent at multi-file generation', role: 'both' },
-            { id: 'phi4:14b', label: 'Phi-4 14B', icon: '🔬', tag: 'quality', desc: 'Microsoft. Excellent reasoning', role: 'both' },
-            { id: 'llama3.1:8b', label: 'Llama 3.1 8B', icon: '🦙', tag: 'fast', desc: 'Meta. Fast, lighter on VRAM', role: 'both' },
-            { id: 'llama3.1:70b', label: 'Llama 3.1 70B', icon: '🦙', tag: 'big', desc: 'Highest quality — needs ~40GB VRAM', role: 'both' },
-            { id: 'qwen2.5:72b', label: 'Qwen 2.5 72B', icon: '⚛', tag: 'big', desc: 'Very capable — needs ~40GB VRAM', role: 'both' },
+            { id: 'nemotron-3-super:cloud', label: 'Nemotron 3 Super Cloud · Planning', icon: '☁', tag: 'pinned', desc: 'Cloud architecture and target selection', role: 'refine' },
+            { id: 'gemma4:12b', label: 'Gemma 4 12B Local · 98K · 100% GPU', icon: '⚡', tag: 'pinned', desc: 'Local generation, updates, and repair', role: 'build' },
         ]
 
-        let selRefine = localStorage.getItem('locode-rm') || 'gemma4:12b'
-        let selBuild = localStorage.getItem('locode-bm') || 'gemma4:12b'
+        let selRefine = 'nemotron-3-super:cloud'
+        let selBuild = 'gemma4:12b'
 
         const PIPE_STEPS = [
             { id: 'refine', label: 'Designing app' },
