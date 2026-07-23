@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from .integrations import IntegrationService
 from .models import PackageRequest
 from .service import Agent4Service
 
@@ -12,7 +13,7 @@ def create_app():
     except ModuleNotFoundError as exc:
         raise RuntimeError("FastAPI is not installed. Install requirements.txt before running the API.") from exc
 
-    app = FastAPI(title="Agent 4", version="1.0.0")
+    app = FastAPI(title="Agent 4", version="1.1.0")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -21,10 +22,19 @@ def create_app():
         allow_headers=["*"],
     )
     service = Agent4Service()
+    integrations = IntegrationService()
 
     @app.get("/health")
     def health():
         return {"status": "ok", "service": "agent4"}
+
+    @app.get("/integrations/status")
+    def integration_status():
+        """Return credential-presence and CLI-auth diagnostics without secrets."""
+        try:
+            return integrations.statuses()
+        except Exception as exc:  # pragma: no cover - defensive endpoint guard
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     @app.post("/package")
     def package(payload: dict):
@@ -59,4 +69,3 @@ def create_app():
         return FileResponse(path=file_path, filename=file_path.name, media_type="application/zip")
 
     return app
-
