@@ -1,1 +1,0 @@
-const PORT = process.env.PORT || 3001; app.get('/health', () => {}); process.env.USER_SERVICE_URL;
