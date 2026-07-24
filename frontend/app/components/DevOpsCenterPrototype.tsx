@@ -1000,8 +1000,7 @@ services:
                                     </div>
 
                                     <div className="button-stack">
-                                        <button type="button" className="primary-button" onClick={handleRunPackage} disabled={submitting || !selectedSourcePath}>
-                                            {submitting ? "Running..." : "Run Packaging"}
+                                        <button type="button" className="primary-button" onClick={() => void handleRunPackage()} disabled={submitting || !selectedSourcePath}>
                                         </button>
                                         <button type="button" className="secondary-button" onClick={() => setSelectedSourcePath(inputCandidates[0]?.source_path || "")} disabled={!inputCandidates.length}>
                                             Load First Input
@@ -1183,7 +1182,7 @@ services:
                             Export ZIP
                         </a>
                         <button type="button" className="secondary-button" disabled>PDF Report</button>
-                        <button type="button" className="ghost-button" onClick={handleRunPackage} disabled={submitting || !selectedSourcePath}>
+                        <button type="button" className="ghost-button" onClick={() => void handleRunPackage()} disabled={submitting || !selectedSourcePath}>
                             Re-run
                         </button>
                     </div>
