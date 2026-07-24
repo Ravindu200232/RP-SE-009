@@ -14,7 +14,46 @@ from backend.agent4.service import Agent4Service
 from backend.agent4.analytics import LearningAnalytics, LearningMonitor
 
 
-DATA_ROOT = Path("/Users/malith_bandara/Desktop/final_research_agentic/data/jobs")
+DATA_ROOT = Path(__file__).resolve().parents[1] / ".pytest_tmp" / "learning-jobs"
+
+SAMPLE_JOB = DATA_ROOT / "sample-job"
+SAMPLE_JOB.mkdir(parents=True, exist_ok=True)
+
+(SAMPLE_JOB / "result.json").write_text(
+    json.dumps(
+        {
+            "architecture": "microservices",
+            "confidence": 0.92,
+            "state": "VALIDATED",
+            "strategy": {
+                "deployment_profile": "docker-compose"
+            },
+        }
+    ),
+    encoding="utf-8",
+)
+
+(SAMPLE_JOB / "analysis.json").write_text(
+    json.dumps(
+        {
+            "services": [
+                {
+                    "name": "user-service",
+                    "runtime": "node",
+                },
+                {
+                    "name": "order-service",
+                    "runtime": "node",
+                },
+            ],
+            "infrastructure": {
+                "mongodb": True,
+                "redis": True,
+            },
+        }
+    ),
+    encoding="utf-8",
+)
 
 
 class TestLearningEngine:

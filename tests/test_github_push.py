@@ -26,13 +26,29 @@ def test_pushes_packaged_output_to_existing_repo() -> None:
     workspace = make_workspace()
     try:
         remote = workspace / "remote.git"
-        subprocess.run(["git", "init", "--bare", str(remote)], check=True, capture_output=True, text=True)
+        subprocess.run(
+            ["git", "init", "--bare", str(remote)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
 
         package_dir = workspace / "package"
         package_dir.mkdir(parents=True, exist_ok=True)
         write(package_dir / "README.md", "# packaged output\n")
 
-        result = GitHubPushClient().push(package_dir, str(remote), "main", "Add package")
+        client = GitHubPushClient()
+
+        # This unit test intentionally uses a temporary local Git repository.
+        # Production validation correctly accepts only remote GitHub URLs.
+        client._validate_repo_url = lambda _: ""
+
+        result = client.push(
+            package_dir,
+            str(remote),
+            "main",
+            "Add package",
+        )
 
         assert result.state == JobState.PUSHED
         assert result.branch == "main"
