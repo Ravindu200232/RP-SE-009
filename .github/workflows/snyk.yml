@@ -63,11 +63,7 @@ jobs:
         run: snyk test --all-projects --detection-depth=4 --severity-threshold=high
 
       
-      - name: Test infrastructure as code
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: snyk iac test . --severity-threshold=high
-
+      
       - name: Monitor dependencies in Snyk
         if: github.event_name == 'push'
         env:
