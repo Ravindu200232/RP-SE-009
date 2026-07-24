@@ -55,6 +55,7 @@ def test_validator_checks_generated_files() -> None:
 
 
 def test_docker_build_validation_uses_buildx_compatible_arguments(tmp_path, monkeypatch) -> None:
+    monkeypatch.delenv("AGENT4_SKIP_DOCKER_BUILD", raising=False)
     package_dir = tmp_path / "package"
     service_dir = package_dir / "server" / "user-service"
     service_dir.mkdir(parents=True, exist_ok=True)
