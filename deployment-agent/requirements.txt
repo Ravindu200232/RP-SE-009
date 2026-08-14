@@ -1,0 +1,14 @@
+# Documentation, not an install manifest — these are folded into AgentForge's own
+# Requirements.txt, because the agent runs inside AgentForge's interpreter.
+#
+# playwright is gone from that list: it drove the evidence exporter's dashboard
+# screenshots, and the dashboard it screenshotted is not part of the port.
+boto3>=1.34,<2
+botocore[crt]>=1.34,<2
+jsonschema>=4.23,<5
+playwright>=1.48,<2
+pymongo[srv]>=4.9,<5
+PyYAML>=6.0,<7
+reportlab>=4.2,<5
+requests>=2.32,<3
+websockets>=13,<17

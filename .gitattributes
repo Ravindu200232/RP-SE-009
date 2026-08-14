@@ -1,2 +1,11 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Shell scripts must keep LF even when checked out on Windows. A .command file
+# with CRLF endings fails on macOS with "bad interpreter: /bin/bash^M", which
+# is a confusing way to discover a line-ending problem.
+*.sh        text eol=lf
+*.command   text eol=lf
+
+# Batch files are the mirror image: CRLF, or `cmd` mis-parses multi-line blocks.
+*.bat       text eol=crlf
