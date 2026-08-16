@@ -1,9 +1,0 @@
-fastapi
-uvicorn
-python-multipart
-pillow
-langchain
-langgraph
-langchain-core
-langchain-ollama
-pydantic>=2
