@@ -1326,8 +1326,20 @@ class AnalyzerAgent:
         The URL that verifies a password.
 
         Found by looking for `bcrypt.compare` rather than by guessing a path —
-        that is what actually distinguishes a login handler, and it matched all
-        three real auth projects on disk.
+        that is what actually distinguishes a hand-rolled login handler, and it
+        matched all three real auth projects on disk.
+
+        Better Auth defeats all three of those tests at once, and it is what
+        these apps are generated with. Its whole surface is one catch-all,
+        `app/api/auth/[...all]/route.js`, which enumerates as
+        `/api/auth/[...all]`: no `bcrypt.compare`, because the library does the
+        comparing; no "login"/"signin" in the path, because the segment is
+        literally `[...all]`; and no "password" in the body, because the file
+        does nothing but delegate. So this returned "" for the app it was most
+        likely to be pointed at, the browser reproduction went to the page
+        anonymously, got the login redirect, and reported "nothing went wrong"
+        about a page it never reached. Measured live on
+        app-name-spoke-and-chain before this was added.
         """
         routes = self.enumerate_routes()
         api = {u: r for u, r in routes.items() if r["kind"] == "api"}
@@ -1337,6 +1349,15 @@ class AnalyzerAgent:
             body = files.get(r["file"], "")
             if "bcrypt.compare" in body or "compareSync" in body:
                 return url
+
+        # `/api/auth/[...all]` + `/sign-in/email` — the path the catch-all's
+        # own comment documents, and the one the login form posts to.
+        for url, r in api.items():
+            body = files.get(r["file"], "")
+            if "better-auth" in body and "POST" in r["methods"]:
+                base = re.sub(r"/\[\.\.\.[^\]]+\]$", "", url).rstrip("/")
+                return f"{base}/sign-in/email"
+
         for url, r in api.items():
             if any(w in url.lower() for w in ("login", "signin", "authenticate")) \
                     and "POST" in r["methods"]:
@@ -2051,6 +2072,13 @@ class AnalyzerAgent:
         for f in report.findings[:8]:
             self._log("WARN", f"   • {f.line()[:150]}")
 
+        # What the build got wrong is what this FIRST scan found. Recording the
+        # report at the end instead would record only what the repair loop
+        # failed to fix — so the faults the loop is good at, which are exactly
+        # the ones worth teaching the next build not to make, would never be
+        # learned from at all.
+        first_findings = list(report.findings)
+
         if use_model and self.unresolved_packages():
             pkgs = " ".join(self.unresolved_packages())
             self._log("INFO", f"   📦 Installing {pkgs}")
@@ -2083,6 +2111,18 @@ class AnalyzerAgent:
         self._fire("on_phase", {"phase": -5, "title": "Analyzing project",
                                 "status": "done", "written": report.written})
         self._log("INFO", f"🔍 Analyzer done — {report.summary()}")
+
+        # What this build got wrong, kept where the next one will be told.
+        # Everything above already had a stable `code` and a `fix` sentence;
+        # they were used to repair this project and then thrown away, which is
+        # how "13 of 13 seeded projects have this" happened — the check caught
+        # it every time and nothing ever taught the builder.
+        try:
+            from . import lessons
+            lessons.record(self.project_dir.name,
+                           lessons.from_findings(first_findings))
+        except Exception as e:                                  # noqa: BLE001
+            log.debug(f"lessons: {e}")
         return report
 
     def run_runtime(self, mongo=None, node_bin: str = "node",

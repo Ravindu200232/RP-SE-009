@@ -314,8 +314,78 @@ class VitestRunner:
                 self._log("WARN", f"      {line[:150]}")
             return 0, [], False
 
+        if paths:
+            self._merge_into_report(data)
+
         passed, failures = self._parse(data)
         return passed, failures, True
+
+    def _merge_into_report(self, part: dict) -> None:
+        """
+        Fold a targeted run's results back into the whole-app report.
+
+        `vitest.json` is what the testing tab reads, and only a full run wrote
+        it — a targeted run goes to `vitest-<hash>.json` so two runs cannot
+        race over one file. That was fine while targeting was a detail INSIDE
+        the stage, where a full run always followed. It stopped being fine when
+        a feature's stage became targeted end to end: the feature's tests ran,
+        their results went to a file nothing reads, and the tab went on showing
+        the run before it.
+
+        Merging by test FILE, replacing rather than appending. A file that was
+        just re-run has exactly one current result — its old suite entry is not
+        history, it is a stale duplicate, and leaving both makes a test that
+        was fixed still show as failing next to its own pass.
+
+        Everything not in this run is carried through untouched, which is the
+        point: updating one feature must not blank the other forty files'
+        results.
+        """
+        full = self.project_dir / REPORT
+        try:
+            old = json.loads(full.read_text(encoding="utf-8", errors="replace"))
+        except Exception:
+            old = None
+        if not isinstance(old, dict) or not isinstance(old.get("testResults"), list):
+            # Nothing to merge into — this run IS the report.
+            old = None
+
+        if old is None:
+            merged = dict(part)
+        else:
+            fresh = {self._rel(s.get("name") or s.get("testFilePath") or ""): s
+                     for s in (part.get("testResults") or [])}
+            kept = [s for s in old["testResults"]
+                    if self._rel(s.get("name") or s.get("testFilePath") or "")
+                    not in fresh]
+            merged = dict(old)
+            merged["testResults"] = kept + list(fresh.values())
+
+        # The counters are recomputed from the suites rather than added up from
+        # the two reports: a case that moved from failing to passing has to
+        # come off one total and onto the other, and arithmetic on the headline
+        # numbers cannot know it moved.
+        cases = [c for s in merged["testResults"]
+                 for c in (s.get("assertionResults") or [])]
+        passed = sum(1 for c in cases if c.get("status") == "passed")
+        failed = sum(1 for c in cases if c.get("status") == "failed")
+        merged.update({
+            "numTotalTestSuites": len(merged["testResults"]),
+            "numTotalTests": len(cases),
+            "numPassedTests": passed,
+            "numFailedTests": failed,
+            "numPendingTests": len(cases) - passed - failed,
+            "numFailedTestSuites": sum(1 for s in merged["testResults"]
+                                       if s.get("status") == "failed"),
+            "numPassedTestSuites": sum(1 for s in merged["testResults"]
+                                       if s.get("status") == "passed"),
+            "success": failed == 0,
+        })
+        try:
+            full.parent.mkdir(parents=True, exist_ok=True)
+            full.write_text(json.dumps(merged), encoding="utf-8")
+        except OSError as e:
+            log.debug(f"merging into {REPORT}: {e}")
 
     def _parse(self, data):
         passed, failures = 0, []

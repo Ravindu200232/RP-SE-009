@@ -5,7 +5,7 @@ import { ArrowUp, Loader2, Sparkles } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { send } from '@/lib/ws'
 import { api } from '@/lib/api'
-import { Button } from './ui'
+import { Button, TextArea } from './ui'
 import { cn } from '@/lib/utils'
 import { useAttachments } from '@/lib/use-attachments'
 import { AttachButtons, AttachList } from './srs/Attachments'
@@ -144,11 +144,16 @@ export default function Home({ onStarted }) {
                       [background:radial-gradient(60%_100%_at_50%_0%,var(--accent),transparent_70%)]" />
 
       <div className="relative w-full max-w-[680px] py-10">
+        {/* The full lockup goes here and nowhere smaller. It carries the
+            wordmark, the taglines and a detailed illustration — at 34px in the
+            sidebar all of that is a smudge, which is why the mark cropped to
+            the hexagon is what goes there. Here there is room for it, and the
+            heading it replaces said the same words in worse type. */}
         <div className="mb-7 text-center">
-          <h1 className="font-display text-[38px] font-light leading-[1.1] text-ink">
-            AgentForge <b className="font-extrabold">Studio</b>
-          </h1>
-          <p className="mx-auto mt-2.5 max-w-[420px] text-[13px] leading-relaxed text-muted">
+          <img src="/__agentforge/agentforge-logo.png"
+               alt="AgentForge Studio — AI-powered full stack app builder"
+               className="mx-auto h-auto w-full max-w-[330px] select-none" />
+          <p className="mx-auto mt-3 max-w-[420px] text-[13px] leading-relaxed text-muted">
             Describe an app. It gets planned, written, tested, repaired and
             served — and you watch every step.
           </p>
@@ -174,7 +179,7 @@ export default function Home({ onStarted }) {
         {srsPhase === 'idle' && (<>
         <div className="rounded-panel border border-line bg-panel p-2
                         transition-colors focus-within:border-accent/40">
-          <textarea value={prompt} autoFocus rows={5} ref={box}
+          <TextArea value={prompt} autoFocus rows={5} ref={box}
                     placeholder="A community darkroom with three roles: members book sessions, technicians run the bench, a manager sees the money…"
                     onChange={e => setPrompt(e.target.value)}
                     onKeyDown={e => {

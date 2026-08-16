@@ -23,8 +23,11 @@ export const api = {
   settings: () => req('/settings'),
   saveSettings: (s) => post('/settings', s),
   imageCheck: () => req('/image-check'),
+  imageStart: () => post('/image-start', {}),
   files: (project) => req(`/files/${encodeURIComponent(project)}`),
+  saveFile: (project, path, content) => post('/save-file', { project, path, content }),
   open: (project) => post(`/open/${encodeURIComponent(project)}`, {}),
+  deleteProject: (project) => post('/delete-project', { project }),
   undo: (project, id) => post('/undo', { project, id }),
 
   logoPrompt: (prompt, model, opts) => localJob('/logo-prompt', { prompt, model }, opts),

@@ -92,6 +92,75 @@
   ::selection { background: color-mix(in oklab, var(--accent) 30%, transparent); }
 }
 
+/* Syntax colours for the code pane.
+ *
+ * Named per theme rather than once, because a palette tuned for a near-black
+ * background is unreadable on a near-white one: the dark set is Dark+ as a
+ * developer expects it, and the light set is the same hues taken down in
+ * lightness and up in saturation so they hold their contrast on paper-white.
+ *
+ * Plain CSS variables, not `@theme` tokens, because these are used by
+ * `lib/highlight.js` through class names it writes into a string — Tailwind
+ * cannot see those, so it would purge any utility class built from them.
+ */
+[data-theme="dark"] {
+  --tk-plain: #a0aab8;
+  --tk-cmt:   #5f6b7a;
+  --tk-str:   #c3e88d;
+  --tk-kw:    #c792ea;
+  --tk-lit:   #f78c6c;
+  --tk-num:   #f78c6c;
+  --tk-fn:    #82aaff;
+  --tk-type:  #ffcb6b;
+  --tk-tag:   #f07178;
+  --tk-prop:  #89ddff;
+  --tk-key:   #f07178;
+}
+
+[data-theme="light"] {
+  --tk-plain: #3b3b46;
+  --tk-cmt:   #8a8fa0;
+  --tk-str:   #2e7d32;
+  --tk-kw:    #8b2fb8;
+  --tk-lit:   #b8501a;
+  --tk-num:   #b8501a;
+  --tk-fn:    #1a56b8;
+  --tk-type:  #9a6b00;
+  --tk-tag:   #c2185b;
+  --tk-prop:  #0277a8;
+  --tk-key:   #c2185b;
+}
+
+.tk-cmt  { color: var(--tk-cmt); font-style: italic; }
+.tk-str  { color: var(--tk-str); }
+.tk-kw   { color: var(--tk-kw); }
+.tk-lit  { color: var(--tk-lit); }
+.tk-num  { color: var(--tk-num); }
+.tk-fn   { color: var(--tk-fn); }
+.tk-type { color: var(--tk-type); }
+.tk-tag  { color: var(--tk-tag); }
+.tk-prop { color: var(--tk-prop); }
+.tk-key  { color: var(--tk-key); }
+
+/* The two layers of the editor.
+ *
+ * A textarea cannot colour its own text, so the colours are a <pre> sitting
+ * exactly underneath a transparent one. "Exactly" is the whole trick: every
+ * metric that decides where a glyph lands has to match, or the caret drifts
+ * from the character it is on — font, size, line height, padding, tab size,
+ * word wrapping and border. They are set here, once, for both. */
+.editor-layer {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.75;
+  padding: 16px;
+  tab-size: 2;
+  white-space: pre;
+  overflow-wrap: normal;
+  border: 0;
+  margin: 0;
+}
+
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 5px; }
@@ -115,6 +184,28 @@
 }
 .lc-sweep { animation: lc-sweep 1.5s cubic-bezier(.55, 0, .45, 1) infinite; }
 
+/* The mark, while the work runs.
+ *
+ * Two rings turning at different speeds around the letter, and the letter
+ * itself breathing. It is the only thing on the preview until the run is over,
+ * so it has to look deliberate rather than like a page that failed to load —
+ * a still logo on a blank panel reads as "broken", and motion reads as "busy".
+ */
+@keyframes lc-orbit {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.lc-orbit    { animation: lc-orbit 2.4s linear infinite; }
+.lc-orbit-slow { animation: lc-orbit 3.8s linear infinite reverse; }
+
+@keyframes lc-breathe {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%      { opacity: .72; transform: scale(.94); }
+}
+.lc-breathe { animation: lc-breathe 2.2s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
-  .lc-rise, .lc-sweep { animation: none; }
+  .lc-rise, .lc-sweep, .lc-orbit, .lc-orbit-slow, .lc-breathe {
+    animation: none;
+  }
 }

@@ -689,6 +689,14 @@ def dev_log_since(mark: int, limit: int = 60) -> str:
 def start_dev_server(proj_dir: Path, stack: str = None):
     """Dispatch to the right dev server for the project's stack."""
     stack = stack or detect_stack(proj_dir)
+
+    # Which project is being served, recorded because nothing else knew.
+    # `delete_project` has to stop the dev server before removing the folder —
+    # on Windows a running node holding `.next/` makes the directory
+    # undeletable, and the half-removed project that leaves behind is worse
+    # than not deleting it at all.
+    active_vite["dir"] = str(Path(proj_dir).resolve())
+
     if stack == "next":
         start_next(proj_dir)
     else:
@@ -946,7 +954,14 @@ def _redact_uri(uri: str) -> str:
 
 
 def _open_project(proj_name: str):
-    """Boot an existing project so the preview iframe has something to show."""
+    """Boot an existing project so the preview iframe has something to show.
+
+    Every exit says so, because the studio holds its preview behind the build
+    overlay from the click until this answers — `done` or `error`, and nothing
+    else clears it. `wait_for_dev` returning False used to fall out of the
+    bottom silently, which left the overlay up over a project that was never
+    going to appear, with no way to tell that from one still starting.
+    """
     try:
         proj_dir = PROD_DIR / proj_name
         if not proj_dir.exists():
@@ -962,6 +977,12 @@ def _open_project(proj_name: str):
         start_dev_server(proj_dir, stack)
         if wait_for_dev(stack):
             edone(f"http://localhost:{DEV_PORT}", proj_name)
+        else:
+            why = (dev_stderr(stack) or "").strip().splitlines()
+            eerr(f"{proj_name} did not start"
+                 + (f" — {why[-1][:200]}" if why else
+                    ". Its dev server never answered."))
+            return
         if stack == "next":
             _announce_project_credentials(proj_dir)
     except Exception as e:
@@ -986,10 +1007,55 @@ def _announce_project_credentials(proj_dir: Path):
         log.warning(f"could not read demo accounts: {e}")
 
 
+# Words that are an answer, not a name.
+#
+# The interview asks a name it already heard back for confirmation — "You
+# mentioned 'pubudu tireshop' — is that the exact name you want?" — and on a
+# typed question the reply is "yes". That was recorded as the name, and "yes"
+# slugs perfectly: three real builds went to `production-ready/yes` and
+# `yes-2`, into databases `agentforge_yes` and `agentforge_yes_2`, with
+# `_srs_name_line` telling the architect THE APP IS CALLED "yes" — so it is in
+# the header, the page title, the sign-in screen and `package.json` too.
+#
+# `interview.record` no longer stores it. This is the other half: the SRS
+# documents already staged on disk still say "yes", and every reader here would
+# still believe them.
+NOT_A_NAME = {
+    "yes", "y", "yeah", "yep", "yup", "ok", "okay", "sure", "fine", "correct",
+    "right", "true", "confirm", "confirmed", "no", "n", "nope", "nah", "false",
+    "none", "na", "null", "undefined", "app", "application", "webapp",
+    "web app", "website", "site", "project", "untitled", "test",
+}
+
+
+def _is_a_name(text: str, limit: int = 60) -> bool:
+    """False for a confirmation, a placeholder, or nothing at all."""
+    name = " ".join(str(text or "").split())
+    return bool(name) and len(name) <= limit and name.lower() not in NOT_A_NAME
+
+
 def _slug(text: str, fallback: str = "app") -> str:
     s = re.sub(r"[^a-z0-9]+", "-", (text or "").lower()).strip("-")
     s = re.sub(r"-+", "-", s)[:28].strip("-")
     return s or fallback
+
+
+def _project_slug(*candidates: str, fallback: str = "app") -> str:
+    """
+    The first candidate that reads like a name, as a folder name.
+
+    The name reaches three places that outlive the build — the directory under
+    `production-ready`, the Mongo database `db_name_for` derives from it, and
+    the suffixing in `_project_dir_for` — so a word that is not a name is not
+    a small mistake. `_slug("yes")` is a perfectly good slug, which is how two
+    tire shops came to live in `production-ready/yes` and `yes-2`; falling
+    through to the prompt gives a duller name and the right one.
+    """
+    for text in candidates:
+        s = _slug(text, "")
+        if s and s.replace("-", " ") not in NOT_A_NAME and s not in NOT_A_NAME:
+            return s
+    return fallback
 
 
 def _has_app(d: Path) -> bool:
@@ -1523,11 +1589,13 @@ def _srs_app_name(srs_id: str) -> str:
                          .read_text(encoding="utf-8"))
         doc = doc.get("srs_document") or doc
         summary = doc.get("app_summary")
-        name = ((summary or {}).get("app_name") if isinstance(summary, dict)
-                else "") or doc.get("project_name") or ""
-        name = " ".join(str(name).split())
-
-        return name if 0 < len(name) <= 40 else ""
+        for candidate in (((summary or {}).get("app_name")
+                           if isinstance(summary, dict) else ""),
+                          doc.get("project_name")):
+            name = " ".join(str(candidate or "").split())
+            if _is_a_name(name, limit=40):
+                return name
+        return ""
     except Exception:
         return ""
 
@@ -1546,6 +1614,13 @@ def _srs_name_line(proj_dir: Path) -> str:
     So it goes FIRST, above the prompt. The customer was asked what to call
     their app and typed an answer; inventing a different one is the build
     disagreeing with the only part of the spec they wrote themselves.
+
+    Unless what they typed was "yes". This line is the strongest naming
+    instruction in the whole prompt, and pointed at a confirmation word it
+    stamps that word across the header, the title bar, the sign-in screen and
+    `package.json` — which is exactly what happened. `_is_a_name` is the check;
+    with no usable name the line is simply left out and the architect names the
+    app from the idea, as it does for every build that never ran an interview.
     """
     try:
         doc = json.loads((proj_dir / ".agentforge" / "srs" / "srs_latest.json")
@@ -1557,7 +1632,7 @@ def _srs_name_line(proj_dir: Path) -> str:
     name = ((summary or {}).get("app_name") if isinstance(summary, dict)
             else "") or doc.get("project_name") or ""
     name = " ".join(str(name).split())
-    if not name or len(name) > 60:
+    if not _is_a_name(name):
         return ""
     return (f"THE APP IS CALLED “{name}”. The customer chose that name. Use it "
             f"exactly, in the header, the page title, the sign-in screen and "
@@ -1606,6 +1681,12 @@ def _srs_brief(proj_dir: Path, model: str) -> str:
         list's. An empty section does not read as a bug; it reads as a
         specification that had nothing to say.
         """
+        # A bare string is one item, not a sequence of letters. `customer_notes`
+        # is stored as prose, and iterating it produced one bullet per
+        # character — 44 lines reading "- W", "- h", "- a".
+        if isinstance(items, str):
+            items = [items]
+
         out = []
         for item in (items or []):
             ident = ""
@@ -1664,18 +1745,193 @@ def _srs_brief(proj_dir: Path, model: str) -> str:
             parts.append(f"\n{title}\n" + "\n".join(lines))
             titles.append(title)
 
-    tables = (doc.get("database_design") or {}).get("tables") or []
+    def column(c):
+        """One column with everything the schema actually decided about it.
+
+        Names alone were what this used to emit, and a name is the one part of
+        a column a builder can already guess. The type, the uniqueness and the
+        foreign key are what it cannot — and getting those wrong is not a
+        cosmetic miss: a string where the schema says ObjectId is the
+        `doc.ownerId?.toString() === user.id` class of bug that finds nothing
+        and reports no error.
+        """
+        if isinstance(c, str):
+            return c
+        if not isinstance(c, dict):
+            return ""
+        name = c.get("name") or c.get("column") or ""
+        if not name:
+            return ""
+        flags = []
+        if c.get("type"):
+            flags.append(str(c["type"]))
+        if c.get("primary_key") or c.get("primary"):
+            flags.append("primary key")
+        if c.get("unique"):
+            flags.append("unique")
+        ref = c.get("references") or c.get("foreign_key")
+        if ref:
+            flags.append(f"references {ref}")
+        vals = c.get("values") or c.get("enum")
+        if vals:
+            shown = ", ".join(str(v) for v in list(vals)[:8])
+            flags.append(f"one of: {shown}")
+        if c.get("default") is not None and c.get("default") != "":
+            flags.append(f"default {c['default']}")
+        if c.get("nullable") is True or c.get("required") is False:
+            flags.append("optional")
+        return f"{name} ({'; '.join(flags)})" if flags else str(name)
+
+    database = doc.get("database_design") or {}
+    tables = database.get("tables") or []
     shaped = []
     for t in tables:
         if not isinstance(t, dict):
             continue
-        cols = t.get("columns") or t.get("fields") or []
-        names = [c if isinstance(c, str) else (c.get("name") or c.get("column") or "")
-                 for c in cols]
-        names = [n for n in names if n]
         name = t.get("table_name") or t.get("name")
-        if name:
-            shaped.append(f"- {name}: {', '.join(names) or 'no columns given'}")
+        if not name:
+            continue
+        cols = [column(c) for c in (t.get("columns") or t.get("fields") or [])]
+        cols = [c for c in cols if c]
+        head = f"- {name}"
+        why = " ".join(str(t.get("description") or "").split())
+        if why:
+            head += f" — {why}"
+        shaped.append(head + "\n    " + ("\n    ".join(cols) or "no columns given"))
+
+    for rel in (database.get("relationships") or []):
+        if not isinstance(rel, dict):
+            continue
+        frm, to = rel.get("from"), rel.get("to")
+        if not (frm and to):
+            continue
+        kind = str(rel.get("type") or "").replace("_", " ")
+        shaped.append(f"- {frm} → {to}" + (f"  ({kind})" if kind else ""))
+
+    def requirement_rows(items):
+        """Requirements with their id, module and priority.
+
+        The module is what tells the planner which task a requirement belongs
+        to, and the priority is the only thing separating what must exist from
+        what would be nice — both were being dropped on the floor.
+        """
+        out = []
+        for r in (items or []):
+            if isinstance(r, str):
+                out.append(f"- {r}")
+                continue
+            if not isinstance(r, dict):
+                continue
+            text = " ".join(str(r.get("requirement") or r.get("description")
+                                or r.get("text") or "").split())
+            if not text:
+                continue
+            ident = " ".join(str(r.get("id") or "").split())
+            tail = [str(r[k]) for k in ("module", "priority") if r.get(k)]
+            line = f"- {ident}  {text}" if ident else f"- {text}"
+            if tail:
+                line += f"   [{' · '.join(tail)}]"
+            out.append(line)
+        return out
+
+    def role_rows(items):
+        """Each role and the duties its description spells out."""
+        out = []
+        for r in (items or []):
+            if isinstance(r, str):
+                out.append(f"- {r}")
+                continue
+            if not isinstance(r, dict):
+                continue
+            name = " ".join(str(r.get("role_name") or r.get("name") or "").split())
+            if not name:
+                continue
+            why = " ".join(str(r.get("description") or "").split())
+            out.append(f"- {name}" + (f" — {why}" if why else ""))
+        return out
+
+    def route_rows(items):
+        """The API the specification already decided on.
+
+        Without this the builder invents its own paths, and then the pages it
+        writes call endpoints that were never agreed with anybody.
+        """
+        out = []
+        for e in (items or []):
+            if isinstance(e, str):
+                out.append(f"- {e}")
+                continue
+            if not isinstance(e, dict):
+                continue
+            path = e.get("path") or e.get("endpoint")
+            if not path:
+                continue
+            method = str(e.get("method") or "GET").upper()
+            line = f"- {method} {path}"
+            why = " ".join(str(e.get("description") or "").split())
+            if why:
+                line += f" — {why}"
+            if e.get("auth_required") is True:
+                line += "   [signed in]"
+            elif e.get("auth_required") is False:
+                line += "   [public]"
+            out.append(line)
+        return out
+
+    def trace_rows(items):
+        """Which requirement is answered by which page and which table.
+
+        The one machine-readable map from a requirement to the files that have
+        to exist for it. It is what makes the `Covers:` line on a build task a
+        fact rather than a guess.
+        """
+        out = []
+        for row in (items or []):
+            if not isinstance(row, dict):
+                continue
+            rid = row.get("requirement_id") or row.get("id")
+            if not rid:
+                continue
+            pages = ", ".join(str(p) for p in (row.get("pages") or []))
+            tables_ = ", ".join(str(t) for t in (row.get("tables") or []))
+            bits = []
+            if pages:
+                bits.append(f"pages: {pages}")
+            if tables_:
+                bits.append(f"data: {tables_}")
+            if not bits:
+                continue
+            out.append(f"- {rid} → " + "; ".join(bits))
+        return out
+
+    def look_rows():
+        """The colour and the components the customer actually asked for."""
+        out = []
+        brand = doc.get("branding") or {}
+        if isinstance(brand, dict):
+            bits = [f"{k.replace('_', ' ')}: {v}"
+                    for k, v in brand.items() if isinstance(v, (str, int)) and v]
+            if bits:
+                out.append("- " + "; ".join(bits))
+        ux = doc.get("ui_ux_requirements") or {}
+        if isinstance(ux, dict):
+            need = ux.get("required_components") or []
+            if need:
+                out.append("- every screen is built from: "
+                           + ", ".join(str(c) for c in need))
+            rest = [f"{k.replace('_', ' ')}: {v}" for k, v in ux.items()
+                    if k != "required_components" and isinstance(v, (str, bool, int))]
+            if rest:
+                out.append("- " + "; ".join(rest))
+        return out
+
+    def flag_rows(obj, label=""):
+        """A small settings object, one line, skipping what it left empty."""
+        if not isinstance(obj, dict):
+            return []
+        bits = [f"{k.replace('_', ' ')}: {v}" for k, v in obj.items()
+                if isinstance(v, (str, bool, int)) and v not in ("", None)]
+        return [f"- {label}" + "; ".join(bits)] if bits else []
 
     matrix = []
     for row in (doc.get("role_access_matrix") or []):
@@ -1700,20 +1956,57 @@ def _srs_brief(proj_dir: Path, model: str) -> str:
             flows.append(f"- {name}: "
                          + " → ".join(f"{i}. {s}" for i, s in enumerate(steps, 1)))
 
-    section("REQUIREMENTS", rows(doc.get("functional_requirements"), id_key="id"))
+    # Ordered by how badly the build needs it, because the cut below is a tail
+    # truncation: whatever is last is what a small context loses first.
+    section("REQUIREMENTS", requirement_rows(doc.get("functional_requirements")))
     section("DATA", shaped)
-    section("ROLES", rows(doc.get("roles"), key="role_name"))
+    section("THE ROUTES IT MUST SERVE", route_rows(doc.get("api_design")))
+    section("ROLES", role_rows(doc.get("roles")))
     section("PAGES THAT REQUIRE A LOGIN", page_rows(doc.get("protected_pages")))
     section("PAGES THAT MUST BE PUBLIC", page_rows(doc.get("public_pages")))
     section("WHO CAN REACH WHAT", matrix)
+    section("WHICH REQUIREMENT LIVES WHERE",
+            trace_rows(doc.get("requirement_traceability_matrix")))
     section("HOW THE WORK FLOWS", flows)
     section("DONE MEANS", rows(doc.get("acceptance_criteria"), key="criterion",
                                id_key="id"))
     section("VALIDATION RULES", rows(doc.get("validation_rules"), key="rule",
                                      id_key="field"))
+    section("SIGNING IN", flag_rows(doc.get("authentication_requirement")))
     section("SECURITY", rows(doc.get("security_requirements")))
+    section("HOW IT SHOULD LOOK", look_rows())
+    section("THE MODULES IT IS MADE OF", rows(doc.get("main_modules")))
+    def report_rows(items):
+        """A report, its filters and the formats it exports.
+
+        `rows()` looks for requirement/description/criterion/rule/name and a
+        report has none of them — it is keyed `report_name` — so this section
+        rendered empty on every document while looking like a specification
+        that asked for no reports.
+        """
+        out = []
+        for r in (items or []):
+            if isinstance(r, str):
+                out.append(f"- {r}")
+                continue
+            if not isinstance(r, dict):
+                continue
+            name = " ".join(str(r.get("report_name") or r.get("name") or "").split())
+            if not name:
+                continue
+            bits = []
+            if r.get("filters"):
+                bits.append("filtered by " + ", ".join(str(f) for f in r["filters"]))
+            if r.get("exports"):
+                bits.append("exports " + ", ".join(str(e) for e in r["exports"]))
+            out.append(f"- {name}" + (f" — {'; '.join(bits)}" if bits else ""))
+        return out
+
+    section("REPORTS IT MUST PRODUCE", report_rows(doc.get("reporting_requirements")))
     section("QUALITIES", rows(doc.get("non_functional_requirements"), id_key="id"))
+    section("LIMITS AGREED", rows(doc.get("constraints")))
     section("ASSUMPTIONS ALREADY AGREED", rows(doc.get("assumptions")))
+    section("WHAT THE CUSTOMER ADDED", rows(doc.get("customer_notes")))
 
     text = "\n".join(parts)
 
@@ -1722,12 +2015,35 @@ def _srs_brief(proj_dir: Path, model: str) -> str:
     if len(text) > budget:
         cut = text.rfind("\n", 0, budget)
         dropped = text[cut:].count("\n- ") if cut > 0 else text.count("\n- ")
+
+        # Counted before the cut, so a section that survives with half its rows
+        # is reported as half a section. Testing only for the title said
+        # "nothing lost" while the last rows of the last surviving section were
+        # already gone — the quietest possible way to mislead.
+        def bullets(body: str, title: str) -> int:
+            """Rows belonging to `title` alone, not to everything after it."""
+            if f"\n{title}\n" not in body:
+                return 0
+            rest = body.split(f"\n{title}\n", 1)[1]
+            end = rest.find("\n\n")            # the next section's blank line
+            return (rest[:end] if end > 0 else rest).count("\n- ") + \
+                   (1 if (rest[:end] if end > 0 else rest).startswith("- ") else 0)
+
+        full = {t: bullets(text, t) for t in titles}
         text = text[:cut if cut > 0 else budget] + "\n"
 
-        lost = [t for t in titles if f"\n{t}\n" not in text]
+        lost, partial = [], []
+        for t in titles:
+            if f"\n{t}\n" not in text:
+                lost.append(t)
+                continue
+            kept = bullets(text, t)
+            if kept < full.get(t, kept):
+                partial.append(f"{t} ({kept} of {full[t]})")
         elog("WARN", f"   ✂ SRS brief trimmed to {budget:,} chars for {model} — "
                      f"{dropped} line(s) left out (they are all in the SRS tab)"
-                     + (f"; sections lost: {', '.join(lost)}" if lost else ""))
+                     + (f"; sections lost: {', '.join(lost)}" if lost else "")
+                     + (f"; cut short: {', '.join(partial)}" if partial else ""))
     elog("INFO", f"   📄 Architect briefed with the SRS ({len(text):,} chars "
                  f"of a {budget:,} budget)")
     return text
@@ -2508,6 +2824,17 @@ def _record_round_one(proj_dir: Path, qa, passed: int, failures: list) -> None:
     except Exception as e:
         log.warning(f"could not append qa history: {e}")
 
+    # The same classes, kept where the NEXT build can see them. This file has
+    # always been written and only ever read back to draw the Testing tab; the
+    # failure classes it counts are exactly the shape a lesson needs.
+    try:
+        from agents import lessons
+        rows = [{"failed": len(failures),
+                 "top": [{"class": n, "count": c} for n, c in top[:5]]}]
+        lessons.record(proj_dir.name, lessons.from_qa_history(rows))
+    except Exception as e:                                      # noqa: BLE001
+        log.debug(f"lessons from qa: {e}")
+
 
 def drop_tests_for_missing_targets(proj_dir: Path, qa) -> list:
     """
@@ -2568,7 +2895,18 @@ def drop_tests_for_missing_targets(proj_dir: Path, qa) -> list:
     return dropped
 
 
-def run_qa_unit_stage(arch, proj_dir: Path, qa, *, build_ok: bool) -> dict:
+def _tests_for_targets(qa, targets) -> list:
+    """The test files written against these source files, from the manifest."""
+    wanted = {str(t).replace("\\", "/").lstrip("./") for t in (targets or [])}
+    if not wanted:
+        return []
+    return sorted({rel for rel, meta in (qa.manifest or {}).items()
+                   if str((meta or {}).get("target", "")).replace("\\", "/")
+                   .lstrip("./") in wanted})
+
+
+def run_qa_unit_stage(arch, proj_dir: Path, qa, *, build_ok: bool,
+                      scope=None) -> dict:
     """
     Install the runner, run the generated tests, and repair what fails.
 
@@ -2586,6 +2924,21 @@ def run_qa_unit_stage(arch, proj_dir: Path, qa, *, build_ok: bool) -> dict:
       decrease, the round is reverted byte for byte.
     * **A QA failure never fails the pipeline.** Every path here returns, and
       the app is served either way.
+
+    `scope` is the source files a run is ABOUT — the files a feature wrote, the
+    files a repair touched. Given it, only the tests written against those
+    files run, and the whole-suite sweep at the end is skipped. Without it the
+    whole suite runs, which is right for a build: everything is new.
+
+    It is a real trade and worth naming. A feature breaks an app most often in
+    the shared component it edited on the way past, and a scoped run cannot see
+    that — the page that imports the component is not in scope, so its test is
+    not run. What it buys is a feature that finishes in the time the feature
+    took rather than the time the whole suite takes, on a project where the
+    suite grows with every build. The shared component itself IS in scope when
+    the feature edited it, so the common case is still covered; what is given
+    up is the second-order break, and `verify_after_edit` plus the route probe
+    still run over the whole app either way.
     """
     out = {"ran": False, "passed": 0, "failed": 0, "fixed": 0, "code_fixes": 0}
     if not qa or not qa.has_tests():
@@ -2622,7 +2975,22 @@ def run_qa_unit_stage(arch, proj_dir: Path, qa, *, build_ok: bool) -> dict:
 
     tier = 0
 
+    # `watch` is the narrowing the repair rounds already did — after round one
+    # only the tests that failed are re-run. A scoped stage starts narrowed,
+    # from the first round, and never widens.
     watch = None
+    scoped = _tests_for_targets(qa, scope) if scope else []
+    if scope:
+        if not scoped:
+            elog("INFO", "   🧪 Nothing that changed has a test — skipping the "
+                         "suite rather than running everything else")
+            ephase({"phase": -15, "title": "Running unit tests", "status": "done"})
+            return out
+        watch = scoped
+        others = max(0, len(qa.manifest or {}) - len(scoped))
+        elog("INFO", f"   🧪 Testing only what changed — {len(scoped)} test "
+                     f"file(s)"
+                     + (f", leaving {others} untouched" if others else ""))
 
     baseline_cases = set()
     for rnd in range(1, MAX_QA_FIX + 2):
@@ -2747,8 +3115,13 @@ def run_qa_unit_stage(arch, proj_dir: Path, qa, *, build_ok: bool) -> dict:
                 elog("WARN", f"   ↩ {len(failures)} case(s) still red after "
                              f"the revert")
 
+    # The sweep exists because the repair rounds narrow to the failing files
+    # and something outside that narrowing can still be red. A SCOPED stage is
+    # narrowed on purpose, for the whole stage — sweeping at the end would run
+    # the suite this was called to avoid, and the count it reported would be
+    # the whole app's rather than the change's.
     saw_everything = watch is None
-    if watch is not None and ok:
+    if watch is not None and ok and not scoped:
         passed, failures, ok = runner.run()
         if ok:
             saw_everything = True
@@ -3213,6 +3586,28 @@ def _repair_runtime(arch, proj_dir: Path, qa, analyzer, all_errors: str,
     return []
 
 
+BROWSER_CONSOLE_MAX = 6000
+
+
+def _browser_console(msg: dict) -> str:
+    """
+    What the preview's console had logged, as the client sent it.
+
+    Trimmed here rather than trusted: the client already caps it, and the cap
+    that matters is the one on the side that pastes the text into a prompt. An
+    app in a render loop can log the same error thousands of times a second,
+    and a repair prompt that arrives mostly full of console does not leave room
+    for the file it is supposed to repair.
+
+    The tail, not the head — the errors nearest the complaint are the ones from
+    the thing that just failed.
+    """
+    text = str(msg.get("console") or "").strip()
+    if len(text) <= BROWSER_CONSOLE_MAX:
+        return text
+    return "…\n" + text[-BROWSER_CONSOLE_MAX:]
+
+
 def _think_flag(msg: dict):
     """
     The UI's thinking switch, as Ollama's tri-state.
@@ -3241,8 +3636,7 @@ def _find_fooocus_config() -> str:
     # The two layouts the installer produces, plus the one the zip makes when
     # it is extracted into a folder of its own name.
     inside = ("Fooocus/config.txt", "config.txt", "fooocus_config.json")
-    roots = [Path(f"{d}:/") for d in "CDEFG"] + [Path.home()]
-    for root in roots:
+    for root in _FOOOCUS_ROOTS:
         try:
             if not root.exists():
                 continue
@@ -3259,6 +3653,106 @@ def _find_fooocus_config() -> str:
                         return str(candidate)
         except OSError:
             continue
+    return ""
+
+
+# Where an install plausibly lives. The drive roots are where the zip gets
+# extracted; the rest is where a browser download and a checkout actually land,
+# and neither is reachable from `Path.home()` with a single `Fooocus*` glob —
+# the install this was written against sits under
+# `~/OneDrive/Documents/GitHub/Fooocus_win64_2-5-0/`, four levels down.
+_FOOOCUS_ROOTS = (
+    [Path(f"{d}:/") for d in "CDEFG"]
+    + [Path.home() / p for p in
+       ("", "Downloads", "Documents", "Desktop", "Documents/GitHub",
+        "OneDrive/Documents", "OneDrive/Documents/GitHub", "OneDrive/Desktop")]
+)
+
+
+# Preferred first, and the preference decides across the whole search rather
+# than within one folder — `run_4gb.bat` sits one level above `Fooocus/`, so a
+# folder-at-a-time search finds whatever the deepest folder happens to hold and
+# the ordering here never applies.
+#
+# `run_4gb.bat` first because its presence says the install was set up for a
+# small card: it is what ships with the low-VRAM package, alongside a
+# LOWVRAM_4GB_README. Starting the plain `run.bat` there loads a checkpoint the
+# GPU cannot hold, and Fooocus dies after the splash. Nothing that is not a
+# shell script belongs on this list — `entry_with_update.py` starts Fooocus
+# too, but handing a `.py` to `cmd /c start` opens it in an editor.
+_FOOOCUS_LAUNCHERS = ("run_4gb.bat", "run.bat", "run_anime.bat",
+                      "run_realistic.bat", "run.sh")
+
+
+def _fooocus_folders() -> list:
+    """Every directory that might hold a Fooocus launcher, nearest first.
+
+    `image_config` leads the list because that path is already known to point
+    into a real install — walking up from `…/Fooocus/config.txt` reaches the
+    launcher beside it without guessing where the folder is. The scan is the
+    fallback for an install that was never configured.
+    """
+    settings = load_settings()
+    out = []
+    config = str(settings.get("image_config", FOOOCUS_CONFIG)).strip()
+    if config:
+        here = Path(config).parent
+        out += [here, *list(here.parents)[:3]]
+    for root in _FOOOCUS_ROOTS:
+        try:
+            if root.exists():
+                for folder in sorted(root.glob("Fooocus*")):
+                    out += [folder, folder / folder.name]
+        except OSError:
+            continue
+    return out
+
+
+def _fooocus_launcher() -> str:
+    """The script that starts Fooocus on this machine, or ""."""
+    explicit = str(load_settings().get("image_launcher", "")).strip()
+    if explicit and Path(explicit).is_file():
+        return explicit
+
+    folders = _fooocus_folders()
+    for name in _FOOOCUS_LAUNCHERS:
+        for folder in folders:
+            candidate = folder / name
+            try:
+                if candidate.is_file():
+                    return str(candidate)
+            except OSError:
+                continue
+    return ""
+
+
+def start_fooocus() -> str:
+    """
+    Launch the local Fooocus. Returns "" on success, else why not.
+
+    Detached and in its own window: it takes minutes to load a checkpoint the
+    first time, prints its progress, and is the thing somebody needs to read
+    when it fails. Nothing here waits for it — `/image-check` is what says
+    whether it came up.
+    """
+    script = _fooocus_launcher()
+    if not script:
+        return ("no Fooocus install was found — start it yourself, or set "
+                "image_launcher in Settings to its run script")
+    folder = Path(script).parent
+    try:
+        if os.name == "nt":
+            subprocess.Popen(["cmd", "/c", "start", "", Path(script).name],
+                             cwd=str(folder), shell=False,
+                             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+        else:
+            subprocess.Popen(["/bin/sh", str(script)], cwd=str(folder),
+                             stdout=subprocess.DEVNULL,
+                             stderr=subprocess.DEVNULL,
+                             start_new_session=True)
+    except OSError as e:
+        return f"could not start {Path(script).name}: {e}"
+    elog("INFO", f"   🎨 Starting Fooocus — {script}")
     return ""
 
 
@@ -3280,6 +3774,7 @@ def _image_settings() -> dict:
         "image_enabled": bool(s.get("image_enabled", False)),
         "image_host": str(s.get("image_host", "")),
         "image_config": str(s.get("image_config", FOOOCUS_CONFIG)),
+        "image_launcher": str(s.get("image_launcher", "")),
         "lan_access": bool(s.get("lan_access", False)),
     }
 
@@ -3469,6 +3964,77 @@ def preview_uri(out: Path) -> str:
         log.debug(f"preview {out}: {e}")
         return ""
     return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+
+
+def _image_wishes(proj_dir: Path) -> list:
+    """The kinds of picture the customer asked for, from the adopted interview.
+
+    `adopt_srs` copies `interview.json` next to the SRS, and it is the only
+    artefact that still holds the answers verbatim — the SRS document itself
+    reduces "tire photos, supplier logos, vehicle photos" to one adjective in
+    `ui_ux_requirements.design_style`, which is not something a planner can
+    turn into an image list.
+    """
+    try:
+        doc = json.loads((proj_dir / ".agentforge" / "srs" / "interview.json")
+                         .read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    for answer in doc.get("answers") or []:
+        if answer.get("question_id") != "image_kinds":
+            continue
+        value = answer.get("value")
+        items = value if isinstance(value, list) else [value]
+        return [str(v).replace("_", " ").strip() for v in items if str(v)]
+    return []
+
+
+def _image_brief_line(proj_dir: Path) -> str:
+    """
+    What the planner is told about pictures — which until now was nothing.
+
+    The plan is the only thing that decides whether an app has images:
+    `run_image_stage` draws exactly what `plan["images"]` lists, and the
+    planner's instructions end with "omit the heading entirely for an app with
+    no pictures — an admin dashboard usually has none". A POS reads as an admin
+    dashboard, so the heading was omitted, `plan["images"]` came back empty, and
+    the image stage returned before it reached Fooocus.
+
+    That happened with the switch on, Fooocus answering, and the customer
+    having answered a question in the interview asking which artwork they
+    wanted — tire photos, supplier logos, vehicle photos. Every layer worked
+    and no picture was ever drawn, because the one component that decides was
+    the only one never told any of it.
+
+    The off branch matters as much: told nothing, a planner is equally free to
+    write `<img src="/generated/hero.png">` for a build with no generator
+    behind it, and every one of those tags is a 404 in the shipped app.
+    """
+    agent = image_agent()
+    if not agent.enabled or not agent.available():
+        return ("\n\nIMAGE GENERATION IS OFF for this build. Omit the "
+                "`## Images` heading, leave `\"images\"` empty in the JSON, and "
+                "do not write an <img> pointing at `/generated/…` — nothing "
+                "will draw it and every one of them would 404. Use Tailwind "
+                "gradients, inline SVG or emoji where a picture would go.\n")
+
+    line = ("\n\nIMAGE GENERATION IS ON for this build. Every picture you list "
+            "under `## Images` is drawn by a local image model into "
+            "`public/generated/<key>.png` before the app first runs, so the "
+            "tags you write for them point at real files. This app is not one "
+            "of the ones that should omit the heading.")
+    wishes = _image_wishes(proj_dir)
+    if wishes:
+        line += (" The customer was asked which artwork they wanted and "
+                 "answered: " + ", ".join(wishes) + ". Cover every one of "
+                 "them, with a key per seeded record wherever the answer is a "
+                 "photograph of a thing the app stores, so the seed can point "
+                 "each row at its own picture.")
+    else:
+        line += (" List every picture the app is better for having — a photo "
+                 "per seeded record that would carry one, a login backdrop, a "
+                 "hero where the app has a public page.")
+    return line + "\n"
 
 
 def run_image_stage(arch, proj_dir: Path) -> int:
@@ -4060,7 +4626,7 @@ def classify_intent(arch, text: str, route: str = "") -> tuple:
 
 
 def run_chat(proj_name: str, text: str, model: str, route: str = "",
-             think: bool = None, qa_model: str = ""):
+             think: bool = None, qa_model: str = "", console: str = ""):
     """
     One input for everything: read what the user wants, then do it.
 
@@ -4069,6 +4635,14 @@ def run_chat(proj_name: str, text: str, model: str, route: str = "",
     allowed to make it. Nobody thinks "this is a page-scoped restyle" — they
     think "this bit looks wrong". So the classification happens here instead,
     and the tabs become an implementation detail.
+
+    `console` is what the studio's preview had already logged when the message
+    was typed — see `studio/lib/console-log.js`. It goes to the repair path and
+    NOT to the classifier: a screen can hold a stale 500 from ten minutes ago
+    while somebody asks for a new page, and a router shown a list of errors
+    calls everything a bug. What the user typed is what decides which tool
+    runs; the console only decides how well the repair is aimed once the bug
+    path is the one running.
     """
     set_tester_emit(emit)
     proj_dir = PROD_DIR / proj_name
@@ -4083,18 +4657,120 @@ def run_chat(proj_name: str, text: str, model: str, route: str = "",
     elog("INFO", f"💬 {intent} — {restated[:80]}")
     emit({"type": "chat_intent", "intent": intent, "summary": restated})
 
+    # The router's job is to pick the tool, not to rewrite the request. It is
+    # asked for ONE line, so handing that line onward instead of what the user
+    # typed silently deletes everything past the first clause: "add a refunds
+    # page with a status filter, CSV export, admin-only" arrives as "add a
+    # refunds page". Worse, an attachment is carried IN the prompt — the block
+    # `use-edit-attachments.js` appends holds the transcribed document and the
+    # on-disk path of an uploaded picture — so summarising it throws the
+    # attachment away entirely and the model invents a path instead.
+    #
+    # The restatement is still worth having: it is what the log line and the
+    # intent chip show. It is just not the instruction.
     if intent == "ask":
-        return run_question(arch, proj_dir, text)
+        # Answering ends the turn like every other branch. The studio clears
+        # its busy flag on `done` or `error` and on nothing else, so a branch
+        # that finishes by streaming a log line leaves the ask box disabled,
+        # the spinner turning and the model resident until the page is
+        # reloaded. This branch could never be reached before, which is why
+        # nobody had noticed.
+        try:
+            run_question(arch, proj_dir, text)
+            edone(f"http://localhost:{DEV_PORT}", proj_name)
+        finally:
+            stop_model(model)
+        return
     if intent == "bug":
-        return run_bug_report(proj_name, restated, model, route, think, qa_model)
+        return run_bug_report(proj_name, text, model, route, think, qa_model,
+                              console=console)
     if intent == "page" and route:
-        return run_page_update(proj_name, restated, model, route, think)
+        return run_page_update(proj_name, text, model, route, think)
 
-    return run_feature(proj_name, restated, model, think, qa_model)
+    return run_feature(proj_name, text, model, think, qa_model)
+
+
+def _reproduce_complaint(proj_dir: Path, route: str, complaint: str, analyzer):
+    """Open the app as a browser and watch the reported thing fail.
+
+    Signed in where the app has demo accounts, because most of a generated app
+    is behind a login and an anonymous visit reproduces the login redirect
+    instead of the bug.
+    """
+    from agents.reproduce import Reproduction, reproduce
+
+    if not _dev_alive():
+        return Reproduction(route=route or "/", why_not="the dev server is not running")
+
+    login, endpoint = None, ""
+    try:
+        endpoint = analyzer.find_login_endpoint() or ""
+        accounts = (analyzer.arch.plan or {}).get("demo_accounts") or []
+        if accounts and endpoint:
+            first = accounts[0]
+            login = (first.get("email"), first.get("password"))
+    except Exception as e:                                      # noqa: BLE001
+        log.debug(f"demo login for reproduce: {e}")
+
+    seen = reproduce(route or "/", complaint, port=DEV_PORT,
+                     login=login, login_endpoint=endpoint)
+    if not seen.ran:
+        elog("INFO", f"   🔎 Could not open it in a browser — {seen.why_not}")
+        return seen
+
+    found = (len(seen.console) + len(seen.page_errors) + len(seen.network))
+    elog("INFO", f"   🔎 Opened {seen.route} in a browser"
+                 + (" (signed in)" if seen.signed_in else "")
+                 + (f" — {found} thing(s) went wrong" if found
+                    else " — the browser reported nothing"))
+    if seen.filled:
+        elog("INFO", f"   ⌨ Filled {len(seen.filled)} required field(s) first "
+                     f"— {', '.join(seen.filled[:4])}")
+    if seen.clicked:
+        elog("INFO", f"   🖱 Clicked '{seen.clicked}' — "
+                     + ("the page changed" if seen.changed else "nothing happened"))
+    return seen
+
+
+def _report_symptom(before, after) -> bool:
+    """Say whether the thing they reported still happens. Returns True if fixed.
+
+    Compared on the fault's own words with the numbers removed, because ports,
+    ids and line offsets move between two runs of the same app and comparing
+    them raw would call every repair a failure.
+    """
+    if not (before.ran and after.ran):
+        elog("INFO", "   ↻ Could not re-check it in a browser — the change is "
+                     "in, but nobody has confirmed the symptom is gone")
+        return False
+
+    was, now = before.signature(), after.signature()
+    gone, left, fresh = was - now, was & now, now - was
+
+    if left:
+        elog("WARN", "   ✗ The app builds, but what you reported is STILL "
+                     "happening:")
+        for line in sorted(left)[:3]:
+            elog("WARN", f"      {line[:150]}")
+    elif was:
+        elog("INFO", f"   ✓ The symptom is gone — {len(gone)} fault(s) that "
+                     f"happened before this change do not happen now")
+    elif before.clicked and not before.changed and after.changed:
+        elog("INFO", f"   ✓ '{before.clicked}' does something now")
+    else:
+        elog("INFO", "   ↻ Re-checked in a browser; it was quiet before and "
+                     "after, so this one is for you to confirm")
+
+    if fresh:
+        elog("WARN", f"   ⚠ {len(fresh)} new fault(s) that were not there "
+                     f"before this change:")
+        for line in sorted(fresh)[:3]:
+            elog("WARN", f"      {line[:150]}")
+    return bool(was) and not left
 
 
 def run_bug_report(proj_name: str, complaint: str, model: str, route: str = "",
-                   think: bool = None, qa_model: str = ""):
+                   think: bool = None, qa_model: str = "", console: str = ""):
     """
     Repair something the user says is broken.
 
@@ -4102,6 +4778,25 @@ def run_bug_report(proj_name: str, complaint: str, model: str, route: str = "",
     repair path alongside what the dev server actually printed while the page
     was being loaded. "The login does nothing" plus a stack trace naming
     `app/api/auth` is a fixable report; either alone is a guess.
+
+    THREE witnesses now, and they see different things:
+
+      * `_reproduce_complaint` opens the app again and presses what it thinks
+        was meant. Thorough, and it has to guess the control, starts signed out
+        of the user's session, and cannot reach a state that took six screens
+        to get into.
+      * the dev server's terminal, which sees the server half and nothing the
+        browser did with it.
+      * `console` — the studio preview's OWN console at the moment the sentence
+        was typed, forwarded by `studio/lib/console-log.js`. It needs no guess
+        and no reproduction: it already failed, in the state it failed in, and
+        it carries the failed request with its status and its body. Measured on
+        a real report, that was `PUT /api/customers/6a800a9… → 500` raised at
+        `CustomerForm.jsx:48` — a file and a line number, off a sentence that
+        contained neither.
+
+    It goes first in the report for that reason. A reproduction that came back
+    clean does not contradict it; it means the reproduction did not get there.
     """
     set_tester_emit(emit)
     try:
@@ -4120,29 +4815,33 @@ def run_bug_report(proj_name: str, complaint: str, model: str, route: str = "",
             wait_for_dev(stack)
 
         mark = dev_log_mark()
-        if route and _dev_alive():
-            try:
-                import urllib.request
-
-                urllib.request.urlopen(f"http://127.0.0.1:{DEV_PORT}{route}",
-                                       timeout=45).read(1)
-            except Exception as e:
-                log.debug(f"reproduce {route}: {e}")
+        seen = _reproduce_complaint(proj_dir, route, complaint, analyzer)
         trace = _filter_db_noise(dev_log_since(mark), True)
         faults = terminal_faults(trace)
 
         report = (f"The user reports: {complaint}\n\n"
-                  f"They were on {route or 'the app'}.")
+                  f"They were on {route or 'the app'}.\n\n")
+        if console:
+            report += ("Their own browser had already logged this, on the page "
+                       "they were looking at when they said so — this is the "
+                       "failure itself, not a re-enactment of it:\n"
+                       f"{console.strip()}\n\n")
+            elog("INFO", "   📋 the browser's console came with the report")
+        report += seen.as_prompt()
         if faults:
-            report += (f"\n\nThe dev server printed this while that page "
-                       f"was loading:\n" + f"\n".join(faults[:4]))
+            report += (f"\n\nThe dev server printed this at the same time:\n"
+                       + "\n".join(faults[:4]))
             elog("INFO", f"   📋 {len(faults)} matching server error(s)")
-        else:
-            elog("INFO", "   📋 The server logged nothing — going on the "
-                         "report alone")
+
+        # The mark is retaken here, AFTER the reproduction. It used to be the
+        # one from before it, so `_autofix_from_terminal` below re-read the
+        # very faults this repair was about to fix and spent its rewrite rounds
+        # on a file that was already correct.
+        mark = dev_log_mark()
 
         eprog("Repairing…", 45)
 
+        before = dict(arch.files)
         fixed = _repair_runtime(arch, proj_dir, None, analyzer, report,
                                 trace, 1)
         if not fixed:
@@ -4150,6 +4849,14 @@ def run_bug_report(proj_name: str, complaint: str, model: str, route: str = "",
                  "this could find")
             return
         elog("INFO", f"   ✅ {len(fixed)} file(s) changed")
+
+        # A repair is the change most worth being able to take back: it is made
+        # from a complaint, on a file the user did not choose, by a model that
+        # was told what the browser saw.
+        touched = [p for p in fixed if p in before]
+        undo_id = _snapshot(proj_name, touched, before) if touched else ""
+        if undo_id:
+            emit({"type": "undo_point", "id": undo_id, "files": touched})
         arch.save_convo()
 
         eprog("Checking…", 80)
@@ -4158,6 +4865,13 @@ def run_bug_report(proj_name: str, complaint: str, model: str, route: str = "",
                           build_rounds=0, probe=False, analyzer=analyzer)
         _autofix_from_terminal(arch, fixed[0], {"route": route}, mark,
                                proj_dir=proj_dir, analyzer=analyzer, model=model)
+
+        # Ask the same question again. A repair that compiles is not a repair;
+        # the only thing that settles it is whether the fault the user reported
+        # still happens, and saying so plainly is the difference between a fix
+        # and a claim.
+        _report_symptom(seen, _reproduce_complaint(proj_dir, route, complaint,
+                                                   analyzer))
         eprog("Done!", 100)
         edone(f"http://localhost:{DEV_PORT}", proj_name,
               preview=_route_of({"route": route}))
@@ -4236,7 +4950,15 @@ def verify_after_edit(arch, proj_dir: Path, proj_name: str, *,
     if compiling:
 
         _stop_dev_proc()
-        ensure_node_deps(proj_dir)
+
+    # Outside the `compiling` gate on purpose. `check_syntax` parses with the
+    # project's own esbuild and gives up with "esbuild is not installed in this
+    # project" when node_modules is not there — so on every build_rounds=0
+    # path, which is every quick edit, the one check that catches a file the
+    # model truncated mid-function was reporting why it had not run instead of
+    # running. `ensure_node_deps` is a no-op when the dependencies are already
+    # installed, which on an edit path they almost always are.
+    ensure_node_deps(proj_dir)
 
     problems, why_not = check_syntax(proj_dir, arch.files)
     if why_not:
@@ -4303,6 +5025,22 @@ def verify_after_edit(arch, proj_dir: Path, proj_name: str, *,
         report = analyzer.scan()
         mark = dev_log_mark()
         analyzer.probe_routes(report)
+
+        # The whole deterministic suite just ran. Everything it found that is
+        # not a red route used to be dropped here, unlogged: a repair could
+        # introduce a session-cookie mismatch, a dead endpoint or a seed guard
+        # and nobody would ever be told. Repairing them is still not this
+        # function's job — the routes are — but saying them out loud is free.
+        others = [f for f in report.findings if f.code != "ROUTE_ERROR"]
+        blockers = [f for f in others if f.severity == "blocker"]
+        if blockers:
+            elog("WARN", f"   ⚠ {len(blockers)} blocker(s) the edit leaves behind:")
+            for f in blockers[:5]:
+                elog("WARN", f"      {f.line()[:150]}")
+        elif others:
+            elog("INFO", f"   · {len(others)} smaller finding(s) — see the "
+                         f"Testing tab")
+
         failed = [f for f in report.findings if f.code == "ROUTE_ERROR"]
         if failed:
             elog("WARN", f"   ❌ {len(failed)} route(s) failing — repairing")
@@ -4406,7 +5144,7 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
         else:
 
             proj_dir = _project_dir_for(
-                _slug(_srs_app_name(srs_id) or prompt[:40]), "next")
+                _project_slug(_srs_app_name(srs_id), prompt[:40]), "next")
             pname = proj_dir.name
         proj_dir.mkdir(parents=True, exist_ok=True)
         elog("INFO", f"   📁 {proj_dir}")
@@ -4462,7 +5200,13 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
             arch.load_existing()
             left = len(arch.unfinished())
             elog("INFO", f"⏭️  Resuming {pname} — {left} file(s) still missing")
-            ok = arch.resume()
+            # A resume with its conversation intact already has the whole
+            # specification: `start_conversation` baked it into the pinned
+            # preamble and `load_convo` brings it back. It is the fallback —
+            # resuming with no saved thread — that rebuilds the preamble from
+            # the plan alone, and that is the one case where the rest of the
+            # app would be written without ever seeing the SRS.
+            ok = arch.resume(brief=_srs_brief(proj_dir, model) if srs_id else "")
         else:
 
             brief = prompt
@@ -4476,6 +5220,7 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
 
                 brief = (_srs_name_line(proj_dir) + brief
                          + _srs_brief(proj_dir, model))
+            brief += _image_brief_line(proj_dir)
             ok = arch.run(brief)
         if not ok:
             estep("plan", "error")
@@ -4790,6 +5535,7 @@ def run_feature(proj_name: str, request: str, model: str, think: bool = None,
         agent = FeaturesAgent(arch, proj_dir, callbacks=_analyzer_callbacks(),
                               analyzer=analyzer)
         eprog("Writing…", 40)
+        before = dict(arch.files)
         spec = agent.run(request)
         if not spec.written:
             eerr("The feature agent changed nothing")
@@ -4798,6 +5544,16 @@ def run_feature(proj_name: str, request: str, model: str, think: bool = None,
         if spec.rejected:
             elog("WARN", f"   ⛔ {len(spec.rejected)} write(s) outside the plan "
                          f"were dropped")
+
+        # An undo point, which this path has never had. The five small edit
+        # tools each take one; the three paths that can rewrite eight files in
+        # one turn — this, the ask box and a bug repair — took none, so the one
+        # change a user is most likely to want back was the one they could not
+        # get back.
+        touched = [p for p in spec.written if p in before]
+        undo_id = _snapshot(proj_name, touched, before) if touched else ""
+        if undo_id:
+            emit({"type": "undo_point", "id": undo_id, "files": touched})
 
         arch.save_convo()
 
@@ -4837,14 +5593,25 @@ def run_feature(proj_name: str, request: str, model: str, think: bool = None,
 def _feature_tests(arch, proj_dir: Path, spec, model: str, qa_model: str, *,
                    build_ok: bool):
     """
-    Unit-test the feature that was just added, then run the whole suite.
+    Unit-test the feature that was just added — and only it.
 
-    Two separate claims, and both matter. The new files get tests of their own,
-    on the same terms the build's code did — a feature that ships untested is
-    the one place the app's coverage silently goes backwards. And the FULL
-    suite runs afterwards, not just the new tests: the way a feature breaks an
-    app is almost never in its own files, it is in the shared component it
-    edited on the way past.
+    The new files get tests of their own, on the same terms the build's code
+    did: a feature that ships untested is the one place an app's coverage
+    silently goes backwards. Routes count as new files, so an added
+    `app/api/…/route.js` is tested like anything else.
+
+    What runs afterwards is those tests and the tests of the files this feature
+    touched, NOT the whole suite. The suite grows with every build, and re-
+    running all of it to add one page turns a two-minute change into a ten-
+    minute one on a project that is working.
+
+    That is a deliberate trade — see `run_qa_unit_stage`'s `scope`. The break a
+    whole-suite run catches and a scoped one does not is the second-order one:
+    a shared component edited on the way past, breaking a page that was not
+    part of the feature. The component itself is in scope when it was edited;
+    the page that imports it is not. `verify_after_edit` and the route probe
+    still cover the whole app, so a page that has stopped rendering is still
+    caught — by the thing that watches pages rather than by a unit test.
 
     Skipped when the build is red — a failing test against code that does not
     compile says nothing — and when the QA model is local, since QA is
@@ -4883,7 +5650,8 @@ def _feature_tests(arch, proj_dir: Path, spec, model: str, qa_model: str, *,
         ephase({"phase": -15, "title": "Running unit tests", "status": "done"})
         return qa
     try:
-        run_qa_unit_stage(arch, proj_dir, qa, build_ok=True)
+        run_qa_unit_stage(arch, proj_dir, qa, build_ok=True,
+                          scope=spec.written)
     except Exception as e:
         elog("WARN", f"   ⚠ Unit test stage failed: {e}")
         log.exception("feature unit tests")
@@ -5173,7 +5941,10 @@ def run_element_edit(proj_name: str, instruction: str, element: dict,
               "score": res.score, "candidates": res.candidates[:6],
               "used_model": res.used_model, "shared_routes": shared[:12]})
         page_route = _route_of(element)
-        verdict = _scope_verdict(res.path, shared, instruction, route=page_route)
+
+        # The selector does not ask. They clicked the thing they meant.
+        verdict = _scope_verdict(res.path, shared, instruction,
+                                 route=page_route, ask=False)
         if verdict == "asked":
             return
         if verdict == "scoped":
@@ -5197,7 +5968,7 @@ def run_element_edit(proj_name: str, instruction: str, element: dict,
         t_write = time.time()
         ok, written = _element_write_round(arch, res.path, before, instruction,
                                            element, anchor, removing, adding,
-                                           retexting)
+                                           retexting, line=res.line)
         elog("INFO", f"   ⏱ model {time.time() - t_write:.1f}s")
         if not ok:
             ephase({"phase": -11, "title": "Editing the element", "status": "done"})
@@ -5232,6 +6003,91 @@ def run_element_edit(proj_name: str, instruction: str, element: dict,
 
 
 LOCAL_IMPORT_RE = re.compile(r"""from\s+['"]@/(components/[\w./-]+)['"]""")
+
+
+# "I could not find what you pointed at, so I changed nothing."
+#
+# The edit prompts tell the model this is a correct answer, so the studio has
+# to be able to recognise it. It could not: the pattern was written inline as
+# `r"\b(?:does not exist|…"` and what reached the file was a literal BACKSPACE
+# byte where the `\b` was meant — 0x08, inside a raw string, so the pattern
+# demanded a control character no model has ever emitted. It could not match
+# anything. Every refusal fell through to the retry, the retry produced the
+# same refusal, and the user was told "The model returned no file" for a tool
+# that was working exactly as designed. Confirmed with `od -c`; it was the only
+# stray control character in the repository.
+#
+# Named and compiled here so the next edit to it happens somewhere a stray
+# keystroke is visible, and so the pencil path can use the same list — it had
+# no such check at all.
+_DECLINED_RE = re.compile(
+    r"\b(?:"
+    r"does\s+not\s+exist|is\s+not\s+(?:present|there|in\s+the)|not\s+found|"
+    r"could\s+not\s+(?:find|locate)|cannot\s+(?:find|locate)|can't\s+(?:find|locate)|"
+    r"unable\s+to\s+(?:find|locate)|"
+    r"no\s+(?:such|matching|element|section|tools?)\b|"
+    r"nothing\s+(?:to\s+change|matching|matches)|"
+    r"there\s+is\s+no\b|there\s+are\s+no\b|"
+    r"i\s+(?:did\s+not|didn't|do\s+not|don't)\s+(?:find|see|change)|"
+    r"left\s+(?:it\s+)?unchanged|changed\s+nothing|no\s+changes?\s+(?:were\s+)?made"
+    r")",
+    re.I)
+
+
+def _where_in_file(before: str, element: dict, line: int = 0) -> str:
+    """
+    The exact source line the clicked element is written on, quoted back.
+
+    The one thing the edit prompt never said. `ElementResolver` returns a line
+    number, the log prints it — `📍 app/login/page.jsx:53` — and then it is
+    dropped: `_element_write_round` is not passed it and the prompt has no
+    place for it. The model was handed five kilobytes of source, a one-line
+    description of a `<div>` and "make this more premium", and told to find it
+    on its own. On a page where six divs carry similar Tailwind it picks one of
+    them, and which one is a coin toss — the change lands on the child, or the
+    parent, or the sibling, and the tool reads as not working when what it did
+    was answer a question nobody had pinned down.
+
+    Quoting the source line verbatim is what makes it exact: it is a string the
+    model can match, not a coordinate it has to trust.
+
+    The line number is often 0 — the resolver scores whole files and only
+    sometimes comes back with a position (`📍 …:?` is that case). So the class
+    list and the text are searched for as well, and the search is the reliable
+    half: a className copied out of the live DOM appears verbatim in the JSX
+    that produced it.
+    """
+    lines = before.splitlines()
+    if not lines:
+        return ""
+
+    def quote(n: int) -> str:
+        return (f"It is written on line {n + 1}:\n"
+                f"{lines[n]}\n\n"
+                f"That is the element they pointed at. Change what THAT tag "
+                f"renders — not the tag above it, not the one nested inside "
+                f"it, and not a sibling that happens to look similar.")
+
+    if 0 < line <= len(lines):
+        return quote(line - 1)
+
+    # The class list as the browser reported it. Tailwind class strings are
+    # long and specific, so the first one that appears verbatim is the element.
+    classes = str(element.get("className") or "").strip()
+    if classes:
+        for probe in (classes, " ".join(classes.split()[:4])):
+            if not probe:
+                continue
+            for n, text in enumerate(lines):
+                if probe in text:
+                    return quote(n)
+
+    text = str(element.get("text") or "").strip()[:40]
+    if len(text) >= 4:
+        for n, row in enumerate(lines):
+            if text in row:
+                return quote(n)
+    return ""
 
 
 def _section_span(element: dict) -> str:
@@ -5346,25 +6202,36 @@ def _shared_routes(arch, rel: str) -> list:
 
 
 def _scope_verdict(rel: str, shared: list, instruction: str,
-                   route: str = "") -> str:
+                   route: str = "", ask: bool = True) -> str:
     """
     `""` go ahead · `"scoped"` do it for this route only · `"asked"` stop.
 
-    The picker paths edit exactly the file they resolve to, and a click on a
-    footer resolves to the file that RENDERS it — usually a layout or a shared
-    component. So "remove the footer", said while looking at /login, quietly
-    took it off the whole site, and the preview afterwards showed /login,
-    where it did indeed look right.
+    A file that renders on several routes cannot be edited on one of them. A
+    click on a footer resolves to the file that RENDERS it — usually a layout
+    or a shared component — so "remove the footer", said while looking at
+    /login, takes it off the whole site, and the preview afterwards shows
+    /login, where it does indeed look right.
 
-    Asking rather than guessing was the explicit call. A wrong guess either
-    deletes something from eleven pages nobody was looking at, or refuses what
-    was plainly asked; neither is recoverable without noticing, and one of them
-    is not noticeable at all.
+    `looks_like_global` and `looks_like_page_only` read the answer out of the
+    instruction itself, both of them, because "on /login only" is not global
+    and reading only the first would ask the same question forever.
 
-    No new protocol: the question goes out as log lines and the next
-    instruction is the answer. Which means the answer has to be recognised —
-    hence `looks_like_page_only` as well as `looks_like_global`, or "on /login
-    only" is not global, and the same question gets asked forever.
+    `ask=False` is for the tools where the user has already pointed at the
+    thing. With the selector and the pencil they put the cursor on a section
+    and said what to do with it; the section IS the answer, and stopping to ask
+    which routes they meant is asking them to repeat themselves. There the
+    reach is logged and the edit goes ahead. It stays on by default for the
+    paths driven by a typed sentence, where nothing was pointed at and the file
+    was chosen by resolution rather than by the user.
+
+    When it does ask, the turn is OVER. Every caller returns on "asked" and
+    none of them emitted anything after it, so the studio never learned the run
+    had stopped: `busy` stayed true, and the ask box — the one place the answer
+    could be typed — is disabled while busy. The question was asked and the way
+    to answer it was switched off in the same breath, which is a deadlock with
+    a spinner on it, reading "Waiting for you" forever. So it ends the turn
+    explicitly; there is nothing left running, and saying so is what puts the
+    box back.
     """
     if len(shared) <= 1:
         return ""
@@ -5377,6 +6244,16 @@ def _scope_verdict(rel: str, shared: list, instruction: str,
         elog("INFO", f"   📐 {rel} is on {len(shared)} routes — changing "
                      f"{where} only, as asked")
         return "scoped"
+    if not ask:
+        # Said, not asked. The reach is still worth knowing — it is the
+        # difference between a restyle and a site-wide one — but it is a fact
+        # about what is happening, not a question holding it up.
+        elog("WARN", f"   🌐 {rel} is on {len(shared)} routes, so this changes "
+                     f"all of them: {', '.join(shared[:6])}"
+                     + (f" (+{len(shared) - 6} more)" if len(shared) > 6 else ""))
+        elog("INFO", f"      Add “— on {where} only” next time to keep the "
+                     f"others as they are.")
+        return ""
     elog("WARN", f"   🛑 Not done yet — that lives in {rel}, which is rendered "
                  f"on {len(shared)} routes, not just {where}:")
     elog("WARN", f"      {', '.join(shared[:8])}"
@@ -5390,6 +6267,11 @@ def _scope_verdict(rel: str, shared: list, instruction: str,
           "options": [f"{instruction.strip()[:60]} — on {where} only",
                       f"{instruction.strip()[:60]} — everywhere"]})
     eprog("Waiting for you", 0)
+
+    # No project and no url: this is "the turn stopped", not "the app is
+    # built". `done` carrying an empty project leaves the one the studio
+    # already has alone, and clears `busy`, which is the whole point.
+    edone("", "", preview=route or "/")
     return "asked"
 
 
@@ -5650,11 +6532,14 @@ def _edit_rules(adding: bool) -> str:
 
 
 def _element_write_round(arch, path, before, instruction, element, anchor,
-                         removing, adding=False, retexting=False, attempts=2):
+                         removing, adding=False, retexting=False, attempts=2,
+                         line=0):
     """Ask for the rewrite; reject anything that overran and retry once."""
     near = _neighbours(arch, path, before)
     span = _section_span(element)
+    where = _where_in_file(before, element, line)
     user = (f"## The element the user clicked\n{describe(element)}\n\n"
+            + (f"## Where it is\n{where}\n\n" if where else "")
             + (f"## The section they selected — it runs from the first of "
                f"these to the second\n{span}\n\n" if span else "")
             + f"Route: {element.get('route', '/')}\n\n"
@@ -5701,8 +6586,14 @@ def _element_write_round(arch, path, before, instruction, element, anchor,
 
             head = " ".join(reply.split())[:300] or "(empty response)"
 
-            if re.search(r"(?:does not exist|is not present|not found|"
-                         r"cannot find|no (?:such|tools|section))", reply, re.I):
+            # A reply with no file in it is as likely to be obedience as it is
+            # failure: `ELEMENT_EDIT_SYSTEM` tells the model that "I cannot
+            # find it, so I changed nothing" is the RIGHT answer. The two need
+            # opposite handling — retrying a refusal is how a model gets
+            # pushed into inventing a replacement for something that was never
+            # there, and reporting one as a failure is a working tool calling
+            # itself broken.
+            if _DECLINED_RE.search(reply):
                 elog("INFO", f"   ✅ Nothing to change — {head[:160]}")
                 eerr("That element is not on this page — nothing was changed")
                 return False, ""
@@ -5715,7 +6606,13 @@ def _element_write_round(arch, path, before, instruction, element, anchor,
                     "starting immediately with '<write_file'. No markdown "
                     "fences, no explanation, no summary."})
                 continue
-            eerr("The model returned no file")
+
+            # What it said, not only that it said nothing usable. The model's
+            # own words were already logged as a WARN and scrolled away, so the
+            # message that reached the user was the one sentence in the whole
+            # exchange that could not be acted on.
+            eerr(f"The model returned no file after {attempts} attempts. "
+                 f"It said: {head[:220]}")
             return False, ""
 
         why = None
@@ -5768,7 +6665,7 @@ def _vision_model(preferred: str) -> str:
 
 
 def _pencil_write_round(arch, path, before, instruction, element, shot,
-                        vis_model, payload, attempts=2):
+                        vis_model, payload, attempts=2, line=0):
     vp = payload.get("viewport") or {}
     text = (f"Route: {element.get('route') or payload.get('route') or '/'}   "
             f"Viewport: {vp.get('w', '?')}×{vp.get('h', '?')} "
@@ -5785,6 +6682,13 @@ def _pencil_write_round(arch, path, before, instruction, element, shot,
                  "below.\n")
     if element:
         text += f"\nElement under the drawing:\n{describe(element)}\n"
+        # Same gap the selector had: the picture shows WHERE, and the source
+        # is five kilobytes of JSX with no marker in it saying which tag the
+        # red line was drawn over. A vision model matching a rendered card to
+        # one of six similar divs by eye is guessing; the quoted line is not.
+        where = _where_in_file(before, element, line)
+        if where:
+            text += f"\nWhere that is in the source:\n{where}\n"
     text += (f"\n## What the user asked for\n{instruction}\n\n"
              f"## The complete current source of {path}\n{before}")
 
@@ -5803,16 +6707,54 @@ def _pencil_write_round(arch, path, before, instruction, element, shot,
             on_file_start=lambda p: None,
             on_file_token=lambda t: None,
             on_file_end=lambda p, c: got.__setitem__("body", c))
+
+        # The reply is kept, not just parsed.
+        #
+        # `parser.feed` went in as the delta handler and nothing else saw the
+        # tokens, so when the model answered with prose instead of a file there
+        # was no prose left to look at: the pencil could only ever report "The
+        # model returned no file", which names the symptom and destroys the
+        # evidence. This runs on `vis_model` — a DIFFERENT model from the rest
+        # of the studio, borrowed for its vision — so "what did it say" is the
+        # first question worth asking and the one that could not be answered.
+        raw = []
+
+        def feed(token):
+            raw.append(token)
+            parser.feed(token)
+
         try:
-            arch._stream(convo, parser.feed, temperature=0.4,
+            arch._stream(convo, feed, temperature=0.4,
                          model=vis_model, timeout=arch.EDIT_TIMEOUT)
         except Exception as e:
             eerr(f"The model failed: {e}")
             return False, ""
         parser.close()
+        reply = "".join(raw)
         body = got.get("body", "")
         if not body:
-            eerr("The model returned no file")
+            head = " ".join(reply.split())[:300] or "(empty response)"
+            if _DECLINED_RE.search(reply):
+                elog("INFO", f"   ✅ Nothing to change — {head[:160]}")
+                eerr(f"That region was not found in {path}, so nothing was "
+                     f"changed. {vis_model} said: {head[:200]}")
+                return False, ""
+            elog("WARN", f"   ⚠ no <write_file> block — {vis_model} said: {head}")
+
+            # And it gets the second chance the selector path already had.
+            # A vision model handed a screenshot is markedly more likely to
+            # answer with a description of what it sees; asked once for the
+            # file and nothing else, it usually complies.
+            if attempt < attempts:
+                convo.append({"role": "assistant", "content": reply[:2000]})
+                convo.append({"role": "user", "content":
+                    "That was not a file. Output the COMPLETE file inside "
+                    f"one <write_file path=\"{path}\">…</write_file> block, "
+                    "starting immediately with '<write_file'. No markdown "
+                    "fences, no description of the image, no explanation."})
+                continue
+            eerr(f"{vis_model} returned no file after {attempts} attempts. "
+                 f"It said: {head[:220]}")
             return False, ""
 
         # Only a broken file is refused now, never a big edit. The old ceiling
@@ -5872,7 +6814,9 @@ def run_pencil_edit(proj_name: str, instruction: str, payload: dict,
         emit({"type": "element_picked", "file": res.path, "line": res.line,
               "score": res.score, "candidates": res.candidates[:6],
               "used_model": res.used_model, "shared_routes": shared[:12]})
-        verdict = _scope_verdict(res.path, shared, instruction, route=route)
+        # Nor does the pencil. They drew over the region they meant.
+        verdict = _scope_verdict(res.path, shared, instruction, route=route,
+                                 ask=False)
         if verdict == "asked":
             return
         if verdict == "scoped":
@@ -5915,7 +6859,7 @@ def run_pencil_edit(proj_name: str, instruction: str, payload: dict,
         mark = dev_log_mark()
         ok, written = _pencil_write_round(arch, res.path, before, instruction,
                                           element, shot, vis_model or model,
-                                          payload)
+                                          payload, line=res.line)
         ephase({"phase": -13, "title": "Redesigning", "status": "done",
                 "written": 1 if ok else 0})
         if not ok:
@@ -6034,9 +6978,16 @@ def run_page_update(proj_name: str, instruction: str, model: str, route: str,
                                  callbacks=_analyzer_callbacks())
         path = _page_file_for(arch, analyzer, route)
         if not path or path not in arch.files:
-            eerr(f"No page file found for {route or '/'} — use the Feature "
-                 f"tab for changes that span more than one page")
-            return
+            # Hand it to the planner rather than refusing. A dynamic route —
+            # /mechanic/complete/64f1… — resolves to no single file, and this
+            # used to be a dead end: the router sends a restyle here, the page
+            # cannot be found, and the user gets an error for a request that
+            # the feature path would have handled. Telling somebody to "use the
+            # Feature tab" is also stale advice now that nothing asks them to
+            # choose a tab.
+            elog("INFO", f"   ↪ {route or '/'} is not one page — planning it "
+                         f"as a change instead")
+            return run_feature(proj_name, instruction, model, think)
 
         before = arch.files[path]
         elog("INFO", f"📄 Page update — {route or '/'} → {path}")
@@ -6144,7 +7095,10 @@ def run_page_update(proj_name: str, instruction: str, model: str, route: str,
         if not got:
             head = " ".join("".join(raw).split())[:300] or "(empty response)"
             elog("WARN", f"   ⚠ no <write_file> block — model said: {head}")
-            eerr("The model returned no file")
+            if _DECLINED_RE.search("".join(raw)):
+                eerr(f"Nothing was changed — the model said: {head[:220]}")
+                return False, ""
+            eerr(f"The model returned no file. It said: {head[:220]}")
             return
 
         olds, keep = {}, {}
@@ -6298,6 +7252,101 @@ def _deploy_marker(project_dir: Path) -> dict | None:
     return {"state": "deployed", "target": target}
 
 
+def delete_project(proj_name: str) -> dict:
+    """
+    Remove a project from disk, and its database with it.
+
+    Irreversible, so the fences come first and there are four of them:
+
+      * the name is reduced to a single path segment, so nothing arriving over
+        HTTP can name a directory outside `production-ready`;
+      * a leading dot is refused by name — `.srs` holds every staged
+        specification for every project, and it sits in the same directory;
+      * the resolved path must still be a directory INSIDE `PROD_DIR`, checked
+        after resolution rather than before, so a symlink pointing out of it
+        cannot be followed;
+      * the dev server is stopped first when it is the one being served. A
+        running node holds `.next/` open, and on Windows that turns the delete
+        into a half-removed project.
+
+    The database goes too. `db_name_for` derives it from the folder name, so a
+    project deleted and later rebuilt under the same name would otherwise
+    inherit the old rows and never re-seed — which is the bug `reset_project_db`
+    exists for. That call has its own fencing (it refuses a URI the user
+    configured, and any database not named `agentforge_*`), so a Mongo the user
+    owns is never touched. Best effort: a project whose `.env.local` is gone
+    still deletes, and the log says why the database was left.
+
+    Returns as soon as the project is GONE from the list, which is a rename;
+    the bytes and the database follow on a thread. See below for why.
+    """
+    name = str(proj_name or "").strip().replace("\\", "/")
+    if not name or "/" in name or name in (".", "..") or name.startswith("."):
+        return {"error": f"{proj_name!r} is not a project name"}
+
+    proj_dir = PROD_DIR / name
+    try:
+        resolved = proj_dir.resolve()
+        resolved.relative_to(PROD_DIR.resolve())
+    except (ValueError, OSError):
+        return {"error": f"{name} is outside production-ready"}
+    if not resolved.is_dir():
+        return {"error": f"no such project: {name}"}
+
+    if active_vite.get("dir") == str(resolved):
+        elog("INFO", f"   ⏹ Stopping the dev server before deleting {name}")
+        _stop_dev_proc()
+        _kill_port(DEV_PORT)
+        active_vite["dir"] = None
+
+    # Renamed now, emptied later.
+    #
+    # `shutil.rmtree` over a project is not a quick operation: `node_modules`
+    # alone is tens of thousands of files, and on Windows the walk took long
+    # enough that the Next rewrite in front of this API — which abandons any
+    # request at 30 seconds — closed the socket while the delete was still
+    # running. The delete SUCCEEDED and the studio saw a dead connection, so
+    # the log said "Deleted" and the browser said it had failed.
+    #
+    # A rename inside the same directory is one metadata write. The project
+    # disappears from `list_projects` immediately (it skips dotted names), the
+    # response goes back in milliseconds, and the bytes go on a thread where
+    # taking a minute costs nobody anything.
+    trash = PROD_DIR / f".trash-{name}-{int(time.time())}"
+    try:
+        resolved.rename(trash)
+    except OSError as e:
+        return {"error": f"could not delete {name}: {e}"}
+
+    DEPLOY_RUNS.pop(name, None)
+
+    def _finish():
+        # The database first, while its `.env.local` still exists — the drop
+        # reads the name out of it.
+        dropped, why = "", ""
+        try:
+            r = MONGO.reset_project_db(trash, node_bin=NODE_BIN)
+            dropped = r.get("db", "") if r.get("ok") else ""
+            why = "" if dropped else str(r.get("error", "") or "")
+        except Exception as e:                                   # noqa: BLE001
+            why = f"{type(e).__name__}: {e}"
+        elog("INFO", f"   🗑 Deleted {name}"
+                     + (f" and its database {dropped}" if dropped else
+                        f" — its database was left ({why or 'no reason given'})"))
+        try:
+            shutil.rmtree(trash, ignore_errors=True)
+        except Exception as e:                                   # noqa: BLE001
+            log.debug(f"emptying {trash.name}: {e}")
+        # Anything a previous crash left behind goes with it, so the folder
+        # cannot fill up with half-deleted projects nobody can see.
+        for old in PROD_DIR.glob(".trash-*"):
+            if old != trash:
+                shutil.rmtree(old, ignore_errors=True)
+
+    threading.Thread(target=_finish, daemon=True).start()
+    return {"ok": True, "project": name}
+
+
 def list_projects() -> list:
     """Return all projects in production-ready/ with metadata."""
     projects = []
@@ -6371,6 +7420,57 @@ FILE_PRIORITY = [
 ]
 MAX_LISTED_FILES = 120
 MAX_FILE_BYTES = 256_000
+
+
+def save_project_file(proj_name: str, rel: str, content: str) -> dict:
+    """
+    Write one file a person edited in the code pane. `{"error": …}` if not.
+
+    Deliberately NOT `ArchitectAgent.write_file`. That one canonicalises the
+    path, deletes a `.js` twin of a `.jsx`, and refuses paths the build is not
+    supposed to touch — every bit of it right for a model writing a file it
+    named itself, and wrong for a person who opened a file, changed a line and
+    pressed save. What they had on screen is what goes to disk, at the path it
+    came from.
+
+    The path is still resolved and checked against the project root, because
+    the path arrives over HTTP: `..\\..\\` in it walks out of the project and
+    writes wherever it likes, and a studio bound to the LAN would hand that to
+    anyone on it.
+    """
+    proj_dir = PROD_DIR / _safe_stem(proj_name, "")
+    if not proj_dir.is_dir():
+        return {"error": f"no such project: {proj_name}"}
+
+    rel = str(rel or "").replace("\\", "/").strip().lstrip("/")
+    if not rel:
+        return {"error": "no path given"}
+    try:
+        target = (proj_dir / rel).resolve()
+        target.relative_to(proj_dir.resolve())
+    except (ValueError, OSError):
+        return {"error": f"{rel} is outside the project"}
+
+    if target.suffix not in SRC_EXT | {".json", ".md", ".mjs", ".cjs", ".txt"}:
+        return {"error": f"{target.suffix or 'that kind of file'} is not editable here"}
+    if len(content) > MAX_FILE_BYTES:
+        return {"error": f"{len(content):,} characters is past the "
+                         f"{MAX_FILE_BYTES:,} limit"}
+
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8", newline="")
+    except OSError as e:
+        return {"error": f"could not write {rel}: {e}"}
+
+    size = (f"{len(content)/1024:.1f}KB" if len(content) >= 1024
+            else f"{len(content)}B")
+    elog("INFO", f"   💾 {rel} saved by hand ({size})")
+
+    # Every studio window watching this project gets the new bytes, the same
+    # way it would if an agent had written them.
+    efile(rel, size, content)
+    return {"ok": True, "path": rel, "size": size}
 
 
 def get_project_files(proj_name: str) -> dict:
@@ -6784,7 +7884,8 @@ async def ws_handler(websocket, path=None):
                             target=run_chat,
                             args=(proj, p, am, (msg.get("route") or "").strip(),
                                   _think_flag(msg),
-                                  (msg.get("qa_model") or "").strip()),
+                                  (msg.get("qa_model") or "").strip(),
+                                  _browser_console(msg)),
                             daemon=True).start()
                 elif msg.get("type") == "agent_update":
                     proj = msg.get("project", "").strip()
@@ -6793,10 +7894,22 @@ async def ws_handler(websocket, path=None):
                     rt   = (msg.get("route") or "").strip()
                     if proj and p:
 
+                        # Through the router, not straight to `arch.update()`.
+                        #
+                        # `run_chat` reads the sentence and picks the tool: a
+                        # complaint goes to the bug path, which reproduces it
+                        # before editing; a request goes to `run_feature`,
+                        # which plans and shows the plan; a restyle of the page
+                        # in front of them goes to `run_page_update`. All of it
+                        # was already written and none of it was reachable —
+                        # nothing in the studio has ever sent `type: "chat"`,
+                        # so every message typed into the ask box landed on the
+                        # one path with no plan, no allowlist and no snapshot.
                         threading.Thread(
-                            target=(run_page_update if rt else run_agent_update),
-                            args=((proj, p, am, rt, _think_flag(msg)) if rt
-                                  else (proj, p, am, _think_flag(msg))),
+                            target=run_chat,
+                            args=(proj, p, am, rt, _think_flag(msg),
+                                  (msg.get("qa_model") or "").strip(),
+                                  _browser_console(msg)),
                             daemon=True).start()
                 elif msg.get("type") == "pencil_edit":
                     proj = msg.get("project", "").strip()
@@ -7025,8 +8138,14 @@ class UIHandler(SimpleHTTPRequestHandler):
             self._json(list_projects())
         elif path == "/image-check":
 
+            # Asked again every time the switch is flipped, so it must be a
+            # live probe and not a remembered answer: Fooocus is started and
+            # stopped by hand, and a studio that decided at boot that nothing
+            # was answering would go on saying so all day. `image_agent()`
+            # builds a fresh agent, whose `base_url` caches only within itself.
             agent = image_agent()
             host = agent.base_url()
+            launcher = _fooocus_launcher()
 
             import socket
             lan = ""
@@ -7037,6 +8156,8 @@ class UIHandler(SimpleHTTPRequestHandler):
                     lan = ""
             self._json({"enabled": agent.enabled, "available": bool(host),
                         "host": host or "", "lan_url": lan,
+                        "launcher": launcher,
+                        "can_start": bool(launcher and not host),
                         "lan_access": bool(load_settings().get("lan_access"))})
         elif path == "/models":
 
@@ -7201,6 +8322,27 @@ class UIHandler(SimpleHTTPRequestHandler):
                 daemon=True
             ).start()
             self._json({"ok": True})
+        elif path == "/delete-project":
+            body = self._body()
+            out = delete_project(str(body.get("project", "")))
+            self._json(out, 400 if out.get("error") else 200)
+        elif path == "/save-file":
+            body = self._body()
+            out = save_project_file(str(body.get("project", "")),
+                                    str(body.get("path", "")),
+                                    str(body.get("content", "")))
+            self._json(out, 400 if out.get("error") else 200)
+        elif path == "/image-start":
+
+            # Turning the switch on is the moment somebody wants pictures, and
+            # it is also the moment they find out Fooocus is not running. It is
+            # a separate program with a separate window and a two-minute cold
+            # start, so this only fires it off — the caller polls
+            # `/image-check` until it answers.
+            why = start_fooocus()
+            if why:
+                return self._json({"error": why}, 503)
+            self._json({"ok": True, "launcher": _fooocus_launcher()})
         elif path == "/logo-prompt":
 
             body = self._body()
@@ -7363,16 +8505,15 @@ class UIHandler(SimpleHTTPRequestHandler):
             self._json({"ok": True})
         elif path == "/agent-update":
             body = self._body()
+            # Same router as the websocket path above, so the fallback the
+            # studio uses when the socket is down behaves identically.
             threading.Thread(
-                target=(run_page_update if (body.get("route") or "").strip()
-                        else run_agent_update),
-                args=((body.get("project", ""), body.get("prompt", ""),
-                       body.get("model") or default_agent_model(),
-                       (body.get("route") or "").strip(), _think_flag(body))
-                      if (body.get("route") or "").strip() else
-                      (body.get("project", ""), body.get("prompt", ""),
-                       body.get("model") or default_agent_model(),
-                       _think_flag(body))),
+                target=run_chat,
+                args=(body.get("project", ""), body.get("prompt", ""),
+                      body.get("model") or default_agent_model(),
+                      (body.get("route") or "").strip(), _think_flag(body),
+                      (body.get("qa_model") or "").strip(),
+                      _browser_console(body)),
                 daemon=True
             ).start()
             self._json({"ok": True})
@@ -7400,6 +8541,8 @@ class UIHandler(SimpleHTTPRequestHandler):
                 patch["image_host"] = str(body["image_host"]).strip()
             if "image_config" in body:
                 patch["image_config"] = str(body["image_config"]).strip()
+            if "image_launcher" in body:
+                patch["image_launcher"] = str(body["image_launcher"]).strip()
             if body.get("local_num_ctx"):
                 try:
                     patch["local_num_ctx"] = max(4096, int(body["local_num_ctx"]))

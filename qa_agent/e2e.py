@@ -51,6 +51,12 @@ from .spec import TestFailure
 log = logging.getLogger("qa.e2e")
 
 TEMPERATURE = 0.3
+
+# One scenario is a few dozen lines. Without a budget of its own the call
+# inherits `chat_stream`'s 1800s, which is the ceiling for a whole build — and
+# this is the stage somebody is waiting on after the unit tests go green.
+CALL_BUDGET = 300
+
 STEP_TIMEOUT = 15_000
 
 
@@ -321,7 +327,8 @@ class E2EAgent:
                                   on_file_end=lambda p, c: None)
         try:
             self.arch._stream(convo, parser.feed, temperature=TEMPERATURE,
-                              model=QASession.model_for(self.qa, self.arch))
+                              model=QASession.model_for(self.qa, self.arch),
+                              timeout=CALL_BUDGET)
         except Exception as e:
             self._log("WARN", f"   ⚠ could not write an end-to-end flow: {e}")
             return Scenario()

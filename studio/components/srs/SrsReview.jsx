@@ -7,7 +7,7 @@ import {
 import { api, API } from '@/lib/api'
 import { useStore } from '@/lib/store'
 import { loadSrsView, srsViewFromVersion } from '@/lib/srs-view'
-import { Badge, Button, Empty, Panel } from '../ui'
+import { Badge, Button, Empty, Panel, TextArea } from '../ui'
 import { VIEWS, badgeFor } from './views'
 import { cn } from '@/lib/utils'
 
@@ -177,7 +177,7 @@ export default function SrsReview({ projectId, onApproved, onBack }) {
           </div>
 
           <div className="border-t border-line p-2">
-            <textarea value={prompt} rows={3} ref={box} disabled={Boolean(busy)}
+            <TextArea value={prompt} rows={3} ref={box} disabled={Boolean(busy)}
                       placeholder="Describe a change — “add a refunds page only the manager can open”…"
                       onChange={e => setPrompt(e.target.value)}
                       onKeyDown={e => {

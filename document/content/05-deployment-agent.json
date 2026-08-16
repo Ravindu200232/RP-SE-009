@@ -1,0 +1,497 @@
+{
+ "title": "The Deployment Agent \u2014 CI, AWS and Vercel delivery for a generated Next.js app",
+ "one_liner": "A thread-per-request HTTP service that takes a built Next.js application, writes it the CI/CD workflows and infrastructure it needs, stops for a human's approval, then puts it on AWS EC2, AWS ECS Fargate or Vercel \u2014 watching it until it answers, and able to stop it and delete it again.",
+ "overview": "The deployment agent is a copy of a standalone product (DeployForge) mounted inside AgentForge's own process, and it is deliberately kept as a copy: deploy_agent/__init__.py says a future re-sync should be a directory copy, not a merge. Every AgentForge-specific seam is collected in deploy_agent/bridge.py, and only three files in the copy import it \u2014 config.py (where state.db lives), tools.py (which Ollama the readiness probe asks) and orchestrator.py (which model writes the plan). Two things were renamed because AgentForge has a module of each name at the root of sys.path: agents/ became dfagents/, server.py became dfserver.py.\n\nA deployment is two halves separated by a human. The first half touches neither the user's repository nor any cloud account. IntakeAgent copies the project into an isolated worktree under production-ready/.deploy/runs/<id>/worktree; PlannerAgent asks a Gemma model for a schema-validated plan; ArtifactGeneratorAgent writes the CI workflows, the CloudFormation template (or the Vercel config), the release script and a set of bounded source patches into that copy; SecurityValidatorAgent checks them; and the orchestrator runs a real install and build inside the staged copy to find out whether the thing actually compiles. The run parks at REVIEW_READY with a readiness score and a unified diff the studio renders.\n\nThe second half re-verifies every artifact's SHA-256 against what was reviewed, applies the bootstrap CloudFormation stack (or links the Vercel project), writes the runtime secret, hands GitHub the variables and secrets its workflows read, copies the reviewed files into the real repository, commits, pushes, and then watches the GitHub Actions run it triggered. Everything that could differ per provider is a fact in a table (providers/spec.py: TargetProfile) rather than a subclass; the only genuine behavioural variance is \"get the provider ready and tell me what to put into GitHub\", which is what ProviderPrep carries.\n\nThe run itself is a real state machine enforced in SQLite: StateStore.transition_run raises on any edge not in ALLOWED_TRANSITIONS. A supervisor sweeps every 15 seconds for runs abandoned by a process restart. A great deal of the code exists because of specific, measured failures \u2014 a build that needed a database to compile, an OIDC provider a redeployment deleted out from under itself, a deployment stuck in VALIDATING for a day that could not be deleted \u2014 and the docstrings name them.",
+ "features": [
+  {
+   "name": "Generated CI workflow with a real MongoDB service container",
+   "what": "ci.yml runs on pull_request and on push to the detected branch, path-filtered to the service root. The single validate job declares a mongo:7 service on 27017:27017 with a mongosh ping health check (10s interval, 5s timeout, 10 retries), installs, builds with the placeholder environment, runs a production-only dependency audit (continue-on-error, gated on hashFiles of the lockfile), and on the EC2 target asserts that .next/standalone/server.js exists.",
+   "where": "deployment-agent/deploy_agent/dfagents/generator.py (_ci_workflow, _build_services_yaml, _toolchain)"
+  },
+  {
+   "name": "AWS EC2 deployment workflow: S3 plus SSM Run Command",
+   "what": "deploy.yml builds, packages .next/standalone (copying .next/static in, and public/ if it exists) into /tmp/app.tar.gz, assumes the deploy role over GitHub OIDC, uploads the tarball and deploy/release.sh to S3 under releases/<sha>/, dispatches AWS-RunShellScript over SSM with a 600-second timeout, then polls get-command-invocation itself 60 times at 5s \u2014 the invocation is not queryable the instant send-command returns, and the built-in waiter caps out below the release timeout. It finishes by curling the stack's ApplicationUrl output plus the health path.",
+   "where": "deployment-agent/deploy_agent/dfagents/generator.py (_deploy_workflow)"
+  },
+  {
+   "name": "The EC2 release script, run on the instance",
+   "what": "Fetched from S3 per deployment rather than baked into UserData, so changing it does not require replacing the instance. It unpacks into /opt/app/releases/<sha>, rebuilds /opt/app/shared/.env from Secrets Manager through a jq allow-list of exactly the keys the contract declares, swaps the current symlink atomically with mv -Tf, restarts the nextjs systemd unit, polls the health path 30 times at 2s, prunes to the five most recent releases so rollback has somewhere to go, and dumps journalctl -u nextjs -n 50 on failure.",
+   "where": "deployment-agent/deploy_agent/dfagents/generator.py (_release_script)"
+  },
+  {
+   "name": "AWS ECS Fargate path, image built on the runner and never locally",
+   "what": "A three-stage Dockerfile, a Fargate task definition and an ECS deploy workflow that logs into ECR, runs docker build with --network=host, tags with github.sha and never :latest, renders the task definition with an inline python3 heredoc, registers the revision, calls update-service --desired-count 1 and then aws ecs wait services-stable so a stalled rollout fails the workflow instead of reporting a green deploy over the old image. required_tools for this target is git, gh, aws \u2014 Docker is deliberately absent.",
+   "where": "deployment-agent/deploy_agent/dfagents/generator.py (_ecs_deploy_workflow, _dockerfile, _task_definition), deployment-agent/deploy_agent/deployment_agent/providers/spec.py"
+  },
+  {
+   "name": "Bounded, declared source patches for deployment compatibility",
+   "what": "Adds output: standalone to the Next config (or creates a minimal one), adds a GET /api/health route if none exists (App Router or Pages), rewrites an eager lib/mongodb.js to connect on first use, defers the Better Auth catch-all route's handler to the first request, strips an explicit baseURL from the auth client so it is same-origin behind nginx, and adds export const dynamic = force-dynamic to pages and layouts that read the database. Every patch is recorded with a path, a reason and a change, and shows up in the reviewable diff.",
+   "where": "deployment-agent/deploy_agent/dfagents/generator.py (_apply_compatibility_patches)"
+  },
+  {
+   "name": "Local production build as a gate, not a suggestion",
+   "what": "The orchestrator runs the real install and build commands inside the staged copy with NODE_ENV cleared and the placeholder MONGODB_URI set, scores 15 points for a pass and 8 for a fail, parses the npm audit summary out of the output to cap the security category, and on the AWS targets fails the build itself if .next/standalone/server.js was not produced. Deployment is refused unless the build category is at least 15.",
+   "where": "deployment-agent/deploy_agent/deployment_agent/orchestrator.py (_validate_build), deployment-agent/deploy_agent/dfagents/deployer.py (_validate_request)"
+  },
+  {
+   "name": "One bounded model-chosen repair attempt after a failed build",
+   "what": "If the build fails, the planner is shown the last 8000 characters of redacted output and may pick only from four predefined actions (ensure-standalone-output, ensure-type-safe-health-route, same-origin-auth, normalize-alert-variant) or none. The generator applies only those, re-validates and rebuilds. The alert-variant repair scans at most 2000 files, skips anything over 512 KB, and only normalizes an unsupported Alert variant to the component default.",
+   "where": "deployment-agent/deploy_agent/dfagents/planner.py (repair_build, BUILD_REPAIR_SCHEMA), deployment-agent/deploy_agent/dfagents/generator.py (repair_compatibility)"
+  },
+  {
+   "name": "Artifact integrity re-check between review and deploy",
+   "what": "_validate_request reloads the manifest, checks its schema version is exactly 3, checks the runtime strategy matches the target profile, checks the persisted artifact set equals agent_owned_files, and re-hashes every staged file against its recorded SHA-256. When copying into the real repository, a file that existed before must still match its recorded original hash or the run aborts with 'Source file changed after review; re-run analysis'.",
+   "where": "deployment-agent/deploy_agent/dfagents/deployer.py (_validate_request, _apply_reviewed_artifacts)"
+  },
+  {
+   "name": "Push, or open a pull request when the branch is protected",
+   "what": "Stages everything except .env value files, node_modules, .next and .vercel, force-adds .env.example, refuses outright to commit any staged file whose name begins with .env and is not .env.example, then pushes to the default branch. If that push is rejected it pushes deployment-agent/<run8> and opens a PR instead, and the run parks in CI_RUNNING with a waiting event carrying the PR URL. Git authenticates through a per-invocation gh auth git-credential helper rather than mutating the user's global config.",
+   "where": "deployment-agent/deploy_agent/dfagents/deployer.py (_commit_and_push, github_credential_args)"
+  },
+  {
+   "name": "In-app AWS onboarding: SSO device flow, quotas, permission simulation",
+   "what": "Drives the IAM Identity Center device authorization flow so the operator never types a credential; the browser only sees a verification URL, a user code, account and role names, and an opaque vault reference. It compares the target's service quotas against current usage and simulates the target's required IAM actions with SimulatePrincipalPolicy, reporting unknown rather than blocked when the identity cannot introspect itself. It can also emit a CloudFormation template an administrator applies once to grant the permissions.",
+   "where": "deployment-agent/deploy_agent/deployment_agent/aws_onboarding.py, deployment-agent/deploy_agent/deployment_agent/credentials.py"
+  },
+  {
+   "name": "MongoDB URI preflight that names the actual problem",
+   "what": "Connects and pings with a 6-second budget before any cloud resource is touched, and classifies the failure as auth, dns, unreachable (almost always the Atlas IP allowlist) or malformed. It rejects query options the Node driver does not know, because those pass this check but fail the app's build, and warns when the URI names no database, since everything would then land in test. It never returns the URI or any credential.",
+   "where": "deployment-agent/deploy_agent/deployment_agent/mongodb_check.py"
+  },
+  {
+   "name": "Live monitoring snapshot across three providers",
+   "what": "One /monitor call collects GitHub workflow runs (and the PR, if the push became one), then either EC2 instances plus SSM release history, ECS services/tasks/deployments plus the running image, or Vercel deployments, domains and build logs \u2014 with the CloudFormation stack, its recent events and up to 100 CloudWatch lines shared by both AWS collectors. It probes / and /api/health live, recomputes readiness out of 100, and drives the transitions to VALIDATING, LIVE or FAILED.",
+   "where": "deployment-agent/deploy_agent/dfagents/monitor.py"
+  },
+  {
+   "name": "Cancel: stop the run and the workflow, delete nothing",
+   "what": "Moves the run to CANCELLED, which is outside the supervisor's reconciled set so it will not be swept back to life, and best-effort cancels the live GitHub Actions run, because that is the thing still writing to the instance. AWS is left completely alone and still billing, and the UI says so in as many words. The worker thread is not stopped \u2014 it cannot be, it is inside a boto3 or git call \u2014 it finds out when its next state transition is rejected.",
+   "where": "deployment-agent/deploy_agent/dfagents/deployer.py (cancel, _cancel_workflow_run), studio/components/deploy/DeployDanger.jsx"
+  },
+  {
+   "name": "Teardown: irreversible, and reachable even from a stuck run",
+   "what": "Deletes the <slug>-service and <slug>-bootstrap stacks (or the Vercel project), emptying the ECR repository and every object version and delete marker in the S3 bucket first, since CloudFormation cannot delete either while non-empty. An active run is refused without force; with force it is cancelled first and then torn down, in that order, so a teardown does not race a workflow that would recreate the stack.",
+   "where": "deployment-agent/deploy_agent/dfagents/deployer.py (start_teardown, _teardown_worker, _drain_stack_resources)"
+  },
+  {
+   "name": "Rollback on both providers",
+   "what": "On EC2 an SSM script relinks /opt/app/current to the most recent release directory that is not the current one and restarts the service. On Vercel the second-newest READY deployment is promoted through the REST API. Both move the run to ROLLED_BACK, which has edges back to BOOTSTRAPPING and on to DESTROYED.",
+   "where": "deployment-agent/deploy_agent/dfagents/deployer.py (rollback, _rollback_vercel)"
+  },
+  {
+   "name": "A supervisor that recovers runs abandoned by a process restart",
+   "what": "A deployment is driven by a daemon thread; when the process exits mid-deployment that thread disappears while the SQLite row stays active, locking the project against every later deployment. The reconciler runs once at startup and then every 15 seconds, treats an absent in-memory project key as the orphan signal, and for a run with a repository simply re-reads the authoritative remote state through the monitor. Orphaned deployments fail after 20 minutes, orphaned analyses after 90. It never starts, retries or rolls anything back.",
+   "where": "deployment-agent/deploy_agent/deployment_agent/supervisor.py"
+  },
+  {
+   "name": "Evidence export: a ZIP and a PDF",
+   "what": "The ZIP carries every reviewed artifact (re-redacted on the way in), the run record, the full event stream and any screenshots. The PDF is a ReportLab document with the readiness table, the detected services, the last 80 events, the masked remote snapshot and up to ten images. Dashboard capture through Playwright is best-effort and returns an empty list when unavailable, which under AgentForge it always is, since the dashboard it screenshotted was not part of the port.",
+   "where": "deployment-agent/deploy_agent/deployment_agent/exporter.py"
+  },
+  {
+   "name": "The studio Deploy tab: a stepper, ten monitor views and a console",
+   "what": "Picks a target, shows which of GitHub, AWS-or-Vercel and MongoDB is still unconnected, blocks the button until unit tests pass or the user explicitly overrides, then renders a per-stage stepper from the agent's own event stream. After that: Overview, Pipeline, Repository, CI/CD (with the generated workflow source), Infrastructure, IAM and Security, Logs, API Validation and Evidence, plus a sticky console with Live Logs, Agent Events, Terminal, Prompt Trace and Errors channels.",
+   "where": "studio/components/deploy/DeployPanel.jsx, studio/components/deploy/MonitorViews.jsx, studio/components/deploy/MonitorPipeline.jsx, studio/components/deploy/MonitorRepo.jsx, studio/components/deploy/MonitorSecurity.jsx, studio/components/deploy/MonitorConsole.jsx"
+  },
+  {
+   "name": "Autopilot: one button drives analyze, review, deploy and adopt",
+   "what": "AgentForge's server.py runs the whole sequence on a background thread, draining the agent's events into the studio log by cursor, refusing to deploy a plan written without a model, and finally copying run.json, events.json, monitor.json and link.json into the project's .agentforge/deploy/ so reopening it a week later still shows what was deployed and where. A torn-down run's record is archived to .agentforge/deploy-archive/<run_id>/ rather than deleted, because the record is the evidence.",
+   "where": "server.py (_deploy_autopilot, _deploy_wait, adopt_deploy, retire_deploy)"
+  },
+  {
+   "name": "Long-call job shim so the studio never holds a blocking request open",
+   "what": "POST /api/deploy/jobs starts a proxied call to the agent on a thread and answers immediately with a djob_ id; the studio polls GET /api/deploy/jobs/<id> at 300 ms then 900 ms. Jobs cannot start jobs, finished jobs are reaped after 900 seconds, and at most 200 are kept. This is what lets a 25-second monitor collection or a multi-minute onboarding probe run from a browser without a request timeout.",
+   "where": "server.py (deploy_job_start, _deploy_job_run, deploy_job_poll), studio/lib/api.js (deployJob)"
+  }
+ ],
+ "stack": [
+  {
+   "name": "Python standard library (http.server.ThreadingHTTPServer)",
+   "role": "The agent's whole HTTP API on 127.0.0.1:7834 \u2014 a SimpleHTTPRequestHandler subclass with hand-rolled routing and security headers on every response.",
+   "why": "deploy_agent/mount.py states it: a ThreadingHTTPServer gets a thread per request, so the long blocking work (boto3, gh, npm ci) blocks only its own request's thread. Rewriting thirty-five handlers onto AgentForge's websocket loop would put every one of those blocking calls back on a loop \u2014 the bug the SRS agent hit with uvicorn and ReportLab."
+  },
+  {
+   "name": "SQLite",
+   "role": "The single source of run state: runs, events (auto-increment id, indexed per run), artifacts (keyed run_id+path) and evidence, behind StateStore with an RLock and check_same_thread=False.",
+   "why": "The event id is what replaced the websocket. GET /api/runs/{id}/events?after=N is a replayable cursor read, so a browser reload loses nothing; server.py says this is the whole reason the agent's websocket on :7835 was not ported."
+  },
+  {
+   "name": "AWS CloudFormation",
+   "role": "Both AWS targets' infrastructure, applied as a named change set (deployment-agent-<epoch>) with CAPABILITY_NAMED_IAM and previewed as a change_set event before execution.",
+   "why": "The change set is the reviewable step: the studio sees every resource action and replacement before anything is applied. A ROLLBACK_COMPLETE stack is deleted and waited out first, because CloudFormation refuses to update one."
+  },
+  {
+   "name": "GitHub Actions with GitHub OIDC",
+   "role": "Where the build and the deploy actually happen; aws-actions/configure-aws-credentials@v4 assumes the stack's deploy role.",
+   "why": "No cloud access key is ever written to GitHub on the AWS path. Both the classic subject and the immutable repo:owner@OWNER_ID/name@REPO_ID form are pinned in the trust policy, and a repository that has customised its OIDC subject template is refused up front."
+  },
+  {
+   "name": "GitHub CLI (gh)",
+   "role": "Repository creation, identity lookup, Actions variables and secrets, workflow listing and cancellation, PR creation, and git authentication via gh auth git-credential.",
+   "why": "The agent runs git without a terminal, so Git Credential Manager cannot prompt and the push fails with 'could not read Username' even while gh is signed in. The helper is scoped to the single command instead of mutating the user's global config the way gh auth setup-git would."
+  },
+  {
+   "name": "Docker, on the GitHub runner only",
+   "role": "Builds the ECS image from a three-stage node:20-alpine Dockerfile inside the deploy workflow.",
+   "why": "Explicitly not a local requirement \u2014 the ECS profile's required_tools is git, gh, aws. The Dockerfile header says it: built by GitHub Actions, so there is no need for Docker on the machine that generated it."
+  },
+  {
+   "name": "mongo:7 as a GitHub Actions service container",
+   "role": "A throwaway database on 127.0.0.1:27017 for the duration of every build job, with a mongosh ping health check.",
+   "why": "Making the build placeholder URI true is the fix that does not depend on predicting what the model wrote. The templates avoid connecting at import, but the model writes application code too \u2014 the failing app had mongodbAdapter(await getDb()) at top level in a lib/auth.js no template produced."
+  },
+  {
+   "name": "nginx and systemd (EC2 target)",
+   "role": "nginx listens on 80 and reverse-proxies to 127.0.0.1:PORT with forwarded headers and upgrade handling; a hardened nextjs.service unit runs node /opt/app/current/server.js with NoNewPrivileges, PrivateTmp, ProtectSystem=strict, ProtectHome and ReadWritePaths=/opt/app.",
+   "why": "The application binds to loopback, so the only thing the security group's open port 80 reaches is nginx. Being same-origin behind that proxy is also why the Better Auth client patch strips its explicit baseURL."
+  },
+  {
+   "name": "Vercel CLI plus the Vercel REST API",
+   "role": "The CLI does sign-in and vercel link; everything read back (deployments, build logs, domains) and every exact state change (promote, delete, env upsert) goes through REST at api.vercel.com.",
+   "why": "vercel_api.py says it plainly: the CLI's subcommand names and JSON shapes have moved between versions, while these endpoints have not. The token is found by probing every location vercel login is known to write, including the Windows xdg.data layout under APPDATA."
+  },
+  {
+   "name": "PyYAML",
+   "version": ">=6.0,<7",
+   "role": "Parses the generated workflows and CloudFormation templates back, to verify they are structurally valid before a run may proceed.",
+   "why": "A custom SafeLoader subclass drops the implicit bool resolver and accepts every ! tag \u2014 otherwise YAML 1.1 turns the workflow's on: key into the boolean True, and !Ref / !GetAtt / !Sub make a CloudFormation template unparseable."
+  },
+  {
+   "name": "jsonschema (Draft 2020-12)",
+   "version": ">=4.23,<5",
+   "role": "Validates the planner's JSON against PLAN_SCHEMA and BUILD_REPAIR_SCHEMA, with one repair round-trip that feeds the validation error back to the model.",
+   "why": "The repair schema is an enum of four permitted actions, so the model can never propose an arbitrary file edit. The plan schema constrains instance types, ports (1024-65535) and the health path pattern."
+  },
+  {
+   "name": "Ollama via AgentForge's router (gemma4:31b-cloud by default)",
+   "role": "Writes the deployment plan and picks build repairs, streamed over /api/chat with temperature 0 and num_predict 4096.",
+   "why": "bridge.py: the copied client posted every model to localhost:11434, so :cloud tags only worked after a separate ollama signin. Routing through AgentForge sends cloud tags to ollama.com with the bearer token it already has. Native structured output is skipped entirely for :cloud models, falling back to validated JSON extraction."
+  },
+  {
+   "name": "pymongo[srv]",
+   "version": ">=4.9,<5",
+   "role": "The pre-deployment Atlas URI check: connect, ping, server_info, list database names.",
+   "why": "The most expensive failure in this pipeline is a deployment that reaches AWS, passes its health check, and only then turns out to have an unusable database URI. This surfaces it in a couple of seconds."
+  },
+  {
+   "name": "ReportLab",
+   "version": ">=4.2,<5",
+   "role": "Renders the A4 evidence report PDF served from /api/runs/{id}/report.pdf."
+  },
+  {
+   "name": "requests",
+   "version": ">=2.32,<3",
+   "role": "Ollama streaming, the Vercel API, the live homepage and health probes, and AgentForge's proxy and job shim into the agent."
+  },
+  {
+   "name": "Playwright",
+   "version": ">=1.48,<2 \u2014 documented, deliberately not installed under AgentForge",
+   "role": "Screenshotted the standalone agent's dashboard tabs into the evidence bundle.",
+   "why": "Root Requirements.txt says it is deliberately absent: it only drove the evidence exporter's dashboard screenshots, and that dashboard is not part of the port. capture_dashboard swallows the failure and returns an empty list, so both exports still work."
+  },
+  {
+   "name": "Next.js 16, React 19, Tailwind 4 (the studio)",
+   "role": "The Deploy tab: eleven client components under studio/components/deploy/, with useMonitor and useRunData hooks over a Zustand store.",
+   "why": "Monitor polling is cadenced per target (Vercel 20s, EC2 35s, ECS 40s), pauses while the document is hidden, and only auto-polls while the run is VALIDATING or newly LIVE \u2014 a monitor call costs a round of live cloud API reads."
+  }
+ ],
+ "how_it_works": [
+  {
+   "stage": "1. Mount and recover",
+   "detail": "server.py:start_deploy_api puts deployment-agent/ on sys.path and calls deploy_agent.mount.serve, which sets DEPLOYMENT_AGENT_DATA_DIR to production-ready/.deploy, runs dfserver.start_reconciliation() (one immediate reconcile_once sweep, then the 15-second supervisor loop) and blocks on ThreadingHTTPServer at 127.0.0.1:7834. Nothing in mount.py may raise into AgentForge: a broken deployment agent must be a tab that explains itself, reported through /api/deploy-status."
+  },
+  {
+   "stage": "2. Analyze (DRAFT to ANALYZING)",
+   "detail": "POST /api/runs/analyze requires cloud_consent true, creates the run row and spawns Orchestrator._analyze. IntakeAgent copies the project into the staged worktree, finds every package.json with a next dependency (shallowest first), detects the package manager from the lockfile, generates a package-lock.json inside the copy if none exists, scans process.env references for the environment contract, enumerates App Router routes, and records the git branch, remote and dirty files."
+  },
+  {
+   "stage": "3. Plan",
+   "detail": "PlannerAgent fills the plan with deterministic values from discovery first, then asks the model for risks, recommendations, source patches and a generation block. Only three fields of the answer are actually used \u2014 the GitHub job list, the instance type and the requested patch names; everything unsafe (commands, root, port, health path) stays authoritative from discovery. free_tier_only() clamps a t3.small or t3.medium choice down to a micro. A failure here is non-fatal: model_used stays False, and the deploy gate later refuses such a run."
+  },
+  {
+   "stage": "4. Generate",
+   "detail": "ArtifactGeneratorAgent.generate resolves the environment contract, writes .env.example, applies the compatibility patches, writes ci.yml and the target's deploy.yml, then the target's own set \u2014 infra/bootstrap.yml, infra/parameters.example.json and deploy/release.sh for EC2; those plus Dockerfile, .dockerignore and deploy/task-definition.json for ECS; deploy/vercel-environment.json and (unless the user already has one) vercel.json for Vercel. It finishes with deployment-report.md, readiness-score.json and deployment-manifest.json. Each record carries its SHA-256, its size, and whether an original file existed and what its hash was."
+  },
+  {
+   "stage": "5. Validate and build (to REVIEW_READY)",
+   "detail": "SecurityValidatorAgent scans every artifact for secret-shaped values, parses every JSON and YAML file, checks the target's required artifacts are present, checks deploy.yml has contents: read plus id-token: write (and that Vercel does not request an id-token) and a workflow_dispatch trigger, and target-specifically checks the OIDC subject restriction, the ECS iam:PassedToService condition and that the Dockerfile copies .next/static. Then the orchestrator runs the real install and build. The gates model_used, artifacts_valid, build_validation and security_validation are recorded, and the run parks at REVIEW_READY."
+  },
+  {
+   "stage": "6. Approve (REVIEW_READY to BOOTSTRAPPING)",
+   "detail": "POST /api/runs/{id}/deploy needs approved true and a MongoDB URI. _validate_request re-checks every precondition and re-hashes every artifact; _reserve_project takes an in-memory lock on the resolved lowercase project path and also scans persisted runs for another in an active state, raising DeploymentConflictError (HTTP 409) either way. The worker thread then checks the target's required CLI tools are installed and transitions to BOOTSTRAPPING."
+  },
+  {
+   "stage": "7. GitHub identity and OIDC subjects",
+   "detail": "The repository is created private if there is no origin (with a timestamp suffix on a name collision), its real default branch is read back from the API, and two OIDC subjects are computed: the classic repo:owner/name:ref:refs/heads/<branch> and the immutable repo:owner@OWNER_ID/name@REPO_ID form. A repository whose OIDC subject template has use_default false is refused here rather than at configure-aws-credentials time."
+  },
+  {
+   "stage": "8. Prepare the provider",
+   "detail": "AWS: find a reusable account-level OIDC provider (never one this stack owns), pick a network (a dedicated VPC normally; two existing public subnets in different AZs when the region already holds five VPCs), create and execute the change set, wait on stack_create_complete or stack_update_complete, then put_secret_value with MONGODB_URI, a freshly minted BETTER_AUTH_SECRET, and BETTER_AUTH_URL and BASE_URL taken from the stack's ApplicationUrl output. Vercel: vercel link in the staged worktree, read projectId and orgId from .vercel/project.json, resolve the production URL, and write the production environment variables straight to Vercel. Each returns a ProviderPrep of GitHub variables, GitHub secrets and repo state."
+  },
+  {
+   "stage": "9. Hand GitHub what it needs",
+   "detail": "_set_github_variables writes each non-secret with gh variable set --body and raises 'Bootstrap output is missing X' on any empty value, which is why every one of those names must be a template Output. _set_github_secrets writes secrets with the value on stdin, never --body, so the credential never appears in argv where a process listing or an echoed stderr would expose it."
+  },
+  {
+   "stage": "10. Apply, commit, push (to CI_RUNNING)",
+   "detail": "Reviewed files are copied from the staged worktree into the real repository, with pre-existing originals backed up under <run>/backup/ and any file that changed since review aborting the run. git add -A stages the application's own edits too \u2014 a redeploy that staged only the artifacts produced a commit of deployment-manifest.json and deployment-report.md and left the site serving the previous code. The push either lands on the default branch or falls back to a PR. If nothing was staged at all, gh workflow run deploy.yml is dispatched so a redeploy of unchanged code still deploys."
+  },
+  {
+   "stage": "11. Watch the workflow (CI_RUNNING to DEPLOYING to VALIDATING)",
+   "detail": "_wait_for_workflow polls gh run list for up to 900 seconds, selecting the run by headSha: select_workflow_run treats the reviewed commit SHA as authoritative, because a repository can hold older successful deploys of the same workflow and taking the newest run would let a stale success advance a fresh deployment. It emits a monitor event whenever the status or conclusion signature changes, raises on failure, cancelled, timed_out or action_required, and hands off to the dashboard if the workflow is still running when the budget expires."
+  },
+  {
+   "stage": "12. Validate live (VALIDATING to LIVE)",
+   "detail": "MonitorAgent.snapshot collects GitHub, the provider and the logs, probes / and /api/health, and scores build plus cicd 20, provider 25, security, monitoring 10 and api 10. It promotes to LIVE only when the state is VALIDATING or LIVE, the score is at least 90, and every probe passed. Because the ceiling is exactly 100 with no headroom, AgentForge's _deploy_wait adds an escape: after 240 seconds parked in VALIDATING it asks the site itself, and a URL that answers is the answer \u2014 skipping the production build alone zeroes a 15-point category and makes 90 unreachable for ever."
+  },
+  {
+   "stage": "13. Adopt, or retire",
+   "detail": "adopt_deploy copies the run, its events, the last monitor snapshot and a link record into the project's .agentforge/deploy/. On every later read of the Deploy tab, _deploy_run_state asks the agent for the run's current state rather than trusting that snapshot; if it now reads DESTROYED, retire_deploy moves the whole folder to .agentforge/deploy-archive/<run_id>/ and drops a deploy-deleted.json marker \u2014 otherwise the tab kept drawing an instance and a stack for infrastructure that no longer existed."
+  }
+ ],
+ "key_files": [
+  {
+   "path": "deployment-agent/deploy_agent/dfagents/generator.py",
+   "does": "2,175 lines and the heart of the subsystem: both CI and deploy workflow generators per target, both CloudFormation templates, the Dockerfile, the task definition, the EC2 release script, the Vercel config and environment mapping, the compatibility patches, and the manifest, report and readiness writers."
+  },
+  {
+   "path": "deployment-agent/deploy_agent/dfagents/deployer.py",
+   "does": "1,549 lines: pre-deploy verification, the project reservation lock, the three _prepare_* provider halves, the CloudFormation change-set apply, GitHub variable and secret delivery, apply-commit-push, workflow waiting, cancel, teardown, resource draining and rollback."
+  },
+  {
+   "path": "deployment-agent/deploy_agent/deployment_agent/state.py",
+   "does": "StateStore: the SQLite schema, ALLOWED_TRANSITIONS, and transition_run, which raises RuntimeError('Invalid deployment state transition: X -> Y') on any edge not in the table."
+  },
+  {
+   "path": "deployment-agent/deploy_agent/dfserver.py",
+   "does": "The HTTP API. A copy of the standalone server.py with four things removed \u2014 the :7835 websocket, the static dashboard, the browser it opened at start, and the folder picker \u2014 and nothing added."
+  },
+  {
+   "path": "deployment-agent/deploy_agent/dfagents/monitor.py",
+   "does": "The snapshot collector for GitHub, EC2, ECS and Vercel; select_workflow_run; readiness scoring; the transitions to DEPLOYING, VALIDATING and FAILED; and _mask_identifiers, which masks 12-digit account ids and long sha256 digests."
+  },
+  {
+   "path": "deployment-agent/deploy_agent/deployment_agent/orchestrator.py",
+   "does": "The analysis pipeline \u2014 intake, plan, generate, validate, local build, one repair round, finalize \u2014 and the readiness bookkeeping that fills the gates dictionary the deployer later checks."
+  },
+  {
+   "path": "deployment-agent/deploy_agent/dfagents/planner.py",
+   "does": "OllamaClient (streaming chat, native-schema probe with fallback, JSON extraction, one schema-repair round) and PlannerAgent with PLAN_SCHEMA, BUILD_REPAIR_SCHEMA and the free-tier instance clamp."
+  },
+  {
+   "path": "deployment-agent/deploy_agent/dfagents/validator.py",
+   "does": "SecurityValidatorAgent: secret scan, JSON and YAML parse checks, required-artifact check, workflow permission checks, per-target template and Dockerfile checks, and the bool-resolver-free YAML loader."
+  },
+  {
+   "path": "deployment-agent/deploy_agent/dfagents/intake.py",
+   "does": "Staging and discovery: Next.js service detection, package manager and lockfile, process.env scan, route scan, port detection from scripts, and the git repository spec."
+  },
+  {
+   "path": "deployment-agent/deploy_agent/deployment_agent/environment.py",
+   "does": "EnvironmentContractResolver \u2014 the five resolutions, the provider-managed and auto-generated name sets, DEPLOYER_INJECTED = (BETTER_AUTH_URL, BASE_URL), and the heuristic that marks a variable development-only when every one of its occurrences sits under a NODE_ENV === development guard."
+  },
+  {
+   "path": "deployment-agent/deploy_agent/deployment_agent/providers/spec.py",
+   "does": "TargetProfile and the TARGET_PROFILES table \u2014 required tools, required artifacts, artifact kind, runtime strategy, whether OIDC permissions are needed, commit subject and PR title \u2014 plus profile_for, target_of and ProviderPrep."
+  },
+  {
+   "path": "deployment-agent/deploy_agent/deployment_agent/validation.py",
+   "does": "The 19 MANDATORY_GATE_IDS, the ValidationGate helper, and SemanticValidator: the environment contract gate, the provider artifacts gate and the secret boundary gate."
+  },
+  {
+   "path": "deployment-agent/deploy_agent/deployment_agent/supervisor.py",
+   "does": "reconcile_once and start_supervisor: the orphan test, the 20-minute and 90-minute grace periods, and the loop that keeps active deployments advancing without the dashboard being open."
+  },
+  {
+   "path": "deployment-agent/deploy_agent/deployment_agent/aws_onboarding.py",
+   "does": "The SSO device flow manager, per-target IAM action and quota tables, check_permissions, check_quotas, request_quota_increase, persist_sso_profile and the bootstrap-role CloudFormation template."
+  },
+  {
+   "path": "deployment-agent/deploy_agent/deployment_agent/security.py",
+   "does": "SECRET_NAME_RE, seven SECRET_VALUE_PATTERNS (AKIA keys, gh tokens, PEM private keys, mongodb URIs, URLs with inline credentials, bearer tokens), redact_text, redact_data, json_dumps_safe and sha256_file."
+  },
+  {
+   "path": "deployment-agent/deploy_agent/deployment_agent/credentials.py",
+   "does": "InMemoryCredentialVault \u2014 a one-hour TTL store with no serialization surface, handing out opaque vault_ references and zeroing values on clear."
+  },
+  {
+   "path": "deployment-agent/deploy_agent/deployment_agent/mongodb_check.py",
+   "does": "The Atlas URI preflight, including the list of query options the Node driver accepts and the auth, DNS and allowlist error classification."
+  },
+  {
+   "path": "deployment-agent/deploy_agent/deployment_agent/vercel_api.py",
+   "does": "Thin REST helpers for projects, deployments, build events, env upsert and delete, promote, delete and domains \u2014 with the comment explaining why the env type is encrypted and not sensitive."
+  },
+  {
+   "path": "deployment-agent/deploy_agent/deployment_agent/vercel_auth.py",
+   "does": "Probes every known vercel login token location, including the Windows xdg.data layout, and reports the connection identity for the dashboard without throwing."
+  },
+  {
+   "path": "deployment-agent/deploy_agent/deployment_agent/exporter.py",
+   "does": "The evidence ZIP, the ReportLab PDF, the best-effort Playwright dashboard capture, and save_evidence for operator-pasted screenshots (PNG/JPEG/WebP data URLs, 12 MB cap)."
+  },
+  {
+   "path": "deployment-agent/deploy_agent/bridge.py",
+   "does": "The only AgentForge-aware module in the copy: the data directory, the settings reader, model routing for :cloud tags, the readiness probe and free_tier_only()."
+  },
+  {
+   "path": "deployment-agent/deploy_agent/mount.py",
+   "does": "Runs the agent inside AgentForge's process, and documents why it keeps its own threaded HTTP server instead of becoming ASGI routes."
+  },
+  {
+   "path": "server.py",
+   "does": "AgentForge's side: start_deploy_api, _proxy_deploy, the deploy job shim, start_deployment, _deploy_autopilot, _deploy_wait, deploy_settings_summary, _deploy_mongo_uri, adopt_deploy, retire_deploy and read_deploy_results."
+  },
+  {
+   "path": "studio/components/deploy/DeployPanel.jsx",
+   "does": "The Deploy tab shell: target picker, account readiness list, test-failure override, the monitor view bar and the ten panes."
+  },
+  {
+   "path": "studio/components/deploy/DeployDanger.jsx",
+   "does": "Cancel and Delete, with two different confirmation dialogs that spell out exactly what each does and does not touch, and which sends force true when the run is in an active state."
+  }
+ ],
+ "contracts": [
+  {
+   "name": "POST /api/runs/analyze",
+   "shape": "{cloud_consent: true (required), path, target: aws_ec2 | aws_ecs | vercel, validate_container} -> 202 {run_id, state: ANALYZING}"
+  },
+  {
+   "name": "POST /api/runs/{id}/deploy",
+   "shape": "{approved: true (required), mongodb_uri, aws_profile, region, credential_reference, vercel_token} -> 202 {accepted, run_id}; 409 on a project conflict, 400 on any failed precondition"
+  },
+  {
+   "name": "POST /api/runs/{id}/cancel",
+   "shape": "{confirm: true} -> 202 {cancelled, state: CANCELLED, workflow_cancelled: gh run id or empty}"
+  },
+  {
+   "name": "POST /api/runs/{id}/teardown",
+   "shape": "{confirm: true, credential_reference, force} -> 202 {accepted, slug}; refuses an active run without force, refuses a DESTROYED run outright"
+  },
+  {
+   "name": "POST /api/runs/{id}/rollback and /retry",
+   "shape": "rollback -> 202 {accepted} (SSM relink on EC2, promote on Vercel); retry -> 202 {run_id} for a fresh analysis of the same path and target"
+  },
+  {
+   "name": "GET /api/runs/{id}/events?after=N",
+   "shape": "{events: [{event_id, run_id, type: step|state|log|terminal|prompt|monitor|change_set|warning|error, stage, status, percent, message, data, timestamp}]} \u2014 the replayable cursor that replaced the websocket"
+  },
+  {
+   "name": "GET /api/runs/{id}/monitor",
+   "shape": "{captured_at, github{repository, runs, successful, failed, pull_request}, aws{region, stacks, instances or services and tasks, releases}, vercel{deployments, domains}, logs, api, errors, workflow, readiness{score, categories, phase}} \u2014 redacted and identifier-masked"
+  },
+  {
+   "name": "GET /api/runs/{id}/artifacts, /artifact?path=, /diff",
+   "shape": "the ArtifactRecord list; a single file, but only if its path is in the persisted manifest and resolves inside the staged root; and the full unified diff of staged versus original"
+  },
+  {
+   "name": "GET /api/runs/{id}/export.zip and /report.pdf",
+   "shape": "attachment downloads named deployment-evidence-<run8>.zip and deployment-report-<run8>.pdf"
+  },
+  {
+   "name": "POST /api/aws/sso/{start,poll,roles,select}",
+   "shape": "start{start_url, region} -> {flow_id, verification_uri_complete, user_code, interval, expires_in}; poll -> {status: pending | complete, accounts}; select{flow_id, account_id, role_name, persist_profile} -> {credential_reference, account_id, role_name, region, expires_at}"
+  },
+  {
+   "name": "POST /api/aws/preflight, /quota/request, /bootstrap-role-template",
+   "shape": "preflight{target, credential_reference or aws_profile, region} -> {target, quotas[], permissions{status, principal, allowed, denied}}; the others request a quota increase and emit a grant template"
+  },
+  {
+   "name": "POST /api/mongodb/check",
+   "shape": "{uri} -> {ok, code: connected|malformed|auth|dns|unreachable|failed|unavailable, message, server_version, database, database_in_uri, databases} \u2014 never the URI itself"
+  },
+  {
+   "name": "GET /api/onboarding/status",
+   "shape": "{tools{git, gh, aws, node, vercel, ollama, ports}, aws_profiles, aws_identities{account, arn, region, service_ready, service_error}, github_authenticated, github_account, cloud_notice}"
+  },
+  {
+   "name": "AgentForge proxy: /api/deploy/* and /api/deploy/jobs",
+   "shape": "/api/deploy/runs/x is proxied to /api/runs/x on 7834 with a 2-second connect and no read deadline; POST /api/deploy/jobs {path, method, body} -> {job_id: djob_...} polled at GET /api/deploy/jobs/{id} -> {status, http_status, result, error, elapsed}"
+  },
+  {
+   "name": "AgentForge: /api/deploy-start, /api/deploy-results/{project}, /api/deploy-status",
+   "shape": "start{project, target, validate_container} kicks off autopilot; results -> {project, agent, live, have{last}, last{run_id, state, target, readiness, repo_state, error, link, monitor}, settings, deleted}; status -> {state, port, error, listening}"
+  },
+  {
+   "name": "File contract: deployment-manifest.json",
+   "shape": "{version: 3, project, project_slug, primary_service, service_root, model, model_used, target, environment_contract, generation{...}, artifacts[], agent_owned_files[]} \u2014 the deploy gate rejects any other version and any set that does not match the persisted artifacts"
+  },
+  {
+   "name": "File contract: readiness-score.json",
+   "shape": "{score, categories{build 15, cicd 20, provider 25, security 20, monitoring 10, api 10}, phase: review | deploying | live, gates{model_used, artifacts_valid, build_validation, security_validation}}"
+  },
+  {
+   "name": "File contract: deploy/task-definition.json placeholders",
+   "shape": "__IMAGE__, __EXECUTION_ROLE_ARN__, __TASK_ROLE_ARN__, __AWS_REGION__ and __RUNTIME_SECRET_ARN__:<NAME>:: \u2014 all substituted by the deploy workflow's render step, never by the agent"
+  },
+  {
+   "name": "File contract: project .agentforge/deploy/",
+   "shape": "run.json, events.json, monitor.json, link.json{run_id, adopted_at, state, target}; on teardown the folder moves to .agentforge/deploy-archive/<run_id>/ and .agentforge/deploy-deleted.json{run_id, deleted_at, archive} is written"
+  },
+  {
+   "name": "GitHub Actions variables and secrets the workflows read",
+   "shape": "EC2 vars: AWS_DEPLOY_ROLE_ARN, AWS_REGION, ARTIFACT_BUCKET, INSTANCE_ID, RUNTIME_SECRET_ID, PROJECT_SLUG. ECS adds ECR_REPOSITORY_URI, ECS_CLUSTER, ECS_SERVICE, ECS_TASK_FAMILY, ECS_EXECUTION_ROLE_ARN, ECS_TASK_ROLE_ARN, CONTAINER_NAME. Vercel vars: VERCEL_ORG_ID, VERCEL_PROJECT_ID, PROJECT_SLUG; secret: VERCEL_TOKEN"
+  }
+ ],
+ "decisions": [
+  {
+   "decision": "Every build job runs a real mongo:7 service container on 127.0.0.1:27017",
+   "why": "next build's 'Collecting page data' pass imports and executes every page and route, so a module that touches the database at import opens a socket while the app is being compiled. On run 8dd72476 (pubudu-tire-pos) that produced 'Failed to collect configuration for /api/auth/[...all] [cause]: MongoServerSelectionError: connect ECONNREFUSED 127.0.0.1:27017'. The route named in the error moved between /, /admin, /api/products/[id] and the auth route across runs, which is why reading the message led nowhere and only a reproduction found it. The templates were made lazy, but the model writes the app's own modules too \u2014 the failing app had mongodbAdapter(await getDb()) at top level in a lib/auth.js no template produced. Making the placeholder URI true is the fix that does not depend on predicting what the model wrote."
+  },
+  {
+   "decision": "docker build --network=host on the ECS deploy workflow",
+   "why": "The ECS target compiles inside docker build, and a build container has its own network namespace: the runner's MongoDB service is not reachable at 127.0.0.1:27017 from inside it. Without the flag any module that touches the database at import fails the image build \u2014 the same failure the service container exists to prevent. test_build_database.py::TheImageBuildCanReachIt pins it."
+  },
+  {
+   "decision": "The Better Auth catch-all route is patched to build its handler on the first request",
+   "why": "The generated route did export const { GET, POST } = toNextJsHandler(auth.handler) at module scope, so importing it constructed Better Auth, which connects to MongoDB. Adding a database to CI alone would have hidden it rather than fixed it, and no app should need its database up to compile. The patched module keeps a lazy handlers variable and does await import('@/lib/auth') inside a ready() helper, with dynamic force-dynamic. It only rewrites the exact shape the builder emits: a hand-written route is untouched, and a second pass reports no patch, so the audit trail does not lie."
+  },
+  {
+   "decision": "lib/mongodb.js is rewritten to connect on first use, with a thenable default export",
+   "why": "A regex replaces the eager clientPromise block with a connection() function and exports { then: (ok, no) => connection().then(ok, no) }, and rewrites await clientPromise to await connection(). The thenable shape means every existing call site keeps working unchanged. The replacement's own comment says why: connecting at import made a running database a requirement to COMPILE, and CI has none."
+  },
+  {
+   "decision": "The build environment and the runtime secret are each defined in exactly one place",
+   "why": "Three build sites \u2014 the CI workflow, the EC2 deploy workflow and the Dockerfile's build stage \u2014 each spelled their own env block out by hand, so all three set MONGODB_URI and none set the Better Auth pair. On a real bccycle run the build logged '[better-auth] Base URL is not set' and 'You are using the default secret', then reported success in 46 seconds. That cost the one signal separating a broken deployment from a healthy one, because 'Base URL is not set' is the exact line the live Invalid origin failure prints. _build_environment and _runtime_secret_entries are now the single lists both ends are built from."
+  },
+  {
+   "decision": "BETTER_AUTH_URL and BASE_URL are read from the stack outputs into the runtime secret",
+   "why": "On a live deployment, signing up returned 'Invalid origin' with '[better-auth] Base URL is not set' in the container log, while the homepage answered, /api/health answered and readiness scored 100 \u2014 only a human trying to sign up found it. The URL is knowable here and nowhere earlier: it is the load balancer's DNS name or the Elastic IP, both of which exist only once the stack is applied. MONGODB_DB is deliberately not written, because an empty value would override the driver's fallback to the database named in the URI with 'test'."
+  },
+  {
+   "decision": "An OIDC provider the bootstrap stack itself owns is reported as absent",
+   "why": "ExistingOidcProviderArn tells the template not to create one, which drops GitHubOidcProvider out of the stack. On a-neighbourhood-repair-cafe the first deploy created it (CREATE_COMPLETE 08:38); the second found it, passed it back, and CloudFormation deleted it (DELETE_COMPLETE 08:56) while the deploy role's trust policy still named that ARN. Every second deployment then failed at configure-aws-credentials with 'The web identity token provided could not be validated', a message that points nowhere near the cause. _find_github_oidc now lists the stack's own resources and returns empty if it manages one."
+  },
+  {
+   "decision": "The ECS service is created with DesiredCount 0 and scaled to 1 by the workflow",
+   "why": "CloudFormation waits for a load-balanced service to stabilise, and the placeholder busybox image can never pass a health check on the application's own health path. Measured on a real account: ECS killed and replaced the task on a loop ('replaced 1 tasks due to an unhealthy status') while the stack sat in CREATE_IN_PROGRESS and the load balancer billed by the hour. With zero desired tasks the service creates immediately and the first real rollout is what starts a container. DeploymentController Type ECS stops CloudFormation dragging the service back to the placeholder on the next update."
+  },
+  {
+   "decision": "The load balancer and target group are left unnamed",
+   "why": "Elastic Load Balancing caps those names at 32 characters and a project slug is already up to 31: 'a-neighbourhood-plant-nurser-16-tg' is 35 and failed the stack outright. CloudFormation generates a name from the stack and logical id that always fits."
+  },
+  {
+   "decision": "The image is tagged with github.sha and never :latest, and ECR tags are immutable",
+   "why": "Two things depend on it and both break silently without it: rollback has no earlier revision to name, and the readiness check cannot tell whether the running service came from this commit or an older one. MonitorAgent._readiness for ECS literally asserts the head SHA appears in the running task's image."
+  },
+  {
+   "decision": "Teardown can be forced, and forcing it cancels the run first",
+   "why": "Refusing outright was a dead end and a costly one. 'Wait for it to finish or fail' assumes it will do one or the other, and the monitor only stamped FAILED from CI_RUNNING and DEPLOYING \u2014 so anything that reached VALIDATING and then broke stayed VALIDATING. Run 3fc71a2466 sat there for over a day, its instance answering 502, still billing, with no way to delete it from the dashboard; the AWS console was the only way out, which is exactly the situation the button exists to prevent. The order matters: a teardown racing a live GitHub Actions run can delete a stack the workflow then recreates."
+  },
+  {
+   "decision": "One shared definition of active (models.ACTIVE_STATES), used by the studio too",
+   "why": "The studio computed running as !TERMINAL.has(state) && !error, so an active run that had recorded an error read as idle and the panel offered a Delete the agent was always going to refuse. DeployDanger now tests membership of the same four states, and test_stuck_run_teardown.py asserts _PERSISTED_ACTIVE_STATES equals ACTIVE_STATES and that every active state has an edge to FAILED."
+  },
+  {
+   "decision": "Cancel exists as its own state, with edges to BOOTSTRAPPING and DESTROYED",
+   "why": "Before this there was no CANCELLED state and no endpoint at all, so a run wedged in BOOTSTRAPPING or CI_RUNNING had no exit: teardown refused it, nothing could stop it, and the supervisor kept reconciling it every sweep. CANCELLED sits outside _RECONCILED_STATES so the supervisor leaves it alone, and its two outgoing edges are what make 'cancel, then either redeploy or delete' possible at all \u2014 transition_run is really enforced, so the sequence only works because both edges exist."
+  },
+  {
+   "decision": "Vercel environment variables are written as encrypted, not sensitive; secrets reach GitHub over stdin; the instance size is clamped to the free tier",
+   "why": "Vercel's sensitive variables are write-only: they reach the running function, but vercel pull returns the literal placeholder [SENSITIVE], so a Next.js build that reads the value fails with whatever error that placeholder produces; encrypted is still encrypted at rest but is decrypted for builds. Separately, gh secret set --body would put the credential in argv where a process listing or an echoed stderr exposes it, so run_command passes it on stdin. And the planning model chose t3.small unprompted on the first real AWS run \u2014 about 15 dollars a month, decided by a model, on an account whose owner had asked for the free option \u2014 so free_tier_only() defaults to True and clamps to a micro, keeping the architecture (t4g.small becomes t4g.micro) so the image is not rebuilt. It is a clamp, not an override: aws_free_tier false gives the plan its choice back."
+  }
+ ],
+ "branch": "deployment-agent",
+ "scope": "deployment-agent/ and studio/components/deploy/",
+ "include_repos": false
+}

@@ -45,6 +45,20 @@ export function useMonitor(runId, { target, state, active, frozen } = {}) {
     }
   }, [runId])
 
+  // A snapshot belongs to the run it was fetched for.
+  //
+  // `refresh` stops when `runId` goes empty, but `snap` was never cleared — so
+  // opening a project that has never been deployed kept showing the LAST
+  // project's infrastructure, its logs and its pipeline, with nothing on
+  // screen saying whose they were. The panel above guards its own `data` with
+  // `data.project === project`; this is the same guard for the half that lives
+  // in here.
+  useEffect(() => {
+    setSnap(null)
+    setError('')
+    setAt(null)
+  }, [runId])
+
   const watching = Boolean(
     runId && active &&
     (state === 'VALIDATING' || (state === 'LIVE' && !snap))

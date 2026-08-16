@@ -858,12 +858,24 @@ class UnitTestAuthor:
         `lock` is passed when several fixes are in flight at once. Only the
         shared bookkeeping needs it; the file write itself is one path per
         worker and cannot collide.
+
+        `on_file_end` fires for a refused write too, and has to. It is the
+        other half of the `on_file_start` the parser already fired when the
+        model opened the block, and the studio's code pane treats an open
+        stream as "a file is being written right now": it shows the live buffer
+        and ignores clicks on the file list, because during a build the pane
+        follows the writer rather than the reader. A write refused here never
+        sent its end, so the pane stayed locked on a file that had stopped
+        arriving — every click on every other file did nothing, for the rest of
+        the session. Refusing the write is still refusing it: nothing is
+        written to disk and the path goes on `rejected`.
         """
         guard = lock or _NULL_LOCK
         key = (path or "").strip().lstrip("./").replace("\\", "/")
         if key not in assigned:
             with guard:
                 rejected.append(key)
+            self._fire("on_file_end", key, content)
             return
         t = assigned[key]
 

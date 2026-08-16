@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { forwardRef, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 
 
@@ -134,11 +134,41 @@ export function Tip({ text, children, className, side = 'top' }) {
   )
 }
 
+/**
+ * What every editable field in the studio has to carry.
+ *
+ * Writing extensions rewrite a field before React hydrates it. Grammarly adds
+ * `data-gramm`, QuillBot adds `data-qb-tmp-id` with a fresh random id, and
+ * both add `spellcheck` — so the server's HTML and the client's DOM disagree
+ * on attributes this app never set, and React reports a hydration mismatch on
+ * a page that is perfectly correct. It cannot be fixed by matching them: the
+ * QuillBot id is random per load, so there is nothing to match.
+ *
+ * `suppressHydrationWarning` is React's own answer for exactly this — it stops
+ * the warning for this element's attributes and nothing else. The opt-out
+ * attributes are set as well, so the extensions that honour them leave the
+ * field alone rather than being merely tolerated: in a code editor a grammar
+ * checker is not noise, it underlines source and offers to correct it.
+ */
+export const plainField = {
+  suppressHydrationWarning: true,
+  spellCheck: false,
+  'data-gramm': 'false',
+  'data-gramm_editor': 'false',
+  'data-enable-grammarly': 'false',
+}
+
 export const Input = ({ className, ...rest }) => (
   <input className={cn('h-7 w-full rounded-ctl border border-line bg-bg px-2.5',
     'text-[11.5px] text-ink outline-none transition-colors',
-    'placeholder:text-muted2 focus:border-accent/60', className)} {...rest} />
+    'placeholder:text-muted2 focus:border-accent/60', className)}
+    {...plainField} {...rest} />
 )
+
+/** A textarea with the same protection. Everything else passes through. */
+export const TextArea = forwardRef(function TextArea({ className, ...rest }, ref) {
+  return <textarea ref={ref} className={className} {...plainField} {...rest} />
+})
 
 export const Table = ({ className, children }) => (
   <div className="w-full overflow-x-auto">

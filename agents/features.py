@@ -35,6 +35,7 @@ import textwrap
 from dataclasses import dataclass, field
 
 from .architect import FileStreamParser
+from .picker import guard_scope
 
 
 LOCAL_IMPORT_RE = re.compile(
@@ -255,8 +256,21 @@ class FeaturesAgent:
         reason this module exists at all.
         """
         routes = self.az.enumerate_routes()
+
+        # The source, not an inventory. This method's own docstring above
+        # describes reading one line per file as the thing `full_source` was
+        # written to replace — and then does it, because only the feature
+        # planner was changed. A bug is the harder of the two to place from a
+        # filename: the frame that names the crash is regularly not the file
+        # that is wrong, and the model cannot tell without reading both.
+        #
+        # A smaller share of the budget than the feature planner takes, because
+        # here the errors and the server log are evidence too and must fit
+        # alongside it.
+        source = self.full_source(budget=int(self._budget_chars() * 0.42))
         parts = [f"## The project's plan\n{self.az.plan_text()[:4000]}",
-                 f"## Every source file\n{self.az.inventory()}",
+                 f"## The source\n{source}" if source
+                 else f"## Every source file\n{self.az.inventory()}",
                  f"## Routes it serves\n{self.az.route_table(routes)}",
                  f"## What went wrong when the app ran\n```\n{errors[:6000]}\n```"]
         if server_log.strip():
@@ -493,6 +507,20 @@ class FeaturesAgent:
                 spec.rejected.append(key)
                 self._log("WARN", f"   ⛔ {key} is not in the plan — skipped")
                 return
+
+            # The allowlist says WHICH files may change; it says nothing about
+            # how much of one may go. Adding a feature to a page is an edit of
+            # that page, so a truncated rewrite or one that drops the exports
+            # other files import lands silently — this path writes more files
+            # at once than any other and was the only one with no such check.
+            old = self.arch.files.get(key, "")
+            if old:
+                why = guard_scope(old, content, adding=True, retexting=True)
+                if why:
+                    spec.rejected.append(key)
+                    self._log("WARN", f"   ⛔ {key} — {why}")
+                    return
+
             self._fire("on_file_start", key)
             self._fire("on_file_end", key, content)
             if self.arch.write_file(key, content):

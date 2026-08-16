@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { ArrowLeft, Check, ChevronDown, Loader2 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useStore } from '@/lib/store'
-import { Badge, Button, Panel, Table, TD, TH, TR } from '../ui'
+import { Badge, Button, Panel, Table, TD, TH, TR, TextArea } from '../ui'
 import { Waiting } from './Interview'
 
 export default function PlanReview({ projectId, onGenerated, onCancel }) {
@@ -262,7 +262,7 @@ export default function PlanReview({ projectId, onGenerated, onCancel }) {
       )}
 
       <div className="mt-3 rounded-panel border border-line bg-panel p-2">
-        <textarea value={revision} rows={2}
+        <TextArea value={revision} rows={2}
                   placeholder={blocking.length
                     ? 'Answer the open questions, or describe any other change…'
                     : 'Want something changed? Describe it and the plan is rewritten…'}

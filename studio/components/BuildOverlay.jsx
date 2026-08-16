@@ -80,8 +80,18 @@ export default function BuildOverlay() {
   const pct = Math.max(0, Math.min(100, progress.pct || 0))
 
   return (
+    // Opaque, not translucent.
+    //
+    // This was `bg-bg/70` over a 20px blur, which is a frosted pane: the app
+    // underneath still showed through it, so a first build was watched through
+    // a smear of half-written pages, and an edit showed the OLD screen behind
+    // the log — the one being replaced — which reads as the change having
+    // already happened and failed. Nothing behind this should be visible until
+    // the run that is rewriting it has finished.
     <div className="absolute inset-0 z-[20] flex flex-col items-center
-                    justify-center gap-5 bg-bg/70 px-8 backdrop-blur-[20px]">
+                    justify-center gap-5 bg-bg px-8">
+      <Mark />
+
       <div className="flex w-full max-w-[520px] flex-col items-center gap-2">
         <div className="flex items-center gap-2">
           <Spinner />
@@ -125,6 +135,27 @@ export default function BuildOverlay() {
         </div>
       )}
 
+    </div>
+  )
+}
+
+/**
+ * The AgentForge mark, turning while the work runs.
+ *
+ * The same artwork the sidebar header carries, so the thing filling the
+ * preview is recognisably the studio and not a spinner somebody left there.
+ * The two rings are `border-t`/`border-b` only — a partial ring turning reads
+ * as motion, where a full circle turning reads as nothing at all.
+ */
+function Mark() {
+  return (
+    <div className="relative grid size-[86px] shrink-0 place-items-center">
+      <span className="lc-orbit absolute inset-0 rounded-full border-[1.5px]
+                       border-transparent border-t-accent/70" />
+      <span className="lc-orbit-slow absolute inset-[9px] rounded-full
+                       border-[1.5px] border-transparent border-b-accent/35" />
+      <img src="/__agentforge/agentforge-mark.png" alt=""
+           className="lc-breathe size-[54px] rounded-[16px] object-contain" />
     </div>
   )
 }

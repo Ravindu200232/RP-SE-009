@@ -42,7 +42,11 @@ export default function Overview({ qa, live }) {
         ) : <Empty>No round-one record.</Empty>}
       </Card>
 
-      <Card title="The suite now" hint="the last full run">
+      {/* "as it stands", not "the last full run": a feature's stage only runs
+          the tests for what it changed, and those results are merged into this
+          report rather than replacing it — so this is the whole suite, with
+          the files that were just re-run showing their new result. */}
+      <Card title="The suite now" hint="every test file, at its latest result">
         {v ? (
           <div className="flex flex-col gap-1.5">
             <Stat n={v.numPassedTests} label="passing" tone="text-ok" />

@@ -11,6 +11,7 @@ import { api } from '@/lib/api'
 import {
   attachPicker, frameDoc, elementInfo, pickedFrom, pickLabel, previewPath,
 } from '@/lib/picker'
+import { consoleReport, forgetConsole, watchFrame } from '@/lib/console-log'
 import { Button, Input, Tip } from './ui'
 import { useEditAttachments } from '@/lib/use-edit-attachments'
 import EditAttach from './EditAttach'
@@ -37,8 +38,10 @@ export default function PreviewPane({ hidden }) {
   const [reading, setReading] = useState(false)
 
   const project = useStore(s => s.project)
+  const busy = useStore(s => s.busy)
   const addLog = useStore(s => s.addLog)
   const setBusy = useStore(s => s.setBusy)
+  const setPreviewRoute = useStore(s => s.setPreviewRoute)
   const models = useStore(s => s.models)
   const think = useStore(s => s.think)
   const undo = useStore(s => s.undo)
@@ -80,8 +83,12 @@ export default function PreviewPane({ hidden }) {
     const f = frameRef.current
     if (!f) return
     const onLoad = () => {
+      // Before anything else: a navigation replaces the frame's window, and
+      // the first error of the new page can arrive during its first render.
+      watchFrame(f)
       const here = previewPath(f)
       setPath(here)
+      setPreviewRoute(here)
       if (jumping.current) {
         // Our own back/forward landing; the trail already knows about it.
         jumping.current = false
@@ -253,6 +260,21 @@ export default function PreviewPane({ hidden }) {
     }
   }
 
+  // What the overlay lifts to reveal has to be the finished app.
+  //
+  // Nothing reloads the preview at the end of a run: the generated app's own
+  // Fast Refresh patches each file into the frame AS it is written, so by the
+  // time the work stops the frame is holding a page assembled out of however
+  // many half-applied refreshes happened on the way — a component that imports
+  // one that had not been written yet, a page mid-rewrite, an error boundary
+  // from three files ago. Reloading once on the falling edge of `busy` means
+  // the first thing seen is the app as it actually stands on disk.
+  const wasBusy = useRef(false)
+  useEffect(() => {
+    if (wasBusy.current && !busy) reloadPreview()
+    wasBusy.current = busy
+  }, [busy])
+
   async function submit() {
     const v = prompt.trim()
     if (!v || !picked) return
@@ -281,7 +303,9 @@ export default function PreviewPane({ hidden }) {
       model: models.agent || models.build, think,
       route: picked.route || path, scroll: picked.scroll, viewport: picked.viewport,
       strokes: pencilOn ? strokesRef.current : undefined,
+      console: consoleReport(),
     })
+    forgetConsole()
     files.reset()
     addLog('INFO', (pencilOn ? 'Redesign: '
       : kind === 'image_edit' ? 'New picture: ' : 'Edit: ') + v)

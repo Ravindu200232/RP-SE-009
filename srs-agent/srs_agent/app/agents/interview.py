@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 
 from ..knowledge import app_types as catalog
 from ..knowledge import topics
@@ -69,6 +70,64 @@ ANSWER_TYPE = {
 
 ATTACHMENT_STORE_LIMIT = 4000
 ATTACHMENT_DIGEST_LIMIT = 700
+
+
+# "yes" is not an app name.
+#
+# The model is told above to ask a value back rather than ask for it twice, and
+# to carry the candidate in `known` — which reaches the question as `prefill`.
+# On a chip question that prefill is a ticked option, so a bare yes cannot
+# happen. On a TYPED question there is nothing to tick: the box is empty, the
+# question reads "You mentioned 'pubudu tireshop' — is that the exact name you
+# want shown at the top of your app?", and the honest reply is "yes".
+#
+# It was stored verbatim as the answer. Measured on three real interviews, all
+# three named the app "yes" — `app_summary.app_name`, `project_name`, the plan
+# heading, `package.json`, the browser tab, the project folder
+# (`production-ready/yes`, then `yes-2`) and the Mongo database
+# (`agentforge_yes`). Nothing downstream could tell: "yes" is a perfectly valid
+# string, so every layer passed it on.
+#
+# A bare yes on a typed question therefore means the candidate it was asked
+# about, and a bare no means "not that" — which is not a name either, so it is
+# stored as nothing and the later fallbacks decide.
+AFFIRMATIONS = {
+    "y", "ya", "yah", "yeah", "yep", "yes", "yup", "yes please", "yes thanks",
+    "ok", "okay", "oky", "k", "sure", "fine", "good", "great", "perfect",
+    "correct", "right", "thats right", "that is right", "exactly", "exact",
+    "true", "confirm", "confirmed", "agreed", "agree", "keep it", "use that",
+    "thats it", "that is it", "same", "as it is",
+}
+NEGATIONS = {
+    "n", "no", "nope", "nah", "no thanks", "not", "not really", "not exactly",
+    "not that", "wrong", "incorrect", "negative", "false", "change it",
+}
+
+_BARE_RE = re.compile(r"[^a-z0-9 ]+")
+
+
+def _bare_word(text) -> str:
+    """An answer reduced to plain lowercase words, for matching against the sets."""
+    return _BARE_RE.sub("", str(text or "").lower()).strip()
+
+
+def _confirmable(session: dict, key: str, topic_key: str) -> str:
+    """
+    The candidate the question on screen quoted back, or "".
+
+    Only for typed topics: elsewhere the prefill is an option and the customer
+    ticks it. `session["current"]` is the question this answer is answering —
+    the orchestrator records before it asks the next one — and the key check
+    keeps a stale `current` from lending its prefill to a different question.
+    """
+    topic = topics.TOPICS_BY_KEY.get(topic_key)
+    if not topic or topic.kind not in ("text", "number"):
+        return ""
+    current = session.get("current") or {}
+    if str(current.get("key") or current.get("id") or "") != key:
+        return ""
+    prefill = current.get("prefill") or []
+    return str(prefill[0]).strip() if prefill else ""
 
 
 def _attachment_entries(attachments) -> list[dict]:
@@ -376,6 +435,27 @@ def record(session: dict, key: str, value=None, text: str = "", images=None,
         "attachments": _attachment_entries(attachments),
         "details": {},
     }
+
+    candidate = _confirmable(session, key, topic_key)
+    if candidate and not isinstance(entry["value"], (list, dict)):
+        said = _bare_word(entry["value"])
+        if said in AFFIRMATIONS:
+            # What they typed is kept in `details` — it is the record of what
+            # happened — but it must not stay in `value`, `text` or
+            # `custom_text`, because those three are what `_answers_digest`
+            # and `flat_answers` hand to the SRS generator. Leaving "yes"
+            # anywhere in that digest invites the same name back.
+            entry["details"]["confirmed"] = said
+            entry["value"] = candidate
+            entry["text"] = candidate
+            entry["custom_text"] = candidate
+            entry["selected_values"] = [candidate]
+        elif said in NEGATIONS:
+            entry["details"]["declined"] = said
+            entry["value"] = ""
+            entry["text"] = ""
+            entry["custom_text"] = ""
+            entry["selected_values"] = []
 
     picked = [s for s in entry["selected_values"] if str(s).strip()]
     if (entry["attachments"] and not picked

@@ -61,7 +61,13 @@ _SYS = (
     "the plan has three records, and one is the right answer when it has one.\n"
     "- If the plan has no login, the app has no accounts. Do not mention users, "
     "roles, permissions, admins, sign-in or audit logs anywhere — not in a "
-    "requirement, not in a table, not in a risk."
+    "requirement, not in a table, not in a risk.\n"
+    "- Each `table_name` is the PLAIN PLURAL of the thing it holds: books, "
+    "students, loans, products, sales. Never pluralise a name that is already "
+    "plural — `bookses`, `studentses`, `loanses`, `productses`, `customerses` "
+    "are not words. Nothing downstream corrects this: the builder creates the "
+    "collection under exactly the name you write, so `bookses` ships as a "
+    "real collection in a real app. It has happened in 4 specifications."
 )
 
 

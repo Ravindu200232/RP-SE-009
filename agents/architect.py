@@ -64,6 +64,12 @@ SNAPSHOT_CLOSE = "## End of current source"
 SNAPSHOT_RE = re.compile(
     re.escape(SNAPSHOT_OPEN) + r".*?" + re.escape(SNAPSHOT_CLOSE), re.S)
 
+# The receipt `_stub_files` leaves where a file body used to be. Shared with
+# `_bodies_stubbed`, which reads it back to decide whether the model can still
+# see its own source: two copies of this string that drift apart would leave
+# the check quietly answering "no" forever.
+STUB_MARK = "[written earlier —"
+
 
 OPEN_RE = re.compile(
     r"<(write_file|file)\s+path\s*=\s*[\"']([^\"'>]+)[\"']\s*>", re.I)
@@ -1149,6 +1155,18 @@ NEXT_BUILDER_SYSTEM = textwrap.dedent("""\
         explicitly says otherwise, and one user per role. A 40-row catalogue
         nobody asked for slows every page, buries the feature under fixtures
         and spends your output budget on data instead of screens.
+      • NEVER open a transaction. No `startSession()`, no `withTransaction`,
+        no `{ session }` option. AgentForge runs a STANDALONE mongod, and
+        standalone Mongo answers every one of them with "Transaction numbers
+        are only allowed on a replica set member or mongos". The route throws
+        on the first real request, so the handler that looked the most careful
+        is the one that never works. Measured: a reservations route written
+        this way returned 400 for every valid booking, and four repair rounds
+        could not save it because the code reads as correct.
+        Where you wanted a transaction, use one atomic update instead —
+        `updateOne({ _id, stock: { $gt: 0 } }, { $inc: { stock: -1 } })` and
+        check `modifiedCount` — then write the dependent document. That is
+        the same race protection for the one field that actually races.
       • Components must be genuinely functional: working state, handlers,
         validation, empty states, hover/focus states, and responsive layout.
       • Every form input needs BOTH a `placeholder` and a label tied to it:
@@ -1308,6 +1326,18 @@ class ArchitectAgent:
     def _builder_sys(self) -> str:
         base = self._P["builder"].replace("{stack}", self._P["rules"])
 
+        # What earlier builds got wrong, from the checks that found it. Every
+        # other rule in this prompt was written by a human reading a failed
+        # build and editing a string literal; this is the same thing, kept up
+        # to date by the analyzer and the test runner instead.
+        try:
+            from . import lessons
+            learned = lessons.prompt_block()
+            if learned:
+                base += "\n\n    " + learned.replace("\n", "\n    ")
+        except Exception as e:                                  # noqa: BLE001
+            log.debug(f"lessons unavailable: {e}")
+
         idx = (docsindex.index_block(self.project_dir)
                if self.stack == "next" else "")
         if not idx:
@@ -1325,6 +1355,56 @@ class ArchitectAgent:
         return path.startswith(self.source_roots) and path.endswith((".jsx", ".js"))
 
     EDIT_TIMEOUT = 150
+
+    # No legitimate turn writes this much.
+    #
+    # The largest single file measured across the generated projects on disk is
+    # 18KB, and the turn that writes the most — one build task, or one QA
+    # author pass over a batch of test files — is a handful of those. A quarter
+    # of a million characters is four times the biggest plausible turn, and a
+    # model that reaches it is not writing an application: it is repeating
+    # itself, which is what a model does when the conversation has gone wrong
+    # and it has nothing left to add.
+    #
+    # Measured on a real run: a QA repair turn passed 219,264 characters at 271
+    # seconds and was still climbing at ~800 a second. Nothing stopped it —
+    # `qa_agent.author` was the only caller passing a `timeout` at all, so every
+    # other one inherited `chat_stream`'s 1800s, and the log said "⏳ still
+    # working" every thirty seconds for half an hour before the stage after it
+    # could start. The stall guard cannot help: it fires on silence, and this
+    # stream was never silent.
+    #
+    # Cutting it keeps whatever arrived. A file left half-written is what
+    # `close_parser` already handles through `_last_truncated`, and a repair
+    # turn cut before its verdict is read as "no verdict — treated as a test
+    # problem", which is a decision the round can carry on from.
+    MAX_TURN_CHARS = 250_000
+
+    # Where the heartbeat starts saying so. Past this a turn is already past
+    # anything normal, and the person watching should be told while it is
+    # happening rather than at the cut.
+    LOUD_TURN_CHARS = 100_000
+
+    # Catching the loop itself, rather than waiting for it to fill a quarter of
+    # a million characters.
+    #
+    # `MAX_TURN_CHARS` is a backstop and it is deliberately generous, because
+    # it cannot tell a runaway from a build task writing six files — so it has
+    # to sit above the largest honest turn, and a model looping at 700
+    # characters a second still takes six minutes to reach it. Six minutes of
+    # "⏳ still working" is indistinguishable from a hang.
+    #
+    # Repetition can tell them apart, which size cannot. A model that has lost
+    # the thread emits the same passage over and over; a model writing an
+    # application does not repeat 240 characters exactly, six times. Generated
+    # code does repeat — imports, boilerplate, similar test cases — so the
+    # block is long enough that an exact match is not a coincidence and the
+    # count is high enough that a genuine duplicate pair or two survives.
+    #
+    # Blocks are non-overlapping and hashed, so this is a dict lookup per 240
+    # characters and costs nothing on a stream that is behaving.
+    LOOP_BLOCK = 240
+    LOOP_REPEATS = 6
 
     def _stream(self, messages, on_delta, tools=None, temperature=0.6,
                 model=None, timeout=None):
@@ -1347,6 +1427,10 @@ class ArchitectAgent:
         chars = 0
         chunks = 0
         first_at = 0.0
+        tail = []          # deltas not yet folded into a block
+        tail_len = 0
+        seen_blocks = {}   # block hash -> how many times it has arrived
+        looping = 0
         for chunk in self.client.chat_stream(
                 model or self.model, messages, tools=tools, options=options,
                 keep_alive="10m", think=self.think, **kw):
@@ -1363,12 +1447,37 @@ class ArchitectAgent:
                 chars += len(delta)
                 if not first_at:
                     first_at = time.time()
+
+                # Fold the stream into fixed blocks and count how often each
+                # one has been seen before. Non-overlapping, so a passage that
+                # repeats on a different offset is still caught within a block
+                # or two — a loop repeats many times, not once.
+                tail.append(delta)
+                tail_len += len(delta)
+                while tail_len >= self.LOOP_BLOCK:
+                    joined = "".join(tail)
+                    block, rest = (joined[:self.LOOP_BLOCK],
+                                   joined[self.LOOP_BLOCK:])
+                    tail, tail_len = ([rest], len(rest)) if rest else ([], 0)
+                    if not block.strip():
+                        continue
+                    key = hash(block)
+                    seen_blocks[key] = seen_blocks.get(key, 0) + 1
+                    looping = max(looping, seen_blocks[key])
+
             now = time.time()
             if now - spoke >= 30:
                 spoke = now
                 elapsed = now - started
                 if chars:
                     wrote = f"{chars:,} characters written"
+                    if looping > 1:
+                        wrote += (f" — {looping} of them identical, so it is "
+                                  f"repeating itself; stopping it at "
+                                  f"{self.LOOP_REPEATS}")
+                    elif chars >= self.LOUD_TURN_CHARS:
+                        wrote += (f" — far past what one turn should write; "
+                                  f"stopping it at {self.MAX_TURN_CHARS:,}")
                 elif thinks:
                     wrote = f"thinking, {thinks:,} token(s), nothing written yet"
                 else:
@@ -1384,6 +1493,24 @@ class ArchitectAgent:
             if chunk.get("done"):
                 self.tokens_in += chunk.get("prompt_eval_count", 0) or 0
                 self.tokens_out += chunk.get("eval_count", 0) or 0
+
+            # Both checks run AFTER the delta is delivered, so everything that
+            # arrived before the cut is kept and parsed: the turn is truncated,
+            # never thrown away.
+            if looping >= self.LOOP_REPEATS:
+                self._log("WARN",
+                          f"   ✂ stopped the model — it sent the same passage "
+                          f"{looping} times ({chars:,} characters, "
+                          f"{time.time() - started:.0f}s). It is looping, not "
+                          f"working. Carrying on with what it wrote.")
+                break
+            if chars >= self.MAX_TURN_CHARS:
+                self._log("WARN",
+                          f"   ✂ stopped the model after {chars:,} characters "
+                          f"in one turn ({time.time() - started:.0f}s) — that "
+                          f"is a runaway, not an answer. Carrying on with what "
+                          f"it wrote.")
+                break
         return tool_calls
 
     def start_conversation(self, user_prompt: str):
@@ -1419,6 +1546,30 @@ class ArchitectAgent:
     def _budget_chars(self) -> int:
         return int(self.num_ctx * HISTORY_BUDGET * CHARS_PER_TOKEN)
 
+    def _bodies_stubbed(self) -> bool:
+        """Has compaction already swapped file bodies for receipts?
+
+        Read from the conversation rather than remembered in a flag, so it is
+        still right after `resume()` loads a `convo.json` that was compacted in
+        a previous session.
+        """
+        return any(STUB_MARK in (m.get("content") or "") for m in self.convo)
+
+    def _room_for_snapshot(self, used: int) -> dict:
+        """Caps that let a snapshot fit in what is left of the budget.
+
+        Returns `{}` when there is not enough room to be worth it — a snapshot
+        that pushes the thread over budget is stripped by `_trim_convo` on the
+        way back, so sending it costs a turn and buys nothing.
+        """
+        headroom = self._budget_chars() - self._convo_chars() - used - 2_000
+        if headroom < 6_000:
+            return {}
+        caps = self._snapshot_caps()
+        per_file = min(caps["per_file"], max(1_200, headroom // 8))
+        max_files = max(3, min(caps["max_files"], headroom // per_file))
+        return {"max_files": int(max_files), "per_file": int(per_file)}
+
     @staticmethod
     def _stub_files(text: str) -> str:
         """
@@ -1432,7 +1583,7 @@ class ArchitectAgent:
             path = m.group(2)
             lines = m.group(3).count("\n") + 1
             return (f'<write_file path="{path}">'
-                    f'\n// [written earlier — {lines} lines, still on disk]\n'
+                    f'\n// {STUB_MARK} {lines} lines, still on disk]\n'
                     f'</{m.group(1)}>')
 
         return re.sub(r"<(write_file|file)\s+path\s*=\s*[\"']([^\"'>]+)[\"']\s*>"
@@ -2456,6 +2607,13 @@ class ArchitectAgent:
               // AgentForge captures that stream, so a client-side crash arrives with
               // a file and a line instead of a bare message. Added in 16.2.
               logging: { browserToTerminal: 'warn' },
+              // Next 16 refuses dev requests whose origin it does not recognise,
+              // and answers 403 for every file under /_next/static. The page
+              // still returns 200, so it looks fine and runs no JavaScript —
+              // which is indistinguishable, from the outside, from an app whose
+              // buttons do nothing. Both the preview and the bug reproduction
+              // reach this app on 127.0.0.1, so both must be named here.
+              allowedDevOrigins: ['127.0.0.1', 'localhost'],
             }
 
             export default nextConfig
@@ -2734,14 +2892,52 @@ class ArchitectAgent:
 
         self.write_agent_files()
 
-    def _context_snapshot(self, max_files: int = 14, per_file: int = 1400) -> str:
-        """Existing source, trimmed — so later files can import correctly."""
+    def _context_snapshot(self, max_files: int = 14, per_file: int = 1400,
+                          wanted: list = None) -> str:
+        """Existing source, trimmed — so later files can import correctly.
+
+        `wanted` is the files about to be written. Ranking by what they will
+        need beats ranking alphabetically, which is what this did: with a
+        fourteen-file cap, `components/AdminTable.jsx` was included over
+        `components/StockAdjustmentForm.jsx` because of the letter A, whatever
+        the next task happened to be about.
+
+        Two things earn a place near the top: living in the same folder as
+        something about to be written, and already being imported by one of
+        them. The three fixed entries stay first — the database helper and the
+        layout are the shape everything else is written against.
+        """
         src = [(p, c) for p, c in self.files.items() if self.is_source(p)]
         if not src:
             return "(no source files yet)"
         priority = ({"src/App.jsx": 0} if self.stack == "vite"
                     else {"lib/mongodb.js": 0, "app/layout.jsx": 1, "app/page.jsx": 2})
-        src.sort(key=lambda x: (priority.get(x[0], 99), x[0]))
+
+        near = set()
+        for target in (wanted or []):
+            path = target if isinstance(target, str) else (target or {}).get("path", "")
+            if not path:
+                continue
+            folder = path.rsplit("/", 1)[0] if "/" in path else ""
+            for other, _ in src:
+                if folder and other.startswith(folder + "/"):
+                    near.add(other)
+            # `@/components/Foo` is how these apps import, so the alias form is
+            # the one that matters; the relative form is checked too because
+            # the Vite stack uses it.
+            body = self.files.get(path, "")
+            specs = (self.ALIAS_IMPORT_RE.findall(body)
+                     + self.LOCAL_IMPORT_RE.findall(body))
+            for spec in specs:
+                spec = spec.lstrip("./")
+                for cand in (spec, f"{spec}.js", f"{spec}.jsx",
+                             f"{spec}/index.js", f"{spec}/index.jsx"):
+                    if cand in self.files:
+                        near.add(cand)
+
+        src.sort(key=lambda x: (priority.get(x[0], 99),
+                                0 if x[0] in near else 1,
+                                x[0]))
         out = []
         for path, content in src[:max_files]:
             body = content if len(content) <= per_file else \
@@ -3041,9 +3237,30 @@ class ArchitectAgent:
             parts.append(f"`{self._last_truncated}` was cut off mid-file. "
                          f"Write it again in full first, then carry on.")
 
-        if self._convo_chars() > self._budget_chars():
-            parts.append(f"{SNAPSHOT_OPEN}\n" + self._context_snapshot()
-                         + f"\n{SNAPSHOT_CLOSE}")
+        # Every turn, not only the tight ones. It is derived from disk, so it
+        # cannot go stale and trimming cannot eat it — and it is the one thing
+        # the model needs that its own compacted transcript no longer holds.
+        ledger = self._symbol_ledger()
+        if ledger:
+            parts.append(ledger)
+
+        # Attached when the transcript has stopped holding the source, not when
+        # the thread happens to be over budget. The old test was
+        # `_convo_chars() > _budget_chars()`, and `_trim_convo` stubs bodies
+        # until the thread is back UNDER budget — so from the turn after the
+        # first compaction, the test is false forever while the receipts pile
+        # up. The model was left reading `// [written earlier — 84 lines, still
+        # on disk]` and inventing the rest, which is the exact failure the
+        # snapshot exists to prevent.
+        #
+        # Sized to the room that is actually free, so it does not trigger the
+        # trim that would take it straight back out.
+        if self._bodies_stubbed():
+            caps = self._room_for_snapshot(sum(len(p) for p in parts))
+            if caps:
+                parts.append(f"{SNAPSHOT_OPEN}\n"
+                             + self._context_snapshot(wanted=outstanding, **caps)
+                             + f"\n{SNAPSHOT_CLOSE}")
 
         grouped = self._outstanding_by_task()
         parts.append("Still to write:\n\n" + (grouped
@@ -3215,6 +3432,135 @@ class ArchitectAgent:
             for n in names:
                 out.setdefault(n, set()).add(path)
         return out
+
+    DEFAULT_EXPORT_RE = re.compile(
+        r"""export\s+default\s+(?:async\s+)?(?:function|class)\s+(\w+)""")
+    # Only the name and the position of the opening brace. The brace itself is
+    # matched by counting, because `({ a, b: { c }, ...rest })` closes twice
+    # and a non-greedy `[^}]*` stops at the inner one — which silently drops
+    # every prop after the nested object while the ledger goes on presenting
+    # itself as the complete contract.
+    PROPS_RE = re.compile(
+        r"""(?:export\s+)?(?:default\s+)?(?:async\s+)?function\s+(\w+)\s*\(\s*\{""")
+    ARROW_PROPS_RE = re.compile(
+        r"""(?:const|let)\s+(\w+)\s*=\s*(?:async\s*)?\(\s*\{""")
+
+    @staticmethod
+    def _balanced(body: str, open_at: int) -> str:
+        """The text inside the braces starting at `open_at`, nesting included."""
+        depth, out = 0, []
+        for ch in body[open_at:]:
+            if ch == "{":
+                depth += 1
+                if depth == 1:
+                    continue
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    return "".join(out)
+            if depth >= 1:
+                out.append(ch)
+        return ""
+
+    def _props_in(self, body: str) -> dict:
+        """component name -> the prop names it destructures, top level only."""
+        found = {}
+        for rx in (self.PROPS_RE, self.ARROW_PROPS_RE):
+            for hit in rx.finditer(body):
+                raw = self._balanced(body, hit.end() - 1)
+                if not raw:
+                    continue
+                taken, depth, part = [], 0, []
+                for ch in raw:                 # split on top-level commas only
+                    if ch in "{[(":
+                        depth += 1
+                    elif ch in "}])":
+                        depth -= 1
+                    if ch == "," and depth == 0:
+                        taken.append("".join(part))
+                        part = []
+                    else:
+                        part.append(ch)
+                taken.append("".join(part))
+
+                names = []
+                for one in taken:
+                    one = one.strip().split(":")[0].split("=")[0].strip()
+                    one = one.lstrip(".").strip()          # ...rest -> rest
+                    if one and one.isidentifier():
+                        names.append(one)
+                if names:
+                    found[hit.group(1)] = names
+        return found
+
+    def _symbol_ledger(self, limit: int = 60) -> str:
+        """What every file written so far exports, and what props it takes.
+
+        The builder's memory of its own code is its own transcript, and
+        `_stub_files` replaces each body with `// [written earlier — 84 lines,
+        still on disk]` the moment the thread outgrows its budget. After that
+        the model knows a file exists and nothing about its shape — while the
+        system prompt tells it, in as many words, to re-read a component's
+        parameter list before rendering it. That instruction became impossible
+        to obey exactly when it started to matter.
+
+        This is the answer, and the reason it works is that it is DERIVED, not
+        remembered: rebuilt from `self.files` on every turn, so no amount of
+        compaction can eat it. It costs a line per file — a 25-file app is
+        about 1,200 characters, against the 8,000 a single stubbed body used
+        to occupy.
+
+        Names and shapes only. The bodies are on disk and the model wrote them;
+        what it loses is the contract, so the contract is what goes back.
+        """
+        rows = []
+        for path in sorted(self.files):
+            if not path.endswith((".js", ".jsx")) or not self.is_source(path):
+                continue
+            body = self.files.get(path) or ""
+
+            names = set(self.DECL_EXPORT_RE.findall(body))
+            for group in self.LIST_EXPORT_RE.findall(body):
+                for entry in group.split(","):
+                    entry = entry.strip()
+                    if entry:
+                        names.add(re.split(r"\s+as\s+", entry)[-1].strip())
+
+            default = ""
+            hit = self.DEFAULT_EXPORT_RE.search(body)
+            if hit:
+                default = hit.group(1)
+            else:
+                # `const Row = ({item}) => …` then `export default Row` — the
+                # common arrow shape, where the name is on a separate line from
+                # the export and the props are on neither.
+                bare = re.search(r"export\s+default\s+(\w+)\s*[;\n]", body)
+                if bare:
+                    default = bare.group(1)
+                elif re.search(r"export\s+default\b", body):
+                    default = "(anonymous)"
+
+            props = self._props_in(body)
+
+            bits = []
+            if default:
+                own = props.get(default)
+                bits.append(f"default {default}"
+                            + (f"({', '.join(own)})" if own else ""))
+            for n in sorted(names - {default}):
+                own = props.get(n)
+                bits.append(n + (f"({', '.join(own)})" if own else ""))
+            if bits:
+                rows.append(f"  {path} — " + "; ".join(bits))
+
+        if not rows:
+            return ""
+        head = ("What you have written so far, and the shape of each one. Props "
+                "are in brackets: render a component with exactly these names, "
+                "and import only what is listed here.")
+        if len(rows) > limit:
+            rows = rows[:limit] + [f"  … and {len(rows) - limit} more on disk"]
+        return head + "\n" + "\n".join(rows)
 
     def _resolves(self, target: str) -> bool:
         """Does a root-relative import specifier point at a file we have?"""
@@ -3679,6 +4025,41 @@ class ArchitectAgent:
             if re.search(r"\bnew\s+MongoClient\b", content):
                 errors.append(f"{path}: constructs a MongoClient — import "
                               f"getDb/getCollection from '@/lib/mongodb' instead")
+            # Standalone mongod refuses every transaction, so this compiles,
+            # reads as the careful version, and returns an error for each real
+            # request. Found in a generated reservations route that failed one
+            # test through four repair rounds — the rounds kept rewriting the
+            # test, because the route looks right.
+            if re.search(r"\bstartSession\s*\(|\bwithTransaction\s*\(", content):
+                errors.append(f"{path}: opens a MongoDB transaction — the mongod "
+                              f"is standalone and answers 'Transaction numbers "
+                              f"are only allowed on a replica set member or "
+                              f"mongos'; use one atomic updateOne with a guard "
+                              f"in the filter and check modifiedCount instead")
+            # The other half of the transaction rule, and the half a model
+            # skips. Told not to open a transaction, the next build reached for
+            # `$inc` as instructed and then dropped the two details that make
+            # it safe — the guard in the filter and the modifiedCount check:
+            #
+            #   const book = await col.findOne({ _id })          // read
+            #   if (book.availableCopies <= 0) return 400
+            #   await col.updateOne({ _id }, { $inc: { availableCopies: -1 } })
+            #
+            # and labelled it "// Atomic check and decrement". Two borrowers of
+            # the last copy both pass the check and both decrement. A
+            # prohibition is easy to obey; a multi-part replacement is not, so
+            # the second half is checked rather than merely asked for.
+            for hit in re.finditer(
+                    r"\$inc\s*:\s*\{\s*([A-Za-z_][\w.]*)\s*:\s*-\s*\d", content):
+                field = hit.group(1)
+                near = content[max(0, hit.start() - 600):hit.end() + 400]
+                guarded = re.search(re.escape(field) + r"\s*:\s*\{\s*\$gte?\b", near)
+                if not guarded and "modifiedCount" not in near:
+                    errors.append(
+                        f"{path}: decrements {field} with no guard — two "
+                        f"requests can both pass the check and both decrement; "
+                        f"put {field}: {{ $gt: 0 }} in the updateOne filter and "
+                        f"treat modifiedCount === 0 as the failure")
             if "next/head" in content and "<Head" in content:
                 errors.append(f"{path}: uses next/head — the App Router has no "
                               f"<Head>; export a `metadata` object instead")
@@ -4127,7 +4508,7 @@ class ArchitectAgent:
             return []
         return self.missing_planned_files()
 
-    def resume(self) -> bool:
+    def resume(self, brief: str = "") -> bool:
         """
         Pick a half-finished build back up where it stopped.
 
@@ -4149,10 +4530,18 @@ class ArchitectAgent:
             return False
         if not self.convo:
 
+            # The specification, if there is one, goes back in here. A resume
+            # normally carries it already — it is in the pinned preamble the
+            # saved thread restores — but this branch rebuilds that preamble
+            # from the plan alone, and the plan is a summary of the SRS, not a
+            # replacement for it. Without this, the half of the app written
+            # after an interruption is the half written blind.
             self._log("WARN", "   ⚠ No saved conversation — resuming from the "
-                              "plan alone")
-            self.start_conversation(self.plan.get("description")
-                                    or self.plan.get("title") or "this app")
+                              "plan" + (" and the specification" if brief
+                                        else " alone"))
+            self.start_conversation((self.plan.get("description")
+                                     or self.plan.get("title") or "this app")
+                                    + (brief or ""))
 
         total = sum(len(p.get("files", [])) for p in self.plan["phases"])
         self._log("INFO", f"⏭️  Resuming — {total - len(missing)}/{total} files "

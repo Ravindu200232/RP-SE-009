@@ -7,7 +7,7 @@ import { useStore } from '@/lib/store'
 import { TYPE_ANOTHER } from '@/lib/srs-constants'
 import { useAttachments } from '@/lib/use-attachments'
 import { AttachButtons, AttachList } from './Attachments'
-import { Button, Panel } from '../ui'
+import { Button, Panel, TextArea } from '../ui'
 import { cn } from '@/lib/utils'
 
 export default function Interview({ projectId, onDone, onCancel }) {
@@ -87,8 +87,20 @@ export default function Interview({ projectId, onDone, onCancel }) {
   const [picked, setPicked] = useState([])
   const attach = useAttachments()
 
-  useEffect(() => { setPicked(multi ? prefill.map(String) : []) },
- [q?.id])
+  // A question that quotes their own words back — "You mentioned 'pubudu
+  // tireshop' — is that the exact name you want?" — carries that candidate in
+  // `prefill`. On a chip question they confirm it by ticking the option that
+  // is already marked "from what you said". On a TYPED question there is
+  // nothing to tick: the box opened empty, and the honest answer to a yes/no
+  // question is "yes" — which is exactly what got stored, and what three real
+  // apps ended up being called, folder and database included.
+  //
+  // So the candidate goes IN the box. Confirming it becomes pressing send;
+  // changing it becomes editing it. Neither one is the word "yes".
+  useEffect(() => {
+    setPicked(multi ? prefill.map(String) : [])
+    setText(!options.length && prefill.length ? String(prefill[0]) : '')
+  }, [q?.id])
 
   if (phase === 'loading') {
     return <Waiting>Reading the first question…</Waiting>
@@ -209,7 +221,7 @@ export default function Interview({ projectId, onDone, onCancel }) {
 
         {(typing || options.length === 0) && (
           <div className="mt-4">
-            <textarea ref={box} value={text} rows={3}
+            <TextArea ref={box} value={text} rows={3}
                       placeholder="Type your answer…"
                       onChange={e => setText(e.target.value)}
                       onKeyDown={e => {

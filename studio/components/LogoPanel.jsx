@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Loader2, Upload } from 'lucide-react'
 import { api } from '@/lib/api'
-import { Button, Modal } from './ui'
+import { Button, Modal, TextArea } from './ui'
 
 const ACCEPT_LOGO = '.png,.jpg,.jpeg,.webp,.gif,.bmp,image/*'
 
@@ -75,7 +75,7 @@ export default function LogoPanel({ idea, model, onAccept, onSkip }) {
         </p>
       </header>
 
-      <textarea value={prompt} rows={3} disabled={state === 'writing'}
+      <TextArea value={prompt} rows={3} disabled={state === 'writing'}
                 placeholder={state === 'writing' ? 'Writing a prompt…' : ''}
                 onChange={e => setPrompt(e.target.value)}
                 className="w-full resize-y rounded-ctl border border-line bg-bg p-2.5

@@ -1,8 +1,8 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Moon, Sun, FolderUp, Settings, Download, ExternalLink, Search, Play,
+  Moon, Sun, FolderUp, Settings, Download, ExternalLink, Search, Play, Trash2,
 } from 'lucide-react'
 import { useStore, KEYS } from '@/lib/store'
 import { api } from '@/lib/api'
@@ -13,12 +13,37 @@ import { cn } from '@/lib/utils'
 
 
 export default function Sidebar({
-  models: cat, projects, onOpen, onImport, onSettings, onZip, onResume,
+  models: cat, projects, onOpen, onImport, onSettings, onZip, onResume, onDeleted,
 }) {
   const s = useStore()
   const { models, agentMode, think, images, project, status, statusText, theme } = s
   const folderRef = useRef(null)
   const [q, setQ] = useState('')
+  const [fooocus, setFooocus] = useState(null)
+  const [confirming, setConfirming] = useState('')
+  const [removing, setRemoving] = useState('')
+
+  async function remove(name) {
+    setRemoving(name)
+    try {
+      await api.deleteProject(name)
+      s.addLog('SUCCESS', `🗑 Deleted ${name}`)
+    } catch (e) {
+      // Reported, not trusted. The request in front of this API is abandoned
+      // at 30 seconds and a delete used to run past it, so "the connection
+      // died" and "nothing happened" are not the same thing — the project was
+      // gone and the studio went on showing it. The list below is what
+      // settles it: whatever the server did, this asks it again.
+      s.addLog('WARN', `Delete of ${name} did not report back — ${e.message}. `
+                     + 'Checking whether it went.')
+    }
+    // The studio was pointing at a folder that may have stopped existing, so
+    // it lets go either way; `onDeleted` re-reads the list from the server.
+    if (project === name) useStore.getState().reset(null)
+    onDeleted?.(name)
+    setRemoving('')
+    setConfirming('')
+  }
 
   function pick(role, id) {
     useStore.setState({ models: { ...models, [role]: id } })
@@ -62,6 +87,95 @@ export default function Sidebar({
     s.persist(storeKey, next ? '1' : '0')
   }
 
+  // The Images chip is the only switch here that another program has to agree
+  // with. Agent and Thinking are settings this browser holds and sends with
+  // the next build; images are drawn by Fooocus, which the server reaches over
+  // HTTP and which the chip never told anything. So the chip was on, the
+  // server's own `image_enabled` was whatever it had been left at, and the
+  // build logged "image generation is off" with the switch lit.
+  //
+  // Two things follow from that. The chip has to write the server's setting,
+  // and it has to say whether Fooocus is actually answering — turning it on is
+  // exactly the moment somebody wants to know, and it is a separate program
+  // that gets started and stopped by hand, so the answer has to be asked for
+  // again each time rather than remembered from boot.
+  async function checkFooocus() {
+    setFooocus(f => ({ ...(f || {}), checking: true }))
+    try {
+      const r = await api.imageCheck()
+      setFooocus({ ...r, checking: false })
+      return r
+    } catch (e) {
+      setFooocus({ error: e.message, checking: false })
+      return null
+    }
+  }
+
+  useEffect(() => {
+    api.settings()
+      .then(cfg => {
+        // The server's setting is the one that decides, so the chip adopts it
+        // rather than the other way round — otherwise a switch left on in this
+        // browser would claim a capability the build does not have. A server
+        // too old to report it leaves the saved chip alone rather than
+        // switching it off on the strength of a missing field.
+        if (!cfg || !('image_enabled' in cfg)) return
+        useStore.setState({ images: !!cfg.image_enabled })
+        s.persist(KEYS.images, cfg.image_enabled ? '1' : '0')
+        if (cfg.image_enabled) checkFooocus()
+      })
+      .catch(() => { })
+  }, [])
+
+  async function toggleImages() {
+    const next = !images
+    useStore.setState({ images: next })
+    s.persist(KEYS.images, next ? '1' : '0')
+    try {
+      await api.saveSettings({ image_enabled: next })
+    } catch {
+      s.addLog('WARN', '⚠ Could not save the images setting — it will not stick.')
+    }
+    if (!next) return setFooocus(null)
+
+    const r = await checkFooocus()
+    if (r?.available) {
+      s.addLog('INFO', `🎨 Fooocus is answering at ${r.host} — pictures will be drawn.`)
+    } else if (r?.can_start) {
+      s.addLog('WARN', '⚠ No Fooocus is answering. Press “start it” in the '
+                     + 'sidebar, or run it yourself.')
+    } else {
+      s.addLog('WARN', '⚠ No Fooocus is answering and none was found on this '
+                     + 'machine — start it, or set its address in Settings.')
+    }
+  }
+
+  async function startFooocus() {
+    setFooocus(f => ({ ...(f || {}), checking: true }))
+    try {
+      const r = await api.imageStart()
+      s.addLog('INFO', `🎨 Starting Fooocus — ${r.launcher}. It takes a `
+                     + 'minute or two to load its model.')
+    } catch (e) {
+      s.addLog('WARN', `⚠ Could not start Fooocus — ${e.message}`)
+      return setFooocus(f => ({ ...(f || {}), checking: false }))
+    }
+    // Cold start is minutes, not seconds, and the answer is what the chip
+    // shows — so poll rather than ask once and report a failure that is only
+    // a model still loading.
+    for (let i = 0; i < 60; i++) {
+      await new Promise(r => setTimeout(r, 5000))
+      const r = await api.imageCheck().catch(() => null)
+      if (r?.available) {
+        setFooocus({ ...r, checking: false })
+        return s.addLog('INFO', `🎨 Fooocus is up at ${r.host}.`)
+      }
+    }
+    setFooocus(f => ({ ...(f || {}), checking: false }))
+    s.addLog('WARN', '⚠ Fooocus did not come up within five minutes — check '
+                   + 'its window for what it is waiting on.')
+  }
+
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase()
     if (!needle) return projects
@@ -83,12 +197,13 @@ export default function Sidebar({
                       border-line bg-panel">
       <header className="flex items-center gap-[11px] border-b border-line
                          px-4 pb-3 pt-4">
-        <span className="grid size-[34px] shrink-0 place-items-center rounded-[10px]
-                         border border-line
-                         bg-[radial-gradient(120%_120%_at_20%_0%,rgba(91,124,247,.35),transparent_70%)]
-                         font-display text-[15px] font-extrabold text-accent">
-          A
-        </span>
+        {/* The artwork, not a letter standing in for it. `basePath` is
+            `/__agentforge`, so a file in `studio/public` is served from under
+            it — an absolute `/agentforge-mark.png` would go to the generated
+            app's dev server instead, which is a different site entirely. */}
+        <img src="/__agentforge/agentforge-mark.png" alt="AgentForge"
+             width={34} height={34}
+             className="size-[34px] shrink-0 rounded-[10px] object-contain" />
         <div className="min-w-0 flex-1">
           <div className="font-display text-[14px] font-bold leading-none text-ink">
             AgentForge
@@ -163,11 +278,30 @@ export default function Sidebar({
               tip="A reasoning pass costs real time on a twenty-file build">
           Thinking
         </Chip>
-        <Chip on={images} onClick={() => toggle('images', KEYS.images)}
-              tip="Generate pictures, and offer a logo before the build">
+        <Chip on={images} onClick={toggleImages}
+              tip={fooocusTip(fooocus, images)}>
           Images
+          {images && (
+            <span className={cn('ml-1.5 inline-block size-[5px] rounded-full align-middle',
+              fooocus?.checking ? 'animate-pulse bg-white/70'
+                : fooocus?.available ? 'bg-white'
+                : 'bg-white/30')} />
+          )}
         </Chip>
       </div>
+
+      {images && fooocus && !fooocus.checking && !fooocus.available && (
+        <p className="px-3 pb-1 pt-0.5 text-[10px] leading-snug text-muted2">
+          No Fooocus is answering
+          {fooocus.can_start ? (<>
+            {' — '}
+            <button onClick={startFooocus}
+                    className="text-accent underline underline-offset-2 hover:text-ink">
+              start it
+            </button>
+          </>) : ' — start it, or set its address in Settings'}
+        </p>
+      )}
 
       <SectionLabel className="px-4 pb-1.5 pt-3.5"
                     right={<span className="font-mono">{projects.length}</span>}>
@@ -187,25 +321,63 @@ export default function Sidebar({
         {shown.map(p => {
           const name = p.name || p
           const on = project === name
+          const asking = confirming === name
+          const busyHere = removing === name
           return (
-            <button key={name} onClick={() => onOpen(name)}
-                    className={cn('flex w-full items-center gap-2 rounded-ctl px-2 py-[7px]',
-                      'text-left transition-colors',
-                      on ? 'bg-accent/12' : 'hover:bg-panel2')}>
+            // A row, not a button — the delete control lives inside it and a
+            // <button> inside a <button> is invalid HTML that React will not
+            // render as written.
+            <div key={name}
+                 className={cn('group flex w-full items-center gap-2 rounded-ctl',
+                   'px-2 py-[7px] transition-colors',
+                   asking ? 'bg-bad/10 ring-1 ring-bad/40'
+                          : on ? 'bg-accent/12' : 'hover:bg-panel2')}>
               <span className={cn('size-[5px] shrink-0 rounded-full',
                                   on ? 'bg-accent' : 'bg-muted2')} />
-              <span className="min-w-0 flex-1">
+              <button onClick={() => onOpen(name)} disabled={asking || busyHere}
+                      className="min-w-0 flex-1 text-left">
                 <span className={cn('block truncate text-[11.5px] leading-tight',
                                     on ? 'text-accent' : 'text-ink')}>
                   {p.title || name}
                 </span>
                 <span className="mt-px block truncate font-mono text-[9px] text-muted2">
-                  {p.stack || 'next'}{p.file_count ? ` · ${p.file_count}` : ''}
+                  {asking ? 'delete this and its database?'
+                          : `${p.stack || 'next'}${p.file_count ? ` · ${p.file_count}` : ''}`}
                 </span>
-              </span>
-              <DeployTag deployed={p.deployed} />
-              {p.unfinished ? <Badge tone="bad">{p.unfinished}</Badge> : null}
-            </button>
+              </button>
+
+              {asking ? (
+                <>
+                  <button onClick={() => remove(name)} disabled={busyHere}
+                          className="shrink-0 rounded border border-bad/50 bg-bad/10
+                                     px-1.5 py-0.5 font-mono text-[9px] text-bad
+                                     transition-colors hover:bg-bad/20
+                                     disabled:opacity-50">
+                    {busyHere ? '…' : 'delete'}
+                  </button>
+                  <button onClick={() => setConfirming('')} disabled={busyHere}
+                          className="shrink-0 px-1 font-mono text-[9px] text-muted2
+                                     hover:text-ink">
+                    keep
+                  </button>
+                </>
+              ) : (<>
+                <DeployTag deployed={p.deployed} />
+                {p.unfinished ? <Badge tone="bad">{p.unfinished}</Badge> : null}
+                {/* Only on hover, and it asks before it acts. This is the one
+                    control in the studio that destroys work that cannot be
+                    got back, so it does not sit where a mis-click can find
+                    it and it never fires on the first press. */}
+                <Tip text={`Delete ${name} from disk`}>
+                  <button onClick={() => setConfirming(name)}
+                          className="shrink-0 rounded p-0.5 text-muted2 opacity-0
+                                     transition-opacity hover:text-bad
+                                     group-hover:opacity-100">
+                    <Trash2 className="size-3" />
+                  </button>
+                </Tip>
+              </>)}
+            </div>
           )
         })}
         {!shown.length && (
@@ -250,6 +422,14 @@ function DeployTag({ deployed }) {
       <Tag tone={gone ? 'mute' : 'ok'}>{gone ? 'gone' : (where || 'deployed')}</Tag>
     </Tip>
   )
+}
+
+function fooocusTip(state, on) {
+  if (!on) return 'Generate pictures, and offer a logo before the build'
+  if (!state || state.checking) return 'Looking for Fooocus…'
+  if (state.available) return `Fooocus is answering at ${state.host}`
+  if (state.error) return `Could not ask the server — ${state.error}`
+  return 'No Fooocus is answering — pictures will be skipped'
 }
 
 function Chip({ on, tip, children, ...rest }) {

@@ -54,6 +54,14 @@ export const useStore = create((set, get) => ({
 
   busy: false,
   setBusy: (busy) => set({ busy }),
+
+  // Which page of the generated app the preview is showing. The ask box needs
+  // it — "this page is blank" and "the booking button does nothing" both mean
+  // nothing without knowing which page — and the router and the reproduction
+  // both take it. It lives here rather than in PreviewPane's own state because
+  // the box that needs it is in the header, two components away.
+  previewRoute: '/',
+  setPreviewRoute: (previewRoute) => set({ previewRoute }),
   project: null,
   view: 'preview',
   setView: (view) => set({ view }),
@@ -103,9 +111,17 @@ export const useStore = create((set, get) => ({
   activeFile: null,
   liveFile: null,
   liveBuf: '',
+
+  // While a file is being written the code pane follows the writer — that is
+  // the point of watching a build. Picking a file from the list is the reader
+  // saying "show me this one instead", so it stops following until the next
+  // file starts. Without it the pane belonged to whichever stream was open,
+  // and a stream that never closed (an agent that announced a write and then
+  // refused it) made every click do nothing for the rest of the session.
+  follow: true,
   putFile: (name, content) => set(s => ({ files: { ...s.files, [name]: content } })),
   setFiles: (files) => set({ files }),
-  setActiveFile: (activeFile) => set({ activeFile }),
+  setActiveFile: (activeFile) => set({ activeFile, follow: false }),
 
   ...DEFAULTS,
 
@@ -147,11 +163,20 @@ export const useStore = create((set, get) => ({
   },
   persist: (key, value) => { try { LS?.setItem(key, value) } catch { } },
 
+  // Everything here is about ONE project, so opening another one has to clear
+  // all of it. `qaReport` and `undo` were left behind: the testing tab showed
+  // the previous project's report until its own arrived, and the undo button
+  // stayed live pointing at a snapshot id taken in a different project — which
+  // `api.undo(project, id)` would have posted against the new one.
   reset: (project) => set({
     project, logs: [], steps: {}, phases: [], files: {},
-    activeFile: null, liveFile: null, liveBuf: '',
+    activeFile: null, liveFile: null, liveBuf: '', follow: true,
     progress: { step: '', pct: 0 },
     tests: emptyTests(),
+    question: null,
+    qaReport: null,
+    undo: null,
+    previewRoute: '/',
   }),
 
   tests: emptyTests(),
@@ -185,6 +210,10 @@ export const useStore = create((set, get) => ({
 
   undo: null,
   setUndo: (undo) => set({ undo }),
+
+  // A question the run stopped on, waiting for an answer. Null the rest of the
+  // time. `ws.answerQuestion` is what clears it.
+  question: null,
 }))
 
 function emptyTests() {
