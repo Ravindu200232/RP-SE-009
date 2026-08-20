@@ -33,7 +33,8 @@ log = logging.getLogger("commands")
 
 DEFAULT_TIMEOUT = 300
 MAX_OUTPUT = 4000
-MAX_CALLS = 12
+MAX_CALLS = 20
+MAX_COMMAND_CHARS = 4096
 
 
 ALLOWED = {
@@ -90,8 +91,9 @@ def validate(command: str):
     command = (command or "").strip()
     if not command:
         return None, "empty command"
-    if len(command) > 400:
-        return None, "command too long"
+    if len(command) > MAX_COMMAND_CHARS:
+        return None, (f"command too long ({len(command)} chars; "
+                      f"limit {MAX_COMMAND_CHARS})")
     if "\n" in command or "\r" in command:
         return None, "one command per block — no newlines"
 
@@ -231,6 +233,18 @@ class CommandRunner:
         if self.on_event:
             self.on_event({"command": command, "status": "running"})
 
+        lock = None
+        if argv and str(argv[0]).lower().split(".")[0] in {"npm", "npx", "yarn", "pnpm"}:
+            try:
+                from qa_agent.harness import NPM_LOCK, npm_busy
+                if npm_busy():
+                    self._log("INFO", "   ⏸ waiting for the other npm to finish")
+                lock = NPM_LOCK
+            except Exception:
+                lock = None
+
+        if lock is not None:
+            lock.acquire()
         try:
             r = subprocess.run(
                 argv, cwd=str(self.project_dir), capture_output=True,
@@ -257,6 +271,9 @@ class CommandRunner:
             if self.on_event:
                 self.on_event({"command": command, "status": "error", "output": str(e)})
             return CommandResult(False, command, str(e), code=-1)
+        finally:
+            if lock is not None:
+                lock.release()
 
         output = ((r.stdout or "") + ("\n" + r.stderr if r.stderr else "")).strip()
         if len(output) > MAX_OUTPUT:
