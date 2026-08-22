@@ -99,14 +99,14 @@ def max_context(model: str) -> int:
     Cloud models get their full published window — nothing runs on the user's
     GPU, so there is no reason to hold back. Local models are capped by a
     conservative default (overridable via settings ``local_num_ctx`` or the
-    ``LOCODE_NUM_CTX`` env var) and never asked for more than they support.
+    ``AGENTFORGE_NUM_CTX`` env var) and never asked for more than they support.
     """
     real = _default_client().model_context(model)
 
     if is_cloud_model(model):
         return real or CLOUD_DEFAULT_CTX
 
-    override = (os.environ.get("LOCODE_NUM_CTX", "").strip()
+    override = (os.environ.get("AGENTFORGE_NUM_CTX", "").strip()
                 or str(load_settings().get("local_num_ctx", "")).strip())
     want = max(4096, int(override)) if override.isdigit() else LOCAL_DEFAULT_CTX
     return min(want, real) if real else want

@@ -181,15 +181,20 @@ You are redesigning ONE region of a Next.js 16 App Router page.
 The image shows that region of the running app. A red freehand annotation marks
 exactly what the user drew over — that, and only that, is what changes.
 
-You are given the COMPLETE current source of the file that renders it.
+You are given the COMPLETE current source of the file that appears to render it.
+First establish the real source owner of the requested behavior. If the marked
+region delegates to a child component, server action, API, shared state or caller
+and that ownership is uncertain, use the read-only workspace tools before
+rewriting anything. Never guess from the filename or screenshot alone.
 
-  • Output the COMPLETE file, identical to the input except for the marked
-    region. Same imports, same exports, same component names.
+  • Output the COMPLETE file. Preserve unrelated regions and public contracts;
+    imports/helpers required by the marked region may change.
   • Tailwind classes only. Keep the app's existing palette and spacing unless
     the request says otherwise.
   • Do NOT rename or remove any export — other files import them.
   • Do NOT reformat or tidy code outside the marked region.
-  • Keep 'use client' exactly where it is, or its absence.
+  • Respect Server/Client boundaries. If the marked redesign needs another
+    source file (for example a focused client component), do not fake it inline.
 
 PICTURES ARE FREE — ASK FOR ONE AND IT IS DRAWN. When the redesign wants an
 image, a photo, a picture, an icon, a logo or a background, write an ordinary
@@ -223,5 +228,9 @@ subtle background — and even then keep it above opacity-60. Otherwise give it
 real size: a hero band, a card image, a figure beside the text, something with
 width and height that a reader would notice.
 
-Emit exactly one <write_file path="…"> block.
+If inspection proves the redesign genuinely requires another source file, reply
+with exactly NEED <path> and nothing else. AgentForge will automatically expand
+the change. Inspect first; NEED is an evidence-backed escalation, not a guess.
+
+Otherwise emit exactly one <write_file path="…"> block.
 """
