@@ -68,6 +68,17 @@ log = logging.getLogger("agent.bugfixer")
 TEMPERATURE = 0.15
 
 
+# The whole-call budget for one repair.
+#
+# A repair reads one test file and one target and rewrites one of them; ten
+# minutes is already several times what that takes. Left unset, `_stream` says
+# nothing to `chat_stream` and the call inherits its 1800s default, which is
+# not a budget for this — it is the ceiling for a build that ran away, and four
+# of these run at once. `MAX_TURN_CHARS` catches a model that floods; this
+# catches the same model doing it slowly.
+CALL_BUDGET = 600
+
+
 MAX_APP_FILES = 4
 
 
@@ -647,7 +658,7 @@ class BugFixerAgent:
             on_file_end=on_end)
         try:
             self.arch._stream(convo, parser.feed, temperature=TEMPERATURE,
-                              model=self.model)
+                              model=self.model, timeout=CALL_BUDGET)
         except Exception as e:
             self._log("WARN", f"   ⚠ bug fixer failed on {test_file}: {e}")
         parser.close()
@@ -762,7 +773,7 @@ class BugFixerAgent:
             on_file_end=on_end)
         try:
             self.arch._stream(convo, parser.feed, temperature=TEMPERATURE,
-                              model=self.model)
+                              model=self.model, timeout=CALL_BUDGET)
         except Exception as e:
             self._log("WARN", f"   ⚠ runtime repair failed: {e}")
         parser.close()

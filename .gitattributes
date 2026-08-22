@@ -1,2 +1,29 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Binaries git must not touch.
+#
+# Without this, `git add document/*.pdf` warns "LF will be replaced by CRLF
+# the next time Git touches it" — and it means it. Every 0x0A byte inside the
+# PDF becomes 0x0D 0x0A on checkout, the xref offsets in the trailer stop
+# pointing at the objects they name, and the file that opens fine here fails
+# to open on a fresh clone. The same holds for every other format below.
+*.pdf   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.icns  binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.mp3   binary
+*.wav   binary
+*.m4a   binary
+*.webm  binary
+*.zip   binary
+*.gz    binary
+*.node  binary
+*.exe   binary
+*.dll   binary
+*.dmg   binary

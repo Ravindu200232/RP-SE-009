@@ -1,0 +1,211 @@
+@import "tailwindcss";
+
+/*
+ * The palette, taken from the original UI unchanged, and handed to Tailwind as
+ * colour tokens.
+ *
+ * Two blocks — one per theme — and the toggle swaps which applies by setting
+ * `data-theme` on <html>. Mapping Tailwind's colours onto these variables
+ * means `bg-panel` and `text-muted` follow the toggle for free, with no `dark:`
+ * variant on any element and no second palette to keep in sync.
+ *
+ * Naming them in `@theme` rather than writing `var(--bg2)` by hand also makes
+ * a whole class of bug impossible: hand-written CSS naming a variable that
+ * does not exist resolves to nothing and renders transparent, silently. A
+ * Tailwind class that does not exist fails at build time instead.
+ */
+[data-theme="dark"] {
+  --bg: #0c0c0f;
+  --bg2: #111116;
+  --bg3: #18181e;
+  --bg4: #1f1f28;
+  --line: rgba(255, 255, 255, .07);
+  --line2: rgba(255, 255, 255, .13);
+  --ink: #e8e8f2;
+  --muted: #6b6b80;
+  --muted2: #45455a;
+  --shadow: rgba(0, 0, 0, .5);
+  --code-bg: #0d0d12;
+}
+
+[data-theme="light"] {
+  --bg: #f4f4f7;
+  --bg2: #ffffff;
+  --bg3: #f0f0f4;
+  --bg4: #e8e8ee;
+  --line: rgba(0, 0, 0, .09);
+  --line2: rgba(0, 0, 0, .15);
+  --ink: #18181e;
+  --muted: #707088;
+  --muted2: #8a8aa3;
+  --shadow: rgba(0, 0, 0, .12);
+  --code-bg: #f7f7fa;
+}
+
+:root {
+  --accent: #5b7cf7;
+  --accent2: #38bdf8;
+  --green: #34d399;
+  --red: #f87171;
+  --yellow: #fbbf24;
+  --orange: #fb923c;
+  --sidebar-w: 272px;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--bg2);
+  --color-panel2: var(--bg3);
+  --color-raised: var(--bg4);
+  --color-code: var(--code-bg);
+  --color-line: var(--line);
+  --color-line2: var(--line2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-muted2: var(--muted2);
+  --color-accent: var(--accent);
+  --color-accent2: var(--accent2);
+  --color-ok: var(--green);
+  --color-bad: var(--red);
+  --color-warn: var(--yellow);
+
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-display: 'Syne', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+
+  --radius-panel: 10px;
+  --radius-ctl: 6px;
+}
+
+/* `[data-theme]` is the switch, so `dark:` follows the toggle rather than the
+   operating system or a class nobody sets. */
+@custom-variant dark ([data-theme="dark"] &);
+
+@layer base {
+  html, body { height: 100%; }
+  body {
+    @apply bg-bg text-ink font-body antialiased;
+    overflow: hidden;   /* the panes scroll, the page never does */
+    font-size: 14px;
+    transition: background .25s, color .25s;
+  }
+  ::selection { background: color-mix(in oklab, var(--accent) 30%, transparent); }
+}
+
+/* Syntax colours for the code pane.
+ *
+ * Named per theme rather than once, because a palette tuned for a near-black
+ * background is unreadable on a near-white one: the dark set is Dark+ as a
+ * developer expects it, and the light set is the same hues taken down in
+ * lightness and up in saturation so they hold their contrast on paper-white.
+ *
+ * Plain CSS variables, not `@theme` tokens, because these are used by
+ * `lib/highlight.js` through class names it writes into a string — Tailwind
+ * cannot see those, so it would purge any utility class built from them.
+ */
+[data-theme="dark"] {
+  --tk-plain: #a0aab8;
+  --tk-cmt:   #5f6b7a;
+  --tk-str:   #c3e88d;
+  --tk-kw:    #c792ea;
+  --tk-lit:   #f78c6c;
+  --tk-num:   #f78c6c;
+  --tk-fn:    #82aaff;
+  --tk-type:  #ffcb6b;
+  --tk-tag:   #f07178;
+  --tk-prop:  #89ddff;
+  --tk-key:   #f07178;
+}
+
+[data-theme="light"] {
+  --tk-plain: #3b3b46;
+  --tk-cmt:   #8a8fa0;
+  --tk-str:   #2e7d32;
+  --tk-kw:    #8b2fb8;
+  --tk-lit:   #b8501a;
+  --tk-num:   #b8501a;
+  --tk-fn:    #1a56b8;
+  --tk-type:  #9a6b00;
+  --tk-tag:   #c2185b;
+  --tk-prop:  #0277a8;
+  --tk-key:   #c2185b;
+}
+
+.tk-cmt  { color: var(--tk-cmt); font-style: italic; }
+.tk-str  { color: var(--tk-str); }
+.tk-kw   { color: var(--tk-kw); }
+.tk-lit  { color: var(--tk-lit); }
+.tk-num  { color: var(--tk-num); }
+.tk-fn   { color: var(--tk-fn); }
+.tk-type { color: var(--tk-type); }
+.tk-tag  { color: var(--tk-tag); }
+.tk-prop { color: var(--tk-prop); }
+.tk-key  { color: var(--tk-key); }
+
+/* The two layers of the editor.
+ *
+ * A textarea cannot colour its own text, so the colours are a <pre> sitting
+ * exactly underneath a transparent one. "Exactly" is the whole trick: every
+ * metric that decides where a glyph lands has to match, or the caret drifts
+ * from the character it is on — font, size, line height, padding, tab size,
+ * word wrapping and border. They are set here, once, for both. */
+.editor-layer {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.75;
+  padding: 16px;
+  tab-size: 2;
+  white-space: pre;
+  overflow-wrap: normal;
+  border: 0;
+  margin: 0;
+}
+
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted2); }
+
+/* The activity feed over the preview.
+ *
+ * A line rises into place as it arrives and the ones behind it step back, so a
+ * run reads as motion rather than as a wall of text. The sweep is for the work
+ * that has no honest percentage — an element edit is one model call, and a bar
+ * that pretends to measure it is a lie with a progress indicator on it. */
+@keyframes lc-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.lc-rise { animation: lc-rise 260ms cubic-bezier(.2, .7, .3, 1) both; }
+
+@keyframes lc-sweep {
+  0%   { transform: translateX(-110%); }
+  100% { transform: translateX(410%); }
+}
+.lc-sweep { animation: lc-sweep 1.5s cubic-bezier(.55, 0, .45, 1) infinite; }
+
+/* The mark, while the work runs.
+ *
+ * Two rings turning at different speeds around the letter, and the letter
+ * itself breathing. It is the only thing on the preview until the run is over,
+ * so it has to look deliberate rather than like a page that failed to load —
+ * a still logo on a blank panel reads as "broken", and motion reads as "busy".
+ */
+@keyframes lc-orbit {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.lc-orbit    { animation: lc-orbit 2.4s linear infinite; }
+.lc-orbit-slow { animation: lc-orbit 3.8s linear infinite reverse; }
+
+@keyframes lc-breathe {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%      { opacity: .72; transform: scale(.94); }
+}
+.lc-breathe { animation: lc-breathe 2.2s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lc-rise, .lc-sweep, .lc-orbit, .lc-orbit-slow, .lc-breathe {
+    animation: none;
+  }
+}

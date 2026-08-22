@@ -39,6 +39,9 @@ WAIT_MS = 2500
 SETTLE_MS = 900
 MAX_LINES = 12
 
+# Words that name a thing on a page rather than describe a problem. Used only
+# to pick which control to press — a miss costs one unclicked button, and the
+# console and network evidence is gathered either way.
 _STOP = {
     "the", "a", "an", "is", "it", "on", "in", "to", "of", "and", "or", "not",
     "does", "do", "did", "doesn", "don", "isn", "wont", "won", "cant", "can",
@@ -51,6 +54,10 @@ _STOP = {
 }
 
 
+# The development toolchain talks to itself in the console, and none of it is
+# the application. Measured on a healthy generated app: eight console lines and
+# three failed requests, every one of them hot-reload plumbing — a model shown
+# that list will happily "fix" a chunk loader that was never broken.
 _NOISE = re.compile(
     r"_next/(?:static|hmr)|/_next/webpack|hot-update|"
     r"WebSocket connection to .*_next|"
@@ -89,12 +96,12 @@ class Reproduction:
     ran: bool = False
     why_not: str = ""
     signed_in: bool = False
-    console: list = field(default_factory=list)  # error text, with source
+    console: list = field(default_factory=list)      # error text, with source
     page_errors: list = field(default_factory=list)  # uncaught, with stacks
-    network: list = field(default_factory=list)  # 4xx/5xx with body snippets
-    clicked: str = ""  # the control pressed, if any
-    filled: list = field(default_factory=list)  # fields given a value first
-    changed: bool = False  # did the page react at all
+    network: list = field(default_factory=list)      # 4xx/5xx with body snippets
+    clicked: str = ""                                # the control pressed, if any
+    filled: list = field(default_factory=list)       # fields given a value first
+    changed: bool = False                            # did the page react at all
     html: str = ""
     screenshot_b64: str = ""
 
@@ -202,7 +209,7 @@ def reproduce(route: str, complaint: str = "", *, port: int = 5173,
                     if _is_noise(text) or _is_noise(where):
                         return
                     line = f"{text}  [{where}]" if where else text
-                    if line not in out.console:  # the same warning repeats
+                    if line not in out.console:      # the same warning repeats
                         out.console.append(line)
 
                 page.on("console", _console)
@@ -227,7 +234,14 @@ def reproduce(route: str, complaint: str = "", *, port: int = 5173,
                     pass
                 page.wait_for_timeout(SETTLE_MS)
 
-                # Marked as run the moment the page is up, not at the end.
+                # Marked as run the moment the page is up, not at the end. The
+                # listeners have been filling `out` since navigation, and a
+                # crash while clicking — a detached element, a navigation
+                # mid-click — used to leave `ran` False, which makes
+                # `as_prompt` say the app could not be opened and throws away
+                # every console error already captured. The evidence is the
+                # point; losing it to a failure of the optional half is the
+                # one outcome worth engineering against.
                 out.ran = True
 
                 if target:
@@ -251,7 +265,9 @@ def reproduce(route: str, complaint: str = "", *, port: int = 5173,
                 ctx.close()
                 browser.close()
     except Exception as e:                                       # noqa: BLE001
-        # Keep whatever was already seen.
+        # Keep whatever was already seen. `why_not` explains the shortfall;
+        # `ran` says whether the page ever came up, and if it did, the console
+        # and network lines gathered before the failure are still evidence.
         out.why_not = str(e)[:300]
         log.warning(f"reproduce failed: {e}")
     return out
@@ -370,14 +386,17 @@ def _press(page, target: str) -> tuple:
 
     control = None
     what = ""
-    # Escaped: these are the user's own words.
+    # Escaped: these are the user's own words. `wanted_control` only lets
+    # letters, apostrophes and hyphens through today, but a regex built from
+    # user text is a trap that costs nothing to close.
     pattern = re.compile(re.escape(target), re.I)
     for how in (lambda: page.get_by_role("button", name=pattern).first,
                 lambda: page.get_by_role("link", name=pattern).first,
                 lambda: page.get_by_text(pattern).first):
         try:
             found = how()
-            # A Locator is always truthy.
+            # A Locator is always truthy, even when it matches nothing, so the
+            # count is the only thing that answers "is it there".
             if found is not None and found.count() > 0:
                 found.wait_for(state="visible", timeout=1500)
                 control = found
