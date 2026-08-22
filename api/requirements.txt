@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+python-multipart
+pillow
+pypdf
+langchain-core>=0.3.78,<0.4
+langchain-ollama>=0.3,<1
+langgraph>=0.6,<1
