@@ -1356,6 +1356,56 @@ class ArchitectAgent:
 
     EDIT_TIMEOUT = 150
 
+    # No legitimate turn writes this much.
+    #
+    # The largest single file measured across the generated projects on disk is
+    # 18KB, and the turn that writes the most — one build task, or one QA
+    # author pass over a batch of test files — is a handful of those. A quarter
+    # of a million characters is four times the biggest plausible turn, and a
+    # model that reaches it is not writing an application: it is repeating
+    # itself, which is what a model does when the conversation has gone wrong
+    # and it has nothing left to add.
+    #
+    # Measured on a real run: a QA repair turn passed 219,264 characters at 271
+    # seconds and was still climbing at ~800 a second. Nothing stopped it —
+    # `qa_agent.author` was the only caller passing a `timeout` at all, so every
+    # other one inherited `chat_stream`'s 1800s, and the log said "⏳ still
+    # working" every thirty seconds for half an hour before the stage after it
+    # could start. The stall guard cannot help: it fires on silence, and this
+    # stream was never silent.
+    #
+    # Cutting it keeps whatever arrived. A file left half-written is what
+    # `close_parser` already handles through `_last_truncated`, and a repair
+    # turn cut before its verdict is read as "no verdict — treated as a test
+    # problem", which is a decision the round can carry on from.
+    MAX_TURN_CHARS = 250_000
+
+    # Where the heartbeat starts saying so. Past this a turn is already past
+    # anything normal, and the person watching should be told while it is
+    # happening rather than at the cut.
+    LOUD_TURN_CHARS = 100_000
+
+    # Catching the loop itself, rather than waiting for it to fill a quarter of
+    # a million characters.
+    #
+    # `MAX_TURN_CHARS` is a backstop and it is deliberately generous, because
+    # it cannot tell a runaway from a build task writing six files — so it has
+    # to sit above the largest honest turn, and a model looping at 700
+    # characters a second still takes six minutes to reach it. Six minutes of
+    # "⏳ still working" is indistinguishable from a hang.
+    #
+    # Repetition can tell them apart, which size cannot. A model that has lost
+    # the thread emits the same passage over and over; a model writing an
+    # application does not repeat 240 characters exactly, six times. Generated
+    # code does repeat — imports, boilerplate, similar test cases — so the
+    # block is long enough that an exact match is not a coincidence and the
+    # count is high enough that a genuine duplicate pair or two survives.
+    #
+    # Blocks are non-overlapping and hashed, so this is a dict lookup per 240
+    # characters and costs nothing on a stream that is behaving.
+    LOOP_BLOCK = 240
+    LOOP_REPEATS = 6
+
     def _stream(self, messages, on_delta, tools=None, temperature=0.6,
                 model=None, timeout=None):
         """
@@ -1377,6 +1427,10 @@ class ArchitectAgent:
         chars = 0
         chunks = 0
         first_at = 0.0
+        tail = []          # deltas not yet folded into a block
+        tail_len = 0
+        seen_blocks = {}   # block hash -> how many times it has arrived
+        looping = 0
         for chunk in self.client.chat_stream(
                 model or self.model, messages, tools=tools, options=options,
                 keep_alive="10m", think=self.think, **kw):
@@ -1393,12 +1447,37 @@ class ArchitectAgent:
                 chars += len(delta)
                 if not first_at:
                     first_at = time.time()
+
+                # Fold the stream into fixed blocks and count how often each
+                # one has been seen before. Non-overlapping, so a passage that
+                # repeats on a different offset is still caught within a block
+                # or two — a loop repeats many times, not once.
+                tail.append(delta)
+                tail_len += len(delta)
+                while tail_len >= self.LOOP_BLOCK:
+                    joined = "".join(tail)
+                    block, rest = (joined[:self.LOOP_BLOCK],
+                                   joined[self.LOOP_BLOCK:])
+                    tail, tail_len = ([rest], len(rest)) if rest else ([], 0)
+                    if not block.strip():
+                        continue
+                    key = hash(block)
+                    seen_blocks[key] = seen_blocks.get(key, 0) + 1
+                    looping = max(looping, seen_blocks[key])
+
             now = time.time()
             if now - spoke >= 30:
                 spoke = now
                 elapsed = now - started
                 if chars:
                     wrote = f"{chars:,} characters written"
+                    if looping > 1:
+                        wrote += (f" — {looping} of them identical, so it is "
+                                  f"repeating itself; stopping it at "
+                                  f"{self.LOOP_REPEATS}")
+                    elif chars >= self.LOUD_TURN_CHARS:
+                        wrote += (f" — far past what one turn should write; "
+                                  f"stopping it at {self.MAX_TURN_CHARS:,}")
                 elif thinks:
                     wrote = f"thinking, {thinks:,} token(s), nothing written yet"
                 else:
@@ -1414,6 +1493,24 @@ class ArchitectAgent:
             if chunk.get("done"):
                 self.tokens_in += chunk.get("prompt_eval_count", 0) or 0
                 self.tokens_out += chunk.get("eval_count", 0) or 0
+
+            # Both checks run AFTER the delta is delivered, so everything that
+            # arrived before the cut is kept and parsed: the turn is truncated,
+            # never thrown away.
+            if looping >= self.LOOP_REPEATS:
+                self._log("WARN",
+                          f"   ✂ stopped the model — it sent the same passage "
+                          f"{looping} times ({chars:,} characters, "
+                          f"{time.time() - started:.0f}s). It is looping, not "
+                          f"working. Carrying on with what it wrote.")
+                break
+            if chars >= self.MAX_TURN_CHARS:
+                self._log("WARN",
+                          f"   ✂ stopped the model after {chars:,} characters "
+                          f"in one turn ({time.time() - started:.0f}s) — that "
+                          f"is a runaway, not an answer. Carrying on with what "
+                          f"it wrote.")
+                break
         return tool_calls
 
     def start_conversation(self, user_prompt: str):

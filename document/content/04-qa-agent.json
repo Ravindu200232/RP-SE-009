@@ -1,0 +1,501 @@
+{
+ "title": "The QA Agent \u2014 writing, running, repairing and reporting the tests",
+ "one_liner": "A test-authoring, test-running, test-repairing and browser-driving subsystem that rides alongside app generation, writes Vitest unit tests per file while the app is still being built, runs and repairs them under a snapshot-backed revert loop, drives the finished app through a real Chromium with Playwright, and leaves four machine-readable artifacts on disk that feed a nine-tab studio view and a PDF export.",
+ "overview": "The QA agent is 15 files and 6,337 lines under `qa_agent/`, plus ten React components under `studio/components/testing/`, plus roughly 900 lines of orchestration inside `server.py`. Its organising idea, stated in `qa_agent/__init__.py`, is that the build pipeline must not be touched: `QASession` wraps two callbacks the architect already fires (`on_phase` and `on_file_written`), calls the original first and enqueues afterwards, and swallows every exception \u2014 so a broken QA agent cannot stop a build. Every model call it makes builds its own message list and hands it to `arch._stream(convo, \u2026)`, so the build conversation is read from and never written to. Generated code is always read from disk, never from `arch.files`, because the generation thread is mutating that dict while QA runs.\n\nThe second organising idea is a split of authority: **AgentForge writes the configuration and the mocks; the model writes only the test bodies.** `qa_agent/harness.py` emits `vitest.config.mjs`, `tests/setup.js` and four helper modules \u2014 `mongoMock.js`, `authMock.js`, `navMock.js`, `request.js`, plus a `nextLink.jsx` alias \u2014 by hand, in Python, because every hazard in this space (Vitest not reading `jsconfig.json`'s `@/` alias, `vi.mock` hoisting, `new ObjectId('123')` throwing, `@/lib/mongodb` connecting at import) produces a failure that reads exactly like an application bug, at which point the repair loop goes after correct code. `mongoMock.js` is not a stub but a small in-memory query engine: it implements the operators routes actually use \u2014 including `updateMany` and `bulkWrite`, whose absence used to surface as a 500 from the route's own try/catch \u2014 and **throws by name** on the rest, because a mock that silently returns nothing points the reader at the app instead of at itself. Which file is worth testing at all is also decided in Python: `qa_agent/spec.py` classifies each generated file into four tiers and hard-excludes async Server Components (Next's own bundled docs say Vitest cannot render them), the Mongo/auth boundary modules, and everything AgentForge itself generates.\n\nRunning is `qa_agent/runner.py`: `npx vitest run --reporter=json --outputFile=\u2026` writing to `.agentforge/qa/vitest.json`, never to stdout, because `CommandRunner` truncates output at 4000 characters and a truncated JSON document is unparseable. Every failure is mapped back through the manifest to the application file it is about, which is what makes a repair allowlist possible at all. Failures are classified in Python \u2014 `IMPORT`, `SYNTAX`, `TIMEOUT`, `ASSERTION`, `RUNTIME` \u2014 and given a human diagnosis from thirteen measured patterns; the rendered DOM is split out of the blob and compacted, and two failure classes whose own message says nothing useful (a frozen-clock timeout, an ObjectId-versus-string comparison) get a written explanation carried in a dedicated `hint` field rather than appended to the stack, because the stack is truncated at 2000 chars and every prompt builder filters it to lines beginning `at `.\n\nThe repair half is deliberately not here: `agents/bugfixer.py` arbitrates whether the test or the code is wrong under a `VERDICT :: test|code :: \u2026` protocol whose default is `test`. What `server.py` owns is the loop around it \u2014 up to four rounds, four files repaired in parallel, a `FileSnapshot` capturing the bytes of every file a round will touch, a revert when the round did not strictly reduce failures, two stalls escalating through four repair tiers, and a hard rule that a code fix must survive a rebuild or be restored byte for byte. Nothing is ever silenced: `_leave_unresolved` explicitly replaced an older behaviour that rewrote red cases as `it.skip` and moved whole files to the quarantine directory, so that \"the suite is green\" became true by deletion. The stage now separately counts `it.skip` cases that never ran and cases that existed at the start and are gone from the suite, and reports both as not passing.",
+ "features": [
+  {
+   "name": "Deterministic target selection, four tiers",
+   "what": "`select_targets` decides what is worth a unit test without asking a model: tier 1 route handlers, tier 2 pure components, tier 3 plain lib modules, tier 4 interactive client components. Hard exclusions carry their reason \u2014 anything under `app/` that is not `route.js` is an async Server Component Vitest cannot render, `lib/mongodb.js`/`lib/auth.js` connect at module scope, and everything in the `GENERATED` frozenset is AgentForge's own scaffold that the model may not edit. Capped at 4 per phase and 30 per project, sorted best-tier-first.",
+   "where": "qa_agent/spec.py"
+  },
+  {
+   "name": "Authoring that overlaps generation",
+   "what": "`QASession.on_file_written` fires the moment a file lands, buffers until there are four, and enqueues a batch; `on_phase` catches whole phases as a fallback. On a cloud QA model up to four author threads run at once \u2014 measured, eleven files took 715s serially against a 188s generation window to hide it in.",
+   "where": "qa_agent/session.py"
+  },
+  {
+   "name": "The author runs what it writes",
+   "what": "After a batch is written, `_verify` runs one batched vitest invocation over just those files, then fixes them ONE FILE AT A TIME in a fresh conversation each, up to three rounds, four files in parallel. Batching the run is for vitest's ~2s startup; not batching the fixes is because a round handed nine failures at once left seven invented test ids in one file untouched while it worked on the others.",
+   "where": "qa_agent/author.py"
+  },
+  {
+   "name": "Best-version retention and signature stalling",
+   "what": "Each fix round records `(failure_count, body)`; a round that makes things worse is reverted to the better version, and two rounds producing the identical sorted failure signature stop the loop instead of repeating it.",
+   "where": "qa_agent/author.py"
+  },
+  {
+   "name": "The Python-written harness",
+   "what": "`vitest.config.mjs` (jsdom, globals, `@/` alias repeated because Vitest does not read jsconfig.json, postcss neutered, esbuild `jsx: 'automatic'` so no @vitejs/plugin-react, 10s test and hook timeouts, `tests/quarantine/**` excluded), `tests/setup.js` (jest-dom, cleanup, and a replaceable `window.location` because jsdom's is non-configurable), and five helper modules.",
+   "where": "qa_agent/harness.py"
+  },
+  {
+   "name": "An in-memory Mongo that throws rather than lies",
+   "what": "`mongoMock.js` implements $eq/$ne/$in/$nin/$gt/$gte/$lt/$lte/$exists/$regex/$not/$all/$size/$elemMatch, $or/$and/$nor, and the update operators $set/$unset/$inc/$mul/$min/$max/$push/$addToSet/$pull/$pop/$rename/$currentDate, plus a cursor that actually sorts, `updateMany`, `bulkWrite`, `findOneAndUpdate` with the driver's before/after semantics, and `distinct`. Anything unimplemented throws a named error saying the mock is the limitation, not the route.",
+   "where": "qa_agent/harness.py"
+  },
+  {
+   "name": "Mechanical repairs on the way to disk",
+   "what": "`write_test_file` runs three Python passes before writing: `drop_redundant_mocks` deletes a `vi.mock` for `next/link` or `lucide-react` (which would override the config's alias and lose the default export), `ensure_mocks` adds the `vi.mock` lines the file under test cannot run without, and `add_helper_imports` adds the import for any helper the test calls \u2014 a missing `oid` import was 8 of 15 failures in one measured run.",
+   "where": "qa_agent/session.py"
+  },
+  {
+   "name": "The manifest",
+   "what": "`.agentforge/qa/manifest.json` maps each test path to `{target, phase, tier, stale}` and is the only thing that lets a failure be attributed to an application file \u2014 without it the fixer would be handed the whole project. Loaded on `bind()`, and `adopt_orphans` registers tests already on disk by inverting `test_path_for`.",
+   "where": "qa_agent/session.py"
+  },
+  {
+   "name": "Staleness marking",
+   "what": "After the analyzer's repair pass, `mark_stale` flags every test whose target's bytes changed, so the bug fixer sees \"out of date\" as a prior rather than as evidence about the code.",
+   "where": "qa_agent/session.py, server.py"
+  },
+  {
+   "name": "Failure classification, diagnosis and DOM extraction",
+   "what": "`classify` assigns IMPORT/SYNTAX/TIMEOUT/ASSERTION/RUNTIME; `diagnose` names thirteen measured patterns (\"route handler crashed\", \"seed-data ambiguity\", \"invented testid\", \"vi.mock hoisting\", \u2026); `split_dom` pulls Testing Library's printed markup out of the blob, collapses SVGs and long class attributes and caps it at 1600 chars so it reaches the model instead of being truncated away.",
+   "where": "qa_agent/runner.py"
+  },
+  {
+   "name": "Written hints for the two mute failure classes",
+   "what": "A `STACK_TRACE_ERROR` timeout and an `expected \u2026 to be { Object (buffer) }` comparison both fail with messages that name nothing. `timeout_hint` and `objectid_hint` supply the three known causes in order; they travel in `TestFailure.hint`, not appended to the stack, because the stack is cut at 2000 chars and prompt builders keep only lines starting `at `.",
+   "where": "qa_agent/runner.py, qa_agent/tests/test_timeout_hint.py"
+  },
+  {
+   "name": "The repair rounds",
+   "what": "Up to `MAX_QA_FIX = 4` rounds inside a `QA_DEADLINE` of 1800s. Each round groups failures by test file, snapshots the test file and its target, dispatches four `BugFixerAgent.fix` calls in parallel, and re-runs only the touched files. A round that does not strictly shrink the failure set is reverted from the snapshot; two such stalls escalate one repair tier (0 usual, 1 refusal reason plus more context, 2 permission to fix the component, 3 the harness itself as a suspect).",
+   "where": "server.py:run_qa_unit_stage"
+  },
+  {
+   "name": "Code fixes must survive a rebuild",
+   "what": "When a round wrote application code, `run_build_fix_loop` reruns; if the build is not green the snapshot restores every file the round touched and the code-fix count is decremented.",
+   "where": "server.py:run_qa_unit_stage"
+  },
+  {
+   "name": "The pass-rate floor",
+   "what": "`_record_round_one` reports round one as a rate rather than a count \u2014 a count means different things in a 20-case and an 80-case suite \u2014 names the dominant failure classes, warns below `ROUND_ONE_FLOOR = 90`, and appends one JSON line to `.agentforge/qa/history.jsonl` with cases, passed, failed, rate, floor and the top five classes. It is a reported floor, not a gate: nothing is blocked by it.",
+   "where": "server.py:_record_round_one"
+  },
+  {
+   "name": "Quarantine",
+   "what": "`VitestRunner.quarantine` moves a test AgentForge could not make trustworthy to `tests/quarantine/<name>` with a `// QUARANTINED by AgentForge: <why>` header, drops it from the manifest and records it on the report. Kept rather than deleted so the mistake can be read; the config's `exclude` already covers the directory. In the unit stage it is reached only when the bug fixer's verdict asks for it.",
+   "where": "qa_agent/runner.py, server.py"
+  },
+  {
+   "name": "Anti-cheat accounting",
+   "what": "`runner.skipped()` lists cases marked `it.skip` that never ran and `runner.vanished(baseline)` lists cases that existed at the start of the stage and are gone \u2014 both reported as not passing, and `out[\"clean\"]` requires neither. `_leave_unresolved` records every still-red case on the report under its own name with its diagnosis, and explicitly refuses to silence anything.",
+   "where": "qa_agent/runner.py, server.py:_leave_unresolved"
+  },
+  {
+   "name": "Housekeeping around the suite",
+   "what": "`drop_tests_for_missing_targets` deletes tests whose subject was removed or reduced to comments before the suite runs; `_backfill_tests` authors tests for every testworthy file the per-phase cap never reached; `_remeasure_unit` re-runs the whole suite at the very end on the bytes that are actually shipping and, if the later stages broke cases, gives two `_repair_after_stages` rounds with every failure pre-marked stale.",
+   "where": "server.py"
+  },
+  {
+   "name": "The scenario grammar",
+   "what": "Nine verbs (GOTO, FILL, CLICK, WAIT_FOR, EXPECT_TEXT, EXPECT_URL, EXPECT_NO_ERROR, plus FLOW/AS headers), five selector kinds (role+name, label, placeholder, text, testid), 24-step cap. An unrecognised verb is dropped rather than executed, so model-written code is never run in AgentForge's process. Parse-time refusals include a GOTO leaving the app, a dynamic-route path with `[` in it, a regex using Python-only syntax, and re-querying a control that was already clicked.",
+   "where": "qa_agent/flows.py"
+  },
+  {
+   "name": "One scenario, two runners that cannot diverge",
+   "what": "`to_playwright_js` emits `tests/e2e/<slug>.spec.js` plus a `playwright.config.js` from the parsed `Scenario`, not from the model's text, and `E2EAgent._locator` mirrors `Selector.js_locator` step for step. AgentForge runs the Python Playwright it already has (chromium 1223 already cached) \u2014 no npm install, no browser download; the spec is the deliverable.",
+   "where": "qa_agent/flows.py, qa_agent/e2e.py"
+  },
+  {
+   "name": "The signed-in sweep and the role-separation check",
+   "what": "`sweep` opens every non-dynamic page (cap 25) on the context the flow just authenticated, catching faults the signed-out route probe never sees. `role_separation` signs in as each demo role through Better Auth's own `/api/auth/sign-in/email`, records which pages each role reached, and reports a page that opens for a role the rest of its section refuses \u2014 then re-checks over plain HTTP with redirects off before making the claim, and drops it if the page answers 3xx.",
+   "where": "qa_agent/e2e.py"
+  },
+  {
+   "name": "Results on disk, nine tabs, and a PDF",
+   "what": "`write_qa_report` writes `.agentforge/qa/report.json` once at the end; `read_qa_results` gathers that plus vitest.json, manifest.json, history.jsonl, lighthouse.json and every file under tests/unit, tests/e2e and tests/quarantine, reporting a missing file as missing rather than as zero. The studio renders nine tabs from it and `GET /api/qa-pdf/<project>` renders the whole thing to A4 on request.",
+   "where": "server.py, studio/components/testing/, qa_agent/report_pdf.py"
+  }
+ ],
+ "stack": [
+  {
+   "name": "Vitest",
+   "version": "3 (`vitest@3`)",
+   "role": "The unit runner. Invoked as `npx vitest run [paths] --reporter=json --outputFile=<rel>` with a 180s ceiling; config is `vitest.config.mjs`.",
+   "why": "`.mjs` rather than `.js` because these generated projects have no `\"type\": \"module\"`, which would make a `.js` config containing `import` ambiguous."
+  },
+  {
+   "name": "jsdom",
+   "version": "25 (`jsdom@25`)",
+   "role": "The DOM environment for every unit test.",
+   "why": "Chosen with eyes open about its limits \u2014 it does not navigate and does not run default form submission, and both facts are encoded in the author's prompt and in dedicated static checks."
+  },
+  {
+   "name": "@testing-library/react",
+   "version": "16",
+   "role": "Rendering and querying components under test.",
+   "why": "The prompt pushes role/text queries and forbids class and style assertions: on a real build every remaining component-test failure was an exact heading, a Tailwind class, or a decorative string, and not one was a real defect."
+  },
+  {
+   "name": "@testing-library/jest-dom",
+   "version": "6",
+   "role": "The `toBeInTheDocument`/`toBeVisible`/`toBeDisabled` matchers, imported once in `tests/setup.js` as `@testing-library/jest-dom/vitest`.",
+   "why": "Installed as a dev dep so the matchers exist without each generated test importing them."
+  },
+  {
+   "name": "@testing-library/user-event",
+   "version": "14",
+   "role": "Installed with the rest of the harness.",
+   "why": "Present but actively discouraged for submits \u2014 measured, `userEvent.click` on a submit button timed out having called nothing, exactly like `fireEvent.click`; only `fireEvent.submit` reached fetch, in 16ms."
+  },
+  {
+   "name": "esbuild (via Vite)",
+   "role": "JSX transform, configured as `esbuild: { jsx: 'automatic', jsxImportSource: 'react' }`.",
+   "why": "Explicitly instead of `@vitejs/plugin-react` \u2014 one fewer dependency and one fewer Babel toolchain in a project that already ships SWC."
+  },
+  {
+   "name": "mongodb (the real driver)",
+   "role": "Only `ObjectId`, imported by `mongoMock.js` and `request.js` so `oid()` produces a genuine 24-char id.",
+   "why": "`new ObjectId('123')` throws inside the driver three frames from anything the model wrote, so the helper exists to make a hardcoded short id impossible."
+  },
+  {
+   "name": "Playwright (Python)",
+   "version": "playwright==1.60.0, chromium build 1223",
+   "role": "Drives the end-to-end scenario, the signed-in sweep and the role-separation check, headless at 1280\u00d7800.",
+   "why": "The chromium revision is already in `~/AppData/Local/ms-playwright` from the tester, so the run costs no npm install and no browser download; `npx playwright test` would cost ~50MB per project and might want an uncached revision."
+  },
+  {
+   "name": "@playwright/test",
+   "role": "Not run by AgentForge \u2014 the target of the emitted `tests/e2e/<slug>.spec.js` and `playwright.config.js`, which the user can run with `npm i -D @playwright/test && npx playwright test`.",
+   "why": "The spec is the deliverable and the Python path is the runner; both are generated from the same parsed `Scenario` so they cannot drift."
+  },
+  {
+   "name": "Lighthouse",
+   "version": "12 (`lighthouse@12` via `npx --yes`)",
+   "role": "One audit of `http://127.0.0.1:<DEV_PORT>` writing `.agentforge/lighthouse.json`, 300s ceiling, `--chrome-flags=\"--headless=new --no-sandbox\"`.",
+   "why": "Driven through the Chromium Playwright already downloaded, located by `_playwright_chromium()` and passed as `CHROME_PATH`, so there is no second browser to install."
+  },
+  {
+   "name": "requests",
+   "role": "Warms each page the flow will visit before it runs, and performs the redirects-off HTTP re-check that can retract a role-separation finding.",
+   "why": "The re-check must not share a code path with the measurement it is checking \u2014 \"the two measurements share only the app\"."
+  },
+  {
+   "name": "ReportLab",
+   "role": "Renders the PDF test report: A4 `BaseDocTemplate`, cover + `TableOfContents` via `multiBuild`, eight numbered sections and an appendix of test sources.",
+   "why": "Pure-Python, so it works on Windows with no native libraries; and it is deliberately the same palette, table and badge furniture as the SRS PDF because the two land in the same inbox."
+  },
+  {
+   "name": "Python threading / queue / ThreadPoolExecutor",
+   "role": "Four author workers, four fix workers in the author's verify loop, four in the unit stage's repair round, and an `NPM_LOCK` RLock serialising every npm invocation and every vitest run.",
+   "why": "Without the install lock the first four author workers would each see `_runner_ready` False and run a concurrent `npm install` into the same node_modules."
+  },
+  {
+   "name": "Better Auth",
+   "role": "Its `/api/auth/sign-in/email` endpoint is called with `page.evaluate` to switch roles for the role-separation check.",
+   "why": "Driving the login form four times turns a fast check into a slow one and couples it to whatever the login page looks like this build."
+  },
+  {
+   "name": "Next.js App Router",
+   "version": "16",
+   "role": "The subject under test. Everything the harness compensates for is a property of it: async Server Components, `params` as a promise since Next 15, `redirect()`/`notFound()` throwing, `next/link` needing a client router.",
+   "why": "Next's own bundled documentation at `node_modules/next/dist/docs/01-app/02-guides/testing/vitest.md` is what rules out unit-testing pages and sends them to E2E."
+  },
+  {
+   "name": "React 19 + Next 16 studio UI",
+   "role": "The nine-tab Testing view, with Zustand for `qaReport`, Tailwind for styling and lucide-react icons; results are fetched from `/api/qa/<project>` and re-fetched whenever the live run stops.",
+   "why": "`emit()` is fire-and-forget with no history and no replay, so a page opened after a build must read the files rather than the socket."
+  }
+ ],
+ "how_it_works": [
+  {
+   "stage": "1. Bind, without touching the build",
+   "detail": "`server.py` constructs `QASession(proj_dir, callbacks=_qa_callbacks(), model=qa_model, enabled=is_cloud_model(qa_model))`, wraps `cb[\"on_phase\"]` and `cb[\"on_file_written\"]` with the session's versions, then constructs the `ArchitectAgent` with that callbacks dict and calls `qa.bind(arch)`. Bind loads the manifest, adopts orphan tests already on disk, sets `concurrent` from `is_cloud_model`, constructs the `UnitTestAuthor`, and starts a daemon thread that installs the test runner ahead of the first job. QA is cloud-only: a local model turns off authoring, repair and the browser pass, and the log says so."
+  },
+  {
+   "stage": "2. Files land; batches are queued",
+   "detail": "Every generated `.js`/`.jsx` write pushes a path into a buffer; at four the buffer flushes into the queue tagged with the plan phase it belongs to. `_ensure_workers` spins up to `QA_AUTHOR_WORKERS = 4` threads. Each job calls `select_targets(files, self.read_source, \u2026)` \u2014 reading from disk, never from `arch.files` \u2014 and `ensure_runner()`, which under `_runner_lock` materialises the harness and runs `npm install -D vitest@3 jsdom@25 @testing-library/\u2026`."
+  },
+  {
+   "stage": "3. One model call per batch writes the tests",
+   "detail": "`UnitTestAuthor.write_for` builds a two-message conversation: the ~200-line SYSTEM prompt, then the app idea (copied from `arch.convo[1]`, never written back), the phase goal, and for each target its full source, its assigned test path, and a `_preamble_note` naming the exact `vi.mock` lines that file needs. The reply is parsed by `FileStreamParser`; `_accept` rejects any path not in the assigned dict. Up to four `<read_file \u2026/>` follow-ups are served through the analyzer, and a missed target gets one explicit re-ask."
+  },
+  {
+   "stage": "4. Three Python passes, then disk",
+   "detail": "`write_test_file` checks the path against `TEST_PATH_RE` (`tests/unit/**.test.js[x]` only), then runs `drop_redundant_mocks` \u2192 `ensure_mocks` \u2192 `add_helper_imports`, writes the file, records `{target, phase, tier, stale: False}` in the manifest, saves `manifest.json`, and fires `on_file_written` so the studio shows it. `// SUSPECT:` comments are then scraped out into `report.suspects` as findings for a human, never as failures."
+  },
+  {
+   "stage": "5. The author verifies its own batch",
+   "detail": "One `vitest run` over just the written paths (its report goes to `.agentforge/qa/vitest-<sha1>.json`, keyed by the path set, so it never clobbers the full-suite `vitest.json`). Unresolvable packages found in the failures are installed by `install_missing`, which then deletes `node_modules/.vite` because Vite's pre-bundle would otherwise describe a tree that no longer exists. If most failures look like an unsettled module graph the run is retried after 3s, 6s and 10s. What is still failing is fixed one file at a time, in parallel, for up to three rounds."
+  },
+  {
+   "stage": "6. Drain, backfill, staleness",
+   "detail": "After generation, `qa.drain(timeout=180)` waits out the queue (the method's own default is 900s), `_backfill_tests` authors tests for every testworthy file the per-phase cap of four never reached, a `FileSnapshot` captures every manifest target, the analyzer's Seam A repair pass runs, and `qa.mark_stale(qa_targets.changed())` flags the tests whose subject moved underneath them."
+  },
+  {
+   "stage": "7. The unit stage",
+   "detail": "`run_qa_unit_stage` runs between `run_build_fix_loop` and `start_next` \u2014 the only window where nothing holds `.next/`. It refuses to run at all unless the build is green. It materialises and installs the harness, drops tests whose target no longer exists, and then loops: run \u2192 record round one and the history line on round 1 \u2192 emit per-case results \u2192 if failures, group by file, snapshot test and target, dispatch `BugFixerAgent.fix` four-wide, re-run only the touched files."
+  },
+  {
+   "stage": "8. Arbitration and the write allowlist",
+   "detail": "`BugFixerAgent` must emit `VERDICT :: test|code :: <evidence>` before any write block; the verdict is read from what has streamed so far, so a model that writes first and explains afterwards gets the safe default of `test`, which may only write the test file. `code` may write only the manifest target. Weakening \u2014 `it.skip`, deleted assertions, `expect(true).toBe(true)` \u2014 is checked in Python after the write and rejected. `lib/mongodb.js` is never editable."
+  },
+  {
+   "stage": "9. Reverting, stalling, escalating",
+   "detail": "A round that does not strictly shrink the failure set restores the snapshot and increments `stalls`; at `MAX_QA_STALLS = 2` the tier goes up (0\u21923) and stalls reset; at tier 3 with no progress the loop calls `_leave_unresolved` and stops. If a round wrote application code, the build is re-checked and a red build restores exactly those files. The whole stage is bounded by `QA_DEADLINE = 1800`s."
+  },
+  {
+   "stage": "10. The final accounting",
+   "detail": "After the loop, if only targeted runs were done, one full-suite run gets the true numbers. Then `skipped()` and `vanished(baseline)` are reported as not-passing, `_leave_unresolved` records every remaining failure with its diagnosis on `report.unresolved`, and `out[\"clean\"]` is set only when all three are empty. Later, `_remeasure_unit` runs the suite once more on the shipping bytes and, if the E2E/security/runtime stages broke cases, gives two `_repair_after_stages` rounds with every failure pre-marked stale."
+  },
+  {
+   "stage": "11. The browser pass",
+   "detail": "`run_qa_e2e_stage` runs after the tester loop has settled \u2014 that loop restarts the dev server between attempts, so a flow started inside it would be driving a server about to be killed. `E2EAgent.author` shows the model the route table, the demo-account roles and up to six pages of real markup (entry page, landing page, then shallowest routes first, 30k budget, each page carrying the components it imports). The scenario is parsed, emitted as a `.spec.js`, and run. All-selector failures buy one re-author; crashes go to `_repair_runtime` for up to 15 rounds, each followed by a rebuild, a snapshot revert on a broken build, and a dev-server restart."
+  },
+  {
+   "stage": "12. Sweep, security, performance, report",
+   "detail": "If the scenario completes, the same page object sweeps every non-dynamic route signed in (cap 25, deduped by first line of fault) and runs the role-separation check. Then `analyzer.run_runtime` (Seam C), `run_security_stage` (six deterministic code checks plus `npm audit --json`), and `run_perf_stage` (Lighthouse). Finally `write_qa_report` puts unit, suite, security, e2e, performance and runtime into `.agentforge/qa/report.json`, which is the only place most of it exists \u2014 every stage's return value was previously discarded and `emit()` has no replay."
+  }
+ ],
+ "key_files": [
+  {
+   "path": "qa_agent/__init__.py",
+   "does": "The public surface and the statement of the design: the build pipeline is untouched, `QASession` wraps one callback, and the repair half lives in `agents/bugfixer.py` because it is a bug-fixing agent like the others."
+  },
+  {
+   "path": "qa_agent/spec.py",
+   "does": "What is worth testing, decided without a model. The four tier constants, `GENERATED`/`UNTESTABLE_LIB` exclusion sets, `MAX_PER_PHASE = 4`, `MAX_PER_PROJECT = 30`, `test_path_for`, `select_targets`, and the `TestTarget`/`TestFailure`/`QAReport` dataclasses."
+  },
+  {
+   "path": "qa_agent/session.py",
+   "does": "Timing, queue, manifest. Callback wrappers, four author workers, `ensure_runner` under its own lock, `write_test_file` with the three mechanical passes, manifest save/load/adopt, `mark_stale`, `drain`. Also `required_mocks`, `mock_line`, `ensure_mocks`, `drop_redundant_mocks`, `add_helper_imports` and the `HELPER_HOMES`/`HELPER_SPIES` tables."
+  },
+  {
+   "path": "qa_agent/author.py",
+   "does": "1,368 lines, most of it the SYSTEM prompt \u2014 the mock contract, the nine measured mistakes, the selector rule, the `// SUSPECT:` escape hatch. Then `write_for`, `_verify`, `_fix_one`, `_failure_digest`, `_fix_prompt`, `_accept`, and a family of static checks of which only `_unbalanced` is currently called (from `server.py`)."
+  },
+  {
+   "path": "qa_agent/harness.py",
+   "does": "Writes `vitest.config.mjs`, `tests/setup.js`, `nextLink.jsx`, `mongoMock.js`, `authMock.js`, `navMock.js` and `request.js` as Python string literals; `deps_present`/`install`/`install_missing`/`_drop_vite_cache`; the `NPM_LOCK` that serialises every npm and vitest invocation."
+  },
+  {
+   "path": "qa_agent/runner.py",
+   "does": "`VitestRunner.run` (report to file, never stdout), `_parse`, `_rel` (resolve both sides before `relative_to`, or the manifest lookup silently misses), `classify`, `diagnose`, `diagnose_all`, `split_dom`/`_compact_dom`, `timeout_hint`, `objectid_hint`, `case_names`/`skipped`/`vanished`, and `quarantine`."
+  },
+  {
+   "path": "qa_agent/snapshot.py",
+   "does": "116 lines that bound the cost of a wrong automated edit. Bytes not text (newline translation would break byte-identical restore on Windows), first-capture-wins across rounds, and `None` recorded for a path that did not exist so an undo can be a delete."
+  },
+  {
+   "path": "qa_agent/flows.py",
+   "does": "The scenario grammar \u2014 `VERBS`, `SELECTOR_KINDS`, `parse_selector`, `parse_scenario`, `Scenario.is_runnable`, `to_playwright_js`, `_js_step`, `PLAYWRIGHT_CONFIG` and the `GRAMMAR` block that is spliced into the E2E system prompt."
+  },
+  {
+   "path": "qa_agent/e2e.py",
+   "does": "`E2EAgent`: `accounts` from `.agentforge/plan.json`, `markup_for`/`_journey_pages`, `author`, `write_spec`, `run` with per-step dispatch, `_wait_hydrated`, `warm`, `sweep`, `role_separation`, `_still_open`, `_reach_table`, `_landed_on`, `_locator` (which must mirror `Selector.js_locator`)."
+  },
+  {
+   "path": "qa_agent/report_pdf.py",
+   "does": "`build_qa_pdf(qa, out_path, project=\u2026)` \u2014 cover with verdict badge, TOC, and eight sections: Summary, Unit tests (per-file table, every case up to 400, failures in full), Test timeline, Integration, API contracts (from the manifest), Bug reports, Security, Performance, plus Appendix A with the test sources cut at 9000 chars with the cut marked. `_missing()` prints \"this stage did not run\" rather than zeros."
+  },
+  {
+   "path": "qa_agent/tests/test_split_dom.py",
+   "does": "Regression test for the bug that shipped a broken navbar: the rendered DOM sat at the front of a 6230-char blob, `stack` was `blob[:2000]`, and prompt builders keep only `at ` lines, so the model saw one sentence."
+  },
+  {
+   "path": "qa_agent/tests/test_timeout_hint.py",
+   "does": "Proves the frozen-clock advice survives the trip to the model \u2014 it was previously appended to a 2365-char blob and cut off entirely, and would have been filtered as prose even intact."
+  },
+  {
+   "path": "qa_agent/tests/test_stream_deadlines.py",
+   "does": "Two deadlines of different kinds: `stall` as the longest tolerated silence (a read timeout) and `timeout` as the total budget; the author previously passed neither and inherited a 1800-second default."
+  },
+  {
+   "path": "qa_agent/tests/test_heartbeat.py",
+   "does": "The progress line has to distinguish a live stream from a dead one \u2014 it printed \"0 reasoning token(s)\" for four minutes against a model with no thinking mode."
+  },
+  {
+   "path": "server.py:read_qa_results",
+   "does": "Gathers vitest.json, manifest.json, report.json, history.jsonl, lighthouse.json (scores rounded to percentages, five named metrics, fetchTime, runtimeError) and every file under tests/unit, tests/e2e and tests/quarantine. Exists because `/api/files/` cannot reach them: `.agentforge` is in `SKIP_DIRS` and `SRC_EXT` is only `{.js,.jsx,.css}`."
+  },
+  {
+   "path": "server.py:write_qa_report",
+   "does": "Serialises unit, suite (passed/failures/unresolved/suspects/quarantined/written/skipped_reason), security (ran/findings/audit), e2e, performance and runtime into `.agentforge/qa/report.json`. Never fatal."
+  },
+  {
+   "path": "server.py:run_qa_unit_stage",
+   "does": "The whole repair loop: four rounds, snapshot revert, two-stall tier escalation, the code-fix rebuild gate, the skipped/vanished accounting and the final `clean` flag."
+  },
+  {
+   "path": "server.py:_leave_unresolved",
+   "does": "Replaced the behaviour that rewrote red cases as `it.skip` and moved files to quarantine \u2014 across the projects on disk that was 30 skipped cases and 32 set-aside files counted as passing."
+  },
+  {
+   "path": "server.py:_record_round_one",
+   "does": "The pass rate, the dominant failure classes, the `ROUND_ONE_FLOOR = 90` warning and the append to `history.jsonl`."
+  },
+  {
+   "path": "server.py:run_perf_stage",
+   "does": "Lighthouse 12 through `npx --yes` with `CHROME_PATH` set to Playwright's cached Chromium; stamps `measured_on: \"next dev \u2014 not a production build\"` onto the scores."
+  },
+  {
+   "path": "studio/components/testing/TestingResult.jsx",
+   "does": "The nine-tab shell: tab list with count badges, retry-four-times load, reload whenever the live run stops, and the PDF button that fetches the blob (rather than linking) so a failure arrives as a log sentence instead of a page of JSON."
+  },
+  {
+   "path": "studio/components/testing/Overview.jsx",
+   "does": "Six cards \u2014 Round one (rate against floor, top classes), The suite now (with explicit callouts for deleted and skipped cases), Left unresolved, Security, Performance, Runtime."
+  },
+  {
+   "path": "studio/components/testing/UnitTests.jsx",
+   "does": "Collapsible per-file case list, failing files sorted first and auto-expanded, a `never ran` stat for skipped cases and the first six lines of each failure message."
+  },
+  {
+   "path": "studio/components/testing/Timeline.jsx",
+   "does": "A bar per build's round-one rate with a dashed line at the floor, red below it, plus the same data as a table newest-first."
+  },
+  {
+   "path": "studio/components/testing/Security.jsx",
+   "does": "The six check codes listed by name with what each looks for and clean/hit status, then each finding with severity, path, message and fix \u2014 and the `npm audit` summary line."
+  },
+  {
+   "path": "studio/components/testing/Coder.jsx",
+   "does": "A file list and a source pane over every test on disk, with quarantined files tagged `set aside`."
+  }
+ ],
+ "decisions": [
+  {
+   "decision": "The model writes test bodies; Python writes the config and the mocks.",
+   "why": "Every configuration hazard produces a failure that reads exactly like an application bug. Vitest does not read `jsconfig.json`, so without an explicit `resolve.alias` every test dies on `Failed to resolve import \"@/lib/mongodb\"` \u2014 which looks like a missing module in the app, and the bug fixer then goes after correct code."
+  },
+  {
+   "decision": "`mongoMock.js` throws a named error on any operator, update verb or bulk method it does not implement.",
+   "why": "It used to understand four operators and fall through to a string comparison. `{ price: { $gt: 10 } }` stringified to `\"[object Object]\"`, matched nothing, the route returned an empty list, and the repair loop rewrote a correct test until it agreed with a broken mock. The same shape for absent methods: `updateMany` missing meant a TypeError inside the route's own try/catch, a 500 that reads as a database fault, and three repair rounds spent on correct code. Silence points at the app; a named error points at the mock."
+  },
+  {
+   "decision": "`clone` keeps Date and ObjectId as objects; `serialize` is a separate function that stringifies.",
+   "why": "Sharing one `JSON.parse(JSON.stringify(\u2026))` for both is what hid the bug: a route doing `job.createdAt.toISOString()` died with \"toISOString is not a function\", its own try/catch turned that into a 500, and the test reported `expected 500 to be 200` \u2014 measured as every such failure in two separate builds."
+  },
+  {
+   "decision": "`authMock.js` aliases `getCurrentUser`, `getUser`, `currentUser` and `requireUser` to the same reader.",
+   "why": "A generated app often wraps `getSessionUser` behind its own name; without the aliases the import resolves to `undefined`, calling it throws, the route's catch returns 500, and every case fails as \"expected 500 to be 401\". Measured on one build: 32 of 46 failures, all of them this, across twelve route files."
+  },
+  {
+   "decision": "`navMock.js`'s `redirect` and `notFound` are spies AND they throw.",
+   "why": "Both halves are needed. A plain function cannot be asserted on (`[Function redirect] is not a spy`), and Next's real `redirect()` throws to abort the render \u2014 guard code assumes it never returns, so a mock that returns lets `if (!user) redirect('/login')` fall through to `user.role` and the test reports \"Cannot read properties of null\", which reads as a missing null check in correct code."
+  },
+  {
+   "decision": "`postForm` builds a `URLSearchParams` body, not a `FormData`, and `postJson` forwards a FormData to it.",
+   "why": "Building a Request with a FormData body sets no Content-Type under jsdom, so `request.formData()` throws \"Content-Type was not one of multipart/form-data or application/x-www-form-urlencoded\", the handler's catch returns 500, and the failure reads as the route crashing. And a FormData stringified by the JSON helper yields `\"{}\"` \u2014 measured, two cases in one file survived nine repair rounds and both escalation tiers against a route that was never wrong."
+  },
+  {
+   "decision": "Tests live under `tests/` and are written by `QASession.write_test_file`, never `arch.write_file`.",
+   "why": "Three measured reasons. `unresolved_packages()` scans every `.js`/`.jsx` in `arch.files` regardless of directory, so a test would make `vitest` and `jsdom` look like missing imports and burn an LLM turn installing them mid-build; `_verify_output()` counts files outside the scaffold and tests would mask an empty build; and `write_file` unlinks the twin stem, so writing `x.test.jsx` would delete an existing `x.test.js`."
+  },
+  {
+   "decision": "The author runs the tests it just wrote instead of statically checking them.",
+   "why": "Stated in `_verify`: every failure class chased with a new static check \u2014 an invented `data-testid`, a role the markup lacks, a hoisting error, a too-short `waitFor`, a seeded Date in the wrong timezone \u2014 says exactly what is wrong the first time the test is run, and reading it generalises to the classes nobody has hit yet. The static checks remain in the file but `_accept` sets `advice = \"\"` unconditionally, so the fix prompt's \"## A static check says\" slot is never populated; only `_unbalanced` is still used, and `server.py:_report_unparseable` points it at application code instead."
+  },
+  {
+   "decision": "Fixes are done one file per conversation, but the run that finds them is batched.",
+   "why": "vitest costs ~2s of startup whatever it executes, so batching the run is free. Batching the fixes is not: asking for nine corrected files in one turn produced nine mediocre ones \u2014 measured, a round that handed back every failure at once left seven invented `data-testid`s in one file untouched while it worked on the others."
+  },
+  {
+   "decision": "`_failure_digest` groups failures by identical message.",
+   "why": "A file that forgot one `vi.mock` fails every case with the same text. Listing it five times spends the prompt on repetition and makes five separate-looking problems out of one \u2014 measured as the exact shape of 39% of all first-run failures. \"5 cases, all of them this\" is also the more useful sentence, because it says the fault is in the setup."
+  },
+  {
+   "decision": "Nothing red is ever silenced \u2014 no `it.skip` rewriting, no automatic quarantine at the end of the loop.",
+   "why": "Both used to happen, and every exit from the repair loop then ended in the words \"the suite is green\". Across the projects on disk that was 30 skipped cases and 32 set-aside files counted as passing. Deleting a case removes it from both sides of the ratio, so the percentage improves precisely because the evidence left \u2014 and `agents/bugfixer.py` already refuses a repair that introduces `it.skip`, so AgentForge has to obey the rule it enforces on the model."
+  },
+  {
+   "decision": "The round-one pass rate is recorded as a rate with a 90% floor, and the floor blocks nothing.",
+   "why": "A count does not travel \u2014 \"5 failing\" means different things in a 20-case and an 80-case suite, and says nothing about why. Every authoring fix this stage has had came from classifying failures by hand across every project on disk after the fact; the history line puts that answer on screen for every build so the next regression announces itself."
+  },
+  {
+   "decision": "A role-separation finding is re-measured over plain HTTP with redirects off before it is reported.",
+   "why": "Re-running the same navigation would re-run its bug with it. The first measurement is one reading of `page.url` after one navigation, and one flaky reading accuses a page that is correctly guarded \u2014 measured on a nursery build, `/grower/add-plant` was reported open to the owner and answered 307 to `/` every time over HTTP. Anything that stops the re-check keeps the finding, so it can only ever remove a claim it actively disproved."
+  },
+  {
+   "decision": "The Lighthouse score is stamped `measured_on: \"next dev \u2014 not a production build\"` and blocks nothing.",
+   "why": "A slow page is a judgement call, not a defect, and a build that refused to finish over a performance score would be refusing to finish over a hero image somebody wanted. The dev server compiles each route on first request and serves unminified JavaScript, so the number is a floor: the built app can only be faster. The PDF and the Performance tab both repeat the caveat next to the number."
+  }
+ ],
+ "contracts": [
+  {
+   "name": "GET /api/qa/<project>",
+   "shape": "`read_qa_results` \u2192 `{project, have:{vitest,manifest,report,history,performance,tests}, vitest, manifest, report, history[], performance:{scores,metrics,fetchTime,runtimeError}, tests:{path: source}}`. 404-shaped `{error}` for an unknown project."
+  },
+  {
+   "name": "GET /api/qa-pdf/<project>",
+   "shape": "Renders `build_qa_pdf` on demand to `.agentforge/qa/Test_Report.pdf` and returns `application/pdf` with `Content-Disposition: attachment; filename=\"<proj>-test-report.pdf\"`; `{error}` with 500 on failure. Rendered per request because the testing tab keeps changing as tests are repaired."
+  },
+  {
+   "name": ".agentforge/qa/manifest.json",
+   "shape": "`{ \"tests/unit/**/x.test.js\": {target, phase, tier, stale, adopted?} }` \u2014 the only mapping from a failing test back to the app file it is about."
+  },
+  {
+   "name": ".agentforge/qa/vitest.json",
+   "shape": "Vitest's own JSON reporter output for a full-suite run: `numPassedTests`, `numFailedTests`, `numTotalTests`, `numTotalTestSuites`, `startTime`, `testResults[].assertionResults[]{fullName,title,ancestorTitles,status,duration,failureMessages}`."
+  },
+  {
+   "name": ".agentforge/qa/vitest-<sha1>.json",
+   "shape": "The same shape for a targeted run, keyed by a 10-char sha1 of the sorted path list, so the author's per-file runs never clobber the full-suite report."
+  },
+  {
+   "name": ".agentforge/qa/report.json",
+   "shape": "`{at, unit:{ran,passed,failed,fixed,code_fixes,skipped?,deleted?,orphaned?,clean,final_check?}, suite:{passed,failures[],unresolved[],suspects[],quarantined[],written[],skipped_reason}, security:{ran,findings[],audit}, e2e:{ran,flow,passed,failed,fixed,failures[]}, performance:{}, runtime:[]}`."
+  },
+  {
+   "name": ".agentforge/qa/history.jsonl",
+   "shape": "One JSON object appended per build: `{at, cases, passed, failed, rate, floor, top:[{class,count}]}`."
+  },
+  {
+   "name": ".agentforge/lighthouse.json",
+   "shape": "Raw Lighthouse 12 output; `read_qa_results` projects `categories.*.score \u00d7 100` and five audits (LCP, CLS, TBT, FCP, speed-index) into `performance`."
+  },
+  {
+   "name": "vitest.config.mjs",
+   "shape": "Written by the harness. jsdom, globals, `setupFiles: ['./tests/setup.js']`, `include: ['tests/unit/**/*.test.{js,jsx}']`, `exclude: ['**/node_modules/**','tests/quarantine/**']`, `testTimeout`/`hookTimeout` 10000, `restoreMocks`, `@` and `next/link` aliases, postcss disabled, esbuild automatic JSX."
+  },
+  {
+   "name": "tests/helpers/mongoMock.js",
+   "shape": "Exports `getCollection`, `getDb`, `serialize`, `ObjectId`, a default resolved client, and the test surface `__seed(name, rows)`, `__reset()`, `__all(name)`, `oid(hex?)`."
+  },
+  {
+   "name": "tests/helpers/authMock.js",
+   "shape": "`getSessionUser` (a `vi.fn`), `auth.api.getSession`, the aliases `getCurrentUser`/`getUser`/`currentUser`/`requireUser`, a default export bundling them, and `__setUser(user|null)` which normalises `id` to a string and deletes `_id`."
+  },
+  {
+   "name": "tests/helpers/navMock.js",
+   "shape": "`useRouter`/`usePathname`/`useParams`/`useSearchParams`, spies `push`,`replace`,`back`,`forward`,`refresh`,`prefetch`, throwing spies `redirect`/`notFound`, and `__setPath(path, {params, query})` / `__resetNav()`."
+  },
+  {
+   "name": "tests/helpers/request.js",
+   "shape": "`oid(hex?)`, `postJson(handler, body, opts)`, `postForm(handler, body, opts)`, `getJson(handler, url, opts)`, `patchJson`/`putJson`/`deleteJson`. All return `{status, json, res}`; the handler is called as `handler(request, {params: Promise.resolve(params)})`."
+  },
+  {
+   "name": "tests/unit/** \u2014 the authored tests",
+   "shape": "Path derived by `test_path_for`: routes \u2192 `tests/unit/api/<flattened path>.test.js`, components \u2192 `tests/unit/components/<Stem>.test.jsx`, libs \u2192 `tests/unit/lib/<stem>.test.js`. The extension follows the target so the JSX transform is never in doubt."
+  },
+  {
+   "name": "tests/quarantine/** \u2014 set aside, never run",
+   "shape": "The original file prefixed with `// QUARANTINED by AgentForge: <why>`. Excluded by the vitest config; still read back by `read_qa_results` and shown in the Coder tab tagged `set aside`."
+  },
+  {
+   "name": "tests/e2e/<slug>.spec.js + playwright.config.js",
+   "shape": "A real `@playwright/test` spec generated from the parsed `Scenario` (never from the model's text), collecting `pageerror` and console errors into `problems`, navigating with `waitUntil: 'load'` and asserting with 15s timeouts. `BASE_URL` overridable; config `testDir: './tests/e2e'`, 60s timeout, no retries, `trace: 'off'`."
+  },
+  {
+   "name": "The scenario grammar (model \u2192 AgentForge)",
+   "shape": "`FLOW ::`, `AS ::`, then `GOTO :: /path`, `FILL :: <selector> :: <value>`, `CLICK :: <selector>`, `WAIT_FOR :: <selector>`, `EXPECT_TEXT :: /re/i`, `EXPECT_URL :: /re/`, `EXPECT_NO_ERROR`, `DONE`. Selectors: `role=X name=/re/i`, `label=`, `placeholder=`, `text=`, `testid=`. Values may use `{{email}}`/`{{password}}`/`{{role}}`, substituted from `.agentforge/plan.json`'s `demo_accounts`."
+  },
+  {
+   "name": "The repair verdict protocol (model \u2192 bugfixer)",
+   "shape": "`VERDICT :: test|code :: <one sentence naming the evidence>`, emitted before any `<write_file>` block. `test` may write only the test file, `code` only the manifest target; missing or unparseable defaults to `test`."
+  },
+  {
+   "name": "Websocket events this subsystem emits",
+   "shape": "`{type:\"test_result\", status: pass|fail|warn|skip, msg, detail}` per case and per Lighthouse category; `{type:\"phase\", phase, title, status}` with the QA phase ids -14 authoring/backfill, -15 unit run, -16 repair round, -17 end-to-end, -18 app repair, -23 performance; plus `log`, `file` and `command` events routed through `_qa_callbacks()`."
+  },
+  {
+   "name": "Studio store contract",
+   "shape": "`api.qa(project)` fills `useStore.qaReport`; `api.qaPdfUrl(project)` is fetched as a blob and downloaded as `<project>-test-report.pdf`. The nine tabs are Overview, Unit Testing, Test Timeline, Integration, API Contracts, Bug Reports, Security, Performance, Coder \u2014 each reading a different slice of the same payload and rendering \"this stage has no record\" rather than a zero when its slice is absent."
+  }
+ ],
+ "branch": "qa-agent",
+ "scope": "qa_agent/ and studio/components/testing/",
+ "include_repos": false
+}
