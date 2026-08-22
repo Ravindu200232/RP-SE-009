@@ -25,4 +25,4 @@ isolation, not for running it. Run the application from `main`.
 
 Other components: srs-agent, builder-agent, qa-agent.
 
-**Author:** Ravindu B. Subasinghe, Sri Lanka Institute of Information Technology
+**Author:** Malith Bandara, Sri Lanka Institute of Information Technology
