@@ -1,0 +1,1542 @@
+{
+  "document_type": "Software Requirements Specification",
+  "standard": "IEEE SRS",
+  "metadata": {
+    "project_name": "Untitled App",
+    "project_id": "SRS-UNTITLED-APP",
+    "domain": "Task Management",
+    "application_type": "Web browser",
+    "version": "1.0",
+    "status": "approved",
+    "author": "Agent 1 SRS API",
+    "organization": "AgentForge Studio",
+    "date_created": "2026-04-24",
+    "last_updated": "2026-04-24",
+    "language": "en"
+  },
+  "sections": {
+    "introduction": {
+      "purpose": "This document specifies the functional and non-functional requirements for a project management application that enables small teams to manage tasks, set reminders, control access based on roles, and export project data to PDF format.",
+      "product_scope": {
+        "summary": "A web-based project management solution for small teams (under 100 users) featuring task management, reminder system, role-based access control, and PDF export functionality.",
+        "business_objectives": [
+          "Provide an intuitive project management platform for small business teams",
+          "Enable efficient task tracking and reminder management",
+          "Implement secure role-based access control",
+          "Support project documentation through PDF export capabilities"
+        ],
+        "benefits": [
+          "Improved team collaboration and project visibility",
+          "Reduced missed deadlines through automated reminders",
+          "Enhanced security through role-based access control",
+          "Easy project documentation and reporting"
+        ],
+        "goals": [
+          "Deliver a fully functional web-based project management application",
+          "Support up to 100 concurrent users at launch",
+          "Provide reliable PDF export functionality",
+          "Ensure secure authentication and authorization"
+        ]
+      }
+    },
+    "overall_description": {
+      "product_perspective": {
+        "system_context": "The project management application is a standalone web-based system that operates through standard web browsers. It includes user authentication, project management features, reminder system, access control, and export capabilities without requiring integration with external systems.",
+        "product_origin": "New system",
+        "related_systems": [
+          {
+            "name": "Email Service",
+            "relationship": "Integration",
+            "interface_summary": "Used for sending reminder notifications and system alerts to users"
+          }
+        ],
+        "context_diagram_reference": "Diagram generation is deferred. Review the analyst workspace and service breakdown for the current phase."
+      },
+      "product_functions": [
+        {
+          "function_id": "PF-001",
+          "name": "User Authentication",
+          "description": "Secure login and account management using email and password credentials"
+        },
+        {
+          "function_id": "PF-002",
+          "name": "Project Management",
+          "description": "Create, edit, and manage projects with tasks, deadlines, and team assignments"
+        },
+        {
+          "function_id": "PF-003",
+          "name": "Reminder System",
+          "description": "Automated notifications and alerts for upcoming deadlines and task assignments"
+        },
+        {
+          "function_id": "PF-004",
+          "name": "Role-Based Access Control",
+          "description": "Manage user permissions and access levels based on assigned roles (admin, team member, viewer)"
+        },
+        {
+          "function_id": "PF-005",
+          "name": "PDF Export",
+          "description": "Generate and download project reports and documentation in PDF format"
+        }
+      ],
+      "user_classes_and_characteristics": [
+        {
+          "user_class_id": "UC-001",
+          "user_class_name": "Business Owners/Admins",
+          "description": "Primary users who manage teams, projects, and system configuration",
+          "technical_expertise": "Medium",
+          "security_or_privilege_level": "Role-based",
+          "education_or_experience": "Basic digital literacy",
+          "frequency_of_use": "Daily",
+          "importance_rank": 1,
+          "notes": ""
+        },
+        {
+          "user_class_id": "UC-002",
+          "user_class_name": "Team Members",
+          "description": "Users who work on assigned tasks and projects",
+          "technical_expertise": "Basic",
+          "security_or_privilege_level": "Role-based",
+          "education_or_experience": "Basic digital literacy",
+          "frequency_of_use": "Regular",
+          "importance_rank": 2,
+          "notes": ""
+        }
+      ]
+    },
+    "external_interface_requirements": {
+      "user_interfaces": [
+        {
+          "ui_id": "UI-001",
+          "name": "Login Page",
+          "description": "Secure authentication interface for user login with email and password",
+          "input_elements": [
+            "AI-guided input"
+          ],
+          "output_elements": [
+            "Structured response"
+          ],
+          "layout_constraints": [
+            "Responsive layout"
+          ],
+          "accessibility_requirements": [
+            "Keyboard support"
+          ],
+          "error_message_standards": [
+            "Human-readable validation"
+          ],
+          "design_reference": "Agent 1 UI"
+        },
+        {
+          "ui_id": "UI-002",
+          "name": "Dashboard",
+          "description": "Main overview showing projects, tasks, and upcoming deadlines",
+          "input_elements": [
+            "AI-guided input"
+          ],
+          "output_elements": [
+            "Structured response"
+          ],
+          "layout_constraints": [
+            "Responsive layout"
+          ],
+          "accessibility_requirements": [
+            "Keyboard support"
+          ],
+          "error_message_standards": [
+            "Human-readable validation"
+          ],
+          "design_reference": "Agent 1 UI"
+        },
+        {
+          "ui_id": "UI-003",
+          "name": "Project Management Interface",
+          "description": "Comprehensive interface for creating, editing, and managing projects and tasks",
+          "input_elements": [
+            "AI-guided input"
+          ],
+          "output_elements": [
+            "Structured response"
+          ],
+          "layout_constraints": [
+            "Responsive layout"
+          ],
+          "accessibility_requirements": [
+            "Keyboard support"
+          ],
+          "error_message_standards": [
+            "Human-readable validation"
+          ],
+          "design_reference": "Agent 1 UI"
+        },
+        {
+          "ui_id": "UI-004",
+          "name": "User Management Screen",
+          "description": "Interface for managing user accounts and role assignments",
+          "input_elements": [
+            "AI-guided input"
+          ],
+          "output_elements": [
+            "Structured response"
+          ],
+          "layout_constraints": [
+            "Responsive layout"
+          ],
+          "accessibility_requirements": [
+            "Keyboard support"
+          ],
+          "error_message_standards": [
+            "Human-readable validation"
+          ],
+          "design_reference": "Agent 1 UI"
+        },
+        {
+          "ui_id": "UI-005",
+          "name": "Export Interface",
+          "description": "Tools for generating and downloading PDF reports",
+          "input_elements": [
+            "AI-guided input"
+          ],
+          "output_elements": [
+            "Structured response"
+          ],
+          "layout_constraints": [
+            "Responsive layout"
+          ],
+          "accessibility_requirements": [
+            "Keyboard support"
+          ],
+          "error_message_standards": [
+            "Human-readable validation"
+          ],
+          "design_reference": "Agent 1 UI"
+        }
+      ],
+      "software_interfaces": [
+        {
+          "software_interface_id": "SI-001",
+          "component_name": "Web Browser Interface",
+          "component_version": "Current stable",
+          "description": "Standard HTTP/HTTPS interface for web browser interaction",
+          "incoming_data_items": [
+            "Request payload"
+          ],
+          "outgoing_data_items": [
+            "Response payload"
+          ],
+          "services_needed": [
+            "Authentication"
+          ],
+          "communication_method": "REST or webhook",
+          "shared_data": [
+            "Project metadata"
+          ],
+          "implementation_constraints": [
+            "Use secure transport"
+          ]
+        },
+        {
+          "software_interface_id": "SI-002",
+          "component_name": "Email Service API",
+          "component_version": "Current stable",
+          "description": "Integration with email service for sending reminder notifications",
+          "incoming_data_items": [
+            "Request payload"
+          ],
+          "outgoing_data_items": [
+            "Response payload"
+          ],
+          "services_needed": [
+            "Authentication"
+          ],
+          "communication_method": "REST or webhook",
+          "shared_data": [
+            "Project metadata"
+          ],
+          "implementation_constraints": [
+            "Use secure transport"
+          ]
+        }
+      ],
+      "hardware_interfaces": [],
+      "communications_interfaces": [
+        {
+          "communication_interface_id": "CI-001",
+          "name": "Browser to API",
+          "description": "Interactive application traffic.",
+          "protocols": [
+            "HTTPS"
+          ],
+          "message_format": "JSON and multipart form data",
+          "security_or_encryption": "TLS 1.2+",
+          "data_transfer_rate": "Interactive",
+          "synchronization_mechanism": "Request-response"
+        },
+        {
+          "communication_interface_id": "CI-002",
+          "name": "Artifact delivery",
+          "description": "Downloads JSON and PDF artifacts.",
+          "protocols": [
+            "HTTPS"
+          ],
+          "message_format": "JSON and PDF",
+          "security_or_encryption": "TLS 1.2+",
+          "data_transfer_rate": "On demand",
+          "synchronization_mechanism": "Direct download"
+        }
+      ]
+    },
+    "system_features": [
+      {
+        "feature_id": "FEAT-001",
+        "feature_name": "Authentication System",
+        "description_and_priority": {
+          "description": "Secure user authentication and session management using email and password",
+          "priority": "High",
+          "benefit_score": 10,
+          "penalty_score": 7,
+          "cost_score": 5,
+          "risk_score": 4
+        },
+        "stimulus_response_sequences": [
+          {
+            "sequence_id": "SRSQ-001",
+            "stimulus": "User starts authentication system",
+            "preconditions": [
+              "An active session exists."
+            ],
+            "system_response": "The system processes the request and shows a clear status update.",
+            "postconditions": [
+              "The updated result is available for review."
+            ]
+          }
+        ],
+        "functional_requirements": [
+          {
+            "requirement_id": "REQ-011",
+            "title": "User Login",
+            "description": "The system shall allow users to authenticate using valid email and password credentials",
+            "actor": "All Users",
+            "trigger": "User initiates the workflow",
+            "inputs": [
+              {
+                "name": "payload",
+                "type": "json",
+                "required": true,
+                "validation_rules": [
+                  "Validate required fields"
+                ]
+              }
+            ],
+            "processing_logic": [
+              "Validate input",
+              "Persist state",
+              "Return clear status"
+            ],
+            "outputs": [
+              {
+                "name": "result",
+                "type": "json",
+                "description": "Structured action result"
+              }
+            ],
+            "business_rules_applied": [
+              "BR-001"
+            ],
+            "error_conditions": [
+              {
+                "condition": "Invalid input",
+                "system_behavior": "Show a validation message"
+              }
+            ],
+            "acceptance_criteria": [
+              "Users can successfully login with correct credentials",
+              "Invalid login attempts are properly handled",
+              "Sessions are securely maintained"
+            ],
+            "priority": "High",
+            "status": "approved",
+            "traceability": {
+              "linked_user_class_ids": [
+                "UC-001"
+              ],
+              "linked_interface_ids": [
+                "UI-001"
+              ],
+              "linked_test_case_ids": [
+                "TC-001-01"
+              ]
+            }
+          },
+          {
+            "requirement_id": "REQ-012",
+            "title": "Password Management",
+            "description": "The system shall support password reset functionality",
+            "actor": "All Users",
+            "trigger": "User initiates the workflow",
+            "inputs": [
+              {
+                "name": "payload",
+                "type": "json",
+                "required": true,
+                "validation_rules": [
+                  "Validate required fields"
+                ]
+              }
+            ],
+            "processing_logic": [
+              "Validate input",
+              "Persist state",
+              "Return clear status"
+            ],
+            "outputs": [
+              {
+                "name": "result",
+                "type": "json",
+                "description": "Structured action result"
+              }
+            ],
+            "business_rules_applied": [
+              "BR-001"
+            ],
+            "error_conditions": [
+              {
+                "condition": "Invalid input",
+                "system_behavior": "Show a validation message"
+              }
+            ],
+            "acceptance_criteria": [
+              "Users can request password reset via email",
+              "Password reset links are secure and time-limited",
+              "Password complexity requirements are enforced"
+            ],
+            "priority": "Medium",
+            "status": "approved",
+            "traceability": {
+              "linked_user_class_ids": [
+                "UC-001"
+              ],
+              "linked_interface_ids": [
+                "UI-001"
+              ],
+              "linked_test_case_ids": [
+                "TC-001-02"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "feature_id": "FEAT-002",
+        "feature_name": "Project Management",
+        "description_and_priority": {
+          "description": "Comprehensive project and task management capabilities",
+          "priority": "High",
+          "benefit_score": 9,
+          "penalty_score": 7,
+          "cost_score": 5,
+          "risk_score": 4
+        },
+        "stimulus_response_sequences": [
+          {
+            "sequence_id": "SRSQ-002",
+            "stimulus": "User starts project management",
+            "preconditions": [
+              "An active session exists."
+            ],
+            "system_response": "The system processes the request and shows a clear status update.",
+            "postconditions": [
+              "The updated result is available for review."
+            ]
+          }
+        ],
+        "functional_requirements": [
+          {
+            "requirement_id": "REQ-021",
+            "title": "Project Creation",
+            "description": "The system shall allow authorized users to create new projects",
+            "actor": "Admin Users",
+            "trigger": "User initiates the workflow",
+            "inputs": [
+              {
+                "name": "payload",
+                "type": "json",
+                "required": true,
+                "validation_rules": [
+                  "Validate required fields"
+                ]
+              }
+            ],
+            "processing_logic": [
+              "Validate input",
+              "Persist state",
+              "Return clear status"
+            ],
+            "outputs": [
+              {
+                "name": "result",
+                "type": "json",
+                "description": "Structured action result"
+              }
+            ],
+            "business_rules_applied": [
+              "BR-001"
+            ],
+            "error_conditions": [
+              {
+                "condition": "Invalid input",
+                "system_behavior": "Show a validation message"
+              }
+            ],
+            "acceptance_criteria": [
+              "Projects can be created with name, description, and timeline",
+              "Projects are properly saved and accessible",
+              "Required project fields are validated"
+            ],
+            "priority": "High",
+            "status": "approved",
+            "traceability": {
+              "linked_user_class_ids": [
+                "UC-001"
+              ],
+              "linked_interface_ids": [
+                "UI-001"
+              ],
+              "linked_test_case_ids": [
+                "TC-002-01"
+              ]
+            }
+          },
+          {
+            "requirement_id": "REQ-022",
+            "title": "Task Management",
+            "description": "The system shall support creating, assigning, and tracking tasks within projects",
+            "actor": "Team Members",
+            "trigger": "User initiates the workflow",
+            "inputs": [
+              {
+                "name": "payload",
+                "type": "json",
+                "required": true,
+                "validation_rules": [
+                  "Validate required fields"
+                ]
+              }
+            ],
+            "processing_logic": [
+              "Validate input",
+              "Persist state",
+              "Return clear status"
+            ],
+            "outputs": [
+              {
+                "name": "result",
+                "type": "json",
+                "description": "Structured action result"
+              }
+            ],
+            "business_rules_applied": [
+              "BR-001"
+            ],
+            "error_conditions": [
+              {
+                "condition": "Invalid input",
+                "system_behavior": "Show a validation message"
+              }
+            ],
+            "acceptance_criteria": [
+              "Tasks can be created with descriptions and deadlines",
+              "Tasks can be assigned to team members",
+              "Task status can be updated and tracked"
+            ],
+            "priority": "High",
+            "status": "approved",
+            "traceability": {
+              "linked_user_class_ids": [
+                "UC-001"
+              ],
+              "linked_interface_ids": [
+                "UI-001"
+              ],
+              "linked_test_case_ids": [
+                "TC-002-02"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "feature_id": "FEAT-003",
+        "feature_name": "Reminder System",
+        "description_and_priority": {
+          "description": "Automated notification system for deadlines and important events",
+          "priority": "High",
+          "benefit_score": 8,
+          "penalty_score": 7,
+          "cost_score": 5,
+          "risk_score": 4
+        },
+        "stimulus_response_sequences": [
+          {
+            "sequence_id": "SRSQ-003",
+            "stimulus": "User starts reminder system",
+            "preconditions": [
+              "An active session exists."
+            ],
+            "system_response": "The system processes the request and shows a clear status update.",
+            "postconditions": [
+              "The updated result is available for review."
+            ]
+          }
+        ],
+        "functional_requirements": [
+          {
+            "requirement_id": "REQ-031",
+            "title": "Deadline Reminders",
+            "description": "The system shall automatically send reminders for upcoming deadlines",
+            "actor": "System",
+            "trigger": "User initiates the workflow",
+            "inputs": [
+              {
+                "name": "payload",
+                "type": "json",
+                "required": true,
+                "validation_rules": [
+                  "Validate required fields"
+                ]
+              }
+            ],
+            "processing_logic": [
+              "Validate input",
+              "Persist state",
+              "Return clear status"
+            ],
+            "outputs": [
+              {
+                "name": "result",
+                "type": "json",
+                "description": "Structured action result"
+              }
+            ],
+            "business_rules_applied": [
+              "BR-001"
+            ],
+            "error_conditions": [
+              {
+                "condition": "Invalid input",
+                "system_behavior": "Show a validation message"
+              }
+            ],
+            "acceptance_criteria": [
+              "Reminders are sent for tasks approaching deadline",
+              "Users receive notifications via email",
+              "Reminder timing is configurable"
+            ],
+            "priority": "High",
+            "status": "approved",
+            "traceability": {
+              "linked_user_class_ids": [
+                "UC-001"
+              ],
+              "linked_interface_ids": [
+                "UI-001"
+              ],
+              "linked_test_case_ids": [
+                "TC-003-01"
+              ]
+            }
+          },
+          {
+            "requirement_id": "REQ-032",
+            "title": "Assignment Notifications",
+            "description": "The system shall notify users when they are assigned new tasks",
+            "actor": "System",
+            "trigger": "User initiates the workflow",
+            "inputs": [
+              {
+                "name": "payload",
+                "type": "json",
+                "required": true,
+                "validation_rules": [
+                  "Validate required fields"
+                ]
+              }
+            ],
+            "processing_logic": [
+              "Validate input",
+              "Persist state",
+              "Return clear status"
+            ],
+            "outputs": [
+              {
+                "name": "result",
+                "type": "json",
+                "description": "Structured action result"
+              }
+            ],
+            "business_rules_applied": [
+              "BR-001"
+            ],
+            "error_conditions": [
+              {
+                "condition": "Invalid input",
+                "system_behavior": "Show a validation message"
+              }
+            ],
+            "acceptance_criteria": [
+              "Users receive immediate notification of new assignments",
+              "Notifications include task details and deadlines",
+              "Notification preferences are respected"
+            ],
+            "priority": "Medium",
+            "status": "approved",
+            "traceability": {
+              "linked_user_class_ids": [
+                "UC-001"
+              ],
+              "linked_interface_ids": [
+                "UI-001"
+              ],
+              "linked_test_case_ids": [
+                "TC-003-02"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "feature_id": "FEAT-004",
+        "feature_name": "Role-Based Access Control",
+        "description_and_priority": {
+          "description": "Secure access control based on user roles and permissions",
+          "priority": "High",
+          "benefit_score": 7,
+          "penalty_score": 5,
+          "cost_score": 5,
+          "risk_score": 4
+        },
+        "stimulus_response_sequences": [
+          {
+            "sequence_id": "SRSQ-004",
+            "stimulus": "User starts role-based access control",
+            "preconditions": [
+              "An active session exists."
+            ],
+            "system_response": "The system processes the request and shows a clear status update.",
+            "postconditions": [
+              "The updated result is available for review."
+            ]
+          }
+        ],
+        "functional_requirements": [
+          {
+            "requirement_id": "REQ-041",
+            "title": "User Role Management",
+            "description": "The system shall allow administrators to assign and modify user roles",
+            "actor": "Admin Users",
+            "trigger": "User initiates the workflow",
+            "inputs": [
+              {
+                "name": "payload",
+                "type": "json",
+                "required": true,
+                "validation_rules": [
+                  "Validate required fields"
+                ]
+              }
+            ],
+            "processing_logic": [
+              "Validate input",
+              "Persist state",
+              "Return clear status"
+            ],
+            "outputs": [
+              {
+                "name": "result",
+                "type": "json",
+                "description": "Structured action result"
+              }
+            ],
+            "business_rules_applied": [
+              "BR-001"
+            ],
+            "error_conditions": [
+              {
+                "condition": "Invalid input",
+                "system_behavior": "Show a validation message"
+              }
+            ],
+            "acceptance_criteria": [
+              "Admins can assign roles to users",
+              "Role changes take effect immediately",
+              "Role assignments are properly saved"
+            ],
+            "priority": "High",
+            "status": "approved",
+            "traceability": {
+              "linked_user_class_ids": [
+                "UC-001"
+              ],
+              "linked_interface_ids": [
+                "UI-001"
+              ],
+              "linked_test_case_ids": [
+                "TC-004-01"
+              ]
+            }
+          },
+          {
+            "requirement_id": "REQ-042",
+            "title": "Access Enforcement",
+            "description": "The system shall enforce access restrictions based on user roles",
+            "actor": "System",
+            "trigger": "User initiates the workflow",
+            "inputs": [
+              {
+                "name": "payload",
+                "type": "json",
+                "required": true,
+                "validation_rules": [
+                  "Validate required fields"
+                ]
+              }
+            ],
+            "processing_logic": [
+              "Validate input",
+              "Persist state",
+              "Return clear status"
+            ],
+            "outputs": [
+              {
+                "name": "result",
+                "type": "json",
+                "description": "Structured action result"
+              }
+            ],
+            "business_rules_applied": [
+              "BR-001"
+            ],
+            "error_conditions": [
+              {
+                "condition": "Invalid input",
+                "system_behavior": "Show a validation message"
+              }
+            ],
+            "acceptance_criteria": [
+              "Users can only access features permitted by their role",
+              "Unauthorized access attempts are blocked",
+              "Access logs are maintained"
+            ],
+            "priority": "High",
+            "status": "approved",
+            "traceability": {
+              "linked_user_class_ids": [
+                "UC-001"
+              ],
+              "linked_interface_ids": [
+                "UI-001"
+              ],
+              "linked_test_case_ids": [
+                "TC-004-02"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "feature_id": "FEAT-005",
+        "feature_name": "PDF Export",
+        "description_and_priority": {
+          "description": "Generation and download of project reports in PDF format",
+          "priority": "High",
+          "benefit_score": 6,
+          "penalty_score": 5,
+          "cost_score": 5,
+          "risk_score": 4
+        },
+        "stimulus_response_sequences": [
+          {
+            "sequence_id": "SRSQ-005",
+            "stimulus": "User starts pdf export",
+            "preconditions": [
+              "An active session exists."
+            ],
+            "system_response": "The system processes the request and shows a clear status update.",
+            "postconditions": [
+              "The updated result is available for review."
+            ]
+          }
+        ],
+        "functional_requirements": [
+          {
+            "requirement_id": "REQ-051",
+            "title": "Report Generation",
+            "description": "The system shall generate PDF reports for projects and tasks",
+            "actor": "Authorized Users",
+            "trigger": "User initiates the workflow",
+            "inputs": [
+              {
+                "name": "payload",
+                "type": "json",
+                "required": true,
+                "validation_rules": [
+                  "Validate required fields"
+                ]
+              }
+            ],
+            "processing_logic": [
+              "Validate input",
+              "Persist state",
+              "Return clear status"
+            ],
+            "outputs": [
+              {
+                "name": "result",
+                "type": "json",
+                "description": "Structured action result"
+              }
+            ],
+            "business_rules_applied": [
+              "BR-001"
+            ],
+            "error_conditions": [
+              {
+                "condition": "Invalid input",
+                "system_behavior": "Show a validation message"
+              }
+            ],
+            "acceptance_criteria": [
+              "PDF reports include project details and task information",
+              "Reports are properly formatted and readable",
+              "Generation completes within reasonable time"
+            ],
+            "priority": "High",
+            "status": "approved",
+            "traceability": {
+              "linked_user_class_ids": [
+                "UC-001"
+              ],
+              "linked_interface_ids": [
+                "UI-001"
+              ],
+              "linked_test_case_ids": [
+                "TC-005-01"
+              ]
+            }
+          },
+          {
+            "requirement_id": "REQ-052",
+            "title": "Download Management",
+            "description": "The system shall allow users to download generated PDF reports",
+            "actor": "Authorized Users",
+            "trigger": "User initiates the workflow",
+            "inputs": [
+              {
+                "name": "payload",
+                "type": "json",
+                "required": true,
+                "validation_rules": [
+                  "Validate required fields"
+                ]
+              }
+            ],
+            "processing_logic": [
+              "Validate input",
+              "Persist state",
+              "Return clear status"
+            ],
+            "outputs": [
+              {
+                "name": "result",
+                "type": "json",
+                "description": "Structured action result"
+              }
+            ],
+            "business_rules_applied": [
+              "BR-001"
+            ],
+            "error_conditions": [
+              {
+                "condition": "Invalid input",
+                "system_behavior": "Show a validation message"
+              }
+            ],
+            "acceptance_criteria": [
+              "Downloads initiate successfully",
+              "PDF files are complete and uncorrupted",
+              "Download progress is indicated to users"
+            ],
+            "priority": "High",
+            "status": "approved",
+            "traceability": {
+              "linked_user_class_ids": [
+                "UC-001"
+              ],
+              "linked_interface_ids": [
+                "UI-001"
+              ],
+              "linked_test_case_ids": [
+                "TC-005-02"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "other_nonfunctional_requirements": {
+      "performance_requirements": [
+        {
+          "requirement_id": "NFR-PERF-001",
+          "description": "The system shall support up to 100 concurrent users without performance degradation",
+          "rationale": "Supports a responsive product experience.",
+          "measurement_method": "Monitoring and tracing",
+          "target_metric": "Service performance",
+          "target_value": "Defined during implementation",
+          "conditions": "Normal operating conditions"
+        },
+        {
+          "requirement_id": "NFR-PERF-002",
+          "description": "Page loads shall complete within 3 seconds under normal load conditions",
+          "rationale": "Supports a responsive product experience.",
+          "measurement_method": "Monitoring and tracing",
+          "target_metric": "Service performance",
+          "target_value": "Defined during implementation",
+          "conditions": "Normal operating conditions"
+        },
+        {
+          "requirement_id": "NFR-PERF-003",
+          "description": "PDF generation shall complete within 30 seconds for typical project reports",
+          "rationale": "Supports a responsive product experience.",
+          "measurement_method": "Monitoring and tracing",
+          "target_metric": "Service performance",
+          "target_value": "Defined during implementation",
+          "conditions": "Normal operating conditions"
+        },
+        {
+          "requirement_id": "NFR-PERF-004",
+          "description": "Database queries shall return results within 1 second for standard operations",
+          "rationale": "Supports a responsive product experience.",
+          "measurement_method": "Monitoring and tracing",
+          "target_metric": "Service performance",
+          "target_value": "Defined during implementation",
+          "conditions": "Normal operating conditions"
+        }
+      ],
+      "safety_requirements": [
+        {
+          "requirement_id": "NFR-SAFE-001",
+          "description": "The system shall prevent accidental loss of active project work.",
+          "hazard": "Loss of project inputs or artifacts",
+          "safeguards": [
+            "Persist session state",
+            "Confirm destructive actions"
+          ],
+          "prevented_actions": [
+            "Silent discard of work"
+          ],
+          "compliance_reference": "Internal product policy"
+        }
+      ],
+      "security_requirements": [
+        {
+          "requirement_id": "NFR-SEC-001",
+          "description": "All user authentication shall use secure password hashing and salting",
+          "authentication_requirements": [
+            "Role-based authentication"
+          ],
+          "authorization_requirements": [
+            "Role-based access"
+          ],
+          "data_protection_requirements": [
+            "TLS in transit",
+            "Encrypted storage"
+          ],
+          "privacy_requirements": [
+            "Business and user data protection"
+          ],
+          "compliance_reference": "Project-dependent",
+          "verification_method": "Security review and tests"
+        },
+        {
+          "requirement_id": "NFR-SEC-002",
+          "description": "Role-based access control shall be enforced for all system functions",
+          "authentication_requirements": [
+            "Role-based authentication"
+          ],
+          "authorization_requirements": [
+            "Role-based access"
+          ],
+          "data_protection_requirements": [
+            "TLS in transit",
+            "Encrypted storage"
+          ],
+          "privacy_requirements": [
+            "Business and user data protection"
+          ],
+          "compliance_reference": "Project-dependent",
+          "verification_method": "Security review and tests"
+        },
+        {
+          "requirement_id": "NFR-SEC-003",
+          "description": "All data transmission shall use HTTPS encryption",
+          "authentication_requirements": [
+            "Role-based authentication"
+          ],
+          "authorization_requirements": [
+            "Role-based access"
+          ],
+          "data_protection_requirements": [
+            "TLS in transit",
+            "Encrypted storage"
+          ],
+          "privacy_requirements": [
+            "Business and user data protection"
+          ],
+          "compliance_reference": "Project-dependent",
+          "verification_method": "Security review and tests"
+        },
+        {
+          "requirement_id": "NFR-SEC-004",
+          "description": "User sessions shall be properly managed and secured against hijacking",
+          "authentication_requirements": [
+            "Role-based authentication"
+          ],
+          "authorization_requirements": [
+            "Role-based access"
+          ],
+          "data_protection_requirements": [
+            "TLS in transit",
+            "Encrypted storage"
+          ],
+          "privacy_requirements": [
+            "Business and user data protection"
+          ],
+          "compliance_reference": "Project-dependent",
+          "verification_method": "Security review and tests"
+        },
+        {
+          "requirement_id": "NFR-SEC-005",
+          "description": "Password reset functionality shall include security measures to prevent abuse",
+          "authentication_requirements": [
+            "Role-based authentication"
+          ],
+          "authorization_requirements": [
+            "Role-based access"
+          ],
+          "data_protection_requirements": [
+            "TLS in transit",
+            "Encrypted storage"
+          ],
+          "privacy_requirements": [
+            "Business and user data protection"
+          ],
+          "compliance_reference": "Project-dependent",
+          "verification_method": "Security review and tests"
+        }
+      ],
+      "software_quality_attributes": [
+        {
+          "attribute_id": "QA-001",
+          "attribute_name": "Usability",
+          "description": "Non-technical users should complete the intake and answer flow without training.",
+          "measurement": "Task completion rate",
+          "target_value": ">= 90%",
+          "priority": "High"
+        }
+      ],
+      "business_rules": [
+        {
+          "rule_id": "BR-001",
+          "description": "Only administrators can create new projects and manage user roles",
+          "applicable_roles": [
+            "Administrator",
+            "Primary User"
+          ],
+          "conditions": [
+            "Project workflow is active"
+          ],
+          "enforcement_requirements": [
+            "REQ-011"
+          ]
+        },
+        {
+          "rule_id": "BR-002",
+          "description": "Team members can only view and update tasks assigned to them",
+          "applicable_roles": [
+            "Administrator",
+            "Primary User"
+          ],
+          "conditions": [
+            "Project workflow is active"
+          ],
+          "enforcement_requirements": [
+            "REQ-011"
+          ]
+        },
+        {
+          "rule_id": "BR-003",
+          "description": "PDF exports are only available to users with appropriate project access",
+          "applicable_roles": [
+            "Administrator",
+            "Primary User"
+          ],
+          "conditions": [
+            "Project workflow is active"
+          ],
+          "enforcement_requirements": [
+            "REQ-011"
+          ]
+        },
+        {
+          "rule_id": "BR-004",
+          "description": "Reminders are sent based on configurable time intervals before deadlines",
+          "applicable_roles": [
+            "Administrator",
+            "Primary User"
+          ],
+          "conditions": [
+            "Project workflow is active"
+          ],
+          "enforcement_requirements": [
+            "REQ-011"
+          ]
+        },
+        {
+          "rule_id": "BR-005",
+          "description": "User roles determine access to specific project management features",
+          "applicable_roles": [
+            "Administrator",
+            "Primary User"
+          ],
+          "conditions": [
+            "Project workflow is active"
+          ],
+          "enforcement_requirements": [
+            "REQ-011"
+          ]
+        }
+      ]
+    },
+    "other_requirements": {
+      "database_requirements": [
+        {
+          "requirement_id": "DB-001",
+          "description": "The database shall store user accounts with secure password hashes",
+          "entities": [
+            "Session",
+            "AnswerSet",
+            "SRSArtifact"
+          ],
+          "retention_policy": "Policy-based retention",
+          "backup_policy": "Scheduled backups"
+        },
+        {
+          "requirement_id": "DB-002",
+          "description": "Project and task data shall be stored with proper relationships and indexing",
+          "entities": [
+            "Session",
+            "AnswerSet",
+            "SRSArtifact"
+          ],
+          "retention_policy": "Policy-based retention",
+          "backup_policy": "Scheduled backups"
+        },
+        {
+          "requirement_id": "DB-003",
+          "description": "User role assignments and permissions shall be stored and easily queryable",
+          "entities": [
+            "Session",
+            "AnswerSet",
+            "SRSArtifact"
+          ],
+          "retention_policy": "Policy-based retention",
+          "backup_policy": "Scheduled backups"
+        },
+        {
+          "requirement_id": "DB-004",
+          "description": "Reminder schedules and notification history shall be maintained",
+          "entities": [
+            "Session",
+            "AnswerSet",
+            "SRSArtifact"
+          ],
+          "retention_policy": "Policy-based retention",
+          "backup_policy": "Scheduled backups"
+        },
+        {
+          "requirement_id": "DB-005",
+          "description": "PDF export history and generated files metadata shall be stored",
+          "entities": [
+            "Session",
+            "AnswerSet",
+            "SRSArtifact"
+          ],
+          "retention_policy": "Policy-based retention",
+          "backup_policy": "Scheduled backups"
+        }
+      ],
+      "internationalization_requirements": [
+        {
+          "requirement_id": "I18N-001",
+          "description": "The product should support future localization without changing the API contract.",
+          "supported_languages": [
+            "en"
+          ],
+          "locale_rules": [
+            "ISO date formatting for API payloads"
+          ]
+        }
+      ],
+      "legal_requirements": [
+        {
+          "requirement_id": "LEGAL-001",
+          "description": "The system shall comply with standard data protection practices for user information",
+          "jurisdiction": "Project-dependent",
+          "reference": "Business and regulatory policy"
+        },
+        {
+          "requirement_id": "LEGAL-002",
+          "description": "User data shall be handled in accordance with general privacy principles",
+          "jurisdiction": "Project-dependent",
+          "reference": "Business and regulatory policy"
+        },
+        {
+          "requirement_id": "LEGAL-003",
+          "description": "No special regulatory compliance requirements beyond standard web application practices",
+          "jurisdiction": "Project-dependent",
+          "reference": "Business and regulatory policy"
+        }
+      ],
+      "reuse_objectives": [
+        {
+          "objective_id": "REUSE-001",
+          "description": "Reuse question planning, validation, and export modules across future agents.",
+          "target_components": [
+            "Question planner",
+            "Validation engine",
+            "Artifact exporter"
+          ]
+        }
+      ],
+      "additional_requirements": [
+        {
+          "requirement_id": "OTH-001",
+          "description": "The system shall be accessible via modern web browsers (Chrome, Firefox, Safari, Edge)"
+        },
+        {
+          "requirement_id": "OTH-002",
+          "description": "User interface shall be responsive and work on desktop and tablet devices"
+        },
+        {
+          "requirement_id": "OTH-003",
+          "description": "Error messages shall be clear and helpful to non-technical users"
+        },
+        {
+          "requirement_id": "OTH-004",
+          "description": "System shall include basic help documentation and user guidance"
+        },
+        {
+          "requirement_id": "OTH-005",
+          "description": "Application shall support future scalability beyond initial 100-user capacity"
+        }
+      ]
+    }
+  },
+  "appendices": {
+    "glossary": [
+      {
+        "term": "SRS",
+        "definition": "Software Requirements Specification"
+      },
+      {
+        "term": "NFR",
+        "definition": "Nonfunctional Requirement"
+      }
+    ],
+    "analysis_models": [
+      {
+        "model_id": "AM-001",
+        "model_type": "Interview Coverage Summary",
+        "description": "Summarises AI-driven questions, user answers, and completion coverage for the current SRS.",
+        "reference": "See analyst workspace interview review."
+      },
+      {
+        "model_id": "AM-002",
+        "model_type": "Service Outline",
+        "description": "Summarises service responsibilities and handoff boundaries for the current build phase.",
+        "reference": "See risk and stack review."
+      }
+    ],
+    "to_be_determined_list": []
+  },
+  "services": [
+    {
+      "service_name": "Web Application Service",
+      "port": 8200,
+      "summary": "Main web application handling user interface, authentication, and core project management features",
+      "endpoints": []
+    },
+    {
+      "service_name": "Database Service",
+      "port": 8201,
+      "summary": "Data storage and management for users, projects, tasks, and system configuration",
+      "endpoints": []
+    },
+    {
+      "service_name": "Notification Service",
+      "port": 8202,
+      "summary": "Handles reminder generation and email notification delivery to users",
+      "endpoints": []
+    },
+    {
+      "service_name": "PDF Export Service",
+      "port": 8203,
+      "summary": "Generates PDF reports from project data and manages download requests",
+      "endpoints": []
+    },
+    {
+      "service_name": "Authentication Service",
+      "port": 8204,
+      "summary": "Manages user authentication, session management, and security functions",
+      "endpoints": []
+    }
+  ],
+  "revision_history": [
+    {
+      "revision_id": "REV-001",
+      "name": "Agent 1 SRS API",
+      "date": "2026-04-24",
+      "reason_for_changes": "Initial generated draft",
+      "version": "1.0"
+    }
+  ],
+  "generated_stack_recommendation": {
+    "frontend": "Next.js 15 + Tailwind CSS",
+    "api": "FastAPI REST API",
+    "ai_orchestrator": "Python AI worker with LangGraph-compatible orchestration",
+    "database": "PostgreSQL",
+    "storage": "S3-compatible object storage",
+    "deployment": "Docker Compose locally, ECS or Kubernetes in production"
+  },
+  "analyst_workspace": {
+    "analysis_summary": "This Software Requirements Specification defines the requirements for a web-based project management application designed for small teams. The system will provide task management with reminders, role-based access control, and PDF export capabilities. Primary users are business owners and administrators who need to manage team projects efficiently. The application will be accessible via web browser with email/password authentication and is designed to support up to 100 concurrent users.",
+    "planner": {
+      "provider": "ollama",
+      "model": "deepseek-v3.1:671b-cloud",
+      "orchestrator": "langgraph"
+    },
+    "coverage": {
+      "total_questions": 8,
+      "answered_questions": 8,
+      "open_questions": 0,
+      "completion_percent": 100
+    },
+    "interview_questions": [
+      {
+        "key": "target_users",
+        "section": "users",
+        "question": "Who will use this app most often?",
+        "input_type": "multiselect",
+        "answered": true,
+        "answer": [
+          "Business owners or admins"
+        ],
+        "answer_text": "Business owners or admins"
+      },
+      {
+        "key": "core_features",
+        "section": "features",
+        "question": "What should people be able to do in the first version?",
+        "input_type": "textarea",
+        "answered": true,
+        "answer": "General answer",
+        "answer_text": "General answer"
+      },
+      {
+        "key": "platforms",
+        "section": "interfaces",
+        "question": "Where will people use it first?",
+        "input_type": "multiselect",
+        "answered": true,
+        "answer": [
+          "Web browser"
+        ],
+        "answer_text": "Web browser"
+      },
+      {
+        "key": "auth_method",
+        "section": "accounts",
+        "question": "How should people get into the system?",
+        "input_type": "select",
+        "answered": true,
+        "answer": "Email and password",
+        "answer_text": "Email and password"
+      },
+      {
+        "key": "integrations",
+        "section": "integrations",
+        "question": "Does it need to connect with any other tools or services?",
+        "input_type": "textarea",
+        "answered": true,
+        "answer": "General answer",
+        "answer_text": "General answer"
+      },
+      {
+        "key": "reports_and_notifications",
+        "section": "operations",
+        "question": "What updates, reminders, reports, or alerts should it send?",
+        "input_type": "textarea",
+        "answered": true,
+        "answer": "General answer",
+        "answer_text": "General answer"
+      },
+      {
+        "key": "compliance",
+        "section": "privacy",
+        "question": "Are there any privacy, legal, or safety rules this product must follow?",
+        "input_type": "multiselect",
+        "answered": true,
+        "answer": [
+          "No special rules"
+        ],
+        "answer_text": "No special rules"
+      },
+      {
+        "key": "expected_scale",
+        "section": "technical",
+        "question": "About how many people may use it when you launch?",
+        "input_type": "select",
+        "answered": true,
+        "answer": "Under 100",
+        "answer_text": "Under 100"
+      }
+    ],
+    "open_items": [],
+    "template_standard": "IEEE SRS",
+    "template_document_type": "Software Requirements Specification",
+    "generator": {
+      "provider": "ollama",
+      "model": "deepseek-v3.1:671b-cloud",
+      "used_ai_generation": true
+    },
+    "stack_summary": {
+      "frontend": "Next.js 15 + Tailwind CSS",
+      "api": "FastAPI REST API",
+      "ai_orchestrator": "Python AI worker with LangGraph-compatible orchestration",
+      "database": "PostgreSQL",
+      "storage": "S3-compatible object storage",
+      "deployment": "Docker Compose locally, ECS or Kubernetes in production"
+    },
+    "expected_scale": "Under 100",
+    "integrations": [
+      "General answer"
+    ],
+    "reports_and_notifications": [
+      "General answer"
+    ],
+    "compliance_focus": [
+      "No special rules"
+    ]
+  },
+  "diagram_previews": []
+}
