@@ -12,6 +12,7 @@ exactly that split.
 """
 from .author import UnitTestAuthor
 from .e2e import E2EAgent
+from .debugger import AgenticE2EDebugger, DebugNotebook
 from .flows import (Scenario, Selector, Step, parse_scenario, parse_selector,
                     to_playwright_js)
 from .harness import CONFIG, DEV_DEPS, TestHarness
@@ -23,7 +24,7 @@ from .spec import (MAX_PER_PHASE, MAX_PER_PROJECT, QAReport, TestFailure,
 
 __all__ = [
     "QASession", "UnitTestAuthor", "TestHarness", "VitestRunner", "FileSnapshot",
-    "E2EAgent", "Scenario", "Selector", "Step",
+    "E2EAgent", "AgenticE2EDebugger", "DebugNotebook", "Scenario", "Selector", "Step",
     "TestTarget", "TestFailure", "QAReport",
     "select_targets", "test_path_for", "classify",
     "parse_scenario", "parse_selector", "to_playwright_js",
