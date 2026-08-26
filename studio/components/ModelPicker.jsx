@@ -6,7 +6,7 @@ import { Dropdown, Tag, Tip } from './ui'
 import { cn } from '@/lib/utils'
 
 export default function ModelPicker({
-  label, value, options, onChange, placeholder = 'choose…', hint,
+  label, value, options, onChange, placeholder = 'choose…', hint, conn,
 }) {
   const [open, setOpen] = useState(false)
   const [q, setQ] = useState('')
@@ -48,6 +48,15 @@ export default function ModelPicker({
                 {Math.round(current.ctx / 1024)}k{current.vision ? ' · vision' : ''}
               </span>
             ) : null}
+            {conn && (
+              <span className={cn('mt-[3px] flex items-center gap-[5px]',
+                                  'text-[10px] leading-none',
+                                  conn.on ? 'text-ok' : 'text-muted2')}>
+                <span className={cn('size-[5px] shrink-0 rounded-full',
+                                    conn.on ? 'bg-ok' : 'bg-muted2')} />
+                <span className="min-w-0 truncate">{conn.text}</span>
+              </span>
+            )}
           </span>
           <ChevronsUpDown className="size-3 shrink-0 text-muted2" />
         </button>

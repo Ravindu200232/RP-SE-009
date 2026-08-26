@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { useStore, KEYS } from '@/lib/store'
 import { api } from '@/lib/api'
-import { isCloud, hasVision } from '@/lib/models'
+import { cloudModel, hasVision, connection } from '@/lib/models'
 import ModelPicker from './ModelPicker'
 import { Badge, Button, Input, SectionLabel, Seg, SegOpt, Tag, Tip } from './ui'
 import { cn } from '@/lib/utils'
@@ -55,7 +55,7 @@ export default function Sidebar({
     s.persist(KEYS.builder, id)
     api.saveSettings({ agent_model: id }).catch(() =>
       s.addLog('WARN', 'Could not save the model setting — it will not stick.'))
-    if (isCloud(id) && !cat.cloudEnabled) {
+    if (cloudModel(cat, id) && !cat.cloudEnabled) {
       s.addLog('WARN', 'Cloud model selected but Ollama is not signed in — run `ollama signin`.')
     }
   }
@@ -147,6 +147,7 @@ export default function Sidebar({
   }, [projects, q])
 
   const activeModel = models.builder || models.agent || models.planner || models.design || ''
+  const conn = connection(cat, activeModel)
   const dot = { live: 'bg-ok', busy: 'bg-warn', connecting: 'bg-muted2' }[status]
     || 'bg-bad'
 
@@ -190,7 +191,7 @@ export default function Sidebar({
         Model
       </SectionLabel>
       <ModelPicker label="Model" value={activeModel} options={cat.all}
-                   onChange={pickModel}
+                   onChange={pickModel} conn={conn}
                    hint={hasVision(cat.all, activeModel)
                      ? 'Used by planning, design and building. This model can also inspect images.'
                      : 'Used by planning, design and building.'} />

@@ -130,6 +130,19 @@ def ensure_model(model: str) -> bool:
     """Check Ollama tags; pull model if missing. Returns True if ready."""
 
     if is_cloud_model(model):
+
+        # No weights to fetch, but the daemon only proxies a cloud model it
+        # has been asked for, so an unregistered one is registered first. With
+        # an API key has_model() is already true and nothing is pulled.
+        if not ollama.has_model(model):
+            elog("INFO", f"   ☁️  Registering cloud model {model} "
+                         f"(no download — cloud models carry no weights)…")
+            if ollama.pull(model):
+                elog("INFO", f"   ✅ {model} registered")
+            else:
+                elog("WARN", f"   ⚠️  Could not register {model} with "
+                             f"Ollama — trying the call anyway")
+
         via = "API key" if ollama.api_key else \
               "signed-in Ollama" if ollama.signed_in() else None
         if via:

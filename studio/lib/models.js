@@ -27,10 +27,10 @@ const CURATED = [
 const CLOUD_UI_LABELS = {
   'qwen3.5:397b-cloud': 'Qwen 397B',
   'minimax-m3:cloud': 'MiniMax M3',
-  'gemma4:31b-cloud': 'Gemma 4 31B Local',
+  'gemma4:31b-cloud': 'Gemma 4 31B',
+  'bjoernb/gemma4-31b-fast:latest': 'Gemma 4 31B Fast',
+  'bjoernb/gemma4-31b-fast': 'Gemma 4 31B Fast',
 }
-
-const isGemma31 = id => String(id || '').toLowerCase() === 'gemma4:31b-cloud'
 
 export const modelLabel = (model) =>
   CLOUD_UI_LABELS[String(model?.id || '').toLowerCase()]
@@ -39,11 +39,22 @@ export const modelLabel = (model) =>
 export const isCloud = (id) => String(id || '').includes('-cloud')
   || String(id || '').endsWith(':cloud')
 
+/**
+ * Cloud by the server's own classification, falling back to the name.
+ *
+ * The name is not always enough: the server decides from `remote_host`, which
+ * also catches a community wrapper such as `bjoernb/gemma4-31b-fast:latest`
+ * that proxies to ollama.com while carrying no -cloud suffix at all.
+ */
+export const cloudModel = (cat, id) => {
+  const entry = (cat?.all || []).find(m => m.id === id)
+  return entry ? !!entry.cloud : isCloud(id)
+}
+
 export function catalogue(payload) {
   const p = payload || {}
   const cloud = (p.cloud || []).map(m => ({
-    ...m, label: modelLabel(m), cloud: !isGemma31(m.id),
-    tag: isGemma31(m.id) ? 'local' : (m.tag || 'cloud'),
+    ...m, label: modelLabel(m), cloud: true, tag: m.tag || 'cloud',
   }))
   const localObjs = (p.local_models || []).map(m =>
     typeof m === 'string' ? { id: m } : m)
@@ -64,7 +75,40 @@ export function catalogue(payload) {
     all: [...cloud, ...local],
     cloudEnabled: !!p.cloud_enabled,
     cloudVia: p.cloud_via || 'none',
+    ollamaReady: !!p.ollama_ready,
+    cloudAccount: p.cloud_account || '',
   }
+}
+
+/**
+ * Whether the chosen model can actually be reached right now, and through
+ * what. Null when nothing is chosen, so the picker shows no line at all.
+ *
+ * An empty local list is not the same answer as an unreachable daemon --
+ * a fresh Ollama with nothing pulled reports the same empty list as one that
+ * is not running -- so the reachable flag comes from the server rather than
+ * being inferred here.
+ */
+export function connection(cat, id) {
+  if (!id) return null
+  if (cloudModel(cat, id)) {
+    if (!cat.cloudEnabled) {
+      return { on: false, text: 'not connected — sign in to Ollama or add a key' }
+    }
+    if (cat.cloudVia === 'api-key') {
+      return { on: true, text: 'connected · ollama.com key' }
+    }
+    return {
+      on: true,
+      text: cat.cloudAccount
+        ? `connected · ollama.com as ${cat.cloudAccount}`
+        : 'connected · signed-in Ollama',
+    }
+  }
+  if (!cat.ollamaReady) return { on: false, text: 'Ollama is not answering' }
+  return (cat.installed || []).includes(id)
+    ? { on: true, text: 'connected · local Ollama' }
+    : { on: false, text: 'not pulled yet — it downloads on the first build' }
 }
 
 export const hasVision = (all, id) => !!all.find(m => m.id === id)?.vision

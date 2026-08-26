@@ -162,7 +162,10 @@ class UIHandler(SimpleHTTPRequestHandler):
             uri = str(s.get("mongodb_uri", "")).strip()
             self._json({
                 "ollama_host": ollama.host,
-                "cloud_enabled": bool(key),
+                "cloud_enabled": ollama.cloud_ready(),
+                "cloud_via": ("api-key" if key
+                              else "signed-in" if ollama.signed_in() else "none"),
+                "ollama_ready": ollama.daemon_ready(),
 
                 "api_key_hint": (f"…{key[-4:]}" if key else ""),
                 "local_num_ctx": s.get("local_num_ctx", max_context("llama3.1:8b")),
@@ -558,9 +561,9 @@ class UIHandler(SimpleHTTPRequestHandler):
             ok = save_settings(patch)
             if patch.get("ollama_host"):
                 ollama.host = patch["ollama_host"].rstrip("/")
-            self._json({"ok": ok, "cloud_enabled": bool(ollama.api_key),
+            self._json({"ok": ok, "cloud_enabled": ollama.cloud_ready(),
                         "cloud_reachable": ollama.cloud_reachable()
-                        if ollama.api_key else False})
+                        if ollama.api_key else ollama.signed_in()})
         elif path == "/upload-project":
             body = self._body()
             name = body.get("name", "imported")

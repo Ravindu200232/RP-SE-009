@@ -6,11 +6,11 @@ tests that AgentForge creates inside customer projects.
 
 ## Layout
 
-- `unit/agents/` — builder and code-agent helpers
+- `unit/agents/` — builder and code-agent helpers, Ollama local/cloud routing
 - `unit/qa_agents/` — QA selection, E2E semantics, convergence, and reporting
 - `unit/deployment/` — deployment security and artifact-safety helpers
 - `unit/srs/` — SRS JSON recovery and builder-handoff helpers
-- `integration/` — shared runtime and cross-agent contracts
+- `integration/` — shared runtime, cross-agent and model-catalogue contracts
 - `results/latest.txt` — result from the most recent committed test run
 - `results/validation.txt` — full repository validation summary
 
