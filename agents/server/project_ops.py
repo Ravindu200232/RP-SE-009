@@ -19,25 +19,24 @@ def _iter_source(proj_dir: Path):
             yield fp
 
 
+def _owned_dir(root: Path, raw: str, label: str,
+               missing_label: str) -> tuple:
+    """Resolve one HTTP-supplied directory name inside its owned root."""
+    name = str(raw or "").strip().replace("\\", "/")
+    if not name or "/" in name or name in (".", "..") or name.startswith("."):
+        return name, None, f"{raw!r} is not a {label}"
+    try:
+        resolved = (root / name).resolve()
+        resolved.relative_to(root.resolve())
+    except (ValueError, OSError):
+        return name, None, f"{name} is outside {root.name}"
+    if not resolved.is_dir():
+        return name, None, f"no such {missing_label}: {name}"
+    return name, resolved, ""
+
+
 def _deploy_marker(project_dir: Path) -> dict | None:
-    """Whether this project was ever deployed, from disk alone.
-
-    Two `is_file()` probes and, for the few that match, a 149-byte read. It has
-    to stay that cheap: `list_projects()` runs this per project on every
-    `/projects` call. `read_deploy_results()` answers a richer version of the
-    same question but makes an HTTP call to the agent and can rewrite the
-    project's record, so it must never be reached from here.
-
-    The deleted case is checked FIRST. Teardown moves `deploy/` away to
-    `deploy-archive/`, so a torn-down project has no `link.json` and would
-    otherwise be indistinguishable from one that was never deployed.
-
-    `state` is deliberately not read out of `link.json`. That file is written
-    once when the run is adopted and never rewritten, so a torn-down deployment
-    still reads LIVE there for ever — the same trap documented on
-    `_deploy_run_state`. What is returned here is a historical fact, "this was
-    deployed, to AWS", never a claim that anything is currently running.
-    """
+    """Return cheap, disk-only deployment history for project listings."""
     agentforge = project_dir / ".agentforge"
     if (agentforge / "deploy-deleted.json").is_file():
         return {"state": "deleted", "target": ""}
@@ -52,26 +51,13 @@ def _deploy_marker(project_dir: Path) -> dict | None:
 
 
 def discard_srs(srs_id: str) -> dict:
-    """
-    Remove one staged specification.
-
-    Fenced the same way `delete_project` is, and for the same reason: the id
-    arrives over HTTP. It is reduced to a single path segment, and the resolved
-    directory has to still be inside `.srs` after resolution, so neither a
-    traversal nor a symlink can name anything else.
-    """
-    sid = str(srs_id or "").strip().replace("\\", "/")
-    if not sid or "/" in sid or sid in (".", "..") or sid.startswith("."):
-        return {"error": f"{srs_id!r} is not a specification id"}
-
-    root = PROD_DIR / ".srs"
-    try:
-        resolved = (root / sid).resolve()
-        resolved.relative_to(root.resolve())
-    except (ValueError, OSError):
-        return {"error": f"{sid} is outside the specification store"}
-    if not resolved.is_dir():
-        return {"error": f"no such specification: {sid}"}
+    """Remove one staged specification without escaping its owned root."""
+    sid, resolved, error = _owned_dir(
+        PROD_DIR / ".srs", srs_id, "specification id", "specification")
+    if error:
+        if "outside" in error:
+            error = f"{sid} is outside the specification store"
+        return {"error": error}
 
     shutil.rmtree(resolved, ignore_errors=True)
     if resolved.exists():
@@ -81,45 +67,11 @@ def discard_srs(srs_id: str) -> dict:
 
 
 def delete_project(proj_name: str) -> dict:
-    """
-    Remove a project from disk, and its database with it.
-
-    Irreversible, so the fences come first and there are four of them:
-
-      * the name is reduced to a single path segment, so nothing arriving over
-        HTTP can name a directory outside `production-ready`;
-      * a leading dot is refused by name — `.srs` holds every staged
-        specification for every project, and it sits in the same directory;
-      * the resolved path must still be a directory INSIDE `PROD_DIR`, checked
-        after resolution rather than before, so a symlink pointing out of it
-        cannot be followed;
-      * the dev server is stopped first when it is the one being served. A
-        running node holds `.next/` open, and on Windows that turns the delete
-        into a half-removed project.
-
-    The database goes too. `db_name_for` derives it from the folder name, so a
-    project deleted and later rebuilt under the same name would otherwise
-    inherit the old rows and never re-seed — which is the bug `reset_project_db`
-    exists for. That call has its own fencing (it refuses a URI the user
-    configured, and any database not named `agentforge_*`), so a Mongo the user
-    owns is never touched. Best effort: a project whose `.env.local` is gone
-    still deletes, and the log says why the database was left.
-
-    Returns as soon as the project is GONE from the list, which is a rename;
-    the bytes and the database follow on a thread. See below for why.
-    """
-    name = str(proj_name or "").strip().replace("\\", "/")
-    if not name or "/" in name or name in (".", "..") or name.startswith("."):
-        return {"error": f"{proj_name!r} is not a project name"}
-
-    proj_dir = PROD_DIR / name
-    try:
-        resolved = proj_dir.resolve()
-        resolved.relative_to(PROD_DIR.resolve())
-    except (ValueError, OSError):
-        return {"error": f"{name} is outside production-ready"}
-    if not resolved.is_dir():
-        return {"error": f"no such project: {name}"}
+    """Remove a fenced project, then its generated database, in background."""
+    name, resolved, error = _owned_dir(
+        PROD_DIR, proj_name, "project name", "project")
+    if error:
+        return {"error": error}
 
     if active_vite.get("dir") == str(resolved):
         elog("INFO", f"   ⏹ Stopping the dev server before deleting {name}")
@@ -189,19 +141,7 @@ def list_projects() -> list:
 
 
 def _unfinished_count(proj_dir: Path) -> int:
-    """
-    Planned files with nothing on disk. 0 for a complete or foreign app.
-
-    Each planned path is stat'd directly — no directory walk. The first version
-    of this globbed the project for `*.js*` to build a stem set, which walks
-    `node_modules`: tens of thousands of files per project, sixteen projects
-    per listing, and `/projects` stopped answering at all. The plan already
-    says exactly which paths to look for, so there is nothing to search for.
-
-    The `.js` / `.jsx` pair is the one real ambiguity — `write_file`
-    canonicalises the extension, so a plan naming `page.js` can be satisfied by
-    `page.jsx` — and that is two extra stat calls, not a walk.
-    """
+    """Count planned files absent on disk without walking dependencies."""
     try:
         fp = proj_dir / ".agentforge" / "plan.json"
         if not fp.is_file():
@@ -234,21 +174,7 @@ MAX_FILE_BYTES = 256_000
 
 
 def save_project_file(proj_name: str, rel: str, content: str) -> dict:
-    """
-    Write one file a person edited in the code pane. `{"error": …}` if not.
-
-    Deliberately NOT `ArchitectAgent.write_file`. That one canonicalises the
-    path, deletes a `.js` twin of a `.jsx`, and refuses paths the build is not
-    supposed to touch — every bit of it right for a model writing a file it
-    named itself, and wrong for a person who opened a file, changed a line and
-    pressed save. What they had on screen is what goes to disk, at the path it
-    came from.
-
-    The path is still resolved and checked against the project root, because
-    the path arrives over HTTP: `..\\..\\` in it walks out of the project and
-    writes wherever it likes, and a studio bound to the LAN would hand that to
-    anyone on it.
-    """
+    """Write one manually edited file, fenced inside its project."""
     proj_dir = PROD_DIR / _safe_stem(proj_name, "")
     if not proj_dir.is_dir():
         return {"error": f"no such project: {proj_name}"}
@@ -328,11 +254,7 @@ def get_project_files(proj_name: str) -> dict:
 
 def _decide_targets(update_prompt: str, components: list, codebase_ctx: str,
                     build_model: str) -> list:
-    """
-    Ask the LLM to decide which existing component(s) to modify — or whether
-    a new component is needed. Returns list of component names (strings).
-    Uses a tiny, fast call so it doesn't waste tokens.
-    """
+    """Ask the LLM for up to three existing or new component names."""
     import requests as req
 
     comp_list = ", ".join(components) if components else "(none)"
@@ -374,10 +296,7 @@ def _decide_targets(update_prompt: str, components: list, codebase_ctx: str,
 def _build_update_prompt(component_name: str, existing_code: str,
                          update_request: str, codebase_ctx: str,
                          is_new: bool) -> str:
-    """
-    Construct a targeted per-component update prompt.
-    This goes through builder._gen() exactly like a fresh generation.
-    """
+    """Build the focused prompt passed through the normal generation path."""
     import textwrap as tw
     if is_new:
         return tw.dedent(f"""\
@@ -418,11 +337,7 @@ def _build_update_prompt(component_name: str, existing_code: str,
 
 
 def run_update_pipeline(proj_name: str, update_prompt: str, build_model: str):
-    """
-    Load an existing project, decide which components to change, re-generate
-    each one through the standard builder._gen() → _write_one() pipeline,
-    then test and fix exactly like a fresh build.
-    """
+    """Update selected components, then run the normal test/fix loop."""
     set_stream_callback(on_token)
     set_tester_emit(emit)
 
@@ -605,11 +520,7 @@ def run_update_pipeline(proj_name: str, update_prompt: str, build_model: str):
 
 
 def _inject_component_into_app(builder, proj_dir: Path, comp_name: str):
-    """
-    When a new component is created, add it to App.jsx so it renders.
-    Adds an import line and a <CompName /> tag inside the main div.
-    Only modifies App.jsx — safe no-op if the component is already referenced.
-    """
+    """Render a newly generated component from a Vite App.jsx."""
     app_path = proj_dir / "src" / "App.jsx"
     if not app_path.exists():
         return
@@ -655,112 +566,66 @@ async def ws_handler(websocket, path=None):
         async for raw in websocket:
             try:
                 msg = json.loads(raw)
-                if msg.get("type") == "build":
-                    p  = msg.get("prompt", "").strip()
-                    rm = msg.get("refine_model", DEFAULT_REFINE)
-                    bm = msg.get("build_model",  DEFAULT_BUILD)
-                    if p:
-                        threading.Thread(
-                            target=run_pipeline, args=(p, rm, bm), daemon=True
-                        ).start()
-                elif msg.get("type") == "agent_build":
-                    p  = msg.get("prompt", "").strip()
-                    am = msg.get("model") or default_agent_model()
-                    th = _think_flag(msg)
-                    qm = (msg.get("qa_model") or "").strip()
-                    if p:
-                        threading.Thread(
-                            target=run_agent_pipeline,
-                            args=(p, am, th, qm, "",
-                                  str(msg.get("logo", "")).strip(),
-                                  str(msg.get("srs_id", "")).strip()),
-                            daemon=True).start()
-                elif msg.get("type") == "agent_resume":
-                    proj = msg.get("project", "").strip()
-                    am = msg.get("model") or default_agent_model()
-                    if proj:
-                        threading.Thread(
-                            target=run_agent_pipeline,
-                            args=("", am, _think_flag(msg),
-                                  (msg.get("qa_model") or "").strip(), proj),
-                            daemon=True).start()
-                elif msg.get("type") == "chat":
-                    proj = msg.get("project", "").strip()
-                    p    = msg.get("prompt", "").strip()
-                    am   = msg.get("model") or default_agent_model()
-                    if proj and p:
-                        threading.Thread(
-                            target=run_chat,
-                            args=(proj, p, am, (msg.get("route") or "").strip(),
-                                  _think_flag(msg),
-                                  (msg.get("qa_model") or "").strip(),
-                                  _browser_console(msg)),
-                            daemon=True).start()
-                elif msg.get("type") == "agent_update":
-                    proj = msg.get("project", "").strip()
-                    p    = msg.get("prompt", "").strip()
-                    am   = msg.get("model") or default_agent_model()
-                    rt   = (msg.get("route") or "").strip()
-                    if proj and p:
-
-                        threading.Thread(
-                            target=run_chat,
-                            args=(proj, p, am, rt, _think_flag(msg),
-                                  (msg.get("qa_model") or "").strip(),
-                                  _browser_console(msg)),
-                            daemon=True).start()
-                elif msg.get("type") == "pencil_edit":
-                    proj = msg.get("project", "").strip()
-                    p    = msg.get("prompt", "").strip()
-                    am   = msg.get("model") or default_agent_model()
-                    if proj and p:
-                        threading.Thread(
-                            target=run_pencil_edit,
-                            args=(proj, p, msg, am, _think_flag(msg)),
-                            daemon=True).start()
-                elif msg.get("type") == "element_edit":
-                    proj = msg.get("project", "").strip()
-                    p    = msg.get("prompt", "").strip()
-                    am   = msg.get("model") or default_agent_model()
-                    el   = msg.get("element") or {}
-                    if proj and p:
-                        threading.Thread(
-                            target=run_element_edit,
-                            args=(proj, p, el, am, _think_flag(msg),
-                                  _browser_console(msg)),
-                            daemon=True).start()
-                elif msg.get("type") == "image_edit":
-                    proj = msg.get("project", "").strip()
-                    p    = msg.get("prompt", "").strip()
-                    am   = msg.get("model") or default_agent_model()
-                    if proj and p:
-                        threading.Thread(
-                            target=run_image_edit,
-                            args=(proj, p, msg.get("element") or {}, am,
-                                  _think_flag(msg)),
-                            daemon=True).start()
-                elif msg.get("type") == "feature":
-                    proj = msg.get("project", "").strip()
-                    p    = msg.get("prompt", "").strip()
-                    am   = msg.get("model") or default_agent_model()
-                    if proj and p:
-                        threading.Thread(
-                            target=run_feature,
-                            args=(proj, p, am, _think_flag(msg),
-                                  (msg.get("qa_model") or "").strip(),
-                                  (msg.get("route") or "").strip(),
-                                  _browser_console(msg)),
-                            daemon=True).start()
-                elif msg.get("type") == "update":
-                    proj = msg.get("project", "").strip()
-                    p    = msg.get("prompt", "").strip()
-                    bm   = msg.get("build_model", DEFAULT_BUILD)
-                    if proj and p:
-                        threading.Thread(
-                            target=run_update_pipeline, args=(proj, p, bm), daemon=True
-                        ).start()
-            except json.JSONDecodeError: pass
-    except websockets.exceptions.ConnectionClosed: pass
+                job = _message_job(msg)
+                if job:
+                    threading.Thread(
+                        target=job[0], args=job[1], daemon=True).start()
+            except json.JSONDecodeError:
+                pass
+    except websockets.exceptions.ConnectionClosed:
+        pass
     finally:
         clients.discard(websocket)
         log.info(f"WS disconnected ({len(clients)})")
+
+
+def _message_job(msg: dict):
+    """Translate one WebSocket action into its unchanged worker contract."""
+    kind = msg.get("type")
+    prompt = str(msg.get("prompt") or "").strip()
+    project = str(msg.get("project") or "").strip()
+
+    if kind == "build" and prompt:
+        return run_pipeline, (
+            prompt, msg.get("refine_model", DEFAULT_REFINE),
+            msg.get("build_model", DEFAULT_BUILD))
+    if kind == "update" and project and prompt:
+        return run_update_pipeline, (
+            project, prompt, msg.get("build_model", DEFAULT_BUILD))
+    known = {
+        "agent_build", "agent_resume", "chat", "agent_update",
+        "pencil_edit", "element_edit", "image_edit", "feature",
+    }
+    if kind not in known:
+        return None
+    model = msg.get("model") or default_agent_model()
+    qa_model = str(msg.get("qa_model") or "").strip()
+    route = str(msg.get("route") or "").strip()
+    think = _think_flag(msg)
+
+    if kind == "agent_build" and prompt:
+        return run_agent_pipeline, (
+            prompt, model, think, qa_model, "",
+            str(msg.get("logo") or "").strip(),
+            str(msg.get("srs_id") or "").strip())
+    if kind == "agent_resume" and project:
+        return run_agent_pipeline, (
+            "", model, think, qa_model, project)
+    if kind in ("chat", "agent_update") and project and prompt:
+        return run_chat, (
+            project, prompt, model, route, think, qa_model,
+            _browser_console(msg))
+    if kind == "pencil_edit" and project and prompt:
+        return run_pencil_edit, (project, prompt, msg, model, think)
+    if kind == "element_edit" and project and prompt:
+        return run_element_edit, (
+            project, prompt, msg.get("element") or {}, model, think,
+            _browser_console(msg))
+    if kind == "image_edit" and project and prompt:
+        return run_image_edit, (
+            project, prompt, msg.get("element") or {}, model, think)
+    if kind == "feature" and project and prompt:
+        return run_feature, (
+            project, prompt, model, think, qa_model, route,
+            _browser_console(msg))
+    return None

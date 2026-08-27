@@ -18,28 +18,7 @@ _DECLINED_RE = re.compile(
 
 
 def _where_in_file(before: str, element: dict, line: int = 0) -> str:
-    """
-    The exact source line the clicked element is written on, quoted back.
-
-    The one thing the edit prompt never said. `ElementResolver` returns a line
-    number, the log prints it — `📍 app/login/page.jsx:53` — and then it is
-    dropped: `_element_write_round` is not passed it and the prompt has no
-    place for it. The model was handed five kilobytes of source, a one-line
-    description of a `<div>` and "make this more premium", and told to find it
-    on its own. On a page where six divs carry similar Tailwind it picks one of
-    them, and which one is a coin toss — the change lands on the child, or the
-    parent, or the sibling, and the tool reads as not working when what it did
-    was answer a question nobody had pinned down.
-
-    Quoting the source line verbatim is what makes it exact: it is a string the
-    model can match, not a coordinate it has to trust.
-
-    The line number is often 0 — the resolver scores whole files and only
-    sometimes comes back with a position (`📍 …:?` is that case). So the class
-    list and the text are searched for as well, and the search is the reliable
-    half: a className copied out of the live DOM appears verbatim in the JSX
-    that produced it.
-    """
+    """Quote the selected source line, falling back to class or visible text."""
     lines = before.splitlines()
     if not lines:
         return ""
@@ -72,19 +51,7 @@ def _where_in_file(before: str, element: dict, line: int = 0) -> str:
 
 
 def _section_span(element: dict) -> str:
-    """
-    The two elements that bound the selected section: its first and its last.
-
-    A click reports one node. When that node is a section rather than a leaf,
-    one node is not enough to act on — "put a band under this" needs to know
-    where "this" ends, and a model given only the opening element guesses the
-    boundary from the markup and regularly guesses a different one than the
-    user drew. So the picker sends both edges and they are described here in
-    the order they appear.
-
-    Empty when the selection was a single element, which is the common case and
-    needs no span at all.
-    """
+    """Describe the first and last elements of a section selection."""
     sec = element.get("section") or {}
     first, last = sec.get("start"), sec.get("end")
     if not isinstance(first, dict) or not isinstance(last, dict):
@@ -100,22 +67,7 @@ _MAP_COLLECTION_RE = re.compile(r"""getCollection\s*\(\s*['"]([a-zA-Z0-9_]+)['"]
 
 
 def _project_map(arch) -> str:
-    """
-    Where everything lives, in about a page of text.
-
-    An edit request arrives with one file's source and no idea what else
-    exists, so "add a cancel button that calls the bookings API" has to be
-    answered by guessing the route's path and shape. Guessing is how a repair
-    invented `@/components/CartContext` and how "remove the navbar" was aimed
-    at a page that never had one.
-
-    Built from the files on disk every time it is asked for, NOT written once
-    at the end of a build. A map generated at build time is wrong the moment
-    the first feature lands, and a stale map is worse than none — it sends the
-    model confidently to a file that moved. This costs nothing to rebuild:
-    measured at 1,287 characters for a 40-file project, against 76,000
-    characters of source.
-    """
+    """Build a fresh compact route, API, component, lib, and data map."""
     pages, apis, comps, libs, colls = [], [], set(), [], set()
     for rel, body in sorted(arch.files.items()):
         if not rel.endswith((".js", ".jsx")):
@@ -183,12 +135,7 @@ def _shared_routes(arch, rel: str) -> list:
 
 
 def _log_reach(rel: str, shared: list, route: str = "") -> None:
-    """Say how far this edit reaches. Never stop it.
-
-    The selection and pencil tools point at a thing on screen; the thing IS
-    the answer, and asking which routes were meant is asking the user to
-    repeat themselves. So this reports and returns.
-    """
+    """Report shared-route reach without blocking a pointed edit."""
     if len(shared) <= 1:
         return
     where = route or "this page"
@@ -201,36 +148,7 @@ def _log_reach(rel: str, shared: list, route: str = "") -> None:
 
 def _scope_verdict(rel: str, shared: list, instruction: str,
                    route: str = "", ask: bool = True) -> str:
-    """
-    `""` go ahead · `"scoped"` do it for this route only · `"asked"` stop.
-
-    A file that renders on several routes cannot be edited on one of them. A
-    click on a footer resolves to the file that RENDERS it — usually a layout
-    or a shared component — so "remove the footer", said while looking at
-    /login, takes it off the whole site, and the preview afterwards shows
-    /login, where it does indeed look right.
-
-    `looks_like_global` and `looks_like_page_only` read the answer out of the
-    instruction itself, both of them, because "on /login only" is not global
-    and reading only the first would ask the same question forever.
-
-    `ask=False` is for the tools where the user has already pointed at the
-    thing. With the selector and the pencil they put the cursor on a section
-    and said what to do with it; the section IS the answer, and stopping to ask
-    which routes they meant is asking them to repeat themselves. There the
-    reach is logged and the edit goes ahead. It stays on by default for the
-    paths driven by a typed sentence, where nothing was pointed at and the file
-    was chosen by resolution rather than by the user.
-
-    When it does ask, the turn is OVER. Every caller returns on "asked" and
-    none of them emitted anything after it, so the studio never learned the run
-    had stopped: `busy` stayed true, and the ask box — the one place the answer
-    could be typed — is disabled while busy. The question was asked and the way
-    to answer it was switched off in the same breath, which is a deadlock with
-    a spinner on it, reading "Waiting for you" forever. So it ends the turn
-    explicitly; there is nothing left running, and saying so is what puts the
-    box back.
-    """
+    """Return ``""``, ``scoped``, or ``asked`` for a shared-route edit."""
     if len(shared) <= 1:
         return ""
     where = route or "this page"
@@ -269,13 +187,7 @@ def _scope_verdict(rel: str, shared: list, instruction: str,
 
 
 def _reach_label(arch, rel: str, route: str = "") -> str:
-    """
-    How many routes a file is on, said plainly enough to act on.
-
-    The point is the difference between the two answers. "You MAY rewrite this
-    one" is true of both a layout that wraps twelve routes and a layout that
-    wraps one, and only one of them is safe to delete a footer from.
-    """
+    """Describe whether editing a file affects one route or many."""
     try:
         reach = routes_rendering(arch.files, rel)
     except Exception as e:
@@ -290,18 +202,7 @@ def _reach_label(arch, rel: str, route: str = "") -> str:
 
 
 def _layout_chain(arch, path: str, cap: int = 3) -> list:
-    """
-    The layouts that wrap this page, outermost last, with what they render.
-
-    A page does not import its layout — Next composes them — so following the
-    page's own imports never reaches `app/layout.jsx`, and the navbar, header
-    and footer live there. Asking to "remove the navbar from the login page"
-    then sends the model a file with no navbar in it and no way to obey:
-    measured, one such edit reasoned for eleven minutes and changed nothing.
-
-    Returns `[(path, body)]` for the layout chain and the components those
-    layouts render, so the chrome is on the table when the request is about it.
-    """
+    """Return layouts and their components wrapping a Next.js page."""
     out, seen = [], set()
     if not path.startswith("app/"):
         return out
@@ -355,15 +256,7 @@ def connected_files(arch, path: str, cap: int = 28) -> list:
 
 
 def _neighbours(arch, path: str, before: str, cap: int = 28) -> str:
-    """The connected files, in full, as prompt text.
-
-    They are quoted whole and they are WRITABLE. They used to be labelled
-    "for reference, do NOT rewrite it", which is the wrong instruction half
-    the time: a change to a page often has to land in the component the page
-    renders, and a model forbidden from touching it either gives up or
-    reimplements the component inline in the page — which is how one edit
-    turns into two versions of the same section.
-    """
+    """Quote writable dependency neighbors within the prompt budget."""
     files = getattr(arch, "files", None) or {}
     blocks, spent = [], 0
     for rel, how in connected_files(arch, path, cap):
@@ -384,15 +277,7 @@ MAX_ELEMENT_AUTOFIX = 2
 
 def _autofix_from_terminal(arch, path, element, mark, rounds=MAX_ELEMENT_AUTOFIX,
                            proj_dir: Path = None, analyzer=None, model: str = None):
-    """Diagnose a broken visual edit from runtime evidence, then repair it.
-
-    The previous implementation immediately rewrote the selected file because
-    it was the most recent edit.  Recency is useful evidence, but it is not a
-    root-cause proof: a change can expose a broken child, caller, API contract or
-    Server/Client boundary elsewhere.  Every repair now goes through the same
-    evidence-first runtime planner; the selected path and exact stack locations
-    are investigation seeds, not a write allowlist.
-    """
+    """Repair a visual edit from runtime evidence and its dependency graph."""
     import urllib.error
     import urllib.request
 
@@ -435,9 +320,7 @@ def _autofix_from_terminal(arch, path, element, mark, rounds=MAX_ELEMENT_AUTOFIX
         ephase({"phase": -20, "title": f"Diagnosing the edit (round {rnd + 1})",
                 "status": "active"})
         try:
-            helper = analyzer or AnalyzerAgent(
-                arch, proj_dir, base_url=f"http://localhost:{DEV_PORT}",
-                callbacks=_analyzer_callbacks())
+            helper = analyzer or _analyzer_for(arch, proj_dir)
             written = _repair_runtime(
                 arch, proj_dir, None, helper, detail, detail, rnd + 1, model,
                 focus_paths=focus, strict_scope=True)
@@ -526,16 +409,7 @@ PICTURES_RULE = (
 
 
 def _edit_rules(adding: bool) -> str:
-    """
-    The fence around a picker edit, in the two shapes it comes in.
-
-    Adding and updating need different sentences. "Only add the new section"
-    read against an update request is an instruction to change nothing, and
-    "do whatever they asked to this section" read against an add is an
-    invitation to rewrite the one they pointed at instead of putting a new one
-    beside it. What both share is the part that is never negotiable: routes,
-    entities and functions.
-    """
+    """Return contract-preserving rules for add or update picker edits."""
     shared = ("DO NOT CHANGE: api routes, entities, functions. The routes stay "
               "at the same paths with the same methods and the same request "
               "and response shapes. The data entities keep their fields and "

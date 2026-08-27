@@ -1,14 +1,6 @@
 # Chat-driven bug fixes for an existing project.
 def bind_host() -> str:
-    """
-    The address the servers listen on.
-
-    Loopback by default, because AgentForge's HTTP surface can start builds, edit
-    files and run npm — none of which belongs on an open port by accident.
-    `lan_access` widens it to the whole network, which is what makes the image
-    endpoint reachable from the other workstation: a second machine running
-    AgentForge can then borrow this one's GPU through /api/image.
-    """
+    """Bind to loopback unless LAN access was explicitly enabled."""
     return "0.0.0.0" if load_settings().get("lan_access") else "127.0.0.1"
 
 
@@ -54,18 +46,7 @@ INTENT_RE = re.compile(r"^\s*INTENT\s*::\s*(bug|feature|page|ask)"
 
 
 def classify_intent(arch, text: str, route: str = "") -> tuple:
-    """
-    `(intent, restated)` for one message the user typed.
-
-    One small model call, on the build model, with nothing but the message and
-    the page they are on. It is deliberately not given the source: deciding
-    "is this a complaint or a request" needs the sentence, not the project, and
-    a router that reads 48k tokens to answer a four-word question is a router
-    nobody will leave switched on.
-
-    Falls back to `feature` — the most conservative route, because it plans
-    before it writes and shows its plan.
-    """
+    """Route one message with a small LLM call; default safely to feature."""
     user = (f"The user is looking at {route or 'the app'}.\n\n"
             f"They typed:\n{text}\n\nAnswer with the INTENT line.")
     buf = []
@@ -84,23 +65,7 @@ def classify_intent(arch, text: str, route: str = "") -> tuple:
 
 def run_chat(proj_name: str, text: str, model: str, route: str = "",
              think: bool = None, qa_model: str = "", console: str = ""):
-    """
-    One input for everything: read what the user wants, then do it.
-
-    AgentForge's tools each solve a different shape of problem and each has its own
-    tab, which asks the user to classify their own request before they are
-    allowed to make it. Nobody thinks "this is a page-scoped restyle" — they
-    think "this bit looks wrong". So the classification happens here instead,
-    and the tabs become an implementation detail.
-
-    `console` is what the studio's preview had already logged when the message
-    was typed — see `studio/lib/console-log.js`. It goes to the repair path and
-    NOT to the classifier: a screen can hold a stale 500 from ten minutes ago
-    while somebody asks for a new page, and a router shown a list of errors
-    calls everything a bug. What the user typed is what decides which tool
-    runs; the console only decides how well the repair is aimed once the bug
-    path is the one running.
-    """
+    """Classify one chat input and dispatch the matching project action."""
     set_tester_emit(emit)
     proj_dir = PROD_DIR / proj_name
     if not proj_dir.is_dir():
@@ -131,12 +96,7 @@ def run_chat(proj_name: str, text: str, model: str, route: str = "",
 
 
 def _reproduce_complaint(proj_dir: Path, route: str, complaint: str, analyzer):
-    """Open the app as a browser and watch the reported thing fail.
-
-    Signed in where the app has demo accounts, because most of a generated app
-    is behind a login and an anonymous visit reproduces the login redirect
-    instead of the bug.
-    """
+    """Reproduce the complaint in-browser, using a demo login when possible."""
     from agents.analysis.reproduce import Reproduction, reproduce
 
     if not _dev_alive():
@@ -173,12 +133,7 @@ def _reproduce_complaint(proj_dir: Path, route: str, complaint: str, analyzer):
 
 
 def _report_symptom(before, after) -> bool:
-    """Say whether the thing they reported still happens. Returns True if fixed.
-
-    Compared on the fault's own words with the numbers removed, because ports,
-    ids and line offsets move between two runs of the same app and comparing
-    them raw would call every repair a failure.
-    """
+    """Compare normalized before/after symptoms and report whether fixed."""
     if not (before.ran and after.ran):
         elog("INFO", "   ↻ Could not re-check it in a browser — the change is "
                      "in, but nobody has confirmed the symptom is gone")
@@ -333,13 +288,7 @@ def _routes_affected_by_paths(arch, paths) -> list[str]:
 
 
 def _feature_focus_scope(arch, paths, *, declared_routes=None, route_hint: str = ""):
-    """Return only pages/APIs directly owned by the feature change.
-
-    Shared UI such as Navbar may render on every page; that fan-out is not a
-    reason to browse the whole app after every small feature. Direct pages and
-    changed API callers are all checked. A component-only edit gets a couple of
-    representative pages instead of a site-wide sweep.
-    """
+    """Return changed pages/APIs without expanding shared UI site-wide."""
     files = getattr(arch, "files", {}) or {}
     direct_pages, caller_pages, shared_pages, apis = set(), set(), set(), set()
 
@@ -411,13 +360,7 @@ def _reproduce_state(proj_dir: Path, route: str, complaint: str, analyzer):
 def _stabilize_bug_repair(arch, proj_dir: Path, proj_name: str, analyzer, *,
                           route: str, complaint: str, model: str,
                           baseline_signature: set, max_rounds: int = 8) -> tuple:
-    """Keep repairing the SAME affected route until downstream faults stop.
-
-    Fixing a 500 can expose the next defect (bad response shape, then a render
-    error). Those are one bug-report transaction. The old path declared success
-    after the first file write and forced the user to report each downstream
-    exception manually.
-    """
+    """Converge downstream faults on the same affected route."""
     total = []
     last_sig = None
     repeat_sig = 0
@@ -480,22 +423,14 @@ def _stabilize_bug_repair(arch, proj_dir: Path, proj_name: str, analyzer, *,
 
 def run_bug_report(proj_name: str, complaint: str, model: str, route: str = "",
                    think: bool = None, qa_model: str = "", console: str = ""):
-    """Repair one user-visible bug as a converging transaction.
-
-    One source fix can uncover the next defect in the same flow. Keep the exact
-    affected route live, rebuild after each write, and continue until the route
-    is clean. Only a hard compile/import regression restores the pre-repair
-    snapshot; an inconclusive browser check keeps the last green repair.
-    """
+    """Repair one bug transaction until its affected route is stable."""
     set_tester_emit(emit)
     tx = None
     try:
         proj_dir, arch, stack = _open_for_edit(proj_name, model, think)
         if arch is None:
             return
-        analyzer = AnalyzerAgent(arch, proj_dir,
-                                 base_url=f"http://localhost:{DEV_PORT}",
-                                 callbacks=_analyzer_callbacks())
+        analyzer = _analyzer_for(arch, proj_dir)
         elog("INFO", f"🐛 {complaint[:80]}")
         eprog("Reproducing…", 20)
 
@@ -593,16 +528,9 @@ def run_bug_report(proj_name: str, complaint: str, model: str, route: str = "",
         stop_model(model)
 
 def run_question(arch, proj_dir: Path, question: str):
-    """
-    Answer a question about the app without touching it.
-
-    Reads the whole project, because "where does the login go" is answerable
-    from the source and not from a summary of it. Writes nothing — the one
-    branch of the chat that cannot change the app.
-    """
+    """Answer from full project source without modifying the app."""
     try:
-        analyzer = AnalyzerAgent(arch, proj_dir,
-                                 callbacks=_analyzer_callbacks())
+        analyzer = _analyzer_for(arch, proj_dir, runtime=False)
         agent = FeaturesAgent(arch, proj_dir, callbacks=_analyzer_callbacks(),
                               analyzer=analyzer, model=model)
         convo = [
@@ -633,16 +561,7 @@ def _truthy(name: str) -> bool:
 def verify_after_edit(arch, proj_dir: Path, proj_name: str, *,
                       stack: str = "next", build_rounds: int = 2,
                       probe: bool = True, analyzer=None) -> dict:
-    """
-    Everything that has to be true after a tool edits a project.
-
-    `run_agent_update` shipped whatever the model wrote and restarted the dev
-    server: no compile check, no request to any route. Every tool that edits an
-    existing app funnels through here instead, so "the model said it changed
-    three files" and "the app still works" stop being the same claim.
-
-    Returns {'build_ok', 'routes_failed', 'broken_imports', 'syntax_broken'}.
-    """
+    """Check syntax, imports, build, dev startup, and optional routes."""
     out = {"build_ok": True, "routes_failed": [], "broken_imports": 0,
            "syntax_broken": []}
     if stack != "next":
@@ -651,9 +570,7 @@ def verify_after_edit(arch, proj_dir: Path, proj_name: str, *,
         wait_for_dev(stack)
         return out
 
-    analyzer = analyzer or AnalyzerAgent(
-        arch, proj_dir, base_url=f"http://localhost:{DEV_PORT}",
-        callbacks=_analyzer_callbacks())
+    analyzer = analyzer or _analyzer_for(arch, proj_dir)
 
     compiling = bool(build_rounds) and not _truthy("AGENTFORGE_SKIP_BUILD_CHECK")
 
@@ -780,19 +697,7 @@ _AGENT_MTIMES = {rel: p.stat().st_mtime for rel, p in _own_sources()}
 
 
 def warn_if_agents_stale():
-    """
-    Say so when AgentForge's own code has changed since this process started.
-
-    Python does not reload an imported module, so editing `agents/planner/architecture.py`
-    while the server runs changes nothing about what it generates — and there is
-    no symptom until a generated app misbehaves in a way the source says it
-    cannot. That happened here: a fix landed at 04:41, the server had started at
-    03:48, and every build for the next hours was scaffolded by the old version
-    while the file on disk looked correct.
-
-    A warning, not a reload: swapping modules under a running build is worse
-    than the problem.
-    """
+    """Warn when loaded agent sources changed; never hot-swap modules."""
     stale = []
     for rel, p in _own_sources():
         try:
@@ -810,18 +715,7 @@ RUN_INTENT = ".agentforge/intent.json"
 
 
 def save_run_intent(proj_dir: Path, **kw) -> None:
-    """
-    Write down what this run was asked to do, at the moment it was asked.
-
-    The plan is what Resume normally restarts from, and it does not exist until
-    the model has written one — which is minutes in, behind a model load and a
-    planning turn. Until then a project existed on disk that nothing could pick
-    up again: cancelling, closing the window or a crash lost the request
-    itself, not just the work.
-
-    Small and written once, so it costs nothing and cannot go stale: it records
-    the request, and the plan records the progress.
-    """
+    """Persist the original request before planning makes resume metadata."""
     try:
         out = proj_dir / RUN_INTENT
         out.parent.mkdir(parents=True, exist_ok=True)

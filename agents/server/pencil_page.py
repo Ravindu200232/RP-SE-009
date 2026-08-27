@@ -188,9 +188,7 @@ def run_pencil_edit(proj_name: str, instruction: str, payload: dict,
         proj_dir, arch, stack = _open_for_edit(proj_name, model, think)
         if arch is None:
             return
-        analyzer = AnalyzerAgent(arch, proj_dir,
-                                 base_url=f"http://localhost:{DEV_PORT}",
-                                 callbacks=_analyzer_callbacks())
+        analyzer = _analyzer_for(arch, proj_dir)
         resolver = ElementResolver(arch, analyzer)
 
         route = payload.get("route") or element.get("route") or "/"
@@ -384,9 +382,7 @@ def run_page_update(proj_name: str, instruction: str, model: str, route: str,
         proj_dir, arch, stack = _open_for_edit(proj_name, model, think)
         if arch is None:
             return
-        analyzer = AnalyzerAgent(arch, proj_dir,
-                                 base_url=f"http://localhost:{DEV_PORT}",
-                                 callbacks=_analyzer_callbacks())
+        analyzer = _analyzer_for(arch, proj_dir)
         path = _page_file_for(arch, analyzer, route)
         if not path or path not in arch.files:
             elog("INFO", f"   ↪ {route or '/'} is not one page — planning it "
@@ -572,28 +568,11 @@ def run_agent_update(proj_name: str, instruction: str, model: str,
     """Agentic edit of an existing project — same write_file loop."""
     set_tester_emit(emit)
     try:
-        proj_dir = PROD_DIR / proj_name
-        if not proj_dir.exists():
-            eerr(f"Project not found: {proj_name}")
+        proj_dir, arch, stack = _open_for_edit(proj_name, model, think)
+        if arch is None:
             return
-        if not ensure_model(model):
-            eerr(f"Cannot load model: {model}")
-            return
-
-        stack = detect_stack(proj_dir)
         elog("INFO", f"✏️  Agent update ({stack}) — {instruction[:70]}")
         eprog("Reading project…", 10)
-
-        if stack == "next":
-            MONGO.ensure_running()
-
-        arch = ArchitectAgent(ollama, model, proj_dir, _agent_callbacks(proj_dir),
-                              stack=stack,
-                              mongo_uri=MONGO.uri_for(proj_name) if stack == "next" else "",
-                              db_name=db_name_for(proj_name) if stack == "next" else "",
-                              think=think)
-        arch.load_existing()
-        stack = arch.stack
 
         eprog("Applying changes…", 35)
         n = arch.update(instruction)

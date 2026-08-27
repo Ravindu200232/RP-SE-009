@@ -164,10 +164,7 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
             elog("WARN", f"   ⚠ Image stage could not continue in background: {e}")
             log.exception("image stage")
 
-        analyzer = AnalyzerAgent(arch, proj_dir,
-                                 base_url=f"http://localhost:{DEV_PORT}",
-                                 callbacks=_analyzer_callbacks(),
-                                 allow_reseed=True)
+        analyzer = _analyzer_for(arch, proj_dir, allow_reseed=True)
 
         qa.drain(timeout=180)
         _backfill_tests(arch, proj_dir, qa)
@@ -584,6 +581,14 @@ def _open_for_edit(proj_name: str, model: str, think: bool = None):
     arch.load_existing()
     elog("INFO", f"   ⏱ open {time.time() - t0:.1f}s")
     return proj_dir, arch, arch.stack
+
+
+def _analyzer_for(arch, proj_dir: Path, *, runtime: bool = True, **options):
+    """Create the shared analyzer configuration used by server actions."""
+    options.setdefault("callbacks", _analyzer_callbacks())
+    if runtime:
+        options.setdefault("base_url", f"http://localhost:{DEV_PORT}")
+    return AnalyzerAgent(arch, proj_dir, **options)
 
 
 
