@@ -1,4 +1,4 @@
-# Build failure analysis and repair flow.
+# Repair flow: build -> collect evidence -> patch owned files -> rebuild.
 
 
 def _npm_build_errors(proj_dir: Path, stack: str = "vite"):

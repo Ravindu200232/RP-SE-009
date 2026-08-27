@@ -2,7 +2,7 @@ import re
 import unittest
 from types import SimpleNamespace
 
-from agents.features.capture import PENCIL_SYSTEM, capture_region
+from agents.features.capture import CaptureResult, PENCIL_SYSTEM, capture_region
 from agents.features.features_apply import FeaturesAgent
 from agents.features.features_common import (
     FeatureSpec, package_requested, safe_change_path,
@@ -75,6 +75,9 @@ class FeaturesRefactorTests(unittest.TestCase):
         self.assertFalse(safe_change_path("../outside.js"))
         self.assertIsInstance(FeatureSpec(), FeatureSpec)
         self.assertTrue(callable(capture_region))
+        shot = CaptureResult(png_b64="crop", page_b64="page")
+        self.assertTrue(shot.ok())
+        self.assertEqual(shot.vision_images(), ["crop", "page"])
         self.assertTrue(callable(guard_scope))
         self.assertTrue(callable(describe))
         self.assertTrue(callable(routes_rendering))

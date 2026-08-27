@@ -1,4 +1,4 @@
-# Feature changes, image edits and scoped updates.
+# Feature flow: understand -> scope -> apply -> test -> refresh the preview.
 def run_feature(proj_name: str, request: str, model: str, think: bool = None,
                 qa_model: str = "", route: str = "", console: str = ""):
     """Apply, verify, stabilize, and test one dependency-aware change."""

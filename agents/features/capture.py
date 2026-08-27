@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import base64
+import io
 import logging
 from dataclasses import dataclass, field
 
@@ -13,12 +14,13 @@ PAD = 24
 MIN_W, MIN_H = 240, 180
 
 
-MAX_B64 = 1_500_000
+MAX_B64 = 900_000
 
 
 @dataclass
 class CaptureResult:
     png_b64: str = ""
+    page_b64: str = ""
     crop: dict = field(default_factory=dict)
     page_size: dict = field(default_factory=dict)
     logged_in: bool = False
@@ -26,6 +28,29 @@ class CaptureResult:
 
     def ok(self) -> bool:
         return bool(self.png_b64)
+
+    def vision_images(self) -> list[str]:
+        return [image for image in (self.png_b64, self.page_b64) if image]
+
+
+def _small_screenshot(png: bytes, size: tuple[int, int]) -> str:
+    """Keep a vision screenshot clear without sending full-size pixels."""
+    encoded = base64.b64encode(png).decode()
+    try:
+        from PIL import Image
+
+        image = Image.open(io.BytesIO(png)).convert("RGB")
+        for bounds, quality in ((size, 82),
+                                ((size[0] // 2, size[1] // 2), 72)):
+            image.thumbnail(bounds)
+            out = io.BytesIO()
+            image.save(out, "JPEG", quality=quality, optimize=True)
+            encoded = base64.b64encode(out.getvalue()).decode()
+            if len(encoded) <= MAX_B64:
+                break
+    except Exception as e:                                  # pragma: no cover
+        log.debug(f"screenshot resize failed: {e}")
+    return encoded
 
 
 def strokes_bounds(strokes, pad: int = PAD) -> dict:
@@ -131,23 +156,10 @@ def capture_region(route: str, *, viewport: dict, scroll: dict, strokes: list,
                 clip["height"] = max(10, min(clip["height"], size["h"] - clip["y"]))
                 res.crop = clip
 
-                png = page.screenshot(clip=clip, type="png", full_page=True)
-                b64 = base64.b64encode(png).decode()
-                if len(b64) > MAX_B64:
-                    scale = (MAX_B64 / len(b64)) ** 0.5
-                    ctx2 = browser.new_context(
-                        viewport={"width": vw, "height": vh},
-                        device_scale_factor=max(0.25, round(scale, 2)))
-                    p2 = ctx2.new_page()
-                    p2.goto(base + (route or "/"), wait_until="load",
-                            timeout=timeout)
-                    if sx or sy:
-                        p2.evaluate(f"window.scrollTo({sx}, {sy})")
-                    p2.evaluate(_OVERLAY_JS, strokes)
-                    png = p2.screenshot(clip=clip, type="png", full_page=True)
-                    b64 = base64.b64encode(png).decode()
-                    ctx2.close()
-                res.png_b64 = b64
+                crop_png = page.screenshot(clip=clip, type="png", full_page=True)
+                page_png = page.screenshot(type="png", full_page=True)
+                res.png_b64 = _small_screenshot(crop_png, (960, 720))
+                res.page_b64 = _small_screenshot(page_png, (1200, 1600))
             finally:
                 ctx.close()
                 browser.close()

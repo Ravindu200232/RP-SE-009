@@ -1,4 +1,4 @@
-# Pencil edits and page-level update helpers.
+# Pencil flow: capture -> understand the mark -> scope -> apply -> verify.
 def _vision_model(preferred: str) -> str:
     """
     The model to send an image to.
@@ -34,8 +34,9 @@ def _pencil_write_round(arch, path, before, instruction, element, shot,
             f"({vp.get('mode', 'desktop')})\n")
     if shot and shot.ok():
         c = shot.crop
-        text += (f"The red freehand annotation marks the region to redesign.\n"
-                 f"Region in the page: x={c.get('x')} y={c.get('y')} "
+        text += ("Image 1 is a close-up of the red freehand annotation. "
+                 "Image 2 is the resized full page with the same mark for context.\n"
+                 f"Marked region: x={c.get('x')} y={c.get('y')} "
                  f"{c.get('width')}×{c.get('height')}\n")
         if shot.logged_in:
             text += "The capture is of the signed-in view.\n"
@@ -56,8 +57,7 @@ def _pencil_write_round(arch, path, before, instruction, element, shot,
 
     msg = {"role": "user", "content": text}
     if shot and shot.ok():
-
-        msg["images"] = [shot.png_b64]
+        msg["images"] = shot.vision_images()
 
     convo = [{"role": "system", "content": PENCIL_SYSTEM + "\n\n" + TOOL_HELP}, msg]
     anchor = (element.get("text") or "").strip()[:60]

@@ -1,4 +1,4 @@
-# Source graph and safe edit-scope helpers.
+# Scope flow: read evidence -> follow imports -> choose the smallest safe set.
 
 LOCAL_IMPORT_RE = re.compile(r"""from\s+['"]@/(components/[\w./-]+)['"]""")
 

@@ -1,4 +1,4 @@
-# Project file operations and WebSocket actions.
+# Project flow: validate ownership -> read or change -> notify the Studio.
 SRC_ROOTS = ("app", "components", "lib", "src", "pages")
 SKIP_DIRS = {"node_modules", ".next", ".git", "dist", "out", ".vite", ".turbo",
              ".agentforge"}

@@ -1,4 +1,4 @@
-# Chat-driven bug fixes for an existing project.
+# Bug-report flow: reproduce -> scope -> repair -> verify -> keep or roll back.
 def bind_host() -> str:
     """Bind to loopback unless LAN access was explicitly enabled."""
     return "0.0.0.0" if load_settings().get("lan_access") else "127.0.0.1"

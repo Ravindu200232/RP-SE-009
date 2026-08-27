@@ -1,4 +1,4 @@
-# Fooocus generation, uploads and image completion.
+# Optional image flow: validate -> generate or copy -> inspect -> publish.
 BROWSER_CONSOLE_MAX = 6000
 
 
@@ -62,7 +62,10 @@ def _fooocus_folders() -> list:
         try:
             if root.exists():
                 for folder in sorted(root.glob("Fooocus*")):
-                    out += [folder, folder / folder.name]
+                    here = folder
+                    for _ in range(4):
+                        out.append(here)
+                        here = here / folder.name
         except OSError:
             continue
     return out

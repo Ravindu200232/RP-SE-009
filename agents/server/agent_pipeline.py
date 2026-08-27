@@ -1,13 +1,9 @@
-# Build updates and repair coordination.
+# Main flow: prepare -> plan -> build -> verify -> report -> serve.
 def run_agent_pipeline(prompt: str, model: str, think: bool = None,
                        qa_model: str = "", resume_project: str = "",
                        logo: str = "", srs_id: str = ""):
-    """
-    Raw prompt → LLM plan.md → LLM writes every file in one continuous pass.
-
-    No templates, no refiner: the model owns the whole project. One chat
-    thread runs the entire build so it remembers what it already wrote.
-    """
+    """Build and verify one app from a request or an approved SRS."""
+    # Stage 1: restore or create the owned project workspace.
     cancel.begin()
     warn_if_agents_stale()
     set_tester_emit(emit)
@@ -74,6 +70,7 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
         if srs_id:
             adopt_srs(srs_id, proj_dir)
 
+        # Stage 2: plan and generate while database startup runs beside it.
         mongo_thread = threading.Thread(target=MONGO.ensure_running, daemon=True)
         mongo_thread.start()
 
@@ -164,6 +161,7 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
             elog("WARN", f"   ⚠ Image stage could not continue in background: {e}")
             log.exception("image stage")
 
+        # Stage 3: compare generated files with the approved plan.
         analyzer = _analyzer_for(arch, proj_dir, allow_reseed=True)
 
         qa.drain(timeout=180)
@@ -191,6 +189,7 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
         except Exception as e:
             elog("WARN", f"   ⚠ dependency preflight could not finish: {e}")
 
+        # Stage 4: install dependencies and prove a production build works.
         estep("install", "active")
         eprog("npm install…", 84)
         if not ensure_node_deps(proj_dir):
@@ -221,6 +220,7 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
         if flow_written:
             qa.mark_stale(pretest_targets.changed())
 
+        # Stage 5: run focused tests, then repair only observed failures.
         unit_out, e2e_out, runtime_errors = {}, {}, []
         runtime_report, api_report = AnalyzerReport(), AnalyzerReport()
         runtime_clean, api_clean = False, False
@@ -445,6 +445,7 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
                     "blocker", "API_STAGE_FAILED",
                     f"post-E2E API verification failed: {e}"))
 
+        # Stage 6: close with security and performance evidence.
         sec_findings, sec_audit, perf_scores = [], {}, {}
         sec_ran = False
         try:
@@ -477,6 +478,7 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
             elog("INFO", "   ⚡ performance skipped — the build is not green, "
                          "so there is no app to measure")
 
+        # Stage 7: write one final verdict and keep the preview available.
         final_report = flow_report
 
         write_qa_report(proj_dir, qa, unit=unit_out, security=sec_findings,

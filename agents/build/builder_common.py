@@ -1,3 +1,4 @@
+# Builder support flow: find tools, stream model output, then run safe commands.
 import json
 import logging
 import os
