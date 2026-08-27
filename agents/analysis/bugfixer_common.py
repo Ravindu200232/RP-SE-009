@@ -59,7 +59,7 @@ import threading
 import re
 from dataclasses import dataclass, field
 
-from agents.planning.architect import FileStreamParser
+from agents.planner.architecture import FileStreamParser
 from agents.core.workspace import WorkspaceTools, TOOL_HELP
 from agents.core.exports_parse import effective_exports, parse_imports, resolve_local
 from agents.features.picker import guard_scope

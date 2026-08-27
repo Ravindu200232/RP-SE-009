@@ -783,7 +783,7 @@ def warn_if_agents_stale():
     """
     Say so when AgentForge's own code has changed since this process started.
 
-    Python does not reload an imported module, so editing `agents/planning/architect.py`
+    Python does not reload an imported module, so editing `agents/planner/architecture.py`
     while the server runs changes nothing about what it generates — and there is
     no symptom until a generated app misbehaves in a way the source says it
     cannot. That happened here: a fix landed at 04:41, the server had started at

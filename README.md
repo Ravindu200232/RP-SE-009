@@ -86,7 +86,7 @@ agentforge/
 ├── server_runtime.py            ordered server-runtime assembler
 ├── pipeline.py                  direct pipeline entrypoint
 ├── agents/
-│   ├── planning/                requirements → architecture/build plan
+│   ├── planner/                 requirements → design/routes/architecture/E2E plan
 │   ├── build/                   generation + browser/runtime validation
 │   ├── analysis/                diagnosis and evidence-backed repairs
 │   ├── features/                feature/edit/image selection helpers

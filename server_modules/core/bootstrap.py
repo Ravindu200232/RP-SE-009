@@ -36,7 +36,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 
 sys.path.insert(0, str(Path(__file__).parent / "srs-agent"))
-from agents.planning.refiner  import RefinerAgent
+from agents.planner.planning import RefinerAgent
 from agents.build.builder_generation import BuilderAgent
 from agents.build.builder_common import set_stream_callback
 from agents.build.tester_browser import TesterAgent
@@ -44,7 +44,7 @@ from agents.build.tester_common import set_emit as set_tester_emit
 from agents.analysis.analyzer import (AnalyzerAgent, AnalyzerReport, Finding,
                              REPAIRABLE_MAJOR)
 from agents.core import nextdocs
-from agents.planning.architect import ArchitectAgent, FileStreamParser
+from agents.planner.architecture import ArchitectAgent, FileStreamParser
 from agents.core.exports_checks import check_named_imports
 from agents.core.exports_syntax import check_syntax, syntax_messages
 from agents.features.features_apply import FeaturesAgent

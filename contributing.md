@@ -18,7 +18,7 @@ Backend-only development can use `python3 server.py`.
 
 | Area | Location | Responsibility |
 |---|---|---|
-| Planning | `agents/planning/` | Requirements, architecture and build-plan contracts |
+| Planning | `agents/planner/` | Requirements, design, site map, architecture and E2E build contracts |
 | Build | `agents/build/` | Project generation and baseline runtime/browser checks |
 | Analysis/repair | `agents/analysis/` | Diagnosis, evidence scoping and fixes |
 | Feature/edit tools | `agents/features/` | Selection, capture, image/source guidance and feature edits |

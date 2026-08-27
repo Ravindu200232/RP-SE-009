@@ -37,7 +37,7 @@ import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from agents.planning.architect import FileStreamParser
+from agents.planner.architecture import FileStreamParser
 from agents.core.commands import CommandRunner
 from agents.core import nextdocs
 from agents.core.exports_common import FRAMEWORK_EXPORTS, strip_noncode as _strip_noncode

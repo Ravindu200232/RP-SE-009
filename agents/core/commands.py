@@ -84,6 +84,18 @@ def _refuse(command: str, why: str) -> CommandResult:
     return CommandResult(False, command, why)
 
 
+def _uses_package_manager(argv: list[str]) -> bool:
+    """Recognize package-manager launchers after absolute-path resolution."""
+    if not argv:
+        return False
+    program = Path(str(argv[0])).name.lower()
+    for suffix in (".exe", ".cmd", ".bat"):
+        if program.endswith(suffix):
+            program = program[:-len(suffix)]
+            break
+    return program in {"npm", "npx", "yarn", "pnpm"}
+
+
 def validate(command: str):
     """
     Return (argv, None) when the command may run, else (None, reason).
@@ -234,7 +246,7 @@ class CommandRunner:
             self.on_event({"command": command, "status": "running"})
 
         lock = None
-        if argv and str(argv[0]).lower().split(".")[0] in {"npm", "npx", "yarn", "pnpm"}:
+        if _uses_package_manager(argv):
             try:
                 from qa_agent.unit.harness_common import NPM_LOCK, npm_busy
                 if npm_busy():

@@ -12,6 +12,7 @@ from agents.core.exports_checks import (
 )
 from agents.core.exports_syntax import syntax_messages
 from agents.core.workspace import WorkspaceTools
+from agents.core.commands import _uses_package_manager
 
 
 class ExportContractTests(unittest.TestCase):
@@ -87,6 +88,14 @@ class ExportContractTests(unittest.TestCase):
         self.assertIn("components/Card.jsx:14", message)
         self.assertIn("Unexpected }", message)
         self.assertIn("valid JavaScript", message)
+
+
+class CommandCoordinationTests(unittest.TestCase):
+    def test_windows_package_manager_path_uses_the_shared_install_lock(self):
+        self.assertTrue(_uses_package_manager(
+            [r"C:\Program Files\nodejs\npm.CMD", "install"]))
+        self.assertTrue(_uses_package_manager(["npx", "vitest", "run"]))
+        self.assertFalse(_uses_package_manager(["node", "script.js"]))
 
 
 class WorkspaceToolTests(unittest.TestCase):

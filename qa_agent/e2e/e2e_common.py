@@ -40,7 +40,7 @@ from urllib.parse import urlparse
 
 import requests
 
-from agents.planning.architect import FileStreamParser
+from agents.planner.architecture import FileStreamParser
 from agents.build.tester_common import overlay_error
 
 from qa_agent.e2e.flows import (CLICKABLE_CSS, FIELD_CSS, GRAMMAR, PLAYWRIGHT_CONFIG,

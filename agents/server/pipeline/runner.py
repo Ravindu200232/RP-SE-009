@@ -7,7 +7,7 @@ import webbrowser
 from pathlib import Path
 
 from agents.build.builder_generation import BuilderAgent
-from agents.planning.refiner import RefinerAgent
+from agents.planner.planning import RefinerAgent
 from agents.build.tester_browser import TesterAgent
 
 from .config import (BUILD_MODEL, DEV_PORT, MAX_FIX, OLLAMA_URL, PROD_DIR,

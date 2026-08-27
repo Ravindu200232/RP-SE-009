@@ -35,7 +35,7 @@ import re
 import textwrap
 from dataclasses import dataclass, field
 
-from agents.planning.architect import FileStreamParser
+from agents.planner.architecture import FileStreamParser
 from agents.core.workspace import WorkspaceTools, TOOL_HELP
 
 
