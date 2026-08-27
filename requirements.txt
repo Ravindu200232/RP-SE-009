@@ -1,0 +1,16 @@
+watchdog>=3.0.0
+requests>=2.31.0
+
+# The deployment agent (deployment-agent/deploy_agent). Its own copy of this
+# list is at deployment-agent/requirements.txt; these are the ones the shared
+# interpreter needs, since the agent runs in this process.
+#
+# playwright is deliberately NOT here: it only drove the evidence exporter's
+# dashboard screenshots, and that dashboard is not part of the port.
+boto3>=1.34,<2
+botocore[crt]>=1.34,<2
+jsonschema>=4.23,<5
+pymongo[srv]>=4.9,<5
+PyYAML>=6.0,<7
+reportlab>=4.2,<5
+websockets>=13,<17
