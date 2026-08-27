@@ -1,4 +1,4 @@
-"""Evidence-led post-build analysis, semantic review, repair, and runtime proof."""
+"""Checks a finished app against its plan and observed behavior."""
 from __future__ import annotations
 
 import http.cookiejar
@@ -79,7 +79,7 @@ class AnalyzerReport:
 
 
 class AnalyzerAgent:
-    """Compare the finished workspace with accepted intent and observed behavior."""
+    """Compare the finished app with its plan and runtime evidence."""
     PLACEHOLDER_MARKERS = ("Building…", "Building&hellip;", "Building...")
     ALWAYS_CHECKED = ("app/page.jsx", "app/page.js")
     _UNAWAITED_RE = re.compile(r"(?<!await\s)(?<!await)\b(getCollection|getDb|getSessionUser)\s*\([^()]*\)\s*\.\s*([A-Za-z_$][\w$]*)")
@@ -672,7 +672,7 @@ class AnalyzerAgent:
                 if reset.get("ok"): self._get_status(self.base_url + "/"); again = self.scan(); self.verify_credentials(again); again.written = report.written; report = again
         self._fire("on_phase", {"phase": -5, "title": "Verifying app", "status": "done"}); return report
 
-    # Stable focused-check methods kept for callers/tests; semantic gaps use unbuilt_promises().
+    # Keep these focused checks available to existing callers.
     def unawaited_collection(self): return self._only(self._code_invariants(), "UNAWAITED_COLLECTION")
     def bad_objectid(self): return self._only(self._code_invariants(), "BAD_OBJECTID")
     def async_param_confusion(self): return self._only(self._code_invariants(), "ASYNC_PARAM_CONFUSION", "UNAWAITED_PARAMS")
@@ -696,7 +696,7 @@ class AnalyzerAgent:
                           "AUTH_SIGNUP_MISSING", "AUTH_PROVIDER_ROUTE")
 
     def _semantic_requirement(self, lens, code):
-        """One cached, evidence-validated semantic lens for legacy entry points."""
+        """Return one cached semantic check for older callers."""
         key = (getattr(self.arch, "write_seq", 0), lens)
         if key not in self._semantic_cache:
             self._semantic_cache[key] = self._semantic_lens(

@@ -1,8 +1,6 @@
-"""The only files AgentForge creates before the implementation model writes code.
+"""Provides runtime defaults created before product code is written.
 
-These are runtime/toolchain defaults, not product decisions. Product pages,
-components, data modules, seed data, routes, and tests always come from the
-approved plan.
+Product-specific files still come from the approved plan.
 """
 from __future__ import annotations
 

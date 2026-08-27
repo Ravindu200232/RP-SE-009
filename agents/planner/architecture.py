@@ -1,4 +1,4 @@
-"""Application architecture and build execution from the approved LLM plan."""
+"""Builds an application from its approved plan."""
 from __future__ import annotations
 
 import json
@@ -125,7 +125,7 @@ PROMPTS = {
 
 
 class ArchitectAgent:
-    """Plan, scaffold, build, resume, and update one generated application."""
+    """Build, resume, and update one generated application."""
 
     NEXT_SCAFFOLD = frozenset({
         "package.json", "next.config.mjs", "jsconfig.json", "tailwind.config.js",

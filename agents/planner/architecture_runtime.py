@@ -1,4 +1,4 @@
-"""Streaming file-block parser shared by the architecture orchestrator."""
+"""Reads file blocks from a model response as it arrives."""
 from __future__ import annotations
 
 import re
@@ -23,7 +23,7 @@ def _safe_flush_len(buffer: str, tag: str) -> int:
 
 
 class FileStreamParser:
-    """Incrementally split model prose from complete file blocks."""
+    """Separate normal text from complete file blocks while streaming."""
 
     def __init__(self, on_text, on_file_start, on_file_token, on_file_end):
         self.on_text, self.on_file_start = on_text, on_file_start

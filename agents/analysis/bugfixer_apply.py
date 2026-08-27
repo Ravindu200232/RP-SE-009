@@ -1,4 +1,4 @@
-"""Evidence-first unit/runtime repair with verdict, scope, and regression guards."""
+"""Repairs test and runtime failures using observed evidence."""
 from __future__ import annotations
 
 import logging
@@ -51,7 +51,7 @@ RUNTIME_SYSTEM = _contract() + "\n\nMODE: FINDING_REPAIR"
 
 
 class BugFixerAgent:
-    """Arbitrate generated tests and repair observed runtime failures."""
+    """Review failing tests and repair proven runtime problems."""
     CASE_RE = re.compile(r"""\b(?:it|test)\s*(?:\.\s*\w+)?\s*\(\s*(['"`])(.+?)\1""", re.S)
     _CASE_START_RE = re.compile(r"""\b(?:it|test)(?:\s*\.\s*\w+)?\s*\(\s*(['"`])(?P<name>.+?)\1\s*,""", re.S)
 

@@ -1,10 +1,4 @@
-"""LLM-first product planning for AgentForge.
-
-The user's text enters once and leaves as one normalized plan that owns the
-design, site map, routes, data, architecture, file graph, and E2E journeys.
-There are no heuristic replanning loops: the planning prompt asks the model to
-perform its completeness pass before returning the first answer.
-"""
+"""Turns a user's request into one complete, normalized product plan."""
 from __future__ import annotations
 
 import json
@@ -105,7 +99,7 @@ def _app_file(route_path: str, leaf: str = "page.jsx") -> str:
 
 
 def _canonical_actor(value: Any, fallback: str = "") -> str:
-    """Turn access prose such as ``ROLE admin`` into an exact role value."""
+    """Match an access description to an exact role name."""
     actor = _text(value, 80)
     actor = re.sub(r"^(?:as\s+)?role\s*[:=-]?\s+", "", actor,
                    flags=re.I).strip()
@@ -113,7 +107,7 @@ def _canonical_actor(value: Any, fallback: str = "") -> str:
 
 
 def _json_object(raw: str) -> dict:
-    """Read the first complete JSON object from a model response."""
+    """Read the first complete JSON object in a model response."""
     source = str(raw or "").strip()
     fenced = re.findall(r"```(?:json)?\s*(\{.*?\})\s*```", source,
                         flags=re.I | re.S)
@@ -157,7 +151,7 @@ def _bullets(items: Any, empty: str = "None") -> list[str]:
 
 
 class PlannerAgent:
-    """Produce and normalize the one plan used by every downstream stage."""
+    """Create the shared plan used by every later stage."""
 
     def __init__(self, client: OllamaClient, model: str, *, stack: str = "next",
                  callbacks: dict | None = None, think: bool | None = None,
@@ -176,7 +170,7 @@ class PlannerAgent:
         if callable(callback):
             try:
                 callback(*args)
-            except Exception as exc:  # callbacks must not stop planning
+            except Exception as exc:  # A callback failure must not stop planning.
                 log.warning("planner callback %s failed: %s", name, exc)
 
     def _log(self, level: str, message: str) -> None:
@@ -249,7 +243,7 @@ class PlannerAgent:
         return PlanBundle(plan, markdown, architecture, design, raw)
 
     def normalize(self, raw: dict, source_input: str = "") -> dict:
-        """Canonicalize names without changing or rejecting model decisions."""
+        """Make plan names consistent without changing its decisions."""
         plan = dict(raw)
         project = _dict(plan.get("project"))
         if not project:
@@ -825,7 +819,7 @@ class PlannerAgent:
 
 
 class RefinerAgent:
-    """Compatibility adapter for the original Vite refine/build pipeline."""
+    """Keep the original Vite planning interface working."""
 
     def __init__(self, ollama_url: str, model: str):
         self.client = OllamaClient(ollama_url)
