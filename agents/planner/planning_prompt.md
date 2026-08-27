@@ -30,36 +30,36 @@ architecture, generation, and end-to-end testing.
 
 ## Design theory and substantial-page default
 
-Use established design theory as an implementation constraint, not as vague
-inspiration:
+Treat design as a deliberate user journey with a distinctive visual thesis,
+not a collection of fashionable sections:
 
-- Build hierarchy with scale, weight, contrast, position, whitespace, and a
-  deliberate primary/secondary/tertiary action order.
-- Apply Gestalt proximity, similarity, common region, continuity, and closure
-  so related information reads as one unit and separate jobs remain distinct.
-- Apply contrast, repetition, alignment, and proximity consistently across the
-  page; reuse a small visual grammar instead of making every section different.
-- Use an 8-point spatial rhythm (4px only for fine adjustments), a predictable
-  type scale, readable line length, and strong vertical cadence between sections.
-- Use progressive disclosure: show the decision-making summary first and place
-  detail, comparison, evidence, process, FAQ, or secondary controls later.
-- Use F-pattern/Z-pattern scanning intentionally, preserve obvious affordances,
-  respect Hick's Law by grouping choices, and reduce cognitive load with clear
-  labels, defaults, feedback, and one dominant next action per section.
-- Treat accessibility as composition: semantic landmarks, logical heading
-  order, keyboard focus, contrast, touch targets, form labels, reduced motion,
-  and content that remains understandable without color or animation.
+- Derive one memorable art direction from the domain, audience, brand story,
+  and desired emotion; define signature typography, surfaces, imagery, and detail.
+- Choreograph the page as a narrative: orient, create desire, enable exploration,
+  answer doubt, prove value, and end with the natural next action.
+- Build hierarchy with scale, weight, contrast, position, whitespace, and one
+  unmistakable primary action; make secondary and tertiary actions visibly quieter.
+- Use Gestalt grouping, editorial grids, alignment, repetition, and controlled
+  asymmetry to create coherence without making every section look identical.
+- Use an 8-point spatial rhythm, disciplined type scale, readable measure, and
+  alternating density to give long pages confident pace and visual breathing room.
+- Apply progressive disclosure and intentional F/Z/task-flow scanning; group
+  choices, expose useful defaults, and show context before asking for commitment.
+- Design responsive composition, not desktop shrinkage: reorder, crop, stack,
+  simplify, and preserve the same hierarchy at 360px, tablet, and wide desktop.
+- Specify purposeful motion, hover, focus, loading, empty, error, and success
+  states that explain cause and effect without delaying the user's task.
+- Treat accessibility as visual craft: semantic order, keyboard flow, contrast,
+  touch targets, labels, reduced motion, and meaning independent of color or media.
 
-For the primary public/product entry page, default to a substantial long-form
-composition when the domain has enough real content. Usually plan 7-12 distinct
-top-to-bottom sections such as navigation, hero/value proposition, primary
-interactive product surface, category/feature overview, selected records or
-proof, process/how-it-works, role-specific value, trust/detail, FAQ, final CTA,
-and footer. Every section must trace to a requirement, capability, real data,
-navigation job, or decision the user must make. Never inflate a page with
-generic testimonials, invented metrics, duplicate feature cards, decorative
-filler, or repeated CTAs. Operational dashboards and focused forms should use
-the density appropriate to their job rather than being forced into a long page.
+For a content-rich primary entry page, usually plan 7-12 distinct sections with
+a clear emotional and task progression: navigation, promise, interactive proof,
+exploration, comparison or evidence, process, role value, trust, final CTA, and
+footer. Every section must earn its place through a requirement, real data,
+navigation job, objection, or decision. Reject generic card grids, invented
+metrics, duplicate claims, decorative bands, and filler copy; vary composition
+while preserving one token system, narrative voice, and action hierarchy.
+Operational dashboards and focused forms should use the density their job needs.
 
 ## Required output
 
