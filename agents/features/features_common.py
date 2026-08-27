@@ -1,42 +1,13 @@
-"""
-Add a feature to a finished app.
-
-`ArchitectAgent.update()` already edits a project, but it cannot do this job.
-Its thread is seeded with `_context_snapshot(max_files=18, per_file=2000)`: at
-most eighteen files, each truncated mid-file. Measured across the ten Next
-projects on disk that is 18 of 60, 18 of 55, 18 of 34 — and the selection is a
-fixed priority list, not a function of the request. On the project that reported
-a broken login it showed the model the route with the broken imports and *not*
-the module that failed to export them, so no phrasing of the instruction could
-have fixed the bug.
-
-So this agent works the way the analyzer does: it is handed an inventory of
-every file — one line each — and pulls the bodies it actually needs. On the
-models in use here a whole project is 27-37k tokens, so the read budget is
-never the constraint; the point is that the model chooses.
-
-Two phases, because "which files change" and "what they become" are different
-questions and only the first produces something checkable:
-
-  PLAN   the model names the files, the packages and the routes, in a strict
-         line format. That list is the initial impact map, not a complexity gate.
-  WRITE  the model implements that map in context-sized waves. If dependency
-         evidence proves another safe project source file is required, the
-         impact map may expand and that file is verified with the rest.
-
-Declared packages are installed *before* the write turn, so the model writes
-against a package that exists rather than one that has to be discovered by a
-failing build afterwards.
-"""
+"""Shared contracts and context helpers for dependency-aware feature changes."""
 from __future__ import annotations
 
 import logging
 import re
-import textwrap
 from dataclasses import dataclass, field
 
 from agents.planner.architecture import FileStreamParser
 from agents.core.workspace import WorkspaceTools, TOOL_HELP
+from agents.features.source_guidance import feature_prompt
 
 
 LOCAL_IMPORT_RE = re.compile(
@@ -48,6 +19,8 @@ log = logging.getLogger("features")
 MAX_FILES = None
 MAX_PACKAGES = None
 MAX_READS = None
+NO_PACKAGE = frozenset({"", "none", "null", "n/a", "n-a", "no package",
+                        "no-package", "(none)"})
 
 # These are path-safety boundaries, not complexity limits.
 CHANGE_DIRS = ("app/", "components/", "lib/", "styles/", "src/")
@@ -81,8 +54,41 @@ def safe_change_path(path: str) -> bool:
         return True
     return rel.startswith(CHANGE_DIRS) and rel.endswith(CHANGE_EXTS)
 
-PLAN_LINE_RE = re.compile(
-    r"^\s*(CURRENT|GAP|CAUSE|EVIDENCE|SUMMARY|PACKAGE|FILE|ROUTE|VERIFY|CONFIDENCE|DONE)\b\s*(?:::)?\s*(.*)$", re.M)
+
+def package_requested(name: str) -> bool:
+    return " ".join(str(name or "").strip().lower().split()) not in NO_PACKAGE
+
+def protocol_lines(text: str):
+    """Yield normalized ``KIND, payload`` pairs from a line protocol."""
+    for raw in str(text or "").splitlines():
+        head, sep, rest = raw.strip().partition("::")
+        if sep:
+            yield head.strip().upper(), rest.strip().strip("`")
+
+
+def change_entry(text: str) -> dict | None:
+    """Parse and safety-check one FILE payload."""
+    parts = [part.strip().strip("`") for part in text.split("::")]
+    if len(parts) < 2:
+        return None
+    action, path = parts[0].lower(), normalise_change_path(parts[1])
+    if action not in ("new", "edit") or not safe_change_path(path):
+        return None
+    return {
+        "path": path,
+        "action": action,
+        "kind": parts[2].lower() if len(parts) > 2 else "",
+        "why": parts[3] if len(parts) > 3 else "",
+    }
+
+
+def unique_paths(items: list) -> list:
+    seen, unique = set(), []
+    for item in items:
+        if item.get("path") not in seen:
+            seen.add(item.get("path"))
+            unique.append(item)
+    return unique
 
 
 @dataclass
@@ -103,132 +109,8 @@ class FeatureSpec:
         return not self.files
 
 
-PLAN_SYSTEM = """\
-You are deciding how to implement ONE requested change in an existing Next.js 16 App Router +
-MongoDB project. The change may be a small edit, a section redesign, a repair, or a large feature. You are NOT writing code yet.
-
-You are given the project's plan, routes, a complete file inventory and the
-most request-relevant source files. Nothing is hidden: when a dependency is not
-shown, inspect it with the workspace tools instead of guessing. Prefer
-`search_code`, `route_source`, `importers` and `read_file` over asking for a
-whole-project dump.
-
-A CHANGE IS NOT AUTOMATICALLY ONE FILE. A large feature or repair may change things that already
-exist, and those dependent edits are the half that gets forgotten. Before you answer,
-walk the project and ask what BREAKS or goes STALE because of this change:
-
-  • Does a new field belong on seeded documents? `lib/seed.js` then changes —
-    and say so in the `why`, because data already in the database will not have
-    the field until it is re-seeded.
-  • Does something new need linking to? The page or nav that should link to it
-    is an edit, or the feature ships unreachable.
-  • Does a shared component need a new prop? Then it changes, and so does
-    every caller — count them before you decide it is worth it.
-  • Does an API route need a new field in its response? That is an edit, and
-    the client that reads it is another.
-  • Does an existing page now show something it did not? That page is an edit.
-
-ROUTE PRESERVATION IS A HARD DESIGN PRINCIPLE:
-  • If the request changes behavior on an existing workflow/page, edit that
-    workflow. Do NOT create a second route with a synonym such as `/cart` when
-    `/shopping-cart` already owns the workflow. A new page route is justified
-    only when the user explicitly asked for a new page/route or the current
-    route table proves no existing owner exists.
-  • Before adding a new API endpoint, inspect the current caller and sibling
-    handlers. Reuse the app's existing auth/database/data-shape conventions;
-    never create a parallel API merely because it is easy to imagine.
-
-List those edits alongside the new files. A plan that is all `new` for a
-feature touching an existing app is usually a plan that missed something.
-
-Before naming files, establish what the app does NOW and what must be
-different. Do not infer ownership from filenames. Ground every edit in source
-you were given or inspected with the workspace tools.
-
-Then output ONLY these lines, nothing else, no prose, no code fences:
-
-CURRENT :: one sentence describing the observed current behavior/structure
-GAP :: one sentence naming the exact missing/wrong behavior relative to the request
-CAUSE :: the source-level reason for the gap; for a purely additive feature say capability absent, not a fake bug
-EVIDENCE :: <existing-path> :: concrete fact observed in that file/route/import graph
-EVIDENCE :: <existing-path> :: another fact when needed
-SUMMARY :: one sentence describing the complete change
-PACKAGE :: <npm-package>            (only if genuinely needed; omit otherwise)
-FILE :: new|edit :: <path> :: server|client :: why this file changes
-ROUTE :: /new-route                 (only for pages or handlers you add)
-VERIFY :: one concrete proof that would show the requested behavior now works
-CONFIDENCE :: high|medium|low
-DONE
-
-Rules:
-  • Name EVERY file and package the requested change genuinely needs. Small
-    changes should stay small; large changes may legitimately span many files.
-    Never omit a necessary file merely to keep the plan short.
-  • Every path is project-relative source. Normal locations are app/…,
-    components/…, lib/…, styles/… or src/…. Root middleware/Next/Tailwind/
-    PostCSS config may be named only when the requested change truly needs it.
-  • `edit` means the file already exists; `new` means it does not. Get this
-    right — it decides whether you are shown its current contents.
-  • Do not list a file you only read for context. List what must CHANGE.
-  • Do not plan authentication or a database connection unless the feature
-    genuinely needs one; this app already has them. `lib/seed.js` IS fair game
-    when the feature gives seeded records a new field.
-"""
-
-
-REPAIR_SYSTEM = """\
-You are deciding WHICH FILES must change to fix a bug in a running Next.js 16
-App Router + MongoDB project. You are NOT writing code yet.
-
-You are given the project's plan, an inventory of every source file (one line
-each), the routes it serves, and the errors the app actually produced when it
-was exercised in a browser. To read a file, emit exactly:
-<read_file path="app/cart/page.jsx"/>
-One per line; you will be given the contents and may then read more. Read the
-files the errors point at, and the files those import — a stack frame names the
-place the app died, which is often not the place that is wrong.
-
-Do not jump from an error message to a rewrite. Establish a source-level root
-cause first. A stack frame, failed request, rendered DOM mismatch, importer, or
-route contract is evidence; a paraphrase of the symptom is not.
-
-Then output ONLY these lines, nothing else, no prose, no code fences:
-
-CURRENT :: one sentence describing what actually happened
-GAP :: one sentence describing the required behavior that failed
-CAUSE :: the source-level root cause, not the symptom
-EVIDENCE :: <existing-path> :: concrete observed fact supporting the cause
-EVIDENCE :: <existing-path> :: another independent fact when available
-SUMMARY :: one sentence naming the repair
-PACKAGE :: <npm-package>            (only if an import genuinely resolves to nothing)
-FILE :: new|edit :: <path> :: server|client :: what is wrong in this file
-VERIFY :: one exact runtime/build/user-flow proof that would disprove the bug
-CONFIDENCE :: high|medium|low
-DONE
-
-Rules:
-  • List the SMALLEST set of files that actually fixes the errors. A fix that
-    rewrites six files to repair one 500 is a worse outcome than the 500.
-  • "Only plain objects can be passed to Client Components" reported five
-    times on one page is ONE bug, and the file to change is usually the client
-    component receiving the prop — not the five call sites. A page passing
-    `icon={DollarSign}` to a `'use client'` card is fixed by making the card
-    take an icon NAME and look it up, which is two files at most.
-  • Every path is project-relative safe source. Follow the dependency chain;
-    do not omit a necessary source file just to keep the plan short.
-  • `edit` means the file already exists; `new` means it does not. Get this
-    right — it decides whether you are shown its current contents.
-  • Do not list a file you only read for context. List what must CHANGE.
-  • A route that redirects an unauthenticated visitor to /login is CORRECT
-    behaviour, not a bug. Do not plan to remove a login requirement.
-  • Do not assume scaffold/auth/database files are correct or wrong. Follow the
-    runtime evidence. If the evidence and dependency chain actually lead there,
-    include the exact source file that must change; otherwise leave it alone.
-  • If the errors do not name a real defect in the application code, an empty
-    FILE set is valid, but the conclusion must still be evidenced: output
-    CURRENT, GAP, CAUSE, at least one EVIDENCE line, SUMMARY, VERIFY,
-    CONFIDENCE and DONE, simply omitting FILE lines.
-"""
+PLAN_SYSTEM = feature_prompt("PLAN", foundation=True)
+REPAIR_SYSTEM = feature_prompt("REPAIR", foundation=True)
 
 
 
@@ -236,33 +118,7 @@ Rules:
 class FeaturesAgentBase:
     """Composition over ArchitectAgent, exactly like AnalyzerAgent."""
 
-    COVER_SYSTEM = """\
-You are checking one plan against one request, and nothing else.
-
-You are given what somebody asked for and the plan a model made for it: a
-summary and the list of files it will change. Your job is to name the parts of
-the REQUEST that no file in that plan will deliver.
-
-A request is usually several things in one sentence — "the member sees X, the
-trainer sees Y, the owner's dashboard shows Z". A plan that covers two of the
-three is not a small miss: the third is a feature the person asked for, was
-told was built, and does not have. It is also invisible, because everything
-that WAS built works.
-
-Go through the request one clause at a time. For each, find the file in the
-plan that delivers it. Judge by what the file IS — a page's own file is what
-shows something on that page — not by what would be convenient.
-
-Reply with one line per uncovered part, and nothing else:
-
-    MISSING :: <the part of the request, in its own words> :: <the file that should deliver it>
-
-If the plan covers every part, reply with exactly:
-
-    COVERED
-
-No preamble, no explanation, no markdown.\
-"""
+    COVER_SYSTEM = feature_prompt("COVER")
 
     MEMORY_TURNS = 8
 
@@ -296,23 +152,7 @@ No preamble, no explanation, no markdown.\
         return self.az._budget_chars()
 
     def full_source(self, budget: int = 0) -> str:
-        """
-        Every source file in the project, complete.
-
-        The inventory-plus-`read_file` loop this replaced was a guessing game:
-        the model saw one line per file and had to know, in advance, which
-        bodies it would need. It reliably read the file the request named and
-        missed the one that quietly depended on it — which is how a feature
-        that added a `slug` to the seed shipped without anyone noticing that
-        the database already held documents that would never get one.
-
-        A whole Next project here is 27-37k tokens against a 262k window. There
-        is no reason to make the model ask.
-
-        Ordered so the parts that constrain everything else come first, and
-        truncated from the end if a project ever does outgrow the budget — a
-        cut-off leaf component costs less than a missing `lib/mongodb.js`.
-        """
+        """Return prioritized complete source blocks within the model budget."""
         files = self.az.source_files()
         budget = budget or int(self._budget_chars() * 0.55)
 
@@ -340,14 +180,7 @@ No preamble, no explanation, no markdown.\
         return "\n".join(out)
 
     def feature_focus_paths(self, request: str, limit: int | None = None) -> list[str]:
-        """Cheap lexical retrieval before the LLM starts using workspace tools.
-
-        A feature request usually names its domain nouns.  Scoring those across
-        paths/source gives the model the obvious page/component plus shared
-        chrome/seed context without paying to serialize 30-40k tokens of an
-        unrelated project.  Importers/search tools cover the dependencies this
-        first pass cannot know in advance.
-        """
+        """Rank likely owners before workspace tools trace dependencies."""
         files = self.az.source_files()
         words = {w for w in re.findall(r"[a-z0-9_]+", str(request or "").lower())
                  if len(w) >= 4 and w not in {"this","that","with","from","page","make","add","update","change","feature"}}
@@ -382,20 +215,7 @@ No preamble, no explanation, no markdown.\
         return "".join(chunks)
 
     def _memory(self) -> list:
-        """
-        The tail of the conversation the app was generated in.
-
-        An edit made against a fresh context can only see the code; this is how
-        it also sees the reasoning. The build thread records which component
-        owns which prop, why a page is a server component, what the seed
-        actually contains — everything the file inventory shows the *result* of
-        and never the *reason* for. Reloaded from `.agentforge/convo.json`, so this
-        works an hour later and in a new process, not only mid-build.
-
-        The system prompt is dropped: this is being replayed under a different
-        one. What is kept is the plan turn plus the most recent exchanges,
-        which is where the app's conventions were actually settled.
-        """
+        """Replay compact plan/recent reasoning under the current system prompt."""
         convo = getattr(self.arch, "convo", None) or []
         if len(convo) < 3:
             return []

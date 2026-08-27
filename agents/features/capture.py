@@ -1,29 +1,11 @@
-"""
-Screenshot the region the user drew over.
-
-Same-origin makes reading the preview's DOM legal, but it does not make a
-screenshot possible: no browser can rasterise an iframe from the parent
-document — there is no `drawImage(iframe)` — and `html2canvas` would mean a new
-CDN dependency inside an app whose whole premise is running locally, producing
-an approximation rather than the page. So the capture happens server-side with
-Playwright, which is already a dependency of `agents/build/tester.py`.
-
-Three details decide whether the image matches what the user was looking at:
-
-  * the context viewport is the **iframe's** CSS size, not the window's, so
-    tablet and mobile modes reproduce exactly;
-  * a fresh browser is signed out, and most drawing happens on an
-    authenticated screen, so the demo credentials are POSTed into the context
-    before navigating;
-  * the strokes are drawn into the page by `page.evaluate` and captured with
-    it, which both marks the region for the model and avoids adding an image
-    library to requirements.txt.
-"""
+"""Capture an annotated preview region with Playwright at the iframe viewport."""
 from __future__ import annotations
 
 import base64
 import logging
 from dataclasses import dataclass, field
+
+from agents.features.source_guidance import feature_prompt
 
 log = logging.getLogger("capture")
 
@@ -175,62 +157,4 @@ def capture_region(route: str, *, viewport: dict, scroll: dict, strokes: list,
     return res
 
 
-PENCIL_SYSTEM = """\
-You are redesigning ONE region of a Next.js 16 App Router page.
-
-The image shows that region of the running app. A red freehand annotation marks
-exactly what the user drew over — that, and only that, is what changes.
-
-You are given the COMPLETE current source of the file that appears to render it.
-First establish the real source owner of the requested behavior. If the marked
-region delegates to a child component, server action, API, shared state or caller
-and that ownership is uncertain, use the read-only workspace tools before
-rewriting anything. Never guess from the filename or screenshot alone.
-
-  • Output the COMPLETE file. Preserve unrelated regions and public contracts;
-    imports/helpers required by the marked region may change.
-  • Tailwind classes only. Keep the app's existing palette and spacing unless
-    the request says otherwise.
-  • Do NOT rename or remove any export — other files import them.
-  • Do NOT reformat or tidy code outside the marked region.
-  • Respect Server/Client boundaries. If the marked redesign needs another
-    source file (for example a focused client component), do not fake it inline.
-
-PICTURES ARE FREE — ASK FOR ONE AND IT IS DRAWN. When the redesign wants an
-image, a photo, a picture, an icon, a logo or a background, write an ordinary
-tag pointing into /generated/ and describe the picture in the alt text:
-
-    <img src="/generated/sourdough-loaf.png"
-         alt="a rustic sourdough loaf on a wooden board, warm morning light"
-         className="…" />
-
-The file does not exist yet and that is fine — the alt text is the prompt, and
-every picture referenced this way is generated and written to disk the moment
-the edit lands. Use a short kebab-case filename and write the alt text the way
-you would describe the shot to a photographer: subject, setting, style, light.
-Never use a stock photo URL, never link to an external host, and never leave a
-placeholder box where a picture was asked for.
-
-PUT IT WHERE IT CAN BE SEEN. A picture that was asked for is the point of the
-change, so it goes in the flow of the region at full strength — no opacity-20,
-no mix-blend-multiply, no gradient laid over it. This shape renders as nothing
-at all and keeps coming back:
-
-    <div className="absolute inset-0 z-0 opacity-20">
-      <img … className="… mix-blend-multiply" />
-      <div className="absolute inset-0 bg-gradient-to-b from-white to-white" />
-    </div>
-
-Twenty per cent opacity under a white gradient on a white section is an
-invisible picture, and the person who asked for it sees no change. Only make
-one a faint background when the request actually said watermark, texture or
-subtle background — and even then keep it above opacity-60. Otherwise give it
-real size: a hero band, a card image, a figure beside the text, something with
-width and height that a reader would notice.
-
-If inspection proves the redesign genuinely requires another source file, reply
-with exactly NEED <path> and nothing else. AgentForge will automatically expand
-the change. Inspect first; NEED is an evidence-backed escalation, not a guess.
-
-Otherwise emit exactly one <write_file path="…"> block.
-"""
+PENCIL_SYSTEM = feature_prompt("PENCIL", foundation=True)

@@ -1,29 +1,4 @@
-"""
-Generated images, from a Fooocus running on this machine or another one.
-
-AgentForge writes apps that want pictures — a hero banner, seeded product photos, a
-poster on a marketing page — and until now it wrote `<img src="/placeholder">`
-and hoped. This module turns "the app needs an image of X" into a real PNG in
-the project's `public/` folder.
-
-**Why it drives Fooocus's Gradio endpoint rather than importing it.** Fooocus
-ships no REST API and no `api_name` on any handler, so there is nothing to call
-by name. What it does expose, because Gradio always does, is `/run/predict`
-with a function index — and the generate handler takes 153 positional
-arguments. Building that by hand would be unreadable and would break on every
-Fooocus release.
-
-So the argument list is read from Fooocus's own `fooocus_config.json`, which
-records the default value of every component in the UI. AgentForge takes those
-defaults verbatim and overrides four of them: the prompt, the aspect ratio, how
-many images, and the seed. That is the whole integration, and it survives a
-Fooocus upgrade as long as the config still describes the UI — which is the
-file Fooocus writes to describe the UI.
-
-**Why the host is configurable.** The workstation with the GPU is not always
-the workstation running AgentForge. Point `image_host` at the other machine (start
-Fooocus there with `--listen`) and everything else is unchanged.
-"""
+"""Generate cached project images through a local or remote Fooocus Gradio UI."""
 import base64
 import json
 import logging
@@ -57,13 +32,7 @@ GENERATE_TIMEOUT = 600
 
 
 class ImageAgent:
-    """
-    One Fooocus, wherever it is running.
-
-    Every method degrades to "no image" rather than raising: an app that could
-    not get a picture still has to build, and a missing banner is a smaller
-    problem than a failed generation.
-    """
+    """Version-tolerant Fooocus client that degrades to ``False`` on failure."""
 
     def __init__(self, host: str = "", config_path: str = "",
                  callbacks: dict = None, enabled: bool = True):
@@ -108,13 +77,7 @@ class ImageAgent:
         return bool(self.enabled and self.base_url())
 
     def _load_template(self) -> bool:
-        """
-        Read Fooocus's UI description and keep the defaults for every input.
-
-        Preferred over the file on disk: `/config` is what the *running*
-        Fooocus is actually using, and a stale `fooocus_config.json` from an
-        older version would build an argument list the server rejects.
-        """
+        """Discover the live generate function and its version-specific defaults."""
         if self._payload is not None:
             return True
         cfg = None
@@ -190,26 +153,7 @@ class ImageAgent:
 
     def generate(self, prompt: str, out_path: Path, *, aspect: str = "landscape",
                  seed: int = 0, force: bool = False) -> bool:
-        """
-        Make one image and write it to `out_path`. False when it could not.
-
-        Already-existing files are left alone: image generation is the slowest
-        thing in a build by an order of magnitude, and a rebuild that reuses
-        what is already on disk is the difference between seconds and minutes.
-
-        `force` is for the caller who is asking for a DIFFERENT picture rather
-        than for this picture to exist — the logo panel, where "try another"
-        means exactly that. Without it the panel wrote every attempt to
-        `logo.png`, found it already there, and handed back the first image
-        every time: a regenerate button that could not regenerate.
-
-        `seed = 0` means "any picture", and is answered with a RANDOM seed.
-        Passing the literal 0 through made it a fixed seed instead, so the same
-        prompt drew the same image forever: measured, three "try another"
-        presses returned byte-identical files after 31 seconds of GPU each —
-        `force` was defeating the file cache and the seed was putting the same
-        picture back. Pass a non-zero seed to reproduce one deliberately.
-        """
+        """Generate one image; cache unless forced and randomize a zero seed."""
         out_path = Path(out_path)
         if not force and out_path.is_file() and out_path.stat().st_size > 1024:
             return True
@@ -253,21 +197,7 @@ class ImageAgent:
         return True
 
     def _predict(self, url: str, args: list):
-        """
-        Run the generate handler and return its final output list.
-
-        Fooocus's generate is a *generator* behind Gradio's queue: it yields
-        progress for a minute, then the images. `/run/predict` answers such a
-        function immediately with whatever the first yield held — a progress
-        bar — which is why the obvious call returns a clean 200 and no picture.
-
-        Gradio 3.x runs its queue over a WebSocket. The handshake is fixed:
-        the server says `send_hash`, we answer with the session; it says
-        `send_data`, we answer with the arguments; then it streams progress
-        until `process_completed` carries the output. Gradio 4 replaced this
-        with SSE at `/queue/join` + `/queue/data`, so both are tried — this one
-        first, because it is what is actually running here.
-        """
+        """Run the queued generator via Gradio 3 WebSocket or Gradio 4 SSE."""
         ws_url = url.replace("http://", "ws://").replace("https://", "wss://")
         session = "agentforge-" + str(int(time.time() * 1000))
         try:
@@ -362,13 +292,7 @@ class ImageAgent:
         return asyncio.run(go())
 
     def _first_image(self, data) -> bytes:
-        """
-        The bytes of the first image in a Gradio response.
-
-        Gradio answers with either a base64 data URI or a path on the server,
-        depending on version and component, so both are handled rather than
-        guessed at.
-        """
+        """Extract the first base64 or file-backed image from nested output."""
         def walk(node):
             if isinstance(node, str):
                 if node.startswith("data:image"):
