@@ -40,7 +40,7 @@ def main() -> int:
 
     status = "PASS" if result.wasSuccessful() else "FAIL"
     summary = [
-        "AgentForge repository test result",
+        "RP-SE-009 repository test result",
         "=================================",
         f"Status: {status}",
         f"Run at (UTC): {datetime.now(timezone.utc).isoformat(timespec='seconds')}",

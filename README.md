@@ -1,71 +1,121 @@
-# AgentForge
+# RP-SE-009: Self-Optimizing AI-Agentic Full-Stack Development Application
 
-AgentForge is an agentic full-stack application builder. A requirement moves through SRS planning, architecture, Next.js generation, automated QA, repair, preview and deployment while the Studio streams the work in a desktop UI.
+An academic software engineering project developed at the **Sri Lanka Institute of Information Technology (SLIIT)**. RP-SE-009 provides an integrated workflow that turns a software requirement into a structured SRS, an implementation plan, a generated full-stack application, verified test evidence, repair iterations, and a deployment-ready release.
 
-## Pipeline
+## Project scope
+
+The Version 2 application integrates four specialist subsystems behind a shared desktop and backend runtime:
+
+- **SRS Agent V2** — requirement intake, clarification, structured specifications, diagrams, and the approved builder handoff.
+- **AI Code Developer Agent V2** — architecture planning, full-stack generation, feature updates, analysis, and evidence-scoped repair.
+- **QA Agent Backend** — unit, runtime/API, end-to-end, security, and verification workflows.
+- **Deployment Agent** — environment validation, provider onboarding, release generation, monitoring, and Vercel/AWS deployment support.
+
+The application keeps each subsystem modular while using a single orchestration layer, shared project state, and one Studio interface.
+
+## Architecture
+
+```text
+┌──────────────────────────────────────────────────────────────────────┐
+│                         Desktop Application                          │
+│                 Electron Shell + Next.js Studio UI                  │
+└───────────────────────────────┬──────────────────────────────────────┘
+                                │ HTTP / WebSocket events
+┌───────────────────────────────▼──────────────────────────────────────┐
+│                    Application Runtime and API                       │
+│ server.py → server_runtime.py → server_modules/{core,srs,deploy,ui} │
+└──────────────┬────────────────┬─────────────────┬────────────────────┘
+               │                │                 │
+┌──────────────▼───────┐ ┌──────▼──────────┐ ┌────▼───────────────────┐
+│ SRS and Planning     │ │ Code Development │ │ Quality Assurance      │
+│ requirement intake  │ │ architecture      │ │ unit/runtime/API tests │
+│ clarification       │ │ code generation   │ │ E2E and security       │
+│ diagrams and SRS    │ │ analysis + repair │ │ evidence and reports   │
+└──────────────┬───────┘ └──────┬───────────┘ └────┬───────────────────┘
+               └────────────────┴──────────────┬────┘
+                                               │ accepted build
+                                    ┌──────────▼───────────┐
+                                    │ Deployment Agent     │
+                                    │ validation, release, │
+                                    │ Vercel/AWS, monitor  │
+                                    └──────────────────────┘
+```
+
+### End-to-end workflow
 
 ```text
 Requirement
-   │
-   ▼
-SRS interview + diagrams
-   │
-   ▼
-Planner / architecture contract
-   │
-   ▼
-Builder ──► generated Next.js + MongoDB app
-   │
-   ▼
-QA: unit → runtime/API → E2E → security
-   │                 │
-   └──── repair ◄────┘
-   │
-   ▼
-Preview → Vercel / AWS deployment
+   → SRS interview, analysis, diagrams, and approval
+   → architecture and implementation contract
+   → Next.js/MongoDB full-stack generation
+   → unit → runtime/API → E2E → security verification
+   → evidence-based repair loop when a gate fails
+   → preview and accepted build
+   → Vercel or AWS deployment and monitoring
 ```
 
-The builder is requirement-driven rather than CRUD-specific. Apps may be authenticated or public. When authentication exists, user-owned records such as carts, bookings and history are scoped from the server session rather than trusting client-supplied user IDs. Successful mutations must also update or revalidate visible state so users do not need a manual refresh.
+The repair loop uses observed source, runtime, browser, and test evidence. A failed gate returns a narrow repair request to the owning stage; accepted results continue to the next gate. Test retries remain separate from the final accepted QA result.
 
-## Main capabilities
+## Repository structure
 
-- SRS interview, structured requirements and rich native diagrams.
-- Plan-to-code preflight before E2E testing.
-- Next.js application generation with MongoDB support.
-- Vitest unit-test authoring and retained whole-suite reporting.
-- Playwright E2E journeys with source/DOM grounding, console/page-error evidence and repair.
-- Stage-level E2E scoring, for example `10/12 = 83%`, plus an aggregate score across final accepted journeys.
-- Runtime, API, security and deployment verification.
-- Vercel and AWS deployment onboarding.
-- Electron shell that owns the Python backend and Studio processes.
-- Live Builder and SRS/Planner activity feeds with paced, latest-five updates.
+```text
+RP-SE-009/
+├── server.py                       stable backend entrypoint
+├── server_runtime.py               ordered shared-runtime composition
+├── pipeline.py                     standalone development pipeline
+├── agents/
+│   ├── planning/                   architecture and build planning
+│   ├── build/                      generation and baseline validation
+│   ├── analysis/                   diagnosis and repair
+│   ├── features/                   feature and edit workflows
+│   ├── data/                       MongoDB lifecycle and data support
+│   ├── core/                       shared model, command, and workspace tools
+│   └── server/                     code-agent server orchestration
+├── srs-agent/                      SRS service, knowledge, and diagrams
+├── qa_agent/
+│   ├── unit/                       unit-test authoring and execution
+│   ├── e2e/                        browser journeys and evidence
+│   ├── verification/               API, security, and PDF reports
+│   ├── core/                       QA session state
+│   └── server/                     backend QA stages
+├── deployment-agent/               deployment planning and execution
+├── server_modules/
+│   ├── core/                       process and job lifecycle
+│   ├── srs/                        SRS runtime bridge and API
+│   ├── deploy/                     deployment runtime bridge and jobs
+│   └── ui/                         HTTP handlers
+├── studio/                         Next.js user interface
+├── desktop/                        Electron process and window lifecycle
+├── test/                           unit and integration regression suite
+├── document/                       system documentation artifacts
+└── production-ready/               generated applications (gitignored)
+```
 
-## Requirements
+The V2 layout uses direct imports to the package that owns each behavior. Old flat compatibility modules are not retained when the same implementation has moved into a focused package.
 
-- Python 3.11+
-- Node.js 20+
-- npm
-- Ollama or another configured model endpoint supported by the project
-- MongoDB when the generated application requires it
+## Technology stack
 
-Deployment additionally needs the provider tools/accounts selected in the Deploy screen. AWS sign-in uses the in-app SSO/device flow where available; npm-installed Windows CLI shims such as `vercel.cmd` are launched through `COMSPEC` instead of being executed as native binaries.
+- Python 3.11+ backend and agent services
+- Next.js 16, React 19, and Tailwind CSS 4 Studio
+- Electron desktop runtime
+- MongoDB for generated applications that require persistence
+- Vitest unit testing and Playwright end-to-end testing
+- Ollama-compatible local or configured remote model endpoint
+- Vercel and AWS deployment integrations
 
-## Install
+## Setup
 
 ### Windows
-
-Run the one-time Windows setup, which installs the root runtime plus the SRS/deployment agent requirements and both Node applications:
 
 ```text
 setup.bat
 start.bat
 ```
 
-`start.bat` prepares Electron when needed and opens the desktop shell. The Electron splash then starts `server.py` and the Studio, so a slow first dependency install does not look like a frozen command window.
-
-### macOS / Linux
+### macOS or Linux
 
 ```bash
+chmod +x setup.sh start.command
 ./setup.sh
 ./start.command
 ```
@@ -73,82 +123,20 @@ start.bat
 For backend-only development:
 
 ```bash
-python3 server.py
+python server.py
 ```
 
-The Studio is served through Electron at `http://localhost:3000/__agentforge`; the backend owns ports `7824`, `7825`, `7826` and the deployment sidecar on `7834` when used.
+The Studio runs at `http://localhost:3000/__agentforge`. Backend services use ports `7824`, `7825`, and `7826`; the deployment sidecar uses `7834` when enabled.
 
-## Source map
+## Development validation
 
-```text
-agentforge/
-├── server.py                    stable backend entrypoint
-├── server_runtime.py            ordered server-runtime assembler
-├── pipeline.py                  direct pipeline entrypoint
-├── agents/
-│   ├── planning/                requirements → architecture/build plan
-│   ├── build/                   generation + browser/runtime validation
-│   ├── analysis/                diagnosis and evidence-backed repairs
-│   ├── features/                feature/edit/image selection helpers
-│   ├── data/                    MongoDB lifecycle/data helpers
-│   ├── core/                    shared model, command and workspace tools
-│   └── server/                  server-side builder/edit orchestration
-├── qa_agent/
-│   ├── unit/                    Vitest authoring, harness and execution
-│   ├── e2e/                     journeys, grounding, browser and repair evidence
-│   ├── verification/            API, security and PDF reporting
-│   ├── core/                    QA session state
-│   └── server/                  server-side QA stages
-├── server_modules/
-│   ├── core/                    process/runtime lifecycle
-│   ├── srs/                     SRS bridge/API
-│   ├── deploy/                  deployment bridge/jobs
-│   └── ui/                      backend HTTP routes
-├── srs-agent/                   SRS service and diagram generation
-├── deployment-agent/            deployment planning/execution service
-├── studio/                      Next.js desktop UI
-├── desktop/                     Electron shell
-└── production-ready/            generated app output (gitignored)
+Run the repository regression suite:
+
+```bash
+python test/run_suite.py
 ```
 
-There are intentionally no compatibility-only one-line wrappers for the old flat agent paths. Internal imports point directly to the implementation package that owns the behavior.
-
-## QA model
-
-### Unit tests
-
-Targeted feature updates merge their latest Vitest result into the existing suite snapshot instead of replacing unrelated results. The Overview therefore represents the current whole suite rather than only the last touched feature.
-
-### E2E tests
-
-Before a browser journey begins, QA compares the approved plan/requirements with the generated source and repairs evidence-backed mismatches. Browser execution then records every declared stage as `pass`, `fail` or `not_reached`.
-
-For a 12-stage journey where stage 11 fails:
-
-```text
-10 passed / 12 total = 83%
-1 failed
-1 not reached
-```
-
-Repair/re-author attempts are not counted as extra tests. Only the final accepted journey ledger contributes to the overall E2E percentage. Console errors and `pageerror` stacks are captured and, when they name a generated source location, become narrow repair evidence for that source instead of triggering a broad speculative rewrite.
-
-## Generated-app data rules
-
-For authenticated applications, the generated server code should:
-
-1. derive identity from the authenticated server session;
-2. normalize one canonical user/owner identifier type;
-3. stamp that identifier on owned writes;
-4. include it in owned reads, updates and deletes;
-5. return the canonical mutation result; and
-6. update client state/cache or trigger route revalidation after success.
-
-For public applications the planner must not invent authentication just to satisfy this pattern.
-
-## Development checks
-
-Fast repository checks used before packaging include:
+Run the main static and contract checks:
 
 ```bash
 python -m compileall -q agents qa_agent server_modules server.py server_runtime.py pipeline.py srs-agent/srs_agent deployment-agent/deploy_agent
@@ -162,15 +150,21 @@ node --check desktop/runtime.js
 node --check desktop/preload.js
 ```
 
-A full Studio production build additionally requires its npm dependencies:
+For a production Studio build:
 
 ```bash
 npm --prefix studio ci --no-audit --no-fund
 npm --prefix studio run build
 ```
 
-## Repository hygiene
+Interactive deployment sign-in and a complete generated-application browser run require the relevant local accounts, credentials, services, and database.
 
-Generated projects, Node modules, Python caches, logs and packaging outputs are ignored. Note that `/build/` is root-anchored in `.gitignore`: `agents/build/` is application source and must be committed.
+## Academic context
 
-Keep implementation files focused and below 1000 lines where practical. New code belongs in the narrowest pipeline package and should use direct imports rather than compatibility façade modules.
+- **Project ID:** RP-SE-009
+- **Project title:** Self-Optimizing AI-Agentic Full-Stack Development Application
+- **Institution:** Sri Lanka Institute of Information Technology (SLIIT)
+
+This repository is maintained as a campus software engineering project. See [LICENSE](LICENSE) for the permitted academic and non-commercial use terms.
+
+The commit-based four-member contribution breakdown is recorded in [COLLABORATION_REPORT.md](COLLABORATION_REPORT.md).

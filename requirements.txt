@@ -2,7 +2,7 @@ watchdog>=3.0.0
 requests>=2.31.0
 
 # The deployment agent (deployment-agent/deploy_agent). Its own copy of this
-# list is at deployment-agent/requirements.txt; these are the ones AgentForge's
+# list is at deployment-agent/requirements.txt; these are the ones the shared
 # interpreter needs, since the agent runs in this process.
 #
 # playwright is deliberately NOT here: it only drove the evidence exporter's

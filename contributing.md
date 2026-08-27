@@ -1,6 +1,6 @@
-# Contributing to AgentForge
+# Contributing to RP-SE-009
 
-AgentForge is easiest to maintain when each change stays inside the pipeline stage that owns it and the repair system keeps evidence stronger than guesses.
+RP-SE-009 is easiest to maintain when each change stays inside the pipeline stage that owns it and the repair system keeps evidence stronger than guesses.
 
 ## Development setup
 
