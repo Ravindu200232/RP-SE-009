@@ -1,25 +1,6 @@
-"""
-The agent's command tool.
+"""Runs approved package commands inside generated projects.
 
-Generating an app is not only writing files: the model regularly needs a
-package it did not plan for (bcryptjs for a login, recharts for a graph). Until
-now an unplanned `import bcrypt from 'bcryptjs'` silently produced a
-`Module not found` at runtime, because dependency syncing only knew a fixed
-allowlist. Giving the model a way to run `npm install bcryptjs` closes that gap.
-
-Safety posture
---------------
-This runs on the user's machine, so it is deliberately narrow:
-
-* **No shell.** Commands are parsed with :func:`shlex.split` and executed as an
-  argv list, so ``&&``, ``|``, ``>``, ``$(...)`` and backticks are not operators
-  — they are just arguments that will fail to match the allowlist.
-* **Allowlisted programs only**, and per-program allowlisted subcommands.
-  `npm install` is permitted; `npm publish` is not.
-* **Confined to the project directory** — cwd is always the generated project.
-* **Bounded** — timeout, output truncation, and a per-build call cap.
-
-Everything else is refused with a message the model can act on.
+Commands stay inside the project and have time, output, and call limits.
 """
 import logging
 import os
@@ -85,7 +66,7 @@ def _refuse(command: str, why: str) -> CommandResult:
 
 
 def _uses_package_manager(argv: list[str]) -> bool:
-    """Recognize package-manager launchers after absolute-path resolution."""
+    """Check whether a command starts a package manager."""
     if not argv:
         return False
     program = Path(str(argv[0])).name.lower()
@@ -97,9 +78,7 @@ def _uses_package_manager(argv: list[str]) -> bool:
 
 
 def validate(command: str):
-    """
-    Return (argv, None) when the command may run, else (None, reason).
-    """
+    """Return the safe command parts, or a reason for refusing the command."""
     command = (command or "").strip()
     if not command:
         return None, "empty command"
@@ -165,7 +144,7 @@ def validate(command: str):
 
 
 class CommandRunner:
-    """Executes validated commands inside one project directory."""
+    """Run approved commands inside one project directory."""
 
     def __init__(self, project_dir: Path, npm_bin: str = "npm",
                  node_bin: str = "node", on_log=None, on_event=None,
@@ -186,7 +165,7 @@ class CommandRunner:
         log.info(txt)
 
     def _resolve(self, argv: list) -> list:
-        """Use the same npm/node AgentForge itself resolved, not whatever is on PATH."""
+        """Use the same npm and Node programs as AgentForge."""
         prog = Path(argv[0]).name.lower()
         if prog.startswith("npx"):
             return [self._npx()] + argv[1:]
@@ -197,20 +176,7 @@ class CommandRunner:
         return argv
 
     def _npx(self) -> str:
-        """
-        The real `npx` executable.
-
-        Bare `"npx"` does not work here, and it fails in a way that reads like
-        the tool is missing rather than misconfigured: on Windows the launcher
-        is `npx.cmd`, and `subprocess.run(..., shell=False)` — which this class
-        insists on, so that `&&` and `|` can never be operators — resolves only
-        `.exe`. Measured: `npx vitest run` came back `npx not found on this
-        machine` while the identical command worked from a shell. Packaged
-        builds vendor their own Node and may not have it on PATH at all.
-
-        `npx` ships beside `npm`, so the binary AgentForge already resolved is the
-        answer; PATH is only the fallback.
-        """
+        """Find the npx program beside npm, with the system path as fallback."""
         name = "npx.cmd" if os.name == "nt" else "npx"
         try:
             sibling = Path(self.npm_bin).parent / name

@@ -1,23 +1,4 @@
-"""
-Unified Ollama client — local daemon + Ollama Cloud.
-
-Cloud routing rules
--------------------
-A model is treated as a cloud model when its name ends with ``-cloud`` or
-``:cloud`` (e.g. ``qwen3-coder:480b-cloud``, ``glm-4.6:cloud``).
-
-Two ways to reach cloud models, both supported here:
-
-1. **Local proxy** — user ran ``ollama signin`` on a recent Ollama build.
-   Cloud models then work through ``http://localhost:11434`` exactly like
-   local ones; the daemon forwards to ollama.com. No key needed here.
-2. **Direct API key** — user pasted an ollama.com API key into AgentForge.
-   We then talk straight to ``https://ollama.com`` with a Bearer token,
-   so no local Ollama install is required for cloud models at all.
-
-If a key is configured it wins for cloud models; otherwise we fall back to
-the local daemon and let it proxy.
-"""
+"""Routes Ollama requests to a local service or Ollama Cloud."""
 import json
 import logging
 import os
@@ -44,23 +25,13 @@ FALLBACK_CLOUD = [
 ]
 
 
-# Cloud models are not capped: nothing is resident on the user's GPU, so the
-# only reason to ask for less would be a limit the model itself imposes. This
-# is the floor used when the daemon reports no window of its own -- a cloud
-# entry proxied by the local daemon often reports a stub value rather than the
-# published one, and believing that would quietly halve the usable prompt.
+# Use the full cloud window when Ollama reports a smaller placeholder value.
 CLOUD_DEFAULT_CTX = 262144
 
-# Not every cloud model says so in its name. `bjoernb/gemma4-31b-fast:latest`
-# is a community wrapper that proxies to ollama.com like any other cloud
-# entry, and the suffix test below would call it local until it happens to be
-# pulled -- which is exactly when getting it wrong costs a build the right
-# context window.
+# Some cloud wrappers do not include "cloud" in their names.
 _KNOWN_CLOUD = {m.lower() for m in FALLBACK_CLOUD}
 
-# Ollama treats `name` and `name:latest` as the same model, and the studio can
-# hand back either spelling depending on whether it came from /api/tags or
-# from this list, so both have to resolve the same way.
+# Treat names with and without the optional "latest" tag as the same model.
 _KNOWN_CLOUD |= {m[: -len(":latest")] for m in _KNOWN_CLOUD
                  if m.endswith(":latest")}
 
@@ -83,7 +54,7 @@ def _icon_for(model_id: str) -> str:
 
 
 def _pretty_label(model_id: str) -> str:
-    """`qwen3.5:397b-cloud` → `Qwen3.5 397B`."""
+    """Turn a model ID into a readable label."""
     base = re.sub(r"[-:]cloud$", "", model_id.strip())
     base = base.split("/")[-1]
     parts = re.split(r"[:\-]", base)
@@ -101,7 +72,7 @@ def _pretty_label(model_id: str) -> str:
 
 
 def is_cloud_model(model: str) -> bool:
-    """True when the model name marks it as an Ollama Cloud model."""
+    """Check whether a model runs through Ollama Cloud."""
     if not model:
         return False
     m = model.strip().lower()
@@ -112,14 +83,9 @@ def is_cloud_model(model: str) -> bool:
 
 
 def max_context(model: str) -> int:
-    """
-    Context window to request for this model.
+    """Choose a safe context size for the model.
 
-    Cloud models get their full published window and are never capped below
-    ``CLOUD_DEFAULT_CTX`` — nothing runs on the user's GPU, so there is no
-    reason to hold back. Local models are capped by a
-    conservative default (overridable via settings ``local_num_ctx`` or the
-    ``AGENTFORGE_NUM_CTX`` env var) and never asked for more than they support.
+    Cloud models use their full window. Local models use the configured limit.
     """
     real = _default_client().model_context(model)
 
@@ -133,7 +99,7 @@ def max_context(model: str) -> int:
 
 
 def load_settings() -> dict:
-    """Read ~/.agentforge/settings.json. Never raises."""
+    """Read AgentForge settings, or return an empty result on failure."""
     try:
         if SETTINGS_PATH.exists():
             return json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
@@ -143,7 +109,7 @@ def load_settings() -> dict:
 
 
 def save_settings(data: dict) -> bool:
-    """Merge-write ~/.agentforge/settings.json. Never raises."""
+    """Update AgentForge settings and report whether the save worked."""
     try:
         SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
         current = load_settings()
@@ -156,13 +122,13 @@ def save_settings(data: dict) -> bool:
 
 
 def get_api_key() -> str:
-    """API key from env first, then the settings file."""
+    """Read the API key from the environment or saved settings."""
     return (os.environ.get("OLLAMA_API_KEY", "").strip()
             or str(load_settings().get("ollama_api_key", "")).strip())
 
 
 def get_local_host() -> str:
-    """Local daemon URL — env override wins, then settings, then default."""
+    """Return the configured address of the local Ollama service."""
     host = (os.environ.get("OLLAMA_HOST", "").strip()
             or str(load_settings().get("ollama_host", "")).strip()
             or DEFAULT_LOCAL_HOST)
@@ -172,7 +138,7 @@ def get_local_host() -> str:
 
 
 class OllamaClient:
-    """Thin requests wrapper that transparently routes local vs cloud."""
+    """Send Ollama requests to the correct local or cloud service."""
 
     def __init__(self, host: str = None, api_key: str = None):
         self.host = (host or get_local_host()).rstrip("/")
@@ -189,7 +155,7 @@ class OllamaClient:
         return self._api_key if self._api_key is not None else get_api_key()
 
     def route(self, model: str):
-        """Return (base_url, headers) for this model."""
+        """Return the address and headers needed for this model."""
         headers = {"Content-Type": "application/json"}
         if is_cloud_model(model) and self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
@@ -201,45 +167,16 @@ class OllamaClient:
 
     @staticmethod
     def _rejected_think(status: int, text: str) -> bool:
-        """Whether this 4xx is the daemon saying the model cannot think."""
+        """Check whether the model rejected the thinking option."""
         return status == 400 and "think" in (text or "").lower()
 
     def chat_stream(self, model: str, messages: list, tools: list = None,
                     options: dict = None, keep_alive=None, timeout: int = 1800,
                     think: bool = None, stall: int = 300):
-        """
-        Yield decoded chunks from /api/chat with stream=True.
+        """Yield chat updates as they arrive.
 
-        Each yielded item is the raw Ollama chunk dict, so callers can read
-        ``chunk["message"]["content"]`` and ``chunk["message"]["tool_calls"]``.
-
-        `think` maps to Ollama's own field: True asks a reasoning model to
-        think first, False suppresses it, None leaves the model's default
-        alone. A model with no thinking mode answers a request carrying the
-        field with a 400, so that one case is retried without it rather than
-        failing a build over a toggle.
-
-        TWO deadlines, because they catch opposite failures and neither
-        catches the other.
-
-        `stall` is the longest silence tolerated — requests' own read timeout,
-        which fires when NOTHING arrives. Without it a model that accepts the
-        request and then says nothing is bounded only by `timeout`, and the
-        total budget below is checked inside the chunk loop, so a stream with
-        no first chunk never reaches it. Measured: a QA repair round sat at
-        "still working — 210s, 0 tokens" against a remote model, and its real
-        ceiling was the 1800s default — half an hour of silence with nothing on
-        screen and no error.
-
-        `timeout` is enforced as a TOTAL budget for the whole stream, not only
-        as the gap between chunks. requests' own timeout is the second of
-        those, and on a stream it is nearly useless: measured on one page edit,
-        3045 chunks arrived in 18 seconds — 1991 of them reasoning tokens — with
-        the longest silence at 0.5s. A model that keeps generating therefore
-        never trips a 150s read timeout, and a runaway turn hung a page update
-        for over seven minutes with nothing on screen and no error. Whatever
-        arrived before the budget ran out is kept; the caller sees a truncated
-        answer instead of waiting forever.
+        Unsupported thinking options are retried without that option. ``stall``
+        limits silence, while ``timeout`` limits the whole response.
         """
         base, headers = self.route(model)
         payload = {"model": model, "messages": messages, "stream": True}
@@ -300,7 +237,7 @@ class OllamaClient:
     def chat(self, model: str, messages: list, tools: list = None,
              options: dict = None, keep_alive=None, timeout: int = 600,
              think: bool = None) -> dict:
-        """Non-streaming chat. Returns the full response dict."""
+        """Return one complete chat response."""
         base, headers = self.route(model)
         payload = {"model": model, "messages": messages, "stream": False}
         if tools:
@@ -325,7 +262,7 @@ class OllamaClient:
         return r.json()
 
     def tags(self, refresh: bool = False) -> list:
-        """Raw /api/tags entries from the local daemon. [] if unreachable."""
+        """List models known by the local service."""
         if self._tags_cache is not None and not refresh:
             return self._tags_cache
         try:
@@ -338,19 +275,13 @@ class OllamaClient:
         return self._tags_cache
 
     def daemon_ready(self) -> bool:
-        """
-        Whether the local daemon answered the last ``/api/tags`` call.
-
-        An empty tag list cannot stand in for this: a freshly installed Ollama
-        with no models pulled returns exactly the same ``[]`` as one that is
-        not running at all, and the UI has to tell those two apart.
-        """
+        """Check whether the local service answered its latest request."""
         if self._tags_cache is None:
             self.tags()
         return self._tags_ok
 
     def cloud_tags(self, refresh: bool = False) -> list:
-        """Models ollama.com exposes to this API key. [] without a key."""
+        """List cloud models available to the configured API key."""
         if not self.api_key:
             return []
         if self._cloud_tags_cache is not None and not refresh:
@@ -365,23 +296,17 @@ class OllamaClient:
         return self._cloud_tags_cache
 
     def list_local(self) -> list:
-        """Every model name the daemon knows about."""
+        """List the model names known by the local service."""
         return [m.get("name") for m in self.tags() if m.get("name")]
 
     def remote_names(self) -> set:
-        """Names the daemon proxies to ollama.com — i.e. cloud models."""
+        """List cloud model names registered with the local service."""
         return {m["name"] for m in self.tags()
                 if "ollama.com" in str(m.get("remote_host") or "")
                 and m.get("name")}
 
     def account(self, refresh: bool = False) -> dict:
-        """
-        The ollama.com account the daemon is signed in to, or ``{}``.
-
-        ``POST /api/me`` — GET on that route answers 405, not 404 — is the
-        only direct answer to the question. Measured on Ollama 0.24.0 it
-        returns ``{"id", "email", "name", "plan"}`` for a signed-in daemon.
-        """
+        """Return the cloud account signed in through the local service."""
         if self._me_cache is not None and not refresh:
             return self._me_cache
         me = {}
@@ -397,28 +322,15 @@ class OllamaClient:
         return me
 
     def signed_in(self) -> bool:
-        """
-        True when the local daemon is signed in to ollama.com.
-
-        A signed-in daemon proxies cloud models itself, so no API key is
-        needed here.
-
-        The ``remote_names()`` half is a fallback for daemons predating
-        ``/api/me``, and used to be the whole test — but that only ever asked
-        "has a cloud model been pulled yet", because a model appears with a
-        ``remote_host`` on ollama.com only once it has been registered. A
-        freshly signed-in daemon with nothing pulled failed it, and the UI
-        then told the user to sign in to an account they were already signed
-        in to.
-        """
+        """Check whether the local service is signed in to Ollama Cloud."""
         return bool(self.account()) or bool(self.remote_names())
 
     def cloud_ready(self) -> bool:
-        """Cloud models are usable via an API key or a signed-in daemon."""
+        """Check whether cloud models can be used."""
         return bool(self.api_key) or self.signed_in()
 
     def show(self, model: str) -> dict:
-        """Cached /api/show — real context length, family and capabilities."""
+        """Return cached details about one model."""
         if model in self._show_cache:
             return self._show_cache[model]
         base, headers = self.route(model)
@@ -434,18 +346,12 @@ class OllamaClient:
         return info
 
     def supports_vision(self, model: str) -> bool:
-        """
-        Whether the model accepts images.
-
-        `show()` already returns this and its result is cached, so asking costs
-        nothing beyond the probe the catalogue already makes. `or []` is load
-        bearing: at least one installed model reports `capabilities: null`.
-        """
+        """Check whether the model accepts images."""
         caps = (self.show(model) or {}).get("capabilities") or []
         return any(str(c).lower() == "vision" for c in caps)
 
     def model_context(self, model: str) -> int:
-        """The model's real maximum context length, or 0 if unknown."""
+        """Return the model's maximum context size, or zero when unknown."""
         mi = (self.show(model) or {}).get("model_info") or {}
         for k, v in mi.items():
             if k.endswith("context_length") and isinstance(v, int):
@@ -459,8 +365,7 @@ class OllamaClient:
         ctx = self.model_context(model_id) if probe else 0
         if cloud:
 
-            # Same rule as max_context(), inlined so a client that is not the
-            # module default still reports the window it will actually ask for.
+            # Report the same cloud window this client will request.
             ctx = max(ctx, CLOUD_DEFAULT_CTX)
         elif ctx:
             ctx = max_context(model_id)
@@ -489,12 +394,7 @@ class OllamaClient:
         }
 
     def discover(self, refresh: bool = False) -> dict:
-        """
-        Ask the daemon (and ollama.com, if a key is set) what actually exists.
-
-        Returns ``{"cloud": [...], "local": [...]}`` of UI-ready entries.
-        Falls back to a small static cloud list only when nothing is reachable.
-        """
+        """Build the local and cloud model lists used by the interface."""
         if refresh:
             self._tags_cache = None
             self._cloud_tags_cache = None
@@ -529,7 +429,7 @@ class OllamaClient:
         return {"cloud": cloud, "local": local}
 
     def cloud_reachable(self) -> bool:
-        """True if a configured API key actually authenticates."""
+        """Check whether the configured API key can reach Ollama Cloud."""
         if not self.api_key:
             return False
         try:
@@ -541,7 +441,7 @@ class OllamaClient:
             return False
 
     def has_model(self, model: str) -> bool:
-        """Cloud models need no local install; local ones are matched by tag."""
+        """Check whether the selected model is ready to use."""
         if is_cloud_model(model):
 
             if self.api_key:
@@ -552,26 +452,10 @@ class OllamaClient:
                    for n in names)
 
     def pull(self, model: str, on_progress=None) -> bool:
-        """
-        Pull a model into the local daemon.
-
-        Cloud models are pulled too. They carry no weights, so nothing is
-        downloaded and the call returns in a moment — but the daemon only
-        proxies a cloud model it has been asked for, and only afterwards does
-        it list that model with a ``remote_host`` on ollama.com. That listing
-        is what :meth:`remote_names`, :meth:`signed_in` and the cloud half of
-        the catalogue all read, so refusing to pull cloud models left a
-        signed-in daemon looking like it had no cloud access at all.
-
-        A cloud pull is still worth attempting without a reachable daemon
-        being fatal: an API key talks to ollama.com directly and needs no
-        local registration, so that case is a success, not a failure.
-        """
+        """Prepare a local model or register a cloud model for use."""
         cloud = is_cloud_model(model)
 
-        # A cloud registration is a handshake, not a download, so it has no
-        # business holding a build for half an hour when the daemon is not
-        # signed in and the request is going to be refused anyway.
+        # Cloud registration should fail quickly when sign-in is unavailable.
         budget = 120 if cloud else 1800
         try:
             r = requests.post(f"{self.host}/api/pull", json={"name": model},
@@ -598,8 +482,7 @@ class OllamaClient:
                     break
             if ok:
 
-                # The daemon now lists a model it did not list before, and
-                # every cloud/installed answer here is served from that cache.
+                # Refresh cached model lists after registration.
                 self._tags_cache = None
                 self._show_cache.pop(model, None)
             return ok or (cloud and bool(self.api_key))
@@ -612,7 +495,7 @@ class OllamaClient:
             return False
 
     def unload(self, model: str):
-        """Free VRAM. No-op for cloud models — nothing is resident locally."""
+        """Unload a local model from memory."""
         if is_cloud_model(model):
             return
         try:
@@ -622,7 +505,7 @@ class OllamaClient:
             pass
 
     def catalog(self, refresh: bool = True) -> dict:
-        """Everything the UI needs to render its model pickers."""
+        """Return the model information needed by the interface."""
         found = self.discover(refresh=refresh)
         return {
             "cloud": found["cloud"],
@@ -652,6 +535,6 @@ def _default_client() -> "OllamaClient":
 
 
 def set_default_client(client: "OllamaClient"):
-    """Let the server share its configured client with the helpers above."""
+    """Share the server's configured client with module helpers."""
     global _CLIENT
     _CLIENT = client

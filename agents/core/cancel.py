@@ -1,24 +1,4 @@
-"""
-Stopping a build, at any point, and leaving nothing behind.
-
-A run spends almost all of its wall-clock inside two things: a model that is
-streaming tokens, and a child process — `npm install`, `npm run build`, a
-Playwright journey — that can hold the thread for minutes. A flag alone
-therefore cannot stop a build "at any time": between two checks of a flag
-there can be four minutes of webpack. So this keeps a registry of the child
-processes a run has started, and cancelling kills them; the thread they were
-blocking then returns, sees the flag, and unwinds.
-
-What cancelling means here is a decision the user made explicitly: the build
-stops AND the half-built project goes, along with the specification it was
-built from. A cancelled run leaves no project in the list to wonder about and
-no spec that describes something that was never finished.
-
-The names to remove arrive over the life of the run rather than at its start —
-the project directory is not known until a slug has been derived, and the SRS
-id only when one was used — so `note()` is called as they become known and
-`begin()` starts from nothing.
-"""
+"""Stops a build and removes its unfinished output safely."""
 
 from __future__ import annotations
 
@@ -35,16 +15,7 @@ __all__ = [
 
 
 class BuildCancelled(BaseException):
-    """
-    Raised at the next checkpoint after a cancel was asked for.
-
-    From BaseException and not Exception, for the same reason KeyboardInterrupt
-    is: the build is wrapped in `except Exception` at dozens of places that are
-    there to keep one flaky step from ending a run, and every one of them would
-    swallow this and carry on building the project the user just asked to
-    throw away. Only the two handlers that name it get to catch it, and
-    `finally` blocks still run, so nothing leaks.
-    """
+    """Stops the run without being caught as a normal build error."""
 
 
 _lock = threading.RLock()
@@ -54,7 +25,7 @@ _project = ""
 _srs_id = ""
 _procs: set = set()
 
-log = None  # set by the server so this module never imports it back
+log = None  # The server provides logging without creating a circular import.
 
 
 def _say(level: str, text: str) -> None:
@@ -67,7 +38,7 @@ def _say(level: str, text: str) -> None:
 
 
 def begin() -> None:
-    """A new run starts: no cancel pending, nothing yet to remove."""
+    """Start tracking a new run."""
     global _running, _project, _srs_id
     with _lock:
         _flag.clear()
@@ -78,7 +49,7 @@ def begin() -> None:
 
 
 def note(project: str = "", srs_id: str = "") -> None:
-    """Record what this run would have to remove if it were cancelled."""
+    """Remember which output belongs to the current run."""
     global _project, _srs_id
     with _lock:
         if project:
@@ -88,7 +59,7 @@ def note(project: str = "", srs_id: str = "") -> None:
 
 
 def finish() -> None:
-    """The run ended on its own terms. Nothing is pending any more."""
+    """Stop tracking a completed run."""
     global _running
     with _lock:
         _running = False
@@ -108,13 +79,7 @@ def state() -> dict:
 
 
 def request() -> dict:
-    """
-    Ask the running build to stop, and make the ask land immediately.
-
-    Killing the children is the part that makes this work while a build is
-    inside webpack rather than between stages. The flag on its own would be
-    honoured only at the next checkpoint, which can be several minutes away.
-    """
+    """Ask the current run to stop and end its active child processes."""
     with _lock:
         if not _running:
             return {"ok": False, "error": "no build is running"}
@@ -133,22 +98,14 @@ def cancelled() -> bool:
 
 
 def check() -> None:
-    """Raise if a cancel is pending. Called wherever a run can safely unwind."""
+    """Stop at a safe point when cancellation is pending."""
     if _flag.is_set():
         raise BuildCancelled()
 
 
 
 class track:
-    """
-    Context manager that makes one child process killable by `request()`.
-
-        with cancel.track(proc):
-            proc.wait()
-
-    A process that has already exited is dropped on the way out, so the
-    registry never grows over a long run.
-    """
+    """Track one child process so cancellation can stop it."""
 
     def __init__(self, proc):
         self.proc = proc
@@ -168,14 +125,7 @@ class track:
 
 
 def _kill(proc) -> None:
-    """
-    Kill a child and everything it started.
-
-    `npm` and `py` are launchers: they spawn the process that does the work and
-    wait on it. Killing the launcher alone leaves node or python running, still
-    holding the port and the project directory, and the delete that follows
-    then fails on Windows with the files locked open.
-    """
+    """Stop a child process and anything it started."""
     try:
         if proc.poll() is not None:
             return
@@ -198,18 +148,9 @@ def _kill(proc) -> None:
 
 
 def cleanup(prod_dir: Path, delete_project=None) -> dict:
-    """
-    Remove what the cancelled run produced: the project, and its spec.
+    """Remove the cancelled project's files and saved specification.
 
-    `delete_project` is passed in rather than imported because it lives in the
-    server module and already carries the fencing this must not duplicate — it
-    refuses names that escape `production-ready`, stops the dev server holding
-    `.next/` open, and drops the project's database. Passing it keeps one
-    implementation of a destructive operation instead of two.
-
-    Both halves are best effort and reported separately. A spec that will not
-    delete is worth saying out loud, but it is not a reason to leave a
-    half-built project in the list.
+    The supplied project remover keeps all project cleanup rules in one place.
     """
     with _lock:
         project, srs_id = _project, _srs_id
@@ -241,20 +182,7 @@ def cleanup(prod_dir: Path, delete_project=None) -> dict:
 
 
 def run(argv, *, timeout=None, capture_output=False, check=False, **kw):
-    """
-    `subprocess.run`, but the child can be killed from another thread.
-
-    The signature is deliberately the same for the arguments the build uses,
-    so a call site becomes killable by changing `subprocess.run` to
-    `cancel.run` and nothing else. What it does not carry over is `input=` and
-    `check=` semantics beyond the return code, because nothing here needs them.
-
-    A child killed by `request()` comes back with a non-zero return code, and
-    the caller treats it as a failed step — which then reaches the next
-    checkpoint and unwinds. That ordering matters: the run must not report the
-    failure to the user as a build error, and it does not, because the
-    checkpoint raises before any of those paths finish reporting.
-    """
+    """Run a child process that can be stopped by a cancellation request."""
     if capture_output:
         kw.setdefault("stdout", subprocess.PIPE)
         kw.setdefault("stderr", subprocess.PIPE)

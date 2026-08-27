@@ -1,4 +1,4 @@
-"""Broken import checks and human-readable grouping."""
+"""Finds broken imports and explains them clearly."""
 from agents.core.exports_common import *
 from agents.core.exports_parse import *
 
@@ -12,15 +12,7 @@ class BrokenImport:
     available: list
 
     def close_match(self) -> str | None:
-        """
-        A very near neighbour, or None.
-
-        Casing is checked exactly rather than by ratio: `getsession` vs
-        `getSession` scores only 0.90 on SequenceMatcher, below any cutoff that
-        is safe for semantic guesses.  Everything else needs 0.92, which is
-        tight enough to reject `setSessionCookie` → `createSession` — a rename
-        that would compile and then fail at runtime with the wrong behaviour.
-        """
+        """Suggest a replacement only when the match is very close."""
         lower = self.name.lower()
         same = [n for n in self.available if n.lower() == lower]
         if len(same) == 1:
@@ -36,7 +28,7 @@ class BrokenImport:
 
 
 def check_named_imports(files: dict) -> list:
-    """Every named import of a local module that the module does not export."""
+    """Find named imports that their local files do not provide."""
     cache: dict = {}
     out = []
     for rel, src in sorted(files.items()):
@@ -79,16 +71,9 @@ _REEXPORT_DEFAULT_RE = re.compile(
 
 
 def has_default_export(rel: str, files: dict, _seen: set = None) -> bool | None:
-    """Whether `rel` has a default export, following `export { default }`.
+    """Check whether a local file provides a default export.
 
-    None when it cannot be known, and callers must treat that as "skip",
-    never as "no default" — the whole risk of this check is calling a working
-    import broken.
-
-    `export * from './x'` is deliberately NOT followed: a star re-export
-    carries every NAMED export and never the default. `export { default }
-    from './x'` does carry it, and lands in `named_from` where it is picked
-    up below.
+    Return ``None`` when the answer cannot be known safely.
     """
     _seen = _seen or set()
     if rel in _seen:
@@ -105,7 +90,7 @@ def has_default_export(rel: str, files: dict, _seen: set = None) -> bool | None:
 
 
 def check_default_imports(files: dict) -> list:
-    """Every default import of a local module that has no default export."""
+    """Find default imports that their local files do not provide."""
     cache: dict = {}
     out = []
     for rel, src in sorted(files.items()):
@@ -135,11 +120,7 @@ def check_default_imports(files: dict) -> list:
 
 
 def group_messages(broken: list) -> list:
-    """One line per (importer, module) pair, listing every missing name.
-
-    The available-export list is the whole value of this message — it is
-    precisely what `next build` can never tell anyone.
-    """
+    """Group missing names from the same file into one helpful message."""
     groups: dict = {}
     for b in broken:
         groups.setdefault((b.importer, b.module), []).append(b)
