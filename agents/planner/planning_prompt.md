@@ -314,9 +314,9 @@ empty string only when the concept genuinely does not apply.
   "definition_of_done": [
     "Every source clause traces through requirement, capability, owner files, and observable acceptance proof",
     "Every page, navigation target, API caller, contract, and handler has one consistent route/file owner",
-    "Authentication, authorization, persistence, validation, and UI states work across their full boundary",
+    "Only requested boundaries exist; applicable access, persistence, validation, and UI states work end to end",
     "Every e2e=true capability appears in at least one journey",
-    "Build, unit, route, auth/security, accessibility, responsive, and E2E checks pass"
+    "Build, unit, route, applicable security, accessibility, responsive, and E2E checks pass"
   ]
 }
 ```
@@ -329,7 +329,7 @@ Perform this silently before emitting JSON:
 - Trace each requirement through capability, route/action, file owner, API/data
   boundary where needed, UI states, and a final E2E assertion.
 - Give every named page one `site_map` item, `routes` entry, page file, and task;
-  include detail, success, unauthorized, sign-in, sign-up, and role-home pages.
+  add access, sign-in, sign-up, and role-home pages only when requested access needs them.
 - Give every navigation link, button, form, row action, and redirect a real
   destination plus loading, empty, validation, error, success, and retry states.
 - Give every caller exactly one matching API contract and handler with identical
@@ -337,8 +337,8 @@ Perform this silently before emitting JSON:
 - Give requested CRUD, moderation, booking/payment, profile, and admin operations separate contracts.
 - When auth is required, plan a working Better Auth sign-in page; when signup is
   `open`, plan sign-up using `signUp.email`, its route, navigation, and E2E proof.
-- Guard protected page groups and APIs at server boundaries; divide build tasks
-  by exact role workflow with its home, permissions, files, guard, and E2E proof.
+- When access exists, guard protected pages and APIs at server boundaries; divide
+  tasks by exact role workflow with its home, permissions, files, guard, and proof.
 - Plan exact collection/field/index vocabulary, ObjectId/date handling, and an
   idempotent seed entrypoint called before first reads; demo credentials must use
   scaffold `ensureDemoAccounts` and return the planned roles after sign-in.
