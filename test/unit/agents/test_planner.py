@@ -129,21 +129,33 @@ class UnifiedPlannerTests(unittest.TestCase):
         self.assertIn("auth.api.signUpEmail", files["lib/auth.js"])
         self.assertIn("ensureDemoAccounts", files["app/api/auth/[...all]/route.js"])
 
-    def test_site_map_pages_are_promoted_to_routes_files_and_tasks(self):
+    def test_coverage_promotes_auth_pages_apis_files_and_role_tasks(self):
         raw = _model_plan()
         raw["information_architecture"]["global_navigation"] = [{
-            "path": "/sign-in", "label": "Sign in", "audience": "PUBLIC",
+            "path": "/about", "label": "About", "audience": "PUBLIC",
         }]
+        raw["roles_and_access"].update({
+            "authentication_required": True, "signup": "open",
+        })
+        raw["api_contracts"] = [{
+            "name": "list-products", "method": "GET", "path": "/api/products",
+            "audience": "ROLE manager", "requirement_ids": ["REQ-001"],
+        }]
+        raw["tasks"][0]["actor"] = "ROLE manager"
         plan = PlannerAgent(None, "test-model").normalize(raw)
 
-        self.assertTrue(any(route["path"] == "/sign-in"
-                            and route["file"] == "app/sign-in/page.jsx"
-                            for route in plan["routes"]))
-        self.assertTrue(any(file["path"] == "app/sign-in/page.jsx"
-                            for file in plan["file_plan"]))
-        self.assertTrue(any(any(file["path"] == "app/sign-in/page.jsx"
-                                for file in task["files"])
-                            for task in plan["tasks"]))
+        routes = {route["path"]: route["file"] for route in plan["routes"]}
+        self.assertEqual(routes["/about"], "app/about/page.jsx")
+        self.assertEqual(routes["/sign-in"], "app/sign-in/page.jsx")
+        self.assertEqual(routes["/sign-up"], "app/sign-up/page.jsx")
+        self.assertEqual(routes["/api/products"], "app/api/products/route.js")
+        files = {file["path"] for file in plan["file_plan"]}
+        self.assertIn("app/sign-up/page.jsx", files)
+        self.assertIn("app/api/products/route.js", files)
+        assigned = {file["path"] for task in plan["tasks"]
+                    for file in task["files"]}
+        self.assertIn("app/sign-up/page.jsx", assigned)
+        self.assertEqual(plan["tasks"][0]["actor"], "manager")
 
     def test_auth_roles_and_seed_contract_are_normalized_before_build(self):
         raw = _model_plan()

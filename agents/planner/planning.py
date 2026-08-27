@@ -94,24 +94,18 @@ def _runtime_path(file_path: str) -> str:
     return "/" + "/".join(segments) if segments else "/"
 
 
-def _page_file(route_path: str) -> str:
-    """Return the deterministic Next App Router page file for a local URL."""
+def _app_file(route_path: str, leaf: str = "page.jsx") -> str:
     route = _text(route_path).split("?", 1)[0].split("#", 1)[0].strip()
     if not route.startswith("/"):
         return ""
     segments = [part for part in route.strip("/").split("/") if part]
     if any(part in {".", ".."} for part in segments):
         return ""
-    return "app/" + ("/".join(segments) + "/" if segments else "") + "page.jsx"
+    return "app/" + ("/".join(segments) + "/" if segments else "") + leaf
 
 
 def _canonical_actor(value: Any, fallback: str = "") -> str:
-    """Normalize access prose to the exact role value used by demo accounts.
-
-    Audience fields intentionally say ``ROLE admin``. Journey and capability
-    actors must say ``admin`` so account resolution does not invent the role
-    ``roleadmin``.
-    """
+    """Turn access prose such as ``ROLE admin`` into an exact role value."""
     actor = _text(value, 80)
     actor = re.sub(r"^(?:as\s+)?role\s*[:=-]?\s+", "", actor,
                    flags=re.I).strip()
@@ -281,9 +275,8 @@ class PlannerAgent:
         for index, item in enumerate(_records(plan.get("requirements")), 1):
             rid = _text(item.get("id") or f"REQ-{index:03d}").upper()
             requirements.append({
-                "id": rid,
+                "id": rid, "actor": _text(item.get("actor") or "user", 80),
                 "source_text": _text(item.get("source_text") or item.get("behavior"), 700),
-                "actor": _text(item.get("actor") or "user", 80),
                 "behavior": _text(item.get("behavior") or item.get("source_text"), 700),
                 "business_rule": _text(item.get("business_rule"), 800),
                 "acceptance": _strings(item.get("acceptance"), 500),
@@ -294,12 +287,14 @@ class PlannerAgent:
         plan["assumptions"] = _records(plan.get("assumptions"))
         plan["design"] = _dict(plan.get("design"))
         plan["information_architecture"] = _dict(plan.get("information_architecture"))
-        plan["site_map"] = self._normalize_site_map(
-            plan.get("site_map"), plan["information_architecture"])
-        plan["routes"] = self._normalize_routes(plan.get("routes"), plan["site_map"])
-        plan["data_model"] = self._normalize_data(plan.get("data_model"))
         plan["roles_and_access"] = self._normalize_access(plan.get("roles_and_access"))
+        plan["site_map"] = self._normalize_site_map(
+            plan.get("site_map"), plan["information_architecture"],
+            plan["roles_and_access"])
         plan["api_contracts"] = self._normalize_apis(plan.get("api_contracts"))
+        plan["routes"] = self._normalize_routes(
+            plan.get("routes"), plan["site_map"], plan["api_contracts"])
+        plan["data_model"] = self._normalize_data(plan.get("data_model"))
         plan["capabilities"] = self._normalize_capabilities(plan.get("capabilities"))
         plan["architecture"] = _dict(plan.get("architecture"))
         plan["e2e_plan"] = self._normalize_e2e(plan.get("e2e_plan"))
@@ -312,10 +307,22 @@ class PlannerAgent:
         self._compatibility_views(plan)
         return plan
 
-    def _normalize_site_map(self, value: Any, information_architecture: dict | None = None) -> list[dict]:
+    def _normalize_site_map(self, value: Any,
+                            information_architecture: dict | None = None,
+                            access: dict | None = None) -> list[dict]:
         out = []
         source = _records(value)
         known = {_text(item.get("path")) for item in source}
+        for path, required in (
+            ("/sign-in", bool((access or {}).get("authentication_required"))),
+            ("/sign-up", _text((access or {}).get("signup")).lower() == "open"),
+        ):
+            if required and path not in known:
+                label = path[1:].replace("-", " ").title()
+                source.append({"path": path, "parent": "/", "label": label,
+                               "type": "page", "audience": "PUBLIC",
+                               "purpose": f"Serve the {label} account flow"})
+                known.add(path)
         for nav in _records((information_architecture or {}).get("global_navigation")):
             path = _text(nav.get("path"))
             if path.startswith("/") and not path.startswith("/api/") and path not in known:
@@ -332,8 +339,7 @@ class PlannerAgent:
             if not path:
                 continue
             out.append({
-                "path": path,
-                "parent": _text(item.get("parent")),
+                "path": path, "parent": _text(item.get("parent")),
                 "label": _text(item.get("label") or item.get("purpose"), 120),
                 "type": _text(item.get("type") or "page", 20),
                 "audience": _text(item.get("audience") or "PUBLIC", 100),
@@ -343,9 +349,21 @@ class PlannerAgent:
             })
         return out
 
-    def _normalize_routes(self, value: Any, site_map: list[dict] | None = None) -> list[dict]:
+    def _normalize_routes(self, value: Any,
+                          site_map: list[dict] | None = None,
+                          apis: list[dict] | None = None) -> list[dict]:
         out = []
-        for item in _records(value):
+        source = _records(value)
+        known_files = {_text(item.get("file")).replace("\\", "/")
+                       for item in source}
+        for api in apis or []:
+            file = api.get("handler_file") or ""
+            if file and file not in known_files:
+                source.append({
+                    **api, "file": file, "kind": "route", "purpose": api["name"],
+                })
+                known_files.add(file)
+        for item in source:
             path = _text(item.get("path"))
             file = _text(item.get("file")).replace("\\", "/").lstrip("./")
             if not path and file:
@@ -356,8 +374,7 @@ class PlannerAgent:
             if file.endswith("route.js"):
                 kind = "route"
             out.append({
-                "path": path,
-                "file": file,
+                "path": path, "file": file,
                 "kind": kind if kind in {"server", "client", "route"} else "server",
                 "audience": _text(item.get("audience") or "PUBLIC", 100),
                 "purpose": _text(item.get("purpose"), 600),
@@ -369,21 +386,15 @@ class PlannerAgent:
                 "requirement_ids": _strings(item.get("requirement_ids"), 40),
             })
 
-        # The site map is a page inventory, not decorative prose. A model can
-        # occasionally list a login/detail page there while omitting it from
-        # routes. Promote every local page so it reaches the file graph/tasks
-        # and cannot become a dead navigation target at runtime.
         known_paths = {item["path"] for item in out}
         for page in site_map or []:
             path = _text(page.get("path"))
             kind = _text(page.get("type") or "page").lower()
-            file = _page_file(path)
+            file = _app_file(path)
             if kind != "page" or not file or path in known_paths:
                 continue
             out.append({
-                "path": path,
-                "file": file,
-                "kind": "server",
+                "path": path, "file": file, "kind": "server",
                 "audience": _text(page.get("audience") or "PUBLIC", 100),
                 "purpose": _text(page.get("purpose") or page.get("label"), 600),
                 "reads": [], "writes": [],
@@ -409,10 +420,8 @@ class PlannerAgent:
                         "rules": _text(field.get("rules"), 400),
                     })
             out.append({
-                "collection": collection,
-                "purpose": _text(item.get("purpose"), 500),
-                "fields": fields,
-                "indexes": _strings(item.get("indexes"), 200),
+                "collection": collection, "purpose": _text(item.get("purpose"), 500),
+                "fields": fields, "indexes": _strings(item.get("indexes"), 200),
                 "seed": _dict(item.get("seed")),
                 "relationships": _strings(item.get("relationships"), 240),
             })
@@ -425,8 +434,7 @@ class PlannerAgent:
             name = _text(role.get("name"), 80)
             if name:
                 roles.append({
-                    "name": _canonical_actor(name, name),
-                    "home": _text(role.get("home"), 180),
+                    "name": _canonical_actor(name, name), "home": _text(role.get("home"), 180),
                     "permissions": _strings(role.get("permissions"), 300),
                     "restrictions": _strings(role.get("restrictions"), 300),
                 })
@@ -443,8 +451,7 @@ class PlannerAgent:
             "authentication_required": bool(access.get("authentication_required")),
             "signup": _text(access.get("signup") or "not-applicable", 30),
             "signup_role": _text(access.get("signup_role"), 80),
-            "roles": roles,
-            "demo_accounts": accounts,
+            "roles": roles, "demo_accounts": accounts,
         }
 
     def _normalize_apis(self, value: Any) -> list[dict]:
@@ -453,16 +460,15 @@ class PlannerAgent:
             path = _text(item.get("path"))
             if not path:
                 continue
+            handler = (_text(item.get("handler_file")).replace("\\", "/")
+                       or _app_file(path, "route.js"))
             out.append({
                 "name": _text(item.get("name") or f"api-{len(out)+1}", 120),
-                "method": _text(item.get("method") or "GET", 10).upper(),
-                "path": path,
-                "handler_file": _text(item.get("handler_file")).replace("\\", "/"),
-                "called_from": _strings(item.get("called_from"), 200),
+                "method": _text(item.get("method") or "GET", 10).upper(), "path": path,
+                "handler_file": handler, "called_from": _strings(item.get("called_from"), 200),
                 "audience": _text(item.get("audience") or "PUBLIC", 100),
                 "request": _records(item.get("request")),
-                "response": _records(item.get("response")),
-                "errors": _records(item.get("errors")),
+                "response": _records(item.get("response")), "errors": _records(item.get("errors")),
                 "side_effects": _strings(item.get("side_effects"), 400),
                 "success_effect": _text(item.get("success_effect"), 500),
                 "requirement_ids": _strings(item.get("requirement_ids"), 40),
@@ -482,15 +488,11 @@ class PlannerAgent:
             out.append({
                 "id": _text(item.get("id") or f"CAP-{index:03d}").upper(),
                 "requirement_ids": _strings(item.get("requirement_ids"), 40),
-                "actor": actor,
-                "who": actor,
-                "behavior": behavior,
-                "requirement": behavior,
-                "proof": "; ".join(proof_points),
-                "proof_points": proof_points,
+                "actor": actor, "who": actor,
+                "behavior": behavior, "requirement": behavior,
+                "proof": "; ".join(proof_points), "proof_points": proof_points,
                 "files": _strings(item.get("files"), 200),
-                "route": _text(item.get("route"), 180),
-                "e2e": bool(item.get("e2e", True)),
+                "route": _text(item.get("route"), 180), "e2e": bool(item.get("e2e", True)),
             })
         return out
 
@@ -566,8 +568,8 @@ class PlannerAgent:
             source.append({
                 "path": "lib/seed.js", "kind": "server",
                 "purpose": "Idempotently create all planned data and Better Auth demo credential accounts",
-                "contracts": ["Await scaffold ensureDemoAccounts and preserve exact demo roles"],
-                "done_when": ["Every planned demo email/password signs in and returns its exact role"],
+                "contracts": ["Export ensureSeeded; await ensureDemoAccounts before first data read"],
+                "done_when": ["Every demo signs in with its exact role; seeded data is queryable"],
             })
             known.add("lib/seed.js")
         for item in source:
@@ -580,8 +582,7 @@ class PlannerAgent:
             if path.endswith("route.js"):
                 kind = "route"
             out.append({
-                "path": path,
-                "kind": kind,
+                "path": path, "kind": kind,
                 "purpose": _text(item.get("purpose") or route.get("purpose"), 700),
                 "requirements": _strings(item.get("requirements") or route.get("requirement_ids"), 40),
                 "imports_from": _strings(item.get("imports_from"), 200),
@@ -609,7 +610,7 @@ class PlannerAgent:
             if not paths:
                 continue
             out.append({
-                "id": item.get("id") or index,
+                "id": item.get("id") or index, "actor": _canonical_actor(item.get("actor")),
                 "title": _text(item.get("title") or f"Task {index}", 140),
                 "goal": _text(item.get("goal"), 600),
                 "requirement_ids": _strings(item.get("requirement_ids") or item.get("covers"), 40),
@@ -622,8 +623,7 @@ class PlannerAgent:
         loose = [item for item in files if item["path"] not in assigned]
         if loose:
             out.append({
-                "id": len(out) + 1,
-                "title": "Complete remaining planned files",
+                "id": len(out) + 1, "title": "Complete remaining planned files",
                 "goal": "Implement every file in the approved file graph.",
                 "requirement_ids": sorted({rid for item in loose for rid in item.get("requirements", [])}),
                 "files": loose,
@@ -644,7 +644,6 @@ class PlannerAgent:
         return out
 
     def _compatibility_views(self, plan: dict) -> None:
-        """Expose the concise legacy keys consumed by QA and UI code."""
         access = plan["roles_and_access"]
         plan["signup_role"] = access.get("signup_role") or ""
         plan["demo_accounts"] = access.get("demo_accounts") or []

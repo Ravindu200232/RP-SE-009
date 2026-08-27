@@ -299,9 +299,9 @@ empty string only when the concept genuinely does not apply.
   ],
   "tasks": [
     {
-      "id": 1,
-      "title": "Cohesive build slice",
-      "goal": "End-to-end result delivered by this task",
+      "id": 1, "actor": "visitor or exact role",
+      "title": "Exact-role workflow slice",
+      "goal": "End-to-end result this role can complete",
       "requirement_ids": ["REQ-001"],
       "files": ["app/exact/page.jsx"],
       "depends_on": [],
@@ -312,11 +312,11 @@ empty string only when the concept genuinely does not apply.
     {"name": "real-package-name", "reason": "exact import/use"}
   ],
   "definition_of_done": [
-    "Every source requirement has a requirement row, capability, implementation files, and acceptance proof",
-    "Every page and API in the site map has one route/file owner",
-    "Every visible action is functional and represented in a capability or E2E journey",
+    "Every source clause traces through requirement, capability, owner files, and observable acceptance proof",
+    "Every page, navigation target, API caller, contract, and handler has one consistent route/file owner",
+    "Authentication, authorization, persistence, validation, and UI states work across their full boundary",
     "Every e2e=true capability appears in at least one journey",
-    "Build succeeds and the required journeys pass"
+    "Build, unit, route, auth/security, accessibility, responsive, and E2E checks pass"
   ]
 }
 ```
@@ -325,24 +325,24 @@ empty string only when the concept genuinely does not apply.
 
 Perform this silently before emitting JSON:
 
-- Compare the original text clause by clause against `requirements`.
-- Compare each requirement against `capabilities`, `file_plan`, and acceptance.
-- Compare every page/API named anywhere against both `site_map` and `routes`.
-- Every local `site_map` item whose type is `page` must have one matching
-  `routes` entry and one concrete page file, including sign-in, sign-up,
-  unauthorized, success, detail, and role-home pages.
-- Compare every route file against exactly one `file_plan` entry and one task.
-- Compare every navigation/action destination against a real route.
-- Compare every API caller's URL, method, field names, response fields, and
-  success behavior against exactly one matching API contract.
-- Compare every data read/write against an exact collection and field vocabulary.
-- Compare every role against a home route and at least one full E2E journey.
-  Journey/capability `actor` values must be the exact role name (for example
-  `admin`), never an access-expression prefix such as `ROLE admin`.
-- Compare every browser-visible capability against `e2e_plan.journeys`.
-- Ensure the design is concrete enough that two developers would produce the
-  same palette, hierarchy, component states, spacing, and responsive behavior.
-- Ensure the plan contains no stub, deferred phase, fake data in UI, or action
-  without a complete outcome.
+- Give every source clause its own stable requirement and observable acceptance.
+- Trace each requirement through capability, route/action, file owner, API/data
+  boundary where needed, UI states, and a final E2E assertion.
+- Give every named page one `site_map` item, `routes` entry, page file, and task;
+  include detail, success, unauthorized, sign-in, sign-up, and role-home pages.
+- Give every navigation link, button, form, row action, and redirect a real
+  destination plus loading, empty, validation, error, success, and retry states.
+- Give every caller exactly one matching API contract and handler with identical
+  URL, method, request fields, response fields, errors, authorization, and effect.
+- Give requested CRUD, moderation, booking/payment, profile, and admin operations separate contracts.
+- When auth is required, plan a working Better Auth sign-in page; when signup is
+  `open`, plan sign-up using `signUp.email`, its route, navigation, and E2E proof.
+- Guard protected page groups and APIs at server boundaries; divide build tasks
+  by exact role workflow with its home, permissions, files, guard, and E2E proof.
+- Plan exact collection/field/index vocabulary, ObjectId/date handling, and an
+  idempotent seed entrypoint called before first reads; demo credentials must use
+  scaffold `ensureDemoAccounts` and return the planned roles after sign-in.
+- Cover every `e2e=true` capability with persisted proof; fix responsive and accessibility states.
+- Emit no stub, deferred phase, fake UI data, dead action, or uncovered fact.
 
 The final JSON must be internally consistent on the first response.
