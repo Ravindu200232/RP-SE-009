@@ -128,6 +128,17 @@ class AnalyzerAgent:
             if origins != {"localhost:*", "127.0.0.1:*"}: out.append(Finding("blocker", "AUTH_ORIGIN", "Better Auth does not trust both loopback preview hosts on moving ports", "lib/auth.js", "trust http://localhost:* and http://127.0.0.1:* only"))
             provider = files.get("app/api/auth/[...all]/route.js", "")
             if not provider or not all(x in provider for x in ("GET", "POST")): out.append(Finding("blocker", "AUTH_PROVIDER_ROUTE", "Better Auth has no complete GET/POST catch-all provider route", "app/api/auth/[...all]/route.js", "delegate GET and POST to the auth instance exported by lib/auth.js"))
+            access = plan.get("roles_and_access") or {}
+            signup_open = str(access.get("signup") or "").strip().lower() == "open"
+            signup = next((m for u, m in routes.items()
+                           if u in {"/sign-up", "/signup", "/register"}), None)
+            signup_body = files.get(signup["file"], "") if signup else ""
+            if signup_open and "signUp.email" not in signup_body:
+                out.append(Finding(
+                    "blocker", "AUTH_SIGNUP_MISSING",
+                    "open registration has no page completing Better Auth email signup",
+                    signup["file"] if signup else "app/sign-up/page.jsx",
+                    "serve an accessible form using signUp.email with failure and success states"))
         for target in self.dead_links(routes):
             if target in {"/sign-in", "/signin", "/login"}: out.append(Finding("blocker", "AUTH_PAGE_MISSING", f"auth code links or redirects to {target}, but no page serves it", f"app/{target.strip('/')}/page.jsx", "create the complete sign-in page using @/lib/auth-client, or consistently use a served auth page"))
         for rel, body in files.items():
@@ -680,7 +691,9 @@ class AnalyzerAgent:
     def server_client_boundary_findings(self): return self._only(self._data_ui_invariants(), "SERVER_CLIENT_EVENT_HANDLER")
     def unsupported_form_method_findings(self): return self._only(self._data_ui_invariants(), "UNSUPPORTED_FORM_METHOD")
     def credential_smells(self): return self._only(self._data_ui_invariants(), "FAKE_HASH", "UNHASHED_SEED")
-    def auth_completeness(self): return self._only(self._auth_invariants(), "AUTH_PAGE_MISSING", "AUTH_PROVIDER_ROUTE")
+    def auth_completeness(self):
+        return self._only(self._auth_invariants(), "AUTH_PAGE_MISSING",
+                          "AUTH_SIGNUP_MISSING", "AUTH_PROVIDER_ROUTE")
 
     def _semantic_requirement(self, lens, code):
         """One cached, evidence-validated semantic lens for legacy entry points."""

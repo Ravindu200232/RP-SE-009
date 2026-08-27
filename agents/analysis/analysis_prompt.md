@@ -95,6 +95,7 @@ Treat these as hard product invariants:
 
 - A link or redirect to `/sign-in` requires a real `app/sign-in/page.jsx` (or the
   source must consistently use an actually served alternative such as `/login`).
+- An `open` signup plan requires a served sign-up page that calls `signUp.email`.
 - The client uses `signIn.email`/`signUp.email` from the project's auth client.
 - `app/api/auth/[...all]/route.js` delegates GET and POST to the same `auth`
   instance exported by `lib/auth.js`.

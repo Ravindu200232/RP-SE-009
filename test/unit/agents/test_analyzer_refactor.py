@@ -73,7 +73,7 @@ class AnalyzerRefactorTests(unittest.TestCase):
                   "export async function ensureSeeded(){ await users.insertOne({email:'admin@example.com'}) }")
             write(root, "app/api/auth/[...all]/route.js",
                   "import { toNextJsHandler } from 'better-auth/next-js'; import { auth } from '@/lib/auth'; export const { GET, POST } = toNextJsHandler(auth)")
-            plan = {"demo_accounts": [
+            plan = {"roles_and_access": {"signup": "open"}, "demo_accounts": [
                 {"email": "admin@example.com", "password": "Password1!", "role": "admin"},
                 {"email": "guest@example.com", "password": "Password1!", "role": "guest"}],
                 "workflows": [{"name": "Admin", "who": "ROLE admin"},
@@ -81,10 +81,17 @@ class AnalyzerRefactorTests(unittest.TestCase):
             agent = AnalyzerAgent(FakeArch(root, plan=plan), root)
             codes = {f.code for f in agent._auth_invariants()}
             self.assertTrue({"BETTER_AUTH_DEMO_SEED", "AUTH_ORIGIN",
-                             "AUTH_PAGE_MISSING"} <= codes)
+                             "AUTH_PAGE_MISSING", "AUTH_SIGNUP_MISSING"} <= codes)
             role_messages = "\n".join(f.message for f in agent.role_contract_findings())
             self.assertNotIn("roleadmin", role_messages)
             self.assertNotIn("roleguest", role_messages)
+
+            write(root, "app/sign-up/page.jsx",
+                  "'use client'; import { signUp } from '@/lib/auth-client'; "
+                  "export default function Page(){ return signUp.email }" )
+            complete = AnalyzerAgent(FakeArch(root, plan=plan), root)
+            self.assertNotIn("AUTH_SIGNUP_MISSING",
+                             {f.code for f in complete._auth_invariants()})
 
     def test_semantic_json_requires_exact_plan_and_source_evidence(self):
         with tempfile.TemporaryDirectory() as root:
