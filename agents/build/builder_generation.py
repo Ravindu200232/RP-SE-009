@@ -8,6 +8,8 @@ class BuilderGenerationMixin:
         self.model        = model
         self.project_dir  = Path(project_dir)
         self.built_files: dict[str, str] = {}
+        self._raw_llm_outputs: dict[str, str] = {}
+        self._fix_size_cache: dict[str, int] = {}
 
     def build(self, refined_prompt: str) -> bool:
         spec = {}
@@ -55,81 +57,28 @@ class BuilderGenerationMixin:
         return self._install_deps()
 
     def fix(self, errors: list):
-        """
-        1. Run `npm run build` to get the real compile error with exact file+line
-        2. Parse which file(s) are broken
-        3. Re-generate each broken file with full error context + full codebase context
-        4. Write fixed files and emit to UI
-        """
+        """Add compiler evidence to tester errors, then use the canonical repair path."""
         log.info(f"   🔧 Starting fix pass ({len(errors)} tester errors)")
-
         build_errors = self._npm_build_errors()
-        log.info(f"   npm build errors:\n{build_errors[:400] if build_errors else '  (none)'}")
-
-        all_error_text = "\n".join(errors) + "\n" + build_errors
-
-        broken = self._identify_broken(all_error_text)
-        if not broken:
-
-            broken = [f for f in self.built_files
-                      if f.startswith("src/components/") and f.endswith(".jsx")]
-            log.info(f"   No specific file found — regenerating all {len(broken)} components")
-        else:
-            log.info(f"   Broken files: {broken}")
-
-        codebase_ctx = self._build_codebase_context()
-
-        for fpath in broken:
-            name = fpath.split("/")[-1].replace(".jsx", "").replace(".tsx", "")
-            current = self.built_files.get(fpath, "")
-            log.info(f"   Re-generating {fpath}...")
-
-            file_errors = self._filter_errors_for_file(all_error_text, name, fpath)
-
-            fixed = self._fix_component(name, current, file_errors, codebase_ctx)
-            if not fixed:
-                log.warning(f"   LLM fix failed for {fpath} — using safe fallback")
-                fixed = _safe_component(name)
-
-            self._write_one(fpath, fixed)
-            log.info(f"   ✓ Saved {fpath} ({len(fixed)}B)")
+        preview = build_errors[:400] if build_errors else "  (none)"
+        log.info(f"   npm build errors:\n{preview}")
+        self.fix_with_errors("\n".join(errors) + "\n" + build_errors)
 
     def _gen(self, component_name: str, user_prompt: str) -> str:
         """Stream generation, forward tokens to UI, return extracted code."""
         try:
-            resp = requests.post(self.url, json={
-                "model":   self.model,
-                "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user",   "content": user_prompt},
-                ],
-                "stream":  True,
-                "options": {"temperature": 0.15, "num_predict": 4096},
-            }, stream=True, timeout=240)
-            resp.raise_for_status()
-
-            _emit(f"\x00START:{component_name}")
-            full = ""
-            for line in resp.iter_lines():
-                if not line: continue
-                try:
-                    chunk = json.loads(line)
-                    tok   = chunk.get("message", {}).get("content", "")
-                    if tok:
-                        full += tok
-                        _emit(tok)
-                    if chunk.get("done"): break
-                except: continue
-            _emit("\x00END")
-
-            if not hasattr(self, '_raw_llm_outputs'):
-                self._raw_llm_outputs = {}
+            full = _stream_chat(
+                self.url,
+                self.model,
+                user_prompt,
+                component_name,
+                temperature=0.15,
+                timeout=240,
+            )
             self._raw_llm_outputs[component_name] = full
             return self._extract(full)
-
         except Exception as e:
             log.error(f"   LLM gen failed ({component_name}): {e}")
-            _emit("\x00END")
             return ""
 
     def _fix_component(self, name: str, broken: str, errors: str, codebase: str, raw_context: str = "") -> str:
@@ -219,35 +168,18 @@ class BuilderGenerationMixin:
             - Must end with: export default function {name}()
             """)
         try:
-            resp = requests.post(self.url, json={
-                "model":   self.model,
-                "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user",   "content": prompt},
-                ],
-                "stream":  True,
-                "options": {"temperature": 0.05, "num_predict": 4096},
-            }, stream=True, timeout=180)
-            resp.raise_for_status()
-
-            _emit(f"\x00START:{name} (fix)")
-            full = ""
-            for line in resp.iter_lines():
-                if not line: continue
-                try:
-                    chunk = json.loads(line)
-                    tok   = chunk.get("message", {}).get("content", "")
-                    if tok:
-                        full += tok
-                        _emit(tok)
-                    if chunk.get("done"): break
-                except: continue
-            _emit("\x00END")
+            full = _stream_chat(
+                self.url,
+                self.model,
+                prompt,
+                f"{name} (fix)",
+                temperature=0.05,
+                timeout=180,
+            )
             result = self._extract(full)
             return result if "export default" in result else ""
         except Exception as e:
             log.error(f"   fix LLM call failed: {e}")
-            _emit("\x00END")
             return ""
 
     def _npm_build_errors(self) -> str:

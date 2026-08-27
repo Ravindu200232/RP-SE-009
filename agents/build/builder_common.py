@@ -1,5 +1,12 @@
-import json, logging, os, re, shutil, subprocess, textwrap
+import json
+import logging
+import os
+import re
+import shutil
+import subprocess
+import textwrap
 from pathlib import Path
+
 import requests
 
 log = logging.getLogger("builder")
@@ -25,6 +32,8 @@ def _find_npm_cmd():
     return [found] if found else None
 
 _stream_callback = None
+
+
 def set_stream_callback(fn):
     global _stream_callback
     _stream_callback = fn
@@ -32,6 +41,71 @@ def set_stream_callback(fn):
 def _emit(token):
     if _stream_callback:
         _stream_callback(token)
+
+
+_PROMPT_FALLBACK = """\
+You are an expert React and Tailwind developer. Return only complete valid JSX.
+Use one export default function with all logic inside it and imports first.
+Only use react, react-dom, framer-motion, and imports from react-icons families.
+Use real icon names, self-close void elements, and give the root a dark background.
+Hoist regex and division expressions outside JSX. Do not use extra dependencies.
+"""
+
+
+def _load_system_prompt() -> str:
+    """Load the editable generation contract, retaining safe packaged defaults."""
+    prompt_path = Path(__file__).with_name("builder_prompt.md")
+    try:
+        prompt = prompt_path.read_text(encoding="utf-8").strip()
+    except OSError as exc:
+        log.warning("Builder prompt unavailable at %s: %s", prompt_path, exc)
+        return _PROMPT_FALLBACK.strip()
+    return prompt or _PROMPT_FALLBACK.strip()
+
+
+SYSTEM_PROMPT = _load_system_prompt()
+
+
+def _stream_chat(url: str, model: str, prompt: str, label: str,
+                 temperature: float, timeout: int) -> str:
+    """Run one framed streaming model call and return its complete text."""
+    full = ""
+    try:
+        response = requests.post(
+            url,
+            json={
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": prompt},
+                ],
+                "stream": True,
+                "options": {"temperature": temperature, "num_predict": 4096},
+            },
+            stream=True,
+            timeout=timeout,
+        )
+        response.raise_for_status()
+        _emit(f"\x00START:{label}")
+        for line in response.iter_lines():
+            if not line:
+                continue
+            try:
+                chunk = json.loads(line)
+            except (TypeError, ValueError):
+                continue
+            if not isinstance(chunk, dict):
+                continue
+            message = chunk.get("message", {})
+            token = message.get("content", "") if isinstance(message, dict) else ""
+            if token:
+                full += token
+                _emit(token)
+            if chunk.get("done"):
+                break
+    finally:
+        _emit("\x00END")
+    return full
 
 
 def _app_shell(title: str, sections: list) -> str:
@@ -101,123 +175,5 @@ SAFE_COMPONENT = textwrap.dedent("""\
 def _safe_component(name: str) -> str:
     return SAFE_COMPONENT.replace("{name}", name).replace("{id}", name.lower())
 
-
-SYSTEM_PROMPT = textwrap.dedent("""\
-    You are an expert React + Tailwind developer.
-    Output ONLY complete, valid JSX code. No markdown fences, no explanation, no preamble.
-
-    ═══════════════════════════════════════════════════════════
-    REFERENCE EXAMPLE — your output must follow this structure EXACTLY:
-    ═══════════════════════════════════════════════════════════
-
-    import { useState } from 'react'
-    import { motion } from 'framer-motion'
-    import { FiMail, FiCheck, FiArrowRight } from 'react-icons/fi'
-
-    export default function Newsletter() {
-      // ── All data and state go INSIDE the function ──────────
-      const plans = [
-        { id: 1, name: 'Weekly Digest', desc: 'Best articles every Monday' },
-        { id: 2, name: 'Daily Brief',   desc: 'Quick updates every morning' },
-      ]
-      const [email, setEmail]   = useState('')
-      const [plan, setPlan]     = useState(1)
-      const [done, setDone]     = useState(false)
-
-      // ── Regex and computed values hoisted ABOVE return() ───
-      const reEmail = /[^a-zA-Z0-9@._+-]/g
-      const reTrim  = /\\s+/g
-      const halfLen = Math.floor(plans.length / 2)   // division OK inside Math.*
-      const stepVal = 1 / plans.length                // division outside JSX
-
-      const handleSubmit = (e) => {
-        e.preventDefault()
-        const cleaned = email.replace(reEmail, '').replace(reTrim, '')
-        if (!cleaned.includes('@')) return
-        setDone(true)
-      }
-
-      if (done) return (
-        <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-          <motion.div initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-center text-white">
-            <FiCheck className="text-5xl text-green-400 mx-auto mb-4" />
-            <h2 className="text-3xl font-bold">You're subscribed!</h2>
-          </motion.div>
-        </div>
-      )
-
-      return (
-        <div className="min-h-screen bg-gray-900 text-white py-20 px-6">
-          <div className="max-w-2xl mx-auto">
-            <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
-              className="text-5xl font-black mb-4 gradient-text">
-              Stay in the Loop
-            </motion.h1>
-            <ul className="mb-8 space-y-3">
-              {plans.map(p => (
-                <li key={p.id}
-                  onClick={() => setPlan(p.id)}
-                  className={`p-4 rounded-xl cursor-pointer border transition ${
-                    plan === p.id ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/10'
-                  }`}>
-                  <span className="font-semibold">{p.name}</span>
-                  <span className="text-gray-400 ml-2 text-sm">{p.desc}</span>
-                </li>
-              ))}
-            </ul>
-            <form onSubmit={handleSubmit} className="flex gap-3">
-              <input type="email" value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                className="flex-1 bg-gray-800 border border-white/10 rounded-xl px-4 py-3 text-white" />
-              <button type="submit"
-                className="flex items-center gap-2 px-6 py-3 bg-indigo-500 hover:bg-indigo-400 rounded-xl font-semibold transition">
-                Subscribe <FiArrowRight />
-              </button>
-            </form>
-            <p className="text-gray-500 text-sm mt-4 flex items-center gap-2">
-              <FiMail /> No spam. Unsubscribe anytime.
-            </p>
-          </div>
-        </div>
-      )
-    }
-
-    ═══════════════════════════════════════════════════════════
-    MANDATORY RULES — violations cause runtime errors:
-    ═══════════════════════════════════════════════════════════
-    1. Imports first. Then IMMEDIATELY export default function. NOTHING between them.
-    2. ALL data arrays, constants, state go INSIDE the function body.
-    3. NEVER: const Component = () => {}  — arrow components are BANNED.
-    4. NEVER: define function then export default separately at the bottom.
-    5. NEVER split into multiple named functions.
-       NO 'function Calculator()' + 'function App() { return <Calculator/> }'.
-       ALL logic lives in ONE export default function. This is the most important rule.
-    6. NEVER import from 'react-icons/all' — use 'react-icons/fi', '/fa', '/hi', etc.
-    7. ONLY use packages from this EXACT allowed list — NO others:
-       ALLOWED: react, react-dom, framer-motion, react-icons
-       react-icons usage: import {{ FiHome }} from 'react-icons/fi'
-       BANNED (will crash Vite): react-scroll, lucide-react, react-leaflet,
-         react-router-dom, axios, lodash, chart.js, d3, three, @mui/material,
-         @chakra-ui/react, react-query, zustand, styled-components, classnames,
-         react-spring, react-use, @heroicons/react, react-helmet, react-hot-toast.
-       If you need a MAP: use a plain <div> with a styled placeholder — no leaflet.
-       If you need CHARTS: use pure CSS/SVG bars — no chart.js/d3.
-       If you need ROUTING: use useState for view switching — no react-router.
-    8. Self-close void elements: <br />, <img />, <input />, <hr />
-    9. Outermost div MUST have explicit background: bg-gray-900, bg-slate-950, bg-black.
-       NEVER leave root div transparent — causes blank white pages.
-    10. Only real icon names: FiHome, FiX, FiCircle, FiStar, FiMenu, FiGrid, FiArrowRight,
-        FiPhone, FiMail, FiUser, FiSettings, FiCode, FiHeart, FiPlus, FiTrash2, FiEdit.
-        NEVER invent: FiOval, FiMultiply, FiCross, FiGamepad2, FiCalculator.
-    11. NEVER write /regex/ inside JSX — hoist to const above return():
-          WRONG: onChange={e => setValue(e.target.value.replace(/[^0-9]/g, ''))}
-          RIGHT: const reDigits = /[^0-9]/g;  ...  .replace(reDigits, '')
-    12. NEVER write division inside JSX {}: Babel misreads / as regex start.
-          WRONG: <input step={30/60} />  or  <div>{count/total}</div>
-          RIGHT: const stepVal = 30/60;  ...  <input step={stepVal} />
-    """)
 
 __all__ = [name for name in globals() if not name.startswith("__")]

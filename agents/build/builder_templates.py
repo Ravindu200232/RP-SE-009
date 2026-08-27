@@ -2,6 +2,79 @@
 from agents.build.builder_common import *
 
 
+def _load_scaffold() -> dict:
+    """Load editable static files, with a minimal runnable fallback."""
+    root = Path(__file__).with_name("scaffold")
+    names = (
+        "package.json", "vite.config.js", "tailwind.config.js",
+        "postcss.config.js", "index.html", "main.jsx", "index.css",
+        "Navbar.jsx",
+    )
+    try:
+        files = {
+            name: (root / name).read_text(encoding="utf-8")
+            for name in names
+        }
+        if not all(content.strip() for content in files.values()):
+            raise ValueError("one or more scaffold assets are empty")
+        package = json.loads(files.pop("package.json"))
+        if not isinstance(package, dict):
+            raise ValueError("scaffold package.json must contain an object")
+        return {
+            "package": package,
+            "config_files": {
+                name: files.pop(name) for name in names[1:4]
+            },
+            "index_html": files["index.html"],
+            "main_jsx": files["main.jsx"],
+            "index_css": files["index.css"],
+            "navbar": files["Navbar.jsx"],
+        }
+    except (OSError, TypeError, ValueError) as exc:
+        log.warning("Builder scaffold unavailable at %s: %s", root, exc)
+    return {
+        "package": {
+            "name": "app", "private": True, "version": "0.0.0",
+            "type": "module",
+            "scripts": {
+                "dev": "vite", "build": "vite build", "preview": "vite preview",
+            },
+            "dependencies": {
+                "react": "^18.2.0", "react-dom": "^18.2.0",
+                "framer-motion": "^11.0.0", "react-icons": "^5.0.0",
+            },
+            "devDependencies": {
+                "@vitejs/plugin-react": "^4.2.0", "vite": "^5.0.0",
+                "tailwindcss": "^3.4.0", "postcss": "^8.4.0",
+                "autoprefixer": "^10.4.0",
+            },
+        },
+        "config_files": {
+            "vite.config.js":
+                "import { defineConfig } from 'vite'\n"
+                "import react from '@vitejs/plugin-react'\n"
+                "export default defineConfig({ plugins: [react()] })\n",
+            "tailwind.config.js":
+                "export default { content: ['./index.html', "
+                "'./src/**/*.{js,ts,jsx,tsx}'] }\n",
+            "postcss.config.js":
+                "export default { plugins: { tailwindcss: {}, "
+                "autoprefixer: {} } }\n",
+        },
+        "index_html": "<div id=\"root\"></div><script type=\"module\" "
+                      "src=\"/src/main.jsx\"></script>\n",
+        "main_jsx": "import ReactDOM from 'react-dom/client'\n"
+                    "import App from './App.jsx'\n"
+                    "ReactDOM.createRoot(document.getElementById('root'))"
+                    ".render(<App />)\n",
+        "index_css": "@tailwind base;\n@tailwind components;\n@tailwind utilities;\n",
+        "navbar": "export default function Navbar() { return <nav /> }\n",
+    }
+
+
+SCAFFOLD = _load_scaffold()
+
+
 class BuilderTemplateMixin:
     def _extract(self, text: str) -> str:
         """Extract JSX code from LLM output, stripping markdown fences."""
@@ -20,87 +93,16 @@ class BuilderTemplateMixin:
 
     def _config_files(self, title: str) -> dict:
         name = re.sub(r"[^a-z0-9-]", "-", title.lower())[:28].strip("-") or "app"
-        pkg = {
-            "name": name, "private": True, "version": "0.0.0", "type": "module",
-            "scripts": {
-                "dev":     "vite",
-                "build":   "vite build",
-                "preview": "vite preview",
-            },
-            "dependencies": {
-                "react": "^18.2.0", "react-dom": "^18.2.0",
-                "framer-motion": "^11.0.0", "react-icons": "^5.0.0",
-            },
-            "devDependencies": {
-                "@vitejs/plugin-react": "^4.2.0",
-                "autoprefixer": "^10.4.0",
-                "postcss": "^8.4.0",
-                "tailwindcss": "^3.4.0",
-                "vite": "^5.0.0",
-            },
-        }
-        return {
-            "package.json": json.dumps(pkg, indent=2),
-            "vite.config.js": textwrap.dedent(f"""\
-                import {{ defineConfig }} from 'vite'
-                import react from '@vitejs/plugin-react'
-                export default defineConfig({{
-                  plugins: [react()],
-                  server: {{ port: 5173 }},
-                }})
-                """),
-            "tailwind.config.js": textwrap.dedent("""\
-                export default {
-                  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
-                  theme: {
-                    extend: {
-                      colors: {
-                        accent:  '#6366f1',
-                        accent2: '#22d3ee',
-                        dark:    '#0a0a0f',
-                        dark2:   '#12121a',
-                        card:    '#1e1e2e',
-                      },
-                      fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
-                    },
-                  },
-                  plugins: [],
-                }
-                """),
-            "postcss.config.js": "export default { plugins: { tailwindcss: {}, autoprefixer: {} } }\n",
-        }
+        package = dict(SCAFFOLD["package"])
+        package["name"] = name
+        files = dict(SCAFFOLD["config_files"])
+        return {"package.json": json.dumps(package, indent=2), **files}
 
     def _index_html(self, title: str) -> str:
-        return textwrap.dedent(f"""\
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-              <meta charset="UTF-8" />
-              <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-              <title>{title}</title>
-              <link rel="preconnect" href="https://fonts.googleapis.com" />
-              <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-            </head>
-            <body>
-              <div id="root"></div>
-              <script type="module" src="/src/main.jsx"></script>
-            </body>
-            </html>
-            """)
+        return SCAFFOLD["index_html"].replace("__TITLE__", title)
 
     def _main_jsx(self) -> str:
-        return textwrap.dedent("""\
-            import React from 'react'
-            import ReactDOM from 'react-dom/client'
-            import App from './App.jsx'
-            import './index.css'
-
-            ReactDOM.createRoot(document.getElementById('root')).render(
-              <React.StrictMode>
-                <App />
-              </React.StrictMode>
-            )
-            """)
+        return SCAFFOLD["main_jsx"]
 
     def _index_css(self, color: str) -> str:
         acc = "#6366f1"; acc2 = "#22d3ee"
@@ -111,41 +113,11 @@ class BuilderTemplateMixin:
         elif "pink"   in cl:                  acc, acc2 = "#ec4899", "#8b5cf6"
         elif "gold"   in cl or "yellow" in cl: acc, acc2 = "#fbbf24", "#f59e0b"
         elif "purple" in cl:                  acc, acc2 = "#a855f7", "#6366f1"
-        return textwrap.dedent(f"""\
-            @tailwind base;
-            @tailwind components;
-            @tailwind utilities;
-
-            @layer base {{
-              * {{ scroll-behavior: smooth; box-sizing: border-box; }}
-              /* Safety net: ensure body always has a dark bg + visible text.
-                 Prevents blank-looking pages when a component forgets to set
-                 a background or uses text that blends into the default white. */
-              html, body, #root {{
-                min-height: 100vh;
-                background-color: #0a0a0f;
-                color: #e2e8f0;
-              }}
-              body {{ @apply font-sans; }}
-              ::-webkit-scrollbar {{ width: 5px; }}
-              ::-webkit-scrollbar-track {{ @apply bg-dark2; }}
-              ::-webkit-scrollbar-thumb {{ background: {acc}; border-radius: 99px; }}
-            }}
-            @layer utilities {{
-              .gradient-text {{
-                background: linear-gradient(135deg, {acc}, {acc2});
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
-              }}
-              .glass {{
-                backdrop-filter: blur(20px);
-                background: rgba(30,30,46,0.55);
-                border: 1px solid rgba(255,255,255,0.08);
-              }}
-              .glow {{ box-shadow: 0 0 30px {acc}33; border: 1px solid {acc}44; }}
-            }}
-            """)
+        return (
+            SCAFFOLD["index_css"]
+            .replace("__ACCENT__", acc)
+            .replace("__ACCENT_2__", acc2)
+        )
 
     def _app_prompt(self, title, description, color, style, instructions, features, site_type):
         return textwrap.dedent(f"""\
@@ -204,44 +176,22 @@ class BuilderTemplateMixin:
 
     def _fallback_navbar(self, title: str, sections: list) -> str:
         links = [s for s in sections if s != "Navbar"]
-        items = "\n          ".join(
-            f'<a href="#{s.lower()}" onClick={{smoothScroll}} className="text-sm text-gray-400 hover:text-white transition-colors uppercase tracking-widest">{s}</a>'
-            for s in links
+        desktop = "\n".join(self._nav_link(section, False) for section in links)
+        mobile = "\n".join(self._nav_link(section, True) for section in links)
+        return (SCAFFOLD["navbar"].replace("__TITLE__", title)
+                .replace("__DESKTOP_LINKS__", desktop)
+                .replace("__MOBILE_LINKS__", mobile))
+
+    @staticmethod
+    def _nav_link(section: str, mobile: bool) -> str:
+        classes = ("text-gray-300 py-2 border-b border-white/10" if mobile else
+                   "text-sm text-gray-400 hover:text-white transition-colors "
+                   "uppercase tracking-widest")
+        href = section.lower()
+        return (
+            f'<a href="#{href}" onClick={{smoothScroll}} '
+            f'className="{classes}">{section}</a>'
         )
-        return textwrap.dedent(f"""\
-            import {{ useState, useEffect }} from 'react'
-            export default function Navbar() {{
-              const [scrolled, setScrolled] = useState(false)
-              const [open, setOpen] = useState(false)
-              useEffect(() => {{
-                const fn = () => setScrolled(window.scrollY > 50)
-                window.addEventListener('scroll', fn)
-                return () => window.removeEventListener('scroll', fn)
-              }}, [])
-              const smoothScroll = (e) => {{
-                e.preventDefault()
-                const id = e.target.getAttribute('href')?.slice(1)
-                document.getElementById(id)?.scrollIntoView({{ behavior: 'smooth' }})
-                setOpen(false)
-              }}
-              return (
-                <nav className={{`fixed top-0 w-full z-50 transition-all duration-300 ${{scrolled ? 'backdrop-blur-xl bg-black/60 border-b border-white/10' : 'bg-transparent'}}`}}>
-                  <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-                    <a href="#" className="text-xl font-black gradient-text">{title}</a>
-                    <div className="hidden md:flex gap-8">
-                      {items}
-                    </div>
-                    <button className="md:hidden text-white text-xl" onClick={{() => setOpen(!open)}}>☰</button>
-                  </div>
-                  {{open && (
-                    <div className="md:hidden bg-black/90 px-6 py-4 flex flex-col gap-3">
-                      {chr(10).join(f'<a href="#{s.lower()}" onClick={{smoothScroll}} className="text-gray-300 py-2 border-b border-white/10">{s}</a>' for s in links)}
-                    </div>
-                  )}}
-                </nav>
-              )
-            }}
-            """)
 
     def _write(self, files: dict):
         for fname, content in files.items():

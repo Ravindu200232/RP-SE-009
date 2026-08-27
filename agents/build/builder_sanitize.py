@@ -2,6 +2,171 @@
 from agents.build.builder_common import *
 
 
+ICON_FAMILIES = {
+    "Fa": "fa", "Fa6": "fa6", "Hi": "hi", "Hi2": "hi2",
+    "Md": "md", "Io": "io", "Io5": "io5", "Bs": "bs",
+    "Ri": "ri", "Si": "si", "Ti": "ti", "Ai": "ai",
+    "Bi": "bi", "Ci": "ci", "Di": "di", "Fc": "fc",
+    "Gi": "gi", "Go": "go", "Gr": "gr", "Im": "im",
+    "Lu": "lu", "Pi": "pi", "Rx": "rx", "Sl": "sl",
+    "Tb": "tb", "Tfi": "tfi", "Vsc": "vsc", "Wi": "wi",
+    "Cg": "cg", "Fi": "fi", "Fl": "fa",
+}
+
+ICON_REPLACEMENTS = {
+    "FiOval": "FiCircle", "FiO": "FiCircle", "FiRing": "FiCircle",
+    "FiEllipse": "FiCircle", "FiDisc2": "FiDisc",
+    "FiCircleFill": "FiCircle", "FiCross": "FiX", "FiXMark": "FiX",
+    "FiTimes": "FiX", "FiPlus2": "FiPlus", "FiStar2": "FiStar",
+    "FiHome2": "FiHome", "FiMenu2": "FiMenu",
+    "FiArrow": "FiArrowRight", "FiButton": "FiSquare",
+    "FiCode2": "FiCode", "FiPhone2": "FiPhone", "FiMail2": "FiMail",
+    "FiGamepad": "FiGrid", "FiBoard": "FiGrid", "FiGrid2": "FiGrid",
+    "FiRefresh": "FiRefreshCw", "FiReset": "FiRefreshCw",
+    "FiMultiply": "FiX", "FiDivide": "FiSlash", "FiMinus": "FiMinus",
+    "FiAdd": "FiPlus", "FiSubtract": "FiMinus",
+    "FiCalculator": "FiHash", "FiDelete": "FiTrash2",
+    "FiClose": "FiX", "FiCancel": "FiX",
+    "FiDots": "FiMoreHorizontal", "FiEllipsis": "FiMoreHorizontal",
+    "FaOval": "FaCircle", "FaCross": "FaTimes", "FaXMark": "FaTimes",
+    "FaGamepad2": "FaGamepad", "FaBoard": "FaTh",
+    "HiOval": "HiOutlineCircle", "HiXMark": "HiX",
+}
+
+BANNED_PACKAGES = (
+    "react-leaflet", "leaflet", "react-router-dom", "react-router",
+    "axios", "lodash", "lodash-es", "chart.js", "react-chartjs-2",
+    "d3", "d3-scale", "d3-shape", "three", "@react-three/fiber",
+    "@react-three/drei", "@mui/material", "@mui/icons-material",
+    "@chakra-ui/react", "@chakra-ui/icons", "react-query",
+    "@tanstack/react-query", "zustand", "jotai", "recoil",
+    "styled-components", "@emotion/react", "@emotion/styled",
+    "classnames", "clsx", "react-spring", "@react-spring/web",
+    "react-use", "react-helmet", "react-helmet-async", "react-hot-toast",
+    "sonner", "react-toastify", "react-dnd", "react-beautiful-dnd",
+    "react-virtualized", "react-window", "react-table",
+    "@tanstack/react-table", "react-hook-form", "formik", "yup",
+    "date-fns", "dayjs", "moment", "uuid", "nanoid", "numeral",
+    "accounting",
+)
+
+VOID_TAGS = {
+    "area", "base", "br", "col", "embed", "hr", "img", "input",
+    "link", "meta", "param", "source", "track", "wbr",
+}
+
+
+def _close_void_tags(text: str) -> str:
+    """Self-close HTML void tags without being confused by JSX braces."""
+    result, index, size = [], 0, len(text)
+    while index < size:
+        if text[index] != "<" or index + 1 >= size or not text[index + 1].isalpha():
+            result.append(text[index])
+            index += 1
+            continue
+        match = re.match(r"<([a-zA-Z0-9]+)\b", text[index:])
+        if not match or match.group(1).lower() not in VOID_TAGS:
+            result.append(text[index])
+            index += 1
+            continue
+        start = index
+        index += len(match.group(0))
+        quote, braces = None, 0
+        while index < size:
+            char = text[index]
+            if quote:
+                if char == quote:
+                    quote = None
+            elif char in "\"'":
+                quote = char
+            elif char == "{":
+                braces += 1
+            elif char == "}":
+                braces = max(0, braces - 1)
+            elif char == ">" and not braces:
+                suffix = " /" if text[index - 1] != "/" else ""
+                result.extend((text[start:index], suffix, ">"))
+                index += 1
+                break
+            index += 1
+        else:
+            result.append(text[start:])
+        continue
+    return "".join(result)
+
+
+def _remove_duplicate_component(code: str, name: str) -> str:
+    """Remove an arrow declaration when a function with the same name exists."""
+    pattern = re.compile(
+        rf"\bconst\s+{re.escape(name)}\s*=\s*"
+        rf"(?:\([^)]*\)|)\s*=>\s*",
+        re.DOTALL,
+    )
+    match = pattern.search(code)
+    if not match:
+        return code
+    start, position = match.start(), match.end()
+    if position >= len(code) or code[position] not in "{(":
+        return code
+    opening = code[position]
+    closing = "}" if opening == "{" else ")"
+    depth = 1
+    position += 1
+    while position < len(code) and depth:
+        depth += (code[position] == opening) - (code[position] == closing)
+        position += 1
+    while position < len(code) and code[position] in ";\n\r ":
+        position += 1
+    return code[:start] + code[position:]
+
+
+def _safe_return(name: str) -> str:
+    """A non-recursive render body used when a component calls itself."""
+    return textwrap.dedent(f"""\
+        return (
+          <section id="{name.lower()}" className="py-20 px-6 text-center">
+            <h2 className="text-4xl font-bold text-white mb-4">{name}</h2>
+            <p className="text-gray-400">Content loading...</p>
+          </section>
+        )
+        """).strip()
+
+
+def _hoist_expressions(code: str, pattern, group: int, prefix: str,
+                       jsx_attribute: bool = False):
+    """Move matched expressions before the first return and expose what moved."""
+    lines = code.splitlines(keepends=True)
+    import_count = sum(1 for line in lines if re.match(r"^import\s", line.strip()))
+    imports = "".join(lines[:import_count])
+    body = "".join(lines[import_count:])
+    extracted = []
+
+    def replace(match):
+        expression = match.group(group).strip()
+        name = f"_{prefix}{len(extracted)}"
+        extracted.append((name, expression))
+        if jsx_attribute:
+            return f"{match.group(1)}{name}{match.group(3)}"
+        return name
+
+    changed = pattern.sub(replace, body)
+    if not extracted:
+        return code, []
+    declarations = "\n".join(
+        f"  const {name} = {expression};" for name, expression in extracted
+    )
+    injection = f"\n{declarations}\n"
+    changed, count = re.subn(
+        r"(\n(\s*)return\s*[\(\n])",
+        lambda match: injection + match.group(1),
+        changed,
+        count=1,
+    )
+    if not count:
+        return code, []
+    return imports + changed, [expression for _, expression in extracted]
+
+
 class BuilderSanitizeMixin:
     def _quick_check(self, code: str, component_name: str) -> str:
         """Lightweight sanity check after extraction. Returns reason if bad, '' if OK."""
@@ -30,22 +195,12 @@ class BuilderSanitizeMixin:
                 prefix = re.match(r'^([A-Z][a-z]+)', icon)
                 pkg = "fi"
                 if prefix:
-                    p = prefix.group(1)
-                    pkg = {
-                        "Fa": "fa",   "Fa6": "fa6",
-                        "Hi": "hi",   "Hi2": "hi2",
-                        "Md": "md",   "Io": "io",   "Io5": "io5",
-                        "Bs": "bs",   "Ri": "ri",    "Si": "si",
-                        "Ti": "ti",   "Ai": "ai",    "Bi": "bi",
-                        "Ci": "ci",   "Di": "di",    "Fc": "fc",
-                        "Gi": "gi",   "Go": "go",    "Gr": "gr",
-                        "Im": "im",   "Lu": "lu",    "Pi": "pi",
-                        "Rx": "rx",   "Sl": "sl",    "Tb": "tb",
-                        "Tfi": "tfi", "Vsc": "vsc",  "Wi": "wi",
-                        "Cg": "cg",   "Fi": "fi",    "Fl": "fa",
-                    }.get(p, "fi")
+                    pkg = ICON_FAMILIES.get(prefix.group(1), "fi")
                 groups.setdefault(pkg, []).append(icon)
-            lines = [f"import {{ {', '.join(v)} }} from 'react-icons/{k}'" for k, v in groups.items()]
+            lines = [
+                f"import {{ {', '.join(icons)} }} from 'react-icons/{family}'"
+                for family, icons in groups.items()
+            ]
             return "\n".join(lines)
 
         new_code, n = re.subn(
@@ -57,24 +212,7 @@ class BuilderSanitizeMixin:
             code = new_code
             changes.append(f"fixed {n} react-icons/all import(s)")
 
-        _ICON_REPLACE = {
-            "FiOval": "FiCircle", "FiO": "FiCircle", "FiRing": "FiCircle",
-            "FiEllipse": "FiCircle", "FiDisc2": "FiDisc", "FiCircleFill": "FiCircle",
-            "FiCross": "FiX", "FiXMark": "FiX", "FiTimes": "FiX",
-            "FiPlus2": "FiPlus", "FiStar2": "FiStar", "FiHome2": "FiHome",
-            "FiMenu2": "FiMenu", "FiArrow": "FiArrowRight", "FiButton": "FiSquare",
-            "FiCode2": "FiCode", "FiPhone2": "FiPhone", "FiMail2": "FiMail",
-            "FiGamepad": "FiGrid", "FiBoard": "FiGrid", "FiGrid2": "FiGrid",
-            "FiRefresh": "FiRefreshCw", "FiReset": "FiRefreshCw",
-            "FiMultiply": "FiX", "FiDivide": "FiSlash", "FiMinus": "FiMinus",
-            "FiAdd": "FiPlus", "FiSubtract": "FiMinus", "FiCalculator": "FiHash",
-            "FiDelete": "FiTrash2", "FiClose": "FiX", "FiCancel": "FiX",
-            "FiDots": "FiMoreHorizontal", "FiEllipsis": "FiMoreHorizontal",
-            "FaOval": "FaCircle", "FaCross": "FaTimes", "FaXMark": "FaTimes",
-            "FaGamepad2": "FaGamepad", "FaBoard": "FaTh",
-            "HiOval": "HiOutlineCircle", "HiXMark": "HiX",
-        }
-        for bad_icon, good_icon in _ICON_REPLACE.items():
+        for bad_icon, good_icon in ICON_REPLACEMENTS.items():
             if bad_icon in code:
                 new_code, n = re.subn(rf'\b{bad_icon}\b', good_icon, code)
                 if n > 0:
@@ -87,7 +225,7 @@ class BuilderSanitizeMixin:
         )
         if console_err_match:
             bad_name = console_err_match.group(1)
-            if bad_name not in _ICON_REPLACE:
+            if bad_name not in ICON_REPLACEMENTS:
 
                 code = re.sub(rf"\b{re.escape(bad_name)}\s*,?\s*", "", code)
                 code = re.sub(r",\s*}", " }", code)
@@ -95,34 +233,7 @@ class BuilderSanitizeMixin:
 
             code = re.sub(r"//\s*CONSOLE_ERROR:[^\n]*\n", "", code)
 
-        _BANNED_PACKAGES = [
-            "react-leaflet", "leaflet",
-            "react-router-dom", "react-router",
-            "axios", "lodash", "lodash-es",
-            "chart.js", "react-chartjs-2",
-            "d3", "d3-scale", "d3-shape",
-            "three", "@react-three/fiber", "@react-three/drei",
-            "@mui/material", "@mui/icons-material",
-            "@chakra-ui/react", "@chakra-ui/icons",
-            "react-query", "@tanstack/react-query",
-            "zustand", "jotai", "recoil",
-            "styled-components", "@emotion/react", "@emotion/styled",
-            "classnames", "clsx",
-            "react-spring", "@react-spring/web",
-            "react-use",
-            "react-helmet", "react-helmet-async",
-            "react-hot-toast", "sonner",
-            "react-toastify",
-            "react-dnd", "react-beautiful-dnd",
-            "react-virtualized", "react-window",
-            "react-table", "@tanstack/react-table",
-            "react-hook-form", "formik", "yup",
-            "date-fns", "dayjs", "moment",
-            "uuid", "nanoid",
-            "numeral", "accounting",
-        ]
-        for pkg in _BANNED_PACKAGES:
-
+        for pkg in BANNED_PACKAGES:
             pkg_pattern = re.compile(
                 rf"^import\b[^\n]*from\s+['\"]" + re.escape(pkg) + r"['\"][^\n]*\n?",
                 re.MULTILINE
@@ -190,39 +301,7 @@ class BuilderSanitizeMixin:
                 code = code.replace(old, new, 1)
                 changes.append("added AnimatePresence to framer-motion import")
 
-        def _close_void(txt):
-            vtags = {"br","hr","img","input","meta","link","area","base","col","embed","param","source","track","wbr"}
-            res, i, n = [], 0, len(txt)
-            while i < n:
-                if txt[i] == '<' and i + 1 < n and txt[i+1].isalpha():
-                    m = re.match(r'<([a-zA-Z0-9]+)\b', txt[i:])
-                    if m and m.group(1).lower() in vtags:
-                        start = i
-                        i += len(m.group(0))
-                        q, braces = None, 0
-                        while i < n:
-                            c = txt[i]
-                            if q:
-                                if c == q: q = None
-                            else:
-                                if c in '"\'': q = c
-                                elif c == '{': braces += 1
-                                elif c == '}': braces = max(0, braces - 1)
-                                elif c == '>' and braces == 0:
-                                    if txt[i-1] != '/': res.append(txt[start:i] + " /")
-                                    else: res.append(txt[start:i])
-                                    res.append('>')
-                                    i += 1
-                                    break
-                            i += 1
-                        else:
-                            res.append(txt[start:])
-                        continue
-                res.append(txt[i])
-                i += 1
-            return "".join(res)
-
-        code = _close_void(code)
+        code = _close_void_tags(code)
 
         code = re.sub(
             r'onClick="(window\.[^"]+)"',
@@ -236,36 +315,7 @@ class BuilderSanitizeMixin:
         has_const = bool(re.search(rf'\bconst\s+{re.escape(component_name)}\s*=', code))
         has_func  = bool(re.search(rf'\bfunction\s+{re.escape(component_name)}\s*\(', code))
         if has_const and has_func:
-
-            def remove_const_block(src):
-                pat = re.compile(
-                    rf'\bconst\s+{re.escape(component_name)}\s*=\s*'
-                    rf'(?:\([^)]*\)|)\s*=>\s*',
-                    re.DOTALL
-                )
-                m = pat.search(src)
-                if not m:
-                    return src
-                start = m.start()
-                pos = m.end()
-
-                if pos < len(src) and src[pos] == '{':
-                    depth, delim = 1, ('{', '}')
-                elif pos < len(src) and src[pos] == '(':
-                    depth, delim = 1, ('(', ')')
-                else:
-                    return src
-                pos += 1
-                while pos < len(src) and depth > 0:
-                    if src[pos] == delim[0]: depth += 1
-                    elif src[pos] == delim[1]: depth -= 1
-                    pos += 1
-
-                while pos < len(src) and src[pos] in ';\n\r ':
-                    pos += 1
-                return src[:start] + src[pos:]
-
-            new_code = remove_const_block(code)
+            new_code = _remove_duplicate_component(code, component_name)
             if new_code != code:
                 code = new_code
                 changes.append(f"removed duplicate const {component_name} declaration")
@@ -275,55 +325,23 @@ class BuilderSanitizeMixin:
             r'(/(?=[^/\n]*[\\^\[\].*+?$|{}])(?:[^/<\\\n]|\\.)+/[gimsuy]*)',
             re.MULTILINE
         )
-        _re_lines = code.splitlines(keepends=True)
-        _re_imp_end = sum(1 for l in _re_lines if re.match(r"^import\s", l.strip()))
-        _re_imp_block = "".join(_re_lines[:_re_imp_end])
-        _re_rest = "".join(_re_lines[_re_imp_end:])
-
-        if _JS_REGEX.search(_re_rest):
-            _re_extracted = []
-            def _hoist_re(m):
-                regex_str = m.group(1)
-                _name = f"_re{len(_re_extracted)}"
-                _re_extracted.append(f"  const {_name} = {regex_str};")
-                return _name
-            new_re_rest = _JS_REGEX.sub(_hoist_re, _re_rest)
-            if _re_extracted:
-                inject = "\n" + "\n".join(_re_extracted) + "\n"
-                new_re_rest = re.sub(
-                    r'(\n(\s*)return\s*[\(\n])',
-                    lambda m, _inj=inject: _inj + m.group(1),
-                    new_re_rest, count=1
-                )
-                code = _re_imp_block + new_re_rest
-                changes.append(f"hoisted {len(_re_extracted)} regex(es) before return")
+        code, regexes = _hoist_expressions(code, _JS_REGEX, 1, "re")
+        if regexes:
+            changes.append(f"hoisted {len(regexes)} regex(es) before return")
 
         _DIV_ATTR = re.compile(
             r'(=\{)\s*(\d[\d.]*\s*/\s*\d[\d.]*|\w+\s*/\s*\d[\d.]*)\s*(\})'
         )
-        _div_extracted = []
-        _div_changes = []
-        def _hoist_div(m):
-            full_expr = m.group(2).strip()
-            _name = f"_dv{len(_div_extracted)}"
-            _div_extracted.append(f"  const {_name} = {full_expr};")
-            _div_changes.append(f"{full_expr} → {_name}")
-            return f"{m.group(1)}{_name}{m.group(3)}"
-
-        _dv_lines = code.splitlines(keepends=True)
-        _dv_imp_end = sum(1 for l in _dv_lines if re.match(r"^import\s", l.strip()))
-        _dv_imp_block = "".join(_dv_lines[:_dv_imp_end])
-        _dv_rest = "".join(_dv_lines[_dv_imp_end:])
-        new_dv_rest = _DIV_ATTR.sub(_hoist_div, _dv_rest)
-        if _div_extracted:
-            inject2 = "\n" + "\n".join(_div_extracted) + "\n"
-            new_dv_rest = re.sub(
-                r'(\n(\s*)return\s*[\(\n])',
-                lambda m, _inj=inject2: _inj + m.group(1),
-                new_dv_rest, count=1
-            )
-            code = _dv_imp_block + new_dv_rest
-            changes.append(f"hoisted {len(_div_extracted)} JSX division(s): {', '.join(_div_changes[:3])}")
+        code, divisions = _hoist_expressions(
+            code,
+            _DIV_ATTR,
+            2,
+            "dv",
+            jsx_attribute=True,
+        )
+        if divisions:
+            summary = ", ".join(divisions[:3])
+            changes.append(f"hoisted {len(divisions)} JSX division(s): {summary}")
 
         if re.search(rf'\bexport default function\s+{re.escape(component_name)}\b', code):
             selfref = re.search(
@@ -331,8 +349,7 @@ class BuilderSanitizeMixin:
                 code
             )
             if selfref:
-                safe = f'return (<section id="{component_name.lower()}" className="py-20 px-6 text-center"><h2 className="text-4xl font-bold text-white mb-4">{component_name}</h2><p className="text-gray-400">Content loading...</p></section>)'
-                code = code.replace(selfref.group(0), safe)
+                code = code.replace(selfref.group(0), _safe_return(component_name))
                 changes.append(f"fixed self-referential render in {component_name}")
 
         if changes:
