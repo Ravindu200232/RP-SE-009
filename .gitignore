@@ -1,0 +1,58 @@
+# Python caches and local virtual environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+
+# Node / Next.js generated files
+node_modules/
+.next/
+out/
+
+# Root packaging outputs only. Keep agents/build/ tracked: it is source code.
+/build/
+/dist/
+/dist-backend/
+/release/
+*.dmg
+*.blockmap
+*.app
+*.asar
+
+# Runtime-generated applications and local tool caches
+/production-ready/
+/vendor/node/
+/vendor/ms-playwright/
+/.agentforge/
+
+# Logs and transient reports
+/logs/
+/tmp/
+*.log
+
+# Local archives / backups
+*.rar
+/backups/
+
+# Editor, agent and OS-local state
+.claude/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local test scratch that is not part of the shipped application
+/tests/
+test_*.py
+# ...but the repository's own suite under /test/ ships with the app.
+# Without this the rule above silently swallows every new test file.
+!/test/**/test_*.py
+/locode.iconset/
