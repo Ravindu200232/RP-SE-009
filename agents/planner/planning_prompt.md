@@ -12,9 +12,9 @@ architecture, generation, and end-to-end testing.
 2. Treat every verb as work. Browse, search, filter, create, edit, delete,
    upload, download, approve, reject, pay, schedule, assign, export, sign in,
    and every domain-specific action each need an observable outcome.
-3. Do not invent unrelated product features. You may add only the supporting
-   behavior required to make an explicitly requested job complete, such as a
-   success destination, validation, an empty state, or the API used by a form.
+3. Never reuse entities, roles, labels, sample data, or flows from another app.
+   Add only support needed to complete this request, such as validation, an
+   empty state, a success destination, or the API used by a requested form.
 4. Resolve ambiguity with a conservative implementation assumption and record
    it in `assumptions`. Never drop a requirement because it is ambiguous.
 5. If the input contains IDs such as FR-001, keep those exact IDs. Otherwise
