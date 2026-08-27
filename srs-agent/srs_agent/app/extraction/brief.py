@@ -20,10 +20,23 @@ def build_brief(raw_idea: str, sources: list[dict[str, Any]]) -> str:
         parts.append(f"USER IDEA:\n{idea}")
     for src in sources:
         text = _clean(src.get("text", ""))
-        if not text:
+        meta = src.get("meta") or {}
+        purpose = _clean(str(meta.get("purpose") or ""))
+        url = str(meta.get("url") or "").strip()
+        if not text and not purpose and not url:
             continue
         mode = src.get("mode", "source").upper()
         fname = src.get("filename") or ""
         header = f"{mode} SOURCE" + (f" ({fname})" if fname else "")
-        parts.append(f"{header}:\n{text}")
+        lines = [f"{header}:"]
+        # What it is for comes before what it looks like.
+        if purpose:
+            lines.append(f"The person says this is for: {purpose}")
+        if url:
+            lines.append(f"It is already in the project and served at `{url}` — "
+                         f"use that exact path, do not invent another and do "
+                         f"not ask for it to be generated.")
+        if text:
+            lines.append(text)
+        parts.append("\n".join(lines))
     return "\n\n---\n\n".join(parts).strip()

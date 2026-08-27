@@ -3,6 +3,8 @@
 import { Empty, Panel } from '../ui'
 import { Stat } from './TestingResult'
 import { cn } from '@/lib/utils'
+import { e2eStageSummary } from '@/lib/e2e-rate'
+import { unitTestStatus } from '@/lib/test-counts'
 
 export default function Overview({ qa, live }) {
   const last = (qa?.history || []).slice(-1)[0]
@@ -15,6 +17,13 @@ export default function Overview({ qa, live }) {
   const perf = qa?.performance?.scores || {}
   const sec = r?.security?.findings || []
   const unresolved = r?.suite?.unresolved || []
+  const e2e = e2eStageSummary(r?.e2e)
+  const unit = unitTestStatus(v)
+  const unitTotal = Number(unit?.total || 0)
+  const unitPassed = Number(unit?.passed || 0)
+  const unitRate = unitTotal ? Math.round(unitPassed * 100 / unitTotal) : 0
+  const history = (qa?.history || []).filter(x => Number.isFinite(Number(x?.rate)))
+  const roundAverage = history.length ? Math.round(history.reduce((sum, x) => sum + Number(x.rate || 0), 0) / history.length) : null
 
   return (
     <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(290px,1fr))]">
@@ -42,13 +51,27 @@ export default function Overview({ qa, live }) {
         ) : <Empty>No round-one record.</Empty>}
       </Card>
 
-      <Card title="The suite now" hint="the last full run">
+      {/* "as it stands", not "the last full run": a feature's stage only runs
+          the tests for what it changed, and those results are merged into this
+          report rather than replacing it — so this is the whole suite, with
+          the files that were just re-run showing their new result. */}
+      <Card title="The suite now" hint="every test file, at its latest result">
         {v ? (
           <div className="flex flex-col gap-1.5">
-            <Stat n={v.numPassedTests} label="passing" tone="text-ok" />
-            <Stat n={v.numFailedTests} label="failing"
-                  tone={v.numFailedTests ? 'text-bad' : undefined} />
-            <Stat n={(v.testResults || []).length} label="files" />
+            <div className="mb-2 flex items-center gap-3">
+              <div className="grid size-16 place-items-center rounded-full p-[6px] shadow-[0_8px_20px_rgba(15,23,42,.12)]"
+                   style={{ background: `conic-gradient(var(--ok) 0deg ${unitRate * 3.6}deg, var(--line) ${unitRate * 3.6}deg 360deg)` }}>
+                <div className="grid size-full place-items-center rounded-full bg-panel"><b className={cn('font-display text-[17px]', unitRate === 100 ? 'text-ok' : unitRate >= 80 ? 'text-warn' : 'text-bad')}>{unitRate}%</b></div>
+              </div>
+              <div className="text-[10.5px] leading-relaxed text-muted">
+                <b className="text-ink">Current whole-suite rate</b>
+                {roundAverage != null && <><br />Round-one average: <b className="text-ink">{roundAverage}%</b> across {history.length} run{history.length === 1 ? '' : 's'}</>}
+              </div>
+            </div>
+            <Stat n={unit.passed} label="passing" tone="text-ok" />
+            <Stat n={unit.failed} label="failing"
+                  tone={unit.failed ? 'text-bad' : undefined} />
+            <Stat n={unit.files} label="files" />
             {r?.unit?.deleted ? (
               <p className="mt-1 text-[11px] text-bad">
                 <b>{r.unit.deleted}</b> case(s) that existed when the stage
@@ -63,6 +86,24 @@ export default function Overview({ qa, live }) {
             ) : null}
           </div>
         ) : <Empty>The suite has not run.</Empty>}
+      </Card>
+
+
+      <Card title="End-to-end proof" hint="all final browser journey stages, not repair retries">
+        {e2e.total ? (
+          <div className="flex items-center gap-4">
+            <div className="relative grid size-20 place-items-center rounded-full p-2 shadow-[0_9px_20px_rgba(15,23,42,.14)]"
+                 style={{ background: `conic-gradient(var(--ok) 0deg ${e2e.rate * 3.6}deg, var(--line) ${e2e.rate * 3.6}deg 360deg)` }}>
+              <div className="grid size-full place-items-center rounded-full bg-panel">
+                <b className={cn('font-display text-[21px]', e2e.rate === 100 ? 'text-ok' : e2e.rate >= 80 ? 'text-warn' : 'text-bad')}>{e2e.rate}%</b>
+              </div>
+            </div>
+            <div>
+              <Stat n={`${e2e.passed}/${e2e.total}`} label="stages passed" tone={e2e.passed === e2e.total ? 'text-ok' : 'text-warn'} />
+              <p className="mt-1 text-[10.5px] text-muted">{e2e.failed} failed · {e2e.notReached} not reached</p>
+            </div>
+          </div>
+        ) : <Empty>End-to-end stages have not run.</Empty>}
       </Card>
 
       <Card title="Left unresolved" hint="cases repair could not make pass">

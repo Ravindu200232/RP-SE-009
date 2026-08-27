@@ -1,24 +1,4 @@
-"""Reading an image with the model, with OCR alongside it.
-
-Tesseract and a vision model are good at different things, and neither
-replaces the other. OCR is exact, instant and free, and it is the right tool
-for the thing customers most often send: a typed price list, an invoice, a
-printed form. A vision model is the right tool for everything OCR cannot do —
-a photo of a shelf, a handwritten note, a screenshot whose *layout* carries
-the meaning — because it describes what the picture shows rather than which
-glyphs are in it.
-
-The picture goes to the model. That is the whole point of letting somebody
-attach one: OCR returns the glyphs on a photo of a shelf and understands
-nothing about it, and a customer who photographs their shelf is telling us
-what they sell. So both readers run, concurrently, and the model's reading
-leads — with OCR appended, because it is the exact one for a price or a code
-that a model may paraphrase.
-
-OCR is still the fallback that matters: it needs no model and no network, so
-an intake with Ollama stopped keeps working on typed documents instead of
-rejecting them.
-"""
+"""Reading an image with the model, with OCR alongside it."""
 from __future__ import annotations
 
 import asyncio
@@ -51,7 +31,7 @@ def ocr_is_usable(text: str) -> bool:
 
 
 async def describe_image(data: bytes, filename: str = "image.png") -> dict[str, Any]:
-    """Ask the model to read the image. Never raises."""
+    """Ask the model to read the image."""
     try:
         text = await get_llm().complete_text(
             system=_SYS,

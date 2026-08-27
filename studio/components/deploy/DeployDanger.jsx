@@ -39,13 +39,13 @@ export function DeployDanger({ runId, state, running, onDone }) {
     <>
       {running && (
         <Button size="sm" variant="ghost" onClick={() => setAsk('cancel')}
-                className="text-muted hover:text-bad"
+                className="text-muted hover:bg-tint hover:text-deep"
                 title="Stop this deployment. Cloud resources are not deleted.">
           <Square className="size-3" /> Cancel
         </Button>
       )}
       <Button size="sm" variant="ghost" onClick={() => setAsk('teardown')}
-              className="text-muted hover:text-bad"
+              className="text-muted hover:bg-tint hover:text-deep"
               title={active
                 ? 'Stop this deployment and delete every cloud resource it created.'
                 : 'Delete every cloud resource this deployment created.'}>
@@ -54,9 +54,10 @@ export function DeployDanger({ runId, state, running, onDone }) {
 
       {ask && (
         <Modal onClose={() => { if (!busy) { setAsk(''); setError('') } }}>
-          <h2 className="flex items-center gap-2 text-[15px] font-semibold text-ink">
-            <AlertTriangle className={ask === 'teardown' ? 'size-4 text-bad'
-                                                         : 'size-4 text-warn'} />
+          <h2 className="flex items-center gap-2.5 border-b-2 border-line2 pb-3
+                         font-display text-[16px] font-extrabold uppercase
+                         tracking-[-.01em] text-ink">
+            <AlertTriangle className="size-4 shrink-0 text-accent" />
             {ask === 'cancel' ? 'Cancel this deployment?'
                               : 'Delete this deployment’s cloud resources?'}
           </h2>
@@ -83,7 +84,7 @@ export function DeployDanger({ runId, state, running, onDone }) {
               <p>This deletes every cloud resource the deployment created — the
                  CloudFormation stack, the instance and its Elastic IP, the
                  artifact bucket and the runtime secret.</p>
-              <p className="text-bad">
+              <p className="border-l-[3px] border-accent bg-tint px-2.5 py-1.5 text-deep">
                 It cannot be undone, and the site stops answering immediately.
               </p>
               <p>The repository, the generated files and this run’s record all
@@ -92,19 +93,21 @@ export function DeployDanger({ runId, state, running, onDone }) {
           )}
 
           {error && (
-            <p className="mt-3 flex items-start gap-2 rounded-ctl border border-bad/40
-                          bg-bad/10 px-2.5 py-2 text-[11.5px] text-bad">
-              <AlertTriangle className="mt-px size-3.5 shrink-0" /> {error}
+            <p className="mt-3 flex items-start gap-2.5 border border-line2
+                          border-l-[3px] border-l-accent bg-tint px-3 py-2.5
+                          text-[11.5px] text-deep">
+              <AlertTriangle className="mt-px size-3.5 shrink-0 text-accent" /> {error}
             </p>
           )}
 
-          <footer className="mt-4 flex items-center justify-end gap-2">
-            <Button variant="outline" onClick={() => { setAsk(''); setError('') }}
-                    disabled={busy}>
+          <footer className="mt-5 flex items-center justify-end gap-2
+                             border-t-2 border-line2 pt-4">
+            <Button variant="outline" size="lg"
+                    onClick={() => { setAsk(''); setError('') }} disabled={busy}>
               Keep it
             </Button>
             <Button variant="solid" onClick={act} disabled={busy}
-                    className={ask === 'teardown' ? 'bg-bad hover:brightness-110' : ''}>
+                    size="lg">
               {busy ? <Loader2 className="size-3.5 animate-spin" />
                     : ask === 'cancel' ? <Square className="size-3.5" />
                                        : <Trash2 className="size-3.5" />}

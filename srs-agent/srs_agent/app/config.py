@@ -1,10 +1,4 @@
-"""Application settings.
-
-This is the ONE file in `app/` that differs from the standalone srs-generator.
-Everything else under this directory is a verbatim copy, so a future re-sync is
-a directory copy plus this file. All the AgentForge-specific values come from
-`..bridge`; see the note there about why this is an import and not an env var.
-"""
+"""Application settings."""
 from __future__ import annotations
 
 from functools import lru_cache
@@ -45,8 +39,6 @@ class Settings(BaseSettings):
     mongodb_allow_memory_fallback: bool = True
 
     storage_dir: str = str(SRS_STAGING)
-    samples_dir: str = "./samples"
-
     api_host: str = "127.0.0.1"
     api_port: int = 7826
     cors_origins: str = "http://localhost:3000"
@@ -68,13 +60,6 @@ class Settings(BaseSettings):
         if not p.is_absolute():
             p = REPO_ROOT / self.storage_dir
         p.mkdir(parents=True, exist_ok=True)
-        return p
-
-    @property
-    def samples_path(self) -> Path:
-        p = Path(self.samples_dir)
-        if not p.is_absolute():
-            p = REPO_ROOT / self.samples_dir
         return p
 
     @property

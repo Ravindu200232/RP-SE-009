@@ -1,15 +1,7 @@
-"""Ollama LLM adapter with primary→fallback models and a JSON repair loop.
-
-Design goals:
-* Talk to a local Ollama server via ``/api/chat`` (JSON mode).
-* Try the primary model first, then the fallback model.
-* Validate structured output against a caller-supplied validator and, on
-  failure, feed the validation errors back to the model and retry (≤3x).
-* Raise :class:`LLMUnavailable` when the server cannot be reached at all so
-  agents can degrade to the deterministic offline generator.
-"""
+"""Ollama LLM adapter with primary→fallback models and a JSON repair loop."""
 from __future__ import annotations
 
+import asyncio
 import json
 import time
 from typing import Any, Awaitable, Callable, Optional
@@ -22,6 +14,9 @@ from .json_utils import extract_json, format_validation_errors
 
 TraceSink = Callable[[dict[str, Any]], Awaitable[None]]
 Validator = Callable[[dict], Any]
+
+_TRANSIENT_HTTP_STATUSES = {429, 500, 502, 503, 504, 529}
+_TRANSPORT_ATTEMPTS = 3
 
 REPAIR_PROMPT = (
     "The JSON you returned failed schema validation with these errors:\n"
@@ -68,6 +63,8 @@ class LLMClient:
             "model": model,
             "messages": messages,
             "stream": False,
+            # SRS never inherits the Studio Builder thinking switch.
+            "think": False,
             "options": {
 
                 "num_ctx": bridge.num_ctx(model),
@@ -98,23 +95,28 @@ class LLMClient:
                 models.append(m)
         for model in models:
             t0 = time.time()
-            try:
-                content = await self._call_model(model, messages, json_mode)
-                if trace_sink:
-                    await trace_sink(
-                        {
-                            "label": label,
-                            "model": model,
-                            "ms": int((time.time() - t0) * 1000),
-                            "system": _first(messages, "system"),
-                            "user": _last(messages, "user"),
-                            "response": content[:6000],
-                        }
-                    )
-                return content
-            except Exception as exc:  # noqa: BLE001 - any failure tries fallback
-                errors.append(f"{model}: {exc!s}")
-                continue
+            for attempt in range(1, _TRANSPORT_ATTEMPTS + 1):
+                try:
+                    content = await self._call_model(model, messages, json_mode)
+                    if trace_sink:
+                        await trace_sink(
+                            {
+                                "label": label,
+                                "model": model,
+                                "ms": int((time.time() - t0) * 1000),
+                                "system": _first(messages, "system"),
+                                "user": _last(messages, "user"),
+                                "response": content[:6000],
+                            }
+                        )
+                    return content
+                except Exception as exc:  # noqa: BLE001 - fallback is intentional
+                    retry = _is_transient(exc) and attempt < _TRANSPORT_ATTEMPTS
+                    if retry:
+                        await asyncio.sleep(1.5 * attempt)
+                        continue
+                    errors.append(f"{model}: {exc!s}")
+                    break
         raise LLMUnavailable(
             f"Ollama unreachable for '{label}' at {self.base}: " + " | ".join(errors)
         )
@@ -210,17 +212,18 @@ class LLMClient:
 
 
 def _user_message(content: str, images: Optional[list[str]] = None) -> dict:
-    """A user turn, with base64 images attached the way /api/chat expects them.
-
-    Images ride on their own key rather than in `content`, which keeps the
-    trace sink — and the repair loop's echo of the conversation — free of
-    megabytes of base64 nobody can read.
-    """
+    """A user turn, with base64 images attached the way /api/chat expects them."""
     message: dict[str, Any] = {"role": "user", "content": content}
     usable = [i for i in (images or []) if i]
     if usable:
         message["images"] = usable
     return message
+
+
+def _is_transient(exc: Exception) -> bool:
+    if isinstance(exc, httpx.HTTPStatusError):
+        return exc.response.status_code in _TRANSIENT_HTTP_STATUSES
+    return isinstance(exc, (httpx.TimeoutException, httpx.TransportError))
 
 
 def _first(messages: list[dict], role: str) -> str:

@@ -89,8 +89,19 @@ def start_deployment(project: str, target: str, opts: dict) -> dict:
     if not mongo:
         raise ValueError("no production MongoDB URI — set one in Settings")
 
-    if target.startswith("aws_") and not str(settings.get("aws_profile", "")).strip():
-        raise ValueError("no AWS account connected — sign in from Settings")
+    if target.startswith("aws_"):
+        aws_profile = str(settings.get("aws_profile", "")).strip()
+        aws_region = str(settings.get("aws_region", "")).strip() or "ap-south-1"
+        if not aws_profile:
+            raise ValueError("no AWS account connected — sign in from Settings")
+        auth = _deploy_call("POST", "/api/aws/profile/status", {
+            "profile": aws_profile,
+            "region": aws_region,
+        }, timeout=(2, 30))
+        if not auth.get("authenticated"):
+            raise ValueError(
+                str(auth.get("error") or "AWS sign-in is missing or expired — sign in again from Settings")
+            )
 
     with DEPLOY_LOCK:
         current = DEPLOY_RUNS.get(project)

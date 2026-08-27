@@ -5,6 +5,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react'
 import { Badge, Empty } from '../ui'
 import { Summary, Stat } from './TestingResult'
 import { cn } from '@/lib/utils'
+import { unitTestStatus } from '@/lib/test-counts'
 
 
 export default function UnitTests({ qa }) {
@@ -26,17 +27,18 @@ export default function UnitTests({ qa }) {
 
   const skipped = suites.flatMap(s => s.cases)
     .filter(c => ['skipped', 'pending', 'todo'].includes(c.status))
+  const unit = unitTestStatus(v)
 
   return (
     <div>
       <Summary>
-        <Stat n={v.numPassedTests} label="passing" tone="text-ok" />
-        <Stat n={v.numFailedTests} label="failing"
-              tone={v.numFailedTests ? 'text-bad' : undefined} />
+        <Stat n={unit.passed} label="passing" tone="text-ok" />
+        <Stat n={unit.failed} label="failing"
+              tone={unit.failed ? 'text-bad' : undefined} />
         {skipped.length > 0 && (
           <Stat n={skipped.length} label="never ran" tone="text-warn" />
         )}
-        <Stat n={suites.length} label="files" />
+        <Stat n={unit.files} label="files" />
         <span className="ml-auto font-mono text-[10px] text-muted2">
           {v.startTime ? new Date(v.startTime).toLocaleString() : ''}
         </span>

@@ -13,6 +13,7 @@ const SSO_REGIONS = ['us-east-1', 'us-east-2', 'us-west-2', 'eu-west-1',
 const AWS_REGIONS = ['ap-south-1', 'us-east-1', 'us-east-2', 'us-west-2',
                      'eu-west-1', 'eu-west-2', 'eu-central-1',
                      'ap-southeast-1', 'ap-southeast-2', 'ap-northeast-1']
+const AWS_CONSOLE_PROFILE = 'agentforge-console'
 
 export default function DeployAccounts({ deploy, onSaved }) {
   const [open, setOpen] = useState(false)
@@ -32,9 +33,9 @@ export default function DeployAccounts({ deploy, onSaved }) {
   }
 
   return (
-    <section className="mt-4 border-t border-line pt-3">
+    <section className="mt-5 border-t-2 border-line2 pt-3">
       <button onClick={() => setOpen(o => !o)} className="w-full text-left">
-        <SectionLabel right={<span className="text-[10px] text-muted2">
+        <SectionLabel className="border-b-2 border-line2 pb-1.5" right={<span className="text-[10px] text-muted2">
                                {open ? 'hide' : 'show'}
                              </span>}>
           Deployment accounts
@@ -48,9 +49,15 @@ export default function DeployAccounts({ deploy, onSaved }) {
 
       {open && (
         <div className="mt-3 space-y-4">
-          {note && <p className="text-[11px] text-bad">{note}</p>}
+          {note && (
+            <p className="border-l-[3px] border-accent bg-tint px-2.5 py-1.5
+                          text-[11px] text-deep">
+              {note}
+            </p>
+          )}
           <Github probe={probe} onRecheck={() => setProbe(null)} />
-          <Aws deploy={deploy} onSave={save} probe={probe} />
+          <Aws deploy={deploy} onSave={save} probe={probe}
+               onRecheck={() => setProbe(null)} />
           <Vercel deploy={deploy} onSave={save} />
           <Mongo deploy={deploy} onSave={save} />
         </div>
@@ -87,7 +94,7 @@ function Github({ probe, onRecheck }) {
   return (
     <Row title="GitHub" ok={ok} unknown={!probe}
          detail={ok ? `signed in as ${probe.github_account || 'your account'}`
-                    : 'the deployment creates a private repository and pushes '
+                    : 'the deployment creates a private repository and pushes'
                       + 'the workflows that build it'}
          actions={<>
            {!ok && (
@@ -101,7 +108,7 @@ function Github({ probe, onRecheck }) {
 }
 
 
-function Aws({ deploy, onSave, probe }) {
+function Aws({ deploy, onSave, probe, onRecheck }) {
   const [profile, setProfile] = useState(deploy?.aws_profile || '')
   const [startUrl, setStartUrl] = useState(deploy?.aws_start_url || '')
   const [ssoRegion, setSsoRegion] = useState(deploy?.aws_sso_region || 'us-east-1')
@@ -113,8 +120,10 @@ function Aws({ deploy, onSave, probe }) {
   const [role, setRole] = useState('')
   const [busy, setBusy] = useState('')
   const [err, setErr] = useState('')
+  const [notice, setNotice] = useState('')
 
-  const connected = Boolean(deploy?.aws_profile)
+  const identity = probe?.aws_identities?.[deploy?.aws_profile]
+  const connected = Boolean(identity)
 
   async function begin() {
     setErr('')
@@ -156,6 +165,26 @@ function Aws({ deploy, onSave, probe }) {
     setBusy('')
   }
 
+  async function waitForProfile(name) {
+    const deadline = Date.now() + 10 * 60 * 1000
+    while (Date.now() < deadline) {
+      const status = await api.deploy('/aws/profile/status', {
+        profile: name,
+        region,
+      }).catch(() => null)
+      if (status?.authenticated) {
+        await onSave({ aws_profile: name, aws_region: region })
+        setProfile(name)
+        setNotice(`AWS sign-in completed — profile ${name} is selected.`)
+        onRecheck?.()
+        return true
+      }
+      await new Promise(resolve => setTimeout(resolve, 3000))
+    }
+    setErr('AWS sign-in was not completed in time. Start it again.')
+    return false
+  }
+
   async function pickAccount(id) {
     setAccount(id)
     setRole('')
@@ -185,6 +214,7 @@ function Aws({ deploy, onSave, probe }) {
         aws_start_url: startUrl.trim(),
         aws_sso_region: ssoRegion,
       })
+      onRecheck?.()
       setFlow(null)
       setAccounts(null)
     } catch (e) {
@@ -194,28 +224,31 @@ function Aws({ deploy, onSave, probe }) {
   }
 
   return (
-    <Row title="AWS" ok={connected} unknown={false}
+    <Row title="AWS" ok={connected} unknown={!probe}
          detail={connected
-           ? `profile ${deploy.aws_profile} · ${deploy.aws_region || 'ap-south-1'}`
-           : 'sign in through IAM Identity Center — no access keys are stored'}>
+           ? `profile ${deploy.aws_profile} · ${identity.role_name || 'authenticated'} · ${deploy.aws_region || 'ap-south-1'}`
+           : deploy?.aws_profile
+             ? `profile ${deploy.aws_profile} needs sign-in or has expired`
+             : 'sign in through IAM Identity Center — no access keys are stored'}>
       <div className="mt-2 w-full space-y-2">
-        <div className="rounded-ctl border border-line bg-panel2 px-2.5 py-2">
+        <div className=" border border-line bg-panel2 px-2.5 py-2">
           <p className="text-[11px] text-muted">
-            Sign in through the browser. Nothing is typed here, and no access
-            key is stored — only a short-lived session.
+            Sign in with your AWS Console session. This uses a separate local
+            profile and never overwrites an IAM Identity Center profile.
           </p>
           <Button size="sm" variant="solid" className="mt-2"
                   disabled={Boolean(busy)}
                   onClick={async () => {
-                    setBusy('console'); setErr('')
+                    setBusy('console'); setErr(''); setNotice('')
                     try {
                       await api.deploy('/onboarding/login', {
                         tool: 'aws-console-login',
-                        profile: 'deployment-agent',
+                        profile: AWS_CONSOLE_PROFILE,
                         region,
                       })
-
-                      setProfile('deployment-agent')
+                      setProfile(AWS_CONSOLE_PROFILE)
+                      setNotice('Finish signing in in the browser. This page will select the profile automatically.')
+                      await waitForProfile(AWS_CONSOLE_PROFILE)
                     } catch (e) { setErr(e.message) }
                     setBusy('')
                   }}>
@@ -246,12 +279,12 @@ function Aws({ deploy, onSave, probe }) {
         )}
 
         {flow && !accounts && (
-          <div className="rounded-ctl border border-line bg-bg px-2.5 py-2">
+          <div className=" border border-line bg-bg px-2.5 py-2">
             <p className="text-[11px] text-muted">
               Approve this in the browser tab that opened, then come back.
             </p>
             <p className="mt-1 flex items-center gap-2">
-              <code className="rounded bg-panel2 px-1.5 py-0.5 font-mono
+              <code className=" bg-panel2 px-1.5 py-0.5 font-mono
                                text-[13px] tracking-[2px] text-ink">
                 {flow.user_code}
               </code>
@@ -298,10 +331,11 @@ function Aws({ deploy, onSave, probe }) {
             {(probe?.aws_profiles || []).length > 0 ? (
               <Select value={profile} onChange={setProfile}
                       placeholder="choose a profile"
-                      options={probe.aws_profiles.map(p => ({
-                        value: typeof p === 'string' ? p : p.name,
-                        label: typeof p === 'string' ? p : p.name,
-                      }))} />
+                      options={Array.from(new Set([
+                        ...probe.aws_profiles.map(p =>
+                          typeof p === 'string' ? p : p.name),
+                        profile,
+                      ].filter(Boolean))).map(name => ({ value: name, label: name }))} />
             ) : (
               <Input value={profile} onChange={e => setProfile(e.target.value)}
                      placeholder="deployment-agent" />
@@ -314,6 +348,7 @@ function Aws({ deploy, onSave, probe }) {
                     try {
                       await onSave({ aws_profile: profile.trim(),
                                      aws_region: region })
+                      onRecheck?.()
                     } catch (e) { setErr(e.message) }
                     setBusy('')
                   }}>
@@ -322,7 +357,14 @@ function Aws({ deploy, onSave, probe }) {
           </Button>
         </div>
 
-        {err && <p className="text-[10.5px] text-bad">{err}</p>}
+        {notice && <p className="text-[10.5px] text-muted">{notice}</p>}
+        {String(identity?.arn || '').endsWith(':root') && (
+          <p className="text-[10.5px] text-deep">
+            Root identity detected. Use an IAM Identity Center deployment role
+            for routine releases instead of the AWS account root user.
+          </p>
+        )}
+        {err && <p className="text-[10.5px] text-deep">{err}</p>}
       </div>
     </Row>
   )
@@ -409,7 +451,7 @@ function Vercel({ deploy, onSave }) {
             {status.message || 'not connected yet'}
           </p>
         )}
-        {err && <p className="text-[10.5px] text-bad">{err}</p>}
+        {err && <p className="text-[10.5px] text-deep">{err}</p>}
       </div>
     </Row>
   )
@@ -472,7 +514,7 @@ function Mongo({ deploy, onSave }) {
             {result.server_version ? ` · MongoDB ${result.server_version}` : ''}
           </p>
         )}
-        {err && <p className="text-[10.5px] text-bad">{err}</p>}
+        {err && <p className="text-[10.5px] text-deep">{err}</p>}
       </div>
     </Row>
   )
@@ -481,14 +523,15 @@ function Mongo({ deploy, onSave }) {
 
 function Row({ title, ok, unknown, detail, actions, children }) {
   return (
-    <div className="rounded-ctl border border-line bg-bg p-2.5">
+    <div className={cn('border border-line2 border-l-[3px] bg-panel2 p-2.5',
+      unknown ? 'border-l-transparent' : ok ? 'border-l-ok' : 'border-l-bad')}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="grid size-3.5 shrink-0 place-items-center">
           {unknown ? <Loader2 className="size-3 animate-spin text-muted2" />
                    : ok ? <Check className="size-3.5 text-ok" />
                         : <X className="size-3.5 text-bad" />}
         </span>
-        <span className="text-[12px] font-medium text-ink">{title}</span>
+        <span className="text-[12px] font-extrabold text-ink">{title}</span>
         <span className="min-w-0 flex-1 truncate text-[10.5px] text-muted">{detail}</span>
         {actions}
       </div>
@@ -499,8 +542,7 @@ function Row({ title, ok, unknown, detail, actions, children }) {
 
 const Field = ({ label, hint, children }) => (
   <label className="block">
-    <span className="mb-1 block text-[9.5px] font-semibold uppercase
-                     tracking-[1.2px] text-muted2">{label}</span>
+    <span className="label-2xs mb-1 block text-label">{label}</span>
     {children}
     {hint && <span className="mt-1 block text-[9.5px] leading-snug text-muted2">
                {hint}
@@ -510,8 +552,8 @@ const Field = ({ label, hint, children }) => (
 
 const Select = ({ value, onChange, options, placeholder }) => (
   <select value={value} onChange={e => onChange(e.target.value)}
-          className="h-7 w-full rounded-ctl border border-line bg-bg px-2
-                     text-[11.5px] text-ink outline-none focus:border-accent/60">
+          className="h-[30px] w-full border border-line2 bg-panel2 px-2
+                     text-[12px] text-ink outline-none focus:border-accent">
     {placeholder && <option value="">{placeholder}</option>}
     {options.map(o => {
       const v = typeof o === 'string' ? o : o.value

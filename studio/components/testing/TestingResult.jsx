@@ -15,6 +15,9 @@ import BugReports from './BugReports'
 import Security from './Security'
 import Performance from './Performance'
 import Coder from './Coder'
+import E2ELiveLanes from './E2ELiveLanes'
+import { e2eStageSummary } from '@/lib/e2e-rate'
+import { unitTestStatus } from '@/lib/test-counts'
 
 
 const VIEWS = [
@@ -32,6 +35,7 @@ const VIEWS = [
 export default function TestingResult() {
   const project = useStore(s => s.project)
   const live = useStore(s => s.tests)
+  const e2eLive = useStore(s => s.e2eParallel)
   const qa = useStore(s => s.qaReport)
   const setQa = useStore(s => s.setQaReport)
   const addLog = useStore(s => s.addLog)
@@ -96,6 +100,9 @@ export default function TestingResult() {
   if (!project) return <Empty>Open a project to see its test results.</Empty>
 
   if (live.running) {
+    if (e2eLive?.active || e2eLive?.lanes?.some(l => l.title)) {
+      return <E2ELiveLanes />
+    }
     return (
       <div className="grid h-full place-items-center p-8 text-center">
         <div>
@@ -105,8 +112,8 @@ export default function TestingResult() {
           </div>
           <p className="text-[13px] text-ink">The build is still running.</p>
           <p className="mx-auto mt-1.5 max-w-[380px] text-[11.5px] leading-relaxed text-muted">
-            Unit tests, the end-to-end flow, security and Lighthouse all report
-            here when they have finished. Progress is in the pipeline column.
+            Unit tests and route checks appear here first. The view switches to
+            four live browser lanes when the end-to-end stage starts.
           </p>
         </div>
       </div>
@@ -162,12 +169,17 @@ function badges(qa) {
   const r = qa?.report
   const v = qa?.vitest
   if (v) {
-    out.unit = { n: `${v.numPassedTests}/${v.numTotalTests}`,
-                 bad: (v.numFailedTests || 0) > 0 }
+    const unit = unitTestStatus(v)
+    out.unit = { n: `${unit.passed}/${unit.total}`,
+                 bad: unit.failed > 0 }
   }
   if (r) {
     const bugs = r.suite?.unresolved?.length || 0
     out.bugs = { n: bugs, bad: bugs > 0 }
+  }
+  if (r?.e2e) {
+    const e = e2eStageSummary(r.e2e)
+    if (e.total) out.e2e = { n: `${e.passed}/${e.total}`, bad: e.passed !== e.total }
   }
   if (r?.security) {
     const sec = r.security.findings?.length || 0

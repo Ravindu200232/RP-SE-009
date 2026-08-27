@@ -21,7 +21,7 @@ export function Evidence({ evidence, runId, busy }) {
       </div>
 
       <Panel className="p-4">
-        <SectionLabel right={
+        <SectionLabel className="border-b-2 border-line2 pb-1.5" right={
           runId ? (
             <div className="flex gap-1">
               <a href={`${API}/deploy/runs/${runId}/export.zip`}
@@ -53,7 +53,7 @@ export function Evidence({ evidence, runId, busy }) {
           : <ul className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
               {items.map(e => (
                 <li key={e.id}
-                    className="rounded-ctl border border-line bg-bg p-2.5">
+                    className=" border border-line bg-bg p-2.5">
                   <div className="flex items-start gap-2">
                     <Camera className="mt-px size-3.5 shrink-0 text-muted2" />
                     <div className="min-w-0 flex-1">

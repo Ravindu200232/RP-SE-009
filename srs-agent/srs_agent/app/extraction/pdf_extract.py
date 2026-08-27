@@ -1,24 +1,4 @@
-"""Reading a PDF: its text layer where it has one, the model where it does not.
-
-Both text engines are optional (see requirements-extract.txt). When neither is
-installed we return a structured note instead of crashing the intake flow.
-
-A PDF is two different documents wearing one extension. An exported invoice or
-a typed spec carries a real text layer, and extracting it is exact, instant and
-complete — a vision model reading a picture of that same page would be slower,
-costlier and worse. A scan, a photographed form or a deck of wireframes carries
-no text layer at all, and text extraction returns an empty string: the customer
-attached their entire requirements document and the intake learned nothing.
-
-So the decision is made per page rather than per file. A page whose text layer
-reads normally is used as it is; a page whose text layer is thin or missing is
-rendered to an image and shown to the vision model, exactly as an attached
-photo would be. A twenty-page contract costs no model calls, and a twenty-page
-scan gets read.
-
-Rendering needs PyMuPDF. Without it a scanned PDF degrades to the old
-behaviour — empty text and a note saying why — rather than failing.
-"""
+"""Read PDF text directly or through the model."""
 from __future__ import annotations
 
 import asyncio
@@ -68,12 +48,12 @@ def extract_pdf_text(data: bytes, filename: str = "upload.pdf") -> dict[str, Any
 
 
 def render_pages(data: bytes, indexes: list[int], dpi: int = RENDER_DPI) -> dict[int, bytes]:
-    """Rasterise the given page indexes to PNG. Returns {} if PyMuPDF is absent."""
+    """Rasterise the given page indexes to PNG."""
     try:
         import pymupdf
     except Exception:  # noqa: BLE001
         try:
-            import fitz as pymupdf  # older name
+            import fitz as pymupdf  # Older name
         except Exception:  # noqa: BLE001
             return {}
 

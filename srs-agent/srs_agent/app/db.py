@@ -1,14 +1,4 @@
-"""Persistence layer.
-
-Exposes a tiny async document `Store` with two interchangeable backends:
-
-* ``MotorStore``  — real MongoDB via Motor (used when reachable).
-* ``MemoryStore`` — in-process dict store used as a fallback so the whole
-  app runs in CI / demos without a Mongo server.
-
-Routers and agents depend only on the ``Store`` protocol, never on Mongo
-directly, so swapping backends is transparent.
-"""
+"""Persistence layer."""
 from __future__ import annotations
 
 import copy
@@ -38,7 +28,7 @@ ALL_COLLECTIONS = [
 
 
 def _matches(doc: dict, query: dict) -> bool:
-    """Minimal Mongo-style matcher: equality + ``$in``."""
+    """Minimal Mongo-style matcher: equality + `$in`."""
     for key, cond in query.items():
         value = doc.get(key)
         if isinstance(cond, dict) and "$in" in cond:
@@ -196,26 +186,7 @@ async def _ensure_indexes(store: MotorStore) -> None:
 
 
 async def ensure_store() -> MotorStore | MemoryStore:
-    """
-    Re-check the store, and fix it if it has gone wrong.
-
-    `connect_store` caches its answer forever, which is correct for a process
-    that outlives nothing. Inside AgentForge it is not: the SRS connects the moment
-    uvicorn starts, and mongod may still be booting — AgentForge starts it in a
-    thread at the same moment. Losing that race once means an in-memory store
-    for the rest of the session, and an interview that vanishes on restart with
-    nothing anywhere saying why.
-
-    The reverse happens too: mongod stops, and every request afterwards fails
-    against a client that will never reconnect on its own.
-
-    Two rules:
-
-    * A Motor store that cannot ping is replaced.
-    * A memory store is upgraded to Motor only when it is EMPTY. Upgrading a
-      memory store with answers in it would silently discard them, which is a
-      worse outcome than staying on the fallback until the user is finished.
-    """
+    """Re-check the store, and fix it if it has gone wrong."""
     global _store
     if _store is None:
         return await connect_store()

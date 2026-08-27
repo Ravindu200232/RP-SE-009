@@ -5,7 +5,7 @@ import {
   AlertTriangle, Check, Globe, KeyRound, Loader2, Shield, ShieldAlert, X,
 } from 'lucide-react'
 import { api } from '@/lib/api'
-import { Badge, Empty, Panel, SectionLabel, Table, TD, TH, TR } from '../ui'
+import { Badge, Panel, SectionLabel, Table, TD, TH, TR } from '../ui'
 import { pipelineStages } from '@/lib/use-run-data'
 import { cn } from '@/lib/utils'
 
@@ -65,7 +65,7 @@ export function Security({ snap, events, artifacts, runId }) {
 
   return (
     <div className="space-y-4">
-      <Panel className="border-warn/40 bg-warn/5 p-3">
+      <Panel className="border-line2 bg-panel2 p-3">
         <p className="flex items-start gap-2 text-[11.5px] text-ink">
           <ShieldAlert className="mt-px size-3.5 shrink-0 text-warn" />
           <span>
@@ -79,7 +79,7 @@ export function Security({ snap, events, artifacts, runId }) {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Panel className="p-4">
-          <SectionLabel right={busy ? <Loader2 className="size-3 animate-spin text-muted2" /> : null}>
+          <SectionLabel className="border-b-2 border-line2 pb-1.5" right={busy ? <Loader2 className="size-3 animate-spin text-muted2" /> : null}>
             IAM roles
           </SectionLabel>
           <p className="mt-1 text-[10px] text-muted2">
@@ -96,7 +96,7 @@ export function Security({ snap, events, artifacts, runId }) {
               : (
                 <div className="mt-2 space-y-2">
                   {tpl.roles.map(role => (
-                    <div key={role} className="rounded-ctl border border-line bg-bg p-2">
+                    <div key={role} className=" border border-line bg-bg p-2">
                       <p className="flex items-center gap-1.5 font-mono text-[10.5px] text-accent">
                         <KeyRound className="size-3" /> {role}
                       </p>
@@ -134,13 +134,13 @@ export function Security({ snap, events, artifacts, runId }) {
         </Panel>
 
         <Panel className="p-4">
-          <SectionLabel>Inbound rules</SectionLabel>
+          <SectionLabel className="border-b-2 border-line2 pb-1.5">Inbound rules</SectionLabel>
           <p className="mt-1 text-[10px] text-muted2">security group ingress</p>
           {!tpl || tpl.ingress.length === 0
             ? <p className="mt-2 text-[11.5px] text-muted">None declared.</p>
             : <ul className="mt-2 space-y-1">
                 {tpl.ingress.map((r, i) => (
-                  <li key={i} className="flex items-center gap-2 rounded-ctl border
+                  <li key={i} className="flex items-center gap-2 border
                                          border-line bg-bg px-2 py-1.5 text-[11.5px]">
                     <span className="font-mono text-accent">{r.from}</span>
                     <span className="min-w-0 flex-1 truncate text-muted">
@@ -151,8 +151,8 @@ export function Security({ snap, events, artifacts, runId }) {
                 ))}
               </ul>}
           {open.length > 0 && (
-            <p className="mt-2 flex items-start gap-1.5 rounded-ctl border border-warn/40
-                          bg-warn/10 px-2 py-1.5 text-[10.5px] text-warn">
+            <p className="mt-2 flex items-start gap-1.5 border border-line2
+                          bg-panel2 px-2 py-1.5 text-[10.5px] text-warn">
               <AlertTriangle className="mt-px size-3 shrink-0" />
               Source {open[0].cidr} — open to the internet. Expected for a public
               site; put a load balancer in front before restricting it.
@@ -161,14 +161,17 @@ export function Security({ snap, events, artifacts, runId }) {
         </Panel>
 
         <Panel className="p-4">
-          <SectionLabel>Security checklist</SectionLabel>
-          <ul className="mt-2 space-y-2">
+          <SectionLabel className="border-b-2 border-line2 pb-1.5">Security checklist</SectionLabel>
+          <ul className="mt-1.5">
             {checks.map(c => (
-              <li key={c.label} className="flex items-start gap-2 text-[11.5px]">
+              <li key={c.label}
+                  className={cn('flex items-start gap-2 border-b border-line',
+                    'border-l-[3px] py-1.5 pl-2 text-[11.5px] last:border-b-0',
+                    c.ok ? 'border-l-ok' : 'border-l-bad bg-tint')}>
                 {c.ok ? <Check className="mt-px size-3.5 shrink-0 text-ok" />
                       : <X className="mt-px size-3.5 shrink-0 text-bad" />}
                 <span className="min-w-0">
-                  <span className={c.ok ? 'text-muted' : 'text-bad'}>{c.label}</span>
+                  <span className={c.ok ? 'text-ink' : 'text-deep'}>{c.label}</span>
                   {c.detail && (
                     <span className="block text-[10px] text-muted2">{c.detail}</span>
                   )}
@@ -188,7 +191,7 @@ export function ApiValidation({ snap }) {
   if (!probes.length) {
     return (
       <Panel className="p-4">
-        <SectionLabel>API validation</SectionLabel>
+        <SectionLabel className="border-b-2 border-line2 pb-1.5">API validation</SectionLabel>
         <p className="mt-2 text-[11.5px] text-muted">
           No probes recorded. The agent only runs these once it knows the
           application URL, which is after the stack exists.
@@ -206,7 +209,7 @@ export function ApiValidation({ snap }) {
 
   return (
     <div className="space-y-4">
-      <Panel className={cn('p-3', all ? 'border-ok/40 bg-ok/5' : 'border-bad/40 bg-bad/5')}>
+      <Panel className={cn('p-3', all ? 'border-ink bg-panel2' : 'border-accent bg-tint')}>
         <div className="flex items-center gap-2">
           {all ? <Check className="size-4 shrink-0 text-ok" />
                : <AlertTriangle className="size-4 shrink-0 text-bad" />}
@@ -226,7 +229,7 @@ export function ApiValidation({ snap }) {
       </Panel>
 
       <Panel className="p-4">
-        <SectionLabel>Results</SectionLabel>
+        <SectionLabel className="border-b-2 border-line2 pb-1.5">Results</SectionLabel>
         <Table className="mt-2">
           <thead><TR>
             <TH>Name</TH><TH>Method</TH><TH>Path</TH><TH>Status</TH>
@@ -262,7 +265,7 @@ export function ApiValidation({ snap }) {
       </Panel>
 
       <Panel className="p-4">
-        <SectionLabel>What was checked</SectionLabel>
+        <SectionLabel className="border-b-2 border-line2 pb-1.5">What was checked</SectionLabel>
         <ul className="mt-2 space-y-1.5">
           {[
             [Globe, 'The application URL answered at all'],

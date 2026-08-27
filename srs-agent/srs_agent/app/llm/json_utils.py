@@ -1,10 +1,4 @@
-"""Best-effort JSON extraction & repair for LLM output.
-
-Local models wrapped by Ollama frequently emit JSON inside ```json fences,
-add a stray prose preamble, or trail a comma. These helpers recover the JSON
-object without an extra dependency. A schema-level repair loop (driven by the
-LLM itself) lives in ``ollama_adapter.py``.
-"""
+"""Best-effort JSON extraction & repair for LLM output."""
 from __future__ import annotations
 
 import json
@@ -55,7 +49,7 @@ def _remove_trailing_commas(text: str) -> str:
 
 
 def extract_json(text: str) -> dict[str, Any]:
-    """Extract a JSON object from arbitrary LLM text. Raises ValueError."""
+    """Extract a JSON object from arbitrary LLM text."""
     if not text or not text.strip():
         raise ValueError("empty LLM response")
 

@@ -1,8 +1,4 @@
-"""Image OCR via pytesseract, falling back to easyocr.
-
-Tesseract needs the native binary; easyocr is a heavier pure-python fallback.
-When neither is available we return setup guidance.
-"""
+"""Image OCR via pytesseract, falling back to easyocr."""
 from __future__ import annotations
 
 import os

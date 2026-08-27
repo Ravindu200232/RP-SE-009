@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -66,41 +66,14 @@ class AddInputRequest(BaseModel):
 
 
 class UploadRequest(AddInputRequest):
-    """An attachment carried as base64 inside a JSON body.
-
-    The multipart route stays the canonical one; this shape exists so an
-    upload can travel the job shim, which only replays JSON. See
-    `routers.projects.add_input_json`.
-    """
+    """An attachment carried as base64 inside a JSON body."""
 
     filename: Optional[str] = None
     content_type: Optional[str] = None
     data_base64: Optional[str] = None
+    # Purpose supplied for this file.
+    purpose: Optional[str] = None
 
 
 class CustomizeRequest(BaseModel):
     prompt: str = Field(..., min_length=1)
-
-
-class AgentEvent(BaseModel):
-    model_config = ConfigDict(extra="allow")
-    id: str
-    project_id: str
-    agent: str
-    channel: str = "agent_events"
-    level: str = "info"
-    message: str
-    progress: Optional[float] = None
-    data: dict[str, Any] = Field(default_factory=dict)
-    created_at: str = Field(default_factory=now_iso)
-
-
-class SrsVersion(BaseModel):
-    model_config = ConfigDict(extra="allow")
-    id: str
-    project_id: str
-    version: str
-    label: str
-    srs: dict[str, Any]
-    diff_summary: list[str] = Field(default_factory=list)
-    created_at: str = Field(default_factory=now_iso)

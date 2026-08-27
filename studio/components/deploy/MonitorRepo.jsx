@@ -48,18 +48,21 @@ export function Repository({ snap, artifacts, busy }) {
 
       <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
         <Panel className="p-4">
-          <SectionLabel>Repository checklist</SectionLabel>
+          <SectionLabel className="border-b-2 border-line2 pb-1.5">Repository checklist</SectionLabel>
           <p className="mt-1 text-[10.5px] text-muted2">
             Required deployment files
           </p>
-          <ul className="mt-2 space-y-1.5">
+          <ul className="mt-1.5">
             {REQUIRED.map(({ label, test }) => {
               const ok = files.some(test)
               return (
-                <li key={label} className="flex items-start gap-2 text-[11.5px]">
+                <li key={label}
+                    className={cn('flex items-start gap-2 border-b border-line',
+                      'border-l-[3px] py-1.5 pl-2 text-[11.5px] last:border-b-0',
+                      ok ? 'border-l-ok' : 'border-l-bad bg-tint')}>
                   {ok ? <Check className="mt-px size-3.5 shrink-0 text-ok" />
                       : <X className="mt-px size-3.5 shrink-0 text-bad" />}
-                  <span className={ok ? 'text-muted' : 'text-bad'}>{label}</span>
+                  <span className={ok ? 'text-ink' : 'text-deep'}>{label}</span>
                 </li>
               )
             })}
@@ -67,7 +70,7 @@ export function Repository({ snap, artifacts, busy }) {
         </Panel>
 
         <Panel className="p-4">
-          <SectionLabel right={<span className="text-[10px] text-muted2">
+          <SectionLabel className="border-b-2 border-line2 pb-1.5" right={<span className="text-[10px] text-muted2">
                                  {files.length} files
                                </span>}>
             Files the agent wrote
@@ -160,7 +163,7 @@ export function CiCd({ snap, artifacts, runId }) {
   return (
     <div className="space-y-4">
       <Panel className="p-4">
-        <SectionLabel right={<span className="text-[10px] text-muted2">
+        <SectionLabel className="border-b-2 border-line2 pb-1.5" right={<span className="text-[10px] text-muted2">
                                {g.successful || 0} passed · {g.failed || 0} failed
                              </span>}>
           GitHub Actions
@@ -179,7 +182,7 @@ export function CiCd({ snap, artifacts, runId }) {
                   const mine = here.databaseId && r.databaseId === here.databaseId
                   const ok = r.conclusion === 'success'
                   return (
-                    <TR key={r.databaseId} className={mine ? 'bg-accent/6' : ''}>
+                    <TR key={r.databaseId} className={mine ? 'bg-panel2' : ''}>
                       <TD>
                         {r.url
                           ? <a href={r.url} target="_blank" rel="noreferrer"
@@ -240,7 +243,7 @@ function WorkflowSource({ runId, workflows }) {
 
   return (
     <Panel className="p-4">
-      <SectionLabel right={
+      <SectionLabel className="border-b-2 border-line2 pb-1.5" right={
         <div className="flex gap-1">
           {workflows.map(w => {
             const name = w.path.split('/').pop()
@@ -262,7 +265,7 @@ function WorkflowSource({ runId, workflows }) {
             <Loader2 className="size-3 animate-spin" /> reading {pick}
           </p>
         : text
-          ? <pre className="mt-2 max-h-[360px] overflow-auto rounded-ctl border border-line
+          ? <pre className="mt-2 max-h-[360px] overflow-auto border border-line
                             bg-bg p-2.5 font-mono text-[10.5px] leading-relaxed text-muted">
               {text}
             </pre>

@@ -9,16 +9,16 @@ import { cn } from '@/lib/utils'
 
 
 const CHANNELS = [
-  { id: 'logs', label: 'Live Logs', Icon: ScrollText,
+  { id: 'logs', label:'Live Logs', Icon: ScrollText,
     match: e => e.type === 'log' },
-  { id: 'events', label: 'Agent Events', Icon: Bot,
+  { id: 'events', label:'Agent Events', Icon: Bot,
     match: e => ['step', 'state', 'monitor', 'change_set'].includes(e.type) },
-  { id: 'terminal', label: 'Terminal', Icon: SquareTerminal,
+  { id: 'terminal', label:'Terminal', Icon: SquareTerminal,
     match: e => e.type === 'terminal' },
-  { id: 'prompt', label: 'Prompt Trace', Icon: Sparkles,
+  { id: 'prompt', label:'Prompt Trace', Icon: Sparkles,
     match: e => e.type === 'prompt' },
 
-  { id: 'errors', label: 'Errors', Icon: AlertTriangle,
+  { id: 'errors', label:'Errors', Icon: AlertTriangle,
     match: e => ['failed', 'error'].includes(String(e.status || '').toLowerCase()) },
 ]
 
@@ -46,10 +46,11 @@ export function MonitorConsole({ events, snapErrors }) {
   }, [open, shown.length])
 
   return (
-    <div className="sticky bottom-0 z-10 border-t border-line bg-panel/95 backdrop-blur">
+    <div className="sticky bottom-0 z-10 border-t-2 border-line2 bg-panel">
       {open && (
         <div ref={body}
-             className="max-h-[240px] overflow-auto border-b border-line px-4 py-2">
+             className="max-h-[240px] overflow-auto border-b border-line2 bg-panel2
+                        px-4 py-2">
           {open === 'errors'
             ? <Errors rows={shown} snapErrors={snapErrors} />
             : open === 'terminal'
@@ -58,39 +59,42 @@ export function MonitorConsole({ events, snapErrors }) {
         </div>
       )}
 
-      <div className="flex items-center gap-1 px-4 py-1.5">
+      {/* Deployment event filters. */}
+      <div className="flex items-stretch">
         {CHANNELS.map(({ id, label, Icon }) => {
           const n = counts[id] || 0
           const active = open === id
           return (
             <button key={id}
                     onClick={() => setOpen(active ? '' : id)}
-                    className={cn('flex shrink-0 items-center gap-1.5 rounded-ctl px-2 py-1',
-                      'text-[10.5px] font-medium transition-colors',
-                      active ? 'bg-accent/12 text-accent'
-                             : 'text-muted2 hover:bg-panel2 hover:text-ink')}>
-              <Icon className={cn('size-3', id === 'errors' && n > 0 && 'text-bad')} />
+                    className={cn('flex shrink-0 items-center gap-1.5 border-r',
+                      'border-line px-3 py-2 font-display text-[10.5px]',
+                      'font-extrabold uppercase tracking-[.08em] transition-colors',
+                      active ? 'bg-accent text-bg'
+                             : 'text-label hover:bg-ink/[.07] hover:text-ink')}>
+              <Icon className="size-3" />
               {label}
               {n > 0 && (
-                <Badge tone={id === 'errors' ? 'bad' : active ? 'accent' : 'mute'}>{n}</Badge>
+                <Badge tone={active ? 'ok' : id === 'errors' ? 'bad' : 'mute'}>{n}</Badge>
               )}
             </button>
           )
         })}
         <span className="flex-1" />
-        <Button size="sm" variant="ghost"
-                disabled={!rows.length}
-                onClick={() => setFloor(Math.max(...(events || []).map(e => e.event_id || 0), 0))}
-                title="Hide everything received so far. The run's own record is not changed.">
-          Clear
-        </Button>
-        {open && (
-          <Button size="icon-sm" variant="ghost" onClick={() => setOpen('')}
-                  title="Collapse">
-            <ChevronDown className="size-3" />
+        <span className="flex shrink-0 items-center gap-1 px-2">
+          <Button size="sm" variant="ghost"
+                  disabled={!rows.length}
+                  onClick={() => setFloor(Math.max(...(events || []).map(e => e.event_id || 0), 0))}
+                  title="Hide everything received so far. The run's own record is not changed.">
+            Clear
           </Button>
-        )}
-        {!open && <ChevronUp className="size-3 text-muted2" />}
+          {open
+            ? <Button size="icon-sm" variant="ghost" onClick={() => setOpen('')}
+                      title="Collapse">
+                <ChevronDown className="size-3" />
+              </Button>
+            : <ChevronUp className="size-3 text-muted2" />}
+        </span>
       </div>
     </div>
   )
@@ -99,9 +103,9 @@ export function MonitorConsole({ events, snapErrors }) {
 function Lines({ rows }) {
   if (!rows.length) return <Quiet />
   return (
-    <div className="space-y-0.5 font-mono text-[10.5px] leading-relaxed">
+    <div className="font-mono text-[10.5px] leading-relaxed">
       {rows.map(e => (
-        <div key={e.event_id} className="flex gap-2">
+        <div key={e.event_id} className="flex gap-2 border-b border-line py-px last:border-0">
           <span className="shrink-0 text-muted2">{clock(e.timestamp)}</span>
           <span className="w-[68px] shrink-0 truncate text-accent" title={e.stage}>
             {e.stage}
@@ -131,8 +135,8 @@ function Terminal({ rows }) {
             <span className="min-w-0 flex-1 truncate text-ink">{e.message}</span>
           </p>
           {e.data?.output && (
-            <pre className="mt-1 whitespace-pre-wrap rounded-ctl border border-line
-                            bg-bg p-2 font-mono text-[10px] leading-relaxed text-muted">
+            <pre className="mt-1 whitespace-pre-wrap border border-line2
+                            bg-panel p-2 font-mono text-[10px] leading-relaxed text-muted">
               {e.data.output}
             </pre>
           )}
@@ -148,16 +152,20 @@ function Errors({ rows, snapErrors }) {
     return <p className="py-3 text-[11px] text-ok">No errors on this run.</p>
   }
   return (
-    <div className="space-y-1">
+    <div>
       {rows.map(e => (
-        <p key={e.event_id} className="flex items-start gap-2 text-[11px] text-bad">
+        <p key={e.event_id} className="flex items-start gap-2 border-b border-line
+                                       border-l-[3px] border-l-accent bg-tint px-2
+                                       py-1 text-[11px] text-deep last:border-b-0">
           <AlertTriangle className="mt-px size-3 shrink-0" />
           <span className="font-mono text-[10px] text-muted2">{clock(e.timestamp)}</span>
           <span className="min-w-0">[{e.stage}] {e.message}</span>
         </p>
       ))}
       {extra.map((e, i) => (
-        <p key={`snap-${i}`} className="flex items-start gap-2 text-[11px] text-bad">
+        <p key={`snap-${i}`} className="flex items-start gap-2 border-b border-line
+                                       border-l-[3px] border-l-accent bg-tint px-2
+                                       py-1 text-[11px] text-deep last:border-b-0">
           <AlertTriangle className="mt-px size-3 shrink-0" />
           <span className="min-w-0">
             {typeof e === 'string' ? e : (e.message || JSON.stringify(e))}

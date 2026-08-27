@@ -62,7 +62,7 @@ export function Pipeline({ events, artifacts, busy }) {
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
       <Panel className="p-4">
-        <SectionLabel right={
+        <SectionLabel className="border-b-2 border-line2 pb-1.5" right={
           <Badge tone={failed ? 'bad' : open ? 'warn' : 'ok'}>
             {failed ? `${failed} failed` : open ? `${open} open` : 'Complete'}
           </Badge>
@@ -84,7 +84,7 @@ export function Pipeline({ events, artifacts, busy }) {
 
       <div className="space-y-4">
         <Panel className="p-4">
-          <SectionLabel>Pipeline summary</SectionLabel>
+          <SectionLabel className="border-b-2 border-line2 pb-1.5">Pipeline summary</SectionLabel>
           <dl className="mt-2 space-y-1.5">
             <Row label="Total stages" value={stages.length} />
             <Row label="Completed" value={done} tone={done === stages.length ? 'ok' : undefined} />
@@ -99,7 +99,7 @@ export function Pipeline({ events, artifacts, busy }) {
         </Panel>
 
         <Panel className="p-4">
-          <SectionLabel right={<span className="text-[10px] text-muted2">
+          <SectionLabel className="border-b-2 border-line2 pb-1.5" right={<span className="text-[10px] text-muted2">
                                  {(artifacts || []).length}
                                </span>}>
             Key artifacts
@@ -135,20 +135,23 @@ export function Pipeline({ events, artifacts, busy }) {
 
 function Step({ n, step, last, artifacts }) {
   const Icon = step.failed ? X : step.done ? Check : Loader2
-  const tone = step.failed ? 'text-bad border-bad/40 bg-bad/10'
-             : step.done ? 'text-ok border-ok/40 bg-ok/10'
-             : 'text-warn border-warn/40 bg-warn/10'
+  const tone = step.failed ? 'text-bg border-bad bg-bad'
+             : step.done ? 'text-bg border-ok bg-ok'
+             : 'text-accent border-accent bg-panel'
   return (
     <li className="relative flex gap-3 pb-3 last:pb-0">
-      {!last && <span className="absolute left-[11px] top-6 h-[calc(100%-1.5rem)] w-px bg-line" />}
+      {!last && <span className="absolute left-[11px] top-6 h-[calc(100%-1.5rem)] w-px bg-line2" />}
       <span className={cn('relative z-10 flex size-[22px] shrink-0 items-center justify-center',
-                          'rounded-full border', tone)}>
+                          'border', tone)}>
         <Icon className={cn('size-3', !step.done && !step.failed && 'animate-spin')} />
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
-          <span className="text-[11.5px] font-medium text-ink">
-            <span className="text-muted2">#{n}</span> {step.stage}
+          <span className="text-[11.5px] font-extrabold text-ink">
+            <span className="font-mono font-normal text-faint">
+              {String(n).padStart(2, '0')}
+            </span>{' '}
+            {step.stage}
           </span>
           <span className="flex-1" />
           <span className="shrink-0 font-mono text-[10px] text-muted2">

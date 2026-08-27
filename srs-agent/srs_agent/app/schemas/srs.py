@@ -1,9 +1,4 @@
-"""Pydantic schema for the SRS document — the strict validation target.
-
-Leaf objects use ``extra="allow"`` so the LLM may enrich them, but the core
-shape and the non-emptiness of critical sections are enforced. This is what
-the JSON-repair loop validates against.
-"""
+"""Pydantic schema for the SRS document — the strict validation target."""
 from __future__ import annotations
 
 from typing import Any, Optional
@@ -199,6 +194,12 @@ class DiagramArtifact(_Loose):
     format: str = "mermaid"
     source: str
     standard: Optional[str] = None
+    question: Optional[str] = None
+    definition: Optional[str] = None
+    drawing_rules: list[str] = Field(default_factory=list)
+    notation: list[str] = Field(default_factory=list)
+    applicable: bool = True
+    applicability_note: Optional[str] = None
     canonical_rendering: Optional[str] = None
     rendered_by: Optional[str] = None
     mmd_path: Optional[str] = None
@@ -272,7 +273,7 @@ class SrsEnvelope(BaseModel):
 
 
 def validate_srs(data: dict) -> SrsEnvelope:
-    """Validate a raw dict into an :class:`SrsEnvelope` (raises ValidationError)."""
+    """Validate a raw dict into an `SrsEnvelope` (raises ValidationError)."""
     return SrsEnvelope.model_validate(data)
 
 

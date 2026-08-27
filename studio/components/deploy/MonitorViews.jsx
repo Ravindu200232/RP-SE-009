@@ -1,7 +1,7 @@
 'use client'
 
 import { AlertTriangle, ExternalLink, Server } from 'lucide-react'
-import { Badge, Empty, Panel, SectionLabel, Table, TD, TH, TR } from '../ui'
+import { Badge, Empty, Panel, SectionLabel, Table, Tag, TD, TH, TR } from '../ui'
 import { cn } from '@/lib/utils'
 
 
@@ -27,18 +27,20 @@ export function StatusBar({ snap, state }) {
 
   const live = String(state || '').toUpperCase() === 'LIVE'
   return (
-    <div className={cn('flex flex-wrap items-center gap-x-4 gap-y-1 rounded-panel border px-3 py-2',
-                       live ? 'border-ok/40 bg-ok/5' : 'border-line bg-panel')}>
-      <span className="flex items-center gap-1.5 text-[12px] font-medium text-ink">
-        <span className={cn('size-1.5 rounded-full', live ? 'bg-ok' : 'bg-muted2')} />
+    // One ruled band across the pane.
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 border-b-2
+                    border-line2 bg-panel2 px-4 py-[11px]">
+      <span className="flex items-center gap-2 font-display text-[12.5px]
+                       font-extrabold text-ink">
+        <span className={cn('size-[7px]', live ? 'bg-ok' : 'bg-faint')} />
         {live ? 'Deployment complete — the site is live' : (state || 'Deployment')}
       </span>
       {bits.map(([label, value, tone]) => (
-        <span key={label} className="flex items-center gap-1.5 text-[11px]">
-          <span className="text-muted2">{label}</span>
+        <span key={label} className="flex items-center gap-[7px] text-[11px]">
+          <span className="text-label">{label}</span>
           <span className={cn('font-mono text-[10.5px]',
-            tone === 'ok' ? 'text-ok' : tone === 'bad' ? 'text-bad'
-            : tone === 'warn' ? 'text-warn' : 'text-muted')}>
+            tone === 'bad' ? 'text-bad' : tone === 'warn' ? 'text-warn'
+            : tone === 'ok' ? 'text-ok' : 'text-muted')}>
             {value}
           </span>
         </span>
@@ -66,73 +68,112 @@ export function Overview({ snap }) {
 
   return (
     <div className="space-y-4">
-      <Panel className="p-4">
-        <SectionLabel right={<Badge tone={score >= 90 ? 'ok' : score >= 60 ? 'warn' : 'bad'}>
-                               {score}/100
-                             </Badge>}>
-          Readiness
-        </SectionLabel>
-        <div className="relative mt-3 h-1.5 w-full overflow-hidden rounded-full bg-line">
-          <div className={cn('h-full transition-all',
-                             score >= 90 ? 'bg-ok' : score >= 60 ? 'bg-warn' : 'bg-bad')}
-               style={{ width: `${Math.min(100, score)}%` }} />
-          <span className="absolute top-0 h-full w-px bg-ink/40" style={{ left: '90%' }} />
+      <div className="border border-line2 p-5">
+        <div className="flex items-baseline gap-3.5">
+          <span className={cn('font-display text-[64px] font-extrabold leading-[.9]',
+                              'tracking-[-.04em]',
+                              score >= 90 ? 'text-ok'
+                                : score >= 60 ? 'text-warn' : 'text-bad')}>
+            {score}
+          </span>
+          <div className="min-w-0">
+            <div className="font-display text-[13px] font-extrabold text-ink">
+              out of 100
+            </div>
+            <div className="mt-0.5 text-[11.5px] text-muted">
+              {score >= 90
+                ? 'at or over the mark — the agent will promote this run'
+                : 'below the mark — the agent will not promote this run'}
+            </div>
+          </div>
+          <span className="flex-1" />
+          <Tag tone={score >= 90 ? 'ok' : score >= 60 ? 'warn' : 'bad'}>
+            {score >= 90 ? 'ready' : 'needs work'}
+          </Tag>
         </div>
-        <p className="mt-1 text-[10px] text-muted2">the mark is 90 — the agent’s own bar</p>
 
-        <ul className="mt-3 space-y-1">
+        <div className="relative mt-4 flex h-3 border border-line2 bg-canvas">
+          <span className={cn('transition-all',
+                              score >= 90 ? 'bg-ok'
+                                : score >= 60 ? 'bg-warn' : 'bg-bad')}
+                style={{ width: `${Math.min(100, score)}%` }} />
+          <span className="absolute -bottom-[5px] -top-[5px] w-[2px] bg-ink"
+                style={{ left: '90%' }} />
+        </div>
+        <div className="mt-1.5 flex justify-between">
+          <span className="font-mono text-[10px] text-faint">0</span>
+          <span className="text-[10.5px] text-muted">
+            the mark is 90 — the agent’s own bar
+          </span>
+          <span className="font-mono text-[10px] text-faint">100</span>
+        </div>
+
+        <div className="mt-5 border-t-2 border-line2">
           {WEIGHTS.map(([key, weight, label]) => {
             const got = Number(cats[key] ?? 0)
+            const full = got >= weight
             return (
-              <li key={key} className="flex items-center gap-2 text-[11.5px]">
-                <span className="w-[74px] shrink-0 text-muted2">{key}</span>
-                <span className="h-1 flex-1 overflow-hidden rounded-full bg-line">
-                  <span className={cn('block h-full',
-                                      got >= weight ? 'bg-ok' : got > 0 ? 'bg-warn' : 'bg-line2')}
+              <div key={key}
+                   className="grid grid-cols-[88px_1fr_60px] items-center gap-3.5
+                              border-b border-line py-2.5
+                              sm:grid-cols-[88px_1fr_60px_1fr]">
+                <span className={cn('font-mono text-[11px]',
+                                    full ? 'text-muted' : 'text-deep')}>
+                  {key}
+                </span>
+                <span className="flex h-2 bg-canvas">
+                  <span className={full ? 'bg-ok' : got > 0 ? 'bg-warn' : 'bg-bad'}
                         style={{ width: `${(got / weight) * 100}%` }} />
                 </span>
-                <span className="w-[46px] shrink-0 text-right font-mono text-[10px] text-muted">
+                <span className={cn('text-right font-mono text-[10.5px]',
+                                    full ? 'text-ok' : 'text-warn')}>
                   {got}/{weight}
                 </span>
-                <span className="hidden min-w-0 flex-1 truncate text-[10.5px] text-muted2 sm:block">
+                <span className="hidden min-w-0 truncate text-[11px] text-label sm:block">
                   {label}
                 </span>
-              </li>
+              </div>
             )
           })}
-        </ul>
-      </Panel>
+        </div>
+      </div>
 
       {probes.length > 0 && (
-        <Panel className="p-4">
-          <SectionLabel right={
-            <Badge tone={probes.every(p => p.passed) ? 'ok' : 'bad'}>
-              {probes.filter(p => p.passed).length}/{probes.length}
-            </Badge>
-          }>
+        <div className="border border-line2 p-4">
+          <SectionLabel className="border-b-2 border-line2 pb-1.5"
+                        right={<Badge tone={probes.every(p => p.passed) ? 'ok' : 'bad'}>
+                          {probes.filter(p => p.passed).length}/{probes.length}
+                        </Badge>}>
             Live checks
           </SectionLabel>
-          <p className="mt-2 text-[11.5px] text-muted">
+          <p className="mt-2.5 text-[11.5px] text-muted">
             {probes.every(p => p.passed)
               ? 'Every endpoint the agent probed answered as expected.'
               : `${probes.filter(p => !p.passed).length} endpoint(s) did not answer as expected.`}
             {' '}See API Validation for each one.
           </p>
-        </Panel>
+        </div>
       )}
 
       {errors.length > 0 && (
-        <Panel className="border-bad/40 p-4">
-          <SectionLabel>Problems the agent found</SectionLabel>
-          <ul className="mt-2 space-y-1">
+        <div className="border border-line2 p-4">
+          <SectionLabel className="border-b-2 border-line2 pb-1.5"
+                        right={<Badge tone="bad">{errors.length}</Badge>}>
+            Errors seen
+          </SectionLabel>
+          <ul className="mt-1">
             {errors.map((e, i) => (
-              <li key={i} className="flex items-start gap-2 text-[11.5px] text-bad">
-                <AlertTriangle className="mt-px size-3.5 shrink-0" />
-                <span className="min-w-0">{typeof e === 'string' ? e : (e.message || JSON.stringify(e))}</span>
+              <li key={i} className="flex items-start gap-2.5 border-b border-line
+                                     border-l-[3px] border-l-accent bg-tint px-2.5
+                                     py-1.5 text-[11.5px] text-deep last:border-b-0">
+                <AlertTriangle className="mt-px size-3.5 shrink-0 text-accent" />
+                <span className="min-w-0">
+                  {typeof e === 'string' ? e : (e.message || JSON.stringify(e))}
+                </span>
               </li>
             ))}
           </ul>
-        </Panel>
+        </div>
       )}
     </div>
   )
@@ -151,7 +192,7 @@ function Aws({ aws }) {
   return (
     <div className="space-y-4">
       <Panel className="p-4">
-        <SectionLabel right={<span className="font-mono text-[10px] text-muted2">
+        <SectionLabel className="border-b-2 border-line2 pb-1.5" right={<span className="font-mono text-[10px] text-muted2">
                                {aws.region}
                              </span>}>
           Instances
@@ -175,7 +216,7 @@ function Aws({ aws }) {
 
       {(aws.stacks || []).length > 0 && (
         <Panel className="p-4">
-          <SectionLabel>CloudFormation</SectionLabel>
+          <SectionLabel className="border-b-2 border-line2 pb-1.5">CloudFormation</SectionLabel>
           <Table className="mt-2">
             <tbody>
               {aws.stacks.map(s => (
@@ -195,7 +236,7 @@ function Aws({ aws }) {
 
       {(aws.releases || []).length > 0 && (
         <Panel className="p-4">
-          <SectionLabel>Releases over SSM</SectionLabel>
+          <SectionLabel className="border-b-2 border-line2 pb-1.5">Releases over SSM</SectionLabel>
           <Table className="mt-2">
             <tbody>
               {aws.releases.slice(0, 8).map((r, i) => (
@@ -219,7 +260,7 @@ function Vercel({ vercel }) {
   return (
     <div className="space-y-4">
       <Panel className="p-4">
-        <SectionLabel right={vercel.application_url && (
+        <SectionLabel className="border-b-2 border-line2 pb-1.5" right={vercel.application_url && (
           <a href={vercel.application_url} target="_blank" rel="noreferrer"
              className="inline-flex items-center gap-1 text-[10px] text-accent hover:underline">
             open <ExternalLink className="size-2.5" />
@@ -253,7 +294,7 @@ function Vercel({ vercel }) {
 
       {(vercel.domains || []).length > 0 && (
         <Panel className="p-4">
-          <SectionLabel>Domains</SectionLabel>
+          <SectionLabel className="border-b-2 border-line2 pb-1.5">Domains</SectionLabel>
           <ul className="mt-2 space-y-1">
             {vercel.domains.map((d, i) => (
               <li key={i} className="flex items-center gap-2 text-[11.5px]">
@@ -275,7 +316,7 @@ export function Logs({ snap }) {
   if (!lines.length) {
     return (
       <Panel className="p-4">
-        <SectionLabel>Logs</SectionLabel>
+        <SectionLabel className="border-b-2 border-line2 pb-1.5">Logs</SectionLabel>
         <p className="mt-2 text-[11.5px] text-muted">
           No log lines yet. That is the 10 “monitoring” points the readiness
           score is missing — the agent has not seen the application write
@@ -292,12 +333,12 @@ export function Logs({ snap }) {
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
       <Panel className="p-4">
-        <SectionLabel right={<span className="text-[10px] text-muted2">
+        <SectionLabel className="border-b-2 border-line2 pb-1.5" right={<span className="text-[10px] text-muted2">
                                {lines.length} lines{capped ? ' (capped)' : ''}
                              </span>}>
           Application logs
         </SectionLabel>
-        <pre className="mt-2 max-h-[420px] overflow-auto rounded-ctl border border-line
+        <pre className="mt-2 max-h-[420px] overflow-auto border border-line
                         bg-bg p-2.5 font-mono text-[10.5px] leading-relaxed text-muted">
           {lines.map((l, i) => (
             <div key={i}>
@@ -309,7 +350,7 @@ export function Logs({ snap }) {
       </Panel>
 
       <Panel className="h-fit p-4">
-        <SectionLabel>Monitoring</SectionLabel>
+        <SectionLabel className="border-b-2 border-line2 pb-1.5">Monitoring</SectionLabel>
         <dl className="mt-2 space-y-1.5 text-[11.5px]">
           <div className="flex items-baseline justify-between gap-2">
             <dt className="text-muted2">Lines</dt>

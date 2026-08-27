@@ -1,10 +1,4 @@
-"""Pluggable speech-to-text.
-
-If no local model is installed we return a clear setup message rather than a
-fake transcript (spec: "Voice input stores transcript or shows setup warning").
-Plug in a real engine by subclassing :class:`SpeechToTextAdapter` and setting
-``ACTIVE_ADAPTER``.
-"""
+"""Pluggable speech-to-text."""
 from __future__ import annotations
 
 from typing import Any
@@ -81,14 +75,7 @@ ACTIVE_ADAPTER: SpeechToTextAdapter = _select_adapter()
 
 
 def transcribe_audio(data: bytes, filename: str = "audio.webm") -> dict[str, Any]:
-    """Transcribe, or explain why not — but never raise.
-
-    An engine that is installed can still fail (a missing CUDA runtime, a codec
-    it cannot decode). Letting that reach the caller turns an upload into a 500
-    and loses the answer the customer just recorded; the audio itself is already
-    saved, so a warning is both truthful and recoverable. This is the shape
-    `extract_image_text` already returns for the same situation.
-    """
+    """Transcribe, or explain why not — but never raise."""
     try:
         return ACTIVE_ADAPTER.transcribe(data, filename)
     except Exception as exc:  # noqa: BLE001

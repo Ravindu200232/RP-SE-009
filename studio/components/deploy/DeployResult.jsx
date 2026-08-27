@@ -2,7 +2,7 @@
 
 import { ExternalLink, GitBranch, Rocket } from 'lucide-react'
 import { STATE_TEXT } from '@/lib/deploy-constants'
-import { Badge, Panel, SectionLabel } from '../ui'
+import { SectionLabel, Tag } from '../ui'
 
 export default function DeployResult({ data }) {
   const last = data?.have?.last ? data.last : null
@@ -16,14 +16,16 @@ export default function DeployResult({ data }) {
   const score = last.readiness?.score
 
   return (
-    <Panel className="p-4">
-      <SectionLabel right={<Badge tone={{ pass: 'ok', fail: 'bad', run: 'accent' }[tone] || 'mute'}>
-                             {label}
-                           </Badge>}>
+    <div className="border border-line2 p-4">
+      <SectionLabel className="border-b-2 border-line2 pb-1.5"
+                    right={<Tag tone={{ pass: 'ok', fail: 'bad',
+                                        run: 'accent' }[tone] || 'mute'}>
+                      {label}
+                    </Tag>}>
         Last deployment
       </SectionLabel>
 
-      <dl className="mt-3 space-y-1.5 text-[11.5px]">
+      <dl className="mt-1 text-[11.5px]">
         <Row label="Target">
           {last.target === 'vercel' ? 'Vercel' : 'AWS EC2'}
         </Row>
@@ -62,18 +64,18 @@ export default function DeployResult({ data }) {
       </dl>
 
       {last.error && (
-        <p className="mt-3 rounded-ctl border border-bad/40 bg-bad/10 px-2.5 py-2
-                      text-[11.5px] text-bad">
+        <p className="mt-3 border border-line2 border-l-[3px] border-l-accent
+                      bg-tint px-3 py-2.5 text-[11.5px] text-deep">
           {last.error}
         </p>
       )}
-    </Panel>
+    </div>
   )
 }
 
 const Row = ({ label, children }) => (
-  <div className="flex gap-3">
-    <dt className="w-[86px] shrink-0 text-muted2">{label}</dt>
+  <div className="flex gap-3 border-b border-line py-1.5 last:border-0">
+    <dt className="w-[86px] shrink-0 text-label">{label}</dt>
     <dd className="min-w-0 flex-1 break-words text-ink">{children}</dd>
   </div>
 )

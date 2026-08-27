@@ -7,8 +7,8 @@ import { AlertTriangle, Activity, Camera, Check, FolderGit2, GitBranch, Globe,
 import { useStore } from '@/lib/store'
 import { api } from '@/lib/api'
 import { TARGETS, TERMINAL } from '@/lib/deploy-constants'
-import { useMonitor, providerOf } from '@/lib/use-monitor'
-import { Badge, Button, Empty, Panel, SectionLabel } from '../ui'
+import { useMonitor } from '@/lib/use-monitor'
+import { Button, Empty, SectionLabel, SubTab, SubTabs } from '../ui'
 import { cn } from '@/lib/utils'
 import DeployProgress from './DeployProgress'
 import DeployResult from './DeployResult'
@@ -20,12 +20,12 @@ import { Evidence } from './MonitorEvidence'
 import { MonitorConsole } from './MonitorConsole'
 import { DeployDanger } from './DeployDanger'
 import { useRunData } from '@/lib/use-run-data'
+import { projectUnitTestStatus } from '@/lib/test-counts'
 
 
 export default function DeployPanel({ onSettings }) {
   const project = useStore(s => s.project)
   const models = useStore(s => s.models)
-  const tests = useStore(s => s.tests)
   const qa = useStore(s => s.qaReport)
   const setQa = useStore(s => s.setQaReport)
   const addLog = useStore(s => s.addLog)
@@ -70,6 +70,16 @@ export default function DeployPanel({ onSettings }) {
     return () => { alive.current = false }
   }, [refresh])
 
+      // Refresh the deployment state read on mount.
+  const FINISHED = ['DESTROYED', 'CANCELLED', 'FAILED', 'ROLLED_BACK']
+  const snapAt = monitor.at
+  useEffect(() => {
+    if (!snapAt) return
+    const state = live?.state || mine?.last?.state || ''
+    if (state && FINISHED.includes(state)) return
+    refresh()
+  }, [snapAt])
+
   useEffect(() => {
     if (!project || qa?.project === project) return
     let ok = true
@@ -112,21 +122,19 @@ export default function DeployPanel({ onSettings }) {
   }, [])
 
   const s = mine?.settings || {}
-  const unit = qa?.project === project ? qa.vitest : null
-
-  const failures = tests.rows.length ? tests.fail
-    : unit ? (unit.numFailedTests || 0) : null
-  const tested = tests.rows.length > 0 || Boolean(unit)
+  const unit = projectUnitTestStatus(qa, project)
+  const failures = unit?.failed ?? null
+  const tested = Boolean(unit?.tested)
   const green = tested && failures === 0
 
   const needs = [
-    { id: 'github', label: 'GitHub',
+    { id: 'github', label:'GitHub',
       ok: Boolean(probe?.github_authenticated),
       unknown: !probe,
       hint: probe?.github_account ? `signed in as ${probe.github_account}`
                                   : 'sign in from Settings — the deploy pushes a repo' },
     target === 'vercel'
-      ? { id: 'vercel', label: 'Vercel',
+      ? { id: 'vercel', label:'Vercel',
           ok: Boolean(s.vercel_token_set) || Boolean(probe?.vercel_connected),
           unknown: !probe && !s.vercel_token_set,
 
@@ -135,16 +143,19 @@ export default function DeployPanel({ onSettings }) {
               + (probe.vercel_source ? ` (${probe.vercel_source})` : '')
             : s.vercel_token_set ? `token saved (${s.vercel_token_hint})`
                                  : 'add a token in Settings' }
-      : { id: 'aws', label: 'AWS',
-          ok: Boolean(s.aws_profile),
-          unknown: false,
-          hint: s.aws_profile ? `profile ${s.aws_profile} · ${s.aws_region || 'ap-south-1'}`
-                              : 'sign in to AWS from Settings' },
-    { id: 'mongo', label: 'MongoDB',
+      : { id: 'aws', label:'AWS',
+          ok: Boolean(probe?.aws_identities?.[s.aws_profile]),
+          unknown: !probe,
+          hint: probe?.aws_identities?.[s.aws_profile]
+            ? `profile ${s.aws_profile} · ${probe.aws_identities[s.aws_profile].role_name || 'authenticated'} · ${s.aws_region || 'ap-south-1'}`
+            : s.aws_profile
+              ? `profile ${s.aws_profile} needs sign-in or has expired`
+              : 'sign in to AWS from Settings' },
+    { id: 'mongo', label:'MongoDB',
       ok: Boolean(s.mongodb_uri_set),
       unknown: false,
       hint: s.mongodb_uri_set ? `saved (${s.mongodb_uri_hint})`
-                              : 'the deployed app needs a database it can reach '
+                              : 'the deployed app needs a database it can reach'
                                 + 'from the internet — set one in Settings' },
   ]
   const ready = needs.every(n => n.ok) && (green || override)
@@ -154,10 +165,11 @@ export default function DeployPanel({ onSettings }) {
     setError('')
     try {
 
-      await api.saveSettings({ deploy_model: models.deploy || models.agent || '' })
+      await api.saveSettings({ deploy_model: models.deploy || models.planner
+                                            || models.agent || '' })
         .catch(() => { })
       await api.deployStart({ project, target, validate_container: validateBuild })
-      addLog('INFO', `🚀 Deploying ${project} to ${target === 'vercel' ? 'Vercel' : 'AWS EC2'}`)
+      addLog('INFO', `Deploying ${project} to ${target === 'vercel' ? 'Vercel' : 'AWS EC2'}`)
       await refresh()
     } catch (e) {
       setError(e.message)
@@ -175,9 +187,9 @@ export default function DeployPanel({ onSettings }) {
   if (agent && !agent.listening) {
     return (
       <div className="min-h-0 flex-1 overflow-auto p-5">
-        <Panel className="p-4">
-          <p className="flex items-start gap-2 text-[12.5px] text-bad">
-            <AlertTriangle className="mt-px size-4 shrink-0" />
+        <div className="rounded-[20px] border border-accent/20 bg-accent/[.055] p-4 shadow-sm">
+          <p className="flex items-start gap-2.5 text-[12.5px] text-deep">
+            <AlertTriangle className="mt-px size-4 shrink-0 text-accent" />
             <span>
               The deployment agent is not running — {agent.error || agent.state}.
               <span className="mt-1 block text-[11px] text-muted">
@@ -185,30 +197,35 @@ export default function DeployPanel({ onSettings }) {
               </span>
             </span>
           </p>
-        </Panel>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto">
+    <div className="min-h-0 flex-1 overflow-auto bg-[radial-gradient(circle_at_top_right,rgba(93,106,251,.08),transparent_30%)]">
       <MonitorBar view={view} setView={setView} monitor={monitor}
                   hasSnapshot={Boolean(monitor.snap)}
                   runId={runId} running={running}
                   state={live?.state || mine?.last?.state || ''}
                   onDone={() => { refresh(); run.reload() }} />
 
-      <div className="space-y-4 p-5">
+      {view !== 'deploy' && monitor.snap && (
+        <StatusBar snap={monitor.snap}
+                   state={live?.state || mine?.last?.state || ''} />
+      )}
+
+      <div className="mx-auto max-w-[1180px] space-y-4 p-5">
       {view !== 'deploy' ? (
         <MonitorPane view={view} monitor={monitor} runId={runId} run={run}
                      state={live?.state || mine?.last?.state || ''} />
       ) : (<>
       {mine?.deleted && !live && (
-        <Panel className="p-4">
+        <div className="rounded-[20px] border border-line/80 bg-white/50 p-4 shadow-sm dark:bg-white/[.025]">
           <div className="flex items-start gap-2.5">
             <Trash2 className="mt-px size-4 shrink-0 text-muted2" />
             <div className="min-w-0">
-              <p className="text-[12.5px] font-medium text-ink">
+              <p className="text-[12.5px] font-extrabold text-ink">
                 This deployment was deleted
               </p>
               <p className="mt-0.5 text-[11.5px] text-muted">
@@ -221,25 +238,26 @@ export default function DeployPanel({ onSettings }) {
               </p>
             </div>
           </div>
-        </Panel>
+        </div>
       )}
 
       {running || live ? <DeployProgress run={live} /> : null}
 
       {!running && (
-        <Panel className="p-4">
+        <div className="rounded-[22px] border border-line/80 bg-white/58 p-5 shadow-sm dark:bg-white/[.025]">
           <SectionLabel>Where should it go?</SectionLabel>
-          <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
+          <p className="mt-1 text-[11px] text-muted">Choose the cloud destination for this reviewed build.</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {TARGETS.map(t => (
               <button key={t.id} onClick={() => setTarget(t.id)}
-                      className={cn('rounded-ctl border p-3 text-left transition-colors',
+                      className={cn('rounded-[18px] border p-4 text-left shadow-sm transition-all',
                         target === t.id
-                          ? 'border-accent/60 bg-accent/8'
-                          : 'border-line bg-bg hover:border-line2')}>
-                <span className="flex items-center gap-2 text-[12.5px] font-medium text-ink">
-                  <span className={cn('grid size-3.5 place-items-center rounded-full border',
-                    target === t.id ? 'border-accent' : 'border-line2')}>
-                    {target === t.id && <span className="size-1.5 rounded-full bg-accent" />}
+                          ? 'border-accent/35 bg-accent/[.07] ring-2 ring-accent/10'
+                          : 'border-line/80 bg-white/55 hover:-translate-y-px hover:bg-white dark:bg-white/[.025]')}>
+                <span className="flex items-center gap-2 text-[12.5px] font-extrabold text-ink">
+                  <span className={cn('grid size-4 place-items-center rounded-full border',
+                    target === t.id ? 'border-accent bg-accent' : 'border-line2 bg-white/70 dark:bg-white/5')}>
+                    {target === t.id && <Check className="size-2.5 text-white" />}
                   </span>
                   {t.label}
                 </span>
@@ -250,36 +268,40 @@ export default function DeployPanel({ onSettings }) {
             ))}
           </div>
 
-          <SectionLabel className="mt-4"
+          <SectionLabel className="mt-6"
                         right={onSettings && (
-                          <Button size="sm" onClick={onSettings}>
+                          <Button variant="outline" size="sm" onClick={onSettings}>
                             <Settings2 className="size-3" /> Settings
                           </Button>
                         )}>
             Accounts
           </SectionLabel>
-          <ul className="mt-2 space-y-1">
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
             {needs.map(n => (
-              <li key={n.id} className="flex items-start gap-2 py-[3px]">
-                <span className="mt-[3px] grid size-3.5 shrink-0 place-items-center">
+              <li key={n.id} className={cn('flex items-start gap-2.5 rounded-2xl border px-3 py-3',
+                n.unknown ? 'border-line bg-white/45 dark:bg-white/[.02]'
+                  : n.ok ? 'border-ok/20 bg-ok/[.055]' : 'border-bad/20 bg-bad/[.045]')}>
+                <span className="mt-[2px] grid size-3.5 shrink-0 place-items-center">
                   {n.unknown
                     ? <Loader2 className="size-3 animate-spin text-muted2" />
                     : n.ok ? <Check className="size-3.5 text-ok" />
                            : <X className="size-3.5 text-bad" />}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="text-[12px] text-ink">{n.label}</span>
-                  <span className="ml-2 text-[10.5px] text-muted">{n.hint}</span>
+                  <span className="text-[12px] font-semibold text-ink">{n.label}</span>
+                  <span className={cn('ml-2 text-[10.5px]',
+                                      n.unknown || n.ok ? 'text-muted' : 'text-deep')}>
+                    {n.hint}
+                  </span>
                 </span>
               </li>
             ))}
           </ul>
 
           {!green && (
-            <label className={cn('mt-3 flex cursor-pointer items-start gap-2 rounded-ctl border',
-              'px-2.5 py-2 text-[11.5px]',
-              override ? 'border-warn/40 bg-warn/10 text-warn'
-                       : 'border-line bg-bg text-muted')}>
+            <label className={cn('mt-4 flex cursor-pointer items-start gap-2.5 rounded-2xl border px-3 py-3 text-[11.5px]',
+              override ? 'border-accent/25 bg-accent/[.055] text-deep'
+                       : 'border-line bg-panel2/70 text-muted')}>
               <input type="checkbox" checked={override} className="mt-0.5"
                      onChange={e => setOverride(e.target.checked)} />
               <span>
@@ -290,13 +312,13 @@ export default function DeployPanel({ onSettings }) {
             </label>
           )}
           {green && (
-            <p className="mt-3 flex items-center gap-2 text-[11.5px] text-ok">
+            <p className="mt-4 flex items-center gap-2.5 rounded-2xl border border-ok/20 bg-ok/[.055] px-3 py-3 text-[11.5px] text-ok">
               <Check className="size-3.5" />
               Every unit test passes.
             </p>
           )}
 
-          <label className="mt-3 flex cursor-pointer items-start gap-2 text-[11.5px] text-muted">
+          <label className="mt-3 flex cursor-pointer items-start gap-2.5 text-[11.5px] text-muted">
             <input type="checkbox" checked={validateBuild} className="mt-0.5"
                    onChange={e => setValidateBuild(e.target.checked)} />
             <span>
@@ -309,7 +331,7 @@ export default function DeployPanel({ onSettings }) {
             </span>
           </label>
 
-          <footer className="mt-4 flex items-center gap-2">
+          <footer className="mt-5 flex items-center gap-3 border-t border-line/70 pt-4">
             <Button variant="solid" size="lg" disabled={!ready || starting}
                     onClick={deploy}>
               {starting ? <Loader2 className="size-3.5 animate-spin" />
@@ -326,12 +348,11 @@ export default function DeployPanel({ onSettings }) {
           </footer>
 
           {error && (
-            <p className="mt-3 flex items-start gap-2 rounded-ctl border border-bad/40
-                          bg-bad/10 px-2.5 py-2 text-[11.5px] text-bad">
-              <AlertTriangle className="mt-px size-3.5 shrink-0" /> {error}
+            <p className="mt-3 flex items-start gap-2.5 rounded-2xl border border-bad/20 bg-bad/[.045] px-3 py-3 text-[11.5px] text-bad">
+              <AlertTriangle className="mt-px size-3.5 shrink-0 text-accent" /> {error}
             </p>
           )}
-        </Panel>
+        </div>
       )}
 
       <DeployResult data={mine} />
@@ -347,16 +368,16 @@ export default function DeployPanel({ onSettings }) {
 
 
 const MONITOR_VIEWS = [
-  { id: 'deploy', label: 'Deploy', Icon: Rocket },
-  { id: 'overview', label: 'Overview', Icon: Activity },
-  { id: 'pipeline', label: 'Pipeline', Icon: Workflow },
-  { id: 'repository', label: 'Repository', Icon: FolderGit2 },
-  { id: 'cicd', label: 'CI/CD', Icon: GitBranch },
-  { id: 'infra', label: 'Infrastructure', Icon: Server },
-  { id: 'security', label: 'IAM & Security', Icon: Shield, aws: true },
-  { id: 'logs', label: 'Logs', Icon: ScrollText },
-  { id: 'api', label: 'API Validation', Icon: Globe },
-  { id: 'evidence', label: 'Evidence', Icon: Camera },
+  { id: 'deploy', label:'Deploy', Icon: Rocket },
+  { id: 'overview', label:'Overview', Icon: Activity },
+  { id: 'pipeline', label:'Pipeline', Icon: Workflow },
+  { id: 'repository', label:'Repository', Icon: FolderGit2 },
+  { id: 'cicd', label:'CI/CD', Icon: GitBranch },
+  { id: 'infra', label:'Infrastructure', Icon: Server },
+  { id: 'security', label:'IAM & Security', Icon: Shield, aws: true },
+  { id: 'logs', label:'Logs', Icon: ScrollText },
+  { id: 'api', label:'API Validation', Icon: Globe },
+  { id: 'evidence', label:'Evidence', Icon: Camera },
 ]
 
 
@@ -371,34 +392,30 @@ function MonitorBar({ view, setView, monitor, hasSnapshot, runId, running,
 
   if (shown.length === 1 && !running) return null
   return (
-    <div className="sticky top-0 z-10 flex items-center gap-1 border-b border-line
-                    bg-panel/95 px-4 py-1.5 backdrop-blur">
-      <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto
-                      [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {shown.map(({ id, label, Icon }) => (
-          <button key={id} onClick={() => setView(id)}
-                  className={cn('flex shrink-0 items-center gap-1.5 rounded-ctl px-2.5 py-1',
-                    'text-[11px] font-medium transition-colors',
-                    view === id ? 'bg-accent/12 text-accent'
-                                : 'text-muted hover:bg-panel2 hover:text-ink')}>
-            <Icon className="size-3" /> {label}
-          </button>
-        ))}
-      </div>
-      <span className="hidden text-[10px] text-muted2 sm:block">
+    <SubTabs className="sticky top-0 z-10">
+      {shown.map(({ id, label, Icon }) => (
+        <SubTab key={id} on={view === id} onClick={() => setView(id)}>
+          <Icon className="size-3" /> {label}
+        </SubTab>
+      ))}
+      <span className="flex-1" />
+      <span className="hidden shrink-0 items-center px-3 font-mono text-[10px]
+                       text-muted2 sm:flex">
         {monitor.live ? (monitor.at ? `updated ${ago(monitor.at)}` : 'live')
                       : 'from the last deployment'}
       </span>
-      <Button size="sm" disabled={monitor.busy || !monitor.canRefresh}
-              onClick={monitor.refresh}
-              title="Ask the deployment agent for a fresh snapshot — this takes around 25 seconds">
-        {monitor.busy ? <Loader2 className="size-3 animate-spin" />
-                      : <RefreshCw className="size-3" />}
-        Refresh
-      </Button>
-      <span className="mx-1 h-4 w-px bg-line" />
-      <DeployDanger runId={runId} state={state} running={running} onDone={onDone} />
-    </div>
+      <span className="flex shrink-0 items-center gap-2 px-3">
+        <Button variant="outline" size="sm"
+                disabled={monitor.busy || !monitor.canRefresh}
+                onClick={monitor.refresh}
+                title="Ask the deployment agent for a fresh snapshot — this takes around 25 seconds">
+          {monitor.busy ? <Loader2 className="size-3 animate-spin" />
+                        : <RefreshCw className="size-3" />}
+          Refresh
+        </Button>
+        <DeployDanger runId={runId} state={state} running={running} onDone={onDone} />
+      </span>
+    </SubTabs>
   )
 }
 
@@ -408,12 +425,10 @@ function MonitorPane({ view, monitor, runId, state, run }) {
   return (
     <div className="space-y-4">
       {monitor.error && (
-        <p className="flex items-start gap-2 rounded-ctl border border-bad/40 bg-bad/10
-                      px-2.5 py-2 text-[11.5px] text-bad">
-          <AlertTriangle className="mt-px size-3.5 shrink-0" /> {monitor.error}
+        <p className="flex items-start gap-2.5 rounded-2xl border border-bad/20 bg-bad/[.045] px-3 py-3 text-[11.5px] text-bad">
+          <AlertTriangle className="mt-px size-3.5 shrink-0 text-accent" /> {monitor.error}
         </p>
       )}
-      <StatusBar snap={snap} state={state} />
       {view === 'overview' && <Overview snap={snap} />}
       {view === 'pipeline' && (
         <Pipeline events={run.events} artifacts={run.artifacts} busy={run.busy} />
