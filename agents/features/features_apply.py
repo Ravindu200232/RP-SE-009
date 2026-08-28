@@ -1,16 +1,11 @@
 """Focused apply responsibilities for FeaturesAgent."""
 from agents.features.features_common import *
+from agents.features.source_guidance import render_feature_prompt
 
 
 class FeaturesAgentApplyMixin:
     def apply(self, request: str, spec: FeatureSpec) -> int:
-        """Implement a planned change without a file-count gate.
-
-        Small changes are written in one turn. Large changes are split into
-        context-sized waves, not rejected or truncated. The complete impact
-        plan stays visible in every wave and workspace tools remain available,
-        so a later wave can inspect what an earlier one just wrote.
-        """
+        """Implement the proven plan in context-sized, dependency-aware waves."""
         if spec.is_empty():
             return 0
 
@@ -18,6 +13,8 @@ class FeaturesAgentApplyMixin:
         image_contract = feature_image_prompt(request)
 
         for pkg in spec.packages:
+            if not package_requested(pkg):
+                continue
             self._log("INFO", f"   📦 npm install {pkg}")
             self.az.cmd.run(f"npm install {pkg}")
 
@@ -25,7 +22,6 @@ class FeaturesAgentApplyMixin:
         planned = list(spec.files)
         plan_paths = {f["path"] for f in planned}
 
-        # Complexity is handled by context-sized waves rather than a hard.
         wave_budget = max(30_000, int(self._budget_chars() * 0.34))
         waves, current, used = [], [], 0
         for f in planned:
@@ -61,7 +57,6 @@ class FeaturesAgentApplyMixin:
                 else:
                     bodies.append(f"--- {f['path']} (NEW FILE) ---\n(create this file)")
 
-            # Nearby dependencies are reference context only.
             shown = set(wave_paths)
             ref_used = sum(len(x) for x in bodies)
             for f in wave:
@@ -91,47 +86,18 @@ class FeaturesAgentApplyMixin:
             evidence_lines = "\n".join(
                 f"  • {e.get('path', '')}: {e.get('fact', '')}"
                 for e in (reasoning.get('evidence') or []) if e.get('path'))
-            user = textwrap.dedent(f"""\
-                ## The requested change
-                {request}
-
-                {('## Image generation contract' + chr(10) + image_contract + chr(10)) if image_contract else ''}
-                ## Evidence-backed change analysis
-                Current behavior: {reasoning.get('current') or '(not recorded)'}
-                Gap: {reasoning.get('gap') or '(not recorded)'}
-                Root cause / ownership: {reasoning.get('cause') or '(not recorded)'}
-                Source evidence:
-                {evidence_lines or '  • (none recorded — inspect before guessing)'}
-                Required proof: {reasoning.get('verify') or '(not recorded)'}
-
-                ## The complete impact plan
-                {spec.summary}
-                {full_listing}
-
-                ## Implementation wave {wave_no}/{len(waves)}
-                Write every file in THIS wave:
-                {wave_listing}
-
-                ## Current source for this wave and nearby dependencies
-                {chr(10).join(bodies)}
-
-                Implement the requested change as one coherent app change.
-                Preserve unrelated behavior and public contracts, but do NOT
-                artificially keep the change inside one file: if inspection
-                proves another existing/new source file is genuinely required,
-                write it too and explain nothing — just emit its write block.
-
-                For edit files, output the COMPLETE file. Do not silently drop
-                unrelated exports, handlers, sections or styling. Keep server/
-                client boundaries valid: never pass functions or BSON objects
-                across a Server→Client prop boundary; create a focused client
-                component when interactivity requires it.
-
-                If a package is required, request it before the importing file:
-                <run_command>npm install package-name</run_command>
-
-                One <write_file path="…"> block per changed file.
-                """)
+            user = render_feature_prompt(
+                "APPLY", request=request,
+                image_contract=("## Image generation contract\n" + image_contract
+                                if image_contract else ""),
+                current=reasoning.get("current") or "(not recorded)",
+                gap=reasoning.get("gap") or "(not recorded)",
+                cause=reasoning.get("cause") or "(not recorded)",
+                evidence=evidence_lines or "  • (none — inspect before guessing)",
+                verify=reasoning.get("verify") or "(not recorded)",
+                summary=spec.summary, full_plan=full_listing,
+                wave_number=wave_no, wave_total=len(waves),
+                wave_plan=wave_listing, source="\n".join(bodies))
 
             convo = ([{"role": "system", "content": self.arch._builder_sys() + "\n\n" + TOOL_HELP}]
                      + self._memory()
@@ -197,22 +163,7 @@ class FeaturesAgentApplyMixin:
         return len(spec.written) - total_written_before
 
     def remember(self, request: str, spec: FeatureSpec) -> bool:
-        """
-        Write this feature into the build thread, so the next edit knows it.
-
-        Without this the memory only ever flows one way. `plan_feature` and
-        `apply` build their own message lists — deliberately, so a feature can
-        never corrupt a running build — which means a feature adds nothing to
-        `arch.convo` and `save_convo()` afterwards has nothing to save. On a
-        project generated before the thread was persisted at all, that leaves
-        it permanently without one: every feature starts from the inventory
-        again, and none of them remember each other.
-
-        So the exchange is recorded here, as a compact receipt rather than the
-        raw turns — the request, the decision, and the files. Same shape
-        `_stub_files` leaves behind, and for the same reason: the code is on
-        disk, the reasoning is what is worth carrying.
-        """
+        """Record a compact request/decision receipt for later edits."""
         if not spec.written:
             return False
         arch = self.arch
@@ -242,18 +193,7 @@ class FeaturesAgentApplyMixin:
             return False
 
     def update_plan(self, request: str, spec: FeatureSpec) -> bool:
-        """
-        Append a `## Feature —` section, after the writes and filtered by what
-        actually landed.
-
-        The ordering is load-bearing. `AnalyzerAgent.planned_paths()` scrapes
-        backticked paths out of this prose, so a path written into plan.md that
-        never reached disk becomes a MISSING_FILE *blocker* on the very next
-        scan — and the analyzer would then try to "repair" a file that was
-        never meant to exist. Listing only files that exist makes the check
-        stronger instead: a silently failed write stays invisible to the plan
-        and is caught by the build check on its own terms.
-        """
+        """Append only successfully written files to plan.md."""
         landed = [f for f in spec.files if f["path"] in spec.written]
         if not landed:
             return False
@@ -302,7 +242,6 @@ class FeaturesAgentApplyMixin:
         self._fire("on_phase", {"phase": -10, "title": "Writing the feature",
                                 "status": "done", "written": n})
         if n:
-            # Syntax/build checks prove that code can run.
             spec = self.converge_semantics(request, spec, rounds=2)
             self.update_plan(request, spec)
             self.remember(request, spec)

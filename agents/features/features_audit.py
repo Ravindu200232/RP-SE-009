@@ -1,46 +1,17 @@
-"""Post-change semantic audit for feature/selection/pencil edits.
-
-Build green proves syntax and bundling.  It does not prove that the requested
-behavior landed in the code that actually owns it.  This audit is deliberately
-read-only: it compares the request, the pre-change reasoning receipt and the
-current changed source, follows dependencies when needed, and either proves the
-change or returns a source-backed delta impact map.
-"""
+"""Read-only semantic audit and bounded repair convergence for feature edits."""
 from __future__ import annotations
 
 import re
 
-from agents.features.features_common import FeatureSpec, normalise_change_path, safe_change_path
+from agents.features.features_common import (
+    FeatureSpec, change_entry, normalise_change_path, protocol_lines,
+    unique_paths,
+)
+from agents.features.source_guidance import feature_prompt, render_feature_prompt
 from agents.core.workspace import WorkspaceTools, TOOL_HELP
 
 
-AUDIT_SYSTEM = """\
-You are the read-only reviewer of ONE completed change in a Next.js 16 app.
-Do not write code. Do not congratulate the implementation. Your only job is to
-prove whether the user's exact request is now satisfied by the CURRENT source.
-
-Use the workspace tools when ownership or a dependency is uncertain. A build
-being green is not proof of behavior. A filename is not proof of ownership.
-For a visual selection/pencil edit, the selected route/file/element are strong
-location evidence, but the actual behavior may live in a child component,
-server action, API route, seed helper, shared caller or layout.
-
-Output ONLY:
-RESULT :: PASS|FAIL
-GAP :: NONE | one precise remaining/wrong behavior
-EVIDENCE :: <existing-path> :: concrete current source fact
-EVIDENCE :: <existing-path> :: another fact when useful
-FILE :: new|edit :: <path> :: server|client :: why this file must still change   (FAIL only)
-VERIFY :: one concrete proof that would demonstrate completion
-DONE
-
-Rules:
-- PASS only when the request is supported by current source evidence.
-- FAIL only when you can name the missing/wrong behavior and source evidence.
-- Never invent a FILE because its name sounds relevant. Inspect first.
-- A large correction may name many files. There is no file-count limit.
-- Do not turn unrelated cleanup, style preferences or test expectations into a gap.
-"""
+AUDIT_SYSTEM = feature_prompt("AUDIT", foundation=True)
 
 
 class FeaturesAgentAuditMixin:
@@ -85,14 +56,7 @@ class FeaturesAgentAuditMixin:
         result = {"result": "", "gap": "", "evidence": [], "files": [],
                   "verify": ""}
         files = getattr(self.arch, "files", {}) or {}
-        for raw in str(text or "").splitlines():
-            line = raw.strip()
-            if not line:
-                continue
-            head, sep, rest = line.partition("::")
-            if not sep:
-                continue
-            kind, rest = head.strip().upper(), rest.strip()
+        for kind, rest in protocol_lines(text):
             if kind == "RESULT":
                 value = rest.split()[0].upper() if rest else ""
                 if value in ("PASS", "FAIL"):
@@ -109,21 +73,11 @@ class FeaturesAgentAuditMixin:
                         result["evidence"].append({"path": path,
                                                    "fact": parts[1][:700]})
             elif kind == "FILE":
-                parts = [p.strip().strip("`") for p in rest.split("::")]
-                if len(parts) >= 2:
-                    action = parts[0].lower()
-                    path = normalise_change_path(parts[1])
-                    if action in ("new", "edit") and safe_change_path(path):
-                        result["files"].append({
-                            "path": path, "action": action,
-                            "kind": parts[2].lower() if len(parts) > 2 else "",
-                            "why": parts[3] if len(parts) > 3 else result["gap"],
-                        })
-        seen = set(); unique = []
-        for f in result["files"]:
-            if f["path"] not in seen:
-                seen.add(f["path"]); unique.append(f)
-        result["files"] = unique
+                entry = change_entry(rest)
+                if entry:
+                    entry["why"] = entry["why"] or result["gap"]
+                    result["files"].append(entry)
+        result["files"] = unique_paths(result["files"])
         return result
 
     def _audit_source(self, paths) -> str:
@@ -163,13 +117,11 @@ class FeaturesAgentAuditMixin:
                         f"Route: {selected_route or '/'}\n"
                         f"Selected owner candidate: {selected_path or '(unknown)'}\n"
                         f"Selected DOM/region: {selected_element or '(not described)'}\n")
-        user = (f"## User request\n{request}\n\n"
-                f"## Pre-change reasoning receipt\n{receipt}\n"
-                f"{selected}\n"
-                f"## Files written by the change\n" +
-                "\n".join(f"- {p}" for p in touched if p) + "\n\n"
-                f"## Current source/import evidence\n{self._audit_source(touched)}\n\n"
-                "Inspect any additional owner/caller/route you need, then audit the exact request.")
+        user = render_feature_prompt(
+            "AUDIT_REQUEST", request=request, receipt=receipt,
+            selection=selected,
+            touched="\n".join(f"- {p}" for p in touched if p),
+            source=self._audit_source(touched))
         self.arch._workspace_tool_cache = {}
         convo = ([{"role": "system", "content": AUDIT_SYSTEM + "\n\n" + TOOL_HELP}]
                  + self._memory() + [{"role": "user", "content": user}])

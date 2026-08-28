@@ -1,27 +1,4 @@
-"""
-The Next.js documentation that ships inside the installed package.
-
-From 16.2 the `next` package carries its own docs at
-`node_modules/next/dist/docs/` — measured on 16.3.0: **444 markdown files,
-3.9 MB**, matched to the exact version installed. That is the point: a model
-answering from training data writes Next 13/14/15 patterns, and 16 hard-errors
-on several of them.
-
-None of it can be pasted into a prompt. Measured sizes:
-
-    the whole bundle                     3.9 MB   ~1.1 M tokens
-    nextjs.org/docs/llms.txt (an index)   46 KB   ~13.6 k tokens
-    the ten pages our rules touch        122 KB    ~36 k tokens
-    one page, use-client.md              3.8 KB    ~1.1 k tokens
-
-…against a builder system prompt that is already ~15 k characters, and a local
-default context of 16 k. So the model gets a short hand-written topic table in
-the prompt and pulls whole pages on demand with `<read_docs topic="…"/>` — the
-same shape as the analyzer's `read_file`, for the same reason.
-
-The topics are hand-picked, not scraped: each one is the page that answers a
-rule this project already enforces and has watched models break.
-"""
+"""Lets agents read the documentation bundled with the installed Next.js."""
 import logging
 import re
 from pathlib import Path
@@ -70,13 +47,13 @@ TOPICS = {
 
 
 def docs_root(project_dir: Path) -> Path | None:
-    """The installed docs directory, or None on Next < 16.2 / no install."""
+    """Return the installed documentation folder when it exists."""
     root = Path(project_dir) / "node_modules" / "next" / "dist" / "docs"
     return root if root.is_dir() else None
 
 
 def available(project_dir: Path) -> dict:
-    """`{topic: description}` for the topics whose file is really present."""
+    """List the available topics and their descriptions."""
     root = docs_root(project_dir)
     if not root:
         return {}
@@ -85,12 +62,7 @@ def available(project_dir: Path) -> dict:
 
 
 def index_block(project_dir: Path) -> str:
-    """
-    The topic table for the system prompt, or "" when there are no docs.
-
-    Deliberately ~15 lines: this is paid for on every single turn, while a page
-    is paid for only when the model asks.
-    """
+    """Build the short topic list shown to the agent."""
     got = available(project_dir)
     if not got:
         return ""
@@ -114,7 +86,7 @@ MAX_BYTES = 24_000
 
 
 def read(project_dir: Path, topic: str) -> str:
-    """One documentation page, or a short refusal the model can act on."""
+    """Read one topic or explain why it is unavailable."""
     topic = (topic or "").strip().lower()
     entry = TOPICS.get(topic)
     if not entry:
@@ -135,14 +107,7 @@ def read(project_dir: Path, topic: str) -> str:
 
 
 def serve(project_dir: Path, reply: str) -> str:
-    """
-    The answer turn for whatever `<read_docs>` tags a reply contains, or "".
-
-    Matched after the reply completes, like `<run_command>`, because the
-    streaming parser only hedges against `<write_file` — a tag it does not know
-    would have its characters leak into the chat pane, possibly split across
-    chunks.
-    """
+    """Return the documentation requested in an agent reply."""
     topics, seen = [], set()
     for t in READ_RE.findall(reply or ""):
         t = t.lower()

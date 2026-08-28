@@ -1,8 +1,8 @@
-"""Import/export parsing and local module resolution."""
+"""Reads imports and exports from local JavaScript files."""
 from agents.core.exports_common import *
 
 def _clause_names(body: str) -> list:
-    """`a, b as c, default as D` -> ['a', 'c', 'D'] — the *exported* names."""
+    """Return the public names from an export list."""
     names = []
     for part in body.split(","):
         part = part.strip()
@@ -42,7 +42,7 @@ def _parse_exports_one(src: str) -> ModuleExports:
 
 
 def parse_exports(src: str) -> ModuleExports:
-    """Union of what the raw and the stripped source declare — see module doc."""
+    """Read every export while avoiding false matches in comments."""
     a = _parse_exports_one(src)
     b = _parse_exports_one(strip_noncode(src))
     return ModuleExports(
@@ -62,14 +62,14 @@ class ImportStmt:
     namespace: str = ""
 
 
-# The clause between `import` and `from` may span lines.
+# Import lists can continue on the next line.
 _IMPORT_RE = re.compile(
     r"""\bimport\s+(?!\()((?:(?!\bimport\b)[^;])*?)\s*from\s*['"]([^'"]+)['"]""",
     re.S)
 
 
 def parse_imports(src: str) -> list:
-    """Import statements, read from the stripped source only — see module doc."""
+    """Read import statements while ignoring commented code."""
     clean = strip_noncode(src)
     out = []
     for m in _IMPORT_RE.finditer(clean):
@@ -111,7 +111,7 @@ def _normalise(path: str) -> str:
 
 
 def resolve_local(importer_rel: str, spec: str, files: dict) -> str | None:
-    """The project-relative path `spec` refers to, or None if unresolvable."""
+    """Find the local file named by an import."""
     if spec.startswith("@/"):
         target = _normalise(spec[2:])
     elif spec.startswith(("./", "../")):
@@ -129,12 +129,9 @@ def resolve_local(importer_rel: str, spec: str, files: dict) -> str | None:
 
 
 def effective_exports(rel: str, files: dict, _seen: set = None) -> set | None:
-    """
-    Every name `rel` exports, following re-exports transitively.
+    """Collect exports from this file and any files it re-exports.
 
-    Returns None when the surface is unknowable — an `export * from` whose
-    target cannot be resolved.  Callers must treat None as "do not check this
-    module", never as "exports nothing".
+    Return ``None`` when the full list cannot be known safely.
     """
     _seen = _seen or set()
     if rel in _seen:

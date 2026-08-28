@@ -1,29 +1,4 @@
-"""
-Named imports that the target module does not export.
-
-JavaScript has no compile-time export checking, so `next build` happily compiles
-a file that does `import { findUserByEmail } from '@/lib/auth'` against a module
-exporting no such name.  The failure only appears at request time as a 500 —
-which is exactly the "login goes to the dashboard then bounces back" bug.
-
-This module is the deterministic detector.  Pure Python, no dependency, shared
-by ArchitectAgent.lint_generated(), AnalyzerAgent.scan() and
-server.verify_after_edit().
-
-Every decision is biased away from false positives, because a false positive
-sends the model off to "fix" working code:
-
-  * only local specs (`./`, `../`, `@/`) are checked — an npm package's export
-    surface is unknowable from source, and `lucide-react` would light up
-    instantly;
-  * exports are read from the raw source *and* the comment-stripped source and
-    unioned, so a stripper confused by an apostrophe in JSX text
-    (`<p>Don't have an account?</p>`) can never make a real export vanish;
-  * imports are read from the stripped source only, so a commented-out import
-    is never checked;
-  * a module that re-exports from something unresolvable has an unknown export
-    surface and is suppressed entirely rather than guessed at.
-"""
+"""Shared helpers for finding imports that do not exist."""
 from __future__ import annotations
 
 import difflib
@@ -82,7 +57,7 @@ def _regex_can_start(src: str, i: int) -> bool:
 
 
 def strip_noncode(src: str) -> str:
-    """Comments and regex literals blanked; strings and offsets preserved."""
+    """Hide comments and patterns without changing text positions."""
     out = list(src)
     n = len(src)
     i = 0
@@ -156,11 +131,7 @@ def strip_noncode(src: str) -> str:
 
 
 def _regex_end(src: str, i: int, n: int) -> int:
-    """Index just past a regex literal starting at `i`, or 0 if it is not one.
-
-    A regex never spans a line, which bounds the blast radius when JSX's
-    `</div>` is mistaken for one.
-    """
+    """Find the end of a single-line pattern, or return zero."""
     j = i + 1
     in_class = False
     while j < n:

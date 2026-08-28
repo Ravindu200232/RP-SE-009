@@ -89,6 +89,47 @@ def _repair_runtime(arch, proj_dir: Path, qa, analyzer, all_errors: str,
             log.exception("runtime repair: fix")
             return []
 
+    try:
+        report = analyzer.scan()
+        anchors = set(focus or focus_paths or [])
+        boundary_error = "Event handlers cannot be passed" in evidence
+        hits = []
+        for finding in report.findings:
+            related = {finding.path, *(getattr(finding, "extra", None) or [])}
+            proven = anchors & related or (boundary_error and finding.code == "SERVER_CLIENT_EVENT_HANDLER")
+            if finding.severity in {"blocker", "major"} and proven:
+                hits.append(finding)
+        if hits:
+            direct_files, direct_evidence = [], []
+            for finding in hits[:10]:
+                for rel in [finding.path] + list(getattr(finding, "extra", None) or []):
+                    rel = str(rel or "").replace("\\", "/").lstrip("./")
+                    if rel not in arch.files or rel in {x["path"] for x in direct_files}:
+                        continue
+                    direct_files.append({"action": "edit", "path": rel,
+                                         "kind": "source", "why": finding.fix or finding.message})
+                    direct_evidence.append({"path": rel,
+                                            "fact": f"{finding.code}: {finding.message}"})
+            if direct_files:
+                direct = FeatureSpec(
+                    summary="Repair Analyzer-proven runtime/source contract violations",
+                    files=direct_files[:16],
+                    context={
+                        "current": "deterministic Analyzer checks found source violations on the failing runtime path",
+                        "gap": "the same runtime path must render and execute without those violations",
+                        "cause": "; ".join(f"{f.code}: {f.message}" for f in hits[:4]),
+                        "evidence": direct_evidence[:16],
+                        "verify": "repeat the failing route/action and require no HTTP 5xx, console error, or pageerror",
+                        "confidence": "high",
+                    })
+                elog("INFO", f"   🔎 Analyzer passed {len(direct_evidence[:16])} direct source proof(s) to Bug Fixer")
+                written = run_fixer(direct)
+                if written:
+                    elog("INFO", f"   ✅ Analyzer-direct repair wrote {len(written)} file(s): {', '.join(written)}")
+                    return written
+    except Exception as e:
+        log.debug(f"direct analyzer repair evidence: {e}")
+
     spec = None
     try:
         spec = planner.plan_repair(all_errors, server_log=dev_errors,

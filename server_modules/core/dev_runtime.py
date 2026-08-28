@@ -205,54 +205,42 @@ def ensure_node_deps(proj_dir: Path) -> bool:
     if _deps_ready(proj_dir):
         return True
 
-    first = not (proj_dir / "node_modules").is_dir()
-    elog("INFO", "📦 Installing dependencies (npm install)…")
-
+    elog("INFO", "📦 Installing dependencies (180s cap, one retry)…")
     from qa_agent.unit.harness_common import NPM_LOCK
     with NPM_LOCK:
-        try:
-            r = cancel.run(
-                [NPM_BIN, "install", "--no-audit", "--no-fund",
-                 "--prefer-offline", "--loglevel=error"],
-                cwd=proj_dir,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=900 if first else 300,
-            )
-            if r.returncode == 0:
-                elog("INFO", "   ✅ npm install complete")
-                return True
-            elog("ERROR", f"   ❌ npm install failed:\n{(r.stderr or '')[:300]}")
-            return False
-        except subprocess.TimeoutExpired:
-            elog("ERROR", "   ❌ npm install timed out")
-            return False
-        except Exception as e:
-            elog("ERROR", f"   ❌ npm install crashed: {e}")
-            return False
+        for attempt in (1, 2):
+            try:
+                r = cancel.run(
+                    [NPM_BIN, "install", "--no-audit", "--no-fund",
+                     "--prefer-offline", "--loglevel=error"],
+                    cwd=proj_dir, capture_output=True, text=True,
+                    encoding="utf-8", errors="replace", timeout=180,
+                    env={**os.environ, "CI": "true", "NO_COLOR": "1",
+                         "FORCE_COLOR": "0", "NPM_CONFIG_FUND": "false",
+                         "NPM_CONFIG_AUDIT": "false"})
+                if r.returncode == 0 and _deps_ready(proj_dir):
+                    elog("INFO", "   ✅ npm install complete")
+                    return True
+                elog("ERROR", f"   ❌ npm install failed:\n{((r.stderr or r.stdout) or '')[:300]}")
+                if attempt == 1:
+                    elog("WARN", "   ↻ npm install exited non-zero — retrying once")
+                    continue
+                return False
+            except subprocess.TimeoutExpired:
+                if attempt == 1:
+                    elog("WARN", "   ⏱ npm install exceeded 180s — process tree stopped; retrying once")
+                    continue
+                elog("ERROR", "   ❌ npm install timed out again after retry")
+                return False
+            except Exception as e:
+                elog("ERROR", f"   ❌ npm install crashed: {e}")
+                return False
+    return False
 
 
 def detect_stack(proj_dir: Path) -> str:
-    """
-    Which framework a generated project uses.
-
-    Projects created before the Next.js migration are Vite and must keep
-    getting Vite prompts, a Vite dev server and Vite test heuristics.
-    """
-    try:
-        pkg = json.loads((proj_dir / "package.json").read_text(encoding="utf-8"))
-        deps = {**pkg.get("dependencies", {}), **pkg.get("devDependencies", {})}
-        if "next" in deps:
-            return "next"
-        if "vite" in deps:
-            return "vite"
-    except Exception:
-        pass
-    if (proj_dir / "next.config.mjs").exists() or (proj_dir / "app").is_dir():
-        return "next"
-    return "vite"
+    """Which framework a generated project uses. AgentForge only builds Next."""
+    return "next"
 
 
 def _kill_proc_tree(proc):
@@ -340,74 +328,7 @@ def _stop_dev_proc():
         active_vite["proc"] = None
 
 
-def start_vite(proj_dir: Path):
-    """Kill old Vite fully, then start fresh on exact DEV_PORT."""
 
-    _stop_dev_proc()
-
-    _kill_port(DEV_PORT)
-    active_vite["stderr_lines"] = []
-    active_vite["stack"] = "vite"
-
-    def _run():
-        try:
-            p = subprocess.Popen(
-
-                [NPM_BIN, "run", "dev", "--", "--port", str(DEV_PORT),
-                 "--host", "--strictPort"],
-                cwd=proj_dir,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                env=os.environ.copy(),
-
-                **({"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
-                   if os.name == "nt" else {"start_new_session": True}),
-            )
-            active_vite["proc"] = p
-
-            def _stderr():
-                for line in p.stderr:
-                    l = line.strip()
-                    if l:
-                        active_vite["stderr_lines"].append(l)
-                        if any(k in l for k in ["Error","error","failed","SyntaxError"]):
-                            elog("WARN", f"   [vite] {l[:120]}")
-            threading.Thread(target=_stderr, daemon=True).start()
-
-            for line in p.stdout:
-                l = line.strip()
-                if l: elog("INFO", f"   [vite] {l}")
-        except Exception as e:
-            elog("ERROR", f"   Vite crashed: {e}")
-
-    threading.Thread(target=_run, daemon=True).start()
-
-def wait_for_vite(timeout: int = 40) -> bool:
-    """Poll DEV_PORT until Vite responds HTTP 200 or timeout expires."""
-    import urllib.request, urllib.error
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        try:
-            r = urllib.request.urlopen(
-                f"http://127.0.0.1:{DEV_PORT}", timeout=2
-            )
-            if r.status == 200:
-                return True
-        except Exception:
-            pass
-        time.sleep(0.5)
-    return False
-
-
-def vite_stderr() -> str:
-    lines = active_vite.get("stderr_lines", [])
-    err = [l for l in lines if any(k in l for k in
-        ["Error","error","SyntaxError","ReferenceError","TypeError",
-         "Cannot find","is not defined","failed","plugin:vite"])]
-    return "\n".join(err[-40:])
 
 
 _ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
@@ -421,7 +342,7 @@ def start_next(proj_dir: Path, port: int = DEV_PORT):
     """
     Start `next dev` on DEV_PORT.
 
-    Note this cannot reuse start_vite: `--host` and `--strictPort` are Vite
+    Note the dev server is started directly here: `--host` and `--strictPort`
     flags, and `next dev` exits immediately on unknown arguments. Next is
     launched directly through node rather than `npm run dev`, which removes a
     process layer and makes the tree far more reliable to kill.
@@ -581,11 +502,7 @@ def start_dev_server(proj_dir: Path, stack: str = None):
     stack = stack or detect_stack(proj_dir)
 
     active_vite["dir"] = str(Path(proj_dir).resolve())
-
-    if stack == "next":
-        start_next(proj_dir)
-    else:
-        start_vite(proj_dir)
+    start_next(proj_dir)
 
 
 def _dev_alive(timeout: float = 2.0) -> bool:
@@ -599,43 +516,11 @@ def _dev_alive(timeout: float = 2.0) -> bool:
         return False
 
 
-def wait_for_dev(stack: str, timeout: int = None) -> bool:
-    if stack == "next":
-        return wait_for_next(timeout or NEXT_READY_TIMEOUT)
-    return wait_for_vite(timeout or 40)
+def wait_for_dev(stack: str = "next", timeout: int = None) -> bool:
+    return wait_for_next(timeout or NEXT_READY_TIMEOUT)
 
 
-def dev_stderr(stack: str) -> str:
-    return next_stderr() if stack == "next" else vite_stderr()
+def dev_stderr(stack: str = "next") -> str:
+    return next_stderr()
 
 
-class UIBuilder(BuilderAgent):
-    """Thin wrapper — overrides _on_write and _install_deps to emit UI events."""
-
-    def _on_write(self, fname: str, sz: str, content: str):
-        efile(fname, sz, content)
-
-    def _install_deps(self) -> bool:
-        estep("install", "active")
-        eprog("npm install…", 60)
-        elog("INFO", "📦 npm install…")
-        try:
-            r = cancel.run(
-                [NPM_BIN, "install"],
-                cwd=self.project_dir,
-                capture_output=True,
-                text=True,
-                timeout=180,
-            )
-            if r.returncode == 0:
-                estep("install", "done")
-                eprog("Dependencies ready", 75)
-                elog("INFO", "   ✅ npm install complete")
-                return True
-            estep("install", "error")
-            elog("ERROR", f"   npm failed: {r.stderr[:200]}")
-            return False
-        except FileNotFoundError:
-            estep("install", "error")
-            elog("ERROR", f"   npm binary not found at: {NPM_BIN}")
-            return False

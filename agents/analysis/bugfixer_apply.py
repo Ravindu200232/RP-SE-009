@@ -1,405 +1,321 @@
-"""Unit/runtime fix execution and guarded commit logic."""
-from agents.analysis.bugfixer_common import *
+"""Repairs test and runtime failures using observed evidence."""
+from __future__ import annotations
+
+import logging
+import re
+import threading
+from dataclasses import dataclass, field
+from pathlib import Path
+
+from agents.core.exports_parse import effective_exports, parse_imports, resolve_local
+from agents.core.workspace import TOOL_HELP, WorkspaceTools
+from agents.features.features_common import safe_change_path
+from agents.features.picker import guard_scope
+from agents.planner.architecture import FileStreamParser
+
+log = logging.getLogger("agent.bugfixer")
+TEMPERATURE, CALL_BUDGET, MAX_APP_FILES = 0.15, 600, 4
+CODE_CHANGE_FRAC, CODE_CHANGE_MIN = 0.50, 40
+RUNTIME_CHANGE_FRAC, RUNTIME_CHANGE_MIN, RUNTIME_MAX_FILES = 0.95, 400, None
+VERDICT_RE = re.compile(r"^\s*VERDICT\s*::\s*(test|code|harness|unclear)\s*(?:::\s*(.*))?$", re.I | re.M)
+VERDICT_HARNESS = "harness"
+WEAKENED_RE = re.compile(r"\b(?:it|test|describe)\s*\.\s*(?:skip|todo)\b|expect\s*\(\s*(?:true|1)\s*\)\s*\.\s*toBe\s*\(\s*(?:true|1)\s*\)")
+HTTP_METHODS = frozenset({"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"})
+NEVER_CODE = frozenset({"lib/mongodb.js"})
+PROMPT_FILE = Path(__file__).with_name("analysis_prompt.md")
 
 
-class BugFixerApplyMixin:
-    def fix(self, failures, *, build_ok=True, round_no=1,
-            tier=0) -> FixVerdict:
-        """
-        Arbitrate and repair one test file's failures. One model call at most.
+@dataclass
+class FixVerdict:
+    test_file: str
+    target: str = ""
+    verdict: str = "test"
+    evidence: str = ""
+    forced: str = ""
+    written: str = ""
+    quarantine: bool = False
+    rejected: list = field(default_factory=list)
+    failing: list = field(default_factory=list)
 
-        `tier` is how hard to try, and it only goes up when repeating the
-        current strategy has stopped paying. Every rung hands the model
-        something the rung below did not have, because a retry that asks the
-        same question with the same context is not a second attempt:
+    @property
+    def touched_code(self): return bool(self.written) and self.written == self.target
 
-          0  the usual repair
-          1  the reason its last write was REFUSED, plus more of the file's
-             neighbourhood. The refusal reasons — "it introduces it.skip",
-             "it drops 3 passing case(s)" — were already being computed and
-             then dropped on the floor, so the model retried blind and
-             reproduced the same rewrite. This is the cheapest new information
-             in the system: no extra retrieval, no extra tokens spent looking.
-          2  permission to fix the COMPONENT rather than the test. `prior`
-             sends almost everything to "test", so a case that is red because
-             the component genuinely lacks the role or label it should have
-             gets the test rewritten to match the broken component, forever.
-             That is the shape that never converges.
-        """
-        if not failures:
-            return FixVerdict(test_file="", verdict="test",
-                              evidence="there is nothing to repair")
-        f0 = failures[0]
-        test_file = f0.test_file
-        target = (f0.target or "").strip()
-        v = FixVerdict(test_file=test_file, target=target,
-                       failing=[f.name for f in failures if f.name])
 
-        forced, reason, action = self.prior(failures, build_ok=build_ok,
-                                            round_no=round_no)
-        if forced:
-            v.forced = reason
-        if action == "quarantine":
-            v.verdict, v.evidence, v.quarantine = "test", reason, True
-            self._log("WARN", f"   🚧 {test_file} — {reason}")
-            with self._lock:
-                self.verdicts.append(v)
-            return v
-        if action == "report":
+def _contract():
+    try: return PROMPT_FILE.read_text("utf-8")
+    except OSError: return "Decide from evidence before writing. Preserve passing tests and exports."
 
-            v.verdict, v.evidence = forced, reason
-            self._log("WARN", f"   ⚠ {test_file} — {reason}")
-            with self._lock:
-                self.verdicts.append(v)
-            return v
 
-        test_body = self._read(test_file) or ""
-        target_body = self._read(target) if target else ""
-        if not test_body.strip():
-            v.verdict, v.evidence = "test", "the test file is gone"
-            with self._lock:
-                self.verdicts.append(v)
-            return v
+SYSTEM = _contract() + "\n\nMODE: TEST_ARBITRATION"
+RUNTIME_SYSTEM = _contract() + "\n\nMODE: FINDING_REPAIR"
 
-        if tier >= 2 and target:
-            reason = (reason + " — and two corrections of the test did not "
-                      "make it pass, so the component is the thing left to "
-                      "doubt").strip(" —")
-        allowed = {test_file, target} - {""}
-        self.arch._workspace_tool_cache = {}
-        convo = [{"role": "system", "content": SYSTEM + "\n\n" + TOOL_HELP},
-                 {"role": "user", "content": self._prompt(
-                     failures, test_body, target_body, forced, reason,
-                     refused=self.refusals.get(test_file, "") if tier else "",
-                     tier=tier)}]
 
-        raw = []
-        state = {"verdict": "", "evidence": ""}
+class BugFixerAgent:
+    """Review failing tests and repair proven runtime problems."""
+    CASE_RE = re.compile(r"""\b(?:it|test)\s*(?:\.\s*\w+)?\s*\(\s*(['"`])(.+?)\1""", re.S)
+    _CASE_START_RE = re.compile(r"""\b(?:it|test)(?:\s*\.\s*\w+)?\s*\(\s*(['"`])(?P<name>.+?)\1\s*,""", re.S)
 
-        def read_verdict():
-            m = VERDICT_RE.search("".join(raw))
-            if m:
-                state["verdict"] = m.group(1).lower()
-                state["evidence"] = (m.group(2) or "").strip()[:200]
-            return state["verdict"]
+    def __init__(self, arch, project_dir=None, *, callbacks=None, session=None, runner=None, model=None):
+        self.arch, self.project_dir, self.cb = arch, Path(project_dir or arch.project_dir), callbacks or {}
+        self.qa, self.runner, self.model = session, runner, model or None
+        self.app_writes, self.verdicts, self.refusals, self._collapsed = set(), [], {}, set()
+        self._lock = threading.Lock()
 
-        def on_end(path, content):
-            key = (path or "").strip().lstrip("./").replace("\\", "/")
-
-            said = read_verdict() or "test"
-            if forced:
-                said = forced
-            want = {test_file} if said != "code" else ({target} if target else set())
-            if key not in want or key not in allowed:
-                v.rejected.append(key)
-                self._log("WARN", f"   ⛔ {key} is not writable under a "
-                                  f"'{said}' verdict — skipped")
-                return
-            self._commit(key, content, said, v)
-
-        parser = FileStreamParser(
-            on_text=lambda t: raw.append(t),
-            on_file_start=lambda p: self._fire("on_file_start", p),
-            on_file_token=lambda t: None,
-            on_file_end=on_end)
+    def _fire(self, name, *args):
+        fn = self.cb.get(name)
+        if callable(fn):
+            try: fn(*args)
+            except Exception as exc: log.warning("callback %s failed: %s", name, exc)
+    def _log(self, level, text):
+        self._fire("on_log", level, text) if callable(self.cb.get("on_log")) else log.info(text)
+    def _read(self, rel):
+        if self.qa: return self.qa.read_source(rel)
         try:
-            for tool_turn in range(2):
-                turn = []
-                def feed(tok):
-                    turn.append(tok)
-                    parser.feed(tok)
-                self.arch._stream(convo, feed, temperature=TEMPERATURE,
-                                  model=self.model, timeout=CALL_BUDGET)
-                reply = "".join(turn)
-                convo.append({"role": "assistant", "content": reply})
-                observations, used = WorkspaceTools(self.arch).serve(reply)
-                if used and not v.written and tool_turn == 0:
-                    self._log("INFO", f"   🧰 unit fixer inspected {used} workspace tool(s)")
-                    convo.append({"role": "user", "content":
-                                  "Tool observations:\n\n" + observations +
-                                  "\n\nContinue the same failing-test diagnosis. Emit the verdict before any write."})
+            fp = self.arch._safe_path(rel); return fp.read_text("utf-8", errors="replace") if fp.is_file() else None
+        except Exception: return None
+
+    def editable(self, rel):
+        rel = str(rel or "").strip().lstrip("./").replace("\\", "/")
+        return bool(rel and rel not in NEVER_CODE and rel not in getattr(self.arch, "NEXT_PROTECTED", frozenset()) and rel.startswith(("app/", "components/", "lib/")) and not rel.startswith("app/api/auth/") and rel.endswith((".js", ".jsx")))
+    def runtime_editable(self, rel, privileged_paths=None): return safe_change_path(rel)
+    def _files_for(self, *rels): return {p: body for p in rels if (body := self._read(p)) is not None}
+    def exports_of(self, target):
+        try: return effective_exports(target, self._files_for(target)) or set()
+        except Exception: return set()
+    def imports_target(self, test_file, target):
+        body = self._read(test_file)
+        if not body or not target: return True
+        files = self._files_for(test_file, target)
+        try: return any(resolve_local(test_file, stmt.spec, files) == target for stmt in parse_imports(body))
+        except Exception: return True
+    def missing_export(self, test_file, target):
+        body, files = self._read(test_file), self._files_for(test_file, target)
+        if not body: return set()
+        try:
+            available = effective_exports(target, files)
+            for stmt in parse_imports(body):
+                if stmt.names and resolve_local(test_file, stmt.spec, files) == target and available is not None:
+                    gap = {name for name, _ in stmt.names if name not in available}
+                    if gap: return gap
+        except Exception as exc: log.debug("missing_export %s: %s", test_file, exc)
+        return set()
+
+    @staticmethod
+    def _threw_in(failure, target):
+        want = str(target or "").replace("\\", "/").lstrip("./")
+        for line in str(getattr(failure, "stack", "") or "").splitlines():
+            norm = line.strip().replace("\\", "/")
+            if not norm.startswith("at ") or "node_modules" in norm or "node:internal" in norm: continue
+            if "/tests/" in norm: return False
+            if want and want in norm: return True
+        return False
+    def prior(self, failures, *, build_ok=True, round_no=1):
+        if not failures: return "test", "there is nothing to repair", "quarantine"
+        first, kinds = failures[0], {f.kind for f in failures}; target = str(first.target or "").strip()
+        if "SYNTAX" in kinds:
+            named = re.search(r"((?:[A-Za-z]:)?[A-Za-z0-9_./\\-]+\.(?:jsx?|tsx?))\s*:\s*\d+\s*:\s*\d+", "\n".join((f.message or "") + "\n" + (f.stack or "") for f in failures))
+            broken = (named.group(1).replace("\\", "/") if named else "").replace(str(self.project_dir).replace("\\", "/") + "/", "")
+            if broken and broken != first.test_file and self.editable(broken): return "code", f"{broken} does not parse", "model"
+            return "test", "the test file does not parse", "quarantine"
+        if "CRASH" in kinds: return ("code", f"{target} threw during execution", "model") if target and self.editable(target) else ("test", "the crash is outside editable app source", "report")
+        if not target: return "test", "the failure names no app target", "model"
+        if not self.editable(target): return "test", f"{target} is not unit-fix editable", "model"
+        if any(f.kind == "RUNTIME" and self._threw_in(f, target) for f in failures): return "code", f"{target} threw rather than failing an assertion", "model"
+        missing = self.missing_export(first.test_file, target)
+        if missing: return "", f"{target} does not export {', '.join(sorted(missing))}", "model"
+        if not self.imports_target(first.test_file, target): return "", f"the test never imports its target; available exports: {', '.join(sorted(self.exports_of(target) & HTTP_METHODS))}", "model"
+        if first.stale and round_no <= 1: return "", f"{target} changed after this test was authored", "model"
+        return None, "", "model"
+
+    @classmethod
+    def _case_blocks(cls, body):
+        out, body = [], str(body or "")
+        for match in cls._CASE_START_RE.finditer(body):
+            start, i, depth, quote, escaped = match.start(), body.index("(", match.start()), 0, "", False
+            while i < len(body):
+                char = body[i]
+                if quote:
+                    if escaped: escaped = False
+                    elif char == "\\": escaped = True
+                    elif char == quote: quote = ""
+                elif char in "'\"`": quote = char
+                elif char == "/" and i+1 < len(body) and body[i+1] == "/":
+                    i = body.find("\n", i)
+                    if i < 0: return None
                     continue
-                break
-        except Exception as e:
-            self._log("WARN", f"   ⚠ bug fixer failed on {test_file}: {e}")
-        parser.close()
-
-        said = read_verdict()
-        v.verdict = forced or said or "test"
-        v.evidence = state["evidence"] or reason
-        if said == VERDICT_HARNESS:
-
-            v.quarantine = True
-            self._log("WARN", f"   🧰 {test_file} — the fixer says the fault is "
-                              f"in AgentForge's own test harness, not this app:")
-            self._log("WARN", f"      {v.evidence or 'no detail given'}")
-            self._log("WARN", f"      Nothing was rewritten. This one needs a "
-                              f"change to AgentForge itself.")
-        elif said == "unclear" and not v.written:
-            v.quarantine = True
-            self._log("WARN", f"   🚧 {test_file} — the fixer could not tell: "
-                              f"{v.evidence or 'no evidence given'}")
-        elif not said:
-
-            self._log("WARN", f"   ⚠ no verdict from the fixer on {test_file} "
-                              f"— treated as a test problem")
-
-        with self._lock:
-
-            self.verdicts.append(v)
-        return v
-
-    def fix_runtime(self, errors: str, spec, *, server_log: str = "",
-                    round_no: int = 1, privileged_paths=None) -> list:
+                elif char == "/" and i+1 < len(body) and body[i+1] == "*":
+                    i = body.find("*/", i)
+                    if i < 0: return None
+                    i += 2; continue
+                elif char == "(": depth += 1
+                elif char == ")":
+                    depth -= 1
+                    if depth == 0:
+                        end = i + 1 + (i+1 < len(body) and body[i+1] == ";"); out.append((match.group("name").strip(), start, end)); break
+                i += 1
+            else: return None
+        return out
+    @classmethod
+    def _failing_titles(cls, titles, reported):
         """
-        Repair what broke when the app ran, against a plan of which files change.
+        Which `it(...)` titles the reported failing case names are about.
 
-        Separate from `fix()` on purpose. That one arbitrates between a test and
-        the code it tests, and its whole prompt is that question — a route
-        returning 500 has no test to be wrong, so the verdict line has nothing
-        to decide and the safe default ("blame the test") is not even available.
-        What is shared is everything that makes a repair safe: project-local
-        path safety, complete-file writes, and post-write verification.
+        Vitest reports a case by `fullName` — its `ancestorTitles` joined to its
+        title — so a case inside `describe('Navbar')` arrives as `Navbar toggles
+        mobile menu` while the source says `it('toggles mobile menu')`. Every
+        generated test file is wrapped in a describe, so the two sets never
+        intersected, and the consequences ran the whole repair loop:
 
-        The planner's file list is the initial impact map, not a file-count or
-        architecture ceiling. The fixer may expand it when workspace/runtime
-        evidence proves another safe source file is part of the same root cause.
-        Returns the paths actually written.
+        * `_splice_passing` found the failing case missing from its failing set,
+          concluded it was passing, and spliced the OLD failing body back over
+          the model's repair. The only part of a rewrite that survived was the
+          text between the cases — imports, `vi.mock` factories, `beforeEach`,
+          seeded rows — which is the shared setup every case depends on. So a
+          round could not fix the case it was about, and could only change the
+          one thing that breaks the cases it was not about. Measured on the
+          luxestay build: three failing Navbar cases, zero overlap with the
+          source titles, six writes, four still failing.
+        * `_lost_cases` subtracted fullNames from a set of titles, so renaming
+          the failing case read as dropping a passing one and the write was
+          refused.
+
+        Matched by suffix, because the ancestors are not in the failure record
+        and reconstructing the describe nesting is a parser this does not need.
+        The longest match wins, so `it('b')` sitting next to `it('a b')` is not
+        swept up by a report of `D a b`.
         """
+        reported = [t for t in (str(n or "").strip() for n in (reported or [])) if t]
+        titles = [t for t in (str(t or "").strip() for t in (titles or [])) if t]
+        out = set()
+        for name in reported:
+            hits = [t for t in titles if name == t or name.endswith(" " + t)]
+            if hits: out.add(max(hits, key=len))
+        return out
+    @classmethod
+    def _splice_passing(cls, old, new, failing):
+        before, after = cls._case_blocks(old), cls._case_blocks(new)
+        if not before or after is None: return ""
+        failing = cls._failing_titles([n for n, _, _ in before] + [n for n, _, _ in after], failing)
+        source, pieces, cursor = {n: (s, e) for n, s, e in before}, [], 0
+        for name, start, end in after:
+            if name in failing or name not in source: continue
+            old_start, old_end = source[name]; pieces += [new[cursor:start], old[old_start:old_end]]; cursor = end
+        return "" if not pieces else "".join(pieces) + new[cursor:]
+    @classmethod
+    def has_case(cls, body, name):
+        """Whether a reported case name still names an `it(...)` in this file."""
+        if not body or not name: return False
+        if str(name) in body: return True
+        return bool(cls._failing_titles([n for n, _, _ in (cls._case_blocks(body) or [])], [name]))
+    @classmethod
+    def _lost_cases(cls, old, new, failing):
+        before = {m.group(2).strip() for m in cls.CASE_RE.finditer(old or "")}; after = {m.group(2).strip() for m in cls.CASE_RE.finditer(new or "")}; lost = (before-after)-cls._failing_titles(before|after, failing)
+        return f"drops passing cases: {', '.join(sorted(lost)[:3])}" if lost else ""
+    @staticmethod
+    def _weakened(old, new):
+        if not str(new or "").strip(): return "the rewrite is empty"
+        if WEAKENED_RE.search(new) and not WEAKENED_RE.search(old or ""): return "introduces a skipped/totological test"
+        before, after = len(re.findall(r"\bexpect\s*\(", old or "")), len(re.findall(r"\bexpect\s*\(", new))
+        return f"assertions fell from {before} to {after}" if before and after * 2 < before else ""
 
-        planned = [f for f in getattr(spec, "files", [])
-                   if self.runtime_editable(f["path"], privileged_paths)]
-        if not planned:
-            return []
+    def _prompt(self, failures, test_body, target_body, forced, reason, refused="", tier=0):
+        first = failures[0]; rows = [f"- {f.name}: {f.message}\n  {str(f.stack or '')[:1200]}" for f in failures[:6]]
+        parts = [f"## Failing test: {first.test_file}\n```js\n{test_body[:12000]}\n```", f"## Production target: {first.target or '(none)'}\n```js\n{str(target_body or '')[:12000]}\n```", "## Failures\n" + "\n".join(rows)]
+        if forced: parts.append(f"The evidence fixes the verdict as {forced}: {reason}")
+        elif reason: parts.append("AgentForge observation (weigh it, do not blindly accept it): " + reason)
+        if refused: parts.append("Your last write to this file did not stand: " + refused)
+        if tier >= 2: parts.append("Earlier test rewrites did not resolve this; production code may be the owner.")
+        if tier >= 3: parts.append("If both test and code match, inspect the harness and answer harness without writing.")
+        parts.append("Use workspace tools when a dependency or contract is missing. Emit VERDICT first, then at most one complete write_file block.")
+        return "\n\n".join(parts)
 
-        allowed = {f["path"] for f in planned}
-        bodies = {f["path"]: (self._read(f["path"]) or "") for f in planned}
-        written = []
+    def _refuse(self, verdict, path, why):
+        verdict.rejected.append(path); self.refusals[verdict.test_file or path] = why; self._log("WARN", f"   ⛔ {path}: {why}")
+    def _write_unit(self, path, content, said, verdict):
+        old = self._read(path) or ""
+        if said == "code":
+            problem = "that file is not editable" if not self.editable(path) else guard_scope(old, content, adding=True, retexting=True)
+            if problem: self._refuse(verdict, path, problem); return
+            if self.arch.write_file(path, content): self.app_writes.add(path); verdict.written = path
+            return
+        problem = self._weakened(old, content) or self._lost_cases(old, content, verdict.failing)
+        if problem: self._refuse(verdict, path, problem); return
+        spliced = self._splice_passing(old, content, verdict.failing)
+        if spliced and not self._weakened(old, spliced): content = spliced
+        if self.qa:
+            meta = self.qa.manifest.get(path) or {}
+            if self.qa.write_test_file(path, content, target=meta.get("target", verdict.target), phase=meta.get("phase", 0), tier=meta.get("tier", 0)): verdict.written = path
 
-        parts = [f"## What went wrong\n```\n{errors[:5000]}\n```"]
-        if server_log.strip():
-            parts.append("## The dev server's own output — the stack frames "
-                         "name the file and line\n"
-                         f"```\n{server_log[:3500]}\n```")
-        if getattr(spec, "summary", ""):
-            parts.append(f"## What the plan concluded\n{spec.summary}")
-
-        reasoning = getattr(spec, "context", {}) or {}
-        if isinstance(reasoning, dict):
-            ev = reasoning.get("evidence") or []
-            evidence_text = "\n".join(
-                f"- {item.get('path')}: {item.get('fact')}"
-                for item in ev if isinstance(item, dict) and item.get("path"))
-            parts.append(
-                "## Evidence-backed diagnosis\n"
-                f"Current behavior: {reasoning.get('current') or '(not recorded)'}\n"
-                f"Exact gap: {reasoning.get('gap') or '(not recorded)'}\n"
-                f"Root cause / owner: {reasoning.get('cause') or '(not recorded)'}\n"
-                f"Source evidence:\n{evidence_text or '- (none)'}\n"
-                f"Required proof: {reasoning.get('verify') or '(not recorded)'}")
-
-            # Older callers may still provide a dedicated references mapping.
-            ref = reasoning.get("references") or {}
-        else:
-            ref = {}
-        if isinstance(ref, dict) and ref:
-            parts.append("## Read these — you may NOT write them\n"
-                         "They are how this project already does it. Use the "
-                         "exports, hooks, context and storage keys they define. "
-                         "Do not reimplement what is here and do not invent a "
-                         "second way to do the same thing.")
-            for p, b in list(ref.items())[:6]:
-                parts.append(f"### {p} (reference only)\n```js\n{str(b)[:6000]}\n```")
-
-        parts.append("## Initial impact files, and why each one is suspected")
-        for f in planned:
-            body = bodies[f["path"]]
-            why = f.get("why") or "named by the repair plan"
-            if body:
-                parts.append(f"### {f['path']} — {why}\n```js\n{body[:9000]}\n```")
-            else:
-                parts.append(f"### {f['path']} — {why}\n"
-                             f"(this file does not exist yet; create it)")
-        parts.append("Write the complete repair file set, one <write_file> block each. "
-                     "You may expand beyond the initial list when workspace evidence proves another safe source file is required.")
-
-        convo = [{"role": "system", "content": RUNTIME_SYSTEM + "\n\n" + TOOL_HELP},
-                 {"role": "user", "content": "\n\n".join(parts)}]
-        self.arch._workspace_tool_cache = {}
-
+    def fix(self, failures, *, build_ok=True, round_no=1, tier=0):
+        if not failures: return FixVerdict(test_file="", evidence="there is nothing to repair")
+        first, forced, reason_action = failures[0], *self.prior(failures, build_ok=build_ok, round_no=round_no)[:2]
+        _, _, action = self.prior(failures, build_ok=build_ok, round_no=round_no)
+        verdict = FixVerdict(first.test_file, str(first.target or "").strip(), failing=[f.name for f in failures if f.name], forced=reason_action if forced else "")
+        if action in {"quarantine", "report"}: verdict.verdict, verdict.evidence, verdict.quarantine = forced or "test", reason_action, action == "quarantine"; self.verdicts.append(verdict); return verdict
+        test_body, target_body = self._read(first.test_file) or "", self._read(first.target) if first.target else ""
+        messages = [{"role": "system", "content": SYSTEM + "\n\n" + TOOL_HELP}, {"role": "user", "content": self._prompt(failures, test_body, target_body, forced, reason_action, self.refusals.get(first.test_file, "") if tier else "", tier)}]
+        self.arch._workspace_tool_cache = {}; tools, raw, state = WorkspaceTools(self.arch), [], {"verdict": "", "evidence": ""}
+        def decision():
+            match = VERDICT_RE.search("".join(raw))
+            if match: state.update(verdict=match.group(1).lower(), evidence=(match.group(2) or "")[:300])
+            return state["verdict"]
         def on_end(path, content):
-            key = (path or "").strip().lstrip("./").replace("\\", "/")
+            key, said = str(path or "").strip().lstrip("./").replace("\\", "/"), forced or decision() or "test"; allowed = {first.test_file} if said != "code" else {verdict.target}
+            if key not in allowed: self._refuse(verdict, key, f"not writable under {said} verdict")
+            else: self._write_unit(key, content, said, verdict)
+        parser = FileStreamParser(on_text=raw.append, on_file_start=lambda p: self._fire("on_file_start", p), on_file_token=lambda _: None, on_file_end=on_end)
+        for _ in range(3):
+            chunks = []
+            try:
+                def feed(token): chunks.append(token); parser.feed(token)
+                self.arch._stream(messages, feed, temperature=TEMPERATURE, model=self.model, timeout=CALL_BUDGET)
+            except Exception as exc: self._log("WARN", f"   ⚠ bug fixer failed: {exc}"); break
+            reply = "".join(chunks); messages.append({"role": "assistant", "content": reply}); observation, used = tools.serve(reply)
+            if used and not verdict.written: messages.append({"role": "user", "content": "Tool observations:\n\n" + observation + "\n\nContinue the same arbitration; verdict must precede a write."}); continue
+            break
+        parser.close(); said = decision(); verdict.verdict, verdict.evidence = forced or said or "test", state["evidence"] or reason_action
+        if said in {"harness", "unclear"} and not verdict.written: verdict.quarantine = True
+        self.verdicts.append(verdict); return verdict
 
-            if not self.runtime_editable(key, privileged_paths):
-                self._log("WARN", f"   ⛔ ignored unsafe repair path {key}")
-                return
-            if key not in allowed:
-                self._log("INFO", f"   ↗ repair impact expanded to {key} after source inspection")
-            old = bodies.get(key)
-            if old is None:
-                old = self._read(key) or ""
-                bodies[key] = old
-            if self._commit_runtime(key, content, old):
-                written.append(key)
-
-        raw = []
-        parser = FileStreamParser(
-            on_text=lambda t: raw.append(t),
-            on_file_start=lambda p: self._fire("on_file_start", p),
-            on_file_token=lambda t: None,
-            on_file_end=on_end)
-        old_priv = set(getattr(self.arch, "_e2e_privileged_paths", set()) or set())
-        seen_observations = set()
-        try:
-            self.arch._e2e_privileged_paths = old_priv | set(privileged_paths or [])
-            while True:
-                turn = []
-                def feed(tok):
-                    turn.append(tok); parser.feed(tok)
-                self.arch._stream(convo, feed, temperature=TEMPERATURE,
-                                  model=self.model, timeout=CALL_BUDGET)
-                reply = "".join(turn)
-                convo.append({"role":"assistant", "content":reply})
-                observations, used = WorkspaceTools(self.arch).serve(reply)
-                if used and not written:
-                    sig = observations.strip()
-                    context_chars = sum(len(str(m.get("content", ""))) for m in convo)
-                    budget_chars = 0
-                    try:
-                        budget_chars = int(self.arch._budget_chars())
-                    except Exception:
-                        try:
-                            budget_chars = int(getattr(self.arch, "context_tokens", 0) or 0) * 3
-                        except Exception:
-                            budget_chars = 0
-                    if sig and sig not in seen_observations and (not budget_chars or context_chars < budget_chars * 0.82):
-                        seen_observations.add(sig)
-                        self._log("INFO", f"   🧰 runtime fixer inspected {used} workspace tool(s)")
-                        convo.append({"role":"user", "content":
-                                      "Tool observations:\n\n" + observations +
-                                      "\n\nContinue the SAME root-cause repair. Follow the evidence; expand the source file set if the dependency chain proves it is necessary. Do not repeat a tool call."})
-                        continue
-                    if sig in seen_observations:
-                        self._log("WARN", "   ↔ runtime fixer repeated the same inspection — deciding from current evidence")
-                break
-        except Exception as e:
-            self._log("WARN", f"   ⚠ runtime repair failed: {e}")
-        finally:
-            self.arch._e2e_privileged_paths = old_priv
+    def fix_runtime(self, errors, spec, *, server_log="", round_no=1, privileged_paths=None):
+        planned = [f for f in getattr(spec, "files", []) if self.runtime_editable(f.get("path"), privileged_paths)]
+        if not planned: return []
+        paths = {f["path"] for f in planned}; neighborhood = WorkspaceTools(self.arch).dependency_paths(paths, max_depth=3, cap=32); allowed = paths | set(neighborhood)
+        evidence = {p: self._read(p) or "" for p in allowed}; context = getattr(spec, "context", {}) or {}
+        proved = list(dict.fromkeys([str(x.get("path") or "") for x in context.get("evidence") or [] if isinstance(x, dict)] + [f["path"] for f in planned]))
+        source = "\n\n".join(f"### {p} — COMPLETE CURRENT FILE\n```js\n{evidence[p]}\n```" for p in proved if p in evidence)
+        parts = [f"## Runtime/browser evidence\n```\n{str(errors)[:6000]}\n{str(server_log)[:5000]}\n```", f"## Analyzer diagnosis — ALREADY PROVEN\n{getattr(spec, 'summary', '')}\n{context}", "## Initial impact\n" + "\n".join(f"- {f['path']}: {f.get('why','suspected by diagnosis')}" for f in planned)]
+        if source: parts.append("## Analyzer source evidence — COMPLETE CURRENT FILES\n" + source)
+        messages = [{"role": "system", "content": RUNTIME_SYSTEM + "\n\n" + TOOL_HELP}, {"role": "user", "content": "\n\n".join(parts) + "\n\nDo not re-prove Analyzer evidence. Read the attached complete files as authoritative current state, trace only missing dependencies, repair every manifestation of the proven root contract, and emit complete files only."}]
+        self.arch._workspace_tool_cache = {}; tools, written = WorkspaceTools(self.arch), []
+        def on_end(path, content):
+            key = str(path or "").strip().lstrip("./").replace("\\", "/")
+            if not self.runtime_editable(key, privileged_paths): self._log("WARN", f"   ⛔ unsafe runtime repair {key}"); return
+            old = evidence.get(key, self._read(key) or ""); before, after = effective_exports(key, {key: old}) or set(), effective_exports(key, {key: content}) or set()
+            if before-after: self._log("WARN", f"   ⛔ {key} drops exports: {', '.join(sorted(before-after))}"); return
+            if self.arch.write_file(key, content): written.append(key); self.app_writes.add(key)
+        parser = FileStreamParser(on_text=lambda _: None, on_file_start=lambda p: self._fire("on_file_start", p), on_file_token=lambda _: None, on_file_end=on_end)
+        for _ in range(4):
+            chunks = []
+            try:
+                def feed(token): chunks.append(token); parser.feed(token)
+                self.arch._stream(messages, feed, temperature=TEMPERATURE, model=self.model, timeout=CALL_BUDGET)
+            except Exception as exc: self._log("WARN", f"   ⚠ runtime repair failed: {exc}"); break
+            reply = "".join(chunks); messages.append({"role": "assistant", "content": reply}); observation, used = tools.serve(reply)
+            if used and not written: messages.append({"role": "user", "content": "Tool observations:\n\n" + observation + "\n\nContinue the same root-cause repair."}); continue
+            break
         parser.close()
-
-        if not written:
-            self._log("WARN", f"   ⚠ Round {round_no} changed nothing")
-            return written
-
-        self.arch.repair_missing_imports()
-        self.arch.sync_dependencies()
+        if written: self.arch.repair_missing_imports(); self.arch.sync_dependencies()
         return written
 
-    def _commit_runtime(self, key, content, old) -> bool:
-        """
-        A runtime repair write.
-
-        The file-count budget and the changed-line ceiling are both gone. A
-        page that 500s is broken by observation, not by a test's opinion, and a
-        repair that is honest about it often rewrites most of the file or
-        touches a seventh one. Refusing on size or on a tally left the app
-        broken and called it caution.
-
-        What is still refused is what a rewrite never justifies: a truncated
-        file, and an export other files import going missing. Those are not
-        opinions about how much should change — they are the two ways a write
-        breaks something that was working.
-        """
-        if not content or not content.strip():
-            self._log("WARN", f"   ⛔ {key}: the rewrite is empty")
-            return False
-        if not self.arch.write_file(key, content):
-            return False
-        self.app_writes.add(key)
-        self._log("INFO", f"   🔧 {key} — rewritten")
-        return True
-
-    def _refuse(self, v, key, why: str) -> None:
-        """
-        Throw a write away, and REMEMBER WHY.
-
-        The reason used to be logged and dropped, so the next attempt was
-        handed the same file, the same failure and the same prompt, and wrote
-        the same thing again. Two of those in a row is what the stage read as
-        "no progress" before it gave up — but nothing had gone wrong with the
-        model's reasoning, it simply was never told what had been rejected.
-        """
-        v.rejected.append(key)
-        self._log("WARN", f"   ⛔ {key}: {why}")
-        with self._lock:
-            self.refusals[v.test_file or key] = why
-
-    def _commit(self, key, content, said, v):
-        """Write, after the guards that the verdict alone cannot enforce."""
-        old = self._read(key) or ""
-
-        if said == "code":
-            if not self.editable(key):
-                self._refuse(v, key, "that file is not editable")
-                return
-
-            bad = guard_scope(old, content, adding=True, retexting=True)
-            if bad:
-                self._refuse(v, key, bad)
-                return
-            if not self.arch.write_file(key, content):
-                return
-            self.app_writes.add(key)
-            v.written = key
-            self._log("INFO", f"   🔧 {key} — {v.evidence or 'fixed'}")
-            return
-
-        weak = self._weakened(old, content)
-        if weak:
-            self._refuse(v, key, f"{weak} — the test is not repaired, it is "
-                                 f"disabled")
-            return
-
-        lost = self._lost_cases(old, content, v.failing)
-        if lost:
-            self._refuse(v, key, lost)
-            return
-
-        # Whatever was written, put every passing case back byte-for-byte.
-        collapsed = key in getattr(self, "_collapsed", set())
-        spliced = self._splice_passing(old, content, v.failing) if v.failing else ""
-        if collapsed:
-            with self._lock:
-                self._collapsed.discard(key)
-            if not spliced:
-                self._refuse(v, key, "the hidden passing cases could not be "
-                                     "restored into this rewrite — resend "
-                                     "with the full file")
-                return
-        if spliced and spliced != content:
-            if not self._weakened(old, spliced) and \
-                    not self._lost_cases(old, spliced, v.failing):
-                content = spliced
-                self._log("INFO", f"   🧵 {key} — passing case(s) kept "
-                                  "byte-for-byte from the previous file")
-        if self.qa:
-            meta = self.qa.manifest.get(key) or {}
-            ok = self.qa.write_test_file(key, content,
-                                         target=meta.get("target", v.target),
-                                         phase=meta.get("phase", 0),
-                                         tier=meta.get("tier", 0))
-            if ok:
-
-                if key in self.qa.manifest:
-                    self.qa.manifest[key]["stale"] = False
-                v.written = key
-                self._log("INFO", f"   🧪 {key} — {v.evidence or 'test corrected'}")
-
-from agents.analysis.bugfixer_scope import BugFixerScopeMixin
-from agents.analysis.bugfixer_prompt import BugFixerPromptMixin
+    def _commit_runtime(self, key, content, old):
+        if not content or not content.strip() or not self.arch.write_file(key, content): return False
+        self.app_writes.add(key); return True
+    def _commit(self, key, content, said, verdict): self._write_unit(key, content, said, verdict)
+    def summary(self):
+        if not self.verdicts: return "no repairs attempted"
+        code = sum(v.touched_code for v in self.verdicts); tests = sum(bool(v.written) and not v.touched_code for v in self.verdicts); held = sum(v.quarantine for v in self.verdicts)
+        return f"{tests} test(s) corrected, {code} code fix(es), {held} set aside"
 
 
-class BugFixerAgent(BugFixerScopeMixin, BugFixerApplyMixin, BugFixerPromptMixin):
-    """Concrete evidence-scoped bug fixer."""
-    pass
+__all__ = ["BugFixerAgent", "FixVerdict", "SYSTEM", "RUNTIME_SYSTEM", "TEMPERATURE", "CALL_BUDGET", "MAX_APP_FILES", "CODE_CHANGE_FRAC", "CODE_CHANGE_MIN", "RUNTIME_CHANGE_FRAC", "RUNTIME_CHANGE_MIN", "RUNTIME_MAX_FILES", "VERDICT_RE", "VERDICT_HARNESS", "WEAKENED_RE", "HTTP_METHODS", "NEVER_CODE", "log"]

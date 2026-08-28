@@ -1,28 +1,4 @@
-"""
-Next.js's own error pages, fetched for the fix prompt.
-
-When Next reports an error it names the page that explains it:
-
-    Route "/products/[slug]": Next.js encountered uncached data during
-    prerendering. …
-    Learn more: https://nextjs.org/docs/messages/blocking-prerender-dynamic
-
-Those pages are written for agents — the canonical fix, the trade-offs against
-the alternatives, and the mistakes a first attempt usually makes. They are the
-one part of the Next.js documentation that is **not** bundled into the npm
-package, so they have to come over the network.
-
-AgentForge already captures the text containing that link, in both `next_stderr()`
-and `_npm_build_errors()`. All this module does is notice the link, fetch the
-markdown once, cache it, and hand it back so the fix prompt can carry the
-official answer instead of the model's recollection of one.
-
-Deliberately quiet: a build must never fail because a documentation site was
-unreachable. Every error path returns "" and logs at debug level.
-
-The model cannot do this itself — `agents/core/commands.py` bans curl, wget and
-PowerShell — so the fetch happens here, in AgentForge's Python.
-"""
+"""Fetches and caches official Next.js help for reported errors."""
 import logging
 import re
 import threading
@@ -54,7 +30,7 @@ def cache_dir() -> Path:
 
 
 def slugs_in(text: str) -> list:
-    """Every error-page slug named in a blob of build or server output."""
+    """Find the error-help page names in build output."""
     seen, out = set(), []
     for m in MESSAGE_LINK_RE.finditer(text or ""):
         s = m.group(1).lower()
@@ -65,12 +41,7 @@ def slugs_in(text: str) -> list:
 
 
 def fetch(slug: str, *, offline: bool = False) -> str:
-    """
-    The markdown for one error page, or "".
-
-    Cached in memory for the process and on disk across runs, because the same
-    handful of errors recur across every project a user generates.
-    """
+    """Read one error-help page, using the cache when possible."""
     slug = (slug or "").strip().lower()
 
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]{2,60}", slug):
@@ -123,13 +94,7 @@ def fetch(slug: str, *, offline: bool = False) -> str:
 
 def guidance_for(text: str, *, offline: bool = False,
                  max_pages: int = MAX_PAGES) -> str:
-    """
-    The prompt section for whatever error pages `text` names, or "".
-
-    Returns markdown ready to append to a fix prompt. Empty when the output
-    names no page, when nothing could be fetched, or when the network is down —
-    the caller appends it unconditionally and gets nothing on the quiet path.
-    """
+    """Build guidance from the error-help pages named in the text."""
     parts = []
     for slug in slugs_in(text)[:max_pages]:
         body = fetch(slug, offline=offline)

@@ -1,29 +1,4 @@
-"""
-Generated images, from a Fooocus running on this machine or another one.
-
-AgentForge writes apps that want pictures — a hero banner, seeded product photos, a
-poster on a marketing page — and until now it wrote `<img src="/placeholder">`
-and hoped. This module turns "the app needs an image of X" into a real PNG in
-the project's `public/` folder.
-
-**Why it drives Fooocus's Gradio endpoint rather than importing it.** Fooocus
-ships no REST API and no `api_name` on any handler, so there is nothing to call
-by name. What it does expose, because Gradio always does, is `/run/predict`
-with a function index — and the generate handler takes 153 positional
-arguments. Building that by hand would be unreadable and would break on every
-Fooocus release.
-
-So the argument list is read from Fooocus's own `fooocus_config.json`, which
-records the default value of every component in the UI. AgentForge takes those
-defaults verbatim and overrides four of them: the prompt, the aspect ratio, how
-many images, and the seed. That is the whole integration, and it survives a
-Fooocus upgrade as long as the config still describes the UI — which is the
-file Fooocus writes to describe the UI.
-
-**Why the host is configurable.** The workstation with the GPU is not always
-the workstation running AgentForge. Point `image_host` at the other machine (start
-Fooocus there with `--listen`) and everything else is unchanged.
-"""
+"""Generate cached project images through a local or remote Fooocus Gradio UI."""
 import base64
 import json
 import logging
@@ -55,15 +30,16 @@ SAFE_RE = re.compile(r"[^a-z0-9]+")
 
 GENERATE_TIMEOUT = 600
 
+# Fooocus reports a gallery file before that file is readable, so the fetch
+# polls rather than deciding on its first attempt.
+FETCH_TIMEOUT = 45
+FETCH_POLL = 1.5
+IMAGE_MAGIC = (b"\x89PNG", b"\xff\xd8\xff\xe0", b"\xff\xd8\xff\xe1",
+               b"\xff\xd8\xff\xdb", b"RIFF")
+
 
 class ImageAgent:
-    """
-    One Fooocus, wherever it is running.
-
-    Every method degrades to "no image" rather than raising: an app that could
-    not get a picture still has to build, and a missing banner is a smaller
-    problem than a failed generation.
-    """
+    """Version-tolerant Fooocus client that degrades to ``False`` on failure."""
 
     def __init__(self, host: str = "", config_path: str = "",
                  callbacks: dict = None, enabled: bool = True):
@@ -71,6 +47,7 @@ class ImageAgent:
         self.config_path = config_path or ""
         self.cb = callbacks or {}
         self.enabled = enabled
+        self._fetch_error = ""
         self._payload = None
         self._fn_index = None
         self._gallery_index = None
@@ -108,13 +85,7 @@ class ImageAgent:
         return bool(self.enabled and self.base_url())
 
     def _load_template(self) -> bool:
-        """
-        Read Fooocus's UI description and keep the defaults for every input.
-
-        Preferred over the file on disk: `/config` is what the *running*
-        Fooocus is actually using, and a stale `fooocus_config.json` from an
-        older version would build an argument list the server rejects.
-        """
+        """Discover the live generate function and its version-specific defaults."""
         if self._payload is not None:
             return True
         cfg = None
@@ -190,26 +161,7 @@ class ImageAgent:
 
     def generate(self, prompt: str, out_path: Path, *, aspect: str = "landscape",
                  seed: int = 0, force: bool = False) -> bool:
-        """
-        Make one image and write it to `out_path`. False when it could not.
-
-        Already-existing files are left alone: image generation is the slowest
-        thing in a build by an order of magnitude, and a rebuild that reuses
-        what is already on disk is the difference between seconds and minutes.
-
-        `force` is for the caller who is asking for a DIFFERENT picture rather
-        than for this picture to exist — the logo panel, where "try another"
-        means exactly that. Without it the panel wrote every attempt to
-        `logo.png`, found it already there, and handed back the first image
-        every time: a regenerate button that could not regenerate.
-
-        `seed = 0` means "any picture", and is answered with a RANDOM seed.
-        Passing the literal 0 through made it a fixed seed instead, so the same
-        prompt drew the same image forever: measured, three "try another"
-        presses returned byte-identical files after 31 seconds of GPU each —
-        `force` was defeating the file cache and the seed was putting the same
-        picture back. Pass a non-zero seed to reproduce one deliberately.
-        """
+        """Generate one image; cache unless forced and randomize a zero seed."""
         out_path = Path(out_path)
         if not force and out_path.is_file() and out_path.stat().st_size > 1024:
             return True
@@ -235,13 +187,22 @@ class ImageAgent:
         url = self.base_url()
         self._log("INFO", f"   🎨 {out_path.name} — {prompt[:60]}")
         t0 = time.time()
+        self._fetch_error = ""
         data = self._predict(url, args)
         if data is None:
+            # _predict already named the queue/timeout reason; say which image
+            # it cost, or the log shows a generation start with no outcome.
+            self._log("WARN", f"   ⚠ {out_path.name} was not generated "
+                              f"after {time.time() - t0:.0f}s")
             return False
 
         raw = self._first_image(data)
         if not raw:
-            self._log("WARN", "   ⚠ Fooocus returned no image")
+            # Three different faults used to land here as one sentence: a
+            # response shape we could not read, a file that never became
+            # readable, and a failed download all said "returned no image".
+            why = self._fetch_error or "no image field in the Fooocus response"
+            self._log("WARN", f"   ⚠ {out_path.name} — {why}")
             return False
         try:
             out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -253,21 +214,7 @@ class ImageAgent:
         return True
 
     def _predict(self, url: str, args: list):
-        """
-        Run the generate handler and return its final output list.
-
-        Fooocus's generate is a *generator* behind Gradio's queue: it yields
-        progress for a minute, then the images. `/run/predict` answers such a
-        function immediately with whatever the first yield held — a progress
-        bar — which is why the obvious call returns a clean 200 and no picture.
-
-        Gradio 3.x runs its queue over a WebSocket. The handshake is fixed:
-        the server says `send_hash`, we answer with the session; it says
-        `send_data`, we answer with the arguments; then it streams progress
-        until `process_completed` carries the output. Gradio 4 replaced this
-        with SSE at `/queue/join` + `/queue/data`, so both are tried — this one
-        first, because it is what is actually running here.
-        """
+        """Run the queued generator via Gradio 3 WebSocket or Gradio 4 SSE."""
         ws_url = url.replace("http://", "ws://").replace("https://", "wss://")
         session = "agentforge-" + str(int(time.time() * 1000))
         try:
@@ -362,13 +309,7 @@ class ImageAgent:
         return asyncio.run(go())
 
     def _first_image(self, data) -> bytes:
-        """
-        The bytes of the first image in a Gradio response.
-
-        Gradio answers with either a base64 data URI or a path on the server,
-        depending on version and component, so both are handled rather than
-        guessed at.
-        """
+        """Extract the first base64 or file-backed image from nested output."""
         def walk(node):
             if isinstance(node, str):
                 if node.startswith("data:image"):
@@ -398,26 +339,53 @@ class ImageAgent:
         return walk(data)
 
     def _fetch(self, ref: str) -> bytes:
-        """A file Fooocus reported by path — read it, or pull it over HTTP."""
-        p = Path(ref)
-        if p.is_file():
-            try:
-                return p.read_bytes()
-            except OSError:
-                pass
+        """A file Fooocus reported by path — read it, or pull it over HTTP.
+
+        Fooocus names the file in its gallery result before that file is
+        readable, so a single immediate attempt loses images that were in fact
+        generated: the first few succeed while it is idle, then every later one
+        reports nothing. Poll for a short while instead of giving up at once,
+        and keep the last reason so the caller can say what went wrong.
+        """
+        self._fetch_error = ""
         url = self.base_url()
-        if not url:
-            return b""
-        for path in (f"/file={ref}", f"/file/{ref}", ref):
-            try:
-                r = requests.get(url + path if path.startswith("/") else path,
-                                 timeout=60)
-                if r.status_code == 200 and r.content[:4] in (b"\x89PNG", b"\xff\xd8\xff\xe0",
-                                                              b"RIFF"):
-                    return r.content
-            except requests.RequestException:
-                continue
-        return b""
+        deadline = time.time() + FETCH_TIMEOUT
+        attempt = 0
+        while True:
+            attempt += 1
+            p = Path(ref)
+            if p.is_file():
+                try:
+                    body = p.read_bytes()
+                    if body[:4] in IMAGE_MAGIC:
+                        return body
+                    self._fetch_error = f"{p.name} is not image data yet"
+                except OSError as e:
+                    self._fetch_error = f"cannot read {p.name}: {e}"
+            elif not url:
+                self._fetch_error = "no Fooocus address, and the file is not on disk"
+
+            if url:
+                for path in (f"/file={ref}", f"/file/{ref}", ref):
+                    target = url + path if path.startswith("/") else path
+                    try:
+                        r = requests.get(target, timeout=60)
+                    except requests.RequestException as e:
+                        self._fetch_error = f"{type(e).__name__} on {path}"
+                        continue
+                    if r.status_code != 200:
+                        self._fetch_error = f"HTTP {r.status_code} on {path}"
+                    elif r.content[:4] not in IMAGE_MAGIC:
+                        self._fetch_error = f"{path} returned {len(r.content)}B of non-image data"
+                    else:
+                        return r.content
+
+            if time.time() >= deadline:
+                self._fetch_error = (f"{self._fetch_error or 'not readable'} "
+                                     f"after {attempt} attempt(s) over "
+                                     f"{FETCH_TIMEOUT}s")
+                return b""
+            time.sleep(FETCH_POLL)
 
     @staticmethod
     def slug(text: str, limit: int = 40) -> str:

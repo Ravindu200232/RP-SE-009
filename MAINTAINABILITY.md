@@ -1,10 +1,10 @@
-# RP-SE-009 maintenance map
+# AgentForge maintenance map
 
 The repository follows the actual pipeline so a maintainer can find behavior without chasing compatibility wrappers.
 
 ## Build pipeline
 
-- `agents/planning/` — requirement interpretation, architecture and planning.
+- `agents/planner/` — requirement interpretation, design/routes, architecture and E2E planning.
 - `agents/build/` — project generation and baseline validation.
 - `agents/analysis/` — analyzer, reproducer and evidence-backed repair.
 - `agents/features/` — feature/edit/capture/image helpers.

@@ -1,4 +1,1 @@
-"""Agents build modules.
-
-Import concrete implementations directly from this package.
-"""
+"""Write planned files, clean them, install packages, and repair builds."""

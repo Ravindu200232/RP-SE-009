@@ -1,28 +1,4 @@
-"""
-Point at something in the preview and change just that.
-
-The UI hands over a descriptor of the clicked element — its tag, id, classes,
-visible text, a few attributes, an ancestor chain, and the route it was on. This
-module answers two questions:
-
-  which file renders it?   `ElementResolver.resolve()`
-  did the edit stay small? `guard_scope()`
-
-Resolution is deliberately staged so the model runs last and often not at all.
-Matching only on visible text gives 1-6 candidate files on a real project —
-'Demo Accounts' narrows to one, 'Sign In' to six. But the route the user was on
-is a signal text matching ignores: `/login` reaches `app/login/page.js` and,
-transitively, only the handful of modules it imports. On the sample project that
-closure is about three files, so the six-way tie collapses before a single token
-is spent.
-
-`guard_scope` exists because the only write primitive here is a whole-file
-rewrite. "Make this button teal" and "rewrite this page" produce the same kind
-of tool call, and the difference has to be measured after the fact: how much
-changed, and whether the file's exports still match. The export check reuses the
-named-import parser, which means an element edit cannot introduce the very bug
-class that broke the login route.
-"""
+"""Resolve a selected DOM element to source and guard whole-file rewrites."""
 from __future__ import annotations
 
 import difflib
@@ -31,6 +7,7 @@ import re
 from dataclasses import dataclass, field
 
 from agents.core.exports_parse import parse_exports, resolve_local
+from agents.features.source_guidance import feature_prompt
 
 log = logging.getLogger("picker")
 
@@ -58,11 +35,7 @@ class ElementResolver:
         self.az = analyzer
 
     def route_closure(self, route: str) -> list:
-        """
-        The page for `route`, every layout above it, and everything they import.
-
-        This is the signal a text search cannot see, and it costs nothing.
-        """
+        """Return the route page, parent layouts, and local imports."""
         files = self.az.code_files()
         routes = self.az.enumerate_routes()
         path = (route or "/").split("?")[0].rstrip("/") or "/"
@@ -197,20 +170,7 @@ class ElementResolver:
 
 
 def render_index(files: dict) -> dict:
-    """
-    `{path: {paths that import it}}` — the edge every other helper lacks.
-
-    Everything else in this codebase walks imports forwards: what does this
-    file pull in. Nothing asked the opposite question, and the opposite
-    question is the one that decides scope. Without it "take the footer off
-    the login page" and "take the footer off every page" are the same request,
-    because the footer is one file either way.
-
-    Built from `LOCAL_IMPORT_RE` + `resolve_local`, which already handle `./`,
-    `../` and `@/` alike and get `.jsx`-before-`.js` and `index.jsx` right. A
-    fresh regex over `@/components/...` — the shape used elsewhere in the
-    codebase for prompt assembly — would miss `./Footer` entirely.
-    """
+    """Map each local source path to the files that import it."""
     out = {}
     for rel, body in (files or {}).items():
         if not rel.endswith((".js", ".jsx")):
@@ -230,17 +190,7 @@ def _route_of_page(rel: str) -> str:
 
 
 def routes_rendering(files: dict, target: str) -> list:
-    """
-    Every route that puts `target` on the screen.
-
-    Walks importers upwards until it reaches something Next actually routes:
-    a page contributes its own route, a layout contributes every route
-    beneath it. That is the whole point — a footer imported by
-    `app/layout.jsx` comes back as all twelve routes, not as one file.
-
-    Returns sorted routes. A target nothing renders comes back empty, and a
-    page comes back as itself.
-    """
+    """Walk importers to return every page route that renders ``target``."""
     files = files or {}
     target = (target or "").lstrip("./").replace("\\", "/")
     if not target:
@@ -282,46 +232,7 @@ def guard_scope(old: str, new: str, *, anchor: str = "", removing: bool = False,
                 adding: bool = False, retexting: bool = False,
                 designing: bool = False,
                 max_changed_frac: float = 0.20, min_abs: int = 25) -> str | None:
-    """
-    Reject a rewrite that did more than the instruction asked for.
-
-    Returns None when the edit is acceptable, otherwise a reason the model can
-    act on. The only write primitive available is a whole-file rewrite, so this
-    is where "change just this part" is actually enforced.
-
-    `retexting` drops the anchor check, which asks "is the clicked element
-    still there?" by looking for its old text. That question has no good answer
-    when the instruction was to CHANGE that text: "call this heading Built With
-    instead" makes the old wording disappear by doing exactly as it was told,
-    and the check then rejected the correct edit twice and gave up. Measured —
-    renaming a caption failed every time.
-
-    `adding` drops the changed-line ceiling and nothing else. Asking for a new
-    section is asking for fifty new lines, so the ceiling would refuse every
-    such request twice and then give up — it measures "how much moved", which
-    is the wrong question when the answer is meant to be "a lot, all of it
-    new". What still holds is everything that catches real damage: truncation,
-    a dropped export, and the existing content having survived.
-
-    `designing` keeps only the checks that catch a broken FILE, and drops every
-    check that judges the EDIT. A redesign is supposed to move a lot of lines,
-    lose the old wording and restructure the markup — measuring it against the
-    original and refusing when it differs too much means refusing the thing
-    that was asked for. It did: "The redesign changed far more than the region
-    — nothing was written" was the outcome of asking a selection or a pencil
-    stroke to look different, and the user got nothing at all.
-
-    What replaces it is downstream and better, because it tests the result
-    rather than its shape: the syntax gate parses every file, the export gate
-    resolves every named import, the route probe asks each page whether it
-    still renders, and whatever is still broken goes to the bug fixer. A guess
-    about how many lines an edit "should" touch was never evidence of anything.
-
-    So under `designing` only two things still refuse: an empty response, which
-    is not an edit, and a rewrite short enough to be a truncated stream rather
-    than a shorter design. The floor for that is deliberately low — a redesign
-    is allowed to simplify.
-    """
+    """Return a repairable reason when a whole-file edit violates scope."""
     if not new or not new.strip():
         return "the rewrite is empty"
     floor = 0.25 if designing else 0.6
@@ -420,67 +331,7 @@ def looks_like_retext(instruction: str) -> bool:
     return bool(RETEXT_RE.search(instruction or ""))
 
 
-ELEMENT_EDIT_SYSTEM = """\
-You are editing ONE part of a Next.js 16 App Router file — changing the element
-the user clicked, or adding a new element or section right where they pointed.
-
-You are given the element the user clicked, the route it is on, and the COMPLETE
-current source of the file that appears to render it. Before changing code,
-establish which current source actually owns the requested behavior. If a child,
-caller, API, server action or shared component is uncertain, use the read-only
-workspace tools and inspect it instead of guessing from a filename.
-
-THE SCOPE RULE: CHANGE EVERYTHING THE SELECTED REGION NEEDS, AND NOTHING UNRELATED.
-
-  • Output the COMPLETE file. Preserve unrelated sections and public contracts,
-    but imports/helpers used by the selected region may change when required.
-  • Do NOT perform unrelated cleanup, reformatting or renames. Do NOT rename or
-    remove an export that other files depend on.
-  • A large redesign of the selected section is valid even when it changes many
-    lines. Size is never a reason to refuse the requested edit.
-
-DO EVERYTHING THEY ASKED FOR. Rewrite the text, change the animation, redesign
-the whole thing — whatever the request is, that part of the file is yours to
-change completely. There is no such thing as too big a change to what they
-pointed at.
-
-THAT INCLUDES REMOVING THINGS. "Take this section out", "drop the badges",
-"get rid of the icons" — do exactly that, and delete the markup properly rather
-than hiding it behind a class. Removal is a normal request, not a special case.
-
-WHAT MUST NOT HAPPEN is something disappearing that they never mentioned. The
-tools row is still there after "make the heading bigger". The FAQ is still
-there after "restyle the cards". Ask yourself one question before you answer:
-is anything gone that they did not ask you to remove? If so, put it back.
-
-If you cannot find the thing they described, change nothing and say so. Do not
-tidy the area instead and do not invent a replacement — an empty answer is
-right, a plausible substitute is not.
-  • Respect the Server/Client boundary. If what you are adding needs a hook or
-    event handler and this file is a Server Component, the correct solution may
-    require a small 'use client' component. If that component is not already in
-    this file, reply NEED <path> so AgentForge can automatically expand the edit.
-  • Match what is already there: the same palette, spacing scale, radius,
-    border treatment and heading sizes the surrounding markup uses. A new
-    section that does not look like its neighbours is a wrong answer.
-
-IF YOU NEED A PACKAGE THAT IS NOT INSTALLED, ASK FOR IT FIRST. Emit the command
-on its own, BEFORE the file that imports it:
-
-<run_command>npm install embla-carousel-react</run_command>
-
-  • One package per command, real npm names only, no flags beyond `npm install`.
-  • Already installed, so never ask for these: react, react-dom, next, mongodb,
-    tailwindcss, lucide-react, framer-motion, better-auth.
-  • Prefer what is already there. Reaching for a new dependency to do something
-    Tailwind and framer-motion already do is not an improvement.
-
-If source inspection proves the complete change cannot be made in this file,
-reply with exactly NEED <path> and nothing else. Do not emit NEED merely because
-a dependency might matter — inspect it first with the workspace tools.
-
-Emit exactly one <write_file path="…"> block.
-"""
+ELEMENT_EDIT_SYSTEM = feature_prompt("ELEMENT_EDIT", foundation=True)
 
 
 def describe(el: dict) -> str:
@@ -515,35 +366,19 @@ QUOTED_RE = re.compile(r"""['"]([^'"\n]{3,60})['"]""")
 
 def visible_strings(src: str) -> set:
     """The words a page shows, normalised. Empty for a file with no JSX."""
-    out = set()
-    for m in JSX_TEXT_RE.finditer(src or ""):
-        t = " ".join(m.group(1).split())
-        if t and not t.startswith(("/", "*")) and any(c.isalpha() for c in t):
-            out.add(t)
+    out = {text for match in JSX_TEXT_RE.finditer(src or "")
+           if (text := " ".join(match.group(1).split()))
+           and not text.startswith(("/", "*"))
+           and any(char.isalpha() for char in text)}
     for arr in ARRAY_STR_RE.findall(src or ""):
-        for t in QUOTED_RE.findall(arr):
-            t = " ".join(t.split())
-
-            if t and not re.search(r"\b(?:bg|text|border|flex|grid|p|m)-", t):
-                out.add(t)
+        out.update(text for value in QUOTED_RE.findall(arr)
+                   if (text := " ".join(value.split()))
+                   and not re.search(r"\b(?:bg|text|border|flex|grid|p|m)-", text))
     return out
 
 
 def lost_content(old: str, new: str, tolerance: float = 0.2) -> str | None:
-    """
-    What the rewrite dropped from the page, or None.
-
-    A whole-page rewrite is allowed to restructure freely, which means none of
-    the other guards can see the one thing that actually goes wrong: content
-    quietly disappearing. Measured — a two-column layout request came back
-    having deleted a tools row and an animated heading and invented a contact
-    block nobody asked for, and every existing check passed it because the file
-    grew and kept its exports.
-
-    Compared on visible text, so restyling, reordering and rewording a heading
-    all stay legal. Only the disappearance of a fifth of what the page said is
-    treated as a mistake.
-    """
+    """Report when a rewrite silently drops too much visible content."""
     before = visible_strings(old)
     if len(before) < 4:
         return None

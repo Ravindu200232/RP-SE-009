@@ -1,37 +1,4 @@
-"""What previous builds got wrong, so the next one is told before it starts.
-
-`agents/analysis/analyzer.py` contains this line, about a seed guard that stops seeding
-the moment a real user signs up:
-
-    Measured across the corpus: 13 of 13 seeded projects have this, and not one
-    uses an upsert — because the builder prompt handed them the count-guard as
-    its template.
-
-Thirteen for thirteen. A static analyzer found it every time, a human eventually
-read enough logs to notice, and the fix was to hand-edit a string literal in the
-builder's system prompt. Every rule in that prompt arrived the same way, and the
-evidence quoted through this codebase — "measured across thirty-five generated
-apps", "51 of 57 labelled forms" — is a corpus that exists only as prose inside
-the very prompts it produced. Nothing carried a failure in one project into the
-next build automatically.
-
-This is that missing loop, and it is deliberately the smallest thing that could
-work. The taxonomy already existed: the analyzer's findings carry a stable
-`code` and a `fix` sentence, and the QA agent already counts its failures by
-class. Both are recorded here, counted across projects, and the most frequent
-are handed to the next build as a short block of "this keeps happening, here is
-what fixes it".
-
-What this is NOT: a score, a gate, or a retry. Nothing here can fail a build or
-hold one back. It only changes what the model is shown before it writes, which
-is the same lever every other rule in the builder prompt pulls — the difference
-being that this one updates itself.
-
-Stored in `~/.agentforge/lessons.json`, beside the settings, because it belongs
-to the installation rather than to any project. It is capped, it is ordered by
-how often a thing has actually happened, and a lesson nobody has hit for a long
-time falls off the end.
-"""
+"""Records repeated build mistakes so future builds can avoid them."""
 from __future__ import annotations
 
 import json
@@ -46,7 +13,7 @@ log = logging.getLogger("lessons")
 
 STORE = Path.home() / ".agentforge" / "lessons.json"
 
-# The block handed to the builder.
+# Limits keep the builder's lesson list short.
 MAX_IN_PROMPT = 10
 MAX_CHARS = 1600
 MAX_KEPT = 120
@@ -59,7 +26,7 @@ def _now() -> str:
 
 
 def load(path: Path = None) -> dict:
-    """Every lesson recorded so far. Never raises."""
+    """Read saved lessons, or return an empty list on failure."""
     path = path or STORE
     try:
         if path.is_file():
@@ -75,7 +42,7 @@ def _save(lessons: dict, path: Path = None) -> None:
     path = path or STORE
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        # Trimmed by how much evidence there is, not by age alone.
+        # Keep the lessons seen in the most projects.
         if len(lessons) > MAX_KEPT:
             ranked = sorted(lessons.items(),
                             key=lambda kv: (kv[1].get("count", 0),
@@ -93,14 +60,7 @@ def _save(lessons: dict, path: Path = None) -> None:
 
 
 def record(project: str, entries, path: Path = None) -> int:
-    """Note what went wrong in one project. Returns how many were new to it.
-
-    `entries` is any iterable of `(code, remedy)` — the analyzer's finding code
-    with its `fix` sentence, or a QA failure class with nothing. A code already
-    seen in this project is not counted twice: the number that matters is how
-    many separate projects hit it, because one project hitting the same thing
-    forty times is one mistake, not forty.
-    """
+    """Save this project's mistakes and return how many are new for it."""
     lessons = load(path)
     fresh = 0
     for code, remedy in entries or []:
@@ -123,36 +83,21 @@ def record(project: str, entries, path: Path = None) -> int:
 
 
 def _unbag_lint(message: str) -> tuple:
-    """A LINT finding's own rule, as a code and a remedy.
-
-    Every rule in `ArchitectAgent`'s Next.js checks reports through one shared
-    code — `Finding("major", "LINT", problem)` — with the rule itself carried in
-    the sentence. Skipping the whole bag, which is what this used to do, threw
-    away the most repeatable faults there are: "constructs a MongoClient",
-    "contains TypeScript syntax", "imports react-router-dom", "route handlers
-    must use named exports". Counting them under one `LINT` counter would have
-    been worse than useless, so the sentence is split instead:
-
-        app/lib/auth.js: constructs a MongoClient — import getDb/getCollection
-                         └── the code                └── the remedy
-
-    Found by a live build: the first analyzer scan of the-cheese-board reported
-    exactly one blocker and one major, and the major was a LINT.
-    """
+    """Turn a general lint message into a specific lesson and remedy."""
     text = " ".join(str(message or "").split())
     head, sep, rest = text.partition(": ")
-    # Only a real path prefix is dropped.
+    # Remove the file name only when the message starts with one.
     if sep and ("/" in head or head.endswith((".js", ".jsx", ".mjs", ".json"))):
         text = rest
     rule, _, remedy = text.partition(" — ")
     slug = re.sub(r"[^A-Za-z0-9]+", "_", rule).strip("_").upper()
-    if len(slug) > 44:  # on a word boundary, so it stays readable
+    if len(slug) > 44:  # Keep the code short without cutting a word when possible.
         slug = slug[:44].rpartition("_")[0] or slug[:44]
     return (f"LINT_{slug}" if slug else "", remedy.strip() or rule.strip())
 
 
 def from_findings(findings) -> list:
-    """`(code, fix)` pairs out of an AnalyzerReport's findings."""
+    """Turn analyzer findings into lesson and remedy pairs."""
     out = []
     for f in findings or []:
         code = getattr(f, "code", "") or ""
@@ -217,11 +162,7 @@ QA_REMEDIES = {
 
 
 def from_qa_history(rounds) -> list:
-    """`(class, remedy)` pairs out of the QA agent's own failure classes.
-
-    Only rounds that actually failed something. A green round has nothing to
-    teach the next build.
-    """
+    """Turn failed test rounds into lesson and remedy pairs."""
     out = []
     for row in rounds or []:
         if not isinstance(row, dict) or not row.get("failed"):
@@ -235,13 +176,9 @@ def from_qa_history(rounds) -> list:
 
 
 def prompt_block(path: Path = None) -> str:
-    """The block for the builder's system prompt, or "" when there is nothing.
-
-    Ordered by how many separate projects hit each thing, because that is the
-    only honest measure of "this keeps happening".
-    """
+    """Build the short list of repeated mistakes shown to the builder."""
     lessons = load(path)
-    # A remedy is the price of admission.
+    # A lesson is useful only when it includes a remedy.
     ranked = [(code, row) for code, row in lessons.items()
               if row.get("count", 0) >= MIN_PROJECTS and (row.get("remedy") or "").strip()]
     ranked.sort(key=lambda kv: (kv[1].get("count", 0), kv[1].get("last_seen", "")),

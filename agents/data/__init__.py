@@ -1,4 +1,1 @@
-"""Agents data modules.
-
-Import concrete implementations directly from this package.
-"""
+"""Start MongoDB and prepare isolated data for each generated app."""

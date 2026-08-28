@@ -1,1 +1,1 @@
-"""Agent server pieces."""
+"""Connect UI requests to the build, repair, and feature pipelines."""
