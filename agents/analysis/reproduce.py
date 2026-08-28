@@ -1,32 +1,4 @@
-"""Open the app and watch it fail, before changing a line of it.
-
-The bug path used to "reproduce" a complaint like this:
-
-    urllib.request.urlopen(f"http://127.0.0.1:{DEV_PORT}{route}").read(1)
-
-One byte, over HTTP, with no JavaScript. "The booking button does nothing" is a
-client-side symptom: the server returns 200, the terminal prints nothing, and
-the model was then asked to name the broken file from a one-line-per-file
-inventory and the user's sentence. That is not diagnosis, it is a guess with a
-stack trace's worth of confidence.
-
-Everything needed to do it properly already existed, in two places that had
-never been introduced to each other: `agents/capture.py` opens a signed-in
-Playwright context (the demo credentials are POSTed into it before navigating,
-because most of a generated app is behind a login), and `qa_agent/e2e/e2e.py`
-attaches the three listeners that see what a browser sees — console, pageerror
-and response. This puts them together and adds the one thing neither does:
-finding the control the user is complaining about and clicking it.
-
-What comes back is evidence, not a theory. The console error with its stack,
-the request that returned 500 with the body it returned, the button's own
-markup, and whether anything on the page changed when it was pressed. The model
-is told what happened; it no longer has to imagine it.
-
-Nothing here raises. A reproduction that fails to run returns a record saying
-so, and the caller carries on with whatever else it has — the same policy as
-every other optional reader in this codebase.
-"""
+"""Replay a reported problem in a browser before changing the app."""
 from __future__ import annotations
 
 import logging
@@ -66,12 +38,7 @@ def _is_noise(line: str) -> bool:
 
 
 def _shape(url: str) -> str:
-    """A URL with the record ids taken out, so two runs can be compared.
-
-    `/api/bookings/64f1…` and `/api/bookings/91ac…` are the same endpoint
-    failing twice, and an ObjectId is hex — masking only digits leaves `#f#`
-    against `#ac` and calls a fixed route broken.
-    """
+    """Hide changing record IDs so URLs can be compared across runs."""
     parts = []
     for seg in str(url or "").split("/"):
         if seg and (re.fullmatch(r"[0-9a-fA-F-]{6,}", seg) or any(c.isdigit() for c in seg)):
@@ -83,32 +50,27 @@ def _shape(url: str) -> str:
 
 @dataclass
 class Reproduction:
-    """What the browser saw when it was asked to do the thing complained about."""
+    """What the browser observed while replaying the reported problem."""
 
     route: str = "/"
     ran: bool = False
     why_not: str = ""
     signed_in: bool = False
-    console: list = field(default_factory=list)  # error text, with source
-    page_errors: list = field(default_factory=list)  # uncaught, with stacks
-    network: list = field(default_factory=list)  # 4xx/5xx with body snippets
-    clicked: str = ""  # the control pressed, if any
-    filled: list = field(default_factory=list)  # fields given a value first
-    changed: bool = False  # did the page react at all
+    console: list = field(default_factory=list)  # Browser errors and their source.
+    page_errors: list = field(default_factory=list)  # Uncaught page errors.
+    network: list = field(default_factory=list)  # Failed requests and response details.
+    clicked: str = ""  # The control that was pressed.
+    filled: list = field(default_factory=list)  # Fields filled before the action.
+    changed: bool = False  # Whether the page reacted.
     html: str = ""
     screenshot_b64: str = ""
 
     def is_clean(self) -> bool:
-        """Nothing went wrong that a browser could see."""
+        """Return whether the browser saw no problem."""
         return not (self.console or self.page_errors or self.network)
 
     def signature(self) -> set:
-        """The stable part of each fault, for telling one run from the next.
-
-        Numbers move between runs — ports, ids, timings, line offsets in a
-        rebuilt bundle — so they are dropped. What is left is the sentence the
-        fault is, which is what has to be gone afterwards for a repair to count.
-        """
+        """Return stable problem details for comparing two runs."""
         out = set()
         for line in list(self.console) + list(self.page_errors):
             text = re.sub(r"\d+", "#", " ".join(str(line).split()))
@@ -120,7 +82,7 @@ class Reproduction:
         return out
 
     def as_prompt(self) -> str:
-        """The evidence, in the order a person would read it."""
+        """Format the evidence in a readable order."""
         if not self.ran:
             return f"The app could not be opened to reproduce this: {self.why_not}"
         parts = [f"The app was opened at {self.route}"
@@ -150,7 +112,7 @@ class Reproduction:
 
 
 def wanted_control(complaint: str) -> str:
-    """The words most likely to name the control being complained about."""
+    """Find the words most likely to name the reported control."""
     words = [w for w in re.findall(r"[A-Za-z][A-Za-z'-]+", complaint or "")
              if w.lower() not in _STOP and len(w) > 2]
     return " ".join(words[:3])
@@ -159,7 +121,7 @@ def wanted_control(complaint: str) -> str:
 def reproduce(route: str, complaint: str = "", *, port: int = 5173,
               login: tuple = None, login_endpoint: str = "",
               timeout: int = 45_000) -> Reproduction:
-    """Open `route`, press what the complaint names, and report what happened."""
+    """Open the route, perform the reported action, and record what happens."""
     out = Reproduction(route=route or "/")
     try:
         from playwright.sync_api import sync_playwright
@@ -202,7 +164,7 @@ def reproduce(route: str, complaint: str = "", *, port: int = 5173,
                     if _is_noise(text) or _is_noise(where):
                         return
                     line = f"{text}  [{where}]" if where else text
-                    if line not in out.console:  # the same warning repeats
+                    if line not in out.console:  # Ignore repeated warnings.
                         out.console.append(line)
 
                 page.on("console", _console)
@@ -227,7 +189,7 @@ def reproduce(route: str, complaint: str = "", *, port: int = 5173,
                     pass
                 page.wait_for_timeout(SETTLE_MS)
 
-                # Marked as run the moment the page is up, not at the end.
+                # Record the replay once the page loads.
                 out.ran = True
 
                 if target:
@@ -251,7 +213,7 @@ def reproduce(route: str, complaint: str = "", *, port: int = 5173,
                 ctx.close()
                 browser.close()
     except Exception as e:                                       # noqa: BLE001
-        # Keep whatever was already seen.
+        # Keep any evidence already collected.
         out.why_not = str(e)[:300]
         log.warning(f"reproduce failed: {e}")
     return out
@@ -280,7 +242,7 @@ _FILL_SCAN = """f => {
 
 
 def _value_for(field, today) -> str:
-    """Something the browser will accept for this input's type."""
+    """Choose a valid sample value for an input."""
     kind = field.get("type") or ""
     if kind == "email":
         return "test@example.com"
@@ -300,22 +262,7 @@ def _value_for(field, today) -> str:
 
 
 def _fill_required(page, control) -> list:
-    """Give the form the values it insists on, before pressing its button.
-
-    Measured live on app-name-spoke-and-chain: clicking 'Confirm Booking' on an
-    untouched form produced zero console errors and zero page errors, because
-    HTML5 `required` validation refuses the submit and `handleSubmit` never
-    runs. Fill the same five fields and the real fault appears immediately —
-    "Cannot read properties of undefined (reading 'trim')".
-
-    Without this, every complaint about a form — which is most of the "button
-    does nothing" reports there are — reproduces as "the browser reported
-    nothing", and that is indistinguishable from a healthy page.
-
-    This does submit the form, so a demo row may be written to the development
-    database. That is what reproducing a booking bug means, and it is the same
-    thing the person reporting it did.
-    """
+    """Fill required fields so the reported form action can run."""
     try:
         form = control.evaluate_handle("el => el.closest('form')")
         if not form or form.evaluate("f => f === null"):
@@ -353,15 +300,7 @@ def _fill_required(page, control) -> list:
 
 
 def _press(page, target: str) -> tuple:
-    """Click the control the complaint names.
-
-    Returns (what, did-anything-change, what-was-filled-first).
-
-    "Nothing changed" is the finding, not a failure of the attempt: a button
-    whose handler throws, whose handler is missing, or whose form never submits
-    all look identical from the outside, and all three are worth telling the
-    model about.
-    """
+    """Click the reported control and record whether the page changes."""
     before = ""
     try:
         before = page.inner_text("body")[:4000]
@@ -370,14 +309,14 @@ def _press(page, target: str) -> tuple:
 
     control = None
     what = ""
-    # Escaped: these are the user's own words.
+    # Treat the user's words as plain text, not a search pattern.
     pattern = re.compile(re.escape(target), re.I)
     for how in (lambda: page.get_by_role("button", name=pattern).first,
                 lambda: page.get_by_role("link", name=pattern).first,
                 lambda: page.get_by_text(pattern).first):
         try:
             found = how()
-            # A Locator is always truthy.
+            # Check that the browser actually found an element.
             if found is not None and found.count() > 0:
                 found.wait_for(state="visible", timeout=1500)
                 control = found

@@ -1,19 +1,37 @@
-RP-SE-009 repository test result
+AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-08-27T01:11:25+00:00
+Run at (UTC): 2026-08-28T16:12:10+00:00
 Command: python test/run_suite.py
-Python: 3.12.10
-Unit tests: 73
+Python: 3.13.5
+Unit tests: 132
 Integration tests: 20
-Total tests run: 93
+Total tests run: 152
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 0.041s
+Duration: 0.065s
 
 Detailed results
 ----------------
+test_better_auth_invariants_cover_missing_page_seed_and_origins (test.unit.agents.test_analyzer_refactor.AnalyzerRefactorTests.test_better_auth_invariants_cover_missing_page_seed_and_origins) ... ok
+test_decidable_compatibility_checks_are_not_silent_stubs (test.unit.agents.test_analyzer_refactor.AnalyzerRefactorTests.test_decidable_compatibility_checks_are_not_silent_stubs) ... ok
+test_e2e_execution_stops_before_browser_on_syntax_failure (test.unit.agents.test_analyzer_refactor.AnalyzerRefactorTests.test_e2e_execution_stops_before_browser_on_syntax_failure) ... ok
+test_generated_e2e_syntax_is_a_blocker (test.unit.agents.test_analyzer_refactor.AnalyzerRefactorTests.test_generated_e2e_syntax_is_a_blocker) ... ok
+test_legacy_semantic_methods_share_validated_cached_lens (test.unit.agents.test_analyzer_refactor.AnalyzerRefactorTests.test_legacy_semantic_methods_share_validated_cached_lens) ... ok
+test_public_join_surface_and_line_ceiling (test.unit.agents.test_analyzer_refactor.AnalyzerRefactorTests.test_public_join_surface_and_line_ceiling) ... ok
+test_semantic_json_requires_exact_plan_and_source_evidence (test.unit.agents.test_analyzer_refactor.AnalyzerRefactorTests.test_semantic_json_requires_exact_plan_and_source_evidence) ... ok
+test_a_case_reported_by_full_name_is_still_found_in_its_file (test.unit.agents.test_analyzer_refactor.FailingCaseNameTests.test_a_case_reported_by_full_name_is_still_found_in_its_file) ... ok
+test_a_passing_case_is_still_restored_byte_for_byte (test.unit.agents.test_analyzer_refactor.FailingCaseNameTests.test_a_passing_case_is_still_restored_byte_for_byte) ... ok
+test_dropping_a_genuinely_passing_case_is_still_refused (test.unit.agents.test_analyzer_refactor.FailingCaseNameTests.test_dropping_a_genuinely_passing_case_is_still_refused) ... ok
+test_renaming_the_failing_case_is_not_read_as_dropping_a_passing_one (test.unit.agents.test_analyzer_refactor.FailingCaseNameTests.test_renaming_the_failing_case_is_not_read_as_dropping_a_passing_one) ... ok
+test_the_longest_title_wins_so_a_short_sibling_is_not_swept_up (test.unit.agents.test_analyzer_refactor.FailingCaseNameTests.test_the_longest_title_wins_so_a_short_sibling_is_not_swept_up) ... ok
+test_the_repair_to_the_failing_case_survives_the_splice (test.unit.agents.test_analyzer_refactor.FailingCaseNameTests.test_the_repair_to_the_failing_case_survives_the_splice) ... ok
+test_a_literal_route_wins_over_a_dynamic_sibling (test.unit.agents.test_analyzer_refactor.RouteLookupTests.test_a_literal_route_wins_over_a_dynamic_sibling)
+`[roomId]` sorts before `available`, so first-match found the wrong one. ... ok
+test_windows_package_manager_path_uses_the_shared_install_lock (test.unit.agents.test_code_agent_helpers.CommandCoordinationTests.test_windows_package_manager_path_uses_the_shared_install_lock) ... ok
+test_a_scaffold_module_is_never_told_to_grow_an_export (test.unit.agents.test_code_agent_helpers.ExportContractTests.test_a_scaffold_module_is_never_told_to_grow_an_export)
+AgentForge refuses to rewrite lib/mongodb.js, so that repair is a trap. ... ok
 test_close_match_accepts_a_case_only_export_difference (test.unit.agents.test_code_agent_helpers.ExportContractTests.test_close_match_accepts_a_case_only_export_difference) ... ok
 test_grouped_message_keeps_all_missing_names_together (test.unit.agents.test_code_agent_helpers.ExportContractTests.test_grouped_message_keeps_all_missing_names_together) ... ok
 test_missing_default_export_is_reported (test.unit.agents.test_code_agent_helpers.ExportContractTests.test_missing_default_export_is_reported) ... ok
@@ -25,6 +43,9 @@ test_dynamic_page_route_maps_to_its_source (test.unit.agents.test_code_agent_hel
 test_read_file_refuses_parent_directory_escape (test.unit.agents.test_code_agent_helpers.WorkspaceToolTests.test_read_file_refuses_parent_directory_escape) ... ok
 test_repeated_tool_request_is_served_only_once (test.unit.agents.test_code_agent_helpers.WorkspaceToolTests.test_repeated_tool_request_is_served_only_once) ... ok
 test_tool_requests_keep_the_order_written_by_the_agent (test.unit.agents.test_code_agent_helpers.WorkspaceToolTests.test_tool_requests_keep_the_order_written_by_the_agent) ... ok
+test_markdown_prompts_load_with_agentic_contracts (test.unit.agents.test_features_refactor.FeaturesRefactorTests.test_markdown_prompts_load_with_agentic_contracts) ... ok
+test_package_sentinels_never_become_install_requests (test.unit.agents.test_features_refactor.FeaturesRefactorTests.test_package_sentinels_never_become_install_requests) ... ok
+test_real_package_and_public_contracts_survive (test.unit.agents.test_features_refactor.FeaturesRefactorTests.test_real_package_and_public_contracts_survive) ... ok
 test_every_offered_cloud_entry_carries_the_window_it_will_request (test.unit.agents.test_ollama_client.CatalogueShapeTests.test_every_offered_cloud_entry_carries_the_window_it_will_request) ... ok
 test_the_catalogue_falls_back_to_known_cloud_models_when_empty (test.unit.agents.test_ollama_client.CatalogueShapeTests.test_the_catalogue_falls_back_to_known_cloud_models_when_empty) ... ok
 test_a_cloud_model_reporting_no_window_still_gets_the_default (test.unit.agents.test_ollama_client.CloudContextTests.test_a_cloud_model_reporting_no_window_still_gets_the_default) ... ok
@@ -47,6 +68,51 @@ test_a_signed_in_daemon_with_nothing_pulled_is_still_signed_in (test.unit.agents
 test_an_api_key_reaches_cloud_models_without_any_daemon (test.unit.agents.test_ollama_client.SigninDetectionTests.test_an_api_key_reaches_cloud_models_without_any_daemon) ... ok
 test_an_older_daemon_is_still_detected_by_its_proxied_models (test.unit.agents.test_ollama_client.SigninDetectionTests.test_an_older_daemon_is_still_detected_by_its_proxied_models) ... ok
 test_readiness_tells_an_empty_daemon_from_an_absent_one (test.unit.agents.test_ollama_client.SigninDetectionTests.test_readiness_tells_an_empty_daemon_from_an_absent_one) ... ok
+test_a_complete_first_answer_costs_only_one_call (test.unit.agents.test_planner.UnifiedPlannerTests.test_a_complete_first_answer_costs_only_one_call) ... ok
+test_a_missing_shell_is_a_gap_not_a_python_injection (test.unit.agents.test_planner.UnifiedPlannerTests.test_a_missing_shell_is_a_gap_not_a_python_injection) ... ok
+test_a_planned_seed_must_export_the_name_agentforge_calls (test.unit.agents.test_planner.UnifiedPlannerTests.test_a_planned_seed_must_export_the_name_agentforge_calls) ... ok
+test_a_scalar_answer_is_kept_as_a_one_item_list (test.unit.agents.test_planner.UnifiedPlannerTests.test_a_scalar_answer_is_kept_as_a_one_item_list)
+`"exports": "ensureSeeded"` means the list — dropping it hung the loop. ... ok
+test_a_truncated_gap_round_never_replaces_a_fuller_plan (test.unit.agents.test_planner.UnifiedPlannerTests.test_a_truncated_gap_round_never_replaces_a_fuller_plan)
+A retry that parses smaller than what we hold is discarded. ... ok
+test_an_empty_plan_is_refused_rather_than_built (test.unit.agents.test_planner.UnifiedPlannerTests.test_an_empty_plan_is_refused_rather_than_built)
+No routes and no files is a failed answer, not a small product. ... ok
+test_an_unreachable_database_is_never_reported_as_available (test.unit.agents.test_planner.UnifiedPlannerTests.test_an_unreachable_database_is_never_reported_as_available) ... ok
+test_analyzer_blocks_demo_rows_that_bypass_better_auth (test.unit.agents.test_planner.UnifiedPlannerTests.test_analyzer_blocks_demo_rows_that_bypass_better_auth) ... ok
+test_auth_client_import_is_not_mistaken_for_server_auth (test.unit.agents.test_planner.UnifiedPlannerTests.test_auth_client_import_is_not_mistaken_for_server_auth) ... ok
+test_auth_roles_and_seed_contract_are_normalized_before_build (test.unit.agents.test_planner.UnifiedPlannerTests.test_auth_roles_and_seed_contract_are_normalized_before_build) ... ok
+test_auth_templates_are_self_contained (test.unit.agents.test_planner.UnifiedPlannerTests.test_auth_templates_are_self_contained) ... ok
+test_database_clients_recover_instead_of_caching_a_dead_one (test.unit.agents.test_planner.UnifiedPlannerTests.test_database_clients_recover_instead_of_caching_a_dead_one) ... ok
+test_e2e_account_resolution_accepts_role_access_prefix (test.unit.agents.test_planner.UnifiedPlannerTests.test_e2e_account_resolution_accepts_role_access_prefix) ... ok
+test_every_dangling_reference_is_reported_as_a_gap (test.unit.agents.test_planner.UnifiedPlannerTests.test_every_dangling_reference_is_reported_as_a_gap) ... ok
+test_one_model_answer_produces_all_planning_artifacts (test.unit.agents.test_planner.UnifiedPlannerTests.test_one_model_answer_produces_all_planning_artifacts) ... ok
+test_page_layout_reaches_the_builder_with_its_file (test.unit.agents.test_planner.UnifiedPlannerTests.test_page_layout_reaches_the_builder_with_its_file) ... ok
+test_pictures_are_planned_only_when_the_request_asks_for_them (test.unit.agents.test_planner.UnifiedPlannerTests.test_pictures_are_planned_only_when_the_request_asks_for_them) ... ok
+test_plain_mongo_demo_password_is_invalid_for_better_auth (test.unit.agents.test_planner.UnifiedPlannerTests.test_plain_mongo_demo_password_is_invalid_for_better_auth) ... ok
+test_planner_never_invents_a_missing_account_flow (test.unit.agents.test_planner.UnifiedPlannerTests.test_planner_never_invents_a_missing_account_flow)
+A dropped sign-in page stays dropped; the analyzer owns that gap. ... ok
+test_planner_owns_its_account_flows (test.unit.agents.test_planner.UnifiedPlannerTests.test_planner_owns_its_account_flows)
+The planner's own auth paths survive, and none are invented. ... ok
+test_rich_capability_keeps_legacy_qa_shape (test.unit.agents.test_planner.UnifiedPlannerTests.test_rich_capability_keeps_legacy_qa_shape) ... ok
+test_role_actors_are_normalized_without_authoring_plan_content (test.unit.agents.test_planner.UnifiedPlannerTests.test_role_actors_are_normalized_without_authoring_plan_content) ... ok
+test_scaffold_defaults_cannot_be_overwritten_by_a_build_turn (test.unit.agents.test_planner.UnifiedPlannerTests.test_scaffold_defaults_cannot_be_overwritten_by_a_build_turn) ... ok
+test_scaffold_placeholders_can_always_be_replaced (test.unit.agents.test_planner.UnifiedPlannerTests.test_scaffold_placeholders_can_always_be_replaced)
+The 'Building…' page and the stub seed must never lock themselves in. ... ok
+test_site_map_is_one_xml_document_every_build_round_carries (test.unit.agents.test_planner.UnifiedPlannerTests.test_site_map_is_one_xml_document_every_build_round_carries) ... ok
+test_stream_parser_accepts_split_file_tags (test.unit.agents.test_planner.UnifiedPlannerTests.test_stream_parser_accepts_split_file_tags) ... ok
+test_templates_contain_only_platform_defaults (test.unit.agents.test_planner.UnifiedPlannerTests.test_templates_contain_only_platform_defaults) ... ok
+test_the_planner_is_asked_again_until_nothing_is_missing (test.unit.agents.test_planner.UnifiedPlannerTests.test_the_planner_is_asked_again_until_nothing_is_missing) ... ok
+test_the_planners_own_shell_survives_normalization (test.unit.agents.test_planner.UnifiedPlannerTests.test_the_planners_own_shell_survives_normalization) ... ok
+test_unawaited_collection_access_is_a_lint_error (test.unit.agents.test_planner.UnifiedPlannerTests.test_unawaited_collection_access_is_a_lint_error) ... ok
+test_unawaited_dynamic_params_are_a_lint_error (test.unit.agents.test_planner.UnifiedPlannerTests.test_unawaited_dynamic_params_are_a_lint_error) ... ok
+test_non_runtime_analyzer_omits_base_url (test.unit.agents.test_server_refactor.AnalyzerFactoryTests.test_non_runtime_analyzer_omits_base_url) ... ok
+test_runtime_configuration_is_centralized (test.unit.agents.test_server_refactor.AnalyzerFactoryTests.test_runtime_configuration_is_centralized) ... ok
+test_only_connection_faults_count_as_the_database_being_down (test.unit.agents.test_server_refactor.DatabaseFaultTests.test_only_connection_faults_count_as_the_database_being_down) ... ok
+test_build_and_resume_contracts (test.unit.agents.test_server_refactor.MessageDispatchTests.test_build_and_resume_contracts) ... ok
+test_edit_action_contracts (test.unit.agents.test_server_refactor.MessageDispatchTests.test_edit_action_contracts) ... ok
+test_invalid_or_incomplete_action_is_ignored (test.unit.agents.test_server_refactor.MessageDispatchTests.test_invalid_or_incomplete_action_is_ignored) ... ok
+test_owned_dir_accepts_only_existing_direct_child (test.unit.agents.test_server_refactor.OwnedDirectoryTests.test_owned_dir_accepts_only_existing_direct_child) ... ok
+test_owned_dir_rejects_traversal_hidden_and_missing_names (test.unit.agents.test_server_refactor.OwnedDirectoryTests.test_owned_dir_rejects_traversal_hidden_and_missing_names) ... ok
 test_environment_style_secret_line_keeps_the_key_but_hides_the_value (test.unit.deployment.test_security.DeploymentSecurityTests.test_environment_style_secret_line_keeps_the_key_but_hides_the_value) ... ok
 test_hash_helpers_produce_the_same_artifact_digest (test.unit.deployment.test_security.DeploymentSecurityTests.test_hash_helpers_produce_the_same_artifact_digest) ... ok
 test_missing_artifact_has_no_false_digest (test.unit.deployment.test_security.DeploymentSecurityTests.test_missing_artifact_has_no_false_digest) ... ok
@@ -75,6 +141,7 @@ test_existing_project_cap_prevents_unbounded_test_generation (test.unit.qa_agent
 test_generated_and_module_side_effect_files_are_skipped (test.unit.qa_agents.test_unit_target_selection.UnitTargetSelectionTests.test_generated_and_module_side_effect_files_are_skipped) ... ok
 test_route_handler_is_prioritized_over_a_component (test.unit.qa_agents.test_unit_target_selection.UnitTargetSelectionTests.test_route_handler_is_prioritized_over_a_component) ... ok
 test_runner_classifies_actionable_failure_types (test.unit.qa_agents.test_unit_target_selection.UnitTargetSelectionTests.test_runner_classifies_actionable_failure_types) ... ok
+test_builder_prompt_is_a_natural_srs_handoff (test.unit.srs.test_builder_handoff.BuilderHandoffTests.test_builder_prompt_is_a_natural_srs_handoff) ... ok
 test_entity_hint_singularizes_plain_plural_names (test.unit.srs.test_builder_handoff.BuilderHandoffTests.test_entity_hint_singularizes_plain_plural_names) ... ok
 test_page_and_api_paths_follow_next_app_router_layout (test.unit.srs.test_builder_handoff.BuilderHandoffTests.test_page_and_api_paths_follow_next_app_router_layout) ... ok
 test_reference_field_preserves_object_id_semantics (test.unit.srs.test_builder_handoff.BuilderHandoffTests.test_reference_field_preserves_object_id_semantics) ... ok
@@ -109,6 +176,6 @@ test_runtime_parts_are_unique_and_bootstrap_before_consumers (test.integration.t
 test_stable_server_entrypoint_delegates_to_shared_runtime (test.integration.test_runtime_composition.SharedRuntimeCompositionTests.test_stable_server_entrypoint_delegates_to_shared_runtime) ... ok
 
 ----------------------------------------------------------------------
-Ran 93 tests in 0.041s
+Ran 152 tests in 0.065s
 
 OK

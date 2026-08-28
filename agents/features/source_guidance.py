@@ -1,43 +1,63 @@
-"""Small generation policies shared by build and edit agents."""
+"""Shared feature prompts and small deterministic media-intent guard."""
 from __future__ import annotations
 
 import re
+from functools import lru_cache
+from pathlib import Path
 
 
-HUMAN_COMMENT_POLICY = """\
-SOURCE COMMENT STYLE:
-- Write comments only when they explain WHY, a non-obvious invariant, or a risky boundary.
-- Keep comments short and natural, like a careful maintainer wrote them.
-- Do not narrate obvious JSX, imports, assignments, or every function line by line.
-- Never mention the AI/model/prompt, and do not leave fake TODOs or tutorial commentary.
-- Prefer clear names and small functions over comments that explain confusing code.
-"""
+PROMPT_FILE = Path(__file__).with_name("feature_prompt.md")
 
 
-FEATURE_IMAGE_POLICY = """\
-FEATURE IMAGE CONTRACT:
-- This request explicitly needs a generated picture/photo/visual asset.
-- Reference each new generated asset from app source as /generated/<semantic-name>.png.
-- Give image elements useful, concrete alt text; that text becomes the Fooocus subject prompt.
-- Do not use remote stock URLs, placeholder services, base64 blobs, or invented existing files.
-- AgentForge generates any missing /generated/*.png reference with Fooocus after the source write.
-"""
+@lru_cache(maxsize=None)
+def feature_prompt(name: str, *, foundation: bool = False) -> str:
+    """Load one named contract; keep a safe fallback for packaged installs."""
+    try:
+        text = PROMPT_FILE.read_text("utf-8")
+        marker = str(name or "").strip().upper()
+        match = re.search(
+            rf"<!--\s*{re.escape(marker)}\s*-->(.*?)<!--\s*/{re.escape(marker)}\s*-->",
+            text, re.S)
+        body = match.group(1).strip() if match else ""
+        if foundation and marker != "FOUNDATION":
+            base = feature_prompt("FOUNDATION")
+            body = f"{base}\n\n{body}" if base else body
+        if body:
+            return body
+    except OSError:
+        pass
+    return "Inspect current source and evidence before changing only the requested behavior."
+
+
+def render_feature_prompt(name: str, **values) -> str:
+    """Render explicit double-brace placeholders without template evaluation."""
+    text = feature_prompt(name)
+    for key, value in values.items():
+        text = text.replace("{{" + key.upper() + "}}", str(value or ""))
+    return text
+
+
+HUMAN_COMMENT_POLICY = feature_prompt("HUMAN_COMMENT")
+FEATURE_IMAGE_POLICY = feature_prompt("FEATURE_IMAGE")
 
 
 _IMAGE_INTENT_RE = re.compile(
-    r"\b(?:image|images|photo|photos|picture|pictures|photograph|photographs|"
+    r"\b(?:img|imgs|pic|pics|image|images|photo|photos|"
+    r"picture|pictures|photograph|photographs|"
     r"banner\s+image|hero\s+image|background\s+image|thumbnail|cover\s+image|"
     r"illustration|visual\s+asset)\b",
     re.I,
 )
 _IMAGE_NEGATION_RE = re.compile(
     r"\b(?:no|without|remove|delete|hide|disable)\b[^.!;\n]{0,40}"
-    r"\b(?:image|images|photo|photos|picture|pictures|thumbnail|illustration)s?\b",
+    r"\b(?:img|pic|image|images|photo|photos|"
+    r"picture|pictures|thumbnail|illustration)s?\b",
     re.I,
 )
 _IMAGE_ADD_RE = re.compile(
     r"\b(?:add|include|generate|create|draw|use|put|insert|replace)\b[^.!;\n]{0,40}"
-    r"\b(?:image|images|photo|photos|picture|pictures|thumbnail|illustration)s?\b",
+    r"\b(?:img|pic|image|images|photo|photos|"
+    r"picture|pictures|thumbnail|illustration)s?\b",
     re.I,
 )
 
@@ -60,6 +80,8 @@ def feature_image_prompt(text: str) -> str:
 __all__ = [
     "FEATURE_IMAGE_POLICY",
     "HUMAN_COMMENT_POLICY",
+    "feature_prompt",
+    "render_feature_prompt",
     "feature_image_prompt",
     "feature_image_requested",
 ]

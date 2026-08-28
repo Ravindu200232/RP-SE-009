@@ -226,10 +226,6 @@ def _find_renderer(refresh: bool = False) -> list[str] | None:
         exe = shutil.which(name) if name else None
         if exe and [exe] not in candidates:
             candidates.append([exe])
-    npx = shutil.which("npx")
-    if npx:
-        candidates.append([npx, "-y", "@mermaid-js/mermaid-cli"])
-
     for cmd in candidates:
         if _works(cmd):
             _RENDERER_CACHE = cmd

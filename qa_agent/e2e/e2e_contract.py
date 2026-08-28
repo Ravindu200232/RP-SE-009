@@ -10,6 +10,7 @@ _PUBLIC_ACTORS = {"", "public", "signed-out", "signed out", "anonymous", "visito
 def _actor_class(value: str) -> str:
     """Map equivalent unauthenticated labels to one contract actor."""
     role = str(value or "").strip().lower()
+    role = re.sub(r"^(?:as\s+)?role(?:\s+|[_:=\-]+\s*)", "", role)
     return "public" if role in _PUBLIC_ACTORS else role
 
 

@@ -75,7 +75,9 @@ class E2EContextMixin:
 
     @staticmethod
     def _role_key(value) -> str:
-        return re.sub(r"[^a-z0-9]+", "", str(value or "").lower())
+        role = str(value or "").strip().lower()
+        role = re.sub(r"^(?:as\s+)?role(?:\s+|[_:=\-]+\s*)", "", role)
+        return re.sub(r"[^a-z0-9]+", "", role)
 
     def account_for(self, role) -> dict:
         """Return the one demo account that owns this exact role."""

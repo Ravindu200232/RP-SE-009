@@ -295,13 +295,19 @@ class HarnessInstallMixin:
             return False
 
         if not (self.project_dir / "node_modules" / "next").is_dir():
+            package = self.project_dir / "package.json"
+            key, spec = str(self.project_dir.resolve()), hash(package.read_text(encoding="utf-8"))
+            if NPM_FAILED_SPEC.get(key) == spec:
+                return False
             self._log("INFO", "   📦 installing the app's dependencies before "
                               "the first test run")
             app = self.cmd.run("npm install --no-audit --no-fund --prefer-offline --loglevel=error")
             if not app.ok:
+                NPM_FAILED_SPEC[key] = spec
                 self._log("WARN", "   ⚠ app dependencies are not ready yet — "
                                   "deferring the test runner")
                 return False
+            NPM_FAILED_SPEC.pop(key, None)
             if self.deps_present():
                 self._log("INFO", "   ⚡ test runner arrived with the app dependencies — no second npm install")
                 return True

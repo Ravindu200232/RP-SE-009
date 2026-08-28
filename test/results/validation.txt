@@ -1,12 +1,12 @@
-RP-SE-009 full application validation
+AgentForge full application validation
 ======================================
-Date: 2026-08-27
-Branch: full-app-v2-int
+Date: 2026-08-25
+Branch: full-app-v1-developer-edition
 
 PASS  Repository test suite
-      Unit tests: 73
-      Integration tests: 20
-      Total: 93 passed, 0 failed, 0 errors, 0 skipped
+      Unit tests: 51
+      Integration tests: 10
+      Total: 61 passed, 0 failed, 0 errors, 0 skipped
 
 PASS  Python source compilation
       agents, qa_agent, server_modules, server entrypoints, pipeline,

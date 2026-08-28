@@ -129,7 +129,7 @@ def _builder_translation_validator(source: str):
 
     def validate(data: dict) -> None:
         prompt = str((data or {}).get("prompt") or "").strip()
-        if len(prompt) < 200 or "AGENTFORGE BUILD HANDOFF" not in prompt:
+        if len(prompt) < 200 or not prompt.startswith("Build a complete production-quality") or "##" not in prompt:
             raise ValueError("return the complete AgentForge build handoff")
         missing_ids = sorted(x for x in ids if x not in prompt)
         missing_tokens = sorted(x for x in protected if x not in prompt)

@@ -36,15 +36,12 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 
 sys.path.insert(0, str(Path(__file__).parent / "srs-agent"))
-from agents.planning.refiner  import RefinerAgent
-from agents.build.builder_generation import BuilderAgent
-from agents.build.builder_common import set_stream_callback
 from agents.build.tester_browser import TesterAgent
 from agents.build.tester_common import set_emit as set_tester_emit
 from agents.analysis.analyzer import (AnalyzerAgent, AnalyzerReport, Finding,
                              REPAIRABLE_MAJOR)
 from agents.core import nextdocs
-from agents.planning.architect import ArchitectAgent, FileStreamParser
+from agents.planner.architecture import ArchitectAgent, FileStreamParser
 from agents.core.exports_checks import check_named_imports
 from agents.core.exports_syntax import check_syntax, syntax_messages
 from agents.features.features_apply import FeaturesAgent
@@ -179,6 +176,10 @@ MAX_FIX    = 6
 
 
 RUNTIME_DEADLINE = 900
+
+# Pictures draw on the GPU beside the build, so the run never waits on them
+# except once, right before the browser journeys that photograph the app.
+IMAGE_FINAL_WAIT = 0
 DEV_PORT   = 5173
 UI_PORT    = 7824
 WS_PORT    = 7825

@@ -1,5 +1,6 @@
 """Focused planning responsibilities for FeaturesAgent."""
 from agents.features.features_common import *
+from agents.features.source_guidance import render_feature_prompt
 
 
 class FeaturesAgentPlanningMixin:
@@ -15,33 +16,20 @@ class FeaturesAgentPlanningMixin:
             if rel not in focus:
                 focus.append(rel)
         source = self._focused_source(focus, budget=int(self._budget_chars() * 0.20))
-        current_ui = (f"## Current preview route\n{route_hint} is the page the user was looking at. "
-                      f"Its source owner is {route_owner or '(not resolved)'}. Treat this as strong ownership evidence; "
-                      "do not invent an alternate page for the same workflow unless the request explicitly asks for a new route.\n\n")
         from .source_guidance import feature_image_prompt
         image_contract = feature_image_prompt(request)
-        user = (f"## The project's plan\n{self.az.plan_text()[:6000]}\n\n"
-                f"## Routes it serves\n{self.az.route_table(routes)}\n\n"
-                + current_ui +
-                f"## The feature to add\n{request}\n\n"
-                + (("## Image generation contract\n" + image_contract + "\n") if image_contract else "") +
-                f"## Complete source inventory\n{self.az.inventory()}\n\n"
-                f"## Request-relevant source already retrieved\n{source or '(none)'}\n\n"
-                f"Use workspace tools for any importer/helper/route you still need. "
-                f"Work out what this feature touches — including files that only "
-                f"break BECAUSE of it — then output the plan lines.")
+        user = render_feature_prompt(
+            "PLAN_REQUEST", plan=self.az.plan_text()[:6000],
+            routes=self.az.route_table(routes), route_hint=route_hint,
+            route_owner=route_owner or "(not resolved)", request=request,
+            image_contract=("## Image generation contract\n" + image_contract
+                            if image_contract else ""),
+            inventory=self.az.inventory(), source=source or "(none)")
         return self._plan(PLAN_SYSTEM, user, max_reads, "Feature planning", mode="feature")
 
     def plan_change(self, request: str, *, selected_path: str = "",
                     selected_route: str = "", selected_element: str = "") -> FeatureSpec:
-        """Plan any requested app change before a visual editor writes.
-
-        Section/pencil edits used to assume one file.  That is fast for a color
-        tweak and wrong for a change that needs a client component, API field,
-        seed update, shared caller or package.  This preflight uses the same
-        dependency-aware planner as features; one-file plans stay in the focused
-        editor, multi-file plans automatically escalate to the full change agent.
-        """
+        """Plan visual-editor impact before choosing focused or full apply."""
         routes = self.az.enumerate_routes()
         focus = []
         if selected_path:
@@ -56,35 +44,16 @@ class FeaturesAgentPlanningMixin:
                         f"Route: {selected_route or '/'}\n"
                         f"Current source file: {selected_path or '(unknown)'}\n"
                         f"Selected region: {selected_element or '(not described)'}\n\n")
-        user = (f"## The project's plan\n{self.az.plan_text()[:6000]}\n\n"
-                f"## Routes it serves\n{self.az.route_table(routes)}\n\n"
-                + selected +
-                f"## The requested change\n{request}\n\n"
-                f"## Complete source inventory\n{self.az.inventory()}\n\n"
-                f"## Request-relevant source already retrieved\n{source or '(none)'}\n\n"
-                "Analyze impact first. Name every file that must change. A visual "
-                "edit is allowed to be one file or many files; do not force it into "
-                "one file when dependencies or runtime boundaries require more.")
+        user = render_feature_prompt(
+            "CHANGE_REQUEST", plan=self.az.plan_text()[:6000],
+            routes=self.az.route_table(routes), selection=selected,
+            request=request, inventory=self.az.inventory(),
+            source=source or "(none)")
         return self._plan(PLAN_SYSTEM, user, None, "Change impact analysis",
                           mode="visual", required_evidence_paths=[selected_path] if selected_path else None)
 
     def cover_whole_request(self, request: str, spec: FeatureSpec) -> FeatureSpec:
-        """The plan, checked against the whole request before anything is written.
-
-        Measured on a gym build: the request named five things a waitlist has
-        to touch — the member's button, the member's own list, the automatic
-        promotion on cancel, the trainer's class page and the owner's
-        dashboard count. The planner's summary dropped the fifth on the way
-        in, so `app/owner/page.jsx` was never in the plan, never written, and
-        nothing downstream could notice: every file that WAS planned got
-        written, compiled and passed. Four fifths of a feature, reported as a
-        finished one.
-
-        `_uncovered` does this for numbered requirements at build time. A
-        feature request has no numbers, so it is read back clause by clause
-        instead. One short call; if it finds nothing, this costs a few
-        seconds and changes nothing.
-        """
+        """Ask a second model pass whether every request clause has an owner."""
         if not spec.files:
             return spec
         listing = "\n".join(f"  {f.get('action', 'edit'):4} {f['path']}"
@@ -186,16 +155,6 @@ class FeaturesAgentPlanningMixin:
                     add(meta.get("file"))
                     break
 
-        existing = [p for p in chosen if p in files]
-        if existing:
-            try:
-                graph = WorkspaceTools(self.arch).dependency_paths(
-                    existing, max_depth=4, cap=44)
-                for rel in graph:
-                    add(rel)
-            except Exception as e:
-                log.debug(f"repair dependency neighborhood: {e}")
-
         authish = bool(re.search(
             r"\b401\b|\b403\b|unauthori[sz]ed|forbidden|sign.?in|log.?in|session|role|/api/auth/",
             evidence or "", re.I))
@@ -205,32 +164,24 @@ class FeaturesAgentPlanningMixin:
                         "app/api/auth/[...all]/route.js"):
                 if rel in files:
                     add(rel)
+
+        existing = [p for p in chosen if p in files]
+        if existing:
             try:
                 graph = WorkspaceTools(self.arch).dependency_paths(
-                    [p for p in chosen if p in files], max_depth=3, cap=44)
+                    existing, max_depth=4, cap=44)
                 for rel in graph:
                     add(rel)
-            except Exception:
-                pass
+            except Exception as exc:
+                log.debug(f"repair dependency neighborhood: {exc}")
 
         return chosen[:48]
 
     def plan_repair(self, errors: str, *, server_log: str = "",
                     max_reads: int | None = MAX_READS, focus_paths=None) -> FeatureSpec:
-        """
-        Same two-phase shape, pointed at a bug instead of a feature.
-
-        The runtime fix loop used to hand the whole error blob straight to
-        `ArchitectAgent.update()`, which meant the model picking the files and
-        writing them in one breath, with only the architect's fixed 18-file
-        snapshot to go on — and the file a stack frame names is regularly not
-        the file that is wrong. Deciding first, against an inventory of the
-        whole project and whatever bodies the model asks to read, is the same
-        reason this module exists at all.
-        """
+        """Build an evidence-backed impact map for observed runtime failures."""
         routes = self.az.enumerate_routes()
 
-        # The source, not an inventory.
         focus = self.repair_focus_paths(
             focus_paths, "\n".join([errors or "", server_log or ""])) if focus_paths else []
         if focus:
@@ -238,30 +189,18 @@ class FeaturesAgentPlanningMixin:
                 focus, budget=int(self._budget_chars() * 0.40))
         else:
             source = self.full_source(budget=int(self._budget_chars() * 0.42))
-        parts = [f"## The project's plan\n{self.az.plan_text()[:4000]}",
-                 (("## Focused source neighborhood — plan changes inside this "
-                   "set unless the error explicitly names another file\n" + source)
-                  if focus else (f"## The source\n{source}" if source
-                  else f"## Every source file\n{self.az.inventory()}")),
-                 f"## Routes it serves\n{self.az.route_table(routes)}",
-                 f"## What went wrong when the app ran\n```\n{errors[:6000]}\n```"]
-        if server_log.strip():
-            parts.append("## The dev server's own output\n"
-                         f"```\n{server_log[:4000]}\n```")
-        parts.append("Read what you need, then output the plan lines.")
-        return self._plan(REPAIR_SYSTEM, "\n\n".join(parts), max_reads,
+        user = render_feature_prompt(
+            "REPAIR_REQUEST", plan=self.az.plan_text()[:4000],
+            source=source or self.az.inventory(),
+            routes=self.az.route_table(routes), errors=errors[:6000],
+            server_log=server_log[:4000] or "(none)")
+        return self._plan(REPAIR_SYSTEM, user, max_reads,
                           "Repair planning", allow_empty=True, mode="repair",
                           investigation_paths=focus or None)
 
     def _analysis_issues(self, spec: FeatureSpec, mode: str,
                              required_evidence_paths=None) -> list[str]:
-        """Return evidence gaps that make a proposed change speculative.
-
-        This is a correctness check, not a size gate.  A 30-file feature is
-        fine; a one-file edit whose only justification is its filename is not.
-        Existing files named for editing must be tied to a concrete source
-        observation before implementation starts.
-        """
+        """Return protocol/evidence gaps that make a plan speculative."""
         ctx = spec.context or {}
         issues = []
         for key in ("current", "gap", "cause", "verify"):
@@ -314,15 +253,7 @@ class FeaturesAgentPlanningMixin:
     def _plan(self, system: str, user: str, max_reads: int | None, what: str,
               *, allow_empty: bool = False, mode: str = "feature",
               required_evidence_paths=None, investigation_paths=None) -> FeatureSpec:
-        """Read → hypothesize → prove → impact-map until evidence converges.
-
-        Parseability is not proof, and a fixed number of planning turns is not
-        a safe complexity policy.  Continue while source evidence is genuinely
-        increasing; stop when the same unproven analysis repeats twice or the
-        model context is effectively full.  This lets a 30-file feature inspect
-        30 real owners without a hidden three-turn/file-count ceiling while a
-        stuck one-file guess terminates quickly.
-        """
+        """Run a bounded inspect→hypothesize→prove planning loop."""
         self.arch._workspace_tool_cache = {}
         convo = ([{"role": "system", "content": system + "\n\n" + TOOL_HELP}]
                  + self._memory()
@@ -455,62 +386,38 @@ class FeaturesAgentPlanningMixin:
             "current": "", "gap": "", "cause": "", "evidence": [],
             "verify": "", "confidence": "",
         })
-        for kind, rest in PLAN_LINE_RE.findall(reply):
-            rest = rest.strip().strip("`")
-            if kind == "CURRENT":
-                spec.context["current"] = rest[:500]
-            elif kind == "GAP":
-                spec.context["gap"] = rest[:500]
-            elif kind == "CAUSE":
-                spec.context["cause"] = rest[:700]
+        limits = {"CURRENT": 500, "GAP": 500, "CAUSE": 700,
+                  "VERIFY": 700}
+        for kind, rest in protocol_lines(reply):
+            if kind in limits:
+                spec.context[kind.lower()] = rest[:limits[kind]]
             elif kind == "EVIDENCE":
                 parts = [p.strip().strip("`") for p in rest.split("::", 1)]
                 if len(parts) == 2:
                     path = normalise_change_path(parts[0])
-                    files = getattr(self.arch, "files", {}) or {}
-                    if path in files:
+                    if path in (getattr(self.arch, "files", {}) or {}):
                         spec.context["evidence"].append({"path": path, "fact": parts[1][:700]})
-            elif kind == "VERIFY":
-                spec.context["verify"] = rest[:700]
             elif kind == "CONFIDENCE":
                 spec.context["confidence"] = rest.split()[0].lower() if rest else ""
             elif kind == "SUMMARY":
                 spec.summary = rest[:200]
             elif kind == "PACKAGE" and rest:
                 name = rest.split("::")[0].strip().strip("`")
-                if self.arch.PKG_NAME_RE.match(name) and \
+                if package_requested(name) and self.arch.PKG_NAME_RE.match(name) and \
                         name not in self.arch.NODE_BUILTINS:
                     spec.packages.append(name)
             elif kind == "ROUTE" and rest.startswith("/"):
                 spec.routes.append(rest.split()[0])
             elif kind == "FILE":
-                parts = [p.strip().strip("`") for p in rest.split("::")]
-                if len(parts) < 2:
-                    continue
-                action = parts[0].lower()
-                path = normalise_change_path(parts[1])
-                if action not in ("new", "edit") or not safe_change_path(path):
-                    continue
-                spec.files.append({
-                    "path": path, "action": action,
-                    "kind": (parts[2].lower() if len(parts) > 2 else ""),
-                    "why": (parts[3] if len(parts) > 3 else "")})
+                entry = change_entry(rest)
+                if entry:
+                    spec.files.append(entry)
 
-        seen, unique = set(), []
-        for f in spec.files:
-            if f["path"] in seen:
-                continue
-            seen.add(f["path"])
-            unique.append(f)
-        spec.files = unique
+        spec.files = unique_paths(spec.files)
         spec.packages = list(dict.fromkeys(spec.packages))
-        # Stable de-duplication of evidence paths/facts.
-        ev_seen, ev = set(), []
-        for item in spec.context.get("evidence") or []:
-            sig = (item.get("path"), item.get("fact"))
-            if sig in ev_seen:
-                continue
-            ev_seen.add(sig); ev.append(item)
-        spec.context["evidence"] = ev
+        evidence = spec.context.get("evidence") or []
+        spec.context["evidence"] = list({
+            (item["path"], item["fact"]): item for item in evidence
+        }.values())
         return spec
 

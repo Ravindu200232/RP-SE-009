@@ -358,8 +358,9 @@ class VitestRunner(RunnerExecutionMixin):
         self._log("WARN", "   📦 the test environment is missing "
                           + ", ".join(names[:4])
                           + " — installing and running again")
-        res = self.cmd.run(["npm", "install", "--no-audit", "--no-fund",
-                            "--loglevel=error", *names[:4]], timeout=600)
+        res = self.cmd.run("npm install " + " ".join(names[:4])
+                           + " --no-audit --no-fund --prefer-offline --loglevel=error",
+                           timeout=180)
         ok = getattr(res, "code", 1) == 0
         if not ok:
             self._log("WARN", "   ⚠ that install did not succeed")
