@@ -1,4 +1,4 @@
-# Project file operations and WebSocket actions.
+# Project flow: validate ownership -> read or change -> notify the Studio.
 SRC_ROOTS = ("app", "components", "lib", "src", "pages")
 SKIP_DIRS = {"node_modules", ".next", ".git", "dist", "out", ".vite", ".turbo",
              ".agentforge"}
@@ -19,25 +19,24 @@ def _iter_source(proj_dir: Path):
             yield fp
 
 
+def _owned_dir(root: Path, raw: str, label: str,
+               missing_label: str) -> tuple:
+    """Resolve one HTTP-supplied directory name inside its owned root."""
+    name = str(raw or "").strip().replace("\\", "/")
+    if not name or "/" in name or name in (".", "..") or name.startswith("."):
+        return name, None, f"{raw!r} is not a {label}"
+    try:
+        resolved = (root / name).resolve()
+        resolved.relative_to(root.resolve())
+    except (ValueError, OSError):
+        return name, None, f"{name} is outside {root.name}"
+    if not resolved.is_dir():
+        return name, None, f"no such {missing_label}: {name}"
+    return name, resolved, ""
+
+
 def _deploy_marker(project_dir: Path) -> dict | None:
-    """Whether this project was ever deployed, from disk alone.
-
-    Two `is_file()` probes and, for the few that match, a 149-byte read. It has
-    to stay that cheap: `list_projects()` runs this per project on every
-    `/projects` call. `read_deploy_results()` answers a richer version of the
-    same question but makes an HTTP call to the agent and can rewrite the
-    project's record, so it must never be reached from here.
-
-    The deleted case is checked FIRST. Teardown moves `deploy/` away to
-    `deploy-archive/`, so a torn-down project has no `link.json` and would
-    otherwise be indistinguishable from one that was never deployed.
-
-    `state` is deliberately not read out of `link.json`. That file is written
-    once when the run is adopted and never rewritten, so a torn-down deployment
-    still reads LIVE there for ever — the same trap documented on
-    `_deploy_run_state`. What is returned here is a historical fact, "this was
-    deployed, to AWS", never a claim that anything is currently running.
-    """
+    """Return cheap, disk-only deployment history for project listings."""
     agentforge = project_dir / ".agentforge"
     if (agentforge / "deploy-deleted.json").is_file():
         return {"state": "deleted", "target": ""}
@@ -52,26 +51,13 @@ def _deploy_marker(project_dir: Path) -> dict | None:
 
 
 def discard_srs(srs_id: str) -> dict:
-    """
-    Remove one staged specification.
-
-    Fenced the same way `delete_project` is, and for the same reason: the id
-    arrives over HTTP. It is reduced to a single path segment, and the resolved
-    directory has to still be inside `.srs` after resolution, so neither a
-    traversal nor a symlink can name anything else.
-    """
-    sid = str(srs_id or "").strip().replace("\\", "/")
-    if not sid or "/" in sid or sid in (".", "..") or sid.startswith("."):
-        return {"error": f"{srs_id!r} is not a specification id"}
-
-    root = PROD_DIR / ".srs"
-    try:
-        resolved = (root / sid).resolve()
-        resolved.relative_to(root.resolve())
-    except (ValueError, OSError):
-        return {"error": f"{sid} is outside the specification store"}
-    if not resolved.is_dir():
-        return {"error": f"no such specification: {sid}"}
+    """Remove one staged specification without escaping its owned root."""
+    sid, resolved, error = _owned_dir(
+        PROD_DIR / ".srs", srs_id, "specification id", "specification")
+    if error:
+        if "outside" in error:
+            error = f"{sid} is outside the specification store"
+        return {"error": error}
 
     shutil.rmtree(resolved, ignore_errors=True)
     if resolved.exists():
@@ -81,45 +67,11 @@ def discard_srs(srs_id: str) -> dict:
 
 
 def delete_project(proj_name: str) -> dict:
-    """
-    Remove a project from disk, and its database with it.
-
-    Irreversible, so the fences come first and there are four of them:
-
-      * the name is reduced to a single path segment, so nothing arriving over
-        HTTP can name a directory outside `production-ready`;
-      * a leading dot is refused by name — `.srs` holds every staged
-        specification for every project, and it sits in the same directory;
-      * the resolved path must still be a directory INSIDE `PROD_DIR`, checked
-        after resolution rather than before, so a symlink pointing out of it
-        cannot be followed;
-      * the dev server is stopped first when it is the one being served. A
-        running node holds `.next/` open, and on Windows that turns the delete
-        into a half-removed project.
-
-    The database goes too. `db_name_for` derives it from the folder name, so a
-    project deleted and later rebuilt under the same name would otherwise
-    inherit the old rows and never re-seed — which is the bug `reset_project_db`
-    exists for. That call has its own fencing (it refuses a URI the user
-    configured, and any database not named `agentforge_*`), so a Mongo the user
-    owns is never touched. Best effort: a project whose `.env.local` is gone
-    still deletes, and the log says why the database was left.
-
-    Returns as soon as the project is GONE from the list, which is a rename;
-    the bytes and the database follow on a thread. See below for why.
-    """
-    name = str(proj_name or "").strip().replace("\\", "/")
-    if not name or "/" in name or name in (".", "..") or name.startswith("."):
-        return {"error": f"{proj_name!r} is not a project name"}
-
-    proj_dir = PROD_DIR / name
-    try:
-        resolved = proj_dir.resolve()
-        resolved.relative_to(PROD_DIR.resolve())
-    except (ValueError, OSError):
-        return {"error": f"{name} is outside production-ready"}
-    if not resolved.is_dir():
-        return {"error": f"no such project: {name}"}
+    """Remove a fenced project, then its generated database, in background."""
+    name, resolved, error = _owned_dir(
+        PROD_DIR, proj_name, "project name", "project")
+    if error:
+        return {"error": error}
 
     if active_vite.get("dir") == str(resolved):
         elog("INFO", f"   ⏹ Stopping the dev server before deleting {name}")
@@ -189,19 +141,7 @@ def list_projects() -> list:
 
 
 def _unfinished_count(proj_dir: Path) -> int:
-    """
-    Planned files with nothing on disk. 0 for a complete or foreign app.
-
-    Each planned path is stat'd directly — no directory walk. The first version
-    of this globbed the project for `*.js*` to build a stem set, which walks
-    `node_modules`: tens of thousands of files per project, sixteen projects
-    per listing, and `/projects` stopped answering at all. The plan already
-    says exactly which paths to look for, so there is nothing to search for.
-
-    The `.js` / `.jsx` pair is the one real ambiguity — `write_file`
-    canonicalises the extension, so a plan naming `page.js` can be satisfied by
-    `page.jsx` — and that is two extra stat calls, not a walk.
-    """
+    """Count planned files absent on disk without walking dependencies."""
     try:
         fp = proj_dir / ".agentforge" / "plan.json"
         if not fp.is_file():
@@ -226,29 +166,14 @@ def _unfinished_count(proj_dir: Path) -> int:
 FILE_PRIORITY = [
     "app/page.js", "app/page.jsx", "app/layout.js", "lib/mongodb.js",
     "app/globals.css", "next.config.mjs", "jsconfig.json",
-    "src/App.jsx", "src/main.jsx", "src/index.css", "index.html",
-    "vite.config.js", "package.json", "tailwind.config.js", "plan.md",
+    "package.json", "tailwind.config.js", "plan.md",
 ]
 MAX_LISTED_FILES = 120
 MAX_FILE_BYTES = 256_000
 
 
 def save_project_file(proj_name: str, rel: str, content: str) -> dict:
-    """
-    Write one file a person edited in the code pane. `{"error": …}` if not.
-
-    Deliberately NOT `ArchitectAgent.write_file`. That one canonicalises the
-    path, deletes a `.js` twin of a `.jsx`, and refuses paths the build is not
-    supposed to touch — every bit of it right for a model writing a file it
-    named itself, and wrong for a person who opened a file, changed a line and
-    pressed save. What they had on screen is what goes to disk, at the path it
-    came from.
-
-    The path is still resolved and checked against the project root, because
-    the path arrives over HTTP: `..\\..\\` in it walks out of the project and
-    writes wherever it likes, and a studio bound to the LAN would hand that to
-    anyone on it.
-    """
+    """Write one manually edited file, fenced inside its project."""
     proj_dir = PROD_DIR / _safe_stem(proj_name, "")
     if not proj_dir.is_dir():
         return {"error": f"no such project: {proj_name}"}
@@ -326,324 +251,6 @@ def get_project_files(proj_name: str) -> dict:
     return files
 
 
-def _decide_targets(update_prompt: str, components: list, codebase_ctx: str,
-                    build_model: str) -> list:
-    """
-    Ask the LLM to decide which existing component(s) to modify — or whether
-    a new component is needed. Returns list of component names (strings).
-    Uses a tiny, fast call so it doesn't waste tokens.
-    """
-    import requests as req
-
-    comp_list = ", ".join(components) if components else "(none)"
-    prompt = (
-        f"A React project has these components: {comp_list}\n\n"
-        f"The user wants to: {update_prompt}\n\n"
-        f"CODEBASE SUMMARY:\n{codebase_ctx[:1200]}\n\n"
-        "Which component(s) must be MODIFIED or CREATED to fulfil the request?\n"
-        "Reply with ONLY a JSON array of component names, e.g.: [\"Hero\", \"Navbar\"]\n"
-        "Rules:\n"
-        "- Use existing names exactly as listed above when modifying\n"
-        "- Use a new PascalCase name when a new component is needed\n"
-        "- Maximum 3 components per update\n"
-        "- Reply with ONLY the JSON array. No explanation."
-    )
-    try:
-        r = req.post(
-            f"{OLLAMA_URL}/api/chat",
-            json={
-                "model":    build_model,
-                "messages": [{"role": "user", "content": prompt}],
-                "stream":   False,
-                "options":  {"temperature": 0.0, "num_predict": 80},
-            },
-            timeout=45,
-        )
-        r.raise_for_status()
-        raw = r.json()["message"]["content"].strip()
-
-        m = re.search(r'\[([^\]]+)\]', raw)
-        if m:
-            names = json.loads(f"[{m.group(1)}]")
-            return [n.strip() for n in names if isinstance(n, str) and n.strip()]
-    except Exception as e:
-        log.warning(f"   _decide_targets failed: {e}")
-    return []
-
-
-def _build_update_prompt(component_name: str, existing_code: str,
-                         update_request: str, codebase_ctx: str,
-                         is_new: bool) -> str:
-    """
-    Construct a targeted per-component update prompt.
-    This goes through builder._gen() exactly like a fresh generation.
-    """
-    import textwrap as tw
-    if is_new:
-        return tw.dedent(f"""\
-            Add a NEW component called '{component_name}' to an existing React project.
-
-            USER REQUEST: {update_request}
-
-            EXISTING CODEBASE (for context — imports, styles, data patterns):
-            {codebase_ctx[:1500]}
-
-            Requirements:
-            - Export default function {component_name}()
-            - Match the visual style and color scheme of the existing site
-            - framer-motion animations, Tailwind CSS, react-icons/fi
-            - Real content matching the request — no placeholder text
-            - Outermost div MUST have an explicit dark background class
-            - Output ONLY the complete JSX starting with imports
-            """)
-    else:
-        return tw.dedent(f"""\
-            Modify the existing '{component_name}' React component as requested.
-
-            USER REQUEST: {update_request}
-
-            EXISTING COMPONENT CODE (modify THIS — keep everything not mentioned in the request):
-            {existing_code}
-
-            OTHER FILES FOR CONTEXT (imports, shared styles — do NOT modify these):
-            {codebase_ctx[:1200]}
-
-            Requirements:
-            - Apply ONLY the changes the user requested — preserve all other functionality
-            - Keep the same visual design for parts not mentioned in the request
-            - Export default function {component_name}()
-            - Follow all JSX rules: hoist regex, hoist divisions, no split components
-            - Output ONLY the COMPLETE updated component JSX starting with imports
-            """)
-
-
-def run_update_pipeline(proj_name: str, update_prompt: str, build_model: str):
-    """
-    Load an existing project, decide which components to change, re-generate
-    each one through the standard builder._gen() → _write_one() pipeline,
-    then test and fix exactly like a fresh build.
-    """
-    set_stream_callback(on_token)
-    set_tester_emit(emit)
-
-    proj_dir = PROD_DIR / proj_name
-    if not proj_dir.exists():
-        eerr(f"Project not found: {proj_name}"); return
-
-    try:
-        elog("INFO", "━" * 40)
-        elog("INFO", f"✏️  Updating: {proj_name}")
-        elog("INFO", f"📝 Request: {update_prompt[:80]}")
-        elog("INFO", f"🏗️  Model: {build_model}")
-        elog("INFO", "━" * 40)
-
-        estep("refine", "active")
-        eprog("Loading project…", 5)
-
-        builder = UIBuilder(OLLAMA_URL, build_model, proj_dir)
-
-        file_data = get_project_files(proj_name)
-        for rel, info in file_data.items():
-            builder.built_files[rel] = info["content"]
-
-            efile(rel, info["size"], info["content"])
-
-        comp_dir   = proj_dir / "src" / "components"
-        components = sorted(f.stem for f in comp_dir.glob("*.jsx")) if comp_dir.exists() else []
-        elog("INFO", f"   📂 Loaded {len(file_data)} files | Components: {components}")
-
-        estep("refine", "done")
-        eprog("Analysing request…", 15)
-
-        if not ensure_model(build_model):
-            eerr(f"Cannot load build model: {build_model}"); return
-
-        codebase_ctx = builder._build_codebase_context()
-
-        estep("build", "active")
-        eprog("Deciding targets…", 22)
-
-        targets = _decide_targets(update_prompt, components, codebase_ctx, build_model)
-        targets = [t for t in targets if re.match(r"^[A-Z][A-Za-z0-9_]*$", t)]
-
-        if not targets:
-
-            for comp in components:
-                if comp.lower() in update_prompt.lower():
-                    targets = [comp]
-                    break
-            if not targets and components:
-
-                targets = [max(
-                    components,
-                    key=lambda c: len(builder.built_files.get(f"src/components/{c}.jsx", ""))
-                )]
-                elog("WARN", f"   Could not infer target — defaulting to largest component: {targets}")
-            elif not targets:
-                eerr("No components found in project"); return
-
-        elog("INFO", f"   🎯 Targets: {targets}")
-
-        updated_count = 0
-        pct_per_comp  = max(1, 30 // len(targets))
-
-        for i, comp_name in enumerate(targets):
-            fpath    = f"src/components/{comp_name}.jsx"
-            is_new   = comp_name not in components
-            existing = builder.built_files.get(fpath, "")
-
-            if is_new:
-                elog("INFO", f"   ➕ Creating new component: {comp_name}")
-            else:
-                elog("INFO", f"   ✏️  Updating: {fpath}")
-
-            eprog(f"Generating {comp_name}…", 25 + i * pct_per_comp)
-
-            prompt = _build_update_prompt(
-                comp_name, existing, update_prompt, codebase_ctx, is_new
-            )
-
-            new_code = builder._gen(comp_name, prompt)
-
-            if not new_code:
-                elog("WARN", f"   LLM returned nothing for {comp_name} — skipping")
-                continue
-
-            builder._write_one(fpath, new_code)
-            updated_count += 1
-            elog("INFO", f"   ✓ {fpath} written")
-
-            if is_new:
-                _inject_component_into_app(builder, proj_dir, comp_name)
-
-        if updated_count == 0:
-            eerr("No components were updated — LLM may have failed to generate valid JSX")
-            return
-
-        stop_model(build_model)
-
-        estep("build", "done")
-        eprog("Components updated", 58)
-        elog("INFO", f"   ✅ {updated_count}/{len(targets)} component(s) updated")
-
-        estep("serve", "active")
-        eprog("Restarting Vite…", 65)
-        elog("INFO", "🌐 Restarting Vite…")
-        if not ensure_node_deps(proj_dir):
-            eerr("Dependency install failed")
-            return
-        start_vite(proj_dir)
-        wait_for_vite(35)
-
-        estep("test", "active")
-        eprog("Testing…", 75)
-        elog("INFO", "🧪 Testing updated build…")
-        emit({"type": "test_start"})
-
-        tester = TesterAgent(proj_dir, DEV_PORT)
-        npm_errors = ""
-
-        for attempt in range(1, MAX_FIX + 2):
-            elog("INFO", f"   🔬 Test run #{attempt}")
-            emit({"type": "test_run", "attempt": attempt})
-
-            errors = tester.test()
-
-            if not errors:
-                elog("INFO", "   🎉 All tests passed!")
-                estep("test", "done")
-                break
-
-            if attempt > MAX_FIX:
-                elog("WARN", f"   ⚠ Max fix attempts reached — applying safe fallbacks")
-                from agents.build.builder_common import _safe_component
-                for fpath_s, src in list(builder.built_files.items()):
-                    if not (fpath_s.startswith("src/components/") and fpath_s.endswith(".jsx")):
-                        continue
-                    comp_name_s = fpath_s.split("/")[-1].replace(".jsx", "")
-                    if len(src.strip()) < 400 or npm_errors.strip():
-                        safe = _safe_component(comp_name_s)
-                        (proj_dir / fpath_s).write_text(safe, encoding="utf-8")
-                        builder.built_files[fpath_s] = safe
-                        elog("WARN", f"   🛟 Safe fallback → {fpath_s}")
-                estep("test", "done")
-                break
-
-            npm_errors = builder._npm_build_errors()
-            vs_errors  = vite_stderr()
-            all_errors = "\n".join(errors) + "\n" + npm_errors + "\n" + vs_errors
-
-            elog("INFO", f"   📋 npm build:\n{npm_errors[:250] or '  (none)'}")
-            emit({"type": "test_fixing", "attempt": attempt, "errors": errors[:5]})
-            elog("INFO", f"   🔧 Fixing attempt {attempt}/{MAX_FIX}…")
-
-            if not ensure_model(build_model):
-                elog("WARN", "   Cannot reload build model — skipping fix")
-                break
-
-            builder.fix_with_errors(all_errors)
-            stop_model(build_model)
-
-            elog("INFO", "   🔄 Restarting Vite after fix…")
-            if not ensure_node_deps(proj_dir):
-                eerr("Dependency install failed")
-                return
-            start_vite(proj_dir)
-            wait_for_vite(35)
-
-        url = f"http://localhost:{DEV_PORT}"
-        estep("serve", "done")
-        eprog("Done!", 100)
-        elog("INFO", f"🎉 Updated → {url}")
-        edone(url, proj_name)
-
-    except Exception as e:
-        eerr(f"Update error: {e}")
-        log.exception("Update pipeline error")
-    finally:
-        set_stream_callback(None)
-
-
-def _inject_component_into_app(builder, proj_dir: Path, comp_name: str):
-    """
-    When a new component is created, add it to App.jsx so it renders.
-    Adds an import line and a <CompName /> tag inside the main div.
-    Only modifies App.jsx — safe no-op if the component is already referenced.
-    """
-    app_path = proj_dir / "src" / "App.jsx"
-    if not app_path.exists():
-        return
-
-    app_code = app_path.read_text(encoding="utf-8")
-
-    if f"import {comp_name}" in app_code:
-        return
-
-    try:
-
-        last_import = max(
-            (i for i, l in enumerate(app_code.splitlines()) if l.strip().startswith("import")),
-            default=0
-        )
-        lines = app_code.splitlines()
-        lines.insert(last_import + 1, f"import {comp_name} from './components/{comp_name}'")
-
-        new_app = "\n".join(lines)
-
-        insert_tag = f"      <{comp_name} />\n"
-        last_div   = new_app.rfind("</div>")
-        if last_div != -1:
-            new_app = new_app[:last_div] + insert_tag + new_app[last_div:]
-
-        app_path.write_text(new_app, encoding="utf-8")
-        builder.built_files["src/App.jsx"] = new_app
-        sz = f"{len(new_app)//1024:.1f}KB" if len(new_app) >= 1024 else f"{len(new_app)}B"
-        efile("src/App.jsx", sz, new_app)
-        log.info(f"   ✓ Injected {comp_name} into App.jsx")
-    except Exception as e:
-        log.warning(f"   _inject_component_into_app failed: {e}")
-
-
 async def ws_handler(websocket, path=None):
     clients.add(websocket)
     log.info(f"WS connected ({len(clients)})")
@@ -655,112 +262,59 @@ async def ws_handler(websocket, path=None):
         async for raw in websocket:
             try:
                 msg = json.loads(raw)
-                if msg.get("type") == "build":
-                    p  = msg.get("prompt", "").strip()
-                    rm = msg.get("refine_model", DEFAULT_REFINE)
-                    bm = msg.get("build_model",  DEFAULT_BUILD)
-                    if p:
-                        threading.Thread(
-                            target=run_pipeline, args=(p, rm, bm), daemon=True
-                        ).start()
-                elif msg.get("type") == "agent_build":
-                    p  = msg.get("prompt", "").strip()
-                    am = msg.get("model") or default_agent_model()
-                    th = _think_flag(msg)
-                    qm = (msg.get("qa_model") or "").strip()
-                    if p:
-                        threading.Thread(
-                            target=run_agent_pipeline,
-                            args=(p, am, th, qm, "",
-                                  str(msg.get("logo", "")).strip(),
-                                  str(msg.get("srs_id", "")).strip()),
-                            daemon=True).start()
-                elif msg.get("type") == "agent_resume":
-                    proj = msg.get("project", "").strip()
-                    am = msg.get("model") or default_agent_model()
-                    if proj:
-                        threading.Thread(
-                            target=run_agent_pipeline,
-                            args=("", am, _think_flag(msg),
-                                  (msg.get("qa_model") or "").strip(), proj),
-                            daemon=True).start()
-                elif msg.get("type") == "chat":
-                    proj = msg.get("project", "").strip()
-                    p    = msg.get("prompt", "").strip()
-                    am   = msg.get("model") or default_agent_model()
-                    if proj and p:
-                        threading.Thread(
-                            target=run_chat,
-                            args=(proj, p, am, (msg.get("route") or "").strip(),
-                                  _think_flag(msg),
-                                  (msg.get("qa_model") or "").strip(),
-                                  _browser_console(msg)),
-                            daemon=True).start()
-                elif msg.get("type") == "agent_update":
-                    proj = msg.get("project", "").strip()
-                    p    = msg.get("prompt", "").strip()
-                    am   = msg.get("model") or default_agent_model()
-                    rt   = (msg.get("route") or "").strip()
-                    if proj and p:
-
-                        threading.Thread(
-                            target=run_chat,
-                            args=(proj, p, am, rt, _think_flag(msg),
-                                  (msg.get("qa_model") or "").strip(),
-                                  _browser_console(msg)),
-                            daemon=True).start()
-                elif msg.get("type") == "pencil_edit":
-                    proj = msg.get("project", "").strip()
-                    p    = msg.get("prompt", "").strip()
-                    am   = msg.get("model") or default_agent_model()
-                    if proj and p:
-                        threading.Thread(
-                            target=run_pencil_edit,
-                            args=(proj, p, msg, am, _think_flag(msg)),
-                            daemon=True).start()
-                elif msg.get("type") == "element_edit":
-                    proj = msg.get("project", "").strip()
-                    p    = msg.get("prompt", "").strip()
-                    am   = msg.get("model") or default_agent_model()
-                    el   = msg.get("element") or {}
-                    if proj and p:
-                        threading.Thread(
-                            target=run_element_edit,
-                            args=(proj, p, el, am, _think_flag(msg),
-                                  _browser_console(msg)),
-                            daemon=True).start()
-                elif msg.get("type") == "image_edit":
-                    proj = msg.get("project", "").strip()
-                    p    = msg.get("prompt", "").strip()
-                    am   = msg.get("model") or default_agent_model()
-                    if proj and p:
-                        threading.Thread(
-                            target=run_image_edit,
-                            args=(proj, p, msg.get("element") or {}, am,
-                                  _think_flag(msg)),
-                            daemon=True).start()
-                elif msg.get("type") == "feature":
-                    proj = msg.get("project", "").strip()
-                    p    = msg.get("prompt", "").strip()
-                    am   = msg.get("model") or default_agent_model()
-                    if proj and p:
-                        threading.Thread(
-                            target=run_feature,
-                            args=(proj, p, am, _think_flag(msg),
-                                  (msg.get("qa_model") or "").strip(),
-                                  (msg.get("route") or "").strip(),
-                                  _browser_console(msg)),
-                            daemon=True).start()
-                elif msg.get("type") == "update":
-                    proj = msg.get("project", "").strip()
-                    p    = msg.get("prompt", "").strip()
-                    bm   = msg.get("build_model", DEFAULT_BUILD)
-                    if proj and p:
-                        threading.Thread(
-                            target=run_update_pipeline, args=(proj, p, bm), daemon=True
-                        ).start()
-            except json.JSONDecodeError: pass
-    except websockets.exceptions.ConnectionClosed: pass
+                job = _message_job(msg)
+                if job:
+                    threading.Thread(
+                        target=job[0], args=job[1], daemon=True).start()
+            except json.JSONDecodeError:
+                pass
+    except websockets.exceptions.ConnectionClosed:
+        pass
     finally:
         clients.discard(websocket)
         log.info(f"WS disconnected ({len(clients)})")
+
+
+def _message_job(msg: dict):
+    """Translate one WebSocket action into its unchanged worker contract."""
+    kind = msg.get("type")
+    prompt = str(msg.get("prompt") or "").strip()
+    project = str(msg.get("project") or "").strip()
+
+    known = {
+        "agent_build", "agent_resume", "chat", "agent_update",
+        "pencil_edit", "element_edit", "image_edit", "feature",
+    }
+    if kind not in known:
+        return None
+    model = msg.get("model") or default_agent_model()
+    qa_model = str(msg.get("qa_model") or "").strip()
+    route = str(msg.get("route") or "").strip()
+    think = _think_flag(msg)
+
+    if kind == "agent_build" and prompt:
+        return run_agent_pipeline, (
+            prompt, model, think, qa_model, "",
+            str(msg.get("logo") or "").strip(),
+            str(msg.get("srs_id") or "").strip())
+    if kind == "agent_resume" and project:
+        return run_agent_pipeline, (
+            "", model, think, qa_model, project)
+    if kind in ("chat", "agent_update") and project and prompt:
+        return run_chat, (
+            project, prompt, model, route, think, qa_model,
+            _browser_console(msg))
+    if kind == "pencil_edit" and project and prompt:
+        return run_pencil_edit, (project, prompt, msg, model, think)
+    if kind == "element_edit" and project and prompt:
+        return run_element_edit, (
+            project, prompt, msg.get("element") or {}, model, think,
+            _browser_console(msg))
+    if kind == "image_edit" and project and prompt:
+        return run_image_edit, (
+            project, prompt, msg.get("element") or {}, model, think)
+    if kind == "feature" and project and prompt:
+        return run_feature, (
+            project, prompt, model, think, qa_model, route,
+            _browser_console(msg))
+    return None

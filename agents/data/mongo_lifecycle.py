@@ -13,6 +13,22 @@ class MongoManagerLifecycleMixin:
             except OSError:
                 pass
 
+    def reachable(self, timeout: float = 2.0) -> bool:
+        """Prove the database answers now, instead of trusting a startup flag."""
+        uri = get_uri_override() or f"mongodb://127.0.0.1:{self.port}/"
+        try:
+            from pymongo import MongoClient
+        except ImportError:
+            return self.is_port_open()
+        try:
+            with MongoClient(uri, serverSelectionTimeoutMS=int(timeout * 1000),
+                             connectTimeoutMS=int(timeout * 1000)) as client:
+                client.admin.command("ping")
+            return True
+        except Exception as exc:
+            self.reason = str(exc).splitlines()[0][:200] or self.reason
+            return False
+
     def start(self, timeout: int = 90) -> bool:
         binary = self.binary or self.find_binary()
         if binary is None:
@@ -139,12 +155,18 @@ class MongoManagerLifecycleMixin:
         start our own.
         """
         if get_uri_override():
-            self.available = True
             self.override = True
             self.reason = ""
-            self._log("INFO", "🍃 Using MONGODB_URI from Settings")
-            self._status("external")
-            return True
+            self.available = self.reachable()
+            if self.available:
+                self._log("INFO", "🍃 Using MONGODB_URI from Settings")
+                self._status("external")
+            else:
+                self.reason = self.reason or "the MONGODB_URI in Settings did not answer"
+                self._log("WARN", f"   ⚠ MONGODB_URI in Settings did not "
+                                  f"answer — {self.reason}")
+                self._status("error", error=self.reason[:300])
+            return self.available
 
         with self._lock:
 
@@ -166,7 +188,10 @@ class MongoManagerLifecycleMixin:
             deadline = time.time() + BUDGET_S
             try:
                 ok = self.start(timeout=min(90, max(10, int(deadline - time.time()))))
-                if not ok and "locked" in (self.reason or ""):
+                if not ok and not self.is_port_open():
+                    # A hard kill leaves a lock behind, and an unclean shutdown
+                    # needs a second run to recover, so every failed start that
+                    # is not fighting a live server gets one clean retry.
                     self._clear_stale_lock()
                     ok = self.start(timeout=45)
             except Exception as e:

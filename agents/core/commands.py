@@ -1,25 +1,6 @@
-"""
-The agent's command tool.
+"""Runs approved package commands inside generated projects.
 
-Generating an app is not only writing files: the model regularly needs a
-package it did not plan for (bcryptjs for a login, recharts for a graph). Until
-now an unplanned `import bcrypt from 'bcryptjs'` silently produced a
-`Module not found` at runtime, because dependency syncing only knew a fixed
-allowlist. Giving the model a way to run `npm install bcryptjs` closes that gap.
-
-Safety posture
---------------
-This runs on the user's machine, so it is deliberately narrow:
-
-* **No shell.** Commands are parsed with :func:`shlex.split` and executed as an
-  argv list, so ``&&``, ``|``, ``>``, ``$(...)`` and backticks are not operators
-  — they are just arguments that will fail to match the allowlist.
-* **Allowlisted programs only**, and per-program allowlisted subcommands.
-  `npm install` is permitted; `npm publish` is not.
-* **Confined to the project directory** — cwd is always the generated project.
-* **Bounded** — timeout, output truncation, and a per-build call cap.
-
-Everything else is refused with a message the model can act on.
+Commands stay inside the project and have time, output, and call limits.
 """
 import logging
 import os
@@ -36,7 +17,6 @@ MAX_OUTPUT = 4000
 MAX_CALLS = 20
 MAX_COMMAND_CHARS = 4096
 
-
 ALLOWED = {
 
     "npm": {"install", "i", "add", "uninstall", "remove", "un",
@@ -48,22 +28,17 @@ ALLOWED = {
     "pnpm": {"add", "remove", "install", "list", "why"},
 }
 
-
 ALLOWED_NPM_SCRIPTS = {"build", "dev", "start", "lint"}
-
 
 DANGEROUS = re.compile(
     r"(^|[^\w])(rm|rmdir|del|rd|format|mkfs|dd|shutdown|reboot|kill|taskkill|"
     r"chmod|chown|icacls|reg|sudo|su|curl|wget|iwr|invoke-webrequest|"
     r"powershell|pwsh|cmd|bash|sh|zsh|python|pip|git)([^\w]|$)", re.I)
 
-
 BANNED_FLAGS = {"--prefix", "-g", "--global", "--ignore-scripts=false",
                 "--unsafe-perm", "--allow-same-version"}
 
-
 _PKG_RE = re.compile(r"^(@[a-z0-9][\w.-]*/)?[a-z0-9][\w.-]*(@[\w.^~><=*\-+.]+)?$", re.I)
-
 
 class CommandResult:
     def __init__(self, ok: bool, command: str, output: str, code=None):
@@ -79,15 +54,22 @@ class CommandResult:
         status = "exit 0" if self.code == 0 else f"exit {self.code}"
         return head + f"[{status}]\n{self.output}".rstrip()
 
-
 def _refuse(command: str, why: str) -> CommandResult:
     return CommandResult(False, command, why)
 
+def _uses_package_manager(argv: list[str]) -> bool:
+    """Check whether a command starts a package manager."""
+    if not argv:
+        return False
+    program = re.split(r"[\\/]", str(argv[0]))[-1].lower()
+    for suffix in (".exe", ".cmd", ".bat"):
+        if program.endswith(suffix):
+            program = program[:-len(suffix)]
+            break
+    return program in {"npm", "npx", "yarn", "pnpm"}
 
 def validate(command: str):
-    """
-    Return (argv, None) when the command may run, else (None, reason).
-    """
+    """Return the safe command parts, or a reason for refusing the command."""
     command = (command or "").strip()
     if not command:
         return None, "empty command"
@@ -151,9 +133,8 @@ def validate(command: str):
 
     return argv, None
 
-
 class CommandRunner:
-    """Executes validated commands inside one project directory."""
+    """Run approved commands inside one project directory."""
 
     def __init__(self, project_dir: Path, npm_bin: str = "npm",
                  node_bin: str = "node", on_log=None, on_event=None,
@@ -174,7 +155,7 @@ class CommandRunner:
         log.info(txt)
 
     def _resolve(self, argv: list) -> list:
-        """Use the same npm/node AgentForge itself resolved, not whatever is on PATH."""
+        """Use the same npm and Node programs as AgentForge."""
         prog = Path(argv[0]).name.lower()
         if prog.startswith("npx"):
             return [self._npx()] + argv[1:]
@@ -185,20 +166,7 @@ class CommandRunner:
         return argv
 
     def _npx(self) -> str:
-        """
-        The real `npx` executable.
-
-        Bare `"npx"` does not work here, and it fails in a way that reads like
-        the tool is missing rather than misconfigured: on Windows the launcher
-        is `npx.cmd`, and `subprocess.run(..., shell=False)` — which this class
-        insists on, so that `&&` and `|` can never be operators — resolves only
-        `.exe`. Measured: `npx vitest run` came back `npx not found on this
-        machine` while the identical command worked from a shell. Packaged
-        builds vendor their own Node and may not have it on PATH at all.
-
-        `npx` ships beside `npm`, so the binary AgentForge already resolved is the
-        answer; PATH is only the fallback.
-        """
+        """Find the npx program beside npm, with the system path as fallback."""
         name = "npx.cmd" if os.name == "nt" else "npx"
         try:
             sibling = Path(self.npm_bin).parent / name
@@ -209,68 +177,82 @@ class CommandRunner:
         return shutil.which("npx") or shutil.which(name) or "npx"
 
     def run(self, command: str, timeout: int = DEFAULT_TIMEOUT) -> CommandResult:
-
         argv, reason = validate(command)
         if reason:
             self._log("WARN", f"   ⛔ refused: {command}  ({reason})")
             if self.on_event:
-                self.on_event({"command": command, "status": "refused",
-                               "output": reason})
+                self.on_event({"command": command, "status": "refused", "output": reason})
             return _refuse(command, reason)
 
         self.calls += 1
         if self.calls > self.max_calls:
-
             why = f"command limit ({self.max_calls}) reached for this build"
             self._log("WARN", f"   ⛔ refused: {command}  ({why})")
             if self.on_event:
-                self.on_event({"command": command, "status": "refused",
-                               "output": why})
+                self.on_event({"command": command, "status": "refused", "output": why})
             return _refuse(command, why)
 
+        raw_prog = Path(argv[0]).name.lower().removesuffix(".cmd").removesuffix(".exe")
+        installish = (raw_prog in {"npm", "yarn", "pnpm"} and len(argv) > 1
+                      and argv[1] in {"install", "i", "add"})
+        run_timeout = min(int(timeout or DEFAULT_TIMEOUT), 180) if installish else timeout
         argv = self._resolve(argv)
         self._log("INFO", f"   $ {command}")
         if self.on_event:
             self.on_event({"command": command, "status": "running"})
 
         lock = None
-        if argv and str(argv[0]).lower().split(".")[0] in {"npm", "npx", "yarn", "pnpm"}:
+        if _uses_package_manager(argv):
             try:
                 from qa_agent.unit.harness_common import NPM_LOCK, npm_busy
                 if npm_busy():
                     self._log("INFO", "   ⏸ waiting for the other npm to finish")
                 lock = NPM_LOCK
             except Exception:
-                lock = None
+                pass
 
         if lock is not None:
             lock.acquire()
         try:
-            r = subprocess.run(
-                argv, cwd=str(self.project_dir), capture_output=True,
-                text=True, encoding="utf-8", errors="replace", timeout=timeout,
-                env={**os.environ, "CI": "true", "NO_COLOR": "1",
-                     "FORCE_COLOR": "0", "NPM_CONFIG_FUND": "false",
-                     "NPM_CONFIG_AUDIT": "false"},
-
-                shell=False)
-        except subprocess.TimeoutExpired:
-            out = f"timed out after {timeout}s"
-            self._log("WARN", f"   ⛔ {command}: {out}")
-            if self.on_event:
-                self.on_event({"command": command, "status": "error", "output": out})
-            return CommandResult(False, command, out, code=-1)
-        except FileNotFoundError:
-            out = f"{argv[0]} not found on this machine"
-            self._log("WARN", f"   ⛔ {out}")
-            if self.on_event:
-                self.on_event({"command": command, "status": "error", "output": out})
-            return CommandResult(False, command, out, code=-1)
-        except Exception as e:
-            self._log("WARN", f"   ⛔ {command}: {e}")
-            if self.on_event:
-                self.on_event({"command": command, "status": "error", "output": str(e)})
-            return CommandResult(False, command, str(e), code=-1)
+            from agents.core import cancel
+            attempts = 2 if installish else 1
+            for attempt in range(1, attempts + 1):
+                try:
+                    r = cancel.run(
+                        argv, cwd=str(self.project_dir), capture_output=True,
+                        text=True, encoding="utf-8", errors="replace",
+                        timeout=run_timeout,
+                        env={**os.environ, "CI": "true", "NO_COLOR": "1",
+                             "FORCE_COLOR": "0", "NPM_CONFIG_FUND": "false",
+                             "NPM_CONFIG_AUDIT": "false"}, shell=False)
+                    if installish and r.returncode and attempt < attempts:
+                        self._log("WARN", "   ↻ package install failed — retrying once")
+                        continue
+                    break
+                except subprocess.TimeoutExpired:
+                    if attempt < attempts:
+                        self._log("WARN", "   ⏱ package install exceeded 180s — "
+                                          "stopped it and retrying once")
+                        if self.on_event:
+                            self.on_event({"command": command, "status": "retry",
+                                           "output": "install timed out after 180s"})
+                        continue
+                    out = f"timed out after {run_timeout}s (retry exhausted)"
+                    self._log("WARN", f"   ⛔ {command}: {out}")
+                    if self.on_event:
+                        self.on_event({"command": command, "status": "error", "output": out})
+                    return CommandResult(False, command, out, code=-1)
+                except FileNotFoundError:
+                    out = f"{argv[0]} not found on this machine"
+                    self._log("WARN", f"   ⛔ {out}")
+                    if self.on_event:
+                        self.on_event({"command": command, "status": "error", "output": out})
+                    return CommandResult(False, command, out, code=-1)
+                except Exception as e:
+                    self._log("WARN", f"   ⛔ {command}: {e}")
+                    if self.on_event:
+                        self.on_event({"command": command, "status": "error", "output": str(e)})
+                    return CommandResult(False, command, str(e), code=-1)
         finally:
             if lock is not None:
                 lock.release()
@@ -283,8 +265,7 @@ class CommandRunner:
                   f"   {'✅' if ok else '❌'} exit {r.returncode}"
                   + (f" — {output.splitlines()[-1][:100]}" if output else ""))
         if self.on_event:
-            self.on_event({"command": command,
-                           "status": "ok" if ok else "failed",
+            self.on_event({"command": command, "status": "ok" if ok else "failed",
                            "code": r.returncode, "output": output[:600]})
         res = CommandResult(ok, command, output or "(no output)", r.returncode)
         self.history.append(res)

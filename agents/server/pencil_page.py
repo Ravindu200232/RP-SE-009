@@ -1,4 +1,4 @@
-# Pencil edits and page-level update helpers.
+# Pencil flow: capture -> understand the mark -> scope -> apply -> verify.
 def _vision_model(preferred: str) -> str:
     """
     The model to send an image to.
@@ -27,15 +27,22 @@ def _vision_model(preferred: str) -> str:
 
 
 def _pencil_write_round(arch, path, before, instruction, element, shot,
-                        vis_model, payload, attempts=2, line=0):
+                        vis_model, payload, attempts=2, line=0, context=None,
+                        shared_routes=None):
     vp = payload.get("viewport") or {}
-    text = (f"Route: {element.get('route') or payload.get('route') or '/'}   "
+    ctx = context or {}
+    text = (f"## Analyzer change contract\nCurrent: {ctx.get('current') or '(not recorded)'}\n"
+            f"Gap: {ctx.get('gap') or instruction}\nOwnership: {ctx.get('cause') or path}\n"
+            f"Verify: {ctx.get('verify') or 'the marked redesign works without regressions'}\n"
+            f"Shared route reach: {', '.join(shared_routes or []) or element.get('route') or payload.get('route') or '/'}\n\n"
+            f"Route: {element.get('route') or payload.get('route') or '/'}   "
             f"Viewport: {vp.get('w', '?')}×{vp.get('h', '?')} "
             f"({vp.get('mode', 'desktop')})\n")
     if shot and shot.ok():
         c = shot.crop
-        text += (f"The red freehand annotation marks the region to redesign.\n"
-                 f"Region in the page: x={c.get('x')} y={c.get('y')} "
+        text += ("Image 1 is a close-up of the red freehand annotation. "
+                 "Image 2 is the resized full page with the same mark for context.\n"
+                 f"Marked region: x={c.get('x')} y={c.get('y')} "
                  f"{c.get('width')}×{c.get('height')}\n")
         if shot.logged_in:
             text += "The capture is of the signed-in view.\n"
@@ -56,8 +63,7 @@ def _pencil_write_round(arch, path, before, instruction, element, shot,
 
     msg = {"role": "user", "content": text}
     if shot and shot.ok():
-
-        msg["images"] = [shot.png_b64]
+        msg["images"] = shot.vision_images()
 
     convo = [{"role": "system", "content": PENCIL_SYSTEM + "\n\n" + TOOL_HELP}, msg]
     anchor = (element.get("text") or "").strip()[:60]
@@ -188,9 +194,7 @@ def run_pencil_edit(proj_name: str, instruction: str, payload: dict,
         proj_dir, arch, stack = _open_for_edit(proj_name, model, think)
         if arch is None:
             return
-        analyzer = AnalyzerAgent(arch, proj_dir,
-                                 base_url=f"http://localhost:{DEV_PORT}",
-                                 callbacks=_analyzer_callbacks())
+        analyzer = _analyzer_for(arch, proj_dir)
         resolver = ElementResolver(arch, analyzer)
 
         route = payload.get("route") or element.get("route") or "/"
@@ -211,6 +215,11 @@ def run_pencil_edit(proj_name: str, instruction: str, payload: dict,
             eerr(f"{res.path} is empty or unreadable")
             return
         before_project = dict(arch.files)
+        tx = _capture_feature_transaction(arch, proj_dir)
+        try:
+            baseline_keys = _feature_baseline_keys(analyzer.scan())
+        except Exception:
+            baseline_keys = set()
 
         broaden, change_request, impact = _visual_change_preflight(
             arch, analyzer, proj_dir, instruction, element, res.path, route, model)
@@ -251,7 +260,9 @@ def run_pencil_edit(proj_name: str, instruction: str, payload: dict,
         mark = dev_log_mark()
         ok, written = _pencil_write_round(arch, res.path, before, instruction,
                                           element, shot, vis_model or model,
-                                          payload, line=res.line)
+                                          payload, line=res.line,
+                                          context=getattr(impact, 'context', {}) or {},
+                                          shared_routes=shared)
         ephase({"phase": -13, "title": "Redesigning", "status": "done",
                 "written": 1 if ok else 0})
         if not ok:
@@ -289,6 +300,20 @@ def run_pencil_edit(proj_name: str, instruction: str, payload: dict,
             analyzer=analyzer, model=model, route=route)
         _autofix_from_terminal(arch, res.path, payload, mark,
                                proj_dir=proj_dir, analyzer=analyzer, model=model)
+        final = verify_after_edit(arch, proj_dir, proj_name, stack=stack,
+                                  build_rounds=1, probe=False, analyzer=analyzer)
+        red = (not final.get("build_ok", True) or bool(final.get("syntax_broken"))
+               or bool(final.get("broken_imports")))
+        stable, _, _ = _stabilize_feature_upgrade(
+            arch, proj_dir, analyzer, baseline_keys=baseline_keys,
+            before_files=tx["files"], db_ok=db_ok(),
+            declared_routes=getattr(impact, "routes", []) or [], route_hint=route)
+        if red or not stable:
+            reverted = _restore_feature_transaction(arch, proj_dir, tx)
+            _stop_dev_proc(); start_dev_server(proj_dir, stack); wait_for_dev(stack)
+            elog("WARN", f"   ↩ Pencil edit rolled back after live verification ({len(reverted)} file(s))")
+            eerr("The pencil redesign could not keep the app runtime-clean, so the previous working state was restored")
+            return
         eprog("Done!", 100)
         edone(f"http://localhost:{DEV_PORT}", proj_name,
               preview=_route_of(payload))
@@ -384,9 +409,7 @@ def run_page_update(proj_name: str, instruction: str, model: str, route: str,
         proj_dir, arch, stack = _open_for_edit(proj_name, model, think)
         if arch is None:
             return
-        analyzer = AnalyzerAgent(arch, proj_dir,
-                                 base_url=f"http://localhost:{DEV_PORT}",
-                                 callbacks=_analyzer_callbacks())
+        analyzer = _analyzer_for(arch, proj_dir)
         path = _page_file_for(arch, analyzer, route)
         if not path or path not in arch.files:
             elog("INFO", f"   ↪ {route or '/'} is not one page — planning it "
@@ -572,28 +595,11 @@ def run_agent_update(proj_name: str, instruction: str, model: str,
     """Agentic edit of an existing project — same write_file loop."""
     set_tester_emit(emit)
     try:
-        proj_dir = PROD_DIR / proj_name
-        if not proj_dir.exists():
-            eerr(f"Project not found: {proj_name}")
+        proj_dir, arch, stack = _open_for_edit(proj_name, model, think)
+        if arch is None:
             return
-        if not ensure_model(model):
-            eerr(f"Cannot load model: {model}")
-            return
-
-        stack = detect_stack(proj_dir)
         elog("INFO", f"✏️  Agent update ({stack}) — {instruction[:70]}")
         eprog("Reading project…", 10)
-
-        if stack == "next":
-            MONGO.ensure_running()
-
-        arch = ArchitectAgent(ollama, model, proj_dir, _agent_callbacks(proj_dir),
-                              stack=stack,
-                              mongo_uri=MONGO.uri_for(proj_name) if stack == "next" else "",
-                              db_name=db_name_for(proj_name) if stack == "next" else "",
-                              think=think)
-        arch.load_existing()
-        stack = arch.stack
 
         eprog("Applying changes…", 35)
         n = arch.update(instruction)

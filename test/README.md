@@ -1,8 +1,8 @@
-# RP-SE-009 test suite
+# AgentForge test suite
 
 This folder contains a repository-level regression suite for the complete
-RP-SE-009 application. It is intentionally separate from the generated-app
-tests that the application creates inside generated projects.
+AgentForge application. It is intentionally separate from the generated-app
+tests that AgentForge creates inside customer projects.
 
 ## Layout
 

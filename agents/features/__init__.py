@@ -1,4 +1,1 @@
-"""Agents features modules.
-
-Import concrete implementations directly from this package.
-"""
+"""Capture, scope, apply, and verify changes to an existing app."""

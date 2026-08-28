@@ -410,11 +410,12 @@ def _logo_prompt(app_name: str, pack: dict, branding: dict) -> str:
     subject = f"a {label}" + (f" for {domain.lower()}" if named else "")
     dark = branding.get("theme") == "dark"
     return (
-        f"A flat vector logo mark for \"{app_name}\", {subject}. "
-        f"One simple, memorable symbol that reads clearly at 32 pixels. "
-        f"Primary colour {branding['primary_color']} on a "
-        f"{'dark charcoal' if dark else 'white'} background. "
-        f"No text, no lettering, no gradients, no photorealism, no drop shadows. "
-        f"Square composition, generous margin, transparent background, SVG-like clean edges."
+        f"Professional flat-vector logo for {subject}. "
+        f"Include the exact brand name \"{app_name}\" as a clean, correctly spelled, "
+        f"highly readable wordmark beside or below one simple memorable domain-relevant symbol. "
+        f"Use {branding['primary_color']} with one supporting colour on a "
+        f"{'dark charcoal' if dark else 'clean white'} background. "
+        f"Modern balanced typography, legible at small sizes, no slogan unless explicitly supplied, "
+        f"no mockup board, no multiple variants, no photorealism, no watermark, SVG-like clean edges."
     )
 

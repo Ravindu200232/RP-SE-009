@@ -67,7 +67,7 @@ class E2EStateMixin:
         if expected_email and email:
             return email == expected_email
         if expected_role and role:
-            return role == expected_role
+            return self._role_key(role) == self._role_key(expected_role)
         return bool(snap.get("body"))
 
     def _restore_checkpoint_session(self, page, journey=None, scenario=None,
