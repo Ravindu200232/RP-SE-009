@@ -18,6 +18,21 @@ class E2EExecutionMixin:
         Every step is a fixed Python call chosen by verb; the model's text is
         data throughout.
         """
+        # The scenario is also persisted as JavaScript evidence. Parse it before
+        # opening a browser so malformed literals (for example
+        # ``toHaveURL(/admin/rooms/)``) enter the normal evidence/repair loop
+        # instead of failing after Playwright has already started.
+        try:
+            syntax = self.az.e2e_syntax_findings([sc.spec_path()]) if self.az else []
+        except Exception as exc:
+            log.debug(f"E2E syntax preflight: {exc}")
+            syntax = []
+        if syntax:
+            return [TestFailure(
+                test_file=f.path, target="", name="Generated E2E syntax preflight",
+                message=f.message[:500], stack=f.line()[:3000], kind="SYNTAX")
+                for f in syntax]
+
         try:
             from playwright.sync_api import TimeoutError as PWTimeout
             from playwright.sync_api import sync_playwright

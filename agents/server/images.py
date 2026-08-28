@@ -1,51 +1,20 @@
-# Fooocus generation, uploads and image completion.
+# Optional image flow: validate -> generate or copy -> inspect -> publish.
 BROWSER_CONSOLE_MAX = 6000
 
-
 def _browser_console(msg: dict) -> str:
-    """
-    What the preview's console had logged, as the client sent it.
-
-    Trimmed here rather than trusted: the client already caps it, and the cap
-    that matters is the one on the side that pastes the text into a prompt. An
-    app in a render loop can log the same error thousands of times a second,
-    and a repair prompt that arrives mostly full of console does not leave room
-    for the file it is supposed to repair.
-
-    The tail, not the head — the errors nearest the complaint are the ones from
-    the thing that just failed.
-    """
+    """Return the latest bounded preview-console evidence for a prompt."""
     text = str(msg.get("console") or "").strip()
     if len(text) <= BROWSER_CONSOLE_MAX:
         return text
     return "…\n" + text[-BROWSER_CONSOLE_MAX:]
 
-
 def _think_flag(msg: dict):
-    """
-    The UI's thinking switch, as Ollama's tri-state.
-
-    True and False are both instructions — `false` actively suppresses a
-    reasoning model's thinking, which is the whole point of being able to turn
-    it off. A request that carries no flag at all leaves the model's own
-    default alone, so an older client keeps behaving exactly as it did.
-    """
+    """Preserve the UI thinking switch as an Ollama tri-state."""
     v = msg.get("think")
     return None if v is None else bool(v)
 
-
 def _find_fooocus_config() -> str:
-    """Where Fooocus keeps its config, looked for rather than assumed.
-
-    This was one absolute path with a drive letter in it, and the install has
-    since moved from E: to D: to C:. Each time, the path in the source pointed
-    at a drive that was not mounted — harmless, because it is only a fallback
-    for reading model paths, but it is also never right for anybody else.
-
-    Only used when `image_host` gives nothing away; the agent finds the running
-    Fooocus on its own port regardless. Cheap enough to run at import: a
-    handful of `is_file()` calls on paths that mostly do not exist.
-    """
+    """Find a portable Fooocus config instead of assuming a drive path."""
     inside = ("Fooocus/config.txt", "config.txt", "fooocus_config.json")
     for root in _FOOOCUS_ROOTS:
         try:
@@ -65,7 +34,6 @@ def _find_fooocus_config() -> str:
             continue
     return ""
 
-
 _FOOOCUS_ROOTS = (
     [Path(f"{d}:/") for d in "CDEFG"]
     + [Path.home() / p for p in
@@ -73,19 +41,11 @@ _FOOOCUS_ROOTS = (
         "OneDrive/Documents", "OneDrive/Documents/GitHub", "OneDrive/Desktop")]
 )
 
-
 _FOOOCUS_LAUNCHERS = ("run_4gb.bat", "run.bat", "run_anime.bat",
                       "run_realistic.bat", "run.sh")
 
-
 def _fooocus_folders() -> list:
-    """Every directory that might hold a Fooocus launcher, nearest first.
-
-    `image_config` leads the list because that path is already known to point
-    into a real install — walking up from `…/Fooocus/config.txt` reaches the
-    launcher beside it without guessing where the folder is. The scan is the
-    fallback for an install that was never configured.
-    """
+    """Return likely launcher folders, preferring the configured install."""
     settings = load_settings()
     out = []
     config = str(settings.get("image_config", FOOOCUS_CONFIG)).strip()
@@ -96,11 +56,13 @@ def _fooocus_folders() -> list:
         try:
             if root.exists():
                 for folder in sorted(root.glob("Fooocus*")):
-                    out += [folder, folder / folder.name]
+                    here = folder
+                    for _ in range(4):
+                        out.append(here)
+                        here = here / folder.name
         except OSError:
             continue
     return out
-
 
 def _fooocus_launcher() -> str:
     """The script that starts Fooocus on this machine, or ""."""
@@ -119,16 +81,8 @@ def _fooocus_launcher() -> str:
                 continue
     return ""
 
-
 def start_fooocus() -> str:
-    """
-    Launch the local Fooocus. Returns "" on success, else why not.
-
-    Detached and in its own window: it takes minutes to load a checkpoint the
-    first time, prints its progress, and is the thing somebody needs to read
-    when it fails. Nothing here waits for it — `/image-check` is what says
-    whether it came up.
-    """
+    """Launch Fooocus detached; return an empty string or the failure reason."""
     script = _fooocus_launcher()
     if not script:
         return ("no Fooocus install was found — start it yourself, or set "
@@ -149,9 +103,7 @@ def start_fooocus() -> str:
     elog("INFO", f"   🎨 Starting Fooocus — {script}")
     return ""
 
-
 FOOOCUS_CONFIG = _find_fooocus_config()
-
 
 def image_agent(callbacks: dict = None) -> ImageAgent:
     """The configured Fooocus, whether or not it is switched on."""
@@ -160,7 +112,6 @@ def image_agent(callbacks: dict = None) -> ImageAgent:
                       config_path=str(s.get("image_config", FOOOCUS_CONFIG)),
                       callbacks=callbacks or _analyzer_callbacks(),
                       enabled=bool(s.get("image_enabled", False)))
-
 
 def _image_settings() -> dict:
     s = load_settings()
@@ -172,33 +123,17 @@ def _image_settings() -> dict:
         "lan_access": bool(s.get("lan_access", False)),
     }
 
-
 UPLOAD_IMAGE_MAX = 7_500_000
 UPLOAD_IMAGE_SIDE = 2048
 
-
 def _safe_stem(raw: str, fallback: str = "upload") -> str:
-    """A name from the browser, reduced to something that cannot leave the folder.
-
-    Both the picture name and the project name are pasted straight into a path,
-    so `../../` in either walks out of `public/generated` and writes wherever it
-    likes. Taking the basename first and then keeping only safe characters means
-    neither a separator nor a drive letter survives.
-    """
+    """Reduce a browser-supplied name to one safe path stem."""
     stem = Path(str(raw or "").replace("\\", "/")).name
     stem = re.sub(r"[^A-Za-z0-9._-]+", "-", stem).strip("-.")
     return (Path(stem).stem or fallback)[:60]
 
-
 def save_uploaded_image(raw_b64: str, out: Path) -> str:
-    """Write a browser upload to `out` as a real PNG. Returns "" or the reason.
-
-    Re-encoded rather than saved as it arrived, because the file is copied
-    byte-for-byte to `public/logo.png` at build time — a JPEG sitting at a .png
-    path is a lie the rest of the pipeline has no reason to expect. Re-encoding
-    also settles webp, bmp and animated gif, and is the point at which a corrupt
-    upload is caught rather than becoming a broken image in the built app.
-    """
+    """Validate and re-encode a browser upload as bounded PNG data."""
     raw = str(raw_b64 or "")
     if raw.lstrip().startswith("data:") and "," in raw[:64]:
         raw = raw.split(",", 1)[1]  # a browser data: URL
@@ -238,30 +173,12 @@ def save_uploaded_image(raw_b64: str, out: Path) -> str:
     out.write_bytes(buf.getvalue())
     return ""
 
-
 IMAGE_EXT = (".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp")
 AUDIO_EXT = (".wav", ".mp3", ".m4a", ".ogg", ".webm", ".flac")
 ATTACH_TEXT_CAP = 6000
 
-
 def read_attachment(filename: str, data_b64: str, proj_dir: Path = None) -> dict:
-    """Turn one attached file into something an editing prompt can carry.
-
-    The three editing tools all take a single instruction string and hand it to
-    a model, so the cheapest way to let somebody attach a document to one of
-    them is to make the attachment *part of that string*. No edit path changes,
-    no new websocket message, and the three tools cannot drift apart.
-
-    A picture is the one case with two possible meanings — "put this on the
-    page" and "make it look like this" — and guessing is worse than serving
-    both: the file is saved into the project where an `<img>` can point at it,
-    AND it is read, so the description goes into the prompt. Which one the user
-    meant is in their own words, where the model can see it.
-
-    The readers are the SRS agent's, already installed and already exercised by
-    the intake: text layer first for a PDF and the vision model for the pages it
-    cannot reach, faster-whisper for audio.
-    """
+    """Convert one image, PDF, audio, or text attachment into prompt context."""
     name = str(filename or "upload")
     lower = name.lower()
     out = {"kind": "file", "text": "", "url": "", "note": ""}
@@ -305,32 +222,17 @@ def read_attachment(filename: str, data_b64: str, proj_dir: Path = None) -> dict
         out["note"] = f"{name} could not be read ({e})"
     return out
 
-
 def _strip_data_url(raw: str) -> str:
     raw = str(raw or "")
     if raw.lstrip().startswith("data:") and "," in raw[:64]:
         return raw.split(",", 1)[1]
     return raw
 
-
 INLINE_BUDGET = 6_000_000
 PREVIEW_SIDE = 900
 
-
 def preview_uri(out: Path) -> str:
-    """A data: URI for `out`, shrinking it rather than giving up when it is big.
-
-    The caller shows this as the picture; there is no second source to fall back
-    on, so returning "" means the screen says nothing was produced while every
-    other field says something was. That branch used to be unreachable — Fooocus
-    caps its aspects at about a megapixel, so a generated PNG never approached
-    the budget — and an upload at 2048² makes it live: a photograph re-encodes
-    to seven to nine megabytes whatever size the JPEG that carried it was.
-
-    So the budget now governs how the preview is made, not whether there is one.
-    The file on disk is untouched; it is the full-resolution picture the build
-    copies. Only the copy travelling to the browser is scaled.
-    """
+    """Create a bounded PNG data URI without changing the source file."""
     try:
         raw = out.read_bytes()
     except OSError as e:
@@ -353,16 +255,8 @@ def preview_uri(out: Path) -> str:
         return ""
     return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
 
-
 def _image_wishes(proj_dir: Path) -> list:
-    """The kinds of picture the customer asked for, from the adopted interview.
-
-    `adopt_srs` copies `interview.json` next to the SRS, and it is the only
-    artefact that still holds the answers verbatim — the SRS document itself
-    reduces "tire photos, supplier logos, vehicle photos" to one adjective in
-    `ui_ux_requirements.design_style`, which is not something a planner can
-    turn into an image list.
-    """
+    """Read requested image kinds from the adopted SRS interview."""
     try:
         doc = json.loads((proj_dir / ".agentforge" / "srs" / "interview.json")
                          .read_text(encoding="utf-8"))
@@ -376,29 +270,15 @@ def _image_wishes(proj_dir: Path) -> list:
         return [str(v).replace("_", " ").strip() for v in items if str(v)]
     return []
 
-
-def _image_brief_line(proj_dir: Path) -> str:
-    """
-    What the planner is told about pictures — which until now was nothing.
-
-    The plan is the only thing that decides whether an app has images:
-    `run_image_stage` draws exactly what `plan["images"]` lists, and the
-    planner's instructions end with "omit the heading entirely for an app with
-    no pictures — an admin dashboard usually has none". A POS reads as an admin
-    dashboard, so the heading was omitted, `plan["images"]` came back empty, and
-    the image stage returned before it reached Fooocus.
-
-    That happened with the switch on, Fooocus answering, and the customer
-    having answered a question in the interview asking which artwork they
-    wanted — tire photos, supplier logos, vehicle photos. Every layer worked
-    and no picture was ever drawn, because the one component that decides was
-    the only one never told any of it.
-
-    The off branch matters as much: told nothing, a planner is equally free to
-    write `<img src="/generated/hero.png">` for a build with no generator
-    behind it, and every one of those tags is a 404 in the shipped app.
-    """
+def _image_brief_line(proj_dir: Path, requirement: str = "") -> str:
+    """Tell planning exactly when generated image paths are safe to use."""
     agent = image_agent()
+    wishes = _image_wishes(proj_dir)
+    if requirement and not wishes and not feature_image_requested(requirement):
+        return ("\n\nNO PICTURES WERE ASKED FOR in this request. Omit the "
+                "`## Images` heading, leave `\"images\"` empty in the JSON, and "
+                "do not write an <img> pointing at `/generated/…`. Use Tailwind "
+                "gradients, inline SVG or emoji where a picture would go.\n")
     if not agent.enabled or not agent.available():
         return ("\n\nIMAGE GENERATION IS OFF for this build. Omit the "
                 "`## Images` heading, leave `\"images\"` empty in the JSON, and "
@@ -411,7 +291,6 @@ def _image_brief_line(proj_dir: Path) -> str:
             "`public/generated/<key>.png` before the app first runs, so the "
             "tags you write for them point at real files. This app is not one "
             "of the ones that should omit the heading.")
-    wishes = _image_wishes(proj_dir)
     if wishes:
         line += (" The customer was asked which artwork they wanted and "
                  "answered: " + ", ".join(wishes) + ". Cover every one of "
@@ -419,32 +298,26 @@ def _image_brief_line(proj_dir: Path) -> str:
                  "photograph of a thing the app stores, so the seed can point "
                  "each row at its own picture.")
     else:
-        line += (" List every picture the app is better for having — a photo "
-                 "per seeded record that would carry one, a login backdrop, a "
-                 "hero where the app has a public page.")
+        line += (" List only visuals that materially improve the real product experience. "
+                 "Prefer a strong public hero, useful auth backdrop, and domain-appropriate "
+                 "seeded item photos; do not force images into admin tables, utility screens, "
+                 "or sections that are clearer without artwork.")
     return line + "\n"
 
-
 def run_image_stage(arch, proj_dir: Path) -> int:
-    """
-    Generate the pictures the plan asked for, into the project's public folder.
-
-    Runs after the files are written and before the build check, for two
-    reasons: the markup already references `/generated/<key>.png`, so the paths
-    are settled; and a missing image is not a compile error, so nothing
-    downstream has to wait on the GPU to find out whether the app builds.
-
-    Every failure here is survivable. An app with a broken <img> is worth
-    shipping; a build that died because a GPU was busy is not.
-    """
+    """Generate planned images without making GPU failure fatal to the build."""
     plan_images = (arch.plan or {}).get("images") or []
     if not plan_images:
         return 0
+    out_dir = proj_dir / "public" / "generated"; out_dir.mkdir(parents=True, exist_ok=True)
+    for im in plan_images:
+        target = out_dir / f"{im['key']}.png"
+        if not target.exists(): target.write_bytes(_PLACEHOLDER_PNG)
     agent = image_agent()
     if not agent.enabled:
         elog("INFO", f"   🖼 {len(plan_images)} image(s) planned — image "
-                     f"generation is off, so the app ships with the tags in "
-                     f"place and the files missing")
+                     f"generation is off, so instant placeholder files stay in "
+                     f"place instead of broken image URLs")
         return 0
     if not agent.available():
         elog("WARN", "   ⚠ No Fooocus is answering — the planned images are "
@@ -453,7 +326,6 @@ def run_image_stage(arch, proj_dir: Path) -> int:
 
     ephase({"phase": -21, "title": f"Generating {len(plan_images)} image(s)",
             "status": "active"})
-    out_dir = proj_dir / "public" / "generated"
     made = 0
     for n, im in enumerate(plan_images, start=1):
         eprog(f"Image {n}/{len(plan_images)}…", 78)
@@ -466,32 +338,15 @@ def run_image_stage(arch, proj_dir: Path) -> int:
          f"   🎨 {made}/{len(plan_images)} image(s) generated")
     return made
 
-
 _GEN_IMG_RE = re.compile(r"/generated/([A-Za-z0-9._-]+)\.(?:png|jpg|jpeg|webp)")
-
 
 _GEN_IMG_TPL_RE = re.compile(
     r"/generated/\$\{([^}]{1,80})\}\.(?:png|jpg|jpeg|webp)")
 
-
 _SEED_LABEL_RE = re.compile(r"\b(?:name|title|label)\s*:\s*['\"]([^'\"]{1,80})['\"]")
 
-
 def _seeded_values(arch, field: str) -> dict:
-    """
-    `{value: label}` for every literal `field: '…'` in the project's seed.
-
-    The label is the `name`/`title`/`label` in the SAME object literal, found
-    by walking out to the braces either side rather than by parsing
-    JavaScript.
-
-    The braces are the whole point. A fixed-size window around the match
-    reaches back into the object before it, and `search` returns the first
-    match it finds there — so every row was paired with its predecessor's
-    name: `snake-plant` came back labelled "Fiddle Leaf Fig", and five plants
-    would have been drawn as the wrong species. An empty label is harmless
-    (the filename is used instead); a confidently wrong one is not.
-    """
+    """Map seeded field values to labels from the same JS object literal."""
     field_re = re.compile(r"\b" + re.escape(field) + r"\s*:\s*['\"]([^'\"]{1,80})['\"]")
     out = {}
     for rel, body in arch.files.items():
@@ -509,34 +364,18 @@ def _seeded_values(arch, field: str) -> dict:
             out.setdefault(value, label.group(1).strip() if label else "")
     return out
 
-
 _IMG_TAG_RE = re.compile(
     r"<(?:Image|img)\b[^>]*?>", re.S | re.I)
 _ALT_RE = re.compile(r"""\balt\s*=\s*["'{]\s*([^"'}]{3,120})""")
 
-IMAGE_STYLE = ("photographic, natural light, shallow depth of field, "
-               "no text, no watermark, no people looking at the camera")
-
+IMAGE_STYLE = ("photographic, believable materials, natural commercial lighting, "
+               "strong subject separation, composition matched to the UI crop, "
+               "no text, no lettering, no watermark, no people looking at the camera")
+_PLACEHOLDER_PNG = bytes.fromhex("89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c63606060f80f0001040100b51c0c020000000049454e44ae426082")
 
 def _fill_missing_images(arch, proj_dir: Path, why: str = "an edit", *,
                          explicit_request: bool = False) -> int:
-    """
-    Draw any picture the app now asks for and does not have.
-
-    An edit that adds a section usually adds a picture with it — the model
-    writes `<img src="/generated/spa-suite.png" alt="a hotel spa suite" />`
-    because that is what the markup needs, and then nothing draws it, so the
-    page ships with a broken image. The build has an image stage, but it only
-    reads `plan.images`, which is written once before any edit exists.
-
-    So: after an edit, look at what the source references, compare it with
-    what is on disk, and generate the difference. The alt text is the prompt —
-    it is already a description of the picture, written by the model that
-    decided the picture belonged there.
-
-    Never fatal. An app with one missing image is worth serving; a failed edit
-    because a GPU was busy is not.
-    """
+    """Generate image references added after the original build plan."""
     wanted = {}
     for rel, body in arch.files.items():
         if not rel.endswith((".jsx", ".js", ".css")):
@@ -573,6 +412,9 @@ def _fill_missing_images(arch, proj_dir: Path, why: str = "an edit", *,
                if not (out_dir / f"{n}.png").is_file()}
     if not missing:
         return 0
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for name in missing:
+        (out_dir / f"{name}.png").write_bytes(_PLACEHOLDER_PNG)
 
     agent = image_agent()
     if explicit_request:
@@ -600,9 +442,10 @@ def _fill_missing_images(arch, proj_dir: Path, why: str = "an edit", *,
     for name, (alt, rel) in sorted(missing.items()):
 
         subject = alt or name.replace("-", " ").replace("_", " ")
-        prompt = f"{subject}, {IMAGE_STYLE}"
+        prompt = f"{subject}; authentic domain-appropriate visual; {IMAGE_STYLE}"
         if idea:
-            prompt = f"{subject}, for {idea[:80]}, {IMAGE_STYLE}"
+            prompt = (f"{subject}; visually fit this application context: {idea[:180]}; "
+                      f"avoid generic stock-photo clichés; {IMAGE_STYLE}")
         elog("INFO", f"   🎨 {name}.png — {subject[:70]}")
         try:
             if agent.generate(prompt, out_dir / f"{name}.png",
@@ -619,25 +462,8 @@ def _fill_missing_images(arch, proj_dir: Path, why: str = "an edit", *,
          f"   🖼 {made}/{len(missing)} picture(s) drawn for {why}")
     return made
 
-
 def check_seed_duplicates(proj_dir: Path) -> list:
-    """
-    Rows the seed wrote more than once, counted in the live database.
-
-    `ensureSeeded()` runs on a cold start, so it runs again on every dev-server
-    restart, and whether that is harmless depends entirely on whether the seed
-    is idempotent. Two static attempts at deciding that from `lib/seed.js` were
-    both wrong — the first reported thirty-one of forty-two projects including
-    ones upserting on `{ email }`, the second missed six that were genuinely
-    duplicating and flagged four that were not. The causes are too varied to
-    read off the source: no guard, an unstable key, a key that is not unique,
-    a seed that races itself.
-
-    Counting is not a guess. A clinic seeded five pets and six appointments and
-    the collection held eighty-four; a shop seeded a handful of reviews and
-    held seventy-six. Whatever the reason, that is the bug the user sees — the
-    same dog fourteen times on the ward board.
-    """
+    """Report duplicate non-auth seed rows from the live project database."""
     try:
         from pymongo import MongoClient
     except ImportError:

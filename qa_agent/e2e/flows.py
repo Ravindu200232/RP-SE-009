@@ -610,6 +610,9 @@ export default defineConfig({
   testDir: './tests/e2e',
   timeout: 60000,
   retries: 0,
+  // Journeys share seeded records and prove ordered mutations; parallel files
+  // can change the same booking/room underneath one another.
+  workers: 1,
   use: {
     baseURL: process.env.BASE_URL || 'http://localhost:5173',
     // 'load', never 'networkidle': the dev server's HMR socket never closes,

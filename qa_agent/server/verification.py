@@ -732,53 +732,42 @@ def _e2e_hard_upstream_blockers(runtime_report, api_report) -> list:
 
 
 IMAGE_PROMPT_SYSTEM = """\
-You turn a few words from someone looking at a web page into a prompt for an
-image generator. Reply with the prompt and nothing else — no preamble, no
-quotation marks, no explanation, one line, under about thirty words.
+Turn the requested web visual into one production-ready image-generation prompt.
+Reply with the prompt only: one line, concise but specific.
 
-You are given what the picture is now and what they asked for instead. What
-they asked for wins; the old description is only there for what they did not
-mention — the same room, the same product, the same time of day, unless they
-said otherwise.
+Use the app context to make the image belong to the actual product/domain instead
+of looking like generic stock photography. Preserve details the user did not ask
+to change. Describe, in this order: main subject, environment/background,
+composition for its UI placement, lighting, materials/colour mood, visual style.
 
-Name the subject, then the setting, then the light, then the style:
+Prefer believable commercial/editorial photography, clear focal hierarchy,
+intentional negative space where UI will overlay, and a crop that matches the
+requested banner/card/background use. Avoid unrelated decorative objects,
+clutter, crowds, watermarks, fake UI screenshots and generic AI-art buzzwords.
 
-    a corner reading nook with a worn leather armchair, tall bookshelves
-    behind, late afternoon light through a sash window, photographic, shallow
-    depth of field
-
-What ruins it, every time:
-  • text of any kind — generators cannot spell, and a sign or a label comes
-    back as nonsense. Never ask for words, logos, signage or a menu board.
-  • naming the website instead of the picture: "a hero image for a hotel
-    booking site" produces a screenshot of a website, not a hotel
-  • crowds and faces — one person at most, and never looking at the camera
-  • "4k, ultra detailed, trending on artstation" and the rest of that list;
-    they do nothing here
+Normally use no text, logos, signage or lettering. The only exception is when
+the user explicitly asks to redraw an advertisement/banner/poster with text;
+then request only the exact short wording supplied by the user, clearly readable.
 """
 
 LOGO_PROMPT_SYSTEM = """\
-You turn a description of an app into a prompt for an image generator that will
-draw its LOGO. Reply with the prompt and nothing else — no preamble, no
-quotation marks, no explanation, one line.
+Turn the app/SRS brief into one production-ready logo-generation prompt. Reply
+with the prompt only: one line, no explanation.
 
-A logo is a MARK, not a scene. Name the object, the style, the colours and the
-background, in that order, and keep it under about twenty-five words:
+First identify the exact application/brand name stated in the brief. The logo
+MUST include that exact name as clear, correctly spelled, readable text. Design
+one memorable domain-relevant symbol plus a clean wordmark; do not invent or
+shorten the name.
 
-    a minimal line-art coffee bean, deep green on white, flat vector, centred,
-    plenty of white space
+Describe: symbol concept, exact wordmark text in quotes, typography character,
+1-2 brand colours, simple background and flat vector treatment. Keep the mark
+legible at small sizes, centred, balanced, with generous spacing. Prefer a
+professional modern identity appropriate to the app's actual industry.
 
-What ruins it, every time:
-  • describing the business instead of the mark — "a shop where visitors browse
-    beans and staff sign in" produces a photograph of a shop
-  • people, hands, storefronts, interiors, or anything with depth of field
-  • text or lettering — generators cannot spell, and a logo with mangled words
-    is unusable
-  • "logo design", "brand identity", "mockup" — those return a presentation
-    board with six variations on it
-
-Pick ONE object that stands for the business, one or two colours that suit it,
-and say it plainly.
+Avoid scenes, people, hands, storefronts, photographs, gradients unless the
+brief specifically needs one, mockup boards, multiple logo variations, slogans,
+extra letters, watermarks or unrelated icons. The application name is the only
+required text unless the SRS explicitly provides a tagline.
 """
 
 
@@ -895,3 +884,99 @@ def _playwright_chromium() -> str:
             if p.is_file():
                 return str(p)
     return ""
+
+
+def run_delivery_stabilization(arch, proj_dir: Path, analyzer, *, db_ok: bool,
+                               build_ok: bool, rounds: int = 3):
+    """Final delivery gate: repair served behavior even when QA tests stay red."""
+    ephase({"phase": -27, "title": "Final self-healing", "status": "active"})
+    total_written, report, serious = 0, AnalyzerReport(), []
+    for rnd in range(1, max(1, rounds) + 1):
+        elog("INFO", f"   🛡 delivery stabilization {rnd}/{rounds}")
+        db_ok = db_ok or database_ready()
+        if not build_ok:
+            _stop_dev_proc()
+            build_ok = bool(run_build_fix_loop(arch, proj_dir, db_ok, max_rounds=2))
+        if not _dev_alive():
+            start_next(proj_dir); wait_for_next()
+        seed_error = ""
+        if db_ok:
+            try: seed_error = seed_project(getattr(arch, "plan", None) or {}) or ""
+            except Exception as e: seed_error = f"seed endpoint failed: {e}"
+
+        mark = dev_log_mark()
+        try:
+            report = analyzer.run_runtime(mongo=MONGO, node_bin=NODE_BIN,
+                                          use_model=False, probe_apis=True,
+                                          skip_root=False)
+        except Exception as e:
+            elog("WARN", f"   ⚠ final runtime sweep failed: {e}")
+            report = analyzer.scan()
+        if build_ok:
+            try:
+                promises = analyzer.unbuilt_promises(max_reads=8)
+                report.findings.extend(promises)
+            except Exception as e:
+                elog("WARN", f"   ⚠ final journey audit failed: {e}")
+        trace = _filter_db_noise(dev_log_since(mark), db_ok)
+        report.findings.extend(_runtime_fault_findings(trace, arch, analyzer))
+        if seed_error:
+            report.findings.append(Finding("blocker", "SEED_RUNTIME", seed_error,
+                                           "lib/seed.js" if "lib/seed.js" in arch.files else "app/api/seed/route.js",
+                                           "persist every planned seed row and role account; never return success after an early abort", ["lib/auth.js"]))
+        serious = _serious_findings(report)
+        if not serious and _dev_alive():
+            elog("INFO", "   ✅ final served routes, data contracts and journeys are clean")
+            break
+
+        before = total_written
+        total_written += repair_findings(
+            arch, proj_dir, analyzer, report, db_ok, restart_dev=True,
+            server_log=trace, validate_build=bool(build_ok))
+        if total_written == before:
+            elog("WARN", "   ↔ final self-heal found no additional evidence-backed write")
+            break
+        if not build_ok:
+            _stop_dev_proc(); start_next(proj_dir); wait_for_next()
+
+    if total_written and not build_ok:
+        _stop_dev_proc()
+        build_ok = bool(run_build_fix_loop(arch, proj_dir, db_ok, max_rounds=2))
+        start_next(proj_dir); wait_for_next()
+
+    # A repair/build pass may have changed source after the last verdict. Never
+    # ship a stale green receipt: probe the exact bytes that remain on disk.
+    if not _dev_alive():
+        start_next(proj_dir); wait_for_next()
+    mark = dev_log_mark()
+    try:
+        final_runtime = analyzer.run_runtime(
+            mongo=MONGO, node_bin=NODE_BIN, use_model=False, probe_apis=True,
+            skip_root=False)
+    except Exception as e:
+        final_runtime = AnalyzerReport()
+        final_runtime.findings.append(Finding(
+            "blocker", "FINAL_RUNTIME_FAILED", f"final runtime probe failed: {e}"))
+    final_reports = [final_runtime]
+    if build_ok:
+        try:
+            semantic = AnalyzerReport()
+            semantic.findings.extend(analyzer.unbuilt_promises(max_reads=8))
+            final_reports.append(semantic)
+        except Exception as e:
+            semantic = AnalyzerReport()
+            semantic.findings.append(Finding(
+                "major", "FINAL_JOURNEY_AUDIT_FAILED",
+                f"final journey audit failed: {e}"))
+            final_reports.append(semantic)
+    trace = _filter_db_noise(dev_log_since(mark), db_ok)
+    faults = AnalyzerReport()
+    faults.findings.extend(_runtime_fault_findings(trace, arch, analyzer))
+    final_reports.append(faults)
+    report = _merge_analyzer_reports(*final_reports)
+    serious = _serious_findings(report)
+    serving = bool(_dev_alive())
+    clean = bool(serving and not serious)
+    ephase({"phase": -27, "title": "Final self-healing", "status": "done",
+            "clean": clean, "issues": len(serious), "written": total_written})
+    return build_ok, db_ok, report, clean, serving, total_written

@@ -1,10 +1,4 @@
-"""Read-only repo tools shared by AgentForge's LLM agents.
-
-The point is not to dump the whole repository into every prompt.  Claude Code
-and Codex feel natural because the model can inspect the exact thing it is
-uncertain about, then act.  This module gives the builder, feature planner and
-page/section editors the same bounded, deterministic workspace tools.
-"""
+"""Gives agents safe, read-only access to the current project."""
 from __future__ import annotations
 
 import json
@@ -177,7 +171,7 @@ class WorkspaceTools:
         for rel in candidates:
             if rel in self.files:
                 return f"{clean} -> {rel}\n{str(self.files[rel])[:12000]}"
-        # Dynamic App Router match.
+        # Try matching routes with variable path parts.
         endings = ("/route.js",) if api else ("/page.jsx", "/page.js")
         for rel in sorted(self.files):
             if not rel.startswith(prefix + "/") or not rel.endswith(endings):
@@ -244,7 +238,7 @@ class WorkspaceTools:
         return "\n".join(rows)
 
     def _route_file_for_api(self, url: str) -> str:
-        """Map one concrete API URL to its App Router handler."""
+        """Find the file that handles one API address."""
         clean = str(url or "").split("?", 1)[0].rstrip("/") or "/"
         if not clean.startswith("/api/"):
             return ""
@@ -275,7 +269,7 @@ class WorkspaceTools:
 
     def dependency_paths(self, targets, *, max_depth: int = 3,
                          cap: int = 32) -> list[str]:
-        """Return the source graph around the failing files."""
+        """Find source files connected to the selected files."""
         files = self.files
         source_ext = (".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".css")
         roots = ("app/", "components/", "lib/", "src/", "hooks/", "utils/",
@@ -333,7 +327,7 @@ class WorkspaceTools:
                 continue
             near = set(imports.get(rel, ())) | set(importers.get(rel, ()))
             near |= set(api_edges.get(rel, ())) | set(data_edges.get(rel, ()))
-            # Keep direct imports first; the rest stays deterministic.
+            # Show direct imports first and keep the rest in a stable order.
             ranked = list(imports.get(rel, ()))
             ranked += sorted(near - set(ranked))
             queue.extend((child, depth + 1) for child in ranked if child not in seen)

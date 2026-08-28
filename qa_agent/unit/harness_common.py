@@ -31,6 +31,7 @@ log = logging.getLogger("qa.harness")
 
 
 NPM_LOCK = threading.RLock()
+NPM_FAILED_SPEC = {}
 
 
 def npm_busy() -> bool:

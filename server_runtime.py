@@ -8,7 +8,6 @@ from pathlib import Path
 _RUNTIME_PARTS = (
     'server_modules/core/bootstrap.py',
     'server_modules/core/dev_runtime.py',
-    'server_modules/core/build_entry.py',
     'agents/server/build_repair.py',
     'qa_agent/server/unit_support.py',
     'server_modules/srs/srs_runtime.py',

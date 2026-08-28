@@ -301,17 +301,7 @@ class UIHandler(SimpleHTTPRequestHandler):
         if path == "/build/cancel":
             out = cancel.request()
             return self._json(out, 200 if out.get("ok") else 409)
-        if path == "/build":
-            body = self._body()
-            threading.Thread(
-                target=run_pipeline,
-                args=(body.get("prompt",""),
-                      body.get("refine_model", DEFAULT_REFINE),
-                      body.get("build_model",  DEFAULT_BUILD)),
-                daemon=True
-            ).start()
-            self._json({"ok": True})
-        elif path == "/resume":
+        if path == "/resume":
             body = self._body()
             threading.Thread(
                 target=run_agent_pipeline,
@@ -582,16 +572,6 @@ class UIHandler(SimpleHTTPRequestHandler):
                     log.error(f"Failed to write {rel_path}: {e}")
 
             self._json({"ok": True, "project": pname})
-        elif path == "/update":
-            body = self._body()
-            threading.Thread(
-                target=run_update_pipeline,
-                args=(body.get("project",""),
-                      body.get("prompt",""),
-                      body.get("build_model", DEFAULT_BUILD)),
-                daemon=True
-            ).start()
-            self._json({"ok": True})
         else:
             self._json({"error": f"unknown endpoint {path}"}, 404)
 

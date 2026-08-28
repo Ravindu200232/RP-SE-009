@@ -1,5 +1,4 @@
-"""JavaScript syntax validation helpers."""
-from agents.core.exports_common import *
+"""Checks whether generated JavaScript can be read by the build tools."""
 
 _SYNTAX_SCRIPT = r"""
 const fs = require('fs');
@@ -29,13 +28,7 @@ process.stdout.write(JSON.stringify(out));
 
 
 def check_syntax(project_dir, files, node_cmd=None) -> tuple[list, str]:
-    """Every generated file that is not parseable JavaScript.
-
-    Returns `(problems, reason)`. `problems` is a list of
-    `{"path", "line", "message"}`. `reason` is empty when the check actually
-    ran, and says why not when it did not — "no problems" and "not checked"
-    are different facts and the caller has to be able to tell them apart.
-    """
+    """Return syntax problems and any reason the check could not run."""
     import json
     import shutil
     import subprocess
@@ -83,7 +76,7 @@ def check_syntax(project_dir, files, node_cmd=None) -> tuple[list, str]:
 
 
 def syntax_messages(problems: list) -> list:
-    """One repair-ready sentence per unparseable file."""
+    """Explain each syntax problem in a repair-ready sentence."""
     return [
         f"{p['path']}:{p.get('line') or 0}: {p['message']} — this file is not "
         f"valid JavaScript and nothing that imports it can compile. Fix the "

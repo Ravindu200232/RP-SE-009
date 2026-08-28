@@ -1,20 +1,7 @@
-# Feature changes, image edits and scoped updates.
+# Feature flow: understand -> scope -> apply -> test -> refresh the preview.
 def run_feature(proj_name: str, request: str, model: str, think: bool = None,
                 qa_model: str = "", route: str = "", console: str = ""):
-    """
-    Apply one dependency-aware change to an existing project.
-
-    Unlike `run_agent_update`, the model is shown an inventory of every file and
-    pulls what it needs, decides the initial impact set *before* writing, and may
-    expand that set when source evidence proves another safe file is required. It also inherits the conversation the
-    app was generated in — reloaded from `.agentforge/convo.json` — so a feature
-    added an hour later is written by something that remembers the project's
-    conventions rather than re-deriving them from the file listing.
-
-    A feature is not finished when its files are written. It has to compile,
-    its own pages and direct dependencies must stay live, and it gets scoped
-    unit tests before commit.
-    """
+    """Apply, verify, stabilize, and test one dependency-aware change."""
     set_tester_emit(emit)
     try:
         proj_dir, arch, stack = _open_for_edit(proj_name, model, think)
@@ -25,9 +12,7 @@ def run_feature(proj_name: str, request: str, model: str, think: bool = None,
             elog("INFO", f"   🧠 Remembering the build ({len(arch.convo)} turns)")
         eprog("Planning…", 15)
 
-        analyzer = AnalyzerAgent(arch, proj_dir,
-                                 base_url=f"http://localhost:{DEV_PORT}",
-                                 callbacks=_analyzer_callbacks())
+        analyzer = _analyzer_for(arch, proj_dir)
         agent = FeaturesAgent(arch, proj_dir, callbacks=_analyzer_callbacks(),
                               analyzer=analyzer, model=model)
         agent.route_hint = _infer_issue_route(route, request, "", "", arch, analyzer)
@@ -168,31 +153,7 @@ def run_feature(proj_name: str, request: str, model: str, think: bool = None,
 
 def _feature_tests(arch, proj_dir: Path, spec, model: str, qa_model: str, *,
                    build_ok: bool):
-    """
-    Unit-test the feature that was just added — and only it.
-
-    The new files get tests of their own, on the same terms the build's code
-    did: a feature that ships untested is the one place an app's coverage
-    silently goes backwards. Routes count as new files, so an added
-    `app/api/…/route.js` is tested like anything else.
-
-    What runs afterwards is those tests and the tests of the files this feature
-    touched, NOT the whole suite. The suite grows with every build, and re-
-    running all of it to add one page turns a two-minute change into a ten-
-    minute one on a project that is working.
-
-    That is a deliberate trade — see `run_qa_unit_stage`'s `scope`. The break a
-    whole-suite run catches and a scoped one does not is the second-order one:
-    a shared component edited on the way past, breaking a page that was not
-    part of the feature. The component itself is in scope when it was edited;
-    the page that imports it is not. `verify_after_edit` and the route probe
-    still cover the whole app, so a page that has stopped rendering is still
-    caught — by the thing that watches pages rather than by a unit test.
-
-    Skipped when the build is red — a failing test against code that does not
-    compile says nothing — and when the QA model is local, since QA is
-    cloud-only.
-    """
+    """Author and run scoped unit tests when build and cloud QA are ready."""
     qa_model = qa_model or model
     qa = QASession(proj_dir, callbacks=_qa_callbacks(), model=qa_model,
                    enabled=is_cloud_model(qa_model))
@@ -239,12 +200,7 @@ UNDO_DIR = LOGS_DIR / "undo"
 
 
 def _snapshot(proj_name: str, paths, files: dict) -> str:
-    """
-    Copy files aside before a whole-file rewrite.
-
-    Outside the project directory on purpose: the project is walked to build the
-    export zip, so a `.agentforge-undo/` inside it would ship to the user.
-    """
+    """Copy rewritten files to the external undo store."""
     stamp = time.strftime("%Y%m%d-%H%M%S")
     base = UNDO_DIR / proj_name / stamp
     saved = 0
@@ -285,13 +241,7 @@ def restore_snapshot(proj_name: str, stamp: str = "") -> dict:
 
 
 def _one_line(arch, system: str, ask: str, timeout: int = 120) -> str:
-    """
-    One line of prose from the model, with whatever it wrapped it in removed.
-
-    Shared by the logo prompt and the picture prompt: both ask for a single
-    sentence and both get "Sure! Here's a prompt:" in front of it often enough
-    to matter.
-    """
+    """Return the model's final unwrapped line of prose."""
     r = ollama.chat(arch.model, [{"role": "system", "content": system},
                                  {"role": "user", "content": ask[:2400]}],
                     options={"temperature": 0.7}, timeout=timeout)
@@ -301,19 +251,7 @@ def _one_line(arch, system: str, ask: str, timeout: int = 120) -> str:
 
 def run_image_edit(proj_name: str, instruction: str, element: dict,
                    model: str, think: bool = None):
-    """
-    Redraw the picture the user pointed at, and swap it in.
-
-    Editing markup cannot change a photograph, so pointing at an image and
-    typing "a quieter room at dusk" had nowhere to go: the element edit would
-    rewrite the `<img>` tag around the same file, or reach for a stock URL it
-    invented. This draws a new one and rewrites the reference.
-
-    The current `src` is the anchor. It is a literal string in the source, so
-    finding what to rewrite needs no model and no resolver — and when it is not
-    in the source (a path that came out of the database) that is worth saying
-    plainly rather than editing the wrong thing.
-    """
+    """Redraw a selected literal image reference and swap it in source."""
     set_tester_emit(emit)
     try:
         proj_dir, arch, stack = _open_for_edit(proj_name, model, think)
@@ -396,21 +334,7 @@ def run_image_edit(proj_name: str, instruction: str, element: dict,
 
 
 def run_image_swap(proj_name: str, data_b64: str, filename: str, element: dict):
-    """
-    Put the user's own picture where the one they pointed at is.
-
-    The same swap `run_image_edit` performs, with the file coming from them
-    instead of from Fooocus — so it needs no image model, no language model and
-    no network, and answers in about as long as the file takes to decode. That
-    matters beyond speed: "use this exact picture" is not a thing a generator
-    can be asked for, however carefully the prompt is written.
-
-    The reference is rewritten rather than the file overwritten. Overwriting
-    `/generated/x.png` in place would be shorter, but it only works when the
-    picture already lives there — this way a `/logo.png`, a path under
-    `/images/`, or anything else written literally in the source is swapped by
-    exactly the same code, and the old file stays on disk for the undo.
-    """
+    """Store the user's image and swap its selected literal source reference."""
     set_tester_emit(emit)
     try:
         proj_dir, arch, stack = _open_for_edit(proj_name, "", None)
@@ -514,21 +438,7 @@ explanation, no markdown. One sentence, two at most, under 60 words.\
 
 def tune_instruction(instruction: str, element: dict, route: str,
                      model: str) -> str:
-    """The user's few words, made into one precise instruction. Never raises.
-
-    What people type into the edit box is four words in front of the thing
-    they mean — "blackground image include" — and every one of those words
-    was chosen while looking at the page. The model never sees what they saw,
-    so it fills the gap itself, and the gap is where it goes wrong: measured
-    on a real edit, that request produced a background image AND an 80%-white
-    overlay laid on top of it, so the picture landed and the page looked
-    identical.
-
-    So the request is expanded first, from the same element description the
-    edit itself gets. This is one cheap call, it never changes what was
-    asked for, and it returns the original unchanged on any doubt — an
-    instruction is not worth failing an edit over.
-    """
+    """Clarify a short visual request without widening it; never raise."""
     text = (instruction or "").strip()
     if not text or len(text) > 400:
         return text
@@ -639,22 +549,13 @@ def _converge_visual_semantics(arch, analyzer, proj_dir, request: str,
 
 def run_element_edit(proj_name: str, instruction: str, element: dict,
                      model: str, think: bool = None, console: str = ""):
-    """
-    Change the UI region the user pointed at, with dependency-aware scope.
-
-    Resolution is deterministic first. A preflight impact analysis keeps a true
-    one-file edit fast, but automatically escalates a section/element redesign
-    to the full multi-file change agent when a client boundary, shared caller,
-    API/data dependency, package or new component is genuinely required.
-    """
+    """Edit selected UI locally or escalate when dependencies require it."""
     set_tester_emit(emit)
     try:
         proj_dir, arch, stack = _open_for_edit(proj_name, model, think)
         if arch is None:
             return
-        analyzer = AnalyzerAgent(arch, proj_dir,
-                                 base_url=f"http://localhost:{DEV_PORT}",
-                                 callbacks=_analyzer_callbacks())
+        analyzer = _analyzer_for(arch, proj_dir)
         resolver = ElementResolver(arch, analyzer)
 
         elog("INFO", f"🎯 {describe(element).splitlines()[0][:90]}")
@@ -680,6 +581,11 @@ def run_element_edit(proj_name: str, instruction: str, element: dict,
             eerr(f"{res.path} is empty or unreadable")
             return
         before_project = dict(arch.files)
+        tx = _capture_feature_transaction(arch, proj_dir)
+        try:
+            baseline_keys = _feature_baseline_keys(analyzer.scan())
+        except Exception:
+            baseline_keys = set()
 
         broaden, change_request, impact = _visual_change_preflight(
             arch, analyzer, proj_dir, instruction, element, res.path,
@@ -701,7 +607,9 @@ def run_element_edit(proj_name: str, instruction: str, element: dict,
         t_write = time.time()
         ok, written = _element_write_round(arch, res.path, before, instruction,
                                            element, anchor, removing, adding,
-                                           retexting, line=res.line)
+                                           retexting, line=res.line,
+                                           context=getattr(impact, 'context', {}) or {},
+                                           shared_routes=shared)
         elog("INFO", f"   ⏱ model {time.time() - t_write:.1f}s")
         if not ok:
             ephase({"phase": -11, "title": "Editing the element", "status": "done"})
@@ -743,6 +651,20 @@ def run_element_edit(proj_name: str, instruction: str, element: dict,
             model=model, route=page_route)
         _autofix_from_terminal(arch, res.path, element, mark,
                                proj_dir=proj_dir, analyzer=analyzer, model=model)
+        final = verify_after_edit(arch, proj_dir, proj_name, stack=stack,
+                                  build_rounds=1, probe=False, analyzer=analyzer)
+        red = (not final.get("build_ok", True) or bool(final.get("syntax_broken"))
+               or bool(final.get("broken_imports")))
+        stable, _, _ = _stabilize_feature_upgrade(
+            arch, proj_dir, analyzer, baseline_keys=baseline_keys,
+            before_files=tx["files"], db_ok=db_ok(),
+            declared_routes=getattr(impact, "routes", []) or [], route_hint=page_route)
+        if red or not stable:
+            reverted = _restore_feature_transaction(arch, proj_dir, tx)
+            _stop_dev_proc(); start_dev_server(proj_dir, stack); wait_for_dev(stack)
+            elog("WARN", f"   ↩ Selection rolled back after live verification ({len(reverted)} file(s))")
+            eerr("The selected edit could not keep the app runtime-clean, so the previous working state was restored")
+            return
         elog("INFO", f"   ⏱ verify {time.time() - t_verify:.1f}s")
         eprog("Done!", 100)
         edone(f"http://localhost:{DEV_PORT}", proj_name,

@@ -152,6 +152,9 @@ def test_path_for(rel: str) -> str:
     return f"tests/unit/lib/{Path(rel).stem}{ext}"
 
 
+test_path_for.__test__ = False
+
+
 def _classify(rel: str, body: str) -> tuple:
     """(tier, reason) for a file, or (None, why not)."""
     if rel in GENERATED or rel in UNTESTABLE_LIB:

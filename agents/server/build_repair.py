@@ -1,15 +1,8 @@
-# Build failure analysis and repair flow.
+# Repair flow: build -> collect evidence -> patch owned files -> rebuild.
 
 
-def _npm_build_errors(proj_dir: Path, stack: str = "vite"):
-    """
-    `npm run build` surfaces real compile errors the dev server hides.
-
-    Returns ``(error_text, conclusive)``. The second value matters: a timed-out
-    `next build` used to return "" here, which the fix loop then read as "no
-    errors" and shipped a broken app. An inconclusive check must never look
-    like a clean one.
-    """
+def _npm_build_errors(proj_dir: Path, stack: str = "next"):
+    """Return build errors and whether the check reached a conclusion."""
     timeout = NEXT_BUILD_TIMEOUT if stack == "next" else 120
     env = {**os.environ, "CI": "true", "NEXT_TELEMETRY_DISABLED": "1",
            "NO_COLOR": "1", "FORCE_COLOR": "0"}
@@ -52,14 +45,7 @@ def _redact_uri(uri: str) -> str:
 
 
 def _open_project(proj_name: str):
-    """Boot an existing project so the preview iframe has something to show.
-
-    Every exit says so, because the studio holds its preview behind the build
-    overlay from the click until this answers — `done` or `error`, and nothing
-    else clears it. `wait_for_dev` returning False used to fall out of the
-    bottom silently, which left the overlay up over a project that was never
-    going to appear, with no way to tell that from one still starting.
-    """
+    """Boot an existing project's preview and always report the outcome."""
     try:
         proj_dir = PROD_DIR / proj_name
         if not proj_dir.exists():
@@ -89,18 +75,11 @@ def _open_project(proj_name: str):
 
 
 def _announce_project_credentials(proj_dir: Path):
-    """
-    Show an existing project's demo accounts when it is opened.
-
-    Generated apps no longer print these on their own login page, so without
-    this there is no way to sign in to an app you built last week.
-    """
+    """Show an existing project's demo accounts when it is opened."""
     try:
         arch = ArchitectAgent(ollama, DEFAULT_BUILD, proj_dir, stack="next")
         arch.load_existing()
-        AnalyzerAgent(arch, proj_dir,
-                      base_url=f"http://localhost:{DEV_PORT}",
-                      callbacks=_analyzer_callbacks())._announce_credentials()
+        _analyzer_for(arch, proj_dir)._announce_credentials()
     except Exception as e:
         log.warning(f"could not read demo accounts: {e}")
 
@@ -126,16 +105,7 @@ def _slug(text: str, fallback: str = "app") -> str:
 
 
 def _project_slug(*candidates: str, fallback: str = "app") -> str:
-    """
-    The first candidate that reads like a name, as a folder name.
-
-    The name reaches three places that outlive the build — the directory under
-    `production-ready`, the Mongo database `db_name_for` derives from it, and
-    the suffixing in `_project_dir_for` — so a word that is not a name is not
-    a small mistake. `_slug("yes")` is a perfectly good slug, which is how two
-    tire shops came to live in `production-ready/yes` and `yes-2`; falling
-    through to the prompt gives a duller name and the right one.
-    """
+    """Return the first candidate that reads like a durable project name."""
     for text in candidates:
         s = _slug(text, "")
         if s and s.replace("-", " ") not in NOT_A_NAME and s not in NOT_A_NAME:
@@ -144,11 +114,7 @@ def _project_slug(*candidates: str, fallback: str = "app") -> str:
 
 
 def _has_app(d: Path) -> bool:
-    """True when a directory already holds someone's application code.
-
-    Only the scaffold's own placeholders don't count — those are what an
-    interrupted build leaves behind, and stepping back into one is fine.
-    """
+    """Return whether a directory contains code beyond owned scaffolding."""
     for root in ("app", "components", "lib", "src", "pages"):
         base = d / root
         if not base.is_dir():
@@ -178,48 +144,12 @@ def next_major(proj_dir: Path) -> int:
 
 
 def bundler_flag(proj_dir: Path) -> list:
-    """
-    `['--webpack']` on Next 16+, `[]` before it.
-
-    Next 16 made Turbopack the default, and Turbopack words its diagnostics
-    differently from the `Failed to compile` / `Module not found` /
-    `Can't resolve` strings that `run_build_fix_loop`, `next_stderr` and
-    `agents/build/tester.py` all match on. Pinning the bundler pins that vocabulary.
-
-    It must be conditional, not unconditional: **Next 15.5.22 has no
-    `--webpack` flag at all** — verified, its `dev --help` lists only `--turbo`
-    and `--turbopack` — and `next dev` exits immediately on an unknown
-    argument. Passing it to the eleven projects already on disk would kill
-    every one of their dev servers.
-    """
+    """Use Webpack where Next 16 otherwise changes diagnostic vocabulary."""
     return ["--webpack"] if next_major(proj_dir) >= 16 else []
 
 
 def _project_dir_for(pname: str, stack: str) -> Path:
-    """
-    Where a new build should write.
-
-    A NEW build never writes into a directory that already holds an app.
-
-    This used to return `base` whenever `detect_stack(base) == stack`, which
-    made "a Next.js app is already here" the *condition for reuse* rather than
-    for avoidance — the suffixing loop below was unreachable for same-stack
-    collisions. Since `_slug(prompt[:40])` keys a project on the first forty
-    characters of the prompt, three prompts sharing an SRS preamble landed in
-    one folder. Nothing ever empties a directory and `write_file` only
-    overwrites, so a POS app, a school app and a car dealership ended up
-    superimposed: 66 route URLs on disk against a 31-file plan.
-
-    The build itself never noticed — `arch.files` starts empty. The analyzer
-    did, because it reads from disk by design: every leftover
-    `fetch('/api/attendance')` became a DEAD_ENDPOINT blocker, and the repair
-    pass wrote nine route handlers for two dead applications. Because
-    `db_name_for` also follows the directory name, the new app inherited the old
-    one's `users` collection and its own seed never ran.
-
-    Editing an existing project is unaffected — that path goes through
-    `_open_for_edit`, not here.
-    """
+    """Choose an empty/scaffold directory without overlaying another app."""
     base = PROD_DIR / pname
     if not base.exists() or not any(base.iterdir()):
         return base
@@ -283,6 +213,39 @@ def _analyzer_callbacks() -> dict:
 _DB_ERROR_MARKERS = ("MongoServerSelectionError", "MongoNetworkError",
                      "ECONNREFUSED", "MONGODB_URI", "/api/health",
                      "connect ETIMEDOUT")
+
+# Only the faults that mean "the database is not answering". `/api/health` and
+# `MONGODB_URI` are deliberately absent: a health route can fail for its own
+# reasons, and naming a variable is not a connection failure.
+_DB_DOWN_MARKERS = ("MongoServerSelectionError", "MongoNetworkError",
+                    "ECONNREFUSED", "connect ETIMEDOUT")
+
+
+def database_fault(errors) -> bool:
+    """True when what failed is the database connection, not the app."""
+    text = "\n".join(str(e) for e in (errors or ()))
+    return any(marker in text for marker in _DB_DOWN_MARKERS)
+
+
+def recover_database() -> bool:
+    """Bring MongoDB back mid-run and report whether it answers now.
+
+    A build outlives its database sometimes — mongod is killed, crashes, or
+    was a child of a process that went away. The runtime loop used to hand
+    `ECONNREFUSED 127.0.0.1:27017` to the repair agent as if the generated app
+    had a bug, which spends a repair round rewriting correct code and ends with
+    the same error. Restarting the server is the only repair that can work.
+    """
+    try:
+        MONGO.available = False
+        ok = bool(MONGO.ensure_running())
+    except Exception as e:                                       # noqa: BLE001
+        elog("WARN", f"   ⚠ could not restart MongoDB: {e}")
+        return False
+    elog("INFO" if ok else "WARN",
+         "   🍃 MongoDB is answering again" if ok else
+         "   ⚠ MongoDB is still down — database pages will keep failing")
+    return ok
 
 
 def _filter_db_noise(text: str, db_ok: bool) -> str:
@@ -357,22 +320,7 @@ _TW_DIRECTIVES = re.compile(r"^[ \t]*@tailwind\s+(base|components|utilities)\s*;
 
 
 def align_tailwind(arch, proj_dir: Path) -> bool:
-    """Make the Tailwind config match the Tailwind that is installed.
-
-    Tailwind 4 moved the PostCSS plugin into `@tailwindcss/postcss` and
-    replaced the three `@tailwind` directives with one `@import`. A project
-    carrying version 3's shape and version 4's package does not compile, and
-    the error — "trying to use `tailwindcss` directly as a PostCSS plugin" —
-    is not something the model can fix by rewriting a page, so every build
-    round spends itself and the app never starts. Measured on a gym build:
-    six rounds, no green build, the end-to-end stage skipped for it.
-
-    The pin in package.json is what stops the versions drifting apart; this
-    is the second line, for when something installs Tailwind 4 anyway. It
-    reads the version actually in `node_modules` and writes the config that
-    version needs. Deterministic, a few milliseconds, and it runs before
-    every build.
-    """
+    """Align PostCSS and CSS directives with installed Tailwind 4."""
     try:
         meta = proj_dir / "node_modules" / "tailwindcss" / "package.json"
         if not meta.is_file():
@@ -439,17 +387,7 @@ _PKG_INTERNAL_RE = re.compile(
 
 
 def _toolchain_break(proj_dir: Path, errors: str = "") -> str:
-    """Why the INSTALL is broken, or "" when the app itself is at fault.
-
-    Two independent witnesses, and either is enough:
-
-    the disk -- a package whose declared entry files are missing is broken
-    however plausible its `package.json` looks; and
-
-    the error text -- a relative or node_modules-internal `Cannot find module`
-    was raised by a package about its own contents, and no file the builder
-    writes appears anywhere in that sentence.
-    """
+    """Return evidence of an incomplete install, or ``""`` for app faults."""
     nm = proj_dir / "node_modules"
     if not nm.is_dir():
         return "node_modules is missing"
@@ -505,20 +443,7 @@ def _repair_toolchain(proj_dir: Path, why: str) -> bool:
 
 def run_build_fix_loop(arch, proj_dir: Path, db_ok: bool,
                        max_rounds: int = MAX_BUILD_FIX) -> bool:
-    """
-    Compile the app and let the model repair whatever `next build` rejects.
-
-    This runs BEFORE the dev server starts, which matters twice over: `next
-    build` and `next dev` share `.next/`, so building first avoids clobbering a
-    running server; and a compile error is a far cheaper, far more precise
-    signal than waiting for Playwright to notice a blank page.
-
-    The model fixes with its own tools — `write_file` for code, `run_command`
-    for a missing package — so `Module not found: Can't resolve 'bcryptjs'` is
-    something it can actually resolve instead of merely rewriting around.
-
-    Returns True when the build is clean.
-    """
+    """Compile before dev startup and repair conclusive build errors."""
     align_tailwind(arch, proj_dir)
     for rnd in range(1, max_rounds + 1):
         estep("build", "active")
@@ -633,19 +558,7 @@ FAIL_SRC_BUDGET = 26_000
 
 
 def _failing_sources(arch, errors: str) -> str:
-    """The current source of every file the compiler complained about.
-
-    The repair turn was the error text and nothing else. `arch.update` puts it
-    into the running conversation, where the model sees a fixed snapshot that
-    on a forty-file project regularly does not contain the file the error
-    names — so it was being asked to rewrite a file it could not read, and
-    guessed at the rest of it. That is why a build takes three rounds to go
-    green when the error was specific from the first one.
-
-    Next prints the path above each error, so the list is free. Nothing is
-    inferred and nothing is fetched: these are files the compiler itself
-    named, read from what is already in memory.
-    """
+    """Quote current sources explicitly named by compiler diagnostics."""
     seen, blocks, used = set(), [], 0
     for rel in _ERR_FILE_RE.findall(errors or ""):
         rel = rel.replace("\\", "/")

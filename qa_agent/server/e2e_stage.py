@@ -4,7 +4,9 @@ from qa_agent.e2e.e2e_contract import scenario_contract_issue, runtime_contract_
 from qa_agent.e2e.e2e_invariants import validate_repair_invariants, repair_guard_feedback
 from qa_agent.e2e.e2e_console import console_repair_batch
 from qa_agent.e2e.e2e_preflight import run_plan_code_preflight
-from qa_agent.e2e.e2e_results import apply_stage_result, aggregate_e2e
+# e2e_final.py runs in this same namespace and calls stage_result directly.
+from qa_agent.e2e.e2e_results import (aggregate_e2e, apply_stage_result,
+                                      stage_result)
 
 def _repair_after_stages(proj_dir: Path, qa, arch, runner, failures):
     """Re-align stale tests after proven late-stage application repairs."""

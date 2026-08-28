@@ -1,13 +1,58 @@
-# Build updates and repair coordination.
+# Main flow: prepare -> plan -> build -> verify -> report -> serve.
+def database_ready() -> bool:
+    """Prove MongoDB answers at the moment it is needed, and retry once."""
+    for attempt in (1, 2):
+        if MONGO.reachable():
+            MONGO.available = True
+            return True
+        if attempt == 1:
+            try:
+                MONGO.ensure_running()
+            except Exception as exc:                            # noqa: BLE001
+                log.debug(f"database retry: {exc}")
+    MONGO.available = False
+    why = (MONGO.reason or "nothing is answering on 127.0.0.1:27017").strip()
+    elog("WARN", f"   ⚠ No database — {why}")
+    elog("WARN", "      Every page that reads data will error. Start MongoDB, "
+                 "or set a MONGODB_URI in Settings, then build again.")
+    return False
+
+def seed_project(plan: dict) -> str:
+    """Run seed; return concrete endpoint error evidence, or an empty string."""
+    try:
+        body = requests.get(f"http://127.0.0.1:{DEV_PORT}/api/seed",
+                            timeout=180).json()
+    except Exception as exc:                                    # noqa: BLE001
+        error = f"seed endpoint request failed: {str(exc)[:300]}"
+        elog("WARN", f"   ⚠ Seeding did not run — {str(exc)[:160]}")
+        return error
+    if not body.get("ok"):
+        error = f"GET /api/seed returned failure: {str(body.get('error'))[:600]}"
+        elog("WARN", f"   ⚠ Seeding failed — {str(body.get('error'))[:200]}")
+        return error
+    for account in (plan or {}).get("demo_accounts") or []:
+        session = requests.Session()
+        try:
+            login = session.post(f"http://localhost:{DEV_PORT}/api/auth/sign-in/email",
+                                 json={"email": account.get("email"), "password": account.get("password")}, timeout=20)
+            user = session.get(f"http://localhost:{DEV_PORT}/api/auth/get-session", timeout=15).json().get("user") or {}
+        except Exception as exc:
+            return f"seeded demo account could not be verified: {account.get('email')}: {str(exc)[:240]}"
+        expected_role = str(account.get("role") or "").strip().lower()
+        if login.status_code >= 400 or str(user.get("email") or "").lower() != str(account.get("email") or "").lower() or (expected_role and str(user.get("role") or "").strip().lower() != expected_role):
+            return f"seeded role account is unusable: {account.get('email')} (HTTP {login.status_code}, role {user.get('role') or 'missing'})"
+    elog("INFO", "   🌱 Seeded and verified planned data" if body.get("ran")
+                 else "   🌱 Nothing to seed for this app")
+    for account in (plan or {}).get("demo_accounts") or []:
+        elog("INFO", f"   🔑 {account.get('email')} / {account.get('password')}"
+                     + (f"  ({account['role']})" if account.get("role") else ""))
+    return ""
+
 def run_agent_pipeline(prompt: str, model: str, think: bool = None,
                        qa_model: str = "", resume_project: str = "",
                        logo: str = "", srs_id: str = ""):
-    """
-    Raw prompt → LLM plan.md → LLM writes every file in one continuous pass.
-
-    No templates, no refiner: the model owns the whole project. One chat
-    thread runs the entire build so it remembers what it already wrote.
-    """
+    """Build and verify one app from a request or an approved SRS."""
+    # Stage 1: restore or create the owned project workspace.
     cancel.begin()
     warn_if_agents_stale()
     set_tester_emit(emit)
@@ -74,6 +119,7 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
         if srs_id:
             adopt_srs(srs_id, proj_dir)
 
+        # Stage 2: plan and generate while database startup runs beside it.
         mongo_thread = threading.Thread(target=MONGO.ensure_running, daemon=True)
         mongo_thread.start()
 
@@ -83,18 +129,18 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
 
         drawing = {"thread": None}
 
-        def _draw_early(path, content):
-            estream_end(path, content)
-            if path != "plan.md" or drawing["thread"]:
+        def _draw_when_planned(event):
+            """Draw the planned pictures beside code generation, not after it."""
+            ephase(event)
+            if drawing["thread"] or event.get("status") != "done":
                 return
-            if not ((getattr(arch, "plan", None) or {}).get("images")):
+            if not ((event.get("plan") or {}).get("images")):
                 return
-            t = threading.Thread(target=run_image_stage, args=(arch, proj_dir),
-                                 daemon=True)
-            drawing["thread"] = t
-            t.start()
+            drawing["thread"] = threading.Thread(
+                target=run_image_stage, args=(arch, proj_dir), daemon=True)
+            drawing["thread"].start()
 
-        cb["on_file_end"] = _draw_early
+        cb["on_phase"] = _draw_when_planned
 
         qa_model = qa_model or model
         qa = QASession(proj_dir, callbacks=_qa_callbacks(), model=qa_model,
@@ -137,7 +183,7 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
                           "footer with a plain <img> and the app's name as its "
                           "alt text. Do not generate another logo, and do not "
                           "render the app name as text where the logo belongs.")
-            brief += _image_brief_line(proj_dir)
+            brief += _image_brief_line(proj_dir, requirement_brief)
             ok = arch.run(brief, requirement_source=requirement_brief)
         if not ok:
             estep("plan", "error")
@@ -164,10 +210,8 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
             elog("WARN", f"   ⚠ Image stage could not continue in background: {e}")
             log.exception("image stage")
 
-        analyzer = AnalyzerAgent(arch, proj_dir,
-                                 base_url=f"http://localhost:{DEV_PORT}",
-                                 callbacks=_analyzer_callbacks(),
-                                 allow_reseed=True)
+        # Stage 3: compare generated files with the approved plan.
+        analyzer = _analyzer_for(arch, proj_dir, allow_reseed=True)
 
         qa.drain(timeout=180)
         _backfill_tests(arch, proj_dir, qa)
@@ -183,10 +227,7 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
         qa.mark_stale(qa_targets.changed())
 
         mongo_thread.join(timeout=120)
-        db_ok = MONGO.available
-        if not db_ok:
-            elog("WARN", "   ⚠ No database — the app is generated, but pages "
-                         "that read data will error until MongoDB is available.")
+        db_ok = database_ready()
 
         try:
             arch.sync_dependencies()
@@ -194,6 +235,7 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
         except Exception as e:
             elog("WARN", f"   ⚠ dependency preflight could not finish: {e}")
 
+        # Stage 4: install dependencies and prove a production build works.
         estep("install", "active")
         eprog("npm install…", 84)
         if not ensure_node_deps(proj_dir):
@@ -224,6 +266,7 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
         if flow_written:
             qa.mark_stale(pretest_targets.changed())
 
+        # Stage 5: run focused tests, then repair only observed failures.
         unit_out, e2e_out, runtime_errors = {}, {}, []
         runtime_report, api_report = AnalyzerReport(), AnalyzerReport()
         runtime_clean, api_clean = False, False
@@ -234,26 +277,46 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
             elog("WARN", f"   ⚠ Unit test stage failed: {e}")
             log.exception("qa unit stage")
 
+        # Unit repair/revert can expose a shared Server/Client boundary late.
+        # Batch every proven owner through Analyzer's full-file fixer before serve.
         try:
-            if drawing.get("thread"):
-                if drawing["thread"].is_alive():
-                    elog("INFO", "   🖼 waiting for the remaining background images before browser QA…")
-                drawing["thread"].join(timeout=900)
-            _fill_missing_images(arch, proj_dir, "the pages")
+            for boundary_round in (1, 2):
+                boundary = analyzer.server_client_boundary_findings()
+                if not boundary:
+                    break
+                elog("INFO", f"   🧱 pre-runtime boundary repair {boundary_round}: "
+                             f"{len(boundary)} proven source file(s)")
+                if not analyzer.repair(AnalyzerReport(findings=boundary)):
+                    break
+            if analyzer.server_client_boundary_findings():
+                elog("WARN", "   ⚠ Server/Client boundary blockers remain for runtime evidence")
         except Exception as e:
-            elog("WARN", f"   ⚠ Image completion failed: {e}")
+            elog("WARN", f"   ⚠ pre-runtime boundary scan failed: {e}")
+
+        # Pictures keep drawing while the app is served and tested. Blocking here
+        # cost the whole run the length of the image queue — one GPU image is
+        # about a minute, so an eight-image plan stalled build, unit tests and
+        # every browser check for eight minutes to avoid a placeholder in a
+        # screenshot. A late picture is a cosmetic gap; a skipped test is not.
+        if drawing.get("thread") and drawing["thread"].is_alive():
+            elog("INFO", "   🖼 images keep drawing in the background — serving "
+                         "and testing continue now")
 
         estep("serve", "active")
         eprog("Starting Next.js…", 90)
+        # One last chance: a database that arrived late still counts.
+        db_ok = db_ok or database_ready()
         start_next(proj_dir)
         wait_for_next()
+        seed_error = seed_project(arch.plan) if db_ok else ""
 
         estep("test", "active")
         emit({"type": "test_start"})
         tester = TesterAgent(proj_dir, DEV_PORT, stack="next", smoke_only=True)
 
         runtime_deadline = time.time() + RUNTIME_DEADLINE
-        prev_sig = None
+        prev_evidence_sig = None
+        previous_fixed = ()
         smoke_repaired = False
 
         for attempt in range(1, MAX_FIX + 2):
@@ -270,25 +333,28 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
                           "msg": "Dev server error", "detail": f[:160]})
                     elog("WARN", f"   ❌ terminal: {f[:110]}")
 
+            # The database can die after Stage 2 said it was up. That is an
+            # infrastructure fault, and handing it to the repair agent spends a
+            # round rewriting application code that is not wrong. Restart the
+            # server and re-read the app before anyone touches a file.
+            if db_ok and database_fault(errors):
+                elog("WARN", "   🍃 the database stopped answering mid-run — "
+                             "restarting it before blaming the app")
+                db_ok = recover_database()
+                if db_ok:
+                    continue
+                errors = [e for e in errors
+                          if not any(m in e for m in _DB_ERROR_MARKERS)]
+
             if not db_ok:
                 errors = [e for e in errors
                           if not any(m in e for m in _DB_ERROR_MARKERS)]
 
-            if not errors:
+            if not errors and not seed_error:
 
                 elog("INFO", "   🎉 Tests passed — no errors")
                 estep("test", "done")
                 break
-
-            now_sig = frozenset(e.splitlines()[0][:120] for e in errors)
-            if prev_sig is not None and now_sig >= prev_sig:
-                elog("WARN", f"   ⚠ attempt {attempt - 1} changed none of the "
-                             f"{len(now_sig)} error(s) — further attempts would "
-                             f"repeat it")
-                _report_unfixed(errors)
-                estep("test", "done")
-                break
-            prev_sig = now_sig
 
             if time.time() > runtime_deadline:
                 elog("WARN", f"   ⚠ the {RUNTIME_DEADLINE}s runtime-repair "
@@ -308,6 +374,8 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
             if not dev_errors.strip():
                 dev_errors = _filter_db_noise(next_stderr(), db_ok)
             all_errors = "\n".join(errors[:8]) + "\n" + dev_errors
+            if seed_error:
+                all_errors += "\n\nSeed endpoint evidence:\n" + seed_error
 
             if getattr(tester, "mcp_report", ""):
                 all_errors = tester.mcp_report + "\n\n" + all_errors
@@ -321,11 +389,22 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
             ephase({"phase": -2, "title": f"Fixing errors (try {attempt})",
                     "status": "active"})
 
-            _stop_dev_proc()
-
             runtime_focus = _exact_runtime_focus(arch, all_errors)
+            if seed_error:
+                seed_focus = [p for p in ("lib/seed.js", "lib/auth.js") if p in arch.files]
+                runtime_focus = list(dict.fromkeys(runtime_focus + seed_focus))
+            sig_rows = {e.splitlines()[0][:120] for e in errors}
+            if seed_error:
+                sig_rows.add(seed_error[:120])
+            evidence_sig = (frozenset(sig_rows), tuple(runtime_focus), tuple(previous_fixed))
+            if prev_evidence_sig == evidence_sig:
+                elog("WARN", f"   ⚠ attempt {attempt - 1} repeated the same errors, "
+                             "source evidence and edited files — stopping true repetition")
+                _report_unfixed(errors); estep("test", "done"); break
+            prev_evidence_sig = evidence_sig
+            _stop_dev_proc()
             if runtime_focus:
-                elog("INFO", "   🎯 runtime stack named exact source: "
+                elog("INFO", "   🎯 runtime evidence maps source: "
                              + ", ".join(runtime_focus[:3]))
             fixed_paths = _repair_runtime(arch, proj_dir, qa, analyzer, all_errors,
                                          dev_errors, attempt,
@@ -333,6 +412,7 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
                                          strict_scope=bool(runtime_focus),
                                          exact_scope=bool(runtime_focus))
             smoke_repaired = smoke_repaired or bool(fixed_paths)
+            previous_fixed = tuple(sorted(fixed_paths or []))
 
             ephase({"phase": -2, "title": f"Fixing errors (try {attempt})",
                     "status": "done"})
@@ -345,6 +425,8 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
                     elog("WARN", "   ⚠ repaired source has syntax errors; the next pass will focus on them")
             start_next(proj_dir)
             wait_for_next()
+            if db_ok:
+                seed_error = seed_project(arch.plan)
 
         if smoke_repaired:
             elog("INFO", "   🔨 runtime fixes settled — one production build")
@@ -381,10 +463,31 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
             elog("WARN", f"   ⚠ API verification stage failed: {e}")
             log.exception("api verification stage")
 
+        # Never serialize browser QA behind GPU work. Planned image paths get
+        # instant PNG placeholders and the real files replace them in background.
+        try:
+            if drawing.get("thread") and drawing["thread"].is_alive():
+                elog("INFO", "   🖼 images are still drawing — browser journeys continue immediately")
+            else:
+                threading.Thread(target=_fill_missing_images,
+                                 args=(arch, proj_dir, "the pages"),
+                                 daemon=True).start()
+        except Exception as e:
+            elog("WARN", f"   ⚠ Background image completion failed: {e}")
+
         e2e_blockers = _e2e_hard_upstream_blockers(runtime_report, api_report)
 
+        # A journey needs a served app, not a green production build. `next
+        # build` can exit non-zero on a crashed worker while every route still
+        # answers 200 under `next dev`, and skipping the browser then throws
+        # away the only evidence that would say what actually works.
         e2e_out = {}
-        if build_ok and not e2e_blockers:
+        serving = _dev_alive()
+        if serving and not e2e_blockers:
+            if not build_ok:
+                elog("WARN", "   ⚠ running the journeys against a served app "
+                             "whose production build is red — a failure here "
+                             "may be the build fault reappearing")
             try:
                 e2e_out = run_qa_e2e_stage(arch, proj_dir, qa, analyzer,
                                            build_ok=build_ok, db_ok=db_ok) or {}
@@ -397,8 +500,8 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
                 label = f"{stage}:{getattr(f, 'code', '')}"
                 if label not in reasons:
                     reasons.append(label)
-            if not build_ok:
-                reasons.insert(0, "build:not-green")
+            if not serving:
+                reasons.insert(0, "app:not-serving")
             reason_text = ", ".join(reasons) or "upstream correctness gate"
             elog("WARN", "   ⛔ End-to-end journeys skipped — hard upstream "
                          "defects remain (" + reason_text + "). Fix the known "
@@ -448,6 +551,7 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
                     "blocker", "API_STAGE_FAILED",
                     f"post-E2E API verification failed: {e}"))
 
+        # Stage 6: close with security and performance evidence.
         sec_findings, sec_audit, perf_scores = [], {}, {}
         sec_ran = False
         try:
@@ -458,8 +562,45 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
                          f"about whether this app is safe: {e}")
             log.exception("security stage")
 
-        if build_ok:
+        # Tests are evidence, not the delivery boundary. Re-probe and repair the
+        # exact served app so a red unit/E2E suite cannot hide a real 404, 500,
+        # collection mismatch, broken relationship, or missing planned journey.
+        delivery_written = 0
+        try:
+            build_ok, db_ok, final_report, delivery_clean, delivery_conclusive, delivery_written = (
+                run_delivery_stabilization(arch, proj_dir, analyzer, db_ok=db_ok,
+                                           build_ok=build_ok, rounds=3))
+            flow_report = final_report
+            flow_clean = runtime_clean = api_clean = delivery_clean
+            flow_conclusive = delivery_conclusive
+            runtime_errors = [] if delivery_clean else [
+                f"{getattr(f, 'code', 'DELIVERY')}: {getattr(f, 'message', '')}"
+                for f in _serious_findings(final_report)[:8]]
+            if delivery_written:
+                if unit_out:
+                    unit_out["stale_after_late_repair"] = True
+                if e2e_out:
+                    e2e_out["stale_after_late_repair"] = True
+                from qa_agent.verification.security import SecurityAgent
+                sec_findings, _ = SecurityAgent(
+                    proj_dir, callbacks=_analyzer_callbacks(),
+                    cmd=getattr(arch, "cmd", None)).run(audit=False)
+        except Exception as e:
+            delivery_clean = delivery_conclusive = False
+            final_report = _merge_analyzer_reports(flow_report, runtime_report, api_report)
+            final_report.findings.append(Finding(
+                "blocker", "DELIVERY_STABILIZATION_FAILED",
+                f"final self-healing failed: {e}"))
+            flow_report = final_report
+            flow_clean = runtime_clean = api_clean = False
+            runtime_errors.append(f"final self-healing failed: {e}")
+            elog("WARN", f"   ⚠ Final self-healing failed: {e}")
+            log.exception("delivery stabilization")
+
+        if _dev_alive():
             red = []
+            if not build_ok:
+                red.append("build")
             if not runtime_clean:
                 red.append("runtime")
             if not api_clean:
@@ -477,9 +618,10 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
                 elog("WARN", f"   ⚠ Performance stage failed: {e}")
                 log.exception("perf stage")
         else:
-            elog("INFO", "   ⚡ performance skipped — the build is not green, "
-                         "so there is no app to measure")
+            elog("INFO", "   ⚡ performance skipped — nothing is answering on "
+                         f"port {DEV_PORT}, so there is no app to measure")
 
+        # Stage 7: write one final verdict and keep the preview available.
         final_report = flow_report
 
         write_qa_report(proj_dir, qa, unit=unit_out, security=sec_findings,
@@ -496,8 +638,9 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
                      and not bool((e2e_out or {}).get("unwritable", 0))
                      and (e2e_out or {}).get("build_after_fix", True) is not False
                      and not bool((e2e_out or {}).get("stale_after_late_repair")))
-        unit_clean = bool((unit_out or {}).get("ran")) and bool(
-            (unit_out or {}).get("clean", False))
+        unit_clean = (bool((unit_out or {}).get("ran"))
+                      and bool((unit_out or {}).get("clean", False))
+                      and not bool((unit_out or {}).get("stale_after_late_repair")))
         quality_clean = bool(build_ok and flow_clean and flow_conclusive
                              and runtime_clean and api_clean
                              and security_clean and e2e_clean and unit_clean
@@ -507,12 +650,13 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
               "flow": bool(flow_clean), "flow_conclusive": bool(flow_conclusive),
               "runtime": bool(runtime_clean), "api": bool(api_clean),
               "security": bool(security_clean), "e2e": bool(e2e_clean),
-              "unit": bool(unit_clean), "runtime_errors": len(runtime_errors)})
+              "unit": bool(unit_clean), "runtime_errors": len(runtime_errors),
+              "delivery_clean": bool(delivery_clean),
+              "delivery_repaired": int(delivery_written)})
 
         _write_final_flow_receipt(
-            proj_dir, final_report, clean=quality_clean,
-            conclusive=bool(flow_conclusive and runtime_clean and api_clean),
-            db_ok=db_ok, build_ok=build_ok)
+            proj_dir, final_report, clean=delivery_clean,
+            conclusive=bool(delivery_conclusive), db_ok=db_ok, build_ok=build_ok)
 
         url = f"http://localhost:{DEV_PORT}"
 
@@ -524,7 +668,7 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
 
             serving = wait_for_next(20)
         if serving:
-            estep("serve", "done" if quality_clean else "error")
+            estep("serve", "done" if (quality_clean or delivery_clean) else "error")
             if quality_clean:
                 eprog("Done — clean and connected", 100)
                 elog("INFO", f"🎉 Clean app live at {url}")
@@ -562,7 +706,6 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
         stop_model(model)
         cancel.finish()
 
-
 def _open_for_edit(proj_name: str, model: str, think: bool = None):
     """Common preamble for every tool that edits an existing project."""
     t0 = time.time()
@@ -585,12 +728,16 @@ def _open_for_edit(proj_name: str, model: str, think: bool = None):
     elog("INFO", f"   ⏱ open {time.time() - t0:.1f}s")
     return proj_dir, arch, arch.stack
 
-
+def _analyzer_for(arch, proj_dir: Path, *, runtime: bool = True, **options):
+    """Create the shared analyzer configuration used by server actions."""
+    options.setdefault("callbacks", _analyzer_callbacks())
+    if runtime:
+        options.setdefault("base_url", f"http://localhost:{DEV_PORT}")
+    return AnalyzerAgent(arch, proj_dir, **options)
 
 _FEATURE_TX_EXCLUDED_DIRS = {"node_modules", ".next", ".git"}
 _FEATURE_SOAK_SECONDS = 8.0
 _FEATURE_STABILIZE_ROUNDS = 3
-
 
 def _feature_tx_paths(proj_dir: Path) -> set:
     """Files whose bytes belong to a feature transaction baseline.
@@ -620,7 +767,6 @@ def _feature_tx_paths(proj_dir: Path) -> set:
         out.add(rel)
     return out
 
-
 def _capture_feature_transaction(arch, proj_dir: Path) -> dict:
     paths = _feature_tx_paths(proj_dir)
     snap = FileSnapshot(proj_dir)
@@ -632,7 +778,6 @@ def _capture_feature_transaction(arch, proj_dir: Path) -> dict:
         "plan_md": getattr(arch, "plan_md", ""),
         "convo": copy.deepcopy(getattr(arch, "convo", []) or []),
     }
-
 
 def _restore_feature_transaction(arch, proj_dir: Path, tx: dict) -> list:
     """Restore the app to exactly the state before the feature started."""
@@ -652,7 +797,6 @@ def _restore_feature_transaction(arch, proj_dir: Path, tx: dict) -> list:
     arch.convo = copy.deepcopy(tx.get("convo") or [])
     return sorted(set(restored))
 
-
 def _feature_finding_key(f) -> tuple:
     text = str(getattr(f, "message", "") or "").lower()
     text = re.sub(r"\b[0-9a-f]{24}\b", "<id>", text)
@@ -661,16 +805,13 @@ def _feature_finding_key(f) -> tuple:
     return (str(getattr(f, "code", "") or ""),
             str(getattr(f, "path", "") or "").replace("\\", "/"), text)
 
-
 def _feature_baseline_keys(report) -> set:
     return {_feature_finding_key(f) for f in _serious_findings(report)}
-
 
 def _feature_changed_paths(before_files: dict, arch) -> set:
     now = dict(getattr(arch, "files", {}) or {})
     keys = set(before_files) | set(now)
     return {p for p in keys if before_files.get(p) != now.get(p)}
-
 
 def _feature_related_findings(report, baseline_keys: set, changed_paths: set) -> list:
     """Serious findings introduced by this feature, not pre-existing debt."""
@@ -695,14 +836,12 @@ def _feature_related_findings(report, baseline_keys: set, changed_paths: set) ->
         out.append(f)
     return out
 
-
 def _feature_soak_seconds() -> float:
     raw = os.environ.get("AGENTFORGE_FEATURE_SOAK_SECONDS", "").strip()
     try:
         return max(1.0, min(float(raw), 30.0)) if raw else _FEATURE_SOAK_SECONDS
     except ValueError:
         return _FEATURE_SOAK_SECONDS
-
 
 def _observe_feature_upgrade(arch, proj_dir: Path, analyzer, *, db_ok: bool,
                              changed_paths=None, declared_routes=None, route_hint=""):
