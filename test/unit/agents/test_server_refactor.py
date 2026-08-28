@@ -73,8 +73,6 @@ class MessageDispatchTests(unittest.TestCase):
              ("demo", "change", element, "model", None)),
             ("feature", server.run_feature,
              ("demo", "change", "model", None, "qa", "/rooms", "log")),
-            ("update", server.run_update_pipeline,
-             ("demo", "change", "builder")),
         )
         for kind, expected_target, expected_args in cases:
             with self.subTest(kind=kind):
@@ -112,6 +110,23 @@ class AnalyzerFactoryTests(unittest.TestCase):
         with patch.object(server, "AnalyzerAgent", return_value="analyzer") as ctor:
             server._analyzer_for("arch", Path("project"), runtime=False)
         self.assertNotIn("base_url", ctor.call_args.kwargs)
+
+
+class DatabaseFaultTests(unittest.TestCase):
+    """A dead database is infrastructure, not a bug in the generated app."""
+
+    def test_only_connection_faults_count_as_the_database_being_down(self):
+        self.assertTrue(server.database_fault([
+            "DB: /api/health failed → 500 "
+            "MongoServerSelectionError: connect ECONNREFUSED 127.0.0.1:27017"]))
+        self.assertTrue(server.database_fault(["MongoNetworkError: socket closed"]))
+
+        # An app bug must never be mistaken for the database going away, or the
+        # run restarts mongod instead of repairing the fault it actually has.
+        self.assertFalse(server.database_fault([
+            "TypeError: filteredRooms.map is not a function"]))
+        self.assertFalse(server.database_fault(["/api/health returned 500"]))
+        self.assertFalse(server.database_fault([]))
 
 
 if __name__ == "__main__":

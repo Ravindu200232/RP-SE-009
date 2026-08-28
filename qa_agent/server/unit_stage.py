@@ -255,7 +255,7 @@ def _record_round_one(proj_dir: Path, qa, passed: int, failures: list) -> None:
         log.warning(f"could not append qa history: {e}")
 
     try:
-        from agents import lessons
+        from agents.core import lessons
         rows = [{"failed": len(failures),
                  "top": [{"class": n, "count": c} for n, c in top[:5]]}]
         lessons.record(proj_dir.name, lessons.from_qa_history(rows))
@@ -370,10 +370,13 @@ def run_qa_unit_stage(arch, proj_dir: Path, qa, *, build_ok: bool,
     out = {"ran": False, "passed": 0, "failed": 0, "fixed": 0, "code_fixes": 0}
     if not qa or not qa.has_tests():
         return out
+    # A unit test imports modules directly; it does not need a production
+    # build to have succeeded. Skipping the suite because `next build` exited
+    # non-zero hides which behaviour still works, on exactly the run where
+    # that is worth knowing.
     if not build_ok:
-        _qa_skip(qa, "the build is not green, so a failing test would be a "
-                     "symptom rather than the bug")
-        return out
+        elog("WARN", "   ⚠ running unit tests against a red production build "
+                     "— a failure here may be that build fault, not the test")
 
     deadline = time.time() + QA_DEADLINE
     ephase({"phase": -15, "title": "Running unit tests", "status": "active"})
@@ -475,6 +478,26 @@ def run_qa_unit_stage(arch, proj_dir: Path, qa, *, build_ok: bool,
             reverted = snap.restore()
             if reverted:
                 elog("INFO", f"   ↩ restored {len(reverted)} file(s)")
+
+            # Say what the reverted round did, per file, before asking again.
+            # A revert puts the bytes back and the next round then re-runs on
+            # the same file with the same failures, so without this the model
+            # is handed a prompt it has already answered and answers it the
+            # same way. Escalation raises the tier — what may be written — and
+            # never told it what its last write cost. Three tiers, one repair.
+            for tf, case in new_red:
+                fixer.refusals[tf] = (f"it was reverted — it made {case!r} "
+                                      f"fail, and that case was passing "
+                                      f"before. Repair the failing case inside "
+                                      f"its own body; the shared setup at the "
+                                      f"top of the file is read by every case "
+                                      f"in it.")
+            if not new_red:
+                for f in failures:
+                    fixer.refusals[f.test_file] = (
+                        "it was reverted — it left the same case(s) failing. "
+                        "The previous reading of this file was wrong; find a "
+                        "different cause before writing the same repair again.")
             dead += 1
             if dead >= MAX_QA_DEAD:
                 if best is not None:
@@ -713,7 +736,14 @@ def _remeasure_unit(proj_dir: Path, qa, unit: dict, arch=None) -> dict:
             body = fp.read_text(encoding="utf-8", errors="replace") if fp and fp.is_file() else ""
         except Exception:
             body = ""
-        if not body or (key[1] and key[1] not in body):
+        # `case` is vitest's fullName — `Navbar toggles mobile menu` — and the
+        # source says `it('toggles mobile menu')`, so a plain substring test
+        # never matches a file that uses `describe`, which every generated file
+        # does. A case that was red and is now GREEN would be reported as
+        # "disappeared instead of passing", and that alone forced `clean=False`.
+        # `has_case` still accepts the substring, so this can only remove a
+        # false alarm, never raise a new one.
+        if not body or (key[1] and not BugFixerAgent.has_case(body, key[1])):
             deleted_unresolved.append(u)
 
     unit.update(passed=passed, failed=len(failures),

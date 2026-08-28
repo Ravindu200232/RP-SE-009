@@ -42,19 +42,22 @@ FEATURE_IMAGE_POLICY = feature_prompt("FEATURE_IMAGE")
 
 
 _IMAGE_INTENT_RE = re.compile(
-    r"\b(?:image|images|photo|photos|picture|pictures|photograph|photographs|"
+    r"\b(?:img|imgs|pic|pics|image|images|photo|photos|"
+    r"picture|pictures|photograph|photographs|"
     r"banner\s+image|hero\s+image|background\s+image|thumbnail|cover\s+image|"
     r"illustration|visual\s+asset)\b",
     re.I,
 )
 _IMAGE_NEGATION_RE = re.compile(
     r"\b(?:no|without|remove|delete|hide|disable)\b[^.!;\n]{0,40}"
-    r"\b(?:image|images|photo|photos|picture|pictures|thumbnail|illustration)s?\b",
+    r"\b(?:img|pic|image|images|photo|photos|"
+    r"picture|pictures|thumbnail|illustration)s?\b",
     re.I,
 )
 _IMAGE_ADD_RE = re.compile(
     r"\b(?:add|include|generate|create|draw|use|put|insert|replace)\b[^.!;\n]{0,40}"
-    r"\b(?:image|images|photo|photos|picture|pictures|thumbnail|illustration)s?\b",
+    r"\b(?:img|pic|image|images|photo|photos|"
+    r"picture|pictures|thumbnail|illustration)s?\b",
     re.I,
 )
 

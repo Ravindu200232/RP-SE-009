@@ -1,4 +1,41 @@
 # Main flow: prepare -> plan -> build -> verify -> report -> serve.
+def database_ready() -> bool:
+    """Prove MongoDB answers at the moment it is needed, and retry once."""
+    for attempt in (1, 2):
+        if MONGO.reachable():
+            MONGO.available = True
+            return True
+        if attempt == 1:
+            try:
+                MONGO.ensure_running()
+            except Exception as exc:                            # noqa: BLE001
+                log.debug(f"database retry: {exc}")
+    MONGO.available = False
+    why = (MONGO.reason or "nothing is answering on 127.0.0.1:27017").strip()
+    elog("WARN", f"   ⚠ No database — {why}")
+    elog("WARN", "      Every page that reads data will error. Start MongoDB, "
+                 "or set a MONGODB_URI in Settings, then build again.")
+    return False
+
+
+def seed_project(plan: dict) -> None:
+    """Run the planned seed through the scaffold endpoint, then name the logins."""
+    try:
+        body = requests.get(f"http://127.0.0.1:{DEV_PORT}/api/seed",
+                            timeout=180).json()
+    except Exception as exc:                                    # noqa: BLE001
+        elog("WARN", f"   ⚠ Seeding did not run — {str(exc)[:160]}")
+        return
+    if not body.get("ok"):
+        elog("WARN", f"   ⚠ Seeding failed — {str(body.get('error'))[:200]}")
+        return
+    elog("INFO", "   🌱 Seeded the planned data" if body.get("ran")
+                 else "   🌱 Nothing to seed for this app")
+    for account in (plan or {}).get("demo_accounts") or []:
+        elog("INFO", f"   🔑 {account.get('email')} / {account.get('password')}"
+                     + (f"  ({account['role']})" if account.get("role") else ""))
+
+
 def run_agent_pipeline(prompt: str, model: str, think: bool = None,
                        qa_model: str = "", resume_project: str = "",
                        logo: str = "", srs_id: str = ""):
@@ -80,18 +117,18 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
 
         drawing = {"thread": None}
 
-        def _draw_early(path, content):
-            estream_end(path, content)
-            if path != "plan.md" or drawing["thread"]:
+        def _draw_when_planned(event):
+            """Draw the planned pictures beside code generation, not after it."""
+            ephase(event)
+            if drawing["thread"] or event.get("status") != "done":
                 return
-            if not ((getattr(arch, "plan", None) or {}).get("images")):
+            if not ((event.get("plan") or {}).get("images")):
                 return
-            t = threading.Thread(target=run_image_stage, args=(arch, proj_dir),
-                                 daemon=True)
-            drawing["thread"] = t
-            t.start()
+            drawing["thread"] = threading.Thread(
+                target=run_image_stage, args=(arch, proj_dir), daemon=True)
+            drawing["thread"].start()
 
-        cb["on_file_end"] = _draw_early
+        cb["on_phase"] = _draw_when_planned
 
         qa_model = qa_model or model
         qa = QASession(proj_dir, callbacks=_qa_callbacks(), model=qa_model,
@@ -134,7 +171,7 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
                           "footer with a plain <img> and the app's name as its "
                           "alt text. Do not generate another logo, and do not "
                           "render the app name as text where the logo belongs.")
-            brief += _image_brief_line(proj_dir)
+            brief += _image_brief_line(proj_dir, requirement_brief)
             ok = arch.run(brief, requirement_source=requirement_brief)
         if not ok:
             estep("plan", "error")
@@ -178,10 +215,7 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
         qa.mark_stale(qa_targets.changed())
 
         mongo_thread.join(timeout=120)
-        db_ok = MONGO.available
-        if not db_ok:
-            elog("WARN", "   ⚠ No database — the app is generated, but pages "
-                         "that read data will error until MongoDB is available.")
+        db_ok = database_ready()
 
         try:
             arch.sync_dependencies()
@@ -231,19 +265,23 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
             elog("WARN", f"   ⚠ Unit test stage failed: {e}")
             log.exception("qa unit stage")
 
-        try:
-            if drawing.get("thread"):
-                if drawing["thread"].is_alive():
-                    elog("INFO", "   🖼 waiting for the remaining background images before browser QA…")
-                drawing["thread"].join(timeout=900)
-            _fill_missing_images(arch, proj_dir, "the pages")
-        except Exception as e:
-            elog("WARN", f"   ⚠ Image completion failed: {e}")
+        # Pictures keep drawing while the app is served and tested. Blocking here
+        # cost the whole run the length of the image queue — one GPU image is
+        # about a minute, so an eight-image plan stalled build, unit tests and
+        # every browser check for eight minutes to avoid a placeholder in a
+        # screenshot. A late picture is a cosmetic gap; a skipped test is not.
+        if drawing.get("thread") and drawing["thread"].is_alive():
+            elog("INFO", "   🖼 images keep drawing in the background — serving "
+                         "and testing continue now")
 
         estep("serve", "active")
         eprog("Starting Next.js…", 90)
+        # One last chance: a database that arrived late still counts.
+        db_ok = db_ok or database_ready()
         start_next(proj_dir)
         wait_for_next()
+        if db_ok:
+            seed_project(arch.plan)
 
         estep("test", "active")
         emit({"type": "test_start"})
@@ -266,6 +304,19 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
                     emit({"type": "test_result", "status": "fail",
                           "msg": "Dev server error", "detail": f[:160]})
                     elog("WARN", f"   ❌ terminal: {f[:110]}")
+
+            # The database can die after Stage 2 said it was up. That is an
+            # infrastructure fault, and handing it to the repair agent spends a
+            # round rewriting application code that is not wrong. Restart the
+            # server and re-read the app before anyone touches a file.
+            if db_ok and database_fault(errors):
+                elog("WARN", "   🍃 the database stopped answering mid-run — "
+                             "restarting it before blaming the app")
+                db_ok = recover_database()
+                if db_ok:
+                    continue
+                errors = [e for e in errors
+                          if not any(m in e for m in _DB_ERROR_MARKERS)]
 
             if not db_ok:
                 errors = [e for e in errors
@@ -378,10 +429,35 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
             elog("WARN", f"   ⚠ API verification stage failed: {e}")
             log.exception("api verification stage")
 
+        # Journeys photograph the app, so give the pictures a last bounded wait
+        # here — after build, unit tests and the runtime/API sweeps have all had
+        # the machine. Whatever is still queued is filled in or left missing;
+        # E2E is not held open for a GPU.
+        try:
+            if drawing.get("thread") and drawing["thread"].is_alive():
+                elog("INFO", f"   🖼 giving the remaining images "
+                             f"{IMAGE_FINAL_WAIT}s before the browser journeys")
+                drawing["thread"].join(timeout=IMAGE_FINAL_WAIT)
+                if drawing["thread"].is_alive():
+                    elog("WARN", "   ⚠ images are still drawing — the journeys "
+                                 "run now and any late picture lands afterwards")
+            _fill_missing_images(arch, proj_dir, "the pages")
+        except Exception as e:
+            elog("WARN", f"   ⚠ Image completion failed: {e}")
+
         e2e_blockers = _e2e_hard_upstream_blockers(runtime_report, api_report)
 
+        # A journey needs a served app, not a green production build. `next
+        # build` can exit non-zero on a crashed worker while every route still
+        # answers 200 under `next dev`, and skipping the browser then throws
+        # away the only evidence that would say what actually works.
         e2e_out = {}
-        if build_ok and not e2e_blockers:
+        serving = _dev_alive()
+        if serving and not e2e_blockers:
+            if not build_ok:
+                elog("WARN", "   ⚠ running the journeys against a served app "
+                             "whose production build is red — a failure here "
+                             "may be the build fault reappearing")
             try:
                 e2e_out = run_qa_e2e_stage(arch, proj_dir, qa, analyzer,
                                            build_ok=build_ok, db_ok=db_ok) or {}
@@ -394,8 +470,8 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
                 label = f"{stage}:{getattr(f, 'code', '')}"
                 if label not in reasons:
                     reasons.append(label)
-            if not build_ok:
-                reasons.insert(0, "build:not-green")
+            if not serving:
+                reasons.insert(0, "app:not-serving")
             reason_text = ", ".join(reasons) or "upstream correctness gate"
             elog("WARN", "   ⛔ End-to-end journeys skipped — hard upstream "
                          "defects remain (" + reason_text + "). Fix the known "
@@ -456,8 +532,10 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
                          f"about whether this app is safe: {e}")
             log.exception("security stage")
 
-        if build_ok:
+        if _dev_alive():
             red = []
+            if not build_ok:
+                red.append("build")
             if not runtime_clean:
                 red.append("runtime")
             if not api_clean:
@@ -475,8 +553,8 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
                 elog("WARN", f"   ⚠ Performance stage failed: {e}")
                 log.exception("perf stage")
         else:
-            elog("INFO", "   ⚡ performance skipped — the build is not green, "
-                         "so there is no app to measure")
+            elog("INFO", "   ⚡ performance skipped — nothing is answering on "
+                         f"port {DEV_PORT}, so there is no app to measure")
 
         # Stage 7: write one final verdict and keep the preview available.
         final_report = flow_report

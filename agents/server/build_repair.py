@@ -1,7 +1,7 @@
 # Repair flow: build -> collect evidence -> patch owned files -> rebuild.
 
 
-def _npm_build_errors(proj_dir: Path, stack: str = "vite"):
+def _npm_build_errors(proj_dir: Path, stack: str = "next"):
     """Return build errors and whether the check reached a conclusion."""
     timeout = NEXT_BUILD_TIMEOUT if stack == "next" else 120
     env = {**os.environ, "CI": "true", "NEXT_TELEMETRY_DISABLED": "1",
@@ -213,6 +213,39 @@ def _analyzer_callbacks() -> dict:
 _DB_ERROR_MARKERS = ("MongoServerSelectionError", "MongoNetworkError",
                      "ECONNREFUSED", "MONGODB_URI", "/api/health",
                      "connect ETIMEDOUT")
+
+# Only the faults that mean "the database is not answering". `/api/health` and
+# `MONGODB_URI` are deliberately absent: a health route can fail for its own
+# reasons, and naming a variable is not a connection failure.
+_DB_DOWN_MARKERS = ("MongoServerSelectionError", "MongoNetworkError",
+                    "ECONNREFUSED", "connect ETIMEDOUT")
+
+
+def database_fault(errors) -> bool:
+    """True when what failed is the database connection, not the app."""
+    text = "\n".join(str(e) for e in (errors or ()))
+    return any(marker in text for marker in _DB_DOWN_MARKERS)
+
+
+def recover_database() -> bool:
+    """Bring MongoDB back mid-run and report whether it answers now.
+
+    A build outlives its database sometimes — mongod is killed, crashes, or
+    was a child of a process that went away. The runtime loop used to hand
+    `ECONNREFUSED 127.0.0.1:27017` to the repair agent as if the generated app
+    had a bug, which spends a repair round rewriting correct code and ends with
+    the same error. Restarting the server is the only repair that can work.
+    """
+    try:
+        MONGO.available = False
+        ok = bool(MONGO.ensure_running())
+    except Exception as e:                                       # noqa: BLE001
+        elog("WARN", f"   ⚠ could not restart MongoDB: {e}")
+        return False
+    elog("INFO" if ok else "WARN",
+         "   🍃 MongoDB is answering again" if ok else
+         "   ⚠ MongoDB is still down — database pages will keep failing")
+    return ok
 
 
 def _filter_db_noise(text: str, db_ok: bool) -> str:

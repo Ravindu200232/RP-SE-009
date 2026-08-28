@@ -30,6 +30,13 @@ SAFE_RE = re.compile(r"[^a-z0-9]+")
 
 GENERATE_TIMEOUT = 600
 
+# Fooocus reports a gallery file before that file is readable, so the fetch
+# polls rather than deciding on its first attempt.
+FETCH_TIMEOUT = 45
+FETCH_POLL = 1.5
+IMAGE_MAGIC = (b"\x89PNG", b"\xff\xd8\xff\xe0", b"\xff\xd8\xff\xe1",
+               b"\xff\xd8\xff\xdb", b"RIFF")
+
 
 class ImageAgent:
     """Version-tolerant Fooocus client that degrades to ``False`` on failure."""
@@ -40,6 +47,7 @@ class ImageAgent:
         self.config_path = config_path or ""
         self.cb = callbacks or {}
         self.enabled = enabled
+        self._fetch_error = ""
         self._payload = None
         self._fn_index = None
         self._gallery_index = None
@@ -179,13 +187,22 @@ class ImageAgent:
         url = self.base_url()
         self._log("INFO", f"   🎨 {out_path.name} — {prompt[:60]}")
         t0 = time.time()
+        self._fetch_error = ""
         data = self._predict(url, args)
         if data is None:
+            # _predict already named the queue/timeout reason; say which image
+            # it cost, or the log shows a generation start with no outcome.
+            self._log("WARN", f"   ⚠ {out_path.name} was not generated "
+                              f"after {time.time() - t0:.0f}s")
             return False
 
         raw = self._first_image(data)
         if not raw:
-            self._log("WARN", "   ⚠ Fooocus returned no image")
+            # Three different faults used to land here as one sentence: a
+            # response shape we could not read, a file that never became
+            # readable, and a failed download all said "returned no image".
+            why = self._fetch_error or "no image field in the Fooocus response"
+            self._log("WARN", f"   ⚠ {out_path.name} — {why}")
             return False
         try:
             out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -322,26 +339,53 @@ class ImageAgent:
         return walk(data)
 
     def _fetch(self, ref: str) -> bytes:
-        """A file Fooocus reported by path — read it, or pull it over HTTP."""
-        p = Path(ref)
-        if p.is_file():
-            try:
-                return p.read_bytes()
-            except OSError:
-                pass
+        """A file Fooocus reported by path — read it, or pull it over HTTP.
+
+        Fooocus names the file in its gallery result before that file is
+        readable, so a single immediate attempt loses images that were in fact
+        generated: the first few succeed while it is idle, then every later one
+        reports nothing. Poll for a short while instead of giving up at once,
+        and keep the last reason so the caller can say what went wrong.
+        """
+        self._fetch_error = ""
         url = self.base_url()
-        if not url:
-            return b""
-        for path in (f"/file={ref}", f"/file/{ref}", ref):
-            try:
-                r = requests.get(url + path if path.startswith("/") else path,
-                                 timeout=60)
-                if r.status_code == 200 and r.content[:4] in (b"\x89PNG", b"\xff\xd8\xff\xe0",
-                                                              b"RIFF"):
-                    return r.content
-            except requests.RequestException:
-                continue
-        return b""
+        deadline = time.time() + FETCH_TIMEOUT
+        attempt = 0
+        while True:
+            attempt += 1
+            p = Path(ref)
+            if p.is_file():
+                try:
+                    body = p.read_bytes()
+                    if body[:4] in IMAGE_MAGIC:
+                        return body
+                    self._fetch_error = f"{p.name} is not image data yet"
+                except OSError as e:
+                    self._fetch_error = f"cannot read {p.name}: {e}"
+            elif not url:
+                self._fetch_error = "no Fooocus address, and the file is not on disk"
+
+            if url:
+                for path in (f"/file={ref}", f"/file/{ref}", ref):
+                    target = url + path if path.startswith("/") else path
+                    try:
+                        r = requests.get(target, timeout=60)
+                    except requests.RequestException as e:
+                        self._fetch_error = f"{type(e).__name__} on {path}"
+                        continue
+                    if r.status_code != 200:
+                        self._fetch_error = f"HTTP {r.status_code} on {path}"
+                    elif r.content[:4] not in IMAGE_MAGIC:
+                        self._fetch_error = f"{path} returned {len(r.content)}B of non-image data"
+                    else:
+                        return r.content
+
+            if time.time() >= deadline:
+                self._fetch_error = (f"{self._fetch_error or 'not readable'} "
+                                     f"after {attempt} attempt(s) over "
+                                     f"{FETCH_TIMEOUT}s")
+                return b""
+            time.sleep(FETCH_POLL)
 
     @staticmethod
     def slug(text: str, limit: int = 40) -> str:

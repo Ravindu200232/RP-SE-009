@@ -1,14 +1,17 @@
 """Turns a user's request into one complete, normalized product plan."""
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
+from xml.sax.saxutils import escape, quoteattr
 
 from agents.core.ollama_client import OllamaClient, max_context
+from agents.features.source_guidance import feature_image_requested
 
 
 log = logging.getLogger("planner")
@@ -26,14 +29,37 @@ FIXED IMPLEMENTATION STACK
 - Every product page, component, seed module, API route, loading/error/empty behavior, and E2E journey must be planned.
 """
 
-VITE_STACK = """\
-FIXED IMPLEMENTATION STACK
-- React 18 + Vite, JavaScript .jsx only; no TypeScript.
-- Tailwind utilities, react-router-dom v6, lucide-react, framer-motion.
-- Browser state plus localStorage only. No server, database, private API, or server authentication.
-- Files live under src/. AgentForge owns package/config/index/main/style defaults.
-- Every product screen, component, state transition, persistence behavior, and E2E journey must be planned.
-"""
+
+
+# One account flow can be planned under any of these names. The planner must
+# not append a second page for a flow the plan already serves, or the app ships
+# duplicate half-built auth screens that compete for the same navigation.
+SIGN_IN_PATHS = frozenset({"/sign-in", "/signin", "/login"})
+SIGN_UP_PATHS = frozenset({"/sign-up", "/signup", "/register"})
+
+# How many times the planner is asked to close its own gaps before the build
+# proceeds with what it has.
+GAP_ROUNDS = 3
+
+
+_PLAN_VOLUME_KEYS = ("requirements", "routes", "file_plan", "site_map",
+                     "capabilities", "tasks")
+
+
+def _plan_volume(plan: dict) -> dict:
+    return {key: len(_list(plan.get(key))) for key in _PLAN_VOLUME_KEYS}
+
+
+def _plan_is_poorer(candidate: dict, current: dict) -> bool:
+    """True when a replanned answer carries less of the product than we hold."""
+    new, old = _plan_volume(candidate), _plan_volume(current)
+    return any(new[key] < old[key] for key in _PLAN_VOLUME_KEYS)
+
+
+def _plan_is_empty(plan: dict) -> bool:
+    """A plan with nothing to build is a failed plan, not a small product."""
+    volume = _plan_volume(plan)
+    return not (volume["routes"] or volume["file_plan"])
 
 
 @dataclass
@@ -43,6 +69,7 @@ class PlanBundle:
     architecture_markdown: str
     design_markdown: str
     raw: str
+    sitemap_xml: str = ""
 
 
 def _text(value: Any, limit: int = 0) -> str:
@@ -59,8 +86,12 @@ def _dict(value: Any) -> dict:
 
 
 def _strings(value: Any, limit: int = 0) -> list[str]:
+    # A model that answers `"exports": "ensureSeeded"` means the one-item list.
+    # Dropping the scalar threw the answer away, so a gap round that asked for
+    # exactly that value could report the same gap forever and never close it.
+    items = _list(value) or ([value] if isinstance(value, (str, int, float)) else [])
     out = []
-    for item in _list(value):
+    for item in items:
         text = _text(item, limit)
         if text and text not in out:
             out.append(text)
@@ -74,6 +105,233 @@ def _records(value: Any) -> list[dict]:
 def _slug(value: str, fallback: str = "agentforge-app") -> str:
     result = re.sub(r"[^a-z0-9]+", "-", _text(value).lower()).strip("-")
     return result[:48].strip("-") or fallback
+
+
+def _xml_attrs(**values) -> str:
+    """Render only the attributes that carry a value."""
+    return "".join(f' {name.replace("_", "-")}={quoteattr(_text(value))}'
+                   for name, value in values.items() if _text(value))
+
+
+def _xml_list(tag: str, item_tag: str, items: Any, indent: str = "    ") -> list[str]:
+    """Render one child list, or nothing when the plan left it empty."""
+    values = _strings(items, 500)
+    if not values:
+        return []
+    return ([f"{indent}<{tag}>"]
+            + [f"{indent}  <{item_tag}>{escape(value)}</{item_tag}>" for value in values]
+            + [f"{indent}</{tag}>"])
+
+
+def render_sitemap_xml(plan: dict) -> str:
+    """One XML document joining every planned page, API and navigation link."""
+    project = _dict(plan.get("project"))
+    ia = _dict(plan.get("information_architecture"))
+    access = _dict(plan.get("roles_and_access"))
+    known = {_text(page.get("path")): page for page in _records(plan.get("site_map"))}
+    pages = [route for route in _records(plan.get("routes"))
+             if _text(route.get("kind")) != "route"]
+    apis = _records(plan.get("api_contracts"))
+
+    lines = ["<sitemap" + _xml_attrs(app=project.get("title"),
+                                     pages=len(pages), apis=len(apis)) + ">",
+             "  <navigation" + _xml_attrs(model=ia.get("navigation_model")) + ">"]
+    for nav in _records(ia.get("global_navigation")):
+        lines.append("    <link" + _xml_attrs(
+            audience=nav.get("audience"), label=nav.get("label"),
+            path=nav.get("path"), testid=nav.get("test_id")) + "/>")
+    for role in _records(access.get("roles")):
+        lines.append("    <home" + _xml_attrs(role=role.get("name"),
+                                              path=role.get("home")) + "/>")
+    lines.append("  </navigation>")
+
+    for page in pages:
+        meta = _dict(known.get(_text(page.get("path"))))
+        lines.append("  <page" + _xml_attrs(
+            path=page.get("path"), file=page.get("file"), kind=page.get("kind"),
+            audience=page.get("audience") or meta.get("audience"),
+            parent=meta.get("parent"), label=meta.get("label")) + ">")
+        for tag, value in (("purpose", page.get("purpose") or meta.get("purpose")),
+                           ("layout", page.get("layout"))):
+            if _text(value):
+                lines.append(f"    <{tag}>{escape(_text(value, 700))}</{tag}>")
+        for tag, item_tag, items in (
+                ("sections", "section", page.get("sections")),
+                ("actions", "action", page.get("actions")),
+                ("states", "state", page.get("states")),
+                ("reads", "collection", page.get("reads")),
+                ("writes", "collection", page.get("writes")),
+                ("reached-from", "entry", meta.get("reached_from")),
+                ("children", "child", meta.get("children")),
+                ("requirements", "req", page.get("requirement_ids"))):
+            lines += _xml_list(tag, item_tag, items)
+        lines.append("  </page>")
+
+    for api in apis:
+        lines.append("  <api" + _xml_attrs(
+            name=api.get("name"), method=api.get("method"), path=api.get("path"),
+            file=api.get("handler_file"), audience=api.get("audience")) + ">")
+        lines += _xml_list("called-from", "file", api.get("called_from"))
+        if _text(api.get("success_effect")):
+            lines.append("    <success>"
+                         + escape(_text(api.get("success_effect"), 500))
+                         + "</success>")
+        lines.append("  </api>")
+
+    lines.append("</sitemap>")
+    return "\n".join(lines) + "\n"
+
+
+DESIGN_ARCHETYPES = (
+    "editorial magazine — type-led asymmetry, a large serif display face, hairline "
+    "rules, captioned imagery, one restrained accent",
+    "soft minimal — generous whitespace, rounded surfaces, a single muted accent, "
+    "quiet type scale, shadow used sparingly",
+    "dark technical — near-black canvas, one luminous accent, dense data surfaces, "
+    "tabular numerals, precise 1px borders",
+    "warm organic — earthy neutrals, humanist type, soft large radii, "
+    "photography-first blocks, gentle grain",
+    "high-contrast graphic — flat colour blocks, hard borders, oversized labels, "
+    "no shadows, deliberate colour clashes",
+    "vivid product — saturated duotone, bold geometric sans, layered cards, "
+    "confident motion, bright empty states",
+    "archival museum — paper-tone canvas, small caps, wide letter-spacing, "
+    "framed imagery, ink-black text",
+    "utility console — compact rows, monospace accents, muted greys with one "
+    "signal colour, table-first composition",
+)
+
+
+def _design_archetype(seed: str) -> str:
+    """A stable but per-app starting direction, so builds stop looking alike."""
+    digest = hashlib.sha256(_text(seed).lower().encode("utf-8")).hexdigest()
+    return DESIGN_ARCHETYPES[int(digest, 16) % len(DESIGN_ARCHETYPES)]
+
+
+SHELL_FILES = (
+    ("app/layout.jsx", "server",
+     "Root shell: import ./globals.css, render <html>/<body>, and wrap "
+     "{children} in the shared Navbar and Footer so every route has the "
+     "same chrome"),
+    ("components/Navbar.jsx", "client",
+     "Global navigation for every route: brand, the planned destinations "
+     "with an active state, a working mobile menu, and session-aware "
+     "actions when the plan has accounts"),
+    ("components/Footer.jsx", "server",
+     "Global footer for every route: brand line, planned link groups and "
+     "closing row"),
+)
+
+
+IMAGE_STYLE = "photographic, natural light, no text, no watermark"
+IMAGE_FIELD_WORDS = ("image", "photo", "picture", "thumbnail", "cover",
+                     "banner", "avatar", "poster")
+AUTH_COLLECTIONS = {"user", "users", "session", "sessions", "account",
+                    "accounts", "verification", "jwks"}
+IMAGE_LIMIT = 12
+SEED_IMAGE_LIMIT = 4
+
+
+def _image_field(model: dict) -> str:
+    """The field a seeded row already keeps its picture in, when it has one."""
+    for field in _records(model.get("fields")):
+        name = _text(field.get("name"), 100)
+        if any(word in name.lower() for word in IMAGE_FIELD_WORDS):
+            return name
+    return ""
+
+
+def _seed_count(model: dict) -> int:
+    """How many seeded rows of this collection deserve their own picture."""
+    digits = re.sub("[^0-9]", "", str(_dict(model.get("seed")).get("count") or ""))
+    return min(int(digits or 0), SEED_IMAGE_LIMIT)
+
+
+def _demo_accounts(accounts: list[dict], roles: list[dict]) -> list[dict]:
+    """Exactly one signable identity per role, so every role can be proved."""
+    out, taken_roles, taken_emails = [], set(), set()
+    for account in accounts:
+        role, email = _text(account["role"]).lower(), account["email"].lower()
+        if role and role not in taken_roles and email not in taken_emails:
+            taken_roles.add(role)
+            taken_emails.add(email)
+            out.append(account)
+    for role in roles:
+        name = _text(role.get("name"), 80)
+        if not name or name.lower() in taken_roles:
+            continue
+        email = f"{_slug(name, 'demo')}@demo.local"
+        if email in taken_emails:
+            continue
+        taken_roles.add(name.lower())
+        taken_emails.add(email)
+        out.append({"email": email, "password": "password123", "role": name,
+                    "name": f"Demo {name.title()}"})
+    return out
+
+
+def _singular(word: str) -> str:
+    """Name one row of a collection so its picture prompt reads naturally."""
+    if word.endswith("ies") and len(word) > 4:
+        return word[:-3] + "y"
+    if word.endswith(("ches", "shes", "sses", "xes", "zes")):
+        return word[:-2]
+    return word[:-1] if word.endswith("s") else word
+
+
+def _plan_images(plan: dict, design: dict, source_input: str) -> list[dict]:
+    """Plan pictures only when asked: banner, poster, auth pages, seeded rows."""
+    if not feature_image_requested(source_input or plan.get("source_input_summary")):
+        return []
+    title = plan["project"]["title"]
+    out, taken = [], set()
+
+    def add(key: str, purpose: str, subject: str, aspect: str) -> None:
+        key = _slug(key, "")
+        if not key or key in taken or len(out) >= IMAGE_LIMIT:
+            return
+        taken.add(key)
+        out.append({"key": key, "purpose": _text(purpose, 300),
+                    "prompt": _text(subject + ", " + IMAGE_STYLE, 400),
+                    "aspect": aspect})
+
+    add("banner", "Hero banner across the top of the public landing page",
+        "wide hero banner for " + title, "banner")
+    add("poster", "Promotional poster panel on the public landing page",
+        "promotional poster for " + title, "poster")
+    access = _dict(plan.get("roles_and_access"))
+    if access.get("authentication_required"):
+        add("login", "Backdrop beside the /sign-in form",
+            "calm sign-in backdrop for " + title, "portrait")
+        if _text(access.get("signup")).lower() == "open":
+            add("signup", "Backdrop beside the /sign-up form",
+                "welcoming sign-up backdrop for " + title, "portrait")
+
+    models = [model for model in _records(plan.get("data_model"))
+              if _text(model.get("collection")).lower() not in AUTH_COLLECTIONS
+              and _seed_count(model)]
+    seeded = [(model, _image_field(model)) for model in models]
+    seeded = [(model, field) for model, field in seeded if field]
+    if models and not seeded:
+        models[0]["fields"].append({
+            "name": "image", "type": "string", "required": False,
+            "rules": "Path of this row's generated picture under /generated"})
+        seeded = [(models[0], "image")]
+    for model, field in seeded:
+        collection = _text(model.get("collection"), 100)
+        one = _singular(collection)
+        for number in range(1, _seed_count(model) + 1):
+            key = _slug(collection + "-" + str(number), "")
+            add(key, "Seeded `" + collection + "` row " + str(number) +
+                ": set its `" + field + "` to /generated/" + key + ".png",
+                one + " for " + title + ", " + _text(model.get("purpose"), 80),
+                "square")
+
+    for extra in _records(design.get("images")):
+        purpose = _text(extra.get("purpose"), 300)
+        add(extra.get("key"), purpose, _text(extra.get("prompt"), 300) or purpose,
+            _text(extra.get("aspect"), 20) or "wide")
+    return out
 
 
 def _runtime_path(file_path: str) -> str:
@@ -158,7 +416,7 @@ class PlannerAgent:
                  stream: Callable | None = None):
         self.client = client
         self.model = model
-        self.stack = "vite" if stack == "vite" else "next"
+        self.stack = "next"
         self.cb = callbacks or {}
         self.think = think
         self.stream = stream
@@ -181,9 +439,7 @@ class PlannerAgent:
             log.info(message)
 
     def _system_prompt(self) -> str:
-        body = PROMPT_PATH.read_text(encoding="utf-8")
-        stack = VITE_STACK if self.stack == "vite" else NEXT_STACK
-        return body + "\n\n" + stack
+        return PROMPT_PATH.read_text(encoding="utf-8") + "\n\n" + NEXT_STACK
 
     def _call(self, messages: list[dict], on_delta: Callable[[str], None]) -> None:
         if self.stream:
@@ -212,6 +468,12 @@ class PlannerAgent:
             "AUTHORITATIVE USER INPUT\n\n" + requirements +
             ("\n\nBUILD CONTEXT (implementation resources/constraints, not extra product requirements)\n\n"
              + context if context and context != requirements else "") +
+            "\n\nSTARTING ART DIRECTION for this app: " +
+            _design_archetype(requirements) +
+            ". Interpret it for this domain and audience — derive the palette, "
+            "type, spacing and composition from it. Do not fall back to a "
+            "generic gold-and-serif luxury look, and do not reuse a direction "
+            "from another product."
             "\n\nCreate the complete JSON plan now. Preserve every stated detail."
         )
         messages = [
@@ -236,11 +498,21 @@ class PlannerAgent:
             self._log("ERROR", "   ❌ Planner returned no JSON object")
             return None
         plan = self.normalize(parsed, requirements)
+        plan, raw = self._close_gaps(messages, plan, raw, requirements)
+        if _plan_is_empty(plan):
+            # Every later stage reads this plan. An empty one builds nothing,
+            # leaves the scaffold placeholder serving, and still passes a
+            # journey that only opens "/" — a green result for no product.
+            self._log("ERROR", "   ❌ The planner produced no routes and no "
+                               "files. Refusing to build from an empty plan — "
+                               "the model's answer was probably truncated.")
+            return None
         markdown = self.render_markdown(plan)
         architecture = "# Architecture\n\n" + self.render_architecture(plan)
         design = "# Product Design\n\n" + self.render_design(plan)
         self._fire("on_file_end", "plan.md", markdown)
-        return PlanBundle(plan, markdown, architecture, design, raw)
+        return PlanBundle(plan, markdown, architecture, design, raw,
+                          render_sitemap_xml(plan))
 
     def normalize(self, raw: dict, source_input: str = "") -> dict:
         """Make plan names consistent without changing its decisions."""
@@ -282,52 +554,180 @@ class PlannerAgent:
         plan["design"] = _dict(plan.get("design"))
         plan["information_architecture"] = _dict(plan.get("information_architecture"))
         plan["roles_and_access"] = self._normalize_access(plan.get("roles_and_access"))
-        plan["site_map"] = self._normalize_site_map(
-            plan.get("site_map"), plan["information_architecture"],
-            plan["roles_and_access"])
+        plan["site_map"] = self._normalize_site_map(plan.get("site_map"))
         plan["api_contracts"] = self._normalize_apis(plan.get("api_contracts"))
-        plan["routes"] = self._normalize_routes(
-            plan.get("routes"), plan["site_map"], plan["api_contracts"])
+        plan["routes"] = self._normalize_routes(plan.get("routes"))
         plan["data_model"] = self._normalize_data(plan.get("data_model"))
         plan["capabilities"] = self._normalize_capabilities(plan.get("capabilities"))
         plan["architecture"] = _dict(plan.get("architecture"))
         plan["e2e_plan"] = self._normalize_e2e(plan.get("e2e_plan"))
         plan["file_plan"] = self._normalize_files(
-            plan.get("file_plan"), plan["routes"], plan["api_contracts"],
-            plan["capabilities"], plan["roles_and_access"])
+            plan.get("file_plan"), plan["routes"])
         plan["tasks"] = self._normalize_tasks(plan.get("tasks"), plan["file_plan"])
         plan["dependencies"] = self._normalize_dependencies(plan.get("dependencies"))
         plan["definition_of_done"] = _strings(plan.get("definition_of_done"), 500)
-        self._compatibility_views(plan)
+        self._compatibility_views(plan, source_input)
         return plan
 
-    def _normalize_site_map(self, value: Any,
-                            information_architecture: dict | None = None,
-                            access: dict | None = None) -> list[dict]:
+    def _close_gaps(self, messages: list[dict], plan: dict, raw: str,
+                    requirements: str) -> tuple[dict, str]:
+        """Send the planner its own holes until it reports a complete plan.
+
+        Only the planner writes plan content, so an incomplete first answer is
+        answered by asking again rather than by filling the hole in Python.
+        """
+        for attempt in range(1, GAP_ROUNDS + 1):
+            gaps = self.plan_gaps(plan)
+            if not gaps:
+                if attempt > 1:
+                    self._log("INFO", "   ✅ Planner closed every gap")
+                return plan, raw
+            self._log("WARN", f"   🧩 {len(gaps)} gap(s) in the plan — asking "
+                              f"the planner to complete it "
+                              f"({attempt}/{GAP_ROUNDS})")
+            for gap in gaps[:8]:
+                self._log("WARN", f"      • {gap}")
+
+            messages = messages + [
+                {"role": "assistant", "content": raw},
+                {"role": "user", "content":
+                    "That plan is incomplete. Every item below is a hole in "
+                    "your own plan, not a new requirement:\n\n"
+                    + "\n".join(f"- {gap}" for gap in gaps)
+                    + "\n\nKeep every decision you already made. Add exactly "
+                      "what is missing, with the same quality as the rest: real "
+                      "purpose, sections, actions, states, requirement links and "
+                      "journey coverage — never a placeholder. Return the "
+                      "COMPLETE JSON plan again as one raw JSON object."},
+            ]
+            chunks = []
+            try:
+                self._call(messages, chunks.append)
+            except Exception as exc:
+                self._log("WARN", f"   ⚠ Gap round failed: {exc}")
+                return plan, raw
+            reply = "".join(chunks)
+            parsed = _json_object(reply)
+            if not parsed:
+                self._log("WARN", "   ⚠ Gap round returned no JSON object")
+                return plan, raw
+
+            # A retry answers with the WHOLE plan, so a truncated or partial
+            # reply parses into a smaller plan than the one already in hand.
+            # Accepting it silently trades a real plan for an empty one and
+            # every later stage then builds nothing, so only an answer that is
+            # genuinely more complete replaces what we have.
+            candidate = self.normalize(parsed, requirements)
+            if _plan_is_poorer(candidate, plan):
+                self._log("WARN", "   ⚠ the gap round came back smaller than "
+                                  "the plan it was fixing — keeping the fuller "
+                                  "plan and stopping here")
+                return plan, raw
+            plan, raw = candidate, reply
+
+        left = self.plan_gaps(plan)
+        if left:
+            self._log("WARN", f"   ⚠ {len(left)} gap(s) survived "
+                              f"{GAP_ROUNDS} planning rounds")
+        return plan, raw
+
+    def plan_gaps(self, plan: dict) -> list[str]:
+        """Every hole the planner left, phrased so the planner can close it.
+
+        This only reads the plan against itself. Nothing here writes a page,
+        route, file or task: a gap goes back to the planner, because a page
+        invented in Python arrives with no purpose, sections, requirements or
+        E2E coverage and quietly competes with the one the planner meant.
+        """
+        gaps = []
+        access = _dict(plan.get("roles_and_access"))
+        pages = [item for item in plan.get("site_map") or []
+                 if _text(item.get("type") or "page").lower() == "page"]
+        page_paths = {_text(item.get("path")) for item in pages}
+        route_paths = {_text(item.get("path")) for item in plan.get("routes") or []}
+        route_files = {_text(item.get("file")) for item in plan.get("routes") or []}
+        planned_files = {_text(item.get("path")) for item in plan.get("file_plan") or []}
+        assigned = {_text(file.get("path"))
+                    for task in plan.get("tasks") or []
+                    for file in task.get("files") or []}
+
+        for label, aliases, required in (
+            ("sign-in", SIGN_IN_PATHS, bool(access.get("authentication_required"))),
+            ("sign-up", SIGN_UP_PATHS,
+             _text(access.get("signup")).lower() == "open"),
+        ):
+            if required and not (page_paths & aliases):
+                gaps.append(
+                    f"roles_and_access needs a {label} flow, but no site_map "
+                    f"page serves one. Add the page you intend (for example "
+                    f"/{label}) with its route, file and journey.")
+
+        for nav in _records(_dict(plan.get("information_architecture"))
+                            .get("global_navigation")):
+            path = _text(nav.get("path"))
+            if (path.startswith("/") and not path.startswith("/api/")
+                    and path not in page_paths):
+                gaps.append(
+                    f"global_navigation links to {path}, but no site_map page "
+                    f"serves it. Add that page or drop the link.")
+
+        for item in pages:
+            path = _text(item.get("path"))
+            if path and path not in route_paths:
+                gaps.append(f"site_map page {path} has no routes entry naming "
+                            f"its file.")
+
+        for api in plan.get("api_contracts") or []:
+            handler = _text(api.get("handler_file"))
+            if handler and handler not in route_files:
+                gaps.append(
+                    f"api_contracts {_text(api.get('method'))} "
+                    f"{_text(api.get('path'))} has no routes entry for "
+                    f"{handler}.")
+
+        for item in plan.get("routes") or []:
+            file = _text(item.get("file"))
+            if file and file not in planned_files:
+                gaps.append(f"routes entry {_text(item.get('path'))} owns "
+                            f"{file}, but file_plan does not plan it.")
+
+        for capability in plan.get("capabilities") or []:
+            for file in capability.get("files") or []:
+                if _text(file) and _text(file) not in planned_files:
+                    gaps.append(
+                        f"capability {_text(capability.get('id'))} names "
+                        f"{_text(file)}, but file_plan does not plan it.")
+
+        for path, _kind, purpose in SHELL_FILES:
+            if path not in planned_files:
+                gaps.append(f"file_plan has no {path}. {purpose}.")
+
+        seeds = bool(access.get("demo_accounts")) or any(
+            _seed_count(model) for model in plan.get("data_model") or [])
+        if seeds:
+            seed = next((item for item in plan.get("file_plan") or []
+                         if _text(item.get("path")) == "lib/seed.js"), None)
+            if seed is None:
+                gaps.append(
+                    "the plan seeds demo accounts or rows, but file_plan has "
+                    "no lib/seed.js. AgentForge calls its ensureSeeded export, "
+                    "so plan that file exporting ensureSeeded.")
+            elif "ensureSeeded" not in (seed.get("exports") or []):
+                gaps.append(
+                    'the file_plan entry whose path is "lib/seed.js" needs '
+                    '"exports": ["ensureSeeded"] — a JSON array on that entry, '
+                    "not prose in its purpose or contracts. AgentForge calls "
+                    "that exact name through /api/seed.")
+
+        for path in sorted(planned_files - assigned):
+            if path:
+                gaps.append(f"file_plan plans {path}, but no task builds it.")
+
+        return gaps
+
+    def _normalize_site_map(self, value: Any) -> list[dict]:
         out = []
         source = _records(value)
-        known = {_text(item.get("path")) for item in source}
-        for path, required in (
-            ("/sign-in", bool((access or {}).get("authentication_required"))),
-            ("/sign-up", _text((access or {}).get("signup")).lower() == "open"),
-        ):
-            if required and path not in known:
-                label = path[1:].replace("-", " ").title()
-                source.append({"path": path, "parent": "/", "label": label,
-                               "type": "page", "audience": "PUBLIC",
-                               "purpose": f"Serve the {label} account flow"})
-                known.add(path)
-        for nav in _records((information_architecture or {}).get("global_navigation")):
-            path = _text(nav.get("path"))
-            if path.startswith("/") and not path.startswith("/api/") and path not in known:
-                source.append({
-                    "path": path, "parent": "/" if path != "/" else "",
-                    "label": nav.get("label"), "type": "page",
-                    "audience": nav.get("audience"),
-                    "purpose": f"Serve the {nav.get('label') or path} navigation destination",
-                    "reached_from": [f"global navigation {nav.get('label') or path}"],
-                })
-                known.add(path)
         for item in source:
             path = _text(item.get("path"))
             if not path:
@@ -343,20 +743,9 @@ class PlannerAgent:
             })
         return out
 
-    def _normalize_routes(self, value: Any,
-                          site_map: list[dict] | None = None,
-                          apis: list[dict] | None = None) -> list[dict]:
+    def _normalize_routes(self, value: Any) -> list[dict]:
         out = []
         source = _records(value)
-        known_files = {_text(item.get("file")).replace("\\", "/")
-                       for item in source}
-        for api in apis or []:
-            file = api.get("handler_file") or ""
-            if file and file not in known_files:
-                source.append({
-                    **api, "file": file, "kind": "route", "purpose": api["name"],
-                })
-                known_files.add(file)
         for item in source:
             path = _text(item.get("path"))
             file = _text(item.get("file")).replace("\\", "/").lstrip("./")
@@ -377,25 +766,9 @@ class PlannerAgent:
                 "sections": _strings(item.get("sections"), 500),
                 "actions": _strings(item.get("actions"), 500),
                 "states": _strings(item.get("states"), 100),
+                "layout": _text(item.get("layout"), 700),
                 "requirement_ids": _strings(item.get("requirement_ids"), 40),
             })
-
-        known_paths = {item["path"] for item in out}
-        for page in site_map or []:
-            path = _text(page.get("path"))
-            kind = _text(page.get("type") or "page").lower()
-            file = _app_file(path)
-            if kind != "page" or not file or path in known_paths:
-                continue
-            out.append({
-                "path": path, "file": file, "kind": "server",
-                "audience": _text(page.get("audience") or "PUBLIC", 100),
-                "purpose": _text(page.get("purpose") or page.get("label"), 600),
-                "reads": [], "writes": [],
-                "sections": [page.get("label")] if page.get("label") else [],
-                "actions": [], "states": [], "requirement_ids": [],
-            })
-            known_paths.add(path)
         return out
 
     def _normalize_data(self, value: Any) -> list[dict]:
@@ -441,11 +814,13 @@ class PlannerAgent:
                     "role": _canonical_actor(account.get("role"), "user"),
                     "name": _text(account.get("name") or "Demo User", 120),
                 })
+        required = bool(access.get("authentication_required"))
         return {
-            "authentication_required": bool(access.get("authentication_required")),
+            "authentication_required": required,
             "signup": _text(access.get("signup") or "not-applicable", 30),
             "signup_role": _text(access.get("signup_role"), 80),
-            "roles": roles, "demo_accounts": accounts,
+            "roles": roles,
+            "demo_accounts": _demo_accounts(accounts, roles) if required else accounts,
         }
 
     def _normalize_apis(self, value: Any) -> list[dict]:
@@ -528,44 +903,10 @@ class PlannerAgent:
             "failure_evidence": _strings(e2e.get("failure_evidence"), 400),
         }
 
-    def _normalize_files(self, value: Any, routes: list[dict],
-                         apis: list[dict], capabilities: list[dict],
-                         access: dict | None = None) -> list[dict]:
+    def _normalize_files(self, value: Any, routes: list[dict]) -> list[dict]:
         route_by_file = {item["file"]: item for item in routes}
         out, seen = [], set()
         source = _records(value)
-        for route in routes:
-            if route["file"] not in {str(item.get("path") or "") for item in source}:
-                source.append({**route, "path": route["file"]})
-        known = {str(item.get("path") or "") for item in source}
-        for api in apis:
-            path = api.get("handler_file") or ""
-            if path and path not in known:
-                source.append({
-                    "path": path, "kind": "route", "purpose": api.get("name"),
-                    "requirements": api.get("requirement_ids"),
-                    "contracts": [api.get("name")],
-                    "done_when": [api.get("success_effect")],
-                })
-                known.add(path)
-        for capability in capabilities:
-            for path in capability.get("files") or []:
-                if path and path not in known:
-                    source.append({
-                        "path": path, "kind": "client" if path.endswith(".jsx") else "server",
-                        "purpose": capability.get("behavior"),
-                        "requirements": capability.get("requirement_ids"),
-                        "done_when": capability.get("proof_points"),
-                    })
-                    known.add(path)
-        if (access or {}).get("demo_accounts") and "lib/seed.js" not in known:
-            source.append({
-                "path": "lib/seed.js", "kind": "server",
-                "purpose": "Idempotently create all planned data and Better Auth demo credential accounts",
-                "contracts": ["Export ensureSeeded; await ensureDemoAccounts before first data read"],
-                "done_when": ["Every demo signs in with its exact role; seeded data is queryable"],
-            })
-            known.add("lib/seed.js")
         for item in source:
             path = _text(item.get("path")).replace("\\", "/").lstrip("./")
             if not path or path in seen:
@@ -585,6 +926,7 @@ class PlannerAgent:
                 "writes": _strings(item.get("writes") or route.get("writes"), 100),
                 "sections": _strings(item.get("sections") or route.get("sections"), 500),
                 "actions": _strings(item.get("actions") or route.get("actions"), 500),
+                "layout": _text(item.get("layout") or route.get("layout"), 700),
                 "contracts": _strings(item.get("contracts"), 120),
                 "done_when": _strings(item.get("done_when"), 500),
             })
@@ -614,16 +956,6 @@ class PlannerAgent:
                              if isinstance(item.get("done_when"), list)
                              else [_text(item.get("done_when"), 500)] if item.get("done_when") else [],
             })
-        loose = [item for item in files if item["path"] not in assigned]
-        if loose:
-            out.append({
-                "id": len(out) + 1, "title": "Complete remaining planned files",
-                "goal": "Implement every file in the approved file graph.",
-                "requirement_ids": sorted({rid for item in loose for rid in item.get("requirements", [])}),
-                "files": loose,
-                "depends_on": [out[-1]["id"]] if out else [],
-                "done_when": ["Every listed file fulfills its plan contract."],
-            })
         return out
 
     def _normalize_dependencies(self, value: Any) -> list[dict]:
@@ -637,7 +969,7 @@ class PlannerAgent:
                 out.append({"name": name, "reason": reason})
         return out
 
-    def _compatibility_views(self, plan: dict) -> None:
+    def _compatibility_views(self, plan: dict, source_input: str = "") -> None:
         access = plan["roles_and_access"]
         plan["signup_role"] = access.get("signup_role") or ""
         plan["demo_accounts"] = access.get("demo_accounts") or []
@@ -645,7 +977,7 @@ class PlannerAgent:
                               for role in access.get("roles") or []
                               if role.get("name") and role.get("home")}
         design = plan.get("design") or {}
-        plan["images"] = _records(design.get("images"))
+        plan["images"] = _plan_images(plan, design, source_input)
         plan["look_and_feel"] = _text(design.get("direction") or design.get("mood"))
         plan["phases"] = []
         for task in plan.get("tasks") or []:
@@ -733,6 +1065,8 @@ class PlannerAgent:
                 lines.append(f"\n**`{row['path']}` sections:** " + "; ".join(row["sections"]))
             if row["actions"]:
                 lines.append(f"\n**`{row['path']}` actions:** " + "; ".join(row["actions"]))
+            if row.get("layout"):
+                lines.append(f"\n**`{row['path']}` layout:** " + row["layout"])
         lines += ["", "## Data Model", ""]
         for model in plan["data_model"]:
             lines += [f"### `{model['collection']}`", "", model["purpose"] or "Application data", ""]
@@ -746,6 +1080,12 @@ class PlannerAgent:
                   f"**Sign-up:** {plan['roles_and_access']['signup']}", ""]
         for role in plan["roles_and_access"]["roles"]:
             lines.append(f"- **{role['name']}** → `{role['home']}` — " + "; ".join(role["permissions"]))
+        accounts = plan["roles_and_access"]["demo_accounts"]
+        if accounts:
+            lines += ["", "### Demo Accounts", "", "| Email | Password | Role |",
+                      "|---|---|---|"]
+            for account in accounts:
+                lines.append(f"| {account['email']} | {account['password']} | {account['role']} |")
         lines += ["", "## API Contracts", ""]
         for api in plan["api_contracts"]:
             lines += [f"### {api['method']} `{api['path']}` — {api['name']}", "",
@@ -798,6 +1138,13 @@ class PlannerAgent:
         lines += ["", "### Responsive and accessibility", ""]
         lines += _bullets(design.get("responsive"), "Follow the route layouts")
         lines += _bullets(design.get("accessibility"), "Use semantic accessible controls")
+        images = _records(plan.get("images"))
+        if images:
+            lines += ["", "### Images", ""]
+            for item in images:
+                lines.append(f"- `/generated/{item.get('key')}.png` "
+                             f"({item.get('aspect') or 'landscape'}) — "
+                             f"{_text(item.get('purpose'), 300)}")
         return "\n".join(lines).strip()
 
     def render_architecture(self, plan: dict) -> str:
@@ -818,44 +1165,6 @@ class PlannerAgent:
         return "\n".join(lines).strip()
 
 
-class RefinerAgent:
-    """Keep the original Vite planning interface working."""
-
-    def __init__(self, ollama_url: str, model: str):
-        self.client = OllamaClient(ollama_url)
-        self.model = model
-
-    def refine(self, raw_idea: str) -> str:
-        planner = PlannerAgent(self.client, self.model, stack="vite")
-        bundle = planner.create(raw_idea)
-        if not bundle:
-            return ""
-        plan = bundle.data
-        project = plan["project"]
-        design = plan.get("design") or {}
-        features = [cap["behavior"] for cap in plan.get("capabilities") or []]
-        routes = [route["path"] for route in plan.get("routes") or []]
-        spec = {
-            "project_name": project["name"],
-            "site_type": project.get("product_type") or "app",
-            "strategy": "react-app" if len(routes) <= 1 else "react-sections",
-            "title": project["title"],
-            "tagline": _dict(design.get("brand")).get("tagline") or project["primary_goal"],
-            "description": project["summary"],
-            "color_scheme": json.dumps(design.get("colors") or {}, ensure_ascii=False),
-            "style": design.get("direction") or design.get("mood") or "modern",
-            "brand_name": _dict(design.get("brand")).get("name") or project["title"],
-            "target_audience": ", ".join(project.get("target_audiences") or []),
-            "key_features": features,
-            "component_details": "\n".join(plan.get("architecture", {}).get("component_tree") or []),
-            "special_instructions": bundle.markdown,
-            "sections": [entry.get("label") for entry in plan.get("site_map") or [] if entry.get("type") == "page"],
-            "design": design,
-            "features": features,
-            "plan": plan,
-            "_raw_idea": raw_idea,
-        }
-        return json.dumps(spec, indent=2, ensure_ascii=False)
 
 
-__all__ = ["PlanBundle", "PlannerAgent", "RefinerAgent", "PROMPT_PATH"]
+__all__ = ["PlanBundle", "PlannerAgent", "PROMPT_PATH"]

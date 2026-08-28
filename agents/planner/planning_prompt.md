@@ -61,6 +61,26 @@ metrics, duplicate claims, decorative bands, and filler copy; vary composition
 while preserving one token system, narrative voice, and action hierarchy.
 Operational dashboards and focused forms should use the density their job needs.
 
+## App shell, navigation and page layout
+
+Plan one product, not a pile of pages:
+
+- Plan exactly one shell. `app/layout.jsx` renders `components/Navbar.jsx`,
+  `{children}` inside a single content container, and `components/Footer.jsx`.
+  No page declares its own `<html>`, `<body>`, header, or footer.
+- The navbar carries the brand, every `global_navigation` destination this
+  audience can reach, the active state of the current route, one primary
+  action, a working mobile menu, and account controls only when accounts exist.
+- Give every route a `layout`: which shell regions it fills, its section order
+  top to bottom, the desktop grid or column split, what dominates above the
+  fold, and how that composition collapses at 360px.
+- List in `sections` every block the page renders, in render order. One thin
+  block is a planning failure; a page carries the depth its job needs.
+- Point every navbar, footer, card, row, breadcrumb, and CTA link at a planned
+  route, and make every planned route reachable from the shell or a page control.
+- Reuse one component vocabulary across pages — the same button, card, table,
+  form field, section header, and empty state — so the app reads as one system.
+
 ## Required output
 
 Return exactly one raw JSON object. No Markdown fence, commentary, preface, or
@@ -128,6 +148,12 @@ empty string only when the concept genuinely does not apply.
       "grid": "responsive grid rules",
       "navigation": "header/sidebar/mobile behavior"
     },
+    "shell": {
+      "navbar": "brand, links, active state, primary action, account controls",
+      "mobile_nav": "how the menu opens, closes, and returns focus",
+      "footer": "link groups and closing row",
+      "content_container": "max width, padding, and vertical rhythm every page fills"
+    },
     "composition": {
       "hierarchy": "How scale, contrast, whitespace, and action priority guide the eye",
       "gestalt": "How proximity, similarity, common region, and continuity group content",
@@ -186,6 +212,7 @@ empty string only when the concept genuinely does not apply.
       "reads": ["exact collection names"],
       "writes": ["exact collection names"],
       "sections": ["every visual block from top to bottom"],
+      "layout": "shell regions filled, section order, desktop grid, above-the-fold focus, 360px collapse",
       "actions": ["visible control, effect, destination, and testid when unique"],
       "states": ["loading", "empty", "error", "success"],
       "requirement_ids": ["REQ-001"]
@@ -292,6 +319,7 @@ empty string only when the concept genuinely does not apply.
       "reads": ["collections"],
       "writes": ["collections"],
       "sections": ["visual sections"],
+      "layout": "how this file composes inside the shell",
       "actions": ["working actions"],
       "contracts": ["api/navigation contract names"],
       "done_when": ["file-level observable acceptance"]
@@ -330,6 +358,10 @@ Perform this silently before emitting JSON:
   boundary where needed, UI states, and a final E2E assertion.
 - Give every named page one `site_map` item, `routes` entry, page file, and task;
   add access, sign-in, sign-up, and role-home pages only when requested access needs them.
+- Plan the shell first: layout, navbar, footer, the links they carry, and the
+  container every page fills; then compose each page inside it.
+- Give every page a `layout`, ordered `sections`, and a way in and out through
+  the shell or a page control.
 - Give every navigation link, button, form, row action, and redirect a real
   destination plus loading, empty, validation, error, success, and retry states.
 - Give every caller exactly one matching API contract and handler with identical
@@ -337,6 +369,10 @@ Perform this silently before emitting JSON:
 - Give requested CRUD, moderation, booking/payment, profile, and admin operations separate contracts.
 - When auth is required, plan a working Better Auth sign-in page; when signup is
   `open`, plan sign-up using `signUp.email`, its route, navigation, and E2E proof.
+  Nothing downstream invents these pages, so a missing one is a missing feature.
+  Choose one path per flow, such as `/sign-in` or `/login` but never both, and
+  use that exact path in `site_map`, `routes`, `file_plan`, navigation, redirects
+  and journeys.
 - When access exists, guard protected pages and APIs at server boundaries; divide
   tasks by exact role workflow with its home, permissions, files, guard, and proof.
 - Plan exact collection/field/index vocabulary, ObjectId/date handling, and an
@@ -344,5 +380,30 @@ Perform this silently before emitting JSON:
   scaffold `ensureDemoAccounts` and return the planned roles after sign-in.
 - Cover every `e2e=true` capability with persisted proof; fix responsive and accessibility states.
 - Emit no stub, deferred phase, fake UI data, dead action, or uncovered fact.
+
+## Completeness check before you answer
+
+You are the only author of this plan. Nothing downstream invents a page, route,
+file or task for you, so anything you leave out is simply absent from the built
+app. Walk this list against your own JSON and close every gap before answering:
+
+1. Every `site_map` page of type `page` has a `routes` entry naming its file.
+2. Every `information_architecture.global_navigation` link points at a
+   `site_map` page you planned.
+3. `authentication_required` true means one sign-in page exists — pick one path
+   and use it everywhere. `signup: open` means one sign-up page exists likewise.
+4. Every `api_contracts` item has a `routes` entry for its `handler_file`.
+5. Every `routes` entry's file appears in `file_plan`.
+6. Every path named in a capability's `files` appears in `file_plan`.
+7. `file_plan` contains the shared shell: `app/layout.jsx` importing
+   `./globals.css` and wrapping `{children}` in `components/Navbar.jsx` and
+   `components/Footer.jsx`, with the navigation carrying your planned pages.
+8. When you seed demo accounts or rows, `file_plan` contains `lib/seed.js` and
+   lists `ensureSeeded` in its `exports` — AgentForge calls that exact name.
+9. Every `file_plan` path is built by exactly one `tasks` entry.
+
+Anything you add to close a gap gets the same care as the rest of the plan:
+real purpose, sections, actions, states, requirement links and journey
+coverage. Never close a gap with a placeholder.
 
 The final JSON must be internally consistent on the first response.

@@ -119,6 +119,15 @@ def check_default_imports(files: dict) -> list:
     return out
 
 
+# AgentForge writes these modules itself and refuses every rewrite of them, so
+# "add the missing export" is advice the repair pass is not allowed to take.
+# Telling the model to do it just burns rounds on a write that is always
+# rejected, and the build ends with the same unresolved import it started with.
+SCAFFOLD_OWNED_MODULES = frozenset({
+    "@/lib/mongodb", "@/lib/auth", "@/lib/auth-client",
+})
+
+
 def group_messages(broken: list) -> list:
     """Group missing names from the same file into one helpful message."""
     groups: dict = {}
@@ -135,6 +144,12 @@ def group_messages(broken: list) -> list:
 
             out.append(f"{head} Use one of those instead (NextResponse.json(…) "
                        f"is almost always what is meant).")
+        elif module in SCAFFOLD_OWNED_MODULES:
+            out.append(f"{head} {module} is owned by AgentForge and cannot gain "
+                       f"exports — rewrite {importer} against the names it "
+                       f"already has. To write data, await getCollection(name) "
+                       f"and call the driver's own insertOne/updateOne/"
+                       f"deleteOne on it.")
         else:
             out.append(f"{head} Either add the missing export to {module} or "
                        f"use one that exists — do not rename or remove the "

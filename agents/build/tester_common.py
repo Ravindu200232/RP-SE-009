@@ -26,30 +26,8 @@ def etest(status, msg, detail=""):
         _emit({"type": "test_result", "status": status, "msg": msg, "detail": detail})
 
 
-_VITE_NOISE = [
-    "favicon", "Warning:", "DevTools", "Download the React",
-    "ReactDOM.render", "StrictMode", "[HMR]", "[vite]", "vite",
-    "hot update", "connecting", "react-refresh",
-    "net::ERR_", "Failed to load resource",
-    "Cross-Origin", "Content-Security-Policy",
-]
-_VITE_SIGNALS = [
-    "is not defined", "is not a function",
-    "Cannot read prop", "Cannot read properties",
-    "SyntaxError", "ReferenceError", "TypeError",
-    "Failed to resolve import", "does not provide an export",
-]
 
 STACKS = {
-    "vite": {
-        "label": "Vite",
-        "ready_timeout": 30, "req_timeout": 5, "poll": 1.5,
-        "goto_timeout": 30000, "mount_timeout": 8000,
-        "mount_selectors": ["#root > *", "#app > *", "canvas", "svg", "main"],
-        "overlay_tag": "vite-error-overlay",
-        "noise": _VITE_NOISE,
-        "signals": _VITE_SIGNALS,
-    },
     "next": {
         "label": "Next.js",
 
@@ -102,15 +80,6 @@ _OVERLAY_JS = """(re) => {
     return '';
 }"""
 
-_VITE_OVERLAY_JS = """() => {
-    const ov = document.querySelector('vite-error-overlay');
-    if (ov && ov.shadowRoot) {
-        const el = ov.shadowRoot.querySelector('.message-body,.message,pre,.err-message');
-        return el ? el.textContent.trim().slice(0,600)
-                  : ov.shadowRoot.textContent.trim().slice(0,600);
-    }
-    return '';
-}"""
 
 
 def overlay_error(page, stack: str = "next") -> str:
@@ -121,9 +90,7 @@ def overlay_error(page, stack: str = "next") -> str:
     signed-in session, and two copies of the shadow-DOM traversal would drift.
     """
     try:
-        if stack == "next":
-            return page.evaluate(_OVERLAY_JS, OVERLAY_SIGNAL_RE) or ""
-        return page.evaluate(_VITE_OVERLAY_JS) or ""
+        return page.evaluate(_OVERLAY_JS, OVERLAY_SIGNAL_RE) or ""
     except Exception:
         return ""
 
@@ -134,11 +101,11 @@ class TesterAgentBase:
     MAX_EXTRA_ROUTES = 20
 
     def __init__(self, project_dir: Path, port: int = 5173,
-                 stack: str = "vite", smoke_only: bool = False):
+                 stack: str = "next", smoke_only: bool = False):
         self.project_dir = project_dir
         self.port        = port
         self.base_url    = f"http://localhost:{port}"
-        self.stack       = stack if stack in STACKS else "vite"
+        self.stack       = stack if stack in STACKS else "next"
         self.cfg         = STACKS[self.stack]
         self.smoke_only  = bool(smoke_only)
 

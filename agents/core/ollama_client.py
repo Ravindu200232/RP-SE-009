@@ -162,9 +162,6 @@ class OllamaClient:
             return CLOUD_HOST, headers
         return self.host, headers
 
-    def describes_cloud(self, model: str) -> bool:
-        return is_cloud_model(model)
-
     @staticmethod
     def _rejected_think(status: int, text: str) -> bool:
         """Check whether the model rejected the thinking option."""
@@ -357,9 +354,6 @@ class OllamaClient:
             if k.endswith("context_length") and isinstance(v, int):
                 return v
         return 0
-
-    def supports_tools(self, model: str) -> bool:
-        return "tools" in ((self.show(model) or {}).get("capabilities") or [])
 
     def _entry(self, model_id: str, cloud: bool, probe: bool = True) -> dict:
         ctx = self.model_context(model_id) if probe else 0

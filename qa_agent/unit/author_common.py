@@ -198,6 +198,33 @@ pins them fails on a component that works.
     expect(el).toHaveStyle({ color: 'red' })                 // ✗ styling
     expect(el).toHaveClass('bg-indigo-600')                  // ✗ class names
 
+THE SHELL COMPONENTS ARE THE WORST OFFENDERS. Every app has a Navbar and a
+Footer, they are almost entirely copy, and a test of them written from the
+plan instead of the file fails forever. Their contract is WHERE THE LINKS GO
+and WHICH ONES APPEAR FOR THIS SESSION — not the brand string, not the link
+wording, not the order.
+
+    // ✓ the contract: destinations, and what the session changes
+    __setUser(null)
+    render(<Navbar />)
+    expect(screen.getByRole('link', { name: /sign in|log ?in/i })).toBeInTheDocument()
+    const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'))
+    expect(hrefs).toContain('/bookings')
+
+    // ✗ invented from the plan — the file may render "Stays", or a logo
+    expect(screen.getByText('LuxeStay Boutique Hotel')).toBeVisible()
+    expect(screen.getByText('My Reservations')).toBeVisible()
+
+Read the component's JSX and copy the string out of it, or assert the href.
+Never type a caption you have not seen in the file you are testing.
+
+SEED ONE ROW WHEN YOU ASSERT ON ONE ROW. Two seeded rooms both containing
+"Deluxe" make `getByText(/deluxe/i)` throw "found multiple elements", and the
+case fails on the fixture rather than the component. Either seed a single
+distinctive row for that assertion, or count instead:
+
+    expect(screen.getAllByRole('listitem')).toHaveLength(2)   // ✓ unambiguous
+
 Measured: on a real build every remaining component-test failure was one of
 those three — an exact heading, a Tailwind class, a decorative string. Not one
 was a real defect. If a component's only job is to render a label, it does not

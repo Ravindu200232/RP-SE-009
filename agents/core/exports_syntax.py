@@ -1,5 +1,4 @@
 """Checks whether generated JavaScript can be read by the build tools."""
-from agents.core.exports_common import *
 
 _SYNTAX_SCRIPT = r"""
 const fs = require('fs');

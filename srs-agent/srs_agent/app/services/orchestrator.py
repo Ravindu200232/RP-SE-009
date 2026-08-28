@@ -248,7 +248,7 @@ async def _sources_by_id(project_id: str, ids: list[str] | None) -> list[dict]:
 async def _next_question(session: dict) -> dict | None:
     pending = clarify.pending(session)
     if pending:
-        return _remember(session, clarify.question(pending))
+        return _remember(session, await clarify.question(pending))
     return _remember(session, await interview.ask(session))
 
 

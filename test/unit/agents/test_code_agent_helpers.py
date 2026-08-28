@@ -80,6 +80,23 @@ class ExportContractTests(unittest.TestCase):
         self.assertIn("one, two", messages[0])
         self.assertIn("exports only: ok", messages[0])
 
+    def test_a_scaffold_module_is_never_told_to_grow_an_export(self):
+        """AgentForge refuses to rewrite lib/mongodb.js, so that repair is a trap.
+
+        Suggesting it burned every repair round on a write that is always
+        rejected, and the build ended on the import it started with.
+        """
+        broken = [BrokenImport("app/api/bookings/route.js", 3, "insertDocument",
+                               "@/lib/mongodb", "@/lib/mongodb",
+                               ["ObjectId", "getCollection", "getDb", "serialize"])]
+
+        message = group_messages(broken)[0]
+
+        self.assertNotIn("add the missing export", message)
+        self.assertIn("cannot gain exports", message)
+        self.assertIn("getCollection", message)
+        self.assertIn("insertOne", message)
+
     def test_syntax_message_contains_file_line_and_repair_context(self):
         message = syntax_messages([
             {"path": "components/Card.jsx", "line": 14, "message": "Unexpected }"}

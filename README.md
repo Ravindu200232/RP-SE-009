@@ -84,10 +84,9 @@ The Studio is served through Electron at `http://localhost:3000/__agentforge`; t
 agentforge/
 ├── server.py                    stable backend entrypoint
 ├── server_runtime.py            ordered server-runtime assembler
-├── pipeline.py                  direct pipeline entrypoint
 ├── agents/
 │   ├── planner/                 requirements → design/routes/architecture/E2E plan
-│   ├── build/                   generation + browser/runtime validation
+│   ├── build/                   browser/runtime validation
 │   ├── analysis/                diagnosis and evidence-backed repairs
 │   ├── features/                feature/edit/image selection helpers
 │   ├── data/                    MongoDB lifecycle/data helpers
@@ -151,7 +150,7 @@ For public applications the planner must not invent authentication just to satis
 Fast repository checks used before packaging include:
 
 ```bash
-python -m compileall -q agents qa_agent server_modules server.py server_runtime.py pipeline.py srs-agent/srs_agent deployment-agent/deploy_agent
+python -m compileall -q agents qa_agent server_modules server.py server_runtime.py srs-agent/srs_agent deployment-agent/deploy_agent
 python studio/scripts/verify_ui_contract.py
 node studio/scripts/verify_activity.mjs
 node studio/scripts/verify_progress.mjs

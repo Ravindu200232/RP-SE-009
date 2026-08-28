@@ -107,6 +107,14 @@ RULES THAT DECIDE WHETHER THIS WORKS
   • Page identity is a URL fact, not a copywriting fact. Prefer EXPECT_URL for
     reaching a workspace/list/detail page. Do NOT assert a marketing
     slogan or section heading unless the runtime DOM evidence below contains it.
+  • EXPECT_TEXT asserts words that are ALREADY IN the evidence below. Read the
+    heading the page really renders and assert that; do not name the page the
+    way the plan or the route name would put it. A journey that reaches
+    /bookings and asserts /my reservations/i fails on an app whose heading says
+    "Your stays" — the app is right and the assertion is invented, and no
+    rewrite can find the text because it was never there. When the wording you
+    want is not in the evidence, assert EXPECT_URL instead: arriving is the
+    fact, the caption is not.
   • Use `field=<name-or-id>` only when RUNTIME DOM EVIDENCE literally shows
     that input/select `name=` or `id=`. Standard HTML email/password fields may
     use field=email and field=password. Product field names come from this app,

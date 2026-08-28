@@ -48,10 +48,6 @@ def call(base_url: str, tool: str, arguments: dict = None) -> dict:
     return {}
 
 
-def available(base_url: str) -> bool:
-    """Check whether the running app provides its diagnostic tools."""
-    return bool(call(base_url, "get_project_metadata"))
-
 
 def _frame(fr: dict) -> str:
     f = str(fr.get("file", "")).replace("\\", "/")

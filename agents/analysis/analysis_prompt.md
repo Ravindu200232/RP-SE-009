@@ -163,10 +163,40 @@ Write complete files only:
 </write_file>
 ```
 
+Bind the repair to the evidence, not to a plausible neighbour:
+
+- A runtime stack frame names its file and line — `app\admin\bookings\page.jsx:53`
+  is that file, not `app/admin/bookings/[id]/page.jsx` and not its parent. Repair
+  the file the frame names. Read it first and confirm the quoted source line is
+  really there.
+- One exception per file, per frame. If the same exception is reported from three
+  frames in three files, that is three files to repair, and skipping one leaves
+  the error in the log after your write.
+- If the evidence names a file the writable set does not contain, say so instead
+  of repairing the nearest writable file. A repair to an unnamed file cannot
+  clear a fault in the named one.
+- Before writing, restate to yourself which line of which file throws and why.
+  If you cannot, inspect further rather than rewriting on a hunch.
+- A failing HTTP status belongs to the handler that RETURNED it, not to the page
+  that displayed it. `GET /api/bookings/<id> 403` while signed in as the admin
+  who is allowed to read it is a fault in `app/api/bookings/[id]/route.js` — read
+  its authorization branch and find why that session fails it. Improving how the
+  page renders the message leaves the 403 exactly where it was, the next round
+  observes the same status, and the loop repeats until its budget is spent.
+  Repair the page only once the status itself is correct.
+- Say what the status means before you choose a file. 401 is no session; 403 is a
+  session the check rejected — compare the role and owner the handler demands
+  with what the session actually carries; 404 is a lookup that found nothing —
+  compare the id's shape and collection with what the seed wrote; 500 is a throw
+  — read the stack. Each one names a different owner.
+
 Repair rules:
 
 - Preserve all working capabilities, exports, route methods, styling, and copy
   outside the defect.
+- Repairing one call site of a shared mistake is not a repair. When a serialized
+  date, a non-hex id, a missing import, or a non-array response breaks one file,
+  search for the same pattern and fix every file that shares it in this pass.
 - Reuse the existing Mongo, auth, serialization, permission, and validation
   helpers. Do not create parallel clients, cookie names, or auth systems.
 - Await async database/session helpers and Next.js dynamic `params`/
@@ -208,6 +238,37 @@ Never make a test green by deleting passing cases or assertions, introducing
 to merely mirror buggy implementation details. Preserve every passing case
 byte-for-byte. For runtime faults, trust exact browser/server source locations,
 then follow the dependency chain to the real owner.
+
+### What the caller keeps from a `test` rewrite
+
+Only the failing cases' own `it(...)` bodies are taken from your file. Every
+other case is spliced back from the version on disk, byte for byte, whatever you
+wrote for it — so rewriting a passing case is wasted work, and its assertions
+will run exactly as they run today.
+
+Everything OUTSIDE the case bodies is kept from your version and applied
+UNDERNEATH those untouched bodies. That is the shared setup: the imports, the
+`vi.mock` and `vi.hoisted` factories, `beforeEach`, the seeded rows, and any
+constant the cases read. It is the only way a repair can break a case it was not
+about, and it is where this loop's reverted rounds came from — a fixture
+narrowed to settle "found multiple elements", a `beforeEach` that gained a reset
+and stopped a spy from being seen.
+
+So repair inside the failing case first. Narrow its own query, seed its own row,
+assert against what its own body already sets up. `getAllBy…` with a length, a
+`getByRole` with an accessible name, or a distinctive value seeded in that case
+resolves an ambiguous match without touching anything another case reads.
+
+Change the shared setup only when the failure is genuinely in the setup. When
+you do, name every other case in the file and say in your evidence why each one
+still holds under the new setup. If you cannot say that, the change is too broad
+— make it local to the failing case instead.
+
+If you are told a previous write to this file did not stand, that write has
+already been undone: the file in front of you is the version before it. Do not
+send it again. Say what the earlier reading got wrong, then repair a different
+cause — and if the evidence still points the same way, answer `unclear` with
+what you would need to see rather than spending another round on the same edit.
 
 ## Completion discipline
 

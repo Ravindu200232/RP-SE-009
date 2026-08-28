@@ -291,9 +291,15 @@ def _image_wishes(proj_dir: Path) -> list:
     return []
 
 
-def _image_brief_line(proj_dir: Path) -> str:
+def _image_brief_line(proj_dir: Path, requirement: str = "") -> str:
     """Tell planning exactly when generated image paths are safe to use."""
     agent = image_agent()
+    wishes = _image_wishes(proj_dir)
+    if requirement and not wishes and not feature_image_requested(requirement):
+        return ("\n\nNO PICTURES WERE ASKED FOR in this request. Omit the "
+                "`## Images` heading, leave `\"images\"` empty in the JSON, and "
+                "do not write an <img> pointing at `/generated/…`. Use Tailwind "
+                "gradients, inline SVG or emoji where a picture would go.\n")
     if not agent.enabled or not agent.available():
         return ("\n\nIMAGE GENERATION IS OFF for this build. Omit the "
                 "`## Images` heading, leave `\"images\"` empty in the JSON, and "
@@ -306,7 +312,6 @@ def _image_brief_line(proj_dir: Path) -> str:
             "`public/generated/<key>.png` before the app first runs, so the "
             "tags you write for them point at real files. This app is not one "
             "of the ones that should omit the heading.")
-    wishes = _image_wishes(proj_dir)
     if wishes:
         line += (" The customer was asked which artwork they wanted and "
                  "answered: " + ", ".join(wishes) + ". Cover every one of "

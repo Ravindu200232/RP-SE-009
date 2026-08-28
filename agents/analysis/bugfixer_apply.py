@@ -156,17 +156,60 @@ class BugFixerAgent:
             else: return None
         return out
     @classmethod
+    def _failing_titles(cls, titles, reported):
+        """
+        Which `it(...)` titles the reported failing case names are about.
+
+        Vitest reports a case by `fullName` — its `ancestorTitles` joined to its
+        title — so a case inside `describe('Navbar')` arrives as `Navbar toggles
+        mobile menu` while the source says `it('toggles mobile menu')`. Every
+        generated test file is wrapped in a describe, so the two sets never
+        intersected, and the consequences ran the whole repair loop:
+
+        * `_splice_passing` found the failing case missing from its failing set,
+          concluded it was passing, and spliced the OLD failing body back over
+          the model's repair. The only part of a rewrite that survived was the
+          text between the cases — imports, `vi.mock` factories, `beforeEach`,
+          seeded rows — which is the shared setup every case depends on. So a
+          round could not fix the case it was about, and could only change the
+          one thing that breaks the cases it was not about. Measured on the
+          luxestay build: three failing Navbar cases, zero overlap with the
+          source titles, six writes, four still failing.
+        * `_lost_cases` subtracted fullNames from a set of titles, so renaming
+          the failing case read as dropping a passing one and the write was
+          refused.
+
+        Matched by suffix, because the ancestors are not in the failure record
+        and reconstructing the describe nesting is a parser this does not need.
+        The longest match wins, so `it('b')` sitting next to `it('a b')` is not
+        swept up by a report of `D a b`.
+        """
+        reported = [t for t in (str(n or "").strip() for n in (reported or [])) if t]
+        titles = [t for t in (str(t or "").strip() for t in (titles or [])) if t]
+        out = set()
+        for name in reported:
+            hits = [t for t in titles if name == t or name.endswith(" " + t)]
+            if hits: out.add(max(hits, key=len))
+        return out
+    @classmethod
     def _splice_passing(cls, old, new, failing):
-        failing, before, after = set(failing or []), cls._case_blocks(old), cls._case_blocks(new)
+        before, after = cls._case_blocks(old), cls._case_blocks(new)
         if not before or after is None: return ""
+        failing = cls._failing_titles([n for n, _, _ in before] + [n for n, _, _ in after], failing)
         source, pieces, cursor = {n: (s, e) for n, s, e in before}, [], 0
         for name, start, end in after:
             if name in failing or name not in source: continue
             old_start, old_end = source[name]; pieces += [new[cursor:start], old[old_start:old_end]]; cursor = end
         return "" if not pieces else "".join(pieces) + new[cursor:]
     @classmethod
+    def has_case(cls, body, name):
+        """Whether a reported case name still names an `it(...)` in this file."""
+        if not body or not name: return False
+        if str(name) in body: return True
+        return bool(cls._failing_titles([n for n, _, _ in (cls._case_blocks(body) or [])], [name]))
+    @classmethod
     def _lost_cases(cls, old, new, failing):
-        before = {m.group(2).strip() for m in cls.CASE_RE.finditer(old or "")}; after = {m.group(2).strip() for m in cls.CASE_RE.finditer(new or "")}; lost = (before-after)-set(failing or [])
+        before = {m.group(2).strip() for m in cls.CASE_RE.finditer(old or "")}; after = {m.group(2).strip() for m in cls.CASE_RE.finditer(new or "")}; lost = (before-after)-cls._failing_titles(before|after, failing)
         return f"drops passing cases: {', '.join(sorted(lost)[:3])}" if lost else ""
     @staticmethod
     def _weakened(old, new):
@@ -180,7 +223,7 @@ class BugFixerAgent:
         parts = [f"## Failing test: {first.test_file}\n```js\n{test_body[:12000]}\n```", f"## Production target: {first.target or '(none)'}\n```js\n{str(target_body or '')[:12000]}\n```", "## Failures\n" + "\n".join(rows)]
         if forced: parts.append(f"The evidence fixes the verdict as {forced}: {reason}")
         elif reason: parts.append("AgentForge observation (weigh it, do not blindly accept it): " + reason)
-        if refused: parts.append("The last write was refused because " + refused)
+        if refused: parts.append("Your last write to this file did not stand: " + refused)
         if tier >= 2: parts.append("Earlier test rewrites did not resolve this; production code may be the owner.")
         if tier >= 3: parts.append("If both test and code match, inspect the harness and answer harness without writing.")
         parts.append("Use workspace tools when a dependency or contract is missing. Emit VERDICT first, then at most one complete write_file block.")

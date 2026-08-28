@@ -17,7 +17,8 @@ from agents.planner.architecture_runtime import (
     CMD_RE, FENCE_RE, OPEN_RE, PARTIAL_OPEN_RE, FileStreamParser, _strip_fence,
 )
 from agents.planner.build_templates import KNOWN_DEPENDENCIES, render_templates
-from agents.planner.planning import NEXT_STACK, PROMPT_PATH, VITE_STACK, PlannerAgent
+from agents.planner.planning import (NEXT_STACK, PROMPT_PATH, PlannerAgent,
+                                     render_sitemap_xml)
 
 
 log = logging.getLogger("architect")
@@ -59,6 +60,61 @@ QUALITY BAR
   text, keyboard operation, readable contrast, and reduced-motion behavior.
 - Put literal data-testid values only where the plan names them.
 
+GLOBAL SHELL AND PAGE LAYOUT
+- app/layout.jsx is the only file with <html>, <body>, and './globals.css'. It
+  renders the planned Navbar, {children} inside the planned content container,
+  and the Footer, so every route inherits the same chrome. A page never repeats
+  that chrome and never declares its own <html>, <body>, header, or footer.
+- Build the planned Navbar as a client component: brand, every planned link, the
+  active state from usePathname, one primary action, a mobile menu that really
+  opens and closes, and account controls only where the plan has accounts. Every
+  href is a planned route.
+- When the plan has accounts, the Navbar reads the live session with
+  `useSession()` from @/lib/auth-client and shows who is signed in right now.
+  Signed in: render that user's own name — `session.user.name`, falling back to
+  `session.user.email` when the name is empty — next to a real log-out control.
+  That control awaits `signOut()` from @/lib/auth-client and then sends the user
+  to the planned sign-in route with `router.push(...)` from next/navigation, so
+  the session is gone and the page they land on reflects it. Signed out: render
+  the sign-in link instead, and the sign-up link when signup is open. Never show
+  both states at once, never print a hardcoded name, and never leave the log-out
+  control on a page after the session ends. While `useSession()` is still
+  loading, render the same layout with a neutral placeholder so the bar does not
+  jump.
+- Implement each page from its `layout` and `sections`: same order, same grid,
+  same above-the-fold focus, collapsing at 360px as planned. A planned section is
+  a real populated block, never a heading over a placeholder.
+- Compose pages from components sharing one vocabulary of buttons, cards, tables,
+  forms, section headers, and empty states; keep spacing, radii, and type scale
+  identical across routes so the app reads as one product.
+- Fill pages with real data from the planned collections and seed, so lists,
+  grids, and detail pages look complete on first load.
+- Every round carries the approved site map in XML. Each <page> is a real route
+  with its owner file; every link, redirect, nav item, and empty-state action
+  must target one of those paths, and no other route may be invented. Never add
+  privacy, terms, careers, blog, or social destinations the site map does not
+  serve — write that footer information as plain text instead of a link.
+- lib/seed.js exports `ensureSeeded`: idempotent upserts, awaited before the
+  first read of the data it creates. AgentForge also calls it through
+  /api/seed, so the export name and its idempotence are part of the contract.
+- When the plan lists demo accounts, `ensureSeeded` MUST create every one of
+  them, and must do it BEFORE the rows that belong to a user. Await
+  `ensureDemoAccounts()` from @/lib/auth first — that is what makes the
+  credentials real to Better Auth — then read each account back and stamp its
+  id onto the records it owns. Every demo email and password in the plan has to
+  sign in afterwards, and every planned role must be set on its own account.
+  Never insert `{ email, password }` into a users collection yourself; that row
+  cannot sign in. Never throw "required seed entities not found" because the
+  accounts were not made — making them is this file's job, not a precondition
+  it may assume. A seed that leaves the planned identities missing fails every
+  signed-in page, every role check and every journey after sign-in.
+- Better Auth's identity collections are `user` and `account`, both SINGULAR.
+  Read an account back with `getCollection('user')` and find it by email; its
+  `_id` is the ObjectId to stamp on owned rows. `getCollection('users')` is a
+  different, empty collection — a seed that reads it finds nothing, silently
+  skips every row that needed an owner, and leaves the app with no bookings,
+  orders or history while reporting success.
+
 STACK AND FILE BOUNDARIES
 - Next.js 16 App Router + React 19 + JavaScript. Never TypeScript, Pages Router,
   react-router-dom, Mongoose, Prisma, next/image, next/head, or a second Mongo client.
@@ -77,6 +133,50 @@ STACK AND FILE BOUNDARIES
 - Files that read MongoDB export `const dynamic = 'force-dynamic'`.
 - Imports use @/ across app/components/lib and may reference only files already
   present or named in the approved file plan. Fetch URLs are relative literals.
+- AgentForge owns these modules and refuses every rewrite of them, so they will
+  never gain an export. Import ONLY these names, and never invent a helper:
+    @/lib/mongodb      getCollection, getDb, serialize, ObjectId
+    @/lib/auth         auth, getSessionUser, ensureDemoAccounts
+    @/lib/auth-client  authClient, signIn, signUp, signOut, useSession
+  There is no insertDocument, updateDocument, deleteDocument, findDocuments or
+  query helper. Writing data means awaiting getCollection(name) and calling the
+  driver directly on it — insertOne, updateOne, deleteOne, find, findOne — so a
+  create is `const rooms = await getCollection('rooms'); await rooms.insertOne(doc)`.
+
+HOW THESE APPS ACTUALLY BREAK
+Each item below is a crash seen in a served build. Write the right-hand pattern.
+- `ReferenceError: X is not defined` — a component or helper was used without
+  being imported. Before you finish a file, read your own JSX and confirm every
+  capitalised tag and every helper you call has an import line. `<Link>` needs
+  `import Link from 'next/link'`; icons need their named import from
+  `lucide-react`; a planned component needs its `@/components/...` import.
+- `TypeError: x.toLocaleDateString is not a function` — a Mongo `Date` becomes a
+  string the moment the document is serialized for a client component or an API
+  response. Never call a date method on a field you read back. Wrap it:
+  `new Date(booking.checkIn).toLocaleDateString()`. The same applies to any
+  field you format — a number you `.toFixed()` may arrive as a string too.
+- `BSONError: input must be a 24 character hex string` — `new ObjectId(value)`
+  was handed a slug such as `rooms-1`, because the seed identified rows by a
+  readable field. Query by the identifier the seed actually wrote. When a route
+  can receive either, branch on it:
+  `const query = /^[0-9a-f]{24}$/i.test(id) ? { _id: new ObjectId(id) } : { slug: id }`
+  Decide this once per collection and use the same rule in every route, link and
+  seed that touches it.
+- `TypeError: rows.map is not a function` — a fetch result was assumed to be an
+  array. A handler returns an object on error, and `await res.json()` gives that
+  object. Normalise before rendering: `const rows = Array.isArray(data) ? data : []`
+  and keep the planned empty state for the non-array case.
+- A page that renders a list must survive an empty collection, a failed request,
+  and a field that is absent from a row. Reach for optional chaining and a
+  planned fallback instead of assuming the shape.
+- A first visit has chosen no filters, so the unfiltered view is the default
+  view, not an error. An API a page calls on load must answer a bare request
+  with the full list; require a parameter only where the plan says the answer
+  is meaningless without it, and let the page ask for it in the UI rather than
+  firing the request and rendering the rejection. Never open a page on "SYSTEM
+  ERROR — dates are required": show every room, with the date fields waiting.
+  Never invent placeholder arguments to get past this either — a hardcoded
+  date range silently answers a question the visitor did not ask.
 
 DATA, AUTH, AND ACTIONS
 - Use exact collection and field names from the plan. Seed every planned demo
@@ -87,6 +187,24 @@ DATA, AUTH, AND ACTIONS
   @/lib/auth; client code imports signIn/signUp/signOut/useSession from
   @/lib/auth-client. Never create /api/auth routes, sessions, cookies, hashes,
   auth wrappers, or show demo credentials in the app.
+- When the plan needs a sign-in, the planned sign-in page is a finished screen,
+  not a form sketch. It is a client component with a labelled email input
+  (type="email", autocomplete="email"), a labelled password input
+  (type="password", autocomplete="current-password"), and one submit control.
+  Submitting awaits `signIn.email({ email, password })` from @/lib/auth-client
+  inside the page's own submit handler. While the request is in flight the
+  submit control is disabled and says so. A rejected sign-in renders a readable
+  message beside the form — never a console log, never a silent no-op, never a
+  blank screen. A successful sign-in sends the user to the home the plan gives
+  their role, with `router.push(...)` followed by `router.refresh()` so the
+  server sees the new session. When signup is open the page links to the planned
+  sign-up route; it never links to a route the site map does not serve.
+- The planned sign-up page mirrors it with `signUp.email({ email, password, name })`,
+  a labelled name input, autocomplete="new-password", the same pending, error and
+  success behavior, and a link back to sign-in.
+- Never leave either page rendering only markup: a submit control that calls no
+  auth helper is a dead screen, and every other protected route in the app
+  depends on this one working.
 - Better Auth defaults expose `ensureDemoAccounts()`, which creates credential
   provider accounts through `auth.api.signUpEmail` before auth requests. Product
   seed code may await that helper but must never insert `{ email, password }`
@@ -100,45 +218,35 @@ Write only the requested files. Do not narrate and do not stop halfway through
 a file. When all requested files are complete, say BUILD COMPLETE.
 """
 
-VITE_BUILDER_SYSTEM = """\
-You are a senior React/Vite engineer implementing an approved AgentForge plan.
-Write complete <write_file path="…">…</write_file> blocks. Implement every
-planned screen, action, state, design decision, responsive rule, persistence
-behavior, and E2E outcome. Use React 18, JavaScript .jsx, Tailwind,
-react-router-dom v6, localStorage, lucide-react, and framer-motion. Do not write
-stubs, fake controls, TypeScript, server code, private APIs, or unplanned files.
-Every interaction has visible loading/error/success behavior, accessible names,
-keyboard focus, and mobile layout. Do not narrate. Say BUILD COMPLETE at the end.
-"""
 
 NEXT_PLANNER_SYSTEM = PROMPT_PATH.read_text(encoding="utf-8") + "\n\n" + NEXT_STACK
-VITE_PLANNER_SYSTEM = PROMPT_PATH.read_text(encoding="utf-8") + "\n\n" + VITE_STACK
-NEXT_STACK_RULES, VITE_STACK_RULES = NEXT_STACK, VITE_STACK
+NEXT_STACK_RULES = NEXT_STACK
 PROMPTS = {
     "next": {"planner": NEXT_PLANNER_SYSTEM, "builder": NEXT_BUILDER_SYSTEM,
              "rules": NEXT_STACK_RULES, "roots": ("app/", "components/", "lib/"),
              "entry": ("app/page.jsx", "app/page.js")},
-    "vite": {"planner": VITE_PLANNER_SYSTEM, "builder": VITE_BUILDER_SYSTEM,
-             "rules": VITE_STACK_RULES, "roots": ("src/",),
-             "entry": ("src/App.jsx", "src/App.js")},
 }
 
 
 class ArchitectAgent:
     """Build, resume, and update one generated application."""
 
-    NEXT_SCAFFOLD = frozenset({
+    # Scaffold files the product is EXPECTED to replace. app/page.jsx ships as
+    # a "Building…" placeholder and lib/seed.js as a no-op stub, purely so the
+    # app compiles before the product exists. Guarding them the same way as the
+    # real defaults meant that when the plan came back empty, nothing could
+    # ever overwrite the placeholder — not the builder, not the repair pass —
+    # and the app served "Building…" while still passing its own journey.
+    NEXT_PLACEHOLDERS = frozenset({"app/page.jsx", "lib/seed.js"})
+    NEXT_SCAFFOLD = NEXT_PLACEHOLDERS | frozenset({
         "package.json", "next.config.mjs", "jsconfig.json", "tailwind.config.js",
-        "postcss.config.js", "app/globals.css", "app/layout.jsx", "app/page.jsx",
-        "lib/mongodb.js", "app/api/health/route.js", ".env.local", ".gitignore",
+        "postcss.config.js", "app/globals.css", "app/layout.jsx",
+        "lib/mongodb.js", "app/api/health/route.js", "app/api/seed/route.js",
+        ".env.local", ".gitignore",
         "lib/auth.js", "lib/auth-client.js", "app/api/auth/[...all]/route.js",
     })
-    NEXT_PROTECTED = NEXT_SCAFFOLD | {"vitest.config.mjs", "playwright.config.js"}
-    VITE_PROTECTED = frozenset({
-        "package.json", "vite.config.js", "tailwind.config.js",
-        "postcss.config.js", "index.html", "src/main.jsx", "src/index.css",
-        "vitest.config.mjs", "playwright.config.js",
-    })
+    NEXT_PROTECTED = (NEXT_SCAFFOLD - NEXT_PLACEHOLDERS) | {
+        "vitest.config.mjs", "playwright.config.js"}
     NODE_BUILTINS = {"assert", "buffer", "child_process", "crypto", "events", "fs",
                      "fs/promises", "http", "https", "module", "net", "os", "path",
                      "process", "stream", "timers", "tls", "url", "util", "zlib"}
@@ -264,7 +372,7 @@ class ArchitectAgent:
         try:
             target = self._safe_path(rel)
             key = target.relative_to(self.project_dir.resolve()).as_posix()
-            protected = self.NEXT_PROTECTED if self.stack == "next" else self.VITE_PROTECTED
+            protected = self.NEXT_PROTECTED
             planned = {item.get("path") for item in self._planned_files()}
             if key in protected and not self._scaffolding and key not in planned:
                 self._log("WARN", f"   ⛔ kept scaffold-owned default {key}")
@@ -296,7 +404,8 @@ class ArchitectAgent:
         self.plan, self.plan_md = bundle.data, bundle.markdown
         self.architecture_md, self.design_md = bundle.architecture_markdown, bundle.design_markdown
         for path, body in (("plan.md", self.plan_md), ("architecture.md", self.architecture_md),
-                           ("design.md", self.design_md)):
+                           ("design.md", self.design_md),
+                           ("sitemap.xml", bundle.sitemap_xml)):
             self.write_file(path, body)
         self._save_plan_json()
         self.start_conversation(user_prompt)
@@ -364,8 +473,19 @@ class ArchitectAgent:
             + "\n\nUse exact planned names and paths. Output complete <write_file> blocks only."
         )
 
+    def _sitemap_block(self) -> str:
+        """The whole site map, re-sent with every build round the model gets."""
+        xml = render_sitemap_xml(self.plan) if self.plan else ""
+        if "<page" not in xml:
+            return ""
+        return ("\n\nAPPROVED SITE MAP — every route that exists, with its owner "
+                "file, audience, composition and links. Link only to these paths.\n"
+                + xml)
+
     def _run_write_loop(self, user_content: str, _tool_depth: int = 0) -> int:
         self._workspace_tool_cache = {} if _tool_depth == 0 else self._workspace_tool_cache
+        if _tool_depth == 0:
+            user_content += self._sitemap_block()
         self.convo.append({"role": "user", "content": user_content})
         self._trim_convo()
         raw, state = [], {"path": None, "count": 0}
@@ -404,6 +524,17 @@ class ArchitectAgent:
             except Exception as exc:
                 observations, used = "", 0
                 log.debug("workspace tool serving failed: %s", exc)
+            # The builder prompt offers <read_docs topic="…"/> and promises the
+            # page comes back next message, so the request has to be answered
+            # here or the model waits for something that never arrives.
+            try:
+                pages = docsindex.serve(self.project_dir, reply)
+            except Exception as exc:
+                pages = ""
+                log.debug("docs serving failed: %s", exc)
+            if pages:
+                observations = (observations + "\n\n" + pages).strip()
+                used += 1
             if used:
                 self.convo.append({"role": "user", "content": "Tool observations:\n" + observations})
                 return self._run_write_loop("Continue the same task from those observations and write its files.", _tool_depth + 1)
@@ -665,8 +796,6 @@ class ArchitectAgent:
     def load_existing(self) -> None:
         if (self.project_dir / "next.config.mjs").exists() or (self.project_dir / "next.config.js").exists():
             self.stack = "next"
-        elif (self.project_dir / "vite.config.js").exists():
-            self.stack = "vite"
         skip = {"node_modules", ".git", ".next", "dist", "out", ".agentforge", "public", "tests"}
         for path in self.project_dir.rglob("*"):
             if not path.is_file() or any(part in skip for part in path.parts) or path.name.startswith(".env"):
@@ -757,6 +886,5 @@ __all__ = [
     "ArchitectAgent", "FileStreamParser", "CHARS_PER_TOKEN", "HISTORY_BUDGET",
     "EDIT_TIMEOUT", "CMD_RE", "FENCE_RE", "OPEN_RE", "PARTIAL_OPEN_RE",
     "WRITE_FILE_TOOL", "NEXT_PLANNER_SYSTEM", "NEXT_BUILDER_SYSTEM",
-    "VITE_PLANNER_SYSTEM", "VITE_BUILDER_SYSTEM", "NEXT_STACK_RULES",
-    "VITE_STACK_RULES", "PROMPTS", "log",
+    "NEXT_STACK_RULES", "PROMPTS", "log",
 ]

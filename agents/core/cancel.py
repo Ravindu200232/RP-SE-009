@@ -9,8 +9,8 @@ import threading
 from pathlib import Path
 
 __all__ = [
-    "BuildCancelled", "begin", "note", "request", "check", "cancelled",
-    "track", "finish", "cleanup", "state", "run",
+    "BuildCancelled", "begin", "note", "request", "check",
+    "track", "finish", "cleanup", "run",
 ]
 
 
@@ -67,16 +67,6 @@ def finish() -> None:
         _procs.clear()
 
 
-def state() -> dict:
-    with _lock:
-        return {
-            "running": _running,
-            "cancelling": _flag.is_set(),
-            "project": _project,
-            "srs_id": _srs_id,
-        }
-
-
 
 def request() -> dict:
     """Ask the current run to stop and end its active child processes."""
@@ -92,9 +82,6 @@ def request() -> dict:
     _say("WARN", f"   ⏹ cancel requested — stopping {len(victims)} child process(es)")
     return {"ok": True, **who}
 
-
-def cancelled() -> bool:
-    return _flag.is_set()
 
 
 def check() -> None:

@@ -259,34 +259,6 @@ def _api_url_for_source(rel: str) -> str:
     return "/api/" + m.group(1) if m else ""
 
 
-def _routes_affected_by_paths(arch, paths) -> list[str]:
-    """Concrete page routes that render or call the changed source set."""
-    files = getattr(arch, "files", {}) or {}
-    out = set()
-    for rel in paths or []:
-        rel = str(rel or "").replace("\\", "/")
-        try:
-            out.update(routes_rendering(files, rel))
-        except Exception:
-            pass
-        direct = _route_for_page_source(rel)
-        if direct:
-            out.add(direct)
-        api = _api_url_for_source(rel)
-        if api:
-            prefix = api.split("[", 1)[0].rstrip("/")
-            for owner, body in files.items():
-                if not owner.endswith((".js", ".jsx", ".ts", ".tsx")):
-                    continue
-                if prefix and prefix in str(body or ""):
-                    try:
-                        out.update(routes_rendering(files, owner))
-                    except Exception:
-                        pass
-    return sorted(r for r in out
-                  if r.startswith("/") and not r.startswith("/api/") and "[" not in r)
-
-
 def _feature_focus_scope(arch, paths, *, declared_routes=None, route_hint: str = ""):
     """Return changed pages/APIs without expanding shared UI site-wide."""
     files = getattr(arch, "files", {}) or {}
@@ -564,12 +536,6 @@ def verify_after_edit(arch, proj_dir: Path, proj_name: str, *,
     """Check syntax, imports, build, dev startup, and optional routes."""
     out = {"build_ok": True, "routes_failed": [], "broken_imports": 0,
            "syntax_broken": []}
-    if stack != "next":
-
-        start_dev_server(proj_dir, stack)
-        wait_for_dev(stack)
-        return out
-
     analyzer = analyzer or _analyzer_for(arch, proj_dir)
 
     compiling = bool(build_rounds) and not _truthy("AGENTFORGE_SKIP_BUILD_CHECK")

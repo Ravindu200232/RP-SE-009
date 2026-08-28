@@ -48,6 +48,30 @@ def write(root, rel, body):
     target.write_text(body, encoding="utf-8")
 
 
+class RouteLookupTests(unittest.TestCase):
+    def test_a_literal_route_wins_over_a_dynamic_sibling(self):
+        """`[roomId]` sorts before `available`, so first-match found the wrong one.
+
+        The live GET handler was then reported as unserved, and every repair
+        round rewrote a file that had nothing wrong with it.
+        """
+        routes = {
+            "/api/rooms/[roomId]": {"file": "app/api/rooms/[roomId]/route.js",
+                                    "methods": ["PATCH"], "kind": "api"},
+            "/api/rooms/available": {"file": "app/api/rooms/available/route.js",
+                                     "methods": ["GET"], "kind": "api"},
+        }
+
+        served = AnalyzerAgent._route_for("/api/rooms/available", routes)
+        self.assertEqual(served["file"], "app/api/rooms/available/route.js")
+        self.assertIn("GET", served["methods"])
+
+        # A real id still falls through to the dynamic handler.
+        dynamic = AnalyzerAgent._route_for("/api/rooms/507f1f77bcf86cd799439011",
+                                           routes)
+        self.assertEqual(dynamic["file"], "app/api/rooms/[roomId]/route.js")
+
+
 class AnalyzerRefactorTests(unittest.TestCase):
     def test_public_join_surface_and_line_ceiling(self):
         self.assertTrue(REPAIRABLE_MAJOR)
@@ -166,7 +190,8 @@ class AnalyzerRefactorTests(unittest.TestCase):
             self.assertTrue(agent.layout_chrome())
             codes = {f.code for f in agent.scan().findings}
             self.assertTrue({"PROP_CONTRACT", "CREDS_IN_UI", "SEED_VOLUME",
-                             "LAYOUT_CHROME"} <= codes)
+                             "SEED_IN_LAYOUT"} <= codes)
+            self.assertNotIn("LAYOUT_CHROME", codes)  # the shell is planned now
 
     def test_generated_e2e_syntax_is_a_blocker(self):
         with tempfile.TemporaryDirectory() as root:
@@ -197,6 +222,85 @@ class AnalyzerRefactorTests(unittest.TestCase):
         failures = Runner().run(Scenario())
         self.assertEqual(failures[0].kind, "SYNTAX")
         self.assertIn("invalid regex", failures[0].message)
+
+
+DESCRIBED = """\
+import { render, screen } from '@testing-library/react'
+import Navbar from '@/components/Navbar'
+
+describe('Navbar', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('shows user links when logged in as user', () => {
+    render(<Navbar />)
+    expect(screen.getByText('Guest User')).toBeInTheDocument()
+  })
+
+  it('toggles mobile menu', () => {
+    render(<Navbar />)
+    expect(screen.getByRole('link', { name: /rooms/i })).toBeInTheDocument()
+  })
+})
+"""
+
+
+class FailingCaseNameTests(unittest.TestCase):
+    """Vitest reports `fullName`; the source says `it(title)`.
+
+    A case inside `describe('Navbar')` is reported as `Navbar toggles mobile
+    menu`, so the failing set never intersected the titles `_case_blocks`
+    reads. `_splice_passing` therefore treated the failing case as passing and
+    put its OLD body back over the repair, keeping only the shared module scope
+    from the rewrite — the one change that can break a case the round was not
+    about. That is the whole shape of the thrashing repair loop: a round that
+    cannot fix its target and can only break its neighbours.
+    """
+
+    # What vitest wrote for these two cases, verbatim in shape.
+    FAILING = ["Navbar toggles mobile menu"]
+
+    def test_the_repair_to_the_failing_case_survives_the_splice(self):
+        new = DESCRIBED.replace(
+            "expect(screen.getByRole('link', { name: /rooms/i })).toBeInTheDocument()",
+            "expect(screen.getAllByRole('link', { name: /rooms/i })).toHaveLength(2)")
+        spliced = BugFixerAgent._splice_passing(DESCRIBED, new, self.FAILING)
+        self.assertIn("toHaveLength(2)", spliced)
+
+    def test_a_passing_case_is_still_restored_byte_for_byte(self):
+        new = DESCRIBED.replace("expect(screen.getByText('Guest User')).toBeInTheDocument()",
+                                "expect(true).toBe(true)")
+        spliced = BugFixerAgent._splice_passing(DESCRIBED, new, self.FAILING)
+        self.assertIn("expect(screen.getByText('Guest User')).toBeInTheDocument()",
+                      spliced)
+        self.assertNotIn("expect(true).toBe(true)", spliced)
+
+    def test_renaming_the_failing_case_is_not_read_as_dropping_a_passing_one(self):
+        renamed = DESCRIBED.replace("it('toggles mobile menu'",
+                                    "it('opens the mobile menu'")
+        self.assertEqual(
+            BugFixerAgent._lost_cases(DESCRIBED, renamed, self.FAILING), "")
+
+    def test_dropping_a_genuinely_passing_case_is_still_refused(self):
+        without = DESCRIBED.replace(
+            "  it('shows user links when logged in as user', () => {\n"
+            "    render(<Navbar />)\n"
+            "    expect(screen.getByText('Guest User')).toBeInTheDocument()\n"
+            "  })\n\n", "")
+        self.assertIn("drops passing cases",
+                      BugFixerAgent._lost_cases(DESCRIBED, without, self.FAILING))
+
+    def test_the_longest_title_wins_so_a_short_sibling_is_not_swept_up(self):
+        titles = ["b", "a b"]
+        self.assertEqual(BugFixerAgent._failing_titles(titles, ["Suite a b"]),
+                         {"a b"})
+
+    def test_a_case_reported_by_full_name_is_still_found_in_its_file(self):
+        self.assertTrue(
+            BugFixerAgent.has_case(DESCRIBED, "Navbar toggles mobile menu"))
+        self.assertFalse(
+            BugFixerAgent.has_case(DESCRIBED, "Navbar renders a footer"))
 
 
 if __name__ == "__main__":

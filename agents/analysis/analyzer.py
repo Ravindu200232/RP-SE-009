@@ -27,7 +27,7 @@ NEXT_ROOTS = ("app/", "components/", "lib/")
 ROOT_SOURCE = {"middleware.js", "middleware.jsx", "instrumentation.js"}
 MAX_FILE_BYTES = 200_000
 SEVERITIES = ("blocker", "major", "minor")
-REPAIRABLE_MAJOR = frozenset({"UNBUILT_PROMISE", "BROKEN_CONTRACT", "MISSING_PLANNED_DATA", "INERT_CONTROL", "ROLE_REDIRECT", "ROLE_HOME_MISSING", "ROLE_PAGE_UNGUARDED", "MISSING_WORKFLOW_CONTROL", "LAYOUT_CHROME", "LINT", "DEAD_LINK"})
+REPAIRABLE_MAJOR = frozenset({"UNBUILT_PROMISE", "BROKEN_CONTRACT", "MISSING_PLANNED_DATA", "INERT_CONTROL", "ROLE_REDIRECT", "ROLE_HOME_MISSING", "ROLE_PAGE_UNGUARDED", "MISSING_WORKFLOW_CONTROL", "SEED_IN_LAYOUT", "LINT", "DEAD_LINK"})
 PROSE_PATH_RE = re.compile(r"`((?:app|components|lib)/[^`]+?\.jsx?)`")
 PLACEHOLDER_RE = re.compile(r"[*?<>\s]|\.\.\.")
 LINK_HREF_RE = re.compile(r"""<Link\b[^>]*?href\s*=\s*(?:["'](/[^"']*)["']|\{\s*["'](/[^"']*)["']\s*\})""")
@@ -36,6 +36,32 @@ FETCH_URL_RE = re.compile(r"""fetch\(\s*['"](/api/[A-Za-z0-9_\-/\[\]]*)['"]""")
 BCRYPT_LITERAL_RE = re.compile(r"""["'](\$2[aby]?\$\d\d\$[^"']*)["']""")
 HTTP_METHOD_RE = re.compile(r"export\s+(?:async\s+)?(?:function\s+|const\s+)(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b")
 PROMPT_FILE = Path(__file__).with_name("analysis_prompt.md")
+
+# What the model is asked to go looking for. Written as instructions rather than
+# category labels: the deterministic checks below only find the faults someone
+# already thought to encode, and the ones that actually reach a served page —
+# a missing import, a serialized date, an id that is not an ObjectId — are the
+# ones no fixed list caught.
+SEMANTIC_LENSES = (
+    "Walk each accepted capability from its entry route to the outcome the user "
+    "is supposed to see. Does a real control exist, does it reach a handler, "
+    "does the handler persist, and does the page show the result without a "
+    "manual refresh?",
+
+    "Ask what each planned page does when the data is empty, when the request "
+    "fails, and when a field is missing from a row. Look for a value used before "
+    "it exists, and for a response rendered as a list when the handler can also "
+    "return an object or an error.",
+
+    "Read the source for what throws the moment the page is opened: a component "
+    "or helper used without its import, a date or number method called on a "
+    "value that arrives serialized as a string, and an id passed to ObjectId "
+    "when the seed identifies that collection some other way.",
+
+    "Follow identity and authorization: who the session says the user is, which "
+    "routes read it, what a wrong-role visitor actually sees, and whether "
+    "sign-in, sign-out and the seeded demo identities work end to end.",
+)
 
 
 @dataclass
@@ -239,13 +265,14 @@ class AnalyzerAgent:
     def contract_findings(self, routes=None):
         plan, files, out = getattr(self.arch, "plan", None) or {}, self.code_files(), []
         routes = routes or self.enumerate_routes()
+        shell = self._mentions("app/layout.jsx") | self._mentions("app/layout.js")
         for contract in plan.get("contracts") or []:
             if not isinstance(contract, dict): continue
             src, target = str(contract.get("from") or "").lstrip("./").replace("\\", "/"), str(contract.get("target") or "")
             if src not in files or not target.startswith("/"): continue
-            matched = next((m for u, m in routes.items() if self._route_matches(target, [u])), None); method = str(contract.get("method") or "").upper()
+            matched = self._route_for(target, routes); method = str(contract.get("method") or "").upper()
             if contract.get("kind") == "api" and (not matched or method and method not in matched.get("methods", [])): out.append(Finding("blocker", "BROKEN_CONTRACT", f"contract {contract.get('name') or target} requires {method or 'a handler'} {target}, but no matching method is served", src, "implement both ends of the API contract", [src] + ([matched["file"]] if matched else [])))
-            if "[" not in target and target.rstrip("/") not in self._mentions(src): out.append(Finding("major", "BROKEN_CONTRACT", f"contract says {src} must reach {target}, but its import closure never names it", src, f"wire the action to literal target {target}", [src]))
+            if "[" not in target and target.rstrip("/") not in (self._mentions(src) | shell): out.append(Finding("major", "BROKEN_CONTRACT", f"contract says {src} must reach {target}, but its import closure never names it", src, f"wire the action to literal target {target}", [src]))
         return out[:12]
 
     def capability_shape_findings(self):
@@ -342,6 +369,23 @@ class AnalyzerAgent:
             got = [x for x in url.strip("/").split("/") if x]
             if len(got) == len(want) and all(a == b or a.startswith("[") for a, b in zip(got, want)): return True
         return False
+    @staticmethod
+    def _route_for(target, routes):
+        """The route that really serves a URL, preferring the literal one.
+
+        `/api/rooms/available` and `/api/rooms/[roomId]` both match the shape
+        `api/rooms/*`, and the dynamic folder sorts first, so a first-match
+        lookup handed back the wrong handler and reported the live GET route as
+        unserved — a blocker that no repair could ever clear.
+        """
+        want = str(target or "").rstrip("/") or "/"
+        exact = routes.get(want) or routes.get(want + "/")
+        if exact:
+            return exact
+        for url, meta in routes.items():
+            if AnalyzerAgent._route_matches(want, [url]):
+                return meta
+        return None
     def dead_links(self, routes=None):
         pages = [u for u, m in (routes or self.enumerate_routes()).items() if m["kind"] == "page"]
         dead = set()
@@ -491,8 +535,8 @@ class AnalyzerAgent:
 
     def unbuilt_promises(self, max_reads=10):
         report, out = self.scan(), []
-        for lens in ("capabilities and observable UI", "journeys, routes and persistence", "data, Better Auth roles and authorization"):
-            out += self._semantic_lens(lens, report, max_turns=4, max_tools=max(2, max_reads//3))
+        for lens in SEMANTIC_LENSES:
+            out += self._semantic_lens(lens, report, max_turns=4, max_tools=max(2, max_reads // len(SEMANTIC_LENSES)))
         unique, seen = [], set()
         for finding in out:
             key = (finding.code, finding.path, finding.message)
@@ -554,11 +598,14 @@ class AnalyzerAgent:
             total += count; self._files_cache = None; newer = self.scan()
             report = newer
             if len(targets(newer)) >= len(before): break
-        if semantic and use_model and not report.blockers():
+        # The model reads the app whether or not the fixed checks are happy. An
+        # app with blockers left is the one whose remaining faults nothing in
+        # the deterministic list knows how to name.
+        if semantic and use_model:
             findings = self.unbuilt_promises(); first.extend(findings)
             if findings:
                 total += self.repair(AnalyzerReport(findings=findings)); self._files_cache = None; report = self.scan()
-                if not report.blockers(): report.findings += self.unbuilt_promises(max_reads=8)
+                report.findings += self.unbuilt_promises(max_reads=8)
         report.written = total; self._fire("on_phase", {"phase": -5, "title": "Analyzing project", "status": "done", "written": total})
         try:
             from agents.core import lessons
@@ -783,16 +830,10 @@ class AnalyzerAgent:
         return out
     def session_cookie_mismatch(self): return self._only(self._cross_file_invariants(), "SESSION_COOKIE_MISMATCH")
     def layout_chrome(self):
-        files, pages, out = self.code_files(), self.enumerate_routes(), []
+        files, out = self.code_files(), []
         layout = next((p for p in ("app/layout.js", "app/layout.jsx") if p in files), "")
         if not layout: return out
         body = files[layout]
-        has_auth = any(m["kind"] == "page" and re.search(r"login|signin|sign-in|signup|register", url)
-                       for url, m in pages.items())
-        if has_auth and (match := re.search(r"<\s*(Nav\w*|Navbar|Header|Sidebar|TopBar|AppShell)\b", body)):
-            out.append(Finding("major", "LAYOUT_CHROME",
-                               f"root layout renders <{match.group(1)}> on auth pages",
-                               layout, "render application chrome only inside pages that use it"))
         if "ensureSeeded" in body: out.append(Finding(
             "major", "SEED_IN_LAYOUT", "root layout seeds on every page and API request",
             layout, "seed from the data/auth entry points that need it"))

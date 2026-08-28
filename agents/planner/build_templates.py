@@ -32,21 +32,7 @@ NEXT_DEV_DEPENDENCIES = {
     "@testing-library/user-event": "^14.0.0",
 }
 
-VITE_DEPENDENCIES = {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.2",
-    "lucide-react": "^0.441.0",
-    "framer-motion": "^11.5.4",
-}
 
-VITE_DEV_DEPENDENCIES = {
-    "@vitejs/plugin-react": "^4.3.1",
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.47",
-    "tailwindcss": "^3.4.13",
-    "vite": "^5.4.8",
-}
 
 KNOWN_DEPENDENCIES = {
     "react-icons": "^5.3.0",
@@ -114,11 +100,22 @@ if (process.env.NODE_ENV === 'development' && global._mongoClientPromise) {
   clientPromise = global._mongoClientPromise
 }
 
+function cache(value) {
+  clientPromise = value
+  if (process.env.NODE_ENV === 'development') global._mongoClientPromise = value
+}
+
 function connection() {
   if (!clientPromise) {
     if (!uri) throw new Error('MONGODB_URI is not set')
-    clientPromise = new MongoClient(uri).connect()
-    if (process.env.NODE_ENV === 'development') global._mongoClientPromise = clientPromise
+    const client = new MongoClient(uri, { serverSelectionTimeoutMS: 5000 })
+    // A client whose first connection failed keeps a closed topology, so the
+    // dead one is dropped and the next call connects to a live server.
+    cache(client.connect().catch((error) => {
+      cache(undefined)
+      client.close().catch(() => {})
+      throw error
+    }))
   }
   return clientPromise
 }
@@ -157,6 +154,43 @@ export async function GET() {
 }
 """
 
+SEED_MODULE = """\
+// Replaced by the planned seed. The no-op keeps `@/lib/seed` importable so the
+// seed endpoint always resolves, even for an app that stores nothing.
+export async function ensureSeeded() {
+  return { seeded: false }
+}
+"""
+
+SEED_ROUTE = """\
+import * as seedModule from '@/lib/seed'
+
+export const dynamic = 'force-dynamic'
+
+// The planned seed owns its export name, so this route accepts any of them.
+// The lookup is deliberately by computed key. Reading the names straight off
+// the namespace makes webpack emit "Attempted import error" for every name the
+// planned seed does not happen to export, and this route is scaffold-owned, so
+// no repair pass is allowed to rewrite the warning away.
+const SEED_EXPORTS = ['ensureSeeded', 'seedDatabase', 'seed', 'default']
+
+// AgentForge calls this once the app is serving, so the planned rows exist even
+// when no page happened to run the seed itself.
+export async function GET() {
+  const exported = { ...seedModule }
+  const name = SEED_EXPORTS.find((key) => typeof exported[key] === 'function')
+  if (!name) {
+    return Response.json({ ok: true, ran: false, reason: 'no seed export' })
+  }
+  try {
+    await exported[name]()
+    return Response.json({ ok: true, ran: true })
+  } catch (error) {
+    return Response.json({ ok: false, error: String(error) }, { status: 500 })
+  }
+}
+"""
+
 AUTH_CLIENT = """\
 'use client'
 import { createAuthClient } from 'better-auth/react'
@@ -168,14 +202,12 @@ export const { signIn, signUp, signOut, useSession } = authClient
 AUTH_ROUTE = """\
 import { toNextJsHandler } from 'better-auth/next-js'
 
-let handlers
 async function ready() {
-  if (!handlers) {
-    const { auth, ensureDemoAccounts } = await import('@/lib/auth')
-    await ensureDemoAccounts()
-    handlers = toNextJsHandler(auth.handler)
-  }
-  return handlers
+  const { auth, ensureDemoAccounts } = await import('@/lib/auth')
+  // Seeding retries on the next request; a database that is not up yet must
+  // not take every auth endpoint down with it.
+  await ensureDemoAccounts().catch(() => {})
+  return toNextJsHandler(auth.handler)
 }
 
 export const dynamic = 'force-dynamic'
@@ -183,29 +215,7 @@ export async function GET(request) { return (await ready()).GET(request) }
 export async function POST(request) { return (await ready()).POST(request) }
 """
 
-VITE_CONFIG = """\
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
 
-export default defineConfig({
-  plugins: [react()],
-  server: { host: true, port: 5173, strictPort: true },
-})
-"""
-
-VITE_MAIN = """\
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
-import App from './App.jsx'
-import './index.css'
-
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <BrowserRouter><App /></BrowserRouter>
-  </React.StrictMode>,
-)
-"""
 
 
 def _dependency_names(plan: dict) -> list[str]:
@@ -243,26 +253,56 @@ def _auth_module(signup_role: str, origins: list[str], demo_accounts: list[dict]
         import {{ MongoClient }} from 'mongodb'
 
         const globalForAuth = globalThis
-        const client = globalForAuth._authMongoClient ?? new MongoClient(process.env.MONGODB_URI)
-        if (process.env.NODE_ENV !== 'production') globalForAuth._authMongoClient = client
 
-        export const auth = betterAuth({{
-          database: mongodbAdapter(client.db(process.env.MONGODB_DB)),
-          emailAndPassword: {{ enabled: true }},
-          user: {{
-            additionalFields: {{
-              role: {{ type: 'string', defaultValue: {json.dumps(signup_role)}, input: false }},
+        function build() {{
+          const client = new MongoClient(process.env.MONGODB_URI,
+                                         {{ serverSelectionTimeoutMS: 8000 }})
+          return {{ client, auth: betterAuth({{
+            database: mongodbAdapter(client.db(process.env.MONGODB_DB)),
+            emailAndPassword: {{ enabled: true }},
+            user: {{
+              additionalFields: {{
+                role: {{ type: 'string', defaultValue: {json.dumps(signup_role)}, input: false }},
+              }},
             }},
-          }},
-          secret: process.env.BETTER_AUTH_SECRET,
-          baseURL: process.env.BETTER_AUTH_URL,
-          trustedOrigins: {json.dumps(origins)},
-          plugins: [nextCookies()],
-        }})
+            secret: process.env.BETTER_AUTH_SECRET,
+            baseURL: process.env.BETTER_AUTH_URL,
+            trustedOrigins: {json.dumps(origins)},
+            plugins: [nextCookies()],
+          }}) }}
+        }}
+
+        let held = globalForAuth._authInstance ?? build()
+        if (process.env.NODE_ENV !== 'production') globalForAuth._authInstance = held
+
+        export let auth = held.auth
+
+        // The driver closes a client whose first connection failed, so without
+        // this every later request throws "Topology is closed" even once the
+        // database is back. A dead instance is replaced instead.
+        const UNUSABLE = /Topology is closed|MongoNotConnectedError|must be connected/i
+
+        function renew() {{
+          held.client.close().catch(() => {{}})
+          held = build()
+          if (process.env.NODE_ENV !== 'production') globalForAuth._authInstance = held
+          globalForAuth._authDemoSeed = null
+          auth = held.auth
+          return held
+        }}
+
+        async function live(run) {{
+          try {{
+            return await run(held)
+          }} catch (error) {{
+            if (!UNUSABLE.test(String(error))) throw error
+            return await run(renew())
+          }}
+        }}
 
         const demoAccounts = {json.dumps(accounts, ensure_ascii=False)}
 
-        async function createDemoAccounts() {{
+        async function createDemoAccounts({{ client, auth }}) {{
           const db = client.db(process.env.MONGODB_DB)
           for (const account of demoAccounts) {{
             let user = await db.collection('user').findOne({{ email: account.email }})
@@ -291,7 +331,7 @@ def _auth_module(signup_role: str, origins: list[str], demo_accounts: list[dict]
 
         export function ensureDemoAccounts() {{
           if (!globalForAuth._authDemoSeed) {{
-            globalForAuth._authDemoSeed = createDemoAccounts().catch((error) => {{
+            globalForAuth._authDemoSeed = live(createDemoAccounts).catch((error) => {{
               globalForAuth._authDemoSeed = null
               throw error
             }})
@@ -301,7 +341,8 @@ def _auth_module(signup_role: str, origins: list[str], demo_accounts: list[dict]
 
         export async function getSessionUser() {{
           const {{ headers }} = await import('next/headers')
-          const session = await auth.api.getSession({{ headers: await headers() }})
+          const list = await headers()
+          const session = await live(({{ auth }}) => auth.api.getSession({{ headers: list }}))
           return session?.user ?? null
         }}
         """)
@@ -327,23 +368,6 @@ def _next_package(plan: dict) -> str:
     }
     return json.dumps(data, indent=2) + "\n"
 
-
-def _vite_package(plan: dict) -> str:
-    dependencies = dict(VITE_DEPENDENCIES)
-    for name in _dependency_names(plan):
-        if name in KNOWN_DEPENDENCIES:
-            dependencies[name] = KNOWN_DEPENDENCIES[name]
-    project = plan.get("project") or {}
-    data = {
-        "name": project.get("name") or "agentforge-app",
-        "private": True,
-        "version": "0.1.0",
-        "type": "module",
-        "scripts": {"dev": "vite", "build": "vite build", "preview": "vite preview"},
-        "dependencies": dict(sorted(dependencies.items())),
-        "devDependencies": dict(sorted(VITE_DEV_DEPENDENCIES.items())),
-    }
-    return json.dumps(data, indent=2) + "\n"
 
 
 def render_next_templates(plan: dict, *, mongo_uri: str, db_name: str,
@@ -376,7 +400,9 @@ def render_next_templates(plan: dict, *, mongo_uri: str, db_name: str,
             """),
         "app/page.jsx": "export default function Page() { return <main><p>Building…</p></main> }\n",
         "lib/mongodb.js": MONGODB_MODULE,
+        "lib/seed.js": SEED_MODULE,
         "app/api/health/route.js": HEALTH_ROUTE,
+        "app/api/seed/route.js": SEED_ROUTE,
         ".env.local": (
             f"MONGODB_URI={uri}\nMONGODB_DB={database}\n"
             f"BETTER_AUTH_SECRET={secrets.token_hex(32)}\n"
@@ -399,28 +425,8 @@ def render_next_templates(plan: dict, *, mongo_uri: str, db_name: str,
     return files
 
 
-def render_vite_templates(plan: dict) -> dict[str, str]:
-    project = plan.get("project") or {}
-    title = str(project.get("title") or "AgentForge App")
-    return {
-        "package.json": _vite_package(plan),
-        "vite.config.js": VITE_CONFIG,
-        "tailwind.config.js": "module.exports = { content: ['./index.html', './src/**/*.{js,jsx}'], theme: { extend: {} }, plugins: [] }\n",
-        "postcss.config.js": "export default { plugins: { tailwindcss: {}, autoprefixer: {} } }\n",
-        "index.html": (
-            "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"UTF-8\" />"
-            "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />"
-            f"<title>{title}</title></head><body><div id=\"root\"></div>"
-            "<script type=\"module\" src=\"/src/main.jsx\"></script></body></html>\n"
-        ),
-        "src/main.jsx": VITE_MAIN,
-        "src/index.css": NEXT_GLOBALS,
-    }
-
 
 def render_templates(stack: str, plan: dict, *, mongo_uri: str = "",
                      db_name: str = "", dev_port: int = 5173) -> dict[str, str]:
-    if stack == "vite":
-        return render_vite_templates(plan)
     return render_next_templates(plan, mongo_uri=mongo_uri, db_name=db_name,
                                  dev_port=dev_port)
