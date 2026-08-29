@@ -255,20 +255,72 @@ def preview_uri(out: Path) -> str:
         return ""
     return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
 
-def _image_wishes(proj_dir: Path) -> list:
-    """Read requested image kinds from the adopted SRS interview."""
+_IMAGE_YES = {"true", "yes", "1"}
+
+
+def _srs_answers(proj_dir: Path) -> list:
     try:
         doc = json.loads((proj_dir / ".agentforge" / "srs" / "interview.json")
                          .read_text(encoding="utf-8"))
     except Exception:
         return []
-    for answer in doc.get("answers") or []:
+    return doc.get("answers") or []
+
+
+def _image_wishes(proj_dir: Path) -> list:
+    """Read requested image kinds from the adopted SRS interview.
+
+    The interview asks two separate things: `images` is the yes/no, and
+    `image_kinds` is the list of kinds — and it only asks the second one
+    sometimes. Reading the kinds alone meant an interview that answered "yes,
+    generate artwork" and was never asked which kinds looked identical to one
+    that asked for no pictures at all, so the planner was told NO PICTURES WERE
+    ASKED FOR and the build shipped with none.
+    """
+    answers = _srs_answers(proj_dir)
+    for answer in answers:
         if answer.get("question_id") != "image_kinds":
             continue
         value = answer.get("value")
         items = value if isinstance(value, list) else [value]
-        return [str(v).replace("_", " ").strip() for v in items if str(v)]
+        kinds = [str(v).replace("_", " ").strip() for v in items if str(v)]
+        if kinds:
+            return kinds
+    spoken = _images_spoken(proj_dir)
+    if spoken:
+        # They were never offered the kinds list, but they described what they
+        # wanted in their own words. Those words beat any list we could guess.
+        return [spoken]
+    if _images_wanted(proj_dir):
+        # Asked for, but never asked which kinds. Say so plainly rather than
+        # inventing a list the customer never chose.
+        return ["the pictures this product needs"]
     return []
+
+
+def _images_spoken(proj_dir: Path) -> str:
+    """What the customer typed next to the yes/no image question, if anything."""
+    if not _images_wanted(proj_dir):
+        return ""
+    for answer in _srs_answers(proj_dir):
+        if answer.get("question_id") != "images":
+            continue
+        said = str(answer.get("raw_text") or answer.get("text") or "").strip()
+        # A bare "true"/"yes" is the radio button echoing itself, not a wish.
+        if said and said.strip().lower().strip(".") not in _IMAGE_YES:
+            return said
+    return ""
+
+
+def _images_wanted(proj_dir: Path) -> bool:
+    """Did the interview's yes/no image question say yes?"""
+    for answer in _srs_answers(proj_dir):
+        if answer.get("question_id") != "images":
+            continue
+        value = answer.get("value")
+        items = value if isinstance(value, list) else [value]
+        return any(str(v).strip().lower() in _IMAGE_YES for v in items)
+    return False
 
 def _image_brief_line(proj_dir: Path, requirement: str = "") -> str:
     """Tell planning exactly when generated image paths are safe to use."""
@@ -290,7 +342,19 @@ def _image_brief_line(proj_dir: Path, requirement: str = "") -> str:
             "under `## Images` is drawn by a local image model into "
             "`public/generated/<key>.png` before the app first runs, so the "
             "tags you write for them point at real files. This app is not one "
-            "of the ones that should omit the heading.")
+            "of the ones that should omit the heading. "
+            "The `images` array in the JSON has to come back with real entries "
+            "— a plan that returns it empty while generation is on ships an "
+            "app with nothing to look at, which is the single most common way "
+            "these builds come out looking unfinished. Give every entry a "
+            "`key` (lowercase, hyphenated, no extension), a `prompt` written "
+            "as a photographer would brief a shoot for THIS business by name, "
+            "and an `aspect` of landscape, portrait or square. Then use those "
+            "keys: the page that needs the picture renders "
+            "`/generated/<key>.png`, and a seeded row that owns one stores "
+            "that path in its own field. A key nothing references is wasted "
+            "GPU time, and an `<img>` pointing at a key you never listed "
+            "is a 404.")
     if wishes:
         line += (" The customer was asked which artwork they wanted and "
                  "answered: " + ", ".join(wishes) + ". Cover every one of "

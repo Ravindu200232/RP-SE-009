@@ -91,7 +91,7 @@ async def generate_plan(*, project: dict, session: dict, brief: str = "",
         await bus.emit(pid, "PlanGeneratorAgent",
                        "Turning the answers into a plan…", progress=30)
         plan = await get_llm().complete_json(
-            system=_SYS, user="\n".join(parts), validator=_plan_validator(pack),
+            system=_SYS, user="\n".join(parts), validator=_plan_validator(pack, brief=brief or project.get('raw_idea', '')),
             label="plan_generate",
             trace_sink=(lambda p: bus.trace(pid, p)) if pid else None,
         )

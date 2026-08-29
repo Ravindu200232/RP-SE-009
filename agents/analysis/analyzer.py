@@ -61,6 +61,12 @@ SEMANTIC_LENSES = (
     "Follow identity and authorization: who the session says the user is, which "
     "routes read it, what a wrong-role visitor actually sees, and whether "
     "sign-in, sign-out and the seeded demo identities work end to end.",
+
+    "Take every href and every router.push target in the shell and the pages, "
+    "and check that a page file really serves that exact path. The navigation "
+    "written from memory rather than from the route table is the usual "
+    "offender, and the footer is on every screen, so one invented path there "
+    "is a 404 the whole app carries.",
 )
 
 @dataclass
@@ -226,6 +232,82 @@ class AnalyzerAgent:
             if re.search(r"app/(?:login|sign-in|signin)/page\.jsx?$", path) and "signIn.email" in body and re.search(r"router\.(?:push|replace)\(\s*['\"]/['\"]", body) and not re.search(r"\brole\b", body): out.append(Finding("major", "ROLE_REDIRECT", "multi-role sign-in hard-codes every successful identity to /", path, "route the refreshed session role to its planned home", [path]))
         return out
 
+    _AUTH_CALL_RE = re.compile(r"\b(?:signIn|signUp)\.email\s*\(")
+    _AUTH_SUCCESS_RE = re.compile(r"\b(?:result|res|response|data|out)\s*(?:\?)?\.\s*success\b")
+
+    def _auth_result_misread(self):
+        """A sign-in page branching on a field Better Auth never returns.
+
+        `signIn.email` resolves to `{ data, error }`. Reading `.success` off it
+        is always undefined, so the correct-password path takes the failure
+        branch: the cookie is set and the navbar updates to the user's name
+        while the form says "Invalid email or password" and never navigates.
+        Nothing else catches it — the network call is a 200, the session is
+        real, and only a human looking at the screen can tell.
+        """
+        out = []
+        for rel, body in sorted(self.code_files().items()):
+            if not rel.startswith(("app/", "components/")):
+                continue
+            if not self._AUTH_CALL_RE.search(body):
+                continue
+            if not self._AUTH_SUCCESS_RE.search(body):
+                continue
+            out.append(Finding(
+                "blocker", "AUTH_RESULT_MISREAD",
+                "branches on a `success` field that signIn.email never returns, "
+                "so a correct password takes the failure path and the form "
+                "reports invalid credentials while the session is created",
+                rel,
+                "test `if (result.error)` for failure and read the signed-in "
+                "person from `result.data.user`, whose role is "
+                "`result.data.user.role`", [rel]))
+        return out
+
+    def _unguarded_client_pages(self):
+        """Restricted pages written as Client Components, so nothing guards them.
+
+        The pattern is not random: the page needs a form or a modal, the model
+        reaches for 'use client', and the session read has to go with it,
+        because getSessionUser and redirect do not exist in the browser. What
+        ships is a page the plan restricts to one role that anybody can open by
+        typing the URL. Measured on a venue build: five of nine protected
+        pages, every one of them the interactive one.
+
+        The repair is never "add a check to this file" — a client file cannot
+        hold one. It is the split: the page becomes the server file that reads
+        the session, and its interactive half moves into a client component.
+        """
+        plan = getattr(self.arch, "plan", None) or {}
+        routes = self.enumerate_routes()
+        restricted = {}
+        for entry in (plan.get("routes") or []) + (plan.get("site_map") or []):
+            if not isinstance(entry, dict):
+                continue
+            audience = str(entry.get("audience") or "")
+            if "ROLE" not in audience.upper():
+                continue
+            file = str(entry.get("file") or "")
+            if not file:
+                file = str((routes.get(str(entry.get("path") or "")) or {}).get("file") or "")
+            if file.endswith((".js", ".jsx")):
+                restricted.setdefault(file, audience.split("ROLE", 1)[-1].strip())
+
+        out, bodies = [], self.code_files()
+        for rel, role in sorted(restricted.items()):
+            body = bodies.get(rel)
+            if not body or not self._CLIENT_RE.search(body) or "getSessionUser" in body:
+                continue
+            out.append(Finding(
+                "blocker", "CLIENT_PAGE_UNGUARDED",
+                f"the plan gives this page to {role}, but it is a Client "
+                f"Component, so the session is never read and anyone who types "
+                f"the URL opens it", rel,
+                "make the page a Server Component that reads the session, "
+                "checks the role and redirects, and move the interactive part "
+                "into a client component it renders", [rel]))
+        return out
+
     def _data_ui_invariants(self):
         out = []
         for rel, body in sorted(self.code_files().items()):
@@ -240,6 +322,8 @@ class AnalyzerAgent:
             for value in BCRYPT_LITERAL_RE.findall(body):
                 if len(value) != 60: out.append(Finding("blocker", "FAKE_HASH", "contains a malformed bcrypt literal, so every password comparison fails", rel, "create credentials through the configured auth provider")); break
             if "seed" in rel.lower() and "passwordHash" in body and not re.search(r"hashSync|\bhash\(", body): out.append(Finding("blocker", "UNHASHED_SEED", "writes passwordHash without hashing", rel, "use the configured provider or hash the real password"))
+        out += self._unguarded_client_pages()
+        out += self._auth_result_misread()
         return out
 
     def _data_contract_findings(self):
@@ -575,6 +659,57 @@ class AnalyzerAgent:
             if path: normalized.add(path)
         return normalized | set(WorkspaceTools(self.arch).dependency_paths([p for p in normalized if p in files], max_depth=2, cap=24))
 
+    _IMPORT_RE = re.compile(r"""from\s+['"]@/(components/[\w./-]+)['"]""")
+    _FETCH_RE = re.compile(r"""fetch\(\s*[`'"](/api/[\w./\[\]-]+)""")
+
+    @staticmethod
+    def _new_children_of(proposed: dict, safe: set, files: dict) -> set:
+        """New files a page being repaired now reaches for.
+
+        The one correct fix for a guarded page written as a Client Component is
+        to split it: the page becomes the server file that reads the session,
+        and the interactive half moves to a new client component beside it. The
+        repair kept writing exactly that and the write kept being refused as
+        "unrelated", because a file that does not exist yet cannot be among the
+        paths a finding named — so the only correct repair was the one repair
+        that could never land, and the same six pages stayed open round after
+        round. A new component is related when a file that IS in scope imports
+        it in the very same reply.
+        """
+        wanted, reach = set(), set(safe)
+        # The chain is page -> new client component -> new handler, and each
+        # link is only visible once the one before it is in scope, so widen
+        # until nothing new appears rather than one step and stop.
+        while True:
+            found = AnalyzerAgent._referenced_new(proposed, reach, files)
+            if found <= wanted:
+                return wanted
+            wanted |= found
+            reach |= found
+
+    @staticmethod
+    def _referenced_new(proposed: dict, safe: set, files: dict) -> set:
+        """New files that files already in scope name, one step out."""
+        wanted = set()
+        for path, content in proposed.items():
+            if path not in safe:
+                continue
+            body = content or ""
+            for rel in AnalyzerAgent._IMPORT_RE.findall(body):
+                for candidate in (rel, rel + ".jsx", rel + ".js"):
+                    if candidate in proposed and candidate not in files:
+                        wanted.add(candidate)
+            # A handler the repaired page now calls. "This collection is never
+            # used" can only be closed by writing the route that uses it, and a
+            # route that does not exist yet can never be named by the finding,
+            # so refusing every new file made that finding unclosable forever.
+            for url in AnalyzerAgent._FETCH_RE.findall(body):
+                stem = "app" + url.rstrip("/") + "/route"
+                for candidate in (stem + ".js", stem + ".jsx"):
+                    if candidate in proposed and candidate not in files:
+                        wanted.add(candidate)
+        return wanted
+
     def repair(self, report, server_log=""):
         candidates = self._repair_paths(report)
         safe = {p for p in candidates if p.startswith(("app/", "components/", "lib/", "styles/")) or p in {"middleware.js", "middleware.jsx"}}
@@ -596,6 +731,7 @@ class AnalyzerAgent:
             break
         parser.close(); files, written = self.source_files(), []
         direct = {f.path for f in report.findings}
+        safe |= self._new_children_of(proposed, safe, files)
         for path, content in sorted(proposed.items()):
             if path not in safe or not content.strip(): self._log("WARN", f"   ⛔ ignored unrelated/unsafe repair write {path}"); continue
             if path in self._rewritten_this_stage and path not in direct: continue

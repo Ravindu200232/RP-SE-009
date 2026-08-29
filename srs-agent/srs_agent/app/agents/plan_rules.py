@@ -103,9 +103,42 @@ _REVISION_TAIL = (
 )
 
 
-def _plan_validator(pack: dict | None = None):
+_BRIEF_ROUTE_RE = re.compile(
+    r"(?<![\w`/])/[a-z][a-z0-9-]*(?:/(?:\[[a-z_]+\]|[a-z0-9][a-z0-9-]*))*")
+
+
+def _routes_named_in(brief: str) -> list[str]:
+    """Every route the customer wrote down in their own words.
+
+    A long brief that lists its own pages is the customer telling us the map.
+    The model reads it as prose and keeps the interesting ones: it kept
+    /sports/[slug] and dropped /sports, kept /brands/[slug] and dropped
+    /brands. Nothing downstream can miss a page that was never planned, so the
+    omission reaches the customer as five routes that simply do not exist.
+    """
+    seen, out = set(), []
+    for route in _BRIEF_ROUTE_RE.findall(str(brief or "")):
+        route = route.rstrip("/.,;:") or "/"
+        if route.lower() in seen or route.count("/") > 4:
+            continue
+        seen.add(route.lower())
+        out.append(route)
+    return out
+
+
+def _screen_route_shape(route: str) -> str:
+    """One spelling for a route, so /a/:id and /a/[id] compare equal."""
+    parts = []
+    for part in str(route or "").split("?")[0].strip("/").split("/"):
+        if part:
+            parts.append("*" if part[:1] in ":[{" or part[-1:] == "]" else part.lower())
+    return "/" + "/".join(parts)
+
+
+def _plan_validator(pack: dict | None = None, brief: str = ""):
     """A depth floor, sized to the kind of app this is."""
     pack = pack or {}
+    promised = _routes_named_in(brief)
     archetype = str(pack.get("archetype") or "")
     thin = archetype in ("landing-single-page", "single-tool", "marketing")
     wants_auth = str(pack.get("auth_policy") or "") == "required"
@@ -126,6 +159,20 @@ def _plan_validator(pack: dict | None = None):
         if not screens:
             raise ValueError("provide at least one screen, each with a 'name' "
                              "and a 'purpose'")
+
+        if promised:
+            served = {_screen_route_shape(s.get("route")) for s in screens}
+            missing = [r for r in promised
+                       if _screen_route_shape(r) not in served]
+            if missing:
+                raise ValueError(
+                    "the customer named these pages in their own brief and the "
+                    "plan has no screen for them: "
+                    + ", ".join(missing[:8])
+                    + ". Add a screen for each, with its route, purpose and who "
+                      "may open it. A list page is not covered by its detail "
+                      "page: /sports is where a visitor picks a sport and "
+                      "/sports/[slug] is one sport, and both were asked for")
 
         blank = [s["name"] for s in screens if not str(s.get("purpose") or "").strip()]
         if blank:

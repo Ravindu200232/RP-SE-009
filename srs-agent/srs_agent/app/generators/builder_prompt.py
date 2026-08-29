@@ -1,6 +1,7 @@
 """Render the SRS as a natural, builder-ready implementation handoff."""
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 
 from .builder_constants import MAX_CHARS, MAX_WORDS
@@ -70,6 +71,124 @@ def _feature_sections(handoff: dict) -> list[str]:
         chunk += _bullets(body)
         if chunk:
             _section(lines, title, chunk)
+    return lines
+
+
+_ASKED_COUNT_RE = re.compile(
+    r"at least (\d+) ([a-z][a-z ]{2,40}?)(?=[,.;]| and | with | across | including | that | which |$)",
+    re.I)
+
+
+def _counts_the_customer_gave(handoff: dict) -> list[str]:
+    """The seed sizes the customer wrote down, in their own words."""
+    text = str(handoff.get("customer_brief") or "")
+    if not text:
+        source = handoff.get("source_requirements")
+        text = source if isinstance(source, str) else " ".join(str(x) for x in (source or []))
+    seen, out = set(), []
+    for number, thing in _ASKED_COUNT_RE.findall(text or ""):
+        phrase = f"At least {number} {_clean(thing).rstrip(' ,.')}"
+        if phrase.lower() not in seen:
+            seen.add(phrase.lower())
+            out.append(phrase)
+    return out
+
+
+def _same_thing(name: str, line: str) -> bool:
+    """Is this model the one that sentence already sized?
+
+    `TicketSale` and "25 ticket sales" are the same collection written two
+    ways, and without folding the case, the spacing and the plural they read
+    as two, so the section asked for twenty-five of them and five of them in
+    consecutive bullets.
+    """
+    key = re.sub(r"[^a-z]", "", name.lower())
+    words = re.sub(r"[^a-z ]", " ", line.lower()).split()
+    for size in (1, 2):
+        for i in range(len(words) - size + 1):
+            joined = "".join(words[i:i + size])
+            if joined == key or joined.rstrip("s") == key.rstrip("s"):
+                return True
+    return False
+
+
+def _seed_volume(handoff: dict) -> list[str]:
+    """Say how many rows each collection needs, per collection.
+
+    "Provide realistic demo data" is read as three rows, and three rows make a
+    list page look like a stub, a filter look pointless and an empty state
+    unreachable. Measured on a venue build asked for six rooms and twenty
+    events: it shipped two and three, because the brief said the numbers and
+    the handoff did not carry them. So the customer's own figures go first,
+    word for word, and anything they did not size gets a number rather than a
+    range — "a dozen or more, or a handful" is read as a handful every time.
+    """
+    lines = list(_counts_the_customer_gave(handoff))
+    browsed = {_route_owner(p) for p in handoff.get("pages") or []}
+    for model in handoff.get("models") or []:
+        name = _clean(model.get("name") or model.get("table_name"))
+        if not name or name.lower() in _AUTH_MODELS:
+            continue
+        if any(_same_thing(name, line) for line in lines):
+            continue
+        many = name.lower() in browsed or name.lower() + "s" in browsed
+        lines.append(f"At least {'12' if many else '5'} `{name}` rows"
+                     + (" — it has a list page, and a list of three makes "
+                        "the filters on it pointless" if many else ""))
+    if lines:
+        lines.append("Rows that reach the states the app has to show: at least "
+                     "one of every status a record can hold, and at least one "
+                     "row on each side of every rule that can refuse an action, "
+                     "so the refusal path can be walked and not merely read")
+        lines.append("These are minimums, not targets to negotiate down. A seed "
+                     "that stops at three rows per collection ships a demo the "
+                     "customer reads as an empty product")
+    return lines
+
+
+def _route_owner(page: dict) -> str:
+    """The plural thing a list route is about: /events -> events."""
+    parts = [p for p in _clean(page.get("route")).strip("/").split("/") if p]
+    return parts[-1].lower() if parts and not parts[-1].startswith("[") else ""
+
+
+_AUTH_MODELS = {"user", "users", "account", "accounts", "session", "sessions",
+                "verification", "verifications"}
+
+
+def _pages_section(handoff: dict) -> list[str]:
+    """Spell out each screen: what it holds, top to bottom, and what it does.
+
+    The routes list alone tells the builder a page must exist, not what goes on
+    it, so pages came out as a heading over an empty box. Everything here is
+    already in the SRS — it was simply never written into the brief the builder
+    reads.
+    """
+    described = [p for p in handoff.get("pages") or []
+                 if isinstance(p, dict) and _clean(p.get("route"))
+                 and (p.get("sections") or p.get("functions"))]
+    if not described:
+        return []
+    lines = ["## Pages", ""]
+    for page in described:
+        route = _clean(page.get("route"))
+        name = _clean(page.get("name")) or route
+        who = " / ".join(_items(page.get("allowed_roles")))
+        head = f"### {name} — `{route}`"
+        lines += [head + (f" ({who})" if who and not page.get("public") else ""), ""]
+        sections = _items(page.get("sections"))
+        if sections:
+            lines += ["Sections, in the order the visitor meets them:", "",
+                      *[f"{i}. {_clean(x).rstrip('.')}." for i, x in enumerate(sections, 1)], ""]
+        functions = _items(page.get("functions"))
+        if functions:
+            lines += ["On this page a user can:", "", *_bullets(functions), ""]
+    lines += [
+        "Build every section listed above as a real populated block, in that "
+        "order. A heading with nothing under it, a card with fewer fields than "
+        "are named here, or a control that does not perform the action its "
+        "label promises all count as the page being missing.", ""
+    ]
     return lines
 
 
@@ -164,7 +283,16 @@ def _routes_section(handoff: dict) -> list[str]:
     for label, routes in groups.items():
         lines += [f"{label}:", "", *[f"* `{r}`" for r in routes], ""]
     lines += [
-        "Every route above must have a real working page. No required route may return 404. Every navigation link and CTA must point to implemented behavior, and dynamic routes must work with real persisted data.", ""
+        "Every route above must have a real working page. No required route may "
+        "return 404. Every navigation link and CTA must point to implemented "
+        "behavior, and dynamic routes must work with real persisted data.", "",
+        "Nothing decorative. A button whose label names an action performs that "
+        "action; it is not a link to the page where the result would show. No "
+        "placeholder pages, no TODO screens, no href=\"#\", no control that "
+        "logs and returns. Every link in the navigation and the footer points "
+        "at a route in the list above — a tidy name nobody serves is a 404 "
+        "carried on every screen of the app. If a capability is not built, do "
+        "not put a control for it on the page.", ""
     ]
     return lines
 
@@ -209,12 +337,36 @@ def _server_sections(handoff: dict) -> list[str]:
             if not isinstance(item, dict):
                 continue
             name = _clean(item.get(name_key) or item.get("name"))
-            desc = _clean(item.get("description"))
             if name:
-                values.append(name + (f" — {desc}" if desc else ""))
+                values.append(name + _detail_of(item))
         if values:
             _section(lines, title, _bullets(values))
     return lines
+
+
+def _detail_of(item: dict) -> str:
+    """Everything the SRS recorded about one notification, report or integration.
+
+    The renderer printed the name and stopped: "Ticket Purchase Confirmed." is
+    not something anyone can build. Who it reaches, how it reaches them, what
+    the report filters on and what it exports were all sitting in the same
+    record, unread — so the builder invented them or left them out.
+    """
+    bits = []
+    desc = _clean(item.get("description"))
+    if desc:
+        bits.append(desc.rstrip("."))
+    for label, field in (("goes to", "recipients"), ("over", "channels"),
+                         ("filtered by", "filters"), ("exports as", "exports")):
+        values = _items(item.get(field))
+        if values:
+            bits.append(f"{label} {', '.join(values)}")
+    kind = _clean(item.get("type"))
+    if kind and kind.lower() not in {"", "none"}:
+        bits.append(f"{kind} integration")
+    if item.get("required") is False:
+        bits.append("optional")
+    return (" — " + "; ".join(bits)) if bits else ""
 
 def _quality_section(handoff: dict, doc: dict) -> list[str]:
     body = []
@@ -256,6 +408,7 @@ def render_prompt(handoff: dict, plan: dict, *, auth: bool = False,
     if roles:
         lines += ["## Main User Roles", "", *roles]
     lines += _feature_sections(handoff)
+    lines += _pages_section(handoff)
     lines += _auth_section(handoff)
     lines += _models_section(handoff)
     lines += _relationships_section(handoff)
@@ -287,7 +440,7 @@ def render_prompt(handoff: dict, plan: dict, *, auth: bool = False,
         seed_rules += [
             "Provide realistic, idempotent demo data sufficient to open every dynamic route and complete every required journey",
             "When authentication is enabled, provision demo identities through the application's approved authentication system rather than fake seed-route authentication logic",
-        ]
+        ] + _seed_volume(handoff)
         _section(lines, "Seed Data", _bullets(seed_rules))
 
     lines += _journeys_section(handoff)

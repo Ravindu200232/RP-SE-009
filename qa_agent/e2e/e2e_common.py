@@ -120,6 +120,14 @@ RULES THAT DECIDE WHETHER THIS WORKS
     use field=email and field=password. Product field names come from this app,
     never from a global sample vocabulary. When the
     runtime evidence says the element is a <select>, use SELECT, not FILL.
+  • SELECT is for a real <select> only. A radio group is not one: it is a set
+    of <input type="radio"> that you CLICK, one option at a time, and the input
+    itself is often visually hidden behind its <label>, so click the label's
+    text. Getting this wrong costs the whole journey, because the fix reads as
+    "use SELECT" on one round and "SELECT is only for <select>" on the next,
+    and the budget is spent arguing with itself over one step. Read what the
+    failure DOM actually contains: `<select>` → SELECT, `type="radio"` or
+    `type="checkbox"` → CLICK, anything else that takes typing → FILL.
   • If a journey needs another role page after login, GOTO that exact served
     route observed for that actor. Do not assume the auth landing page is
     the page where the rest of the workflow happens.

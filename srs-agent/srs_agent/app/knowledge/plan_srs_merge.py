@@ -100,6 +100,8 @@ def merge_pack_planned(skeleton: dict, pack: dict, plan: dict) -> dict:
             for w in pack["business_workflows"] if isinstance(w, dict) and w.get("steps")
         ]
 
+    _merge_page_detail(doc, pack)
+
     prompt = str((pack.get("branding") or {}).get("logo_image_prompt") or "").strip()
     if prompt and doc.get("branding", {}).get("logo_required"):
         doc["branding"]["logo_image_prompt"] = prompt
@@ -111,6 +113,47 @@ def merge_pack_planned(skeleton: dict, pack: dict, plan: dict) -> dict:
         doc["public_pages"] + doc["protected_pages"],
     )
     return {"srs_document": doc}
+
+
+
+def _route_key(route: str) -> str:
+    """One spelling for a route, so /jobs/:id and /jobs/[id] are the same page."""
+    parts = []
+    for part in str(route or "").split("?")[0].strip("/").split("/"):
+        if not part:
+            continue
+        parts.append("*" if part[:1] in ":[{" or part[-1:] == "]" else part.lower())
+    return "/" + "/".join(parts)
+
+
+def _merge_page_detail(doc: dict, pack: dict) -> None:
+    """Give each planned page the sections and functions the model wrote for it.
+
+    The skeleton knows a page's route and one line of purpose, because that is
+    all the approved plan holds. Without this the SRS ships every screen as a
+    name over an empty `sections` list, and the builder lays out exactly that:
+    a heading with nothing under it. The model is only allowed to describe the
+    routes the plan already has — an entry for a route nobody approved is
+    dropped rather than allowed to widen the scope.
+    """
+    pages = {_route_key(p.get("route")): p
+             for p in (doc.get("public_pages") or []) + (doc.get("protected_pages") or [])
+             if isinstance(p, dict)}
+    for described in pack.get("pages") or []:
+        if not isinstance(described, dict):
+            continue
+        page = pages.get(_route_key(described.get("route")))
+        if not page:
+            continue
+        for key in ("sections", "functions"):
+            fresh, seen = [], set()
+            for item in list(page.get(key) or []) + list(described.get(key) or []):
+                text = str(item).strip()
+                if text and text.lower() not in seen:
+                    seen.add(text.lower())
+                    fresh.append(text)
+            if fresh:
+                page[key] = fresh
 
 
 def effective_plan(doc: dict) -> dict:

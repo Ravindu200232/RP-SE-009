@@ -48,6 +48,51 @@ def seed_project(plan: dict) -> str:
                      + (f"  ({account['role']})" if account.get("role") else ""))
     return ""
 
+
+def write_auth_details(proj_dir, plan: dict) -> None:
+    """Write the seeded sign-ins to GENERATED-AUTH-DETAILS.md.
+
+    Every build ends with a set of role accounts the seeder made, and the only
+    place they appeared was one line in a log that scrolls away. Anyone opening
+    the app afterwards had to read lib/seed.js to find out how to sign in as
+    the manager. The accounts written here are the ones seed_project has just
+    signed in with, so the file describes what actually works.
+    """
+    accounts = [a for a in (plan or {}).get("demo_accounts") or []
+                if isinstance(a, dict) and a.get("email")]
+    if not accounts:
+        return
+    name = str(((plan or {}).get("project") or {}).get("title")
+               or (plan or {}).get("app_name") or proj_dir.name)
+    homes = (plan or {}).get("role_homes") or {}
+    rows = ["| Role | Email | Password | Lands on |",
+            "| --- | --- | --- | --- |"]
+    for account in accounts:
+        role = str(account.get("role") or "-")
+        rows.append(f"| {role} | `{account.get('email')}` | "
+                    f"`{account.get('password') or '-'}` | "
+                    f"{homes.get(role) or '/'} |")
+    body = [
+        f"# {name} — generated auth details",
+        "",
+        "These accounts are created by the database seeder and were signed in",
+        "once during the build, so each one below is known to work. Sign in at",
+        "the app's sign-in route.",
+        "",
+        *rows,
+        "",
+        "Re-running the seed does not change them: seeding is idempotent and",
+        "identifies each account by its email address.",
+        "",
+    ]
+    try:
+        (proj_dir / "GENERATED-AUTH-DETAILS.md").write_text(
+            chr(10).join(body), encoding="utf-8")
+        elog("INFO", f"   🔑 sign-ins written to GENERATED-AUTH-DETAILS.md "
+                     f"({len(accounts)} role account(s))")
+    except OSError as exc:
+        elog("WARN", f"   ⚠ could not write the auth details file: {exc}")
+
 def run_agent_pipeline(prompt: str, model: str, think: bool = None,
                        qa_model: str = "", resume_project: str = "",
                        logo: str = "", srs_id: str = ""):
@@ -309,6 +354,8 @@ def run_agent_pipeline(prompt: str, model: str, think: bool = None,
         start_next(proj_dir)
         wait_for_next()
         seed_error = seed_project(arch.plan) if db_ok else ""
+        if not seed_error:
+            write_auth_details(proj_dir, arch.plan)
 
         estep("test", "active")
         emit({"type": "test_start"})

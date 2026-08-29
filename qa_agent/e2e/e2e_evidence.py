@@ -404,6 +404,11 @@ class E2EEvidenceMixin:
         for acc in accs:
             role = acc.get("role") or acc.get("email", "?")
             if not self._sign_in(page, acc):
+                # Silently skipping a role makes the sweep report a clean app
+                # on evidence it never gathered: with only one role signed in,
+                # nothing can be reached by somebody who should not reach it.
+                self._log("WARN", f"   🔒 could not sign in as {role} — this "
+                                  f"sweep cannot speak for that role")
                 log.debug(f"role separation: could not sign in as {role}")
                 continue
             opened = set()
@@ -424,12 +429,20 @@ class E2EEvidenceMixin:
                     log.debug(f"role separation {role} {url}: {e}")
             reach[role] = opened
 
+        if len(reach) < 2:
+            self._log("WARN", "   🔒 fewer than two roles signed in — no role "
+                              "separation can be observed, so this sweep "
+                              "proves nothing either way")
+            return []
+
         allowed = {u: {r for r, o in reach.items() if u in o} for u in routes}
+
+        out = self._against_the_plan(page, allowed, reach, accs)
+
         sections = {}
         for u in routes:
             sections.setdefault(u.strip("/").split("/")[0], []).append(u)
 
-        out = []
         for name, urls in sections.items():
             if len(urls) < 2:
                 continue
@@ -450,6 +463,51 @@ class E2EEvidenceMixin:
                                    f"{', '.join(sorted(extra))} — the guard on "
                                    f"the section is missing from this page",
                                 self._reach_table(urls, reach)))
+        return out
+
+    def _planned_audience(self) -> dict:
+        """Which role the approved plan says may open each page."""
+        plan = getattr(getattr(self, "az", None), "arch", None)
+        plan = getattr(plan, "plan", None) or {}
+        wanted = {}
+        for entry in (plan.get("routes") or []) + (plan.get("site_map") or []):
+            if not isinstance(entry, dict):
+                continue
+            url, audience = str(entry.get("path") or ""), str(entry.get("audience") or "")
+            role = audience.split("ROLE", 1)[-1].strip() if "ROLE" in audience.upper() else ""
+            if url.startswith("/") and role:
+                wanted.setdefault(url, role)
+        return wanted
+
+    def _against_the_plan(self, page, allowed: dict, reach: dict, accs: list) -> list:
+        """Pages the plan restricts that opened for somebody else anyway.
+
+        The sibling comparison below only sees a page as wrong when a NEIGHBOUR
+        in the same section is tighter. When the guard is missing from the whole
+        section — every /admin page written without a session check — the
+        tightest neighbour is also wide open, so the comparison finds nothing
+        and the sweep reports a clean app while any customer who types /admin
+        reads the revenue. The plan already names the role for those pages, so
+        check the reading against it rather than against the neighbours.
+        """
+        wanted = self._planned_audience()
+        if not wanted:
+            return []
+        out = []
+        for url, role in sorted(wanted.items()):
+            opened = allowed.get(url)
+            if not opened:
+                continue
+            trespass = sorted(r for r in opened
+                              if str(r).strip().casefold() != role.strip().casefold())
+            trespass = [r for r in trespass if self._still_open(page, url, r, accs)]
+            if trespass:
+                out.append((url, f"the plan gives {url} to {role} alone, and it "
+                                 f"opened for {', '.join(trespass)} — the page "
+                                 f"renders without reading the session, so the "
+                                 f"URL is the only thing standing between them "
+                                 f"and it",
+                            self._reach_table([url], reach)))
         return out
 
     @staticmethod
