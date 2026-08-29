@@ -61,6 +61,14 @@ QUALITY BAR
   behavior. The empty state explains what belongs there and provides the real
   next action. Mutation success updates state, refreshes, or navigates without a
   manual reload. Pending controls disable and say what is happening.
+- Treat CRUD as one end-to-end contract, not four unrelated buttons. Create,
+  edit/update and delete each use the exact planned API URL + HTTP method + id
+  shape, check `res.ok`, persist first, then update/revalidate the visible list.
+  Never ship create-only CRUD where edit/delete controls call missing methods.
+- Every mutation shows polished React feedback on both outcomes: a concise
+  success toast/alert after persistence and an actionable error toast/alert on
+  failure. Prefer the planned shared toast host (react-hot-toast is available)
+  over `alert()`, console-only errors, or raw browser text.
 - Preserve the approved palette, type scale, spacing, radii, depth, component
   states, content hierarchy, and mobile behavior. Every interactive element has
   rest, hover, visible keyboard focus, and disabled states when applicable.
@@ -151,7 +159,7 @@ STACK AND FILE BOUNDARIES
 - AgentForge owns these modules and refuses every rewrite of them, so they will
   never gain an export. Import ONLY these names, and never invent a helper:
     @/lib/mongodb      getCollection, getDb, serialize, ObjectId
-    @/lib/auth         auth, getSessionUser, ensureDemoAccounts
+    @/lib/auth         auth, getSessionUser, ensureDemoAccounts, provisionUser
     @/lib/auth-client  authClient, signIn, signUp, signOut, useSession
   There is no insertDocument, updateDocument, deleteDocument, findDocuments or
   query helper. Writing data means awaiting getCollection(name) and calling the
@@ -271,6 +279,10 @@ DATA, AUTH, AND ACTIONS
 - Better Auth defaults expose `ensureDemoAccounts()` in `lib/auth.js`; product
   seed code only awaits that helper. Never copy provider/signup logic into the
   seeder or insert credential rows yourself.
+- When an authorised admin/manager creates a real login account at runtime,
+  call server helper `provisionUser({ email, password, name, role })` from
+  @/lib/auth. Never `insertOne` a password into `user`: that creates a profile
+  with no Better Auth credential, so the UI says created but login can never work.
 - Ownership, role, price, totals, and user identity come from the session and
   database, never trusted request fields. API status/messages match the plan.
 - A page the plan restricts to a role OPENS WITH THAT CHECK, in the page file

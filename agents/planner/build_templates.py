@@ -198,7 +198,7 @@ __AUTH_ENSURE__    await exported[name]()
     }
     for (const account of DEMO_ACCOUNTS) {
       const user = await db.collection('user').findOne({ email: account.email })
-      const credential = user && await db.collection('account').findOne({ userId: user._id.toString(), providerId: 'credential' })
+      const credential = user && await db.collection('account').findOne({ userId: { $in: [user._id, user._id.toString()] }, providerId: 'credential' })
       if (!user || !credential || String(user.role || '') !== String(account.role || ''))
         throw new Error(`Demo account not persisted with role: ${account.email}`)
     }
@@ -344,7 +344,7 @@ def _auth_module(signup_role: str, origins: list[str], demo_accounts: list[dict]
             let user = await db.collection('user').findOne({{ email: account.email }})
             if (user) {{
               const credential = await db.collection('account').findOne({{
-                userId: user._id.toString(), providerId: 'credential',
+                userId: {{ $in: [user._id, user._id.toString()] }}, providerId: 'credential',
               }})
               // A plain orphan user blocks provider signup but can never sign in.
               if (!credential) {{
@@ -373,6 +373,18 @@ def _auth_module(signup_role: str, origins: list[str], demo_accounts: list[dict]
             }})
           }}
           return globalForAuth._authDemoSeed
+        }}
+
+        export async function provisionUser({{ email, password, name, role }}) {{
+          return live(async ({{ client, auth }}) => {{
+            const db = client.db(process.env.MONGODB_DB)
+            if (await db.collection('user').findOne({{ email }})) throw new Error('Email already registered')
+            await auth.api.signUpEmail({{ body: {{ email, password, name }} }})
+            const user = await db.collection('user').findOne({{ email }})
+            if (!user) throw new Error(`Better Auth did not create ${{email}}`)
+            await db.collection('user').updateOne({{ _id: user._id }}, {{ $set: {{ role, name }} }})
+            return {{ id: user._id.toString(), email, name, role }}
+          }})
         }}
 
         export async function getSessionUser() {{
