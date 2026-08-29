@@ -284,6 +284,35 @@ def _kill_proc_tree(proc):
         pass
 
 
+def _kill_project_next(proj_dir: Path):
+    """Stop an untracked `next dev` already serving this exact project."""
+    target = str(Path(proj_dir).resolve())
+    try:
+        if os.name == "nt":
+            q = target.replace("'", "''")
+            script = (f"$p='{q}'; Get-CimInstance Win32_Process | "
+                      "Where-Object {$_.Name -eq 'node.exe' -and $_.CommandLine -and "
+                      "$_.CommandLine.IndexOf($p,[StringComparison]::OrdinalIgnoreCase) -ge 0 "
+                      "-and $_.CommandLine -match 'next(.+)?dev'} | ForEach-Object {$_.ProcessId}")
+            out = subprocess.run(["powershell", "-NoProfile", "-Command", script],
+                                 capture_output=True, text=True, timeout=12).stdout
+            for pid in {x.strip() for x in out.splitlines() if x.strip().isdigit()}:
+                subprocess.run(["taskkill", "/F", "/T", "/PID", pid],
+                               capture_output=True, timeout=10)
+        else:
+            out = subprocess.run(["ps", "-eo", "pid=,args="], capture_output=True, text=True, timeout=5).stdout
+            for line in out.splitlines():
+                if target in line and re.search(r"next.*\bdev\b", line):
+                    pid = line.strip().split(None, 1)[0]
+                    if pid.isdigit() and int(pid) != os.getpid():
+                        try: os.kill(int(pid), signal.SIGKILL)
+                        except OSError: pass
+        time.sleep(0.25)
+        (Path(proj_dir) / ".next" / "dev" / "lock").unlink(missing_ok=True)
+    except Exception as e:
+        log.debug(f"stray next cleanup for {proj_dir}: {e}")
+
+
 def _kill_port(port: int):
     """Force-kill whatever holds a port, on Windows as well as POSIX."""
     if os.name == "nt":
@@ -348,6 +377,7 @@ def start_next(proj_dir: Path, port: int = DEV_PORT):
     process layer and makes the tree far more reliable to kill.
     """
     _stop_dev_proc()
+    _kill_project_next(proj_dir)
     _kill_port(port)
     active_vite["stderr_lines"] = []
     active_vite["ready"] = False

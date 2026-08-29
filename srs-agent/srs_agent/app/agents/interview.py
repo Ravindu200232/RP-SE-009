@@ -207,6 +207,13 @@ async def ask(session: dict) -> dict | None:
         )
         return await localize_question_payload(payload, language, project_id=pid)
 
+    if topic.key == "extra_notes" and any(w in str(session.get("raw_idea", "")).lower()
+                                                for w in ("report", "reports", "export")):
+        payload = _question(item, topic, index, total,
+            question=("Before we finish the reports, what should each report show, which business records or tables should it read, which filters are needed, and how should people view, print or export it?"),
+            options=[])
+        return await localize_question_payload(payload, language, project_id=pid)
+
     if topic.fixed:
         payload = _question(
             item, topic, index, total,

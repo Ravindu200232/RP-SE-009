@@ -219,6 +219,7 @@ def _auth_section(handoff: dict) -> list[str]:
         "Authorization must be enforced server-side before protected data is read or written.",
         "Signed-out users opening protected pages must be redirected to sign in; signed-in users with the wrong role must be refused.",
         "Use the session user record as the role source; never trust role values supplied by the browser.",
+        "Before completion, verify planned credentials can really sign in, leave the auth form, create a session, expose the correct role and update the signed-in navigation state.",
     ]
     return ["## Authentication", "", *body, ""]
 
@@ -340,6 +341,8 @@ def _server_sections(handoff: dict) -> list[str]:
             if name:
                 values.append(name + _detail_of(item))
         if values:
+            if title == "Reporting Requirements":
+                values.append("Generate each approved report once from real persisted data; do not duplicate the same report under different cards, tables or names")
             _section(lines, title, _bullets(values))
     return lines
 
@@ -361,6 +364,9 @@ def _detail_of(item: dict) -> str:
         values = _items(item.get(field))
         if values:
             bits.append(f"{label} {', '.join(values)}")
+    sources = _items(item.get("source_tables") or item.get("tables") or item.get("data_sources"))
+    if sources:
+        bits.append("reads persisted data from " + ", ".join(sources))
     kind = _clean(item.get("type"))
     if kind and kind.lower() not in {"", "none"}:
         bits.append(f"{kind} integration")
@@ -382,7 +388,8 @@ def _quality_section(handoff: dict, doc: dict) -> list[str]:
     body = [x for i, x in enumerate(body) if x and x not in body[:i]]
     body += [
         "Every required route, navigation link and CTA must work without blocking runtime errors.",
-        "Every mutation must persist and the next visible state must prove the change.",
+        "Every auth action and persisted mutation must show polished non-blocking pending, success and error feedback, and the next visible state must prove the real result.",
+        "Use a launch-ready modern responsive design with strong hierarchy and polished mobile, tablet and desktop layouts rather than generic CRUD scaffolding.",
         "Do not replace difficult requirements with TODO pages, decorative buttons, fake forms or hard-coded success states.",
         "Before completion, verify the app can be used from start to finish with the required roles, seeded data and relationships.",
     ]

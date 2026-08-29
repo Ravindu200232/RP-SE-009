@@ -756,8 +756,8 @@ with the prompt only: one line, no explanation.
 
 First identify the exact application/brand name stated in the brief. The logo
 MUST include that exact name as clear, correctly spelled, readable text. Design
-one memorable domain-relevant symbol plus a clean wordmark; do not invent or
-shorten the name.
+one memorable domain-relevant symbol in a clean circular badge/emblem plus a
+clean wordmark; keep the symbol visibly round and do not invent or shorten the name.
 
 Describe: symbol concept, exact wordmark text in quotes, typography character,
 1-2 brand colours, simple background and flat vector treatment. Keep the mark

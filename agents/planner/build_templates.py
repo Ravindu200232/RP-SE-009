@@ -343,11 +343,14 @@ def _auth_module(signup_role: str, origins: list[str], demo_accounts: list[dict]
           for (const account of demoAccounts) {{
             let user = await db.collection('user').findOne({{ email: account.email }})
             if (user) {{
-              const credential = await db.collection('account').findOne({{
-                userId: {{ $in: [user._id, user._id.toString()] }}, providerId: 'credential',
-              }})
-              // A plain orphan user blocks provider signup but can never sign in.
-              if (!credential) {{
+              const ids = [user._id, user._id.toString()]
+              const credential = await db.collection('account').findOne({{ userId: {{ $in: ids }}, providerId: 'credential' }})
+              let valid = Boolean(credential)
+              if (valid) try {{ await auth.api.signInEmail({{ body: {{ email: account.email, password: account.password }} }}) }} catch {{ valid = false }}
+              // Seed owns demo credentials: repair stale/orphan identities through Better Auth.
+              if (!valid) {{
+                await db.collection('session').deleteMany({{ userId: {{ $in: ids }} }})
+                await db.collection('account').deleteMany({{ userId: {{ $in: ids }} }})
                 await db.collection('user').deleteOne({{ _id: user._id }})
                 user = null
               }}
@@ -367,10 +370,7 @@ def _auth_module(signup_role: str, origins: list[str], demo_accounts: list[dict]
 
         export function ensureDemoAccounts() {{
           if (!globalForAuth._authDemoSeed) {{
-            globalForAuth._authDemoSeed = live(createDemoAccounts).catch((error) => {{
-              globalForAuth._authDemoSeed = null
-              throw error
-            }})
+            globalForAuth._authDemoSeed = live(createDemoAccounts).finally(() => {{ globalForAuth._authDemoSeed = null }})
           }}
           return globalForAuth._authDemoSeed
         }}

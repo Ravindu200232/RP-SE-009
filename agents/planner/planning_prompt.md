@@ -367,7 +367,7 @@ Perform this silently before emitting JSON:
 - Give every caller exactly one matching API contract and handler with identical
   URL, method, request fields, response fields, errors, authorization, and effect.
 - Give requested CRUD, moderation, booking/payment, profile, and admin operations separate contracts.
-- For any mutating app, plan one shared React notification/toast host and require every create/update/delete/action to expose pending, success and failure feedback after the real persistence result.
+- For any app with auth or mutations, plan one shared non-blocking React toast host; sign-in/sign-up/sign-out and every persisted create/update/delete/action expose pending, real success and actionable failure feedback.
 - A CRUD capability is incomplete unless create, read, update and delete callers each have a matching served URL/method contract (only omit an operation the SRS explicitly omits).
 - If an authorised role can create login accounts, plan that API to provision the Better Auth credential and role together through the scaffold auth helper; never model it as a raw password insert into the `user` collection.
 - When auth is required, plan a working Better Auth sign-in page; when signup is
