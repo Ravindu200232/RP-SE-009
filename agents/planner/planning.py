@@ -34,6 +34,13 @@ FIXED IMPLEMENTATION STACK
 SIGN_IN_PATHS = frozenset({"/sign-in", "/signin", "/login"})
 SIGN_UP_PATHS = frozenset({"/sign-up", "/signup", "/register"})
 
+# Better Auth owns these collections and reaches them through its own catch-all
+# route, so no planned route reads or writes them. Asking the planner to "connect
+# it to the user flow or remove it" is a gap it cannot close either way: removing
+# the collection loses the identity model, and inventing a route for it competes
+# with the auth provider. The round then repeats until the budget is spent.
+AUTH_OWNED_COLLECTIONS = frozenset({"user", "account", "session", "verification"})
+
 # How many times the planner is asked to close its own gaps before the build
 # proceeds with what it has.
 GAP_ROUNDS = 3
@@ -43,6 +50,42 @@ _PLAN_VOLUME_KEYS = ("requirements", "routes", "file_plan", "site_map",
 
 def _plan_volume(plan: dict) -> dict:
     return {key: len(_list(plan.get(key))) for key in _PLAN_VOLUME_KEYS}
+
+_ROUTES_HEADING_RE = re.compile(r"^#+\s*Required Routes\s*$", re.M)
+_ROUTE_LINE_RE = re.compile(r"^\s*[*-]\s*`(/[^`]*)`\s*$", re.M)
+
+
+def _promised_routes(requirements: str) -> list[str]:
+    """The routes the approved SRS lists under Required Routes.
+
+    The specification says which pages the customer signed off on, and the
+    planner reads it as prose. On a large brief it quietly drops a few — three
+    of twenty-seven on the first sports store — and nothing downstream notices,
+    because a route that was never planned leaves no hole to find. Reading the
+    list back out of the brief is what turns a silent omission into a gap the
+    planner is asked to close.
+    """
+    # Not _text(): it collapses newlines, and every anchor below is a line one.
+    text = str(requirements or "")
+    match = _ROUTES_HEADING_RE.search(text)
+    if not match:
+        return []
+    tail = text[match.end():]
+    end = re.search(r"^#+\s+\S", tail, re.M)
+    return [route for route in _ROUTE_LINE_RE.findall(tail[:end.start()] if end else tail)]
+
+
+def _unplanned_routes(plan: dict, promised: list[str]) -> list[str]:
+    """Every promised route the plan does not serve."""
+    if not promised:
+        return []
+    served = {_url_shape(item.get("path")) for item in plan.get("routes") or []}
+    served |= {_url_shape(item.get("path")) for item in plan.get("site_map") or []}
+    missing = [route for route in promised if _url_shape(route) not in served]
+    return [f"the approved specification requires {route}, but no route or "
+            f"site_map entry serves it. Add the page, its file and its journey."
+            for route in missing]
+
 
 def _plan_is_poorer(candidate: dict, current: dict) -> bool:
     """True when a replanned answer carries less of the product than we hold."""
@@ -87,6 +130,26 @@ def _strings(value: Any, limit: int = 0) -> list[str]:
 
 def _records(value: Any) -> list[dict]:
     return [dict(item) for item in _list(value) if isinstance(item, dict)]
+
+def _url_shape(value: Any) -> str:
+    """A URL with its dynamic segment spelled one way.
+
+    A site map writes /workshop/job/:id and the routes table writes
+    /workshop/job/[id] for the same screen. Comparing the two as plain strings
+    reported a gap the planner could not close — it kept rewriting a page that
+    was already there, and burned every gap round on one phantom.
+    """
+    path = _text(value).split("?", 1)[0].split("#", 1)[0]
+    parts = []
+    for part in path.strip("/").split("/"):
+        if not part:
+            continue
+        if part.startswith((":", "[")) or part.endswith("]") or part.startswith("{"):
+            parts.append("[*]")
+        else:
+            parts.append(part.lower())
+    return "/" + "/".join(parts)
+
 
 def _slug(value: str, fallback: str = "agentforge-app") -> str:
     result = re.sub(r"[^a-z0-9]+", "-", _text(value).lower()).strip("-")
@@ -258,8 +321,18 @@ def _singular(word: str) -> str:
     return word[:-1] if word.endswith("s") else word
 
 def _plan_images(plan: dict, design: dict, source_input: str) -> list[dict]:
-    """Plan pictures only when asked: banner, poster, auth pages, seeded rows."""
-    if not feature_image_requested(source_input or plan.get("source_input_summary")):
+    """Plan pictures the model listed, plus the usual set when asked in words.
+
+    The keyword test only ever reads the requirement prose. On an SRS build the
+    customer answers the picture question in the interview instead, so the prose
+    says nothing about images and the test came back false — throwing away a
+    `## Images` list the model had already written and shipping an app with
+    nothing to look at. What the model listed is the answer; the keyword only
+    decides whether to add the standard banner/poster/auth/seed set on top.
+    """
+    listed = _records(design.get("images"))
+    asked = feature_image_requested(source_input or plan.get("source_input_summary"))
+    if not asked and not listed:
         return []
     title = plan["project"]["title"]
     out, taken = [], set()
@@ -273,6 +346,10 @@ def _plan_images(plan: dict, design: dict, source_input: str) -> list[dict]:
                     "prompt": _text(subject, 650), "aspect": aspect})
 
     context = _text(plan["project"].get("summary") or plan.get("description"), 180)
+    if not asked:
+        for extra in listed:
+            _add_listed_image(add, extra, title)
+        return out
     add("banner", "Hero banner across the top of the public landing page",
         f'wide premium advertisement for {title}; visually represent {context}; '
         f'background-led campaign scene, include the exact readable brand name "{title}" '
@@ -315,13 +392,18 @@ def _plan_images(plan: dict, design: dict, source_input: str) -> list[dict]:
                 f"single clear focal subject, uncluttered background, {IMAGE_STYLE}, {IMAGE_NO_TEXT}",
                 "square")
 
-    for extra in _records(design.get("images")):
-        purpose = _text(extra.get("purpose"), 300)
-        extra_prompt = _text(extra.get("prompt"), 420) or purpose
-        add(extra.get("key"), purpose,
-            f"{extra_prompt}; visually consistent with {title} and its real domain; "
-            f"{IMAGE_STYLE}, {IMAGE_NO_TEXT}", _text(extra.get("aspect"), 20) or "wide")
+    for extra in listed:
+        _add_listed_image(add, extra, title)
     return out
+
+
+def _add_listed_image(add, extra: dict, title: str) -> None:
+    """Queue one picture exactly as the model described it."""
+    purpose = _text(extra.get("purpose"), 300)
+    prompt = _text(extra.get("prompt"), 420) or purpose
+    add(extra.get("key"), purpose,
+        f"{prompt}; visually consistent with {title} and its real domain; "
+        f"{IMAGE_STYLE}, {IMAGE_NO_TEXT}", _text(extra.get("aspect"), 20) or "wide")
 
 def _runtime_path(file_path: str) -> str:
     rel = _text(file_path).replace("\\", "/")
@@ -567,8 +649,9 @@ class PlannerAgent:
         Only the planner writes plan content, so an incomplete first answer is
         answered by asking again rather than by filling the hole in Python.
         """
+        promised = _promised_routes(requirements)
         for attempt in range(1, GAP_ROUNDS + 1):
-            gaps = self.plan_gaps(plan)
+            gaps = self.plan_gaps(plan) + _unplanned_routes(plan, promised)
             if not gaps:
                 if attempt > 1:
                     self._log("INFO", "   ✅ Planner closed every gap")
@@ -634,8 +717,8 @@ class PlannerAgent:
         access = _dict(plan.get("roles_and_access"))
         pages = [item for item in plan.get("site_map") or []
                  if _text(item.get("type") or "page").lower() == "page"]
-        page_paths = {_text(item.get("path")) for item in pages}
-        route_paths = {_text(item.get("path")) for item in plan.get("routes") or []}
+        page_paths = {_url_shape(item.get("path")) for item in pages}
+        route_paths = {_url_shape(item.get("path")) for item in plan.get("routes") or []}
         route_files = {_text(item.get("file")) for item in plan.get("routes") or []}
         planned_files = {_text(item.get("path")) for item in plan.get("file_plan") or []}
         assigned = {_text(file.get("path"))
@@ -647,7 +730,7 @@ class PlannerAgent:
             ("sign-up", SIGN_UP_PATHS,
              _text(access.get("signup")).lower() == "open"),
         ):
-            if required and not (page_paths & aliases):
+            if required and not (page_paths & {_url_shape(a) for a in aliases}):
                 gaps.append(
                     f"roles_and_access needs a {label} flow, but no site_map "
                     f"page serves one. Add the page you intend (for example "
@@ -657,14 +740,14 @@ class PlannerAgent:
                             .get("global_navigation")):
             path = _text(nav.get("path"))
             if (path.startswith("/") and not path.startswith("/api/")
-                    and path not in page_paths):
+                    and _url_shape(path) not in page_paths):
                 gaps.append(
                     f"global_navigation links to {path}, but no site_map page "
                     f"serves it. Add that page or drop the link.")
 
         for item in pages:
             path = _text(item.get("path"))
-            if path and path not in route_paths:
+            if path and _url_shape(path) not in route_paths:
                 gaps.append(f"site_map page {path} has no routes entry naming "
                             f"its file.")
 
@@ -711,7 +794,8 @@ class PlannerAgent:
                     gaps.append(f"relationship {collection}.{m.group(1)} is missing that source field from data_model.")
                 if m and m.group(2) not in models:
                     gaps.append(f"relationship {rel} targets collection {m.group(2)}, but data_model does not define it.")
-            if collection and collection not in used_models:
+            if (collection and collection not in used_models
+                    and collection not in AUTH_OWNED_COLLECTIONS):
                 gaps.append(f"data_model collection {collection} is never read or written by a planned route; connect it to the user flow or remove it.")
 
         seeds = bool(access.get("demo_accounts")) or any(

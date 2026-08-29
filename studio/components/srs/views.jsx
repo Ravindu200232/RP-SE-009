@@ -185,7 +185,7 @@ function Document({ srs }) {
       </DocSection>
 
       <DocSection id="data-requirements" n={dataN} title="Data Requirements and Database Design">
-        {tables.length ? tables.map((table, i) => <DatabaseTable key={table.table_name || i} table={table} index={i} />) : <DocParagraph>No persistent business data is required by this specification.</DocParagraph>}
+        {tables.length ? tables.map((table, i) => <DatabaseTable key={`${table.table_name || 'table'}-${i}`} table={table} index={i} />) : <DocParagraph>No persistent business data is required by this specification.</DocParagraph>}
         {relationships.length > 0 && <DocSubsection title="Relationships"><RelationshipTable items={relationships} /></DocSubsection>}
       </DocSection>
 
@@ -296,19 +296,19 @@ function ApprovedPlanSection({ plan }) {
 function RequirementTable({ items, functional }) {
   const rows = list(items)
   if (!rows.length) return <DocParagraph>None recorded.</DocParagraph>
-  return <Table><thead><TR><TH>ID</TH><TH>{functional ? 'Module' : 'Category'}</TH><TH>Requirement</TH>{functional && <TH>Priority</TH>}<TH>Verification</TH></TR></thead><tbody>{rows.map((r, i) => <TR key={r.id || i}><TD className="font-mono text-[10.5px]">{r.id || `#${i + 1}`}</TD><TD>{functional ? r.module : r.category}</TD><TD className="min-w-[360px]">{r.requirement}</TD>{functional && <TD className="capitalize text-muted">{r.priority || 'medium'}</TD>}<TD className="text-muted">{r.verification_method || (functional ? 'Functional Test' : 'Test / Analysis')}</TD></TR>)}</tbody></Table>
+  return <Table><thead><TR><TH>ID</TH><TH>{functional ? 'Module' : 'Category'}</TH><TH>Requirement</TH>{functional && <TH>Priority</TH>}<TH>Verification</TH></TR></thead><tbody>{rows.map((r, i) => <TR key={`${r.id || 'req'}-${i}`}><TD className="font-mono text-[10.5px]">{r.id || `#${i + 1}`}</TD><TD>{functional ? r.module : r.category}</TD><TD className="min-w-[360px]">{r.requirement}</TD>{functional && <TD className="capitalize text-muted">{r.priority || 'medium'}</TD>}<TD className="text-muted">{r.verification_method || (functional ? 'Functional Test' : 'Test / Analysis')}</TD></TR>)}</tbody></Table>
 }
 
 function IntegrationTable({ items }) {
   const rows = list(items)
   if (!rows.length) return <DocParagraph>No external integrations are required for the initial release.</DocParagraph>
-  return <Table><thead><TR><TH>Integration</TH><TH>Type</TH><TH>Description</TH></TR></thead><tbody>{rows.map((r, i) => <TR key={r.name || i}><TD>{r.name}</TD><TD className="text-muted">{r.type}</TD><TD>{r.description}</TD></TR>)}</tbody></Table>
+  return <Table><thead><TR><TH>Integration</TH><TH>Type</TH><TH>Description</TH></TR></thead><tbody>{rows.map((r, i) => <TR key={`${r.name || 'integration'}-${i}`}><TD>{r.name}</TD><TD className="text-muted">{r.type}</TD><TD>{r.description}</TD></TR>)}</tbody></Table>
 }
 
 function WorkflowList({ items }) {
   const rows = list(items)
   if (!rows.length) return <DocParagraph>No separate business workflow was recorded.</DocParagraph>
-  return <div className="space-y-3">{rows.map((wf, i) => <div key={wf.workflow_name || i} className="rounded-xl bg-black/[.02] p-3 ring-1 ring-line/60 dark:bg-white/[.022]"><p className="text-[11.5px] font-semibold text-ink">{wf.workflow_name || `Workflow ${i + 1}`}{wf.who ? <span className="ml-2 font-normal text-muted">— {wf.who}</span> : null}</p><ol className="mt-2 space-y-1">{list(wf.steps).map((step, j) => <li key={j} className="grid grid-cols-[24px_1fr] gap-2 text-[11.5px] leading-relaxed text-muted"><span className="font-mono text-faint">{j + 1}.</span><span>{step}</span></li>)}</ol></div>)}</div>
+  return <div className="space-y-3">{rows.map((wf, i) => <div key={`${wf.workflow_name || 'workflow'}-${i}`} className="rounded-xl bg-black/[.02] p-3 ring-1 ring-line/60 dark:bg-white/[.022]"><p className="text-[11.5px] font-semibold text-ink">{wf.workflow_name || `Workflow ${i + 1}`}{wf.who ? <span className="ml-2 font-normal text-muted">— {wf.who}</span> : null}</p><ol className="mt-2 space-y-1">{list(wf.steps).map((step, j) => <li key={j} className="grid grid-cols-[24px_1fr] gap-2 text-[11.5px] leading-relaxed text-muted"><span className="font-mono text-faint">{j + 1}.</span><span>{step}</span></li>)}</ol></div>)}</div>
 }
 
 function TraceabilityTable({ items }) {
@@ -318,12 +318,13 @@ function TraceabilityTable({ items }) {
 }
 
 function QualityReview({ items }) {
-  return <Table><thead><TR><TH>Requirement</TH><TH>Review warning</TH></TR></thead><tbody>{list(items).map((r, i) => <TR key={r.requirement_id || i}><TD className="font-mono">{r.requirement_id || `#${i + 1}`}</TD><TD>{list(r.warnings).join('; ')}</TD></TR>)}</tbody></Table>
+  return <Table><thead><TR><TH>Requirement</TH><TH>Review warning</TH></TR></thead><tbody>{list(items).map((r, i) => <TR key={`${r.requirement_id || 'item'}-${i}`}><TD className="font-mono">{r.requirement_id || `#${i + 1}`}</TD><TD>{list(r.warnings).join('; ')}</TD></TR>)}</tbody></Table>
 }
 
+/** One table from the database design. Generated field names repeat often enough that row keys carry the index. */
 function DatabaseTable({ table, index }) {
   const fields = list(table.fields || table.columns)
-  return <DocSubsection title={`${index + 1}. ${table.table_name || table.name || `Table ${index + 1}`}`}>{table.description && <DocParagraph>{table.description}</DocParagraph>}<div className={table.description ? 'mt-2' : ''}><Table><thead><TR><TH>Field</TH><TH>Type</TH><TH>Key / Notes</TH></TR></thead><tbody>{fields.map((f, i) => { const notes = [f.primary_key && 'PK', f.type === 'foreign_key' && f.references && `FK→${f.references}`, f.unique && 'unique', f.nullable === false && 'required', list(f.values).length && `enum: ${list(f.values).slice(0, 5).join(', ')}`, f.default != null && `default=${String(f.default)}`].filter(Boolean).join(', '); return <TR key={f.name || i}><TD>{typeof f === 'string' ? f : f.name}</TD><TD className="text-muted">{typeof f === 'object' ? f.type : ''}</TD><TD className="text-muted">{notes}</TD></TR> })}</tbody></Table></div></DocSubsection>
+  return <DocSubsection title={`${index + 1}. ${table.table_name || table.name || `Table ${index + 1}`}`}>{table.description && <DocParagraph>{table.description}</DocParagraph>}<div className={table.description ? 'mt-2' : ''}><Table><thead><TR><TH>Field</TH><TH>Type</TH><TH>Key / Notes</TH></TR></thead><tbody>{fields.map((f, i) => { const notes = [f.primary_key && 'PK', f.type === 'foreign_key' && f.references && `FK→${f.references}`, f.unique && 'unique', f.nullable === false && 'required', list(f.values).length && `enum: ${list(f.values).slice(0, 5).join(', ')}`, f.default != null && `default=${String(f.default)}`].filter(Boolean).join(', '); return <TR key={`${f.name || 'field'}-${i}`}><TD>{typeof f === 'string' ? f : f.name}</TD><TD className="text-muted">{typeof f === 'object' ? f.type : ''}</TD><TD className="text-muted">{notes}</TD></TR> })}</tbody></Table></div></DocSubsection>
 }
 
 function RelationshipTable({ items }) {
@@ -331,11 +332,11 @@ function RelationshipTable({ items }) {
 }
 
 function RoleSummary({ roles }) {
-  return <Table><thead><TR><TH>Role</TH><TH>Description</TH></TR></thead><tbody>{list(roles).map((r, i) => <TR key={r.role_key || i}><TD>{r.role_name || r.name || line(r)}</TD><TD className="text-muted">{r.description || '—'}</TD></TR>)}</tbody></Table>
+  return <Table><thead><TR><TH>Role</TH><TH>Description</TH></TR></thead><tbody>{list(roles).map((r, i) => <TR key={`${r.role_key || 'role'}-${i}`}><TD>{r.role_name || r.name || line(r)}</TD><TD className="text-muted">{r.description || '—'}</TD></TR>)}</tbody></Table>
 }
 
 function RoleAccessTable({ items }) {
-  return <Table><thead><TR><TH>Role</TH><TH>Allowed Pages</TH><TH>Allowed Functions</TH></TR></thead><tbody>{list(items).map((r, i) => <TR key={r.role || i}><TD>{r.role || r.role_name}</TD><TD className="text-muted">{list(r.allowed_pages || r.pages).map(line).join(', ') || '—'}</TD><TD className="text-muted">{list(r.allowed_functions || r.permissions || r.access).map(line).join(', ') || '—'}</TD></TR>)}</tbody></Table>
+  return <Table><thead><TR><TH>Role</TH><TH>Allowed Pages</TH><TH>Allowed Functions</TH></TR></thead><tbody>{list(items).map((r, i) => <TR key={`${r.role || 'role'}-${i}`}><TD>{r.role || r.role_name}</TD><TD className="text-muted">{list(r.allowed_pages || r.pages).map(line).join(', ') || '—'}</TD><TD className="text-muted">{list(r.allowed_functions || r.permissions || r.access).map(line).join(', ') || '—'}</TD></TR>)}</tbody></Table>
 }
 
 function UiUxSection({ doc }) {
@@ -352,13 +353,13 @@ function KeyValue({ label, value }) {
 function RiskList({ items }) {
   const rows = list(items)
   if (!rows.length) return <DocParagraph>No specific project risks were recorded.</DocParagraph>
-  return <div className="space-y-3">{rows.map((r, i) => <div key={r.id || i} className="rounded-xl border border-line p-3"><div className="flex items-center gap-2"><Tag tone={String(r.severity || '').toLowerCase() === 'high' ? 'solid' : undefined}>{r.severity || 'Medium'} risk</Tag><p className="text-[12px] font-semibold text-ink">{r.risk || line(r)}</p></div>{r.reason && <p className="mt-2 text-[11.5px] leading-relaxed text-muted">{r.reason}</p>}{r.mitigation && <p className="mt-1 text-[11.5px] leading-relaxed text-label"><b>Mitigation:</b> {r.mitigation}</p>}</div>)}</div>
+  return <div className="space-y-3">{rows.map((r, i) => <div key={`${r.id || 'risk'}-${i}`} className="rounded-xl border border-line p-3"><div className="flex items-center gap-2"><Tag tone={String(r.severity || '').toLowerCase() === 'high' ? 'solid' : undefined}>{r.severity || 'Medium'} risk</Tag><p className="text-[12px] font-semibold text-ink">{r.risk || line(r)}</p></div>{r.reason && <p className="mt-2 text-[11.5px] leading-relaxed text-muted">{r.reason}</p>}{r.mitigation && <p className="mt-1 text-[11.5px] leading-relaxed text-label"><b>Mitigation:</b> {r.mitigation}</p>}</div>)}</div>
 }
 
 function AcceptanceList({ items }) {
   const rows = list(items)
   if (!rows.length) return <DocParagraph>No acceptance criteria were recorded.</DocParagraph>
-  return <ul>{rows.map((r, i) => <li key={r.id || i} className="grid grid-cols-[28px_1fr] gap-2 border-b border-line py-2 last:border-0"><span className="text-ok">✓</span><span className="text-[12px] leading-relaxed text-ink">{typeof r === 'string' ? r : (r.criterion || line(r))}</span></li>)}</ul>
+  return <ul>{rows.map((r, i) => <li key={`${r.id || 'criterion'}-${i}`} className="grid grid-cols-[28px_1fr] gap-2 border-b border-line py-2 last:border-0"><span className="text-ok">✓</span><span className="text-[12px] leading-relaxed text-ink">{typeof r === 'string' ? r : (r.criterion || line(r))}</span></li>)}</ul>
 }
 
 function RevisionTable({ items }) {
@@ -590,7 +591,7 @@ function Diagrams({ srs }) {
     <>
       <div className="mb-4 flex w-fit flex-wrap border border-line2">
         {diagrams.map((d, i) => (
-          <button key={d.name} onClick={() => setOpen(i)}
+          <button key={`${d.name || 'diagram'}-${i}`} onClick={() => setOpen(i)}
                   className={cn('border-r border-line2 px-3 py-1.5 text-[11px]',
                     'font-semibold capitalize transition-colors last:border-r-0',
                     i === open ? 'bg-accent text-bg'
@@ -616,7 +617,7 @@ function Diagrams({ srs }) {
             </p>
             <ol className="mt-1.5 space-y-1 text-[11px] leading-[1.5] text-muted">
               {list(current.drawingRules).map((rule, i) => (
-                <li key={rule}><span className="mr-1.5 font-mono text-faint">{i + 1}.</span>{rule}</li>
+                <li key={`${rule}-${i}`}><span className="mr-1.5 font-mono text-faint">{i + 1}.</span>{rule}</li>
               ))}
             </ol>
           </div>
@@ -626,7 +627,7 @@ function Diagrams({ srs }) {
                 How to read the notation
               </p>
               <ul className="mt-1.5 space-y-1 text-[11px] leading-[1.5] text-muted">
-                {list(current.notation).map(item => <li key={item}>• {item}</li>)}
+                {list(current.notation).map((item, i) => <li key={`${item}-${i}`}>• {item}</li>)}
               </ul>
             </div>
           )}
@@ -683,7 +684,7 @@ function Interview({ srs }) {
         const a = byId[q.id]
         const value = a && (Array.isArray(a.value) ? a.value.join(', ') : a.value)
         return (
-          <div key={q.id || i}
+          <div key={`${q.id || 'question'}-${i}`}
                className="grid grid-cols-[34px_1fr] gap-2.5 border-b border-line
                           px-3 py-2.5 last:border-0">
             <span className="font-mono text-[10.5px] text-faint">

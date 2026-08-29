@@ -466,8 +466,12 @@ def run_qa_unit_stage(arch, proj_dir: Path, qa, *, build_ok: bool,
             break
 
         now_cases = {(f.test_file, f.name) for f in failures}
-        worse = (previous is not None
-                 and not (now_cases < previous and len(failures) < len(best)))
+        # Progress is a smaller count, not a strict subset. Demanding a subset
+        # threw away every round that fixed four cases and broke one, so a run
+        # that went 6 → 3 → 2 reverted all three and ended back at 6. The cases
+        # a round broke are still named below, so the model is told what it
+        # cost without the net win being discarded.
+        worse = previous is not None and len(failures) >= len(best)
         if worse:
             stalls += 1
             new_red = sorted(now_cases - previous)
@@ -536,6 +540,21 @@ def run_qa_unit_stage(arch, proj_dir: Path, qa, *, build_ok: bool,
         else:
             stalls = 0
             had_baseline = previous is not None
+            # A kept round can still have broken something on its way down.
+            # Name it, or the next round rewrites the same file blind and the
+            # count climbs back over the rounds that follow.
+            broke = sorted(now_cases - previous) if previous else []
+            for tf, case in broke:
+                fixer.refusals[tf] = (f"the last round reduced the failures but "
+                                      f"made {case!r} fail, and that case was "
+                                      f"passing before. Keep the repair inside "
+                                      f"the case it is about; the shared setup "
+                                      f"at the top of the file is read by every "
+                                      f"case in it.")
+            if broke:
+                elog("WARN", f"   ⚠ that round also broke {len(broke)} passing "
+                             f"case(s) — kept it for the net gain and told the "
+                             f"fixer what it cost")
             previous, best = now_cases, failures
 
             snap.forget()

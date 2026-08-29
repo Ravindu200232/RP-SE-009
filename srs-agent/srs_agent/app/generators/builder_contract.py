@@ -337,9 +337,12 @@ def build_handoff(*, plan: dict, srs_document: dict, pack: dict | None = None,
                                   if isinstance(doc.get("app_summary"), dict) else "")),
         "requirements": requirements,
         "source_requirements": [r for r in requirements if r.get("source_id")],
+        # Kept verbatim so the handoff can quote the sizes and rules the
+        # customer stated in numbers, which nothing downstream reconstructs.
+        "customer_brief": str(doc.get("customer_brief") or ""),
         "capability_seeds": capability_seeds,
         "feature_contracts": feature_contracts,
-        "models": models,
+        "models": _merge_same_model(models),
         "relationships": relationships,
         "pages": pages,
         "apis": apis,
@@ -398,6 +401,38 @@ def rerender_prompt(handoff: dict, plan: dict, srs_document: dict) -> str:
     """Backward-compatible helper used by older callers."""
     return refresh_handoff(handoff, plan, srs_document).get("prompt", "")
 
+
+
+def _merge_same_model(models: list) -> list:
+    """One entry per collection, however many places described it.
+
+    The auth scaffold contributes a User and the SRS contributes its own users
+    table, so every handoff carried the same model twice — once with `role`
+    as a string and once with `role_id` pointing at a Role table. The builder
+    was handed both and had to guess which one the app uses. Keep the first
+    entry, and fold in any field the later one adds rather than dropping it.
+    """
+    merged: dict = {}
+    for model in models:
+        if not isinstance(model, dict):
+            continue
+        key = str(model.get("table") or model.get("name") or "").strip().lower()
+        if not key:
+            continue
+        first = merged.get(key)
+        if first is None:
+            merged[key] = dict(model)
+            continue
+        known = {str(s.get("name")) for s in first.get("field_specs") or []}
+        for spec in model.get("field_specs") or []:
+            name = str(spec.get("name") or "")
+            if name and name not in known:
+                known.add(name)
+                first.setdefault("field_specs", []).append(spec)
+                first.setdefault("fields", {})[name] = spec.get("type")
+        if not _clean(first.get("description")) and _clean(model.get("description")):
+            first["description"] = model["description"]
+    return list(merged.values())
 
 
 def attach_handoff(srs: dict, plan: dict, pack: dict | None = None,

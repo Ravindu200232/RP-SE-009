@@ -36,6 +36,7 @@ _SYS = (
     '  "app_summary": {"business_goal": str, "short_description": str, "target_users": [str]},\n'
     '  "roles": [{"role_key": snake_case, "role_name": str, "description": str}],\n'
     '  "main_modules": [str],\n'
+    '  "pages": [{"route": str, "sections": [str], "functions": [str]}],\n'
     '  "tables": [{"table_name": snake_case, "description": str, "fields": ['
     '{"name": str, "type": "uuid|string|text|integer|decimal|boolean|date|datetime|enum|json|foreign_key", '
     '"primary_key": bool, "nullable": bool, "unique": bool, "references": "table.id", "values": [str], "default": any}]}],\n'
@@ -52,6 +53,33 @@ _SYS = (
     '  "ambiguities": [{"area": str, "description": str, "assumption_made": str, "needs_clarification": bool}]\n'
     "}\n"
     "Reference foreign keys with the exact 'table.id' form.\n"
+    "\n"
+    "`pages` is where a specification stops being a list of nouns and becomes "
+    "something a developer can build from, so give it real weight. Write one "
+    "entry per route the approved plan already has — never a new route — "
+    "and for each of them:\n"
+    "- `sections`: the blocks a visitor meets going down that page, in order, "
+    "each named for what it holds. A landing page is a hero with its headline "
+    "and its calls to action, then the browse-by-category strip, the featured "
+    "items, the trust or testimonial block, the sign-up strip, the footer. A "
+    "list page is its search box, its filters named field by field, its sort "
+    "options, the result grid, and what that grid says when it is empty. A "
+    "detail page is its image, its identity block, its full description, its "
+    "specification table, its action row and its related items. Headings like "
+    "'Main content' or 'Details section' are worth nothing to the person "
+    "building it.\n"
+    "- `functions`: every action a user can take on that page and what each "
+    "one does, plus what a row or card in a list shows, field by field. "
+    "'Manage products' is not a function. 'Search products by name', "
+    "'Filter by category, brand and price', 'Sort by price or newest', and "
+    "'Each card shows image, name, brand, price, discounted price when set, "
+    "stock state and an Add to Cart action' are four. Name the empty state, "
+    "the over-limit state, and the refusal message wherever a rule can reject "
+    "the action.\n"
+    "The builder reads this and nothing else when it lays out the screen. A "
+    "page left with one line of functions and no sections is built as one line "
+    "of functions and no sections, and the customer opens a heading over an "
+    "empty box.\n"
     "\n"
     "THE APPROVED PLAN IS THE BOUNDARY. It is what the customer read and signed "
     "off on, and it is the whole of what you are specifying.\n"
@@ -70,6 +98,27 @@ _SYS = (
     "collection under exactly the name you write, so `bookses` ships as a "
     "real collection in a real app. It has happened in 4 specifications."
 )
+
+
+def _pages_to_cover(skeleton: dict) -> str:
+    """Name every route the enrichment has to describe, and count them.
+
+    "One entry per route the plan has" gets read as "the interesting ones": a
+    courier spec came back with fifteen of seventeen, and the two it skipped
+    were the driver screens, which shipped as a heading over nothing. A list
+    with a number on it is much harder to come up short against.
+    """
+    doc = (skeleton or {}).get("srs_document") or {}
+    routes = [str(p.get("route") or "").strip()
+              for p in (doc.get("public_pages") or []) + (doc.get("protected_pages") or [])
+              if isinstance(p, dict) and str(p.get("route") or "").strip()]
+    if not routes:
+        return ""
+    listed = "\n".join(f"- {r}" for r in routes)
+    return (f"THE {len(routes)} ROUTES YOUR `pages` MUST COVER, ALL OF THEM:\n"
+            f"{listed}\n\nReturn exactly {len(routes)} entries in `pages`, "
+            f"one per route above, each with its sections and its functions. A "
+            f"route you leave out is built as an empty screen.\n\n")
 
 
 def _answers_digest(questions: list[dict], answers: list[dict]) -> str:
@@ -198,7 +247,8 @@ async def generate_srs_node(state: AgentState) -> AgentState:
             + (("This app has NO login and NO user accounts. Say nothing about "
                 "users, roles, permissions or admins.\n\n") if plan and not auth else "")
             + f"USER ANSWERS:\n{digest}\n\n"
-            "Now produce the enrichment JSON described in the system message, "
+            + _pages_to_cover(skeleton)
+            + "Now produce the enrichment JSON described in the system message, "
             "tailored precisely to this idea."
         )
         pack = await llm.complete_json(
@@ -228,6 +278,12 @@ async def generate_srs_node(state: AgentState) -> AgentState:
 
     if plan:
         srs["srs_document"]["approved_plan_markdown"] = str(state.get("plan_markdown") or "")
+        # The customer's own words, kept whole. The seed sizes they wrote down
+        # ("at least 6 rooms, at least 20 events") live nowhere else by this
+        # point: the interview turns them into records and the counts are lost,
+        # so the handoff asked for "realistic demo data" and the build shipped
+        # two rooms and three events.
+        srs["srs_document"]["customer_brief"] = str(brief or "")
         attach_handoff(srs, plan, pack_profile, auth=auth)
         handoff = srs["srs_document"]["builder_handoff"]
         await bus.emit(pid, "SrsJsonGeneratorAgent",

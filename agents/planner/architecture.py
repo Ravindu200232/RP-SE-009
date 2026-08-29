@@ -48,6 +48,15 @@ QUALITY BAR
   design decision, responsive rule, and E2E-visible outcome assigned to a file.
 - No TODO, placeholder, coming-soon screen, href="#", fake JSX record, dead
   button, console-only error, or permanently disabled feature.
+- A control whose label names an action must PERFORM that action. "Add to cart",
+  "Save", "Book", "Approve", "Refund" and their kind are never a plain <Link> to
+  the page where the result would show: that navigates to an empty cart and
+  reads, correctly, as the feature being missing. Write them as a <button> whose
+  handler does the work — update the store, call the planned API, persist — and
+  only then navigate or revalidate. If you find yourself writing
+  `<Link href="/cart">Add to Cart</Link>`, the capability is not built yet.
+  Navigation-only labels are the ones that merely go somewhere: "View cart",
+  "Browse roasts", "Back to orders".
 - A list/table/fetched panel has designed loading, empty, error, and success
   behavior. The empty state explains what belongs there and provides the real
   next action. Mutation success updates state, refreshes, or navigates without a
@@ -68,6 +77,14 @@ GLOBAL SHELL AND PAGE LAYOUT
   active state from usePathname, one primary action, a mobile menu that really
   opens and closes, and account controls only where the plan has accounts. Every
   href is a planned route.
+- The same rule binds the Footer, and it is the one that gets broken: a footer
+  is written last, from memory of what the app "should" have, and it ends up
+  linking /vehicles, /assignments, /inventory — tidy names that no page serves.
+  Every one of them is a 404 sitting on every single screen of the app. Before
+  you write a footer href, find that exact path in the plan's site map. If the
+  section you want has no page, either link the page that does the job under
+  its real path, or write the words as plain text with no link at all. A footer
+  of four honest links beats twelve that lead nowhere.
 - When the plan has accounts, the Navbar reads the live session with
   `useSession()` from @/lib/auth-client and shows who is signed in right now.
   Signed in: render that user's own name — `session.user.name`, falling back to
@@ -148,6 +165,16 @@ Each item below is a crash seen in a served build. Write the right-hand pattern.
   capitalised tag and every helper you call has an import line. `<Link>` needs
   `import Link from 'next/link'`; icons need their named import from
   `lucide-react`; a planned component needs its `@/components/...` import.
+- `Attempted import error: 'X' is not exported from 'lucide-react'` — the icon
+  name was guessed. The build still compiles, so this one reaches the browser
+  as a blank page. lucide renamed and dropped names over the years: there is no
+  `Tool` (it is `Wrench`), no `Gas` (it is `Fuel`), no `Cog` on its own (it is
+  `Settings`), no `Trash` (it is `Trash2`), no `Edit` (it is `Pencil` or
+  `SquarePen`). Reach for the handful you are sure of — `Check`, `X`, `Plus`,
+  `Search`, `User`, `Calendar`, `Clock`, `Car`, `Wrench`, `Fuel`, `Settings`,
+  `AlertCircle`, `ChevronRight`, `LogOut`, `Trash2`, `Pencil` — and when the
+  icon you want is not obviously among them, write the label as text instead.
+  A word the user can read beats an icon that blanks the page.
 - `TypeError: x.toLocaleDateString is not a function` — a Mongo `Date` becomes a
   string the moment the document is serialized for a client component or an API
   response. Never call a date method on a field you read back. Wrap it:
@@ -160,6 +187,20 @@ Each item below is a crash seen in a served build. Write the right-hand pattern.
   `const query = /^[0-9a-f]{24}$/i.test(id) ? { _id: new ObjectId(id) } : { slug: id }`
   Decide this once per collection and use the same rule in every route, link and
   seed that touches it.
+- A related name that renders as the same fallback word on every row — every
+  product tagged "General", every booking by "Customer". Nothing threw, so
+  nothing reported it, and the page looks finished while the whole relationship
+  is missing. The cause is always the same: `serialize()` turned that row's
+  `brand_id` into a STRING, and the `_id` it has to match is still an ObjectId,
+  so `findOne({ _id: p.brand_id })` matches nothing and `?? 'General'` hides it.
+  Resolve the names BEFORE serializing, or key a lookup by string on both
+  sides:
+  `const names = new Map((await brands.find({}).toArray()).map(b => [String(b._id), b.name]))`
+  then read `names.get(String(p.brand_id))`. One query for the whole list, not
+  one per row — a per-row `findOne` inside `.map` is a page that gets slower
+  with every record the customer adds. And write the empty case as the truth
+  it is: an unlinked row says "Unassigned", never a plausible-looking category
+  name that makes a broken join look like real data.
 - `TypeError: rows.map is not a function` — a fetch result was assumed to be an
   array. A handler returns an object on error, and `await res.json()` gives that
   object. Normalise before rendering: `const rows = Array.isArray(data) ? data : []`
@@ -190,12 +231,28 @@ DATA, AUTH, AND ACTIONS
   (type="email", autocomplete="email"), a labelled password input
   (type="password", autocomplete="current-password"), and one submit control.
   Submitting awaits `signIn.email({ email, password })` from @/lib/auth-client
-  inside the page's own submit handler. While the request is in flight the
+  inside the page's own submit handler. That call resolves to
+  `{ data, error }` and NOTHING ELSE. There is no `success` field on it: test
+  `if (result.error)` for the failure and read `result.data.user` for the
+  person who just signed in — their role is `result.data.user.role`. Branching
+  on `result.success` reads `undefined` on a sign-in that worked perfectly, so
+  the session is created, the navbar updates to their name, and the page they
+  are standing on tells them "Invalid email or password" and never moves. It
+  is the worst failure of the lot, because every log says the sign-in
+  succeeded. While the request is in flight the
   submit control is disabled and says so. A rejected sign-in renders a readable
   message beside the form — never a console log, never a silent no-op, never a
   blank screen. A successful sign-in sends the user to the home the plan gives
   their role, with `router.push(...)` followed by `router.refresh()` so the
-  server sees the new session. When signup is open the page links to the planned
+  server sees the new session. Take the role off the value `signIn.email`
+  resolves to — it carries the signed-in user, role included — and push that
+  role's own planned home. Never push `/`: the landing route reads the session
+  on the server, and at that instant the cookie the browser just received has
+  not reached it, so it redirects straight back and the user is left staring at
+  the sign-in form they just completed, signed in, going nowhere. For the same
+  reason never pass a `callbackURL` pointing at the sign-in or sign-up page. If
+  the result carries no role, push the plan's default signed-in home — any real
+  page, never the one you are standing on. When signup is open the page links to the planned
   sign-up route; it never links to a route the site map does not serve.
 - The planned sign-up page mirrors it with `signUp.email({ email, password, name })`,
   a labelled name input, autocomplete="new-password", the same pending, error and
@@ -203,11 +260,41 @@ DATA, AUTH, AND ACTIONS
 - Never leave either page rendering only markup: a submit control that calls no
   auth helper is a dead screen, and every other protected route in the app
   depends on this one working.
+- Every picture the plan lists under `## Images` has to be rendered by some
+  file. Artwork drawn for the sign-in and sign-up screens is the one that gets
+  forgotten: the image model draws it, it lands in public/generated, and the
+  auth pages ship as a bare form on white, so the app looks unfinished in the
+  one place every user starts. If the plan names an image for those screens,
+  the page shows it — as a side panel on wide screens or a covered backdrop
+  behind the card — and the same goes for any other planned key. Do not write
+  a picture the plan never listed, and never leave a listed one unused.
 - Better Auth defaults expose `ensureDemoAccounts()` in `lib/auth.js`; product
   seed code only awaits that helper. Never copy provider/signup logic into the
   seeder or insert credential rows yourself.
 - Ownership, role, price, totals, and user identity come from the session and
   database, never trusted request fields. API status/messages match the plan.
+- A page the plan restricts to a role OPENS WITH THAT CHECK, in the page file
+  itself. Read the session server-side, compare the role, and `redirect(...)`
+  when it does not match — before a single query runs. That makes it a Server
+  Component: no `'use client'` at the top, because `getSessionUser` and
+  `redirect` do not exist in the browser and a client page importing them is a
+  guard that never runs. When the screen also needs state or handlers, the page
+  stays the server file that checks the role and fetches the data, and hands it
+  to a `'use client'` child component that does the interacting. Leaving the check out
+  is not a smaller bug than a crash: the page still renders, so nothing fails
+  and nothing reports it, while anyone who types the URL reads the whole admin
+  dashboard — revenue, customers, every order. Hiding the link in the navbar
+  is not the check; the navbar is not what serves the page. The same holds one
+  row down: a route that returns one record confirms the signed-in user owns
+  that record before returning it, or every customer can read every other
+  customer's order by changing the number in the URL.
+- Compare a role against the SPELLING THE PLAN USES, character for character.
+  `user.role === 'admin'` against a seeded role of `Admin` is false, and the
+  branch it guards silently takes the other path: the admin gets scoped to
+  their own rows and the management table they opened comes back empty, with
+  no error anywhere to explain it. Copy the role strings out of the plan's
+  demo accounts and use those exact values in every comparison, filter and
+  redirect.
 - Every visible action completes its full UI -> API/server -> persistence -> UI
   path and every navigation target exists in the site map.
 

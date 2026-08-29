@@ -478,7 +478,7 @@ def run_build_fix_loop(arch, proj_dir: Path, db_ok: bool,
         first = lines[0][:120] if lines else "?"
         elog("WARN", f"   ❌ Build failed: {first}")
 
-        for ln in lines[1:9]:
+        for ln in _diagnostic_lines(lines):
             elog("WARN", f"      {ln[:160]}")
         emit({"type": "test_fixing", "attempt": rnd,
               "errors": errors.splitlines()[:5]})
@@ -555,6 +555,25 @@ def run_build_fix_loop(arch, proj_dir: Path, db_ok: bool,
 _ERR_FILE_RE = re.compile(r"^\s*\.?/?((?:app|components|lib)/[\w./\[\]@-]+"
                           r"\.(?:jsx?|mjs))\s*$", re.M)
 FAIL_SRC_BUDGET = 26_000
+
+
+_BUILD_NOISE_RE = re.compile(
+    r"^\s*(?:[>$]|▲|-\s|✓|⚠|Creating an optimized|Skipping validation"
+    r"|Finished TypeScript|Collecting page data|Generating static pages|npm (?:warn|notice))",
+    re.I)
+
+
+def _diagnostic_lines(lines: list[str], keep: int = 8) -> list[str]:
+    """The lines of a failed build that say what actually broke.
+
+    A Next.js build opens with eight lines of banner — the npm script, the
+    version, the environment, "Compiled successfully" — and the real error
+    comes after them. Printing the first eight printed the banner every time,
+    so a prerender failure read as a blank wall and the same file was rewritten
+    round after round against no information.
+    """
+    body = [ln for ln in lines[1:] if not _BUILD_NOISE_RE.match(ln)]
+    return (body or lines[1:])[:keep]
 
 
 def _failing_sources(arch, errors: str) -> str:

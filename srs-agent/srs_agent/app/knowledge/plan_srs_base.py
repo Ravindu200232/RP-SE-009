@@ -25,15 +25,43 @@ def _snake(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", spaced.lower()).strip("_")
 
 
+# Words these apps actually use whose plural is not made by adding a letter.
+# Without them `bus` becomes `buses` and comes back as `buse`, and `quiz`
+# becomes `quizes` and comes back as `quize` — and the builder creates the
+# collection under exactly that name, so the nonsense ships.
+_IRREGULAR_PLURAL = {
+    "analysis": "analyses", "diagnosis": "diagnoses", "status": "statuses",
+    "quiz": "quizzes", "bus": "buses", "person": "people", "child": "children",
+    "index": "indexes", "matrix": "matrices", "series": "series",
+    "staff": "staff", "equipment": "equipment", "feedback": "feedback",
+}
+_IRREGULAR_SINGULAR = {v: k for k, v in _IRREGULAR_PLURAL.items()}
+# Endings that look plural but are not: class, bus, analysis, campus.
+_FALSE_PLURAL_ENDINGS = ("ss", "us", "is", "as", "os")
+
+
+def _is_plural(name: str) -> bool:
+    """Does this word already name more than one thing?"""
+    return (name in _IRREGULAR_SINGULAR
+            or (name.endswith("s") and not name.endswith(_FALSE_PLURAL_ENDINGS)))
+
+
 def _table_name(text: str) -> str:
-    """`Sale Item` -> `sale_items`."""
+    """`Sale Item` -> `sale_items`, and `quizzes` stays `quizzes`."""
     name = _snake(text)
     if not name:
         return "record"
-    if name.endswith("y") and not name.endswith(("ay", "ey", "oy", "uy")):
-        return name[:-1] + "ies"
-    if name.endswith(("s", "x", "z", "ch", "sh")):
-        return name + "es"
+    head, _, last = name.rpartition("_")
+    if last in _IRREGULAR_PLURAL:
+        return (head + "_" if head else "") + _IRREGULAR_PLURAL[last]
+    if _is_plural(last):
+        # Already plural. Pluralising it again is where `bookses` and
+        # `quizzeses` come from, and nothing downstream corrects them.
+        return name
+    if last.endswith("y") and not last.endswith(("ay", "ey", "oy", "uy")):
+        return (head + "_" if head else "") + last[:-1] + "ies"
+    if last.endswith(("s", "x", "z", "ch", "sh")):
+        return (head + "_" if head else "") + last + "es"
     return name + "s"
 
 
@@ -169,12 +197,18 @@ def _tables_from_plan(plan: dict, auth: bool) -> tuple[list[dict], list[dict]]:
 
 
 def _singular(table: str) -> str:
-    """`categories` -> `category`, `sales` -> `sale`."""
-    if table.endswith("ies"):
-        return table[:-3] + "y"
-    if table.endswith(("sses", "xes", "zes", "ches", "shes")):
-        return table[:-2]
-    return table[:-1] if table.endswith("s") and not table.endswith("ss") else table
+    """`categories` -> `category`, `buses` -> `bus`, `quizzes` -> `quiz`."""
+    head, _, last = table.rpartition("_")
+    prefix = head + "_" if head else ""
+    if last in _IRREGULAR_SINGULAR:
+        return prefix + _IRREGULAR_SINGULAR[last]
+    if last.endswith("ies") and len(last) > 4:
+        return prefix + last[:-3] + "y"
+    if last.endswith(("sses", "xes", "zes", "ches", "shes")):
+        return prefix + last[:-2]
+    if last.endswith("s") and not last.endswith(_FALSE_PLURAL_ENDINGS):
+        return prefix + last[:-1]
+    return table
 
 
 def _route_for(name: str, index: int) -> str:
