@@ -65,10 +65,13 @@ QUALITY BAR
   edit/update and delete each use the exact planned API URL + HTTP method + id
   shape, check `res.ok`, persist first, then update/revalidate the visible list.
   Never ship create-only CRUD where edit/delete controls call missing methods.
-- Every mutation shows polished React feedback on both outcomes: a concise
-  success toast/alert after persistence and an actionable error toast/alert on
-  failure. Prefer the planned shared toast host (react-hot-toast is available)
+- Every auth action and persisted mutation shows polished non-blocking React
+  feedback: pending state, concise success after the real result, and actionable
+  failure feedback. Prefer the shared toast host (react-hot-toast is available)
   over `alert()`, console-only errors, or raw browser text.
+- Build a launch-ready, modern responsive product rather than generic CRUD UI:
+  strong hierarchy, polished forms/tables/dialogs, consistent spacing and useful
+  360px/tablet/desktop layouts with no clipped controls or horizontal overflow.
 - Preserve the approved palette, type scale, spacing, radii, depth, component
   states, content hierarchy, and mobile behavior. Every interactive element has
   rest, hover, visible keyboard focus, and disabled states when applicable.

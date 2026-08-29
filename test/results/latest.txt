@@ -1,7 +1,7 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-08-28T16:12:10+00:00
+Run at (UTC): 2026-08-29T08:32:02+00:00
 Command: python test/run_suite.py
 Python: 3.13.5
 Unit tests: 132
@@ -10,7 +10,7 @@ Total tests run: 152
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 0.065s
+Duration: 0.060s
 
 Detailed results
 ----------------
@@ -176,6 +176,6 @@ test_runtime_parts_are_unique_and_bootstrap_before_consumers (test.integration.t
 test_stable_server_entrypoint_delegates_to_shared_runtime (test.integration.test_runtime_composition.SharedRuntimeCompositionTests.test_stable_server_entrypoint_delegates_to_shared_runtime) ... ok
 
 ----------------------------------------------------------------------
-Ran 152 tests in 0.065s
+Ran 152 tests in 0.060s
 
 OK

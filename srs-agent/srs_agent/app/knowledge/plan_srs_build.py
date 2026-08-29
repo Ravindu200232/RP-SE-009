@@ -44,6 +44,9 @@ def build_srs_from_plan(*, project: dict, plan: dict, pack: dict | None = None,
 
     branding = build_branding(session, pack, app_name)
     intent = str(plan.get("product_intent") or "").strip()
+    report_note = str(((session.get("answers") or {}).get("report_details") or {}).get("value") or "").strip()
+    if not report_note and any(w in str(session.get("raw_idea", "")).lower() for w in ("report", "reports", "export")):
+        report_note = str(((session.get("answers") or {}).get("extra_notes") or {}).get("value") or "").strip()
 
     modules = []
     for screen in plan.get("screens") or []:
@@ -150,7 +153,8 @@ def build_srs_from_plan(*, project: dict, plan: dict, pack: dict | None = None,
             "pwa_support": "pwa" in devices,
             "required_components": _components_for(tables, auth, archetype),
         },
-        "reporting_requirements": [],
+        "reporting_requirements": ([{"report_name": "Requested reports",
+                                     "description": report_note}] if report_note else []),
         "integration_requirements": [],
         "assumptions": [str(a) for a in plan.get("assumptions") or []],
         "constraints": ["The system is built only from the approved plan; "

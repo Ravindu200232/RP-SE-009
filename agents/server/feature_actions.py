@@ -1,6 +1,7 @@
 # Feature flow: understand -> scope -> apply -> test -> refresh the preview.
 def run_feature(proj_name: str, request: str, model: str, think: bool = None,
-                qa_model: str = "", route: str = "", console: str = ""):
+                qa_model: str = "", route: str = "", console: str = "",
+                unit_tests: bool = True):
     """Apply, verify, stabilize, and test one dependency-aware change."""
     set_tester_emit(emit)
     try:
@@ -107,8 +108,10 @@ def run_feature(proj_name: str, request: str, model: str, think: bool = None,
             elog("INFO", f"   🛠 Live watch repaired {repaired} file write(s) before feature QA")
 
         eprog("Testing the feature…", 88)
-        _feature_tests(arch, proj_dir, spec, model, qa_model,
-                       build_ok=True)
+        if unit_tests:
+            _feature_tests(arch, proj_dir, spec, model, qa_model, build_ok=True)
+        else:
+            elog("INFO", "   🩺 Visual edit uses runtime verification only")
 
         eprog("Final live watch…", 95)
         final_check = verify_after_edit(
@@ -593,7 +596,7 @@ def run_element_edit(proj_name: str, instruction: str, element: dict,
         if broaden:
             count = len(getattr(impact, "files", []) or [])
             elog("INFO", f"   ↗ selected-region change spans {count} source file(s) — switching to full agentic change")
-            return run_feature(proj_name, change_request, model, think)
+            return run_feature(proj_name, change_request, model, think, unit_tests=False)
 
         anchor = (element.get("text") or "").strip()[:60]
         removing = looks_like_removal(instruction)
@@ -621,7 +624,7 @@ def run_element_edit(proj_name: str, instruction: str, element: dict,
                     f"Requested change:\n{instruction}\n\n"
                     "Implement the complete dependency-aware change across every necessary file, then verify it."
                 )
-                return run_feature(proj_name, change_request, model, think)
+                return run_feature(proj_name, change_request, model, think, unit_tests=False)
             return
 
         if not arch.write_file(res.path, written):

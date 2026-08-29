@@ -446,7 +446,8 @@ def _logo_prompt(app_name: str, pack: dict, branding: dict) -> str:
     return (
         f"Professional flat-vector logo for {subject}. "
         f"Include the exact brand name \"{app_name}\" as a clean, correctly spelled, "
-        f"highly readable wordmark beside or below one simple memorable domain-relevant symbol. "
+        f"highly readable wordmark beside or below one simple memorable domain-relevant symbol "
+        f"inside a clean circular badge/emblem with a clearly round silhouette. "
         f"Use {branding['primary_color']} with one supporting colour on a "
         f"{'dark charcoal' if dark else 'clean white'} background. "
         f"Modern balanced typography, legible at small sizes, no slogan unless explicitly supplied, "

@@ -226,7 +226,7 @@ def run_pencil_edit(proj_name: str, instruction: str, payload: dict,
         if broaden:
             count = len(getattr(impact, "files", []) or [])
             elog("INFO", f"   ↗ pencil change spans {count} source file(s) — switching to full agentic change")
-            return run_feature(proj_name, change_request, model, think)
+            return run_feature(proj_name, change_request, model, think, unit_tests=False)
 
         vis_model = _vision_model(model)
         shot = None
@@ -274,7 +274,7 @@ def run_pencil_edit(proj_name: str, instruction: str, payload: dict,
                     f"Requested change:\n{instruction}\n\n"
                     "Implement the complete dependency-aware change across every necessary file, preserving unrelated behavior."
                 )
-                return run_feature(proj_name, change_request, model, think)
+                return run_feature(proj_name, change_request, model, think, unit_tests=False)
             return
 
         if not arch.write_file(res.path, written):
