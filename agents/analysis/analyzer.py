@@ -32,7 +32,7 @@ PROSE_PATH_RE = re.compile(r"`((?:app|components|lib)/[^`]+?\.jsx?)`")
 PLACEHOLDER_RE = re.compile(r"[*?<>\s]|\.\.\.")
 LINK_HREF_RE = re.compile(r"""<Link\b[^>]*?href\s*=\s*(?:["'](/[^"']*)["']|\{\s*["'](/[^"']*)["']\s*\})""")
 ROUTER_PUSH_RE = re.compile(r"""(?:router\.(?:push|replace)|redirect)\(\s*["'](/[^"']*)["']""")
-FETCH_URL_RE = re.compile(r"""fetch\(\s*['"](/api/[A-Za-z0-9_\-/\[\]]*)['"]""")
+FETCH_URL_RE = re.compile(r"""fetch\(\s*[`'"](/api/[A-Za-z0-9_\-/\[\]${}.]*)[`'"]""")
 BCRYPT_LITERAL_RE = re.compile(r"""["'](\$2[aby]?\$\d\d\$[^"']*)["']""")
 HTTP_METHOD_RE = re.compile(r"export\s+(?:async\s+)?(?:function\s+|const\s+)(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b")
 PROMPT_FILE = Path(__file__).with_name("analysis_prompt.md")
@@ -174,6 +174,8 @@ class AnalyzerAgent:
                     "open registration has no page completing Better Auth email signup",
                     signup["file"] if signup else "app/sign-up/page.jsx",
                     "serve an accessible form using signUp.email with failure and success states"))
+        for rel, body in files.items():
+            if rel != "lib/auth.js" and re.search(r'(?:getCollection|collection)\s*\(\s*[\'"]user[\'"]', body) and re.search(r"\bpassword\b", body) and re.search(r"\b(?:insertOne|replaceOne|updateOne)\s*\(", body): out.append(Finding("blocker", "AUTH_PROVIDER_BYPASS", "creates or mutates a login user directly in Mongo with a password, so Better Auth has no credential account", rel, "call provisionUser from @/lib/auth for runtime account creation; keep profile-only updates password-free", ["lib/auth.js"]))
         for target in self.dead_links(routes):
             if target in {"/sign-in", "/signin", "/login"}: out.append(Finding("blocker", "AUTH_PAGE_MISSING", f"auth code links or redirects to {target}, but no page serves it", f"app/{target.strip('/')}/page.jsx", "create the complete sign-in page using @/lib/auth-client, or consistently use a served auth page"))
         for rel, body in files.items():
@@ -229,7 +231,10 @@ class AnalyzerAgent:
         roles = {self._role_key(a.get("role")) for a in plan.get("demo_accounts") or [] if isinstance(a, dict) and a.get("role")}
         if len(roles) < 2: return []
         for path, body in self.code_files().items():
-            if re.search(r"app/(?:login|sign-in|signin)/page\.jsx?$", path) and "signIn.email" in body and re.search(r"router\.(?:push|replace)\(\s*['\"]/['\"]", body) and not re.search(r"\brole\b", body): out.append(Finding("major", "ROLE_REDIRECT", "multi-role sign-in hard-codes every successful identity to /", path, "route the refreshed session role to its planned home", [path]))
+            if not re.search(r"app/(?:login|sign-in|signin)/page\.jsx?$", path) or "signIn.email" not in body: continue
+            clean = _strip_noncode(body)
+            if re.search(r"router\.(?:push|replace)\(\s*['\"]/['\"]", clean) and not re.search(r"\brole\b", clean): out.append(Finding("blocker", "ROLE_REDIRECT", "multi-role sign-in hard-codes every successful identity to /", path, "route result.data.user.role to its planned home; never bounce through /", [path]))
+            if re.search(r"callbackURL\s*:\s*['\"]/(?:login|sign-in|signin)/?['\"]", clean): out.append(Finding("blocker", "AUTH_SELF_CALLBACK", "successful sign-in redirects back to the auth form itself", path, "remove the self callback and navigate to the signed-in role home", [path]))
         return out
 
     _AUTH_CALL_RE = re.compile(r"\b(?:signIn|signUp)\.email\s*\(")
@@ -317,6 +322,7 @@ class AnalyzerAgent:
                 if re.search(r"createIndex\s*\([^)]*?unique\s*:\s*true", body, re.S): out.append(Finding("blocker", "UNIQUE_INDEX_IN_SEED", "the seed creates a unique index against data that survives regeneration", rel, "move migration out of request-time seeding or make it backward-compatible"))
             if rel.startswith(("app/", "components/")):
                 if re.search(r"href\s*=\s*['\"]#['\"]|onClick\s*=\s*\{\s*\(?[^=]*=>\s*\{\s*\}\s*\}", body, re.S): out.append(Finding("major", "INERT_CONTROL", "renders a visible control with no reachable action", rel, "wire the accepted capability or remove the control", [rel]))
+                if re.search(r"\b(?:window\.)?alert\s*\(", body): out.append(Finding("major", "NATIVE_ALERT", "uses a blocking browser alert instead of the app's React feedback UI", rel, "show the planned shared toast/inline alert for mutation success or failure", [rel]))
                 if not self._CLIENT_RE.search(body) and self._EVENT_RE.search(body): out.append(Finding("blocker", "SERVER_CLIENT_EVENT_HANDLER", "a Server Component renders an event handler React cannot serialize", rel, "move the interactive subtree into a Client Component", [rel]))
                 if re.search(r"<form\b[^>]*\bmethod\s*=\s*(?:\{\s*)?['\"](?:put|patch|delete)['\"]", body, re.I | re.S): out.append(Finding("blocker", "UNSUPPORTED_FORM_METHOD", "an HTML form declares PUT/PATCH/DELETE, but browsers submit only GET/POST", rel, "use client fetch or a server action", [rel]))
             for value in BCRYPT_LITERAL_RE.findall(body):
@@ -409,11 +415,11 @@ class AnalyzerAgent:
     def scan(self):
         report = AnalyzerReport(planned=self.planned_paths(), routes=self.enumerate_routes()); report.missing = self.missing_files(); report.dead_links = self.dead_links(report.routes); report.unresolved = self.unresolved_packages()
         for path in report.missing: report.findings.append(Finding("blocker", "MISSING_FILE", "this is still a scaffold placeholder" if self._is_placeholder(path) else "the accepted plan promises this file but it was never written", path, "write the complete planned file"))
-        report.findings += self._code_invariants() + self._auth_invariants() + self._data_ui_invariants() + self._data_contract_findings() + self._cross_file_invariants() + self.contract_findings(report.routes) + self.capability_shape_findings()
+        report.findings += self._code_invariants() + self._auth_invariants() + self._data_ui_invariants() + self._data_contract_findings() + self._cross_file_invariants() + self.fetch_contract_findings(report.routes) + self.contract_findings(report.routes) + self.capability_shape_findings()
         report.findings += self.prop_contract_breaks() + self.credentials_exposed() + self.seed_volume() + self.layout_chrome()
         for url in self.dead_endpoints(report.routes): report.findings.append(Finding("blocker", "DEAD_ENDPOINT", f"source fetches {url}, but no API handler serves it", fix=f"implement app{url}/route.js", extra=[f"app{url}/route.js"]))
         for url in report.dead_links:
-            if url not in {"/sign-in", "/signin", "/login"}: report.findings.append(Finding("major", "DEAD_LINK", f"something links to {url}, but no page serves it", fix="create the planned page or remove the link"))
+            if url not in {"/sign-in", "/signin", "/login"}: report.findings.append(Finding("blocker", "DEAD_LINK", f"something links to {url}, but no page serves it", fix="create the planned page or remove the link"))
         orphans = self.unreachable_pages(report.routes)
         if orphans:
             owners = [report.routes[u]["file"] for u in orphans[:10] if u in report.routes]; report.findings.append(Finding("blocker", "NO_WAY_THERE", f"{len(orphans)} page(s) are unreachable from /: {', '.join(orphans[:8])}", owners[0] if owners else "", "wire accepted navigation through the page shell or parent list", owners[1:]))
@@ -500,7 +506,18 @@ class AnalyzerAgent:
         return sorted(dead)
     def dead_endpoints(self, routes=None):
         apis = [u for u, m in (routes or self.enumerate_routes()).items() if m["kind"] == "api"]
-        return sorted({u.rstrip("/") or "/" for body in self.code_files().values() for u in FETCH_URL_RE.findall(body) if not self._route_matches(u, apis)})
+        return sorted({u.rstrip("/") or "/" for body in self.code_files().values() for u in FETCH_URL_RE.findall(body) if not self._route_matches(re.sub(r"\$\{[^}]+\}", "probe", u), apis)})
+    def fetch_contract_findings(self, routes=None):
+        routes, out = routes or self.enumerate_routes(), []
+        call = re.compile(r"fetch\(\s*([`'\"])(/api/.+?)\1\s*(?:,\s*\{([\s\S]{0,900}?)\}\s*)?\)")
+        for rel, body in self.code_files().items():
+            for _, raw, options in call.findall(body):
+                url = re.sub(r"\$\{[^}]+\}", "probe", raw.split("?", 1)[0]).rstrip("/") or "/"
+                method = (re.search(r"\bmethod\s*:\s*['\"](GET|POST|PUT|PATCH|DELETE)['\"]", options or "", re.I) or [None, "GET"])[1].upper()
+                served = self._route_for(url, routes)
+                if not served: out.append(Finding("blocker", "DEAD_ENDPOINT", f"{method} {raw} has no matching API route", rel, "implement the exact called route/method or correct the caller", [rel])); continue
+                if method not in served.get("methods", []): out.append(Finding("blocker", "API_METHOD_MISMATCH", f"caller sends {method} {raw}, but {served['file']} serves {', '.join(served.get('methods') or []) or 'no HTTP methods'}", rel, "make caller and handler agree on URL, method, body and identifier", [served["file"]]))
+        return out
     def _mentions(self, rel, seen=None):
         files, seen = self.code_files(), seen if seen is not None else set()
         if rel not in files or rel in seen: return set()
