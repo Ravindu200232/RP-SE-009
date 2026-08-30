@@ -4,7 +4,7 @@ import unittest
 
 from test import _support
 from test._support import FakeDaemon, cloud_entry, fake_ollama, local_entry
-from agents.core.ollama_client import (CLOUD_DEFAULT_CTX, FALLBACK_CLOUD,
+from agents.core.llm.llm_client import (CLOUD_DEFAULT_CTX, FALLBACK_CLOUD,
                                        LOCAL_DEFAULT_CTX, is_cloud_model,
                                        max_context)
 

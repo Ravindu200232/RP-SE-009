@@ -35,8 +35,8 @@ import threading
 import time
 from pathlib import Path
 
-from agents.core.commands import CommandRunner
-from agents.core.ollama_client import is_cloud_model
+from agents.core.runtime.command_runner import CommandRunner
+from agents.core.llm.llm_client import is_cloud_model
 
 from qa_agent.unit.spec import MAX_PER_PHASE, QAReport, select_targets
 

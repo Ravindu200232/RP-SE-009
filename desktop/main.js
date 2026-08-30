@@ -187,9 +187,13 @@ async function launch() {
 
     await startBackend()
     await startStudio()
-    step('Waiting for the Studio to answer…', 75)
-    const up = await waitForPort(STUDIO_PORT)
-    if (!up) return { ok: false, note: 'The Studio did not answer on port 3000.' }
+    step('Waiting for the backend and Studio to answer…', 75)
+    const [backendUp, studioUp] = await Promise.all([
+      waitForPort(BACKEND_PORTS[0]),
+      waitForPort(STUDIO_PORT),
+    ])
+    if (!backendUp) return { ok: false, note: 'The AgentForge backend did not answer on port 7824.' }
+    if (!studioUp) return { ok: false, note: 'The Studio did not answer on port 3000.' }
 
     step('Opening…', 100)
     await shellWindow.loadURL(STUDIO_URL)

@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-08-29T08:32:02+00:00
+Run at (UTC): 2026-08-29T19:38:22+00:00
 Command: python test/run_suite.py
 Python: 3.13.5
-Unit tests: 132
-Integration tests: 20
-Total tests run: 152
+Unit tests: 137
+Integration tests: 24
+Total tests run: 161
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 0.060s
+Duration: 0.096s
 
 Detailed results
 ----------------
@@ -82,6 +82,7 @@ test_analyzer_blocks_demo_rows_that_bypass_better_auth (test.unit.agents.test_pl
 test_auth_client_import_is_not_mistaken_for_server_auth (test.unit.agents.test_planner.UnifiedPlannerTests.test_auth_client_import_is_not_mistaken_for_server_auth) ... ok
 test_auth_roles_and_seed_contract_are_normalized_before_build (test.unit.agents.test_planner.UnifiedPlannerTests.test_auth_roles_and_seed_contract_are_normalized_before_build) ... ok
 test_auth_templates_are_self_contained (test.unit.agents.test_planner.UnifiedPlannerTests.test_auth_templates_are_self_contained) ... ok
+test_builder_keeps_project_memory_paths_after_mixin_refactors (test.unit.agents.test_planner.UnifiedPlannerTests.test_builder_keeps_project_memory_paths_after_mixin_refactors) ... ok
 test_database_clients_recover_instead_of_caching_a_dead_one (test.unit.agents.test_planner.UnifiedPlannerTests.test_database_clients_recover_instead_of_caching_a_dead_one) ... ok
 test_e2e_account_resolution_accepts_role_access_prefix (test.unit.agents.test_planner.UnifiedPlannerTests.test_e2e_account_resolution_accepts_role_access_prefix) ... ok
 test_every_dangling_reference_is_reported_as_a_gap (test.unit.agents.test_planner.UnifiedPlannerTests.test_every_dangling_reference_is_reported_as_a_gap) ... ok
@@ -105,6 +106,10 @@ test_the_planner_is_asked_again_until_nothing_is_missing (test.unit.agents.test_
 test_the_planners_own_shell_survives_normalization (test.unit.agents.test_planner.UnifiedPlannerTests.test_the_planners_own_shell_survives_normalization) ... ok
 test_unawaited_collection_access_is_a_lint_error (test.unit.agents.test_planner.UnifiedPlannerTests.test_unawaited_collection_access_is_a_lint_error) ... ok
 test_unawaited_dynamic_params_are_a_lint_error (test.unit.agents.test_planner.UnifiedPlannerTests.test_unawaited_dynamic_params_are_a_lint_error) ... ok
+test_analyzer_helper_reports_invalid_dom_property_names (test.unit.agents.test_react_dom_props.ReactDomPropertyTests.test_analyzer_helper_reports_invalid_dom_property_names) ... ok
+test_builder_writer_normalizes_generated_jsx_before_saving (test.unit.agents.test_react_dom_props.ReactDomPropertyTests.test_builder_writer_normalizes_generated_jsx_before_saving) ... ok
+test_normalizer_does_not_rewrite_custom_component_prop_contracts (test.unit.agents.test_react_dom_props.ReactDomPropertyTests.test_normalizer_does_not_rewrite_custom_component_prop_contracts) ... ok
+test_normalizer_fixes_dom_attributes_but_not_javascript_variables (test.unit.agents.test_react_dom_props.ReactDomPropertyTests.test_normalizer_fixes_dom_attributes_but_not_javascript_variables) ... ok
 test_non_runtime_analyzer_omits_base_url (test.unit.agents.test_server_refactor.AnalyzerFactoryTests.test_non_runtime_analyzer_omits_base_url) ... ok
 test_runtime_configuration_is_centralized (test.unit.agents.test_server_refactor.AnalyzerFactoryTests.test_runtime_configuration_is_centralized) ... ok
 test_only_connection_faults_count_as_the_database_being_down (test.unit.agents.test_server_refactor.DatabaseFaultTests.test_only_connection_faults_count_as_the_database_being_down) ... ok
@@ -174,8 +179,12 @@ test_every_shared_runtime_part_exists_in_the_repository (test.integration.test_r
 test_full_app_runtime_mounts_srs_qa_deployment_builder_and_ui (test.integration.test_runtime_composition.SharedRuntimeCompositionTests.test_full_app_runtime_mounts_srs_qa_deployment_builder_and_ui) ... ok
 test_runtime_parts_are_unique_and_bootstrap_before_consumers (test.integration.test_runtime_composition.SharedRuntimeCompositionTests.test_runtime_parts_are_unique_and_bootstrap_before_consumers) ... ok
 test_stable_server_entrypoint_delegates_to_shared_runtime (test.integration.test_runtime_composition.SharedRuntimeCompositionTests.test_stable_server_entrypoint_delegates_to_shared_runtime) ... ok
+test_desktop_waits_for_backend_before_opening_the_studio (test.integration.test_runtime_composition.StudioStartupResilienceTests.test_desktop_waits_for_backend_before_opening_the_studio) ... ok
+test_mongo_install_uses_the_current_platform_executable_helper (test.integration.test_runtime_composition.StudioStartupResilienceTests.test_mongo_install_uses_the_current_platform_executable_helper) ... ok
+test_studio_retries_projects_and_models_and_keeps_cloud_fallbacks (test.integration.test_runtime_composition.StudioStartupResilienceTests.test_studio_retries_projects_and_models_and_keeps_cloud_fallbacks) ... ok
+test_ui_handler_keeps_the_real_http_handler_base (test.integration.test_runtime_composition.StudioStartupResilienceTests.test_ui_handler_keeps_the_real_http_handler_base) ... ok
 
 ----------------------------------------------------------------------
-Ran 152 tests in 0.060s
+Ran 161 tests in 0.096s
 
 OK

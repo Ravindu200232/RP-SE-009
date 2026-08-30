@@ -5,6 +5,7 @@ _DEPLOY_KEEP_FINISHED_S = 900
 _DEPLOY_MAX_JOBS = 200
 
 
+# Purpose: Handle deploy reap for this focused step.
 def _deploy_reap():
     now = time.time()
     done = [(j["finished"], jid) for jid, j in _DEPLOY_JOBS.items() if j.get("finished")]
@@ -16,6 +17,7 @@ def _deploy_reap():
             _DEPLOY_JOBS.pop(jid, None)
 
 
+# Purpose: Handle deploy job run for this focused step.
 def _deploy_job_run(job_id: str, method: str, path: str, body):
     job = _DEPLOY_JOBS[job_id]
     try:
@@ -37,6 +39,7 @@ def _deploy_job_run(job_id: str, method: str, path: str, body):
         job["finished"] = time.time()
 
 
+# Purpose: Begin the work and answer immediately.
 def deploy_job_start(method: str, path: str, body) -> dict:
     """Begin the work and answer immediately."""
     if not path.startswith("/"):
@@ -55,6 +58,7 @@ def deploy_job_start(method: str, path: str, body) -> dict:
     return {"job_id": job_id, "status": "running", "path": path}
 
 
+# Purpose: Handle deploy job poll for this focused step.
 def deploy_job_poll(job_id: str) -> dict:
     job = _DEPLOY_JOBS.get(job_id)
     if job is None:

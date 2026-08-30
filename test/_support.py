@@ -130,7 +130,7 @@ def fake_ollama(daemon, api_key="", host="http://localhost:11434"):
     so a context-window assertion measures the code under test rather than
     whatever the developer happens to have configured.
     """
-    from agents.core import ollama_client as oc
+    from agents.core.llm import llm_client as oc
 
     previous = oc._CLIENT
     missing = ROOT / "test" / "results" / "__no_such_settings__.json"

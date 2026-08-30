@@ -38,15 +38,15 @@ class SharedRuntimeCompositionTests(unittest.TestCase):
         parts = runtime_parts()
 
         self.assertEqual(len(parts), len(set(parts)))
-        self.assertEqual(parts[0], "server_modules/core/bootstrap.py")
+        self.assertEqual(parts[0], "server_modules/core/startup/bootstrap.py")
         self.assertLess(parts.index("qa_agent/server/unit_support.py"), parts.index("qa_agent/server/unit_stage.py"))
         self.assertLess(parts.index("server_modules/ui/http_base.py"), parts.index("server_modules/ui/http_handler.py"))
-        self.assertEqual(parts[-1], "server_modules/core/main.py")
+        self.assertEqual(parts[-1], "server_modules/core/endpoints/main.py")
 
     def test_full_app_runtime_mounts_srs_qa_deployment_builder_and_ui(self):
         parts = set(runtime_parts())
         required = {
-            "agents/server/agent_pipeline.py",
+            "agents/pipeline/build_pipeline.py",
             "qa_agent/server/unit_stage.py",
             "qa_agent/server/e2e_stage.py",
             "server_modules/srs/srs_runtime.py",
@@ -72,7 +72,7 @@ class SharedRuntimeCompositionTests(unittest.TestCase):
 
 class DesktopProcessContractTests(unittest.TestCase):
     def test_electron_backend_ports_match_the_python_runtime(self):
-        bootstrap = (ROOT / "server_modules/core/bootstrap.py").read_text(encoding="utf-8")
+        bootstrap = (ROOT / "server_modules/core/startup/bootstrap.py").read_text(encoding="utf-8")
         desktop = (ROOT / "desktop/main.js").read_text(encoding="utf-8")
         match = re.search(r"BACKEND_PORTS\s*=\s*\[([^]]+)]", desktop)
         self.assertIsNotNone(match)
@@ -100,6 +100,33 @@ class DesktopProcessContractTests(unittest.TestCase):
         self.assertEqual(package["main"], "main.js")
         self.assertEqual(package["scripts"]["start"], "electron .")
         self.assertTrue((ROOT / "desktop" / package["main"]).is_file())
+
+
+class StudioStartupResilienceTests(unittest.TestCase):
+    def test_ui_handler_keeps_the_real_http_handler_base(self):
+        source = (ROOT / "server_modules/ui/http_handler.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        handler = next(node for node in tree.body
+                       if isinstance(node, ast.ClassDef) and node.name == "UIHandler")
+        bases = {base.id for base in handler.bases if isinstance(base, ast.Name)}
+        self.assertIn("SimpleHTTPRequestHandler", bases)
+
+    def test_desktop_waits_for_backend_before_opening_the_studio(self):
+        source = (ROOT / "desktop/main.js").read_text(encoding="utf-8")
+        self.assertIn("waitForPort(BACKEND_PORTS[0])", source)
+        self.assertIn("waitForPort(STUDIO_PORT)", source)
+
+    def test_studio_retries_projects_and_models_and_keeps_cloud_fallbacks(self):
+        page = (ROOT / "studio/app/page.jsx").read_text(encoding="utf-8")
+        models = (ROOT / "studio/lib/models.js").read_text(encoding="utf-8")
+        self.assertIn("retry(() => api.projects(), 6, 500)", page)
+        self.assertIn("retry(() => api.models(), 6, 500)", page)
+        self.assertIn("CLOUD_FALLBACK", models)
+
+    def test_mongo_install_uses_the_current_platform_executable_helper(self):
+        source = (ROOT / "agents/data/database_install.py").read_text(encoding="utf-8")
+        self.assertNotIn('_exe("mongod")', source)
+        self.assertIn('_platform_executable("mongod")', source)
 
 
 if __name__ == "__main__":

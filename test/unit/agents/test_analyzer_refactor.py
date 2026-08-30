@@ -79,13 +79,15 @@ class AnalyzerRefactorTests(unittest.TestCase):
         self.assertTrue(issubclass(FixVerdict, object))
         self.assertTrue(issubclass(Reproduction, object))
         folder = Path(__file__).parents[3] / "agents" / "analysis"
-        py = sorted(folder.glob("*.py"))
-        self.assertEqual([p.name for p in py],
-                         ["__init__.py", "analyzer.py", "bugfixer_apply.py",
-                          "reproduce.py"])
-        nonempty = sum(sum(bool(line.strip()) for line in p.read_text(
-            encoding="utf-8").splitlines()) for p in py)
-        self.assertLess(nonempty, 1800)
+        self.assertTrue((folder / "checks").is_dir())
+        self.assertTrue((folder / "runtime").is_dir())
+        self.assertTrue((folder / "repair").is_dir())
+        py = sorted(p for p in folder.rglob("*.py") if "__pycache__" not in p.parts)
+        self.assertTrue((folder / "analyzer.py") in py)
+        self.assertTrue((folder / "repair" / "bug_fixer.py") in py)
+        self.assertTrue((folder / "runtime" / "browser_reproduction.py") in py)
+        self.assertLess(max(sum(bool(line.strip()) for line in p.read_text(
+            encoding="utf-8").splitlines()) for p in py), 500)
 
     def test_better_auth_invariants_cover_missing_page_seed_and_origins(self):
         with tempfile.TemporaryDirectory() as root:
@@ -198,7 +200,7 @@ class AnalyzerRefactorTests(unittest.TestCase):
             write(root, "tests/e2e/admin.spec.js",
                   "expect(page).toHaveURL(/admin/rooms/)")
             agent = AnalyzerAgent(FakeArch(root), root)
-            with patch("agents.analysis.analyzer.check_syntax", return_value=([
+            with patch("agents.analysis.checks.code_checks.check_syntax", return_value=([
                     {"path": "tests/e2e/admin.spec.js", "line": 1,
                      "message": "Expected ')'"}], "")):
                 findings = agent.e2e_syntax_findings()
