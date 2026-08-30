@@ -18,12 +18,13 @@ Backend-only development can use `python3 server.py`.
 
 | Area | Location | Responsibility |
 |---|---|---|
-| Planning | `agents/planner/` | Requirements, design, site map, architecture and E2E build contracts |
-| Build | `agents/build/` | Project generation and baseline runtime/browser checks |
-| Analysis/repair | `agents/analysis/` | Diagnosis, evidence scoping and fixes |
-| Feature/edit tools | `agents/features/` | Selection, capture, image/source guidance and feature edits |
-| Data | `agents/data/` | MongoDB lifecycle/data support |
-| Builder server | `agents/server/` | Build/edit server orchestration |
+| Planning | `agents/planner/` | Requirements, design, site map and architecture (`planning/`), generation (`builder/`), scaffolding (`templates/`) |
+| Pipeline | `agents/pipeline/` | Standalone prepare → build → verify flow, build gates (`build/`), bug workflow (`bugs/`) |
+| Build | `agents/build/` | Baseline runtime/browser and route checks |
+| Analysis/repair | `agents/analysis/` | Diagnosis (`checks/`), fixes (`repair/`), reproduction (`runtime/`) |
+| Feature/edit tools | `agents/features/` | Selection, capture, image/source guidance (`planning/`, `runtime/`) |
+| Data | `agents/data/` | Database lifecycle, install and record helpers |
+| Builder server | `agents/server/` | Studio project files and WebSocket build/update jobs |
 | Unit QA | `qa_agent/unit/` | Vitest authoring, harness and runner |
 | E2E QA | `qa_agent/e2e/` | Journey authoring, grounding, execution and results |
 | Verification | `qa_agent/verification/` | API/security/PDF reporting |
@@ -37,7 +38,7 @@ Do not add a tiny file whose only job is to re-export a moved class. Update inte
 ## Change rules
 
 - Keep Builder behavior backward-compatible unless the task explicitly changes it.
-- Keep source files below 1000 lines where practical; split by responsibility, not arbitrary line count.
+- Keep source files below 1000 lines, and keep new or refactored `agents/` modules at or below roughly 400; split by responsibility, not arbitrary line count.
 - Use server-session identity for authenticated user-owned records; never trust a client-provided owner ID.
 - Do not add auth to an app whose requirements do not need auth.
 - A successful mutation must make the new data visible without a manual browser refresh.
@@ -51,13 +52,14 @@ Do not add a tiny file whose only job is to re-export a moved class. Update inte
 Run at least:
 
 ```bash
-python -m compileall -q agents qa_agent server_modules server.py server_runtime.py pipeline.py srs-agent/srs_agent deployment-agent/deploy_agent
+python -m compileall -q agents qa_agent server_modules server.py server_runtime.py srs-agent/srs_agent deployment-agent/deploy_agent
 python studio/scripts/verify_ui_contract.py
 node studio/scripts/verify_activity.mjs
 node studio/scripts/verify_progress.mjs
 node studio/scripts/verify_test_counts.mjs
 node studio/scripts/verify_uploads.mjs
 node --check desktop/main.js desktop/runtime.js desktop/preload.js
+python deployment-agent/verify_aws_session_contract.py
 ```
 
 When npm dependencies are available, also run:
