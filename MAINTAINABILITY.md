@@ -33,6 +33,14 @@ Each area is split into subpackages so one concern stays in one readable file.
 - `server_modules/ui/` — HTTP handlers.
 - `agents/pipeline/build_pipeline.py` — direct standalone pipeline entrypoint.
 
+## Tests
+
+- `test/unit/`, `test/integration/` — the code behaves; run by `test/run_suite.py`.
+- `test/eval/` — the SRS *document* holds the properties a brief implies:
+  `srs_cases.csv` (the dataset), `dataset.py` (typed loading), `validate.py`
+  (dataset soundness, no model needed), `report.py` (coverage report).
+  Its own tests live in `test/unit/eval/` so a broken dataset fails the ordinary suite.
+
 ## Product surfaces
 
 - `srs-agent/` — SRS interview, knowledge and diagrams.

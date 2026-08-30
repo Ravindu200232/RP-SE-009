@@ -154,6 +154,21 @@ Run the repository regression suite:
 python test/run_suite.py
 ```
 
+Check the SRS evaluation dataset and render its coverage report:
+
+```bash
+python -m test.eval.validate
+python -m test.eval.report
+```
+
+The suite asserts that the code behaves; the dataset in [`test/eval/`](test/eval/)
+asserts that the *document the SRS agent writes* holds the properties a customer
+brief implies. It carries 471 briefs over 14 claims — intake guards, scope
+discipline, a 57-cell domain x archetype matrix at four scales, and 13 output
+languages from 6 input scripts. See
+[`test/eval/README.md`](test/eval/README.md) and the generated
+[`test/eval/results/coverage.md`](test/eval/results/coverage.md).
+
 Run the main static and contract checks:
 
 ```bash
