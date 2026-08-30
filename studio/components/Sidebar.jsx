@@ -89,7 +89,8 @@ export default function Sidebar({
         if (cfg.image_enabled) checkFooocus()
       })
       .catch(() => { })
-  }, [])
+    // A Fooocus address saved in Settings should be noticed here too.
+  }, [s.settingsStamp])
 
   async function toggleImages() {
     const next = !images

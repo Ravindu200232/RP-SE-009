@@ -24,6 +24,9 @@ export const api = {
   saveSettings: (s) => post('/settings', s),
   imageCheck: () => req('/image-check'),
   imageStart: () => post('/image-start', {}),
+
+  // Try one address before it is saved; answers with {ok, host, reason}.
+  imageTest: (host) => post('/image-test', { host }),
   files: (project) => req(`/files/${encodeURIComponent(project)}`),
   saveFile: (project, path, content) => post('/save-file', { project, path, content }),
   open: (project) => post(`/open/${encodeURIComponent(project)}`, {}),

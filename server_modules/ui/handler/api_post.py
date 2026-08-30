@@ -71,6 +71,13 @@ class ApiPostMixin:
             if why:
                 return self._json({"error": why}, 503)
             self._json({"ok": True, "launcher": _fooocus_launcher()})
+        elif path == "/image-test":
+
+            # A failed probe is still a successful test, so this answers 200
+            # and lets the caller read `ok` — the UI shows the reason either
+            # way instead of a bare "HTTP 502".
+            body = self._body()
+            self._json(probe_image_host(str(body.get("host", ""))))
         elif path == "/logo-prompt":
 
             body = self._body()

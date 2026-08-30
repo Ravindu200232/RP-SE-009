@@ -53,6 +53,9 @@ export const useStore = create((set, get) => ({
   // Increment when projects on disk change.
   projectsStamp: 0,
 
+  // Increment when server settings are saved.
+  settingsStamp: 0,
+
   // Which kind of work is running.
   workKind: '',
   setWorkKind: (workKind) => set({ workKind }),
@@ -61,6 +64,7 @@ export const useStore = create((set, get) => ({
   setAskOpen: (askOpen) => set({ askOpen }),
   setBusy: (busy) => set(busy ? { busy } : { busy, opening: false }),
   bumpProjects: () => set(s => ({ projectsStamp: s.projectsStamp + 1 })),
+  bumpSettings: () => set(s => ({ settingsStamp: s.settingsStamp + 1 })),
 
   // Which page of the generated app the preview is showing.
   previewRoute: '/',

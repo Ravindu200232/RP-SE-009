@@ -19,11 +19,12 @@ class ImageAgent:
     def __init__(self, host: str = "", config_path: str = "",
                  callbacks: dict = None, enabled: bool = True):
         """Prepare this helper with the state it needs."""
-        self.host = (host or "").rstrip("/")
+        self.host = clean_host(host)
         self.config_path = config_path or ""
         self.cb = callbacks or {}
         self.enabled = enabled
         self._fetch_error = ""
+        self._reach_error = ""
         self._payload = None
         self._fn_index = None
         self._gallery_index = None
@@ -47,20 +48,49 @@ class ImageAgent:
 
     # The Fooocus that answers, or '' when none does. Cached per run.
     def base_url(self) -> str:
-        """The Fooocus that answers, or '' when none does. Cached per run."""
+        """The Fooocus that answers, or '' when none does. Cached per run.
+
+        Every candidate that fails is recorded in ``_reach_error``: a caller
+        that only sees ``""`` cannot tell a refused connection from an
+        address that answered with somebody else's web page.
+        """
         if self._checked is not None:
             return self._checked
         candidates = [self.host] if self.host else list(DEFAULT_HOSTS)
+        tried = []
         for url in candidates:
             try:
-                r = requests.get(f"{url}/config", timeout=4)
+                r = requests.get(f"{url}/config", timeout=REACH_TIMEOUT)
                 if r.status_code == 200 and "components" in r.text[:400]:
                     self._checked = url
                     return url
-            except requests.RequestException:
+                tried.append(f"{url} answered HTTP {r.status_code}"
+                             if r.status_code != 200 else
+                             f"{url} answered, but it is not a Fooocus UI")
+            except requests.RequestException as e:
+                tried.append(f"{url} — {reach_reason(e)}")
                 continue
+        self._reach_error = "; ".join(tried)
         self._checked = ""
         return ""
+
+    # Everything generate() needs, checked without drawing anything.
+    def probe(self) -> dict:
+        """Everything generate() needs, checked without drawing anything."""
+        self._checked = None
+        self._payload = None
+        self._reach_error = ""
+        url = self.base_url()
+        if not url:
+            where = self.host or " or ".join(DEFAULT_HOSTS)
+            return {"ok": False, "host": self.host,
+                    "reason": self._reach_error or f"nothing answered at {where}"}
+        if not self._load_template():
+            return {"ok": False, "host": url,
+                    "reason": f"{url} answered, but its page describes no "
+                              f"generate button this client can drive"}
+        return {"ok": True, "host": url,
+                "reason": f"{url} answered and its generate button is ready"}
 
     # Checks whether the external image service is ready to accept work.
     def available(self) -> bool:

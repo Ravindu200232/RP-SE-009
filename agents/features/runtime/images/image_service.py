@@ -126,6 +126,25 @@ def image_agent(callbacks: dict = None) -> ImageAgent:
                       callbacks=callbacks or _analyzer_callbacks(),
                       enabled=bool(s.get("image_enabled", False)))
 
+# Try one Fooocus address on demand so Settings can test before saving.
+def probe_image_host(host: str = "") -> dict:
+    """Try one Fooocus address on demand so Settings can test before saving.
+
+    ``config_path`` is deliberately left empty: falling back to the Fooocus
+    config file on this machine would let a remote address that answered
+    nothing at all still report itself as ready.
+    """
+    # From: agents/core/llm/llm_settings.py
+    s = load_settings()
+    asked = str(host or "").strip()
+    # From: agents/features/image_generator.py
+    agent = ImageAgent(host=asked or str(s.get("image_host", "")).strip(),
+                       config_path="", callbacks={}, enabled=True)
+    out = agent.probe()
+    out["asked"] = asked
+    out["enabled"] = bool(s.get("image_enabled", False))
+    return out
+
 # Read the configured image service settings needed by image runtime work.
 def _image_settings() -> dict:
     """Prepare the image settings value or state used by this focused pipeline step."""
