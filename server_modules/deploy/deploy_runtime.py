@@ -6,6 +6,7 @@ DEPLOY_LOCK = threading.Lock()
 DEPLOY_DONE = {"LIVE", "FAILED", "ROLLED_BACK", "DESTROYED"}
 
 
+# Purpose: One request to the deployment agent. Raises with a readable message.
 def _deploy_call(method: str, path: str, body=None, timeout=(2, None)):
     """One request to the deployment agent. Raises with a readable message."""
     r = requests.request(method, f"http://127.0.0.1:{DEPLOY_PORT}{path}",
@@ -19,6 +20,7 @@ def _deploy_call(method: str, path: str, body=None, timeout=(2, None)):
     return data
 
 
+# Purpose: The database the deployed app will use.
 def _deploy_mongo_uri(settings: dict) -> str:
     """
     The database the deployed app will use.
@@ -40,6 +42,7 @@ def _deploy_mongo_uri(settings: dict) -> str:
     return ""
 
 
+# Purpose: What is configured for deploying, and nothing that could be replayed.
 def deploy_settings_summary() -> dict:
     """
     What is configured for deploying, and nothing that could be replayed.
@@ -72,6 +75,7 @@ def deploy_settings_summary() -> dict:
     }
 
 
+# Purpose: Begin a deployment and answer immediately. Raises ValueError if it cannot.
 def start_deployment(project: str, target: str, opts: dict) -> dict:
     """Begin a deployment and answer immediately. Raises ValueError if it cannot."""
     if not project:
@@ -122,12 +126,14 @@ def start_deployment(project: str, target: str, opts: dict) -> dict:
     return dict(DEPLOY_RUNS[project])
 
 
+# Purpose: Handle deploy set for this focused step.
 def _deploy_set(project: str, **patch):
     run = DEPLOY_RUNS.get(project)
     if run is not None:
         run.update(patch)
 
 
+# Purpose: Pull whatever the agent has emitted since `after` into AgentForge's log.
 def _deploy_drain_events(project: str, run_id: str, after: int) -> int:
     """
     Pull whatever the agent has emitted since `after` into AgentForge's log.
@@ -164,6 +170,7 @@ def _deploy_drain_events(project: str, run_id: str, after: int) -> int:
     return after
 
 
+# Purpose: Is the thing actually answering? Measured, not inferred from a score.
 def _deploy_serving(run: dict) -> bool:
     """Is the thing actually answering? Measured, not inferred from a score."""
     url = str((run.get("repo") or {}).get("application_url") or "").strip()
@@ -180,6 +187,7 @@ def _deploy_serving(run: dict) -> bool:
     return False
 
 
+# Purpose: Poll the run until it reaches one of `until`, draining events as it goes.
 def _deploy_wait(project: str, run_id: str, until: set, deadline: float,
                  settle_from: set = frozenset(), settle_after: float = 240.0) -> dict:
     """
@@ -240,6 +248,7 @@ def _deploy_wait(project: str, run_id: str, until: set, deadline: float,
     raise TimeoutError("the deployment agent stopped responding")
 
 
+# Purpose: analyze → wait for review → deploy → wait for terminal → adopt.
 def _deploy_autopilot(project: str, target: str, opts: dict,
                       mongo: str, settings: dict):
     """analyze → wait for review → deploy → wait for terminal → adopt."""
@@ -304,6 +313,7 @@ def _deploy_autopilot(project: str, target: str, opts: dict,
         elog("ERROR", f"   🚀 deployment failed — {type(e).__name__}: {e}")
 
 
+# Purpose: Put the deployment's record into the project it deployed.
 def adopt_deploy(run_id: str, proj_dir: Path) -> bool:
     """
     Put the deployment's record into the project it deployed.
@@ -350,6 +360,7 @@ def adopt_deploy(run_id: str, proj_dir: Path) -> bool:
         return False
 
 
+# Purpose: Move a finished deployment's record out of the way, keeping every byte.
 def retire_deploy(proj_dir: Path, run_id: str) -> bool:
     """Move a finished deployment's record out of the way, keeping every byte.
 
@@ -391,6 +402,7 @@ def retire_deploy(proj_dir: Path, run_id: str) -> bool:
         return False
 
 
+# Purpose: The run's state according to the agent, not according to a stale file.
 def _deploy_run_state(run_id: str, fallback: str) -> str:
     """The run's state according to the agent, not according to a stale file.
 
@@ -411,6 +423,7 @@ def _deploy_run_state(run_id: str, fallback: str) -> str:
         return fallback
 
 
+# Purpose: Everything the Deploy tab shows, gathered server-side.
 def read_deploy_results(proj_name: str) -> dict:
     """
     Everything the Deploy tab shows, gathered server-side.
@@ -423,6 +436,7 @@ def read_deploy_results(proj_name: str) -> dict:
     if not proj_dir.is_dir():
         return {"error": f"no such project: {proj_name}"}
 
+    # Purpose: Handle load for this focused step.
     def load(path, default=None):
         try:
             return json.loads(path.read_text(encoding="utf-8"))
@@ -467,3 +481,20 @@ def read_deploy_results(proj_name: str) -> dict:
     if marker and not out["have"]["last"]:
         out["deleted"] = marker
     return out
+
+
+# Deployment status reader kept with deployment runtime.
+# Purpose: Return cheap, disk-only deployment history for project listings.
+def _deploy_marker(project_dir: Path) -> dict | None:
+    """Return cheap, disk-only deployment history for project listings."""
+    agentforge = project_dir / ".agentforge"
+    if (agentforge / "deploy-deleted.json").is_file():
+        return {"state": "deleted", "target": ""}
+    link = agentforge / "deploy" / "link.json"
+    if not link.is_file():
+        return None
+    try:
+        target = str(json.loads(link.read_text(encoding="utf-8")).get("target") or "")
+    except Exception:
+        target = ""
+    return {"state": "deployed", "target": target}

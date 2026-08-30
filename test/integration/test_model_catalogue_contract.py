@@ -6,7 +6,7 @@ import unittest
 
 from test import _support
 from test._support import FakeDaemon, cloud_entry, fake_ollama
-from agents.core.ollama_client import (CLOUD_DEFAULT_CTX, FALLBACK_CLOUD,
+from agents.core.llm.llm_client import (CLOUD_DEFAULT_CTX, FALLBACK_CLOUD,
                                        LOCAL_DEFAULT_CTX, is_cloud_model,
                                        max_context)
 
@@ -78,7 +78,9 @@ class CataloguePayloadContractTests(unittest.TestCase):
     def test_the_models_and_settings_endpoints_agree_on_cloud_readiness(self):
         # /settings once answered `bool(key)`, so a signed-in daemon with no
         # key was cloud-enabled on one endpoint and cloud-off on the other.
-        source = HTTP_HANDLER.read_text(encoding="utf-8")
+        handler_dir = HTTP_HANDLER.parent / "handler"
+        source = HTTP_HANDLER.read_text(encoding="utf-8") + "\n" + "\n".join(
+            part.read_text(encoding="utf-8") for part in sorted(handler_dir.glob("*.py")))
 
         readiness = re.findall(r'"cloud_enabled":\s*([^,\n]+)', source)
 

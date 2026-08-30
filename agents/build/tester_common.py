@@ -7,19 +7,25 @@ import subprocess, sys, time, logging, re
 from pathlib import Path
 from urllib.parse import urlparse
 
-from agents.core import nextmcp
+# Source: core.py — imported helper(s) come from this file.
+from agents.core.nextjs import dev_tools as nextmcp
 log = logging.getLogger("tester")
 _emit = None
 
+# Remember the UI event callback used by this helper.
 def set_emit(fn):
+    """Remember the UI event callback used by this helper."""
     global _emit
     _emit = fn
 
+# Writes one status message and forward it to the Studio.
 def elog(lvl, txt):
+    """Write one status message and forward it to the Studio."""
     if _emit:
         _emit({"type": "log", "level": lvl, "text": txt})
     log.info(f"[{lvl}] {txt}")
 
+# Emit a structured test result event to the UI.
 def etest(status, msg, detail=""):
     """Emit a structured test result event to the UI."""
     if _emit:
@@ -82,6 +88,8 @@ _OVERLAY_JS = """(re) => {
 
 
 
+# The dev server's error dialog for whatever page is currently open. Module level because the end-to-end sweep
+# needs exactly this check on a signed-in session, and two copies of the shadow-DOM traversal would drift.
 def overlay_error(page, stack: str = "next") -> str:
     """
     The dev server's error dialog for whatever page is currently open.
@@ -100,8 +108,10 @@ def overlay_error(page, stack: str = "next") -> str:
 class TesterAgentBase:
     MAX_EXTRA_ROUTES = 20
 
+    # Prepares TesterAgentBase with the services and starting state it needs before it begins work.
     def __init__(self, project_dir: Path, port: int = 5173,
                  stack: str = "next", smoke_only: bool = False):
+        """Prepare this helper with the state it needs."""
         self.project_dir = project_dir
         self.port        = port
         self.base_url    = f"http://localhost:{port}"
@@ -112,7 +122,9 @@ class TesterAgentBase:
         self._mcp_parts  = []
         self._runtime_dynamic_links = []
 
+    # Runs the requested check and return the observed result.
     def test(self) -> list:
+        """Run the requested check and return the observed result."""
         errors = []
         label = self.cfg["label"]
 
@@ -126,15 +138,19 @@ class TesterAgentBase:
         elog("INFO", f"✅ HTTP 200 — {label} is serving")
         etest("pass", "HTTP 200 OK")
 
+        # From: agents/build/tester_browser.py
         if not self._ensure_playwright():
             elog("WARN", "⚠ Playwright unavailable — skipping browser tests")
             etest("skip", "Playwright unavailable")
             return []
 
+        # From: agents/build/tester_browser.py
         errors.extend(self._run_browser_tests())
         return errors
 
+    # Make sure for server is ready before the pipeline continues.
     def _wait_for_server(self, timeout=30):
+        """Prepare the wait for server value or state used by this focused pipeline step."""
         import urllib.request, urllib.error
         deadline = time.time() + timeout
         while time.time() < deadline:
@@ -151,12 +167,15 @@ class TesterAgentBase:
             time.sleep(self.cfg["poll"])
         return False, f"timeout after {timeout}s"
 
+    # Read the HTTP response body as safe text for route and runtime checks.
     def _body_text(self, page) -> str:
+        """Prepare the body text value or state used by this focused pipeline step."""
         try:
             return page.inner_text("body")[:400]
         except Exception:
             return ""
 
+    # The dev server's error dialog for the page currently open, or ''.
     def _overlay_error(self, page) -> str:
         """The dev server's error dialog for the page currently open, or ''."""
         return overlay_error(page, self.stack)

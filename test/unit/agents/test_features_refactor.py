@@ -2,17 +2,17 @@ import re
 import unittest
 from types import SimpleNamespace
 
-from agents.features.capture import CaptureResult, PENCIL_SYSTEM, capture_region
-from agents.features.features_apply import FeaturesAgent
-from agents.features.features_common import (
+from agents.features.pencil_capture import CaptureResult, PENCIL_SYSTEM, capture_region
+from agents.features.feature_writer import FeaturesAgent
+from agents.features.feature_contract import (
     FeatureSpec, package_requested, safe_change_path,
 )
-from agents.features.images import ImageAgent
-from agents.features.picker import (
+from agents.features.image_generator import ImageAgent
+from agents.features.element_selector import (
     ELEMENT_EDIT_SYSTEM, ElementResolver, describe, guard_scope,
     routes_rendering,
 )
-from agents.features.source_guidance import feature_prompt
+from agents.features.feature_prompts import feature_prompt
 
 
 class FeaturesRefactorTests(unittest.TestCase):

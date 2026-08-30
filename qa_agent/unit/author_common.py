@@ -31,7 +31,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from agents.planner.architecture import FileStreamParser
+from agents.planner.builder.app_builder import FileStreamParser
 
 from qa_agent.core.session_files import QASession
 

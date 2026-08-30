@@ -2,6 +2,7 @@
 SRS_API = {"state": "off", "port": SRS_PORT, "error": ""}
 
 
+# Purpose: Run the SRS agent's FastAPI app. Intended as a daemon thread's target.
 def start_srs_api():
     """
     Run the SRS agent's FastAPI app. Intended as a daemon thread's target.
@@ -29,6 +30,7 @@ def start_srs_api():
         print(f"⚠️  SRS agent stopped — {SRS_API['error']}")
 
 
+# Purpose: Is the SRS agent actually there?.
 def srs_status() -> dict:
     """
     Is the SRS agent actually there?

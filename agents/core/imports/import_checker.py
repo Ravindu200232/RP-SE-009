@@ -1,0 +1,175 @@
+"""Finds broken imports and explains them clearly."""
+# Source: import_rules.py — imported helper(s) come from this file.
+from agents.core.imports.import_rules import *
+# Source: import_reader.py — imported helper(s) come from this file.
+from agents.core.imports.import_reader import *
+
+@dataclass
+class BrokenImport:
+    importer: str
+    line: int
+    name: str
+    module: str
+    spec: str
+    available: list
+
+    # Suggest a replacement only when the match is very close.
+    def close_match(self) -> str | None:
+        """Suggest a replacement only when the match is very close."""
+        lower = self.name.lower()
+        same = [n for n in self.available if n.lower() == lower]
+        if len(same) == 1:
+            return same[0]
+        hit = difflib.get_close_matches(self.name, self.available, n=1,
+                                        cutoff=0.92)
+        return hit[0] if hit else None
+
+    # Render this import/export finding as one readable repair message.
+    def message(self) -> str:
+        """Render this import/export finding as one readable repair message."""
+        return (f"{self.importer}:{self.line}: imports {{ {self.name} }} from "
+                f"'{self.spec}', which exports only: "
+                f"{', '.join(self.available) or '(nothing)'}")
+
+
+# Finds named imports that their local files do not provide.
+def check_named_imports(files: dict) -> list:
+    """Find named imports that their local files do not provide."""
+    cache: dict = {}
+    out = []
+    for rel, src in sorted(files.items()):
+        if not rel.endswith(CODE_SUFFIXES) or not isinstance(src, str):
+            continue
+        # From: agents/core/imports/import_reader.py
+        for st in parse_imports(src):
+            if not st.names:
+                continue
+            surface = FRAMEWORK_EXPORTS.get(st.spec)
+            if surface is not None:
+                for imported, _local in st.names:
+                    if imported not in surface:
+                        out.append(BrokenImport(
+                            importer=rel, line=st.line, name=imported,
+                            module=st.spec, spec=st.spec,
+                            available=sorted(surface)))
+                continue
+            if not st.spec.startswith(LOCAL_PREFIXES):
+                continue
+            if st.spec.endswith(SKIP_SUFFIXES):
+                continue
+            # From: agents/core/imports/import_reader.py
+            target = resolve_local(rel, st.spec, files)
+            if target is None or not target.endswith(CODE_SUFFIXES):
+                continue
+            if target not in cache:
+                # From: agents/core/imports/import_reader.py
+                cache[target] = effective_exports(target, files)
+            avail = cache[target]
+            if avail is None:
+                continue
+            for imported, _local in st.names:
+                if imported not in avail:
+                    out.append(BrokenImport(
+                        importer=rel, line=st.line, name=imported,
+                        module=target, spec=st.spec, available=sorted(avail)))
+    return out
+
+
+_REEXPORT_DEFAULT_RE = re.compile(
+    r"""\bexport\s*\{[^}]*\bdefault\b\s*(?:,[^}]*)?\}\s*from\s*['"]""")
+
+
+# Check whether a local file provides a default export. Return ``None`` when the answer cannot be known safely.
+def has_default_export(rel: str, files: dict, _seen: set = None) -> bool | None:
+    """Check whether a local file provides a default export.
+
+    Return ``None`` when the answer cannot be known safely.
+    """
+    _seen = _seen or set()
+    if rel in _seen:
+        return False
+    src = files.get(rel)
+    if not isinstance(src, str):
+        return None
+    # From: agents/core/imports/import_reader.py
+    ex = parse_exports(src)
+    if ex.has_default or "default" in ex.named or "default" in ex.named_from:
+        return True
+    if _REEXPORT_DEFAULT_RE.search(src):
+        return True
+    return False
+
+
+# Finds default imports that their local files do not provide.
+def check_default_imports(files: dict) -> list:
+    """Find default imports that their local files do not provide."""
+    cache: dict = {}
+    out = []
+    for rel, src in sorted(files.items()):
+        if not rel.endswith(CODE_SUFFIXES) or not isinstance(src, str):
+            continue
+        # From: agents/core/imports/import_reader.py
+        for st in parse_imports(src):
+            if not st.default:
+                continue
+            if not st.spec.startswith(LOCAL_PREFIXES):
+                continue
+            if st.spec.endswith(SKIP_SUFFIXES):
+                continue
+            # From: agents/core/imports/import_reader.py
+            target = resolve_local(rel, st.spec, files)
+            if target is None or not target.endswith(CODE_SUFFIXES):
+                continue
+            if target not in cache:
+                cache[target] = has_default_export(target, files)
+            got = cache[target]
+            if got is None or got:
+                continue
+            # From: agents/core/imports/import_reader.py
+            avail = effective_exports(target, files)
+            out.append(BrokenImport(
+                importer=rel, line=st.line, name=st.default,
+                module=target, spec=st.spec,
+                available=sorted(avail or ())))
+    return out
+
+
+# AgentForge writes these modules itself and refuses every rewrite of them, so
+# "add the missing export" is advice the repair pass is not allowed to take.
+# Telling the model to do it just burns rounds on a write that is always
+# rejected, and the build ends with the same unresolved import it started with.
+SCAFFOLD_OWNED_MODULES = frozenset({
+    "@/lib/mongodb", "@/lib/auth", "@/lib/auth-client",
+})
+
+
+# Group missing names from the same file into one helpful message.
+def group_messages(broken: list) -> list:
+    """Group missing names from the same file into one helpful message."""
+    groups: dict = {}
+    for b in broken:
+        groups.setdefault((b.importer, b.module), []).append(b)
+    out = []
+    for (importer, module), items in sorted(groups.items()):
+        first = items[0]
+        names = ", ".join(sorted({i.name for i in items}))
+        head = (f"{importer}:{first.line}: imports {{ {names} }} from "
+                f"'{first.spec}', which exports only: "
+                f"{', '.join(first.available) or '(nothing)'}.")
+        if module in FRAMEWORK_EXPORTS:
+
+            out.append(f"{head} Use one of those instead (NextResponse.json(…) "
+                       f"is almost always what is meant).")
+        elif module in SCAFFOLD_OWNED_MODULES:
+            out.append(f"{head} {module} is owned by AgentForge and cannot gain "
+                       f"exports — rewrite {importer} against the names it "
+                       f"already has. To write data, await getCollection(name) "
+                       f"and call the driver's own insertOne/updateOne/"
+                       f"deleteOne on it.")
+        else:
+            out.append(f"{head} Either add the missing export to {module} or "
+                       f"use one that exists — do not rename or remove the "
+                       f"existing exports, other files import them.")
+    return out
+
+__all__ = [name for name in globals() if not name.startswith("__")]

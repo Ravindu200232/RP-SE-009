@@ -4,15 +4,15 @@ import unittest
 from types import SimpleNamespace
 
 from test import _support  # noqa: F401
-from agents.core.exports_checks import (
+from agents.core.imports.import_checker import (
     BrokenImport,
     check_default_imports,
     check_named_imports,
     group_messages,
 )
-from agents.core.exports_syntax import syntax_messages
-from agents.core.workspace import WorkspaceTools
-from agents.core.commands import _uses_package_manager
+from agents.core.syntax.syntax_checker import syntax_messages
+from agents.core.workspace.source_workspace import WorkspaceTools
+from agents.core.runtime.command_runner import _uses_package_manager
 
 
 class ExportContractTests(unittest.TestCase):

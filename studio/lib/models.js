@@ -23,6 +23,19 @@ const CURATED = [
     desc: 'Very capable — needs ~40GB.' },
 ]
 
+
+const CLOUD_FALLBACK = [
+  'gemma4:31b-cloud',
+  'bjoernb/gemma4-31b-fast:latest',
+  'qwen3-coder:480b-cloud',
+  'deepseek-v3.1:671b-cloud',
+  'gpt-oss:120b-cloud',
+  'kimi-k2:1t-cloud',
+  'glm-4.6:cloud',
+  'minimax-m2:cloud',
+].map(id => ({ id, cloud: true, tag: 'cloud', installed: false,
+  ctx: 262144, desc: 'Ollama Cloud · available after sign-in or API key' }))
+
 // Presentation aliases only. Requests always keep the exact Ollama model id.
 const CLOUD_UI_LABELS = {
   'qwen3.5:397b-cloud': 'Qwen 397B',
@@ -53,7 +66,8 @@ export const cloudModel = (cat, id) => {
 
 export function catalogue(payload) {
   const p = payload || {}
-  const cloud = (p.cloud || []).map(m => ({
+  const cloudSource = (p.cloud || []).length ? p.cloud : CLOUD_FALLBACK
+  const cloud = cloudSource.map(m => ({
     ...m, label: modelLabel(m), cloud: true, tag: m.tag || 'cloud',
   }))
   const localObjs = (p.local_models || []).map(m =>

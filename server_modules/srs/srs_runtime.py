@@ -1,4 +1,5 @@
 # SRS adoption and project handoff helpers.
+# Purpose: One read from the SRS agent. Returns None rather than raising.
 def _srs_get(path: str, timeout: float = 20.0):
     """One read from the SRS agent. Returns None rather than raising."""
     try:
@@ -8,6 +9,7 @@ def _srs_get(path: str, timeout: float = 20.0):
         return None
 
 
+# Purpose: Move an SRS into the project it produced.
 def adopt_srs(srs_id: str, proj_dir: Path) -> bool:
     """
     Move an SRS into the project it produced.
@@ -114,6 +116,7 @@ def adopt_srs(srs_id: str, proj_dir: Path) -> bool:
         return False
 
 
+# Purpose: What the customer called their app, from the staged SRS. "" if unknown.
 def _srs_app_name(srs_id: str) -> str:
     """
     What the customer called their app, from the staged SRS. "" if unknown.
@@ -140,6 +143,7 @@ def _srs_app_name(srs_id: str) -> str:
         return ""
 
 
+# Purpose: What the customer named their app, said before anything else.
 def _srs_name_line(proj_dir: Path) -> str:
     """
     What the customer named their app, said before anything else.
@@ -179,6 +183,7 @@ def _srs_name_line(proj_dir: Path) -> str:
             f"`package.json`. Do not invent another one.\n\n")
 
 
+# Purpose: What the SRS knows that its handoff prompt had to leave out.
 def _srs_brief(proj_dir: Path, model: str) -> str:
     """
     What the SRS knows that its handoff prompt had to leave out.
@@ -207,6 +212,7 @@ def _srs_brief(proj_dir: Path, model: str) -> str:
     if not doc:
         return ""
 
+    # Purpose: One line per item, whatever shape the item is.
     def rows(items, key=None, id_key=None):
         """
         One line per item, whatever shape the item is.
@@ -244,6 +250,7 @@ def _srs_brief(proj_dir: Path, model: str) -> str:
                 out.append(f"- {ident}  {text}" if ident else f"- {text}")
         return out
 
+    # Purpose: Name, route, who may open it, and what it is for.
     def page_rows(pages):
         """Name, route, who may open it, and what it is for."""
         out = []
@@ -277,11 +284,13 @@ def _srs_brief(proj_dir: Path, model: str) -> str:
 
     titles = []
 
+    # Purpose: Handle section for this focused step.
     def section(title, lines):
         if lines:
             parts.append(f"\n{title}\n" + "\n".join(lines))
             titles.append(title)
 
+    # Purpose: One column with everything the schema actually decided about it.
     def column(c):
         """One column with everything the schema actually decided about it.
 
@@ -345,6 +354,7 @@ def _srs_brief(proj_dir: Path, model: str) -> str:
         kind = str(rel.get("type") or "").replace("_", " ")
         shaped.append(f"- {frm} → {to}" + (f"  ({kind})" if kind else ""))
 
+    # Purpose: Requirements with their id, module and priority.
     def requirement_rows(items):
         """Requirements with their id, module and priority.
 
@@ -371,6 +381,7 @@ def _srs_brief(proj_dir: Path, model: str) -> str:
             out.append(line)
         return out
 
+    # Purpose: Each role and the duties its description spells out.
     def role_rows(items):
         """Each role and the duties its description spells out."""
         out = []
@@ -387,6 +398,7 @@ def _srs_brief(proj_dir: Path, model: str) -> str:
             out.append(f"- {name}" + (f" — {why}" if why else ""))
         return out
 
+    # Purpose: The API the specification already decided on.
     def route_rows(items):
         """The API the specification already decided on.
 
@@ -415,6 +427,7 @@ def _srs_brief(proj_dir: Path, model: str) -> str:
             out.append(line)
         return out
 
+    # Purpose: Which requirement is answered by which page and which table.
     def trace_rows(items):
         """Which requirement is answered by which page and which table.
 
@@ -441,6 +454,7 @@ def _srs_brief(proj_dir: Path, model: str) -> str:
             out.append(f"- {rid} → " + "; ".join(bits))
         return out
 
+    # Purpose: The colour and the components the customer actually asked for.
     def look_rows():
         """The colour and the components the customer actually asked for."""
         out = []
@@ -462,6 +476,7 @@ def _srs_brief(proj_dir: Path, model: str) -> str:
                 out.append("- " + "; ".join(rest))
         return out
 
+    # Purpose: A small settings object, one line, skipping what it left empty.
     def flag_rows(obj, label=""):
         """A small settings object, one line, skipping what it left empty."""
         if not isinstance(obj, dict):
@@ -511,6 +526,7 @@ def _srs_brief(proj_dir: Path, model: str) -> str:
     section("SECURITY", rows(doc.get("security_requirements")))
     section("HOW IT SHOULD LOOK", look_rows())
     section("THE MODULES IT IS MADE OF", rows(doc.get("main_modules")))
+    # Purpose: A report, its filters and the formats it exports.
     def report_rows(items):
         """A report, its filters and the formats it exports.
 
@@ -545,12 +561,13 @@ def _srs_brief(proj_dir: Path, model: str) -> str:
 
     text = "\n".join(parts)
 
-    from agents.planner.architecture import CHARS_PER_TOKEN, HISTORY_BUDGET
+    from agents.planner.builder.app_builder import CHARS_PER_TOKEN, HISTORY_BUDGET
     budget = int(max_context(model) * HISTORY_BUDGET * CHARS_PER_TOKEN / 6)
     if len(text) > budget:
         cut = text.rfind("\n", 0, budget)
         dropped = text[cut:].count("\n- ") if cut > 0 else text.count("\n- ")
 
+        # Purpose: Rows belonging to `title` alone, not to everything after it.
         def bullets(body: str, title: str) -> int:
             """Rows belonging to `title` alone, not to everything after it."""
             if f"\n{title}\n" not in body:
@@ -580,6 +597,7 @@ def _srs_brief(proj_dir: Path, model: str) -> str:
     return text
 
 
+# Purpose: Everything the SRS tab shows, gathered server-side.
 def read_srs_results(proj_name: str) -> dict:
     """
     Everything the SRS tab shows, gathered server-side.
@@ -595,12 +613,14 @@ def read_srs_results(proj_name: str) -> dict:
         return {"error": f"no such project: {proj_name}"}
     srs_dir = proj_dir / ".agentforge" / "srs"
 
+    # Purpose: Handle load for this focused step.
     def load(path, default=None):
         try:
             return json.loads(path.read_text(encoding="utf-8"))
         except Exception:
             return default
 
+    # Purpose: Handle text for this focused step.
     def text(path, default=""):
         try:
             return path.read_text(encoding="utf-8")
@@ -647,3 +667,21 @@ def read_srs_results(proj_name: str) -> dict:
 
     out["have"]["pdf"] = (srs_dir / "SRS_latest.pdf").is_file()
     return out
+
+
+# SRS storage action kept with the SRS runtime.
+# Purpose: Remove one staged specification without escaping its owned root.
+def discard_srs(srs_id: str) -> dict:
+    """Remove one staged specification without escaping its owned root."""
+    sid, resolved, error = _owned_dir(
+        PROD_DIR / ".srs", srs_id, "specification id", "specification")
+    if error:
+        if "outside" in error:
+            error = f"{sid} is outside the specification store"
+        return {"error": error}
+
+    shutil.rmtree(resolved, ignore_errors=True)
+    if resolved.exists():
+        return {"error": f"{sid} could not be removed"}
+    elog("INFO", f"   🗑 discarded the specification {sid}")
+    return {"ok": True, "srs_id": sid}

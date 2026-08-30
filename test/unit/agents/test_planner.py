@@ -9,9 +9,9 @@ from pathlib import Path
 
 import xml.etree.ElementTree as ET
 
-from agents.planner.architecture import ArchitectAgent, FileStreamParser
-from agents.planner.build_templates import render_templates
-from agents.planner.planning import PlannerAgent, render_sitemap_xml
+from agents.planner.builder.app_builder import ArchitectAgent, FileStreamParser
+from agents.planner.templates.runtime_defaults import render_templates
+from agents.planner.planning.planner_agent import PlannerAgent, render_sitemap_xml
 
 
 def _model_plan() -> dict:
@@ -92,6 +92,10 @@ def _model_plan() -> dict:
 
 
 class UnifiedPlannerTests(unittest.TestCase):
+    def test_builder_keeps_project_memory_paths_after_mixin_refactors(self):
+        self.assertEqual(ArchitectAgent.PLAN_JSON, ".agentforge/plan.json")
+        self.assertEqual(ArchitectAgent.CONVO_JSON, ".agentforge/convo.json")
+
     def test_one_model_answer_produces_all_planning_artifacts(self):
         calls = []
 
@@ -509,8 +513,8 @@ class UnifiedPlannerTests(unittest.TestCase):
                             for event in events))
 
     def test_auth_client_import_is_not_mistaken_for_server_auth(self):
-        from agents.core.ollama_client import OllamaClient
-        from agents.planner.architecture import ArchitectAgent
+        from agents.core.llm.llm_client import OllamaClient
+        from agents.planner.builder.app_builder import ArchitectAgent
 
         with tempfile.TemporaryDirectory() as tmp:
             arch = ArchitectAgent(OllamaClient(), "test-model", Path(tmp))
@@ -525,8 +529,8 @@ class UnifiedPlannerTests(unittest.TestCase):
                                  for error in arch.lint_generated()))
 
     def test_scaffold_defaults_cannot_be_overwritten_by_a_build_turn(self):
-        from agents.core.ollama_client import OllamaClient
-        from agents.planner.architecture import ArchitectAgent
+        from agents.core.llm.llm_client import OllamaClient
+        from agents.planner.builder.app_builder import ArchitectAgent
 
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "lib" / "auth.js"
@@ -540,8 +544,8 @@ class UnifiedPlannerTests(unittest.TestCase):
                              "export const safe = true\n")
 
     def test_unawaited_collection_access_is_a_lint_error(self):
-        from agents.core.ollama_client import OllamaClient
-        from agents.planner.architecture import ArchitectAgent
+        from agents.core.llm.llm_client import OllamaClient
+        from agents.planner.builder.app_builder import ArchitectAgent
 
         with tempfile.TemporaryDirectory() as tmp:
             arch = ArchitectAgent(OllamaClient(), "test-model", Path(tmp))
@@ -556,8 +560,8 @@ class UnifiedPlannerTests(unittest.TestCase):
                                 for error in arch.lint_generated()))
 
     def test_unawaited_dynamic_params_are_a_lint_error(self):
-        from agents.core.ollama_client import OllamaClient
-        from agents.planner.architecture import ArchitectAgent
+        from agents.core.llm.llm_client import OllamaClient
+        from agents.planner.builder.app_builder import ArchitectAgent
 
         with tempfile.TemporaryDirectory() as tmp:
             arch = ArchitectAgent(OllamaClient(), "test-model", Path(tmp))
@@ -572,8 +576,8 @@ class UnifiedPlannerTests(unittest.TestCase):
                                 for error in arch.lint_generated()))
 
     def test_plain_mongo_demo_password_is_invalid_for_better_auth(self):
-        from agents.core.ollama_client import OllamaClient
-        from agents.planner.architecture import ArchitectAgent
+        from agents.core.llm.llm_client import OllamaClient
+        from agents.planner.builder.app_builder import ArchitectAgent
 
         with tempfile.TemporaryDirectory() as tmp:
             arch = ArchitectAgent(OllamaClient(), "test-model", Path(tmp))
@@ -592,8 +596,8 @@ class UnifiedPlannerTests(unittest.TestCase):
 
     def test_analyzer_blocks_demo_rows_that_bypass_better_auth(self):
         from agents.analysis.analyzer import AnalyzerAgent
-        from agents.core.ollama_client import OllamaClient
-        from agents.planner.architecture import ArchitectAgent
+        from agents.core.llm.llm_client import OllamaClient
+        from agents.planner.builder.app_builder import ArchitectAgent
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

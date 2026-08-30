@@ -1,5 +1,6 @@
 # Runs and reports the deployment sidecar API.
 
+# Purpose: Run the deployment agent's HTTP server. Intended as a daemon thread's target.
 def start_deploy_api():
     """
     Run the deployment agent's HTTP server. Intended as a daemon thread's target.
@@ -24,6 +25,7 @@ def start_deploy_api():
         print(f"⚠️  Deployment agent stopped — {DEPLOY_API['error']}")
 
 
+# Purpose: What the thread believes, plus whether the port is measurably there.
 def deploy_status() -> dict:
     """What the thread believes, plus whether the port is measurably there."""
     import socket

@@ -25,6 +25,7 @@ class _UIServer(ThreadingHTTPServer):
 
     daemon_threads = True
 
+    # Purpose: Handle handle error for this focused step.
     def handle_error(self, request, client_address):
         exc = sys.exc_info()[1]
         if isinstance(exc, (ConnectionAbortedError, ConnectionResetError,

@@ -255,7 +255,7 @@ def _record_round_one(proj_dir: Path, qa, passed: int, failures: list) -> None:
         log.warning(f"could not append qa history: {e}")
 
     try:
-        from agents.core import lessons
+        from agents.core.learning import build_lessons as lessons
         rows = [{"failed": len(failures),
                  "top": [{"class": n, "count": c} for n, c in top[:5]]}]
         lessons.record(proj_dir.name, lessons.from_qa_history(rows))

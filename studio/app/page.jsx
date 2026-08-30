@@ -107,9 +107,10 @@ export default function Studio() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [pendingAsk, setPendingAsk] = useState(null)
 
-  const refreshProjects = () => api.projects()
+  const refreshProjects = () => retry(() => api.projects(), 6, 500)
     .then(r => setProjects(Array.isArray(r) ? r : (r.projects || [])))
-    .catch(() => { })
+    .catch(e => useStore.getState().addLog('WARN',
+      `Projects could not be loaded yet — ${e.message}`))
 
   // The socket cannot call refreshProjects.
   const projectsStamp = useStore(s => s.projectsStamp)
@@ -122,12 +123,18 @@ export default function Studio() {
     useStore.getState().hydrate()
     connect()
     refreshProjects()
-    api.models().then(r => {
+    retry(() => api.models(), 6, 500).catch(() => null).then(r => {
       const c = catalogue(r)
       setCat(c)
 
       const cur = useStore.getState().models
-      if (cur.planner && cur.design && cur.builder) return
+      const knownNow = new Set(c.all.map(m => m.id))
+      const cloudNow = new Set(c.cloud.map(m => m.id))
+      const usableNow = id => knownNow.has(id)
+        && (cloudNow.has(id) ? c.cloudEnabled : c.ollamaReady)
+      const rolesAreUsable = cur.planner && cur.design && cur.builder
+        && [cur.planner, cur.design, cur.builder].every(usableNow)
+      if (rolesAreUsable) return
       // Fill only roles this browser has not chosen. Server-side role settings
       // fall back to the former single Agent setting during migration.
       const known = new Set([...c.cloud, ...(c.local || [])].map(m => m.id))
