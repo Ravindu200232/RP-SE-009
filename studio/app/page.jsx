@@ -341,8 +341,11 @@ export default function Studio() {
 
       {settingsOpen && (
         <SettingsModal onClose={() => setSettingsOpen(false)}
-                       onSaved={() => api.models().then(r => setCat(catalogue(r)))
-                                        .catch(() => { })} />
+                       onSaved={() => {
+                         useStore.getState().bumpSettings()
+                         api.models().then(r => setCat(catalogue(r)))
+                           .catch(() => { })
+                       }} />
       )}
 
       {askOpen && (

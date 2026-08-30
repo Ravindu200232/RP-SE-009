@@ -30,6 +30,36 @@ SAFE_RE = re.compile(r"[^a-z0-9]+")
 
 GENERATE_TIMEOUT = 600
 
+# A Fooocus reached over a tunnel or a LAN answers its first request slower
+# than one on this machine, and four seconds was short enough to report a
+# working remote address as unreachable.
+REACH_TIMEOUT = 10
+
+
+# Say why an address did not answer in words a person can act on.
+def reach_reason(exc) -> str:
+    """Say why an address did not answer in words a person can act on."""
+    name = type(exc).__name__
+    if "Timeout" in name:
+        return f"it did not answer within {REACH_TIMEOUT}s"
+    if "SSL" in name:
+        return "its certificate was refused"
+    if name in ("MissingSchema", "InvalidSchema", "InvalidURL", "URLRequired"):
+        return "that is not a usable web address"
+    if "Connection" in name:
+        return "nothing is listening there"
+    return name
+
+
+# Accept a pasted address that is missing its scheme or carries a stray slash.
+def clean_host(raw: str) -> str:
+    """Accept a pasted address that is missing its scheme or carries a stray slash."""
+    host = str(raw or "").strip().rstrip("/")
+    if host and not re.match(r"^https?://", host, re.I):
+        host = "http://" + host
+    return host
+
+
 # Fooocus reports a gallery file before that file is readable, so the fetch
 # polls rather than deciding on its first attempt.
 FETCH_TIMEOUT = 45

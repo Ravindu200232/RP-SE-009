@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Cloud, CloudOff, Database, Loader2 } from 'lucide-react'
+import { Cloud, CloudOff, Database, Loader2, Wand2 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { Button, Input, Modal } from './ui'
 import { cn } from '@/lib/utils'
@@ -12,6 +12,7 @@ export default function SettingsModal({ onClose, onSaved }) {
   const [ctx, setCtx] = useState('')
   const [key, setKey] = useState('')
   const [mongo, setMongo] = useState('')
+  const [image, setImage] = useState('')
   const [meta, setMeta] = useState(null)
   const [saving, setSaving] = useState(false)
   const [note, setNote] = useState('loading…')
@@ -24,6 +25,7 @@ export default function SettingsModal({ onClose, onSaved }) {
         if (!alive) return
         setHost(d.ollama_host || '')
         setCtx(d.local_num_ctx || '')
+        setImage(d.image_host || '')
         setMeta(d)
         setNote(d.cloud_enabled ? 'cloud enabled' : 'cloud off — local only')
         setTone(d.cloud_enabled ? 'ok' : 'muted')
@@ -40,6 +42,9 @@ export default function SettingsModal({ onClose, onSaved }) {
     if (key.trim()) body.ollama_api_key = key.trim()
 
     if (mongo.trim()) body.mongodb_uri = mongo.trim() === '-' ? '' : mongo.trim()
+    // An empty box is a real choice here — it means "the Fooocus on this
+    // machine" — so it is only sent once the load told us what was saved.
+    if (meta) body.image_host = image.trim()
     try {
       const d = await api.saveSettings(body)
       setNote(!d.cloud_enabled ? 'cloud off — local only'
@@ -92,6 +97,7 @@ export default function SettingsModal({ onClose, onSaved }) {
                  ? `saved (${meta.mongodb_uri_hint})`
                  : 'leave empty to use the local MongoDB'}
                hint="Type a single - to clear a saved URI." />
+        <ImageField value={image} onChange={setImage} />
       </div>
 
       <MongoState mongo={meta?.mongo} />
@@ -124,6 +130,48 @@ const Field = ({ label, value, onChange, hint, ...rest }) => (
     {hint && <span className="mt-1 block text-[10px] text-muted2">{hint}</span>}
   </label>
 )
+
+// The Fooocus address, with a dry run of it that draws nothing.
+function ImageField({ value, onChange }) {
+  const [result, setResult] = useState(null)
+  const [testing, setTesting] = useState(false)
+
+  // Test what is typed, not what is saved, so an address can be tried first.
+  async function test() {
+    setTesting(true)
+    setResult(null)
+    try {
+      setResult(await api.imageTest(value.trim()))
+    } catch (e) {
+      setResult({ ok: false, reason: e.message })
+    }
+    setTesting(false)
+  }
+
+  const said = !result ? '' : result.ok && !result.enabled
+    ? `${result.reason} — turn Images on in the sidebar to use it.`
+    : result.reason
+
+  return (
+    <div className="lg:col-span-2">
+      <span className="label-2xs mb-1 block text-label">Fooocus image URL</span>
+      <div className="flex items-center gap-2">
+        <Input value={value} onChange={e => onChange(e.target.value)}
+               className="min-w-0 flex-1"
+               placeholder="http://127.0.0.1:7865 — or a tunnel address" />
+        <Button variant="outline" disabled={testing} onClick={test}>
+          {testing ? <Loader2 className="size-3.5 animate-spin" />
+                   : <Wand2 className="size-3.5" />} Test
+        </Button>
+      </div>
+      <span className={cn('mt-1 block text-[10px]', !result ? 'text-muted2'
+        : result.ok ? 'text-ink' : 'text-deep')}>
+        {testing ? 'asking that address…'
+          : said || 'Leave empty to use a Fooocus on this machine.'}
+      </span>
+    </div>
+  )
+}
 
 function MongoState({ mongo }) {
   if (!mongo) return null
