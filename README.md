@@ -62,15 +62,33 @@ The repair loop uses observed source, runtime, browser, and test evidence. A fai
 RP-SE-009/
 ├── server.py                       stable backend entrypoint
 ├── server_runtime.py               ordered shared-runtime composition
-├── pipeline.py                     standalone development pipeline
 ├── agents/
-│   ├── planning/                   architecture and build planning
-│   ├── build/                      generation and baseline validation
+│   ├── planner/                    request planning and application building
+│   │   ├── planning/               requirement interpretation, routes, sitemap
+│   │   ├── builder/                approved-plan generation and file writing
+│   │   └── templates/              auth and runtime scaffolding defaults
+│   ├── pipeline/                   standalone pipeline and feature safety
+│   │   ├── build/                  fix loop, runtime/test gates, preview
+│   │   └── bugs/                   bug request, workflow, and verification
+│   ├── build/                      baseline route and browser validation
 │   ├── analysis/                   diagnosis and repair
+│   │   ├── checks/                 auth, code, data, and route scans
+│   │   ├── repair/                 bug fixing, repair runner, semantic audit
+│   │   └── runtime/                runtime probes and browser reproduction
 │   ├── features/                   feature and edit workflows
-│   ├── data/                       MongoDB lifecycle and data support
+│   │   ├── planning/               request and evidence scoping
+│   │   └── runtime/                feature updates, images, pencil, selection
+│   ├── data/                       database lifecycle and record helpers
 │   ├── core/                       shared model, command, and workspace tools
-│   └── server/                     code-agent server orchestration
+│   │   ├── llm/                    client, settings, and model catalog
+│   │   ├── workspace/              file, dependency, and source tools
+│   │   ├── imports/                import reading and rule checks
+│   │   ├── syntax/                 syntax and React DOM prop checks
+│   │   ├── runtime/                command execution and cancellation
+│   │   ├── nextjs/                 Next.js docs and dev tools
+│   │   ├── docs/                   documentation index
+│   │   └── learning/               build lessons
+│   └── server/                     Studio project files and WebSocket jobs
 ├── srs-agent/                      SRS service, knowledge, and diagrams
 ├── qa_agent/
 │   ├── unit/                       unit-test authoring and execution
@@ -91,7 +109,7 @@ RP-SE-009/
 └── production-ready/               generated applications (gitignored)
 ```
 
-The V2 layout uses direct imports to the package that owns each behavior. Old flat compatibility modules are not retained when the same implementation has moved into a focused package.
+The V2 layout uses direct imports to the package that owns each behavior. Old flat compatibility modules are not retained when the same implementation has moved into a focused package. Each agent area is split into subpackages so that a single concern stays readable in one file: every module under `agents/` is roughly 400 lines or fewer.
 
 ## Technology stack
 
@@ -139,7 +157,7 @@ python test/run_suite.py
 Run the main static and contract checks:
 
 ```bash
-python -m compileall -q agents qa_agent server_modules server.py server_runtime.py pipeline.py srs-agent/srs_agent deployment-agent/deploy_agent
+python -m compileall -q agents qa_agent server_modules server.py server_runtime.py srs-agent/srs_agent deployment-agent/deploy_agent
 python studio/scripts/verify_ui_contract.py
 node studio/scripts/verify_activity.mjs
 node studio/scripts/verify_progress.mjs
@@ -148,6 +166,7 @@ node studio/scripts/verify_uploads.mjs
 node --check desktop/main.js
 node --check desktop/runtime.js
 node --check desktop/preload.js
+python deployment-agent/verify_aws_session_contract.py
 ```
 
 For a production Studio build:
@@ -166,5 +185,3 @@ Interactive deployment sign-in and a complete generated-application browser run 
 - **Institution:** Sri Lanka Institute of Information Technology (SLIIT)
 
 This repository is maintained as a campus software engineering project. See [LICENSE](LICENSE) for the permitted academic and non-commercial use terms.
-
-The commit-based four-member contribution breakdown is recorded in [COLLABORATION_REPORT.md](COLLABORATION_REPORT.md).
