@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-08-29T19:38:22+00:00
+Run at (UTC): 2026-08-31T20:28:37+00:00
 Command: python test/run_suite.py
-Python: 3.13.5
-Unit tests: 137
+Python: 3.12.10
+Unit tests: 145
 Integration tests: 24
-Total tests run: 161
+Total tests run: 169
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 0.096s
+Duration: 5.032s
 
 Detailed results
 ----------------
@@ -46,6 +46,14 @@ test_tool_requests_keep_the_order_written_by_the_agent (test.unit.agents.test_co
 test_markdown_prompts_load_with_agentic_contracts (test.unit.agents.test_features_refactor.FeaturesRefactorTests.test_markdown_prompts_load_with_agentic_contracts) ... ok
 test_package_sentinels_never_become_install_requests (test.unit.agents.test_features_refactor.FeaturesRefactorTests.test_package_sentinels_never_become_install_requests) ... ok
 test_real_package_and_public_contracts_survive (test.unit.agents.test_features_refactor.FeaturesRefactorTests.test_real_package_and_public_contracts_survive) ... ok
+test_an_unset_address_is_never_probed (test.unit.agents.test_image_host_settings.ImageHostResolutionTests.test_an_unset_address_is_never_probed)
+With nothing configured there is no address to try, so nothing is tried. ... ok
+test_no_local_default_is_reintroduced (test.unit.agents.test_image_host_settings.ImageHostResolutionTests.test_no_local_default_is_reintroduced)
+A configured address is the only one contacted. ... ok
+test_the_three_unavailable_states_stay_distinguishable (test.unit.agents.test_image_host_settings.ImageHostResolutionTests.test_the_three_unavailable_states_stay_distinguishable)
+Off, unset, and unreachable must not collapse into one message. ... ok
+test_addresses_on_this_machine (test.unit.agents.test_image_host_settings.LocalHostDetectionTests.test_addresses_on_this_machine) ... ok
+test_addresses_somewhere_else (test.unit.agents.test_image_host_settings.LocalHostDetectionTests.test_addresses_somewhere_else) ... ok
 test_every_offered_cloud_entry_carries_the_window_it_will_request (test.unit.agents.test_ollama_client.CatalogueShapeTests.test_every_offered_cloud_entry_carries_the_window_it_will_request) ... ok
 test_the_catalogue_falls_back_to_known_cloud_models_when_empty (test.unit.agents.test_ollama_client.CatalogueShapeTests.test_the_catalogue_falls_back_to_known_cloud_models_when_empty) ... ok
 test_a_cloud_model_reporting_no_window_still_gets_the_default (test.unit.agents.test_ollama_client.CloudContextTests.test_a_cloud_model_reporting_no_window_still_gets_the_default) ... ok
@@ -159,6 +167,12 @@ test_json_fence_is_removed_before_validation (test.unit.srs.test_json_recovery.S
 test_json_object_can_be_recovered_from_explanatory_text (test.unit.srs.test_json_recovery.SRSJsonRecoveryTests.test_json_object_can_be_recovered_from_explanatory_text) ... ok
 test_trailing_commas_are_repaired_without_changing_values (test.unit.srs.test_json_recovery.SRSJsonRecoveryTests.test_trailing_commas_are_repaired_without_changing_values) ... ok
 test_validation_errors_are_compact_and_keep_field_paths (test.unit.srs.test_json_recovery.SRSJsonRecoveryTests.test_validation_errors_are_compact_and_keep_field_paths) ... ok
+test_absolute_in_repo_imports_resolve (test.unit.test_import_integrity.ImportIntegrityTests.test_absolute_in_repo_imports_resolve)
+`from agents.a.b import c` must name a module that exists on disk. ... ok
+test_relative_imports_resolve (test.unit.test_import_integrity.ImportIntegrityTests.test_relative_imports_resolve)
+`from .x import y` must resolve against the file's own package level. ... ok
+test_runtime_fragments_are_listed_and_present (test.unit.test_import_integrity.ImportIntegrityTests.test_runtime_fragments_are_listed_and_present)
+server_runtime.py's exec'd parts must all still exist where it expects them. ... ok
 test_deployment_receipt_can_include_handoff_metadata_without_leaking_secrets (test.integration.test_cross_agent_flow.CrossAgentFlowTests.test_deployment_receipt_can_include_handoff_metadata_without_leaking_secrets) ... ok
 test_repository_contains_each_full_app_subsystem (test.integration.test_cross_agent_flow.CrossAgentFlowTests.test_repository_contains_each_full_app_subsystem) ... ok
 test_srs_dynamic_api_handoff_is_testable_by_the_qa_agent (test.integration.test_cross_agent_flow.CrossAgentFlowTests.test_srs_dynamic_api_handoff_is_testable_by_the_qa_agent) ... ok
@@ -185,6 +199,6 @@ test_studio_retries_projects_and_models_and_keeps_cloud_fallbacks (test.integrat
 test_ui_handler_keeps_the_real_http_handler_base (test.integration.test_runtime_composition.StudioStartupResilienceTests.test_ui_handler_keeps_the_real_http_handler_base) ... ok
 
 ----------------------------------------------------------------------
-Ran 161 tests in 0.096s
+Ran 169 tests in 5.032s
 
 OK

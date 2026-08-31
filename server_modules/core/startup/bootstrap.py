@@ -59,6 +59,8 @@ from agents.features.feature_contract import FeatureSpec
 from agents.features.pencil_capture import PENCIL_SYSTEM, capture_region
 # Source: agents/features/image_generator.py — imported helper(s) come from here.
 from agents.features.image_generator import ImageAgent
+# Source: agents/features/image_settings.py — imported helper(s) come from here.
+from agents.features.image_settings import NO_HOST_SET, is_local_host
 # Source: agents/features/feature_prompts.py — imported helper(s) come from here.
 from agents.features.feature_prompts import feature_image_requested
 # Source: agents/features/element_selector.py — imported helper(s) come from here.

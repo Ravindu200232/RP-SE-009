@@ -50,28 +50,31 @@ class ImageAgent:
     def base_url(self) -> str:
         """The Fooocus that answers, or '' when none does. Cached per run.
 
-        Every candidate that fails is recorded in ``_reach_error``: a caller
-        that only sees ``""`` cannot tell a refused connection from an
-        address that answered with somebody else's web page.
+        The address comes from Settings alone. There is no implicit local
+        default, so a machine that never configured Fooocus does not quietly
+        probe one behind the user's back, and a mistyped remote address is
+        reported instead of being masked by a local install that happens to
+        be running. The failure is recorded in ``_reach_error``: a caller
+        that only sees ``""`` cannot tell an unset address from a refused
+        connection, or from one that answered with somebody else's web page.
         """
         if self._checked is not None:
             return self._checked
-        candidates = [self.host] if self.host else list(DEFAULT_HOSTS)
-        tried = []
-        for url in candidates:
-            try:
-                r = requests.get(f"{url}/config", timeout=REACH_TIMEOUT)
-                if r.status_code == 200 and "components" in r.text[:400]:
-                    self._checked = url
-                    return url
-                tried.append(f"{url} answered HTTP {r.status_code}"
-                             if r.status_code != 200 else
-                             f"{url} answered, but it is not a Fooocus UI")
-            except requests.RequestException as e:
-                tried.append(f"{url} — {reach_reason(e)}")
-                continue
-        self._reach_error = "; ".join(tried)
         self._checked = ""
+        if not self.host:
+            self._reach_error = NO_HOST_SET
+            return ""
+        try:
+            r = requests.get(f"{self.host}/config", timeout=REACH_TIMEOUT)
+            if r.status_code == 200 and "components" in r.text[:400]:
+                self._checked = self.host
+                return self.host
+            self._reach_error = (
+                f"{self.host} answered HTTP {r.status_code}"
+                if r.status_code != 200 else
+                f"{self.host} answered, but it is not a Fooocus UI")
+        except requests.RequestException as e:
+            self._reach_error = f"{self.host} — {reach_reason(e)}"
         return ""
 
     # Everything generate() needs, checked without drawing anything.
@@ -82,15 +85,27 @@ class ImageAgent:
         self._reach_error = ""
         url = self.base_url()
         if not url:
-            where = self.host or " or ".join(DEFAULT_HOSTS)
             return {"ok": False, "host": self.host,
-                    "reason": self._reach_error or f"nothing answered at {where}"}
+                    "reason": self._reach_error or NO_HOST_SET}
         if not self._load_template():
             return {"ok": False, "host": url,
                     "reason": f"{url} answered, but its page describes no "
                               f"generate button this client can drive"}
         return {"ok": True, "host": url,
                 "reason": f"{url} answered and its generate button is ready"}
+
+    # Why no image can be drawn right now, in words a person can act on.
+    def why_unavailable(self) -> str:
+        """Why no image can be drawn right now, in words a person can act on.
+
+        Separates the three states a caller would otherwise report as one:
+        generation switched off, no address configured, and an address that
+        is set but not answering.
+        """
+        if not self.enabled:
+            return "image generation is switched off — turn it on in Settings"
+        self.base_url()
+        return self._reach_error or NO_HOST_SET
 
     # Checks whether the external image service is ready to accept work.
     def available(self) -> bool:

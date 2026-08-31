@@ -2,7 +2,7 @@
 # Source: feature_contract.py — imported helper(s) come from this file.
 from agents.features.feature_contract import *
 # Source: feature_prompts.py — imported helper(s) come from this file.
-from agents.features.feature_prompts import render_feature_prompt
+from agents.features.feature_prompts import feature_image_prompt, render_feature_prompt
 
 class FeatureRequestPlanningMixin:
     # Plan feature in the format expected by the next pipeline steps.
@@ -21,8 +21,6 @@ class FeatureRequestPlanningMixin:
                 focus.append(rel)
         # From: agents/features/feature_contract.py
         source = self._focused_source(focus, budget=int(self._budget_chars() * 0.20))
-        # Source: feature_prompts.py — imported helper(s) come from this file.
-        from .feature_prompts import feature_image_prompt
         # From: agents/features/feature_prompts.py
         image_contract = feature_image_prompt(request)
         # From: agents/features/feature_prompts.py
