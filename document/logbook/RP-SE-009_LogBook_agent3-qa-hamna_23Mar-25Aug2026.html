@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>RP-SE-009 Periodic Log Book — Agent 3 — Hamna Hakeem</title>
+<style>
+@page {
+  size: A4;
+  margin: 16mm 14mm 15mm 14mm;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+body {
+  margin: 0;
+  font-family: "Liberation Serif", "Times New Roman", Times, serif;
+  font-size: 10.5pt;
+  line-height: 1.45;
+  color: #111;
+  background: #fff;
+}
+
+.sheet { max-width: 182mm; margin: 0 auto; }
+
+/* ---------- masthead ---------- */
+.masthead {
+  text-align: center;
+  border-bottom: 2.2pt solid #111;
+  padding-bottom: 7pt;
+  margin-bottom: 12pt;
+}
+.masthead .inst {
+  font-family: "Liberation Sans", Arial, sans-serif;
+  font-size: 12.5pt;
+  font-weight: 700;
+  letter-spacing: .35pt;
+  text-transform: uppercase;
+}
+.masthead .fac {
+  font-family: "Liberation Sans", Arial, sans-serif;
+  font-size: 8.8pt;
+  color: #333;
+  margin-top: 2pt;
+  letter-spacing: .2pt;
+}
+.masthead h1 {
+  font-family: "Liberation Sans", Arial, sans-serif;
+  font-size: 13.5pt;
+  font-weight: 700;
+  margin: 9pt 0 3pt;
+  letter-spacing: .2pt;
+}
+.masthead .sub {
+  font-size: 10pt;
+  color: #222;
+}
+.masthead .sub strong { font-weight: 700; }
+
+/* ---------- section headings ---------- */
+h2 {
+  font-family: "Liberation Sans", Arial, sans-serif;
+  font-size: 10.5pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5pt;
+  margin: 16pt 0 6pt;
+  padding: 3.5pt 6pt;
+  background: #ececec;
+  border-left: 3.5pt solid #111;
+  break-after: avoid;
+}
+h2 .n { color: #444; margin-right: 5pt; }
+
+/* ---------- tables ---------- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 4pt;
+}
+th, td {
+  border: .7pt solid #555;
+  padding: 4pt 6pt;
+  text-align: left;
+  vertical-align: top;
+}
+thead th {
+  background: #ddd;
+  font-family: "Liberation Sans", Arial, sans-serif;
+  font-size: 9pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .3pt;
+}
+thead { display: table-header-group; }
+tr { break-inside: avoid; }
+
+/* details block */
+table.details th {
+  width: 33%;
+  background: #f3f3f3;
+  font-weight: 700;
+}
+
+/* work log */
+table.work col.c-date { width: 20mm; }
+table.work col.c-no { width: 11mm; }
+table.work td.date { white-space: nowrap; font-variant-numeric: tabular-nums; }
+table.work td.no { text-align: center; color: #333; }
+table.work tbody tr:nth-child(even) td { background: #fafafa; }
+
+/* month grouping */
+.month {
+  margin-top: 11pt;
+  break-inside: avoid-page;
+}
+.month-title {
+  font-family: "Liberation Sans", Arial, sans-serif;
+  font-size: 9.6pt;
+  font-weight: 700;
+  letter-spacing: .35pt;
+  text-transform: uppercase;
+  background: #111;
+  color: #fff;
+  padding: 3pt 7pt;
+  break-after: avoid;
+}
+.month-title .count {
+  float: right;
+  font-weight: 400;
+  font-size: 8.6pt;
+  opacity: .85;
+}
+
+/* monthly supervisor sign-off */
+table.signoff {
+  margin-top: 0;
+  margin-bottom: 2pt;
+  break-inside: avoid;
+}
+table.signoff th {
+  background: #f3f3f3;
+  font-family: "Liberation Sans", Arial, sans-serif;
+  font-size: 8.4pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .25pt;
+  text-align: center;
+  padding: 3pt 4pt;
+}
+table.signoff td {
+  height: 15mm;
+  font-size: 9pt;
+}
+/* the consolidated roll-up repeats months already signed above, so it needs
+   only enough room for an initial and a date */
+table.signoff.compact td { height: 9.5mm; }
+table.signoff td.rule {
+  vertical-align: bottom;
+  text-align: center;
+  color: #777;
+  font-size: 8pt;
+  padding-bottom: 3pt;
+}
+.signoff-label {
+  font-family: "Liberation Sans", Arial, sans-serif;
+  font-size: 8.4pt;
+  font-weight: 700;
+  letter-spacing: .3pt;
+  text-transform: uppercase;
+  color: #111;
+  background: #ececec;
+  border: .7pt solid #555;
+  border-bottom: none;
+  padding: 3pt 7pt;
+  break-after: avoid;
+}
+
+/* prose + lists */
+p.summary { text-align: justify; margin: 0 0 6pt; }
+ol.plan, ul.plan { margin: 4pt 0 4pt 16pt; padding: 0; }
+ol.plan li, ul.plan li { margin-bottom: 3.5pt; text-align: justify; }
+
+/* declaration + final signatures */
+.declaration {
+  border: .7pt solid #555;
+  padding: 7pt 9pt;
+  font-size: 9.6pt;
+  text-align: justify;
+  background: #fafafa;
+}
+table.finalsign { margin-top: 8pt; break-inside: avoid; }
+table.finalsign td { height: 22mm; vertical-align: bottom; padding-bottom: 4pt; }
+table.finalsign .role {
+  font-family: "Liberation Sans", Arial, sans-serif;
+  font-size: 8.4pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .3pt;
+}
+table.finalsign .line { border-top: .7pt solid #111; margin-top: 12pt; padding-top: 2.5pt; font-size: 8.6pt; color: #333; }
+
+.note {
+  margin-top: 9pt;
+  font-size: 8.4pt;
+  color: #444;
+  border-top: .7pt dashed #999;
+  padding-top: 5pt;
+}
+.footer-id {
+  margin-top: 10pt;
+  font-size: 8pt;
+  color: #666;
+  text-align: center;
+  border-top: .7pt solid #bbb;
+  padding-top: 4pt;
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="masthead">
+    <div class="inst">Sri Lanka Institute of Information Technology</div>
+    <div class="fac">Faculty of Computing — Department of Software Engineering</div>
+    <h1>Research Project — Periodic Log Entry Form</h1>
+    <div class="sub">
+      Project <strong>R26-SE-009</strong>
+      &nbsp;|&nbsp; Agent 3
+      &nbsp;|&nbsp; <strong>Hamna Hakeem</strong> (IT22516916)
+      &nbsp;|&nbsp; Reporting period <strong>23.03.2026 – 25.08.2026</strong>
+    </div>
+  </div>
+
+  <h2><span class="n">1.</span>Project and Student Details</h2>
+    <table class="details">
+      <tr><th>Project ID</th><td>R26-SE-009</td></tr>
+      <tr><th>Research Topic</th><td>Self-Optimized LLM Multi-Agent System for Software Engineering</td></tr>
+      <tr><th>Supervisor</th><td>Prof. Nuwan Kodagoda</td></tr>
+      <tr><th>Co-Supervisor</th><td>Mr. Eishan Weerasinghe</td></tr>
+      <tr><th>Student Name</th><td>Hamna Hakeem</td></tr>
+      <tr><th>Student Registration No.</th><td>IT22516916</td></tr>
+      <tr><th>Individual Component</th><td>Agent 3 — QA Tester (AI QA Engineer) and the QA user interface</td></tr>
+      <tr><th>Reporting Period</th><td>23 March 2026 to 25 August 2026</td></tr>
+      <tr><th>Phase Covered</th><td>Requirement, implementation and integration phase, representing approximately 65% of the planned project work.</td></tr>
+    </table>
+
+  <h2><span class="n">2.</span>Summary of RP Work Carried Out During the Reporting Period</h2>
+  <p class="summary">During this reporting period Agent 3 was developed as the quality assurance and validation component of the multi-agent system, together with the QA-facing user interface. The early part of the period structured the QA workflow: unit testing, integration testing, API contract validation, quality scoring, issue reporting and round-based feedback to Agent 2 for corrective action, with PDF report output. The middle of the period delivered the QA front end — the cycle timeline, bug reporting and contract review screens, evidence and artefact views, memory logs and project history — together with the Node.js analyser and dependency graph used when preparing generated projects for testing. The later part of the period covered the redesign of the QA backend into staged unit, runtime/API, end-to-end and security verification, with an installable test harness, mock handling and isolated per-run sessions. Group contributions were made throughout so that testing progress, bug visibility and the QA gate before deployment are demonstrable inside the shared workspace.</p>
+
+  <h2><span class="n">3.</span>Date-wise RP Work (40 entries, verified monthly)</h2>
+
+    <div class="month">
+      <div class="month-title">March 2026<span class="count">5 entries</span></div>
+      <table class="work">
+        <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
+        <thead>
+          <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
+        </thead>
+        <tbody>
+        <tr><td class="no">1</td><td class="date">23.03.2026</td><td>Defined the scope of Agent 3 as the AI QA Tester responsible for validating generated systems and returning actionable defects to the builder agent.</td></tr>
+        <tr><td class="no">2</td><td class="date">24.03.2026</td><td>Designed the QA workflow to cover unit testing, integration testing, API contract checks, scoring and bug reporting across the multi-agent pipeline.</td></tr>
+        <tr><td class="no">3</td><td class="date">26.03.2026</td><td>Identified the core test stages and reporting outputs needed for a repeatable quality gate before deployment.</td></tr>
+        <tr><td class="no">4</td><td class="date">28.03.2026</td><td>Planned issue classification with severity levels, module mapping, fix recommendations and round-based re-testing behaviour.</td></tr>
+        <tr><td class="no">5</td><td class="date">31.03.2026</td><td>Defined the quality score structure and summary metrics required for measuring functional quality, security, performance and requirement coverage.</td></tr>
+        </tbody>
+      </table>
+      <div class="signoff-label">Monthly Verification — March 2026</div>
+      <table class="signoff">
+        <thead>
+          <tr>
+            <th style="width:44%">Supervisor's Comments for March 2026</th>
+            <th style="width:28%">Supervisor's Signature</th>
+            <th style="width:28%">Co-Supervisor's Signature</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td></td>
+            <td class="rule">Signature &amp; Date</td>
+            <td class="rule">Signature &amp; Date</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="month">
+      <div class="month-title">April 2026<span class="count">10 entries</span></div>
+      <table class="work">
+        <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
+        <thead>
+          <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
+        </thead>
+        <tbody>
+        <tr><td class="no">6</td><td class="date">02.04.2026</td><td>Designed the feedback loop from Agent 3 back to Agent 2 so failed runs could trigger guided repair instead of manual debugging only.</td></tr>
+        <tr><td class="no">7</td><td class="date">04.04.2026</td><td>Planned report artefact generation for QA summaries and issue bundles that could be consumed by the rest of the team.</td></tr>
+        <tr><td class="no">8</td><td class="date">07.04.2026</td><td>Refined the staged testing cycle so validation progress, fixes and final pass state could be presented clearly to users.</td></tr>
+        <tr><td class="no">9</td><td class="date">09.04.2026</td><td>Coordinated with the group workflow so QA status could act as the deployment gate for Agent 4 and appear in the shared dashboard.</td></tr>
+        <tr><td class="no">10</td><td class="date">21.04.2026</td><td>Implemented the unit-testing and integration-testing routines together with the PDF report writer used for QA output.</td></tr>
+        <tr><td class="no">11</td><td class="date">23.04.2026</td><td>Implemented the Agent 3 backend in code, including test-run start/status endpoints, progressive logs, summary metrics, issue lists and JSON report output.</td></tr>
+        <tr><td class="no">12</td><td class="date">24.04.2026</td><td>Built the shared QA Center interface with a visual test timeline, bug report pane, fix log animation, unit/integration/API tabs and QA inspector.</td></tr>
+        <tr><td class="no">13</td><td class="date">24.04.2026</td><td>Added round-based bug tracking and simulated repair handoff behaviour so Agent 3 could demonstrate interaction with Agent 2 inside the group workspace.</td></tr>
+        <tr><td class="no">14</td><td class="date">27.04.2026</td><td>Reviewed the shared dashboard and activity integration so QA outcomes, open bugs and handoff status are visible across the group demo.</td></tr>
+        <tr><td class="no">15</td><td class="date">28.04.2026</td><td>Prepared the reporting-period summary and verified Agent 3 alignment with the first-phase project milestone.</td></tr>
+        </tbody>
+      </table>
+      <div class="signoff-label">Monthly Verification — April 2026</div>
+      <table class="signoff">
+        <thead>
+          <tr>
+            <th style="width:44%">Supervisor's Comments for April 2026</th>
+            <th style="width:28%">Supervisor's Signature</th>
+            <th style="width:28%">Co-Supervisor's Signature</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td></td>
+            <td class="rule">Signature &amp; Date</td>
+            <td class="rule">Signature &amp; Date</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="month">
+      <div class="month-title">May 2026<span class="count">11 entries</span></div>
+      <table class="work">
+        <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
+        <thead>
+          <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
+        </thead>
+        <tbody>
+        <tr><td class="no">16</td><td class="date">04.05.2026</td><td>Set up the QA front-end routes and the base screen structure for the testing workspace.</td></tr>
+        <tr><td class="no">17</td><td class="date">05.05.2026</td><td>Built the bug-reporting and contract-review screens used to present QA findings.</td></tr>
+        <tr><td class="no">18</td><td class="date">05.05.2026</td><td>Updated the bug-reporting and contract-review screens following the first internal review round.</td></tr>
+        <tr><td class="no">19</td><td class="date">05.05.2026</td><td>Implemented the QA cycle timeline and the testing progress states.</td></tr>
+        <tr><td class="no">20</td><td class="date">06.05.2026</td><td>Added the memory-log and project-history views so previous QA runs remain visible to the user.</td></tr>
+        <tr><td class="no">21</td><td class="date">07.05.2026</td><td>Built the artefacts and evidence presentation screens for test output.</td></tr>
+        <tr><td class="no">22</td><td class="date">09.05.2026</td><td>Added the shared QA components and wired the QA routes into the common navigation.</td></tr>
+        <tr><td class="no">23</td><td class="date">10.05.2026</td><td>Completed responsive checks and polish across the QA screens.</td></tr>
+        <tr><td class="no">24</td><td class="date">10.05.2026</td><td>Cleaned the front-end working branch and prepared it for packaging.</td></tr>
+        <tr><td class="no">25</td><td class="date">11.05.2026</td><td>Added the Node.js analyser, generator and dependency graph support used when preparing generated projects for testing.</td></tr>
+        <tr><td class="no">26</td><td class="date">11.05.2026</td><td>Finalised the Agent 3 front-end copy and pushed the reviewed build to the shared repository.</td></tr>
+        </tbody>
+      </table>
+      <div class="signoff-label">Monthly Verification — May 2026</div>
+      <table class="signoff">
+        <thead>
+          <tr>
+            <th style="width:44%">Supervisor's Comments for May 2026</th>
+            <th style="width:28%">Supervisor's Signature</th>
+            <th style="width:28%">Co-Supervisor's Signature</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td></td>
+            <td class="rule">Signature &amp; Date</td>
+            <td class="rule">Signature &amp; Date</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="month">
+      <div class="month-title">June 2026<span class="count">4 entries</span></div>
+      <table class="work">
+        <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
+        <thead>
+          <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
+        </thead>
+        <tbody>
+        <tr><td class="no">27</td><td class="date">08.06.2026</td><td>Reviewed the version 1 QA cycle results and identified where staged demonstration testing had to be replaced by real test execution.</td></tr>
+        <tr><td class="no">28</td><td class="date">15.06.2026</td><td>Studied test-harness approaches for generated JavaScript and React projects and compared the available runner options.</td></tr>
+        <tr><td class="no">29</td><td class="date">22.06.2026</td><td>Planned the redesigned QA stages covering unit, runtime/API, end-to-end and security verification.</td></tr>
+        <tr><td class="no">30</td><td class="date">29.06.2026</td><td>Defined the evidence model so that every QA verdict is backed by a stored artefact rather than a log line.</td></tr>
+        </tbody>
+      </table>
+      <div class="signoff-label">Monthly Verification — June 2026</div>
+      <table class="signoff">
+        <thead>
+          <tr>
+            <th style="width:44%">Supervisor's Comments for June 2026</th>
+            <th style="width:28%">Supervisor's Signature</th>
+            <th style="width:28%">Co-Supervisor's Signature</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td></td>
+            <td class="rule">Signature &amp; Date</td>
+            <td class="rule">Signature &amp; Date</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="month">
+      <div class="month-title">July 2026<span class="count">4 entries</span></div>
+      <table class="work">
+        <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
+        <thead>
+          <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
+        </thead>
+        <tbody>
+        <tr><td class="no">31</td><td class="date">06.07.2026</td><td>Specified the unit-test authoring and repair loop so failing generated tests are corrected instead of discarded.</td></tr>
+        <tr><td class="no">32</td><td class="date">13.07.2026</td><td>Designed the end-to-end stage: preflight checks, console capture, normalisation and grounding of observed behaviour.</td></tr>
+        <tr><td class="no">33</td><td class="date">20.07.2026</td><td>Prepared the API-verification and security-check requirements for the QA backend rebuild.</td></tr>
+        <tr><td class="no">34</td><td class="date">27.07.2026</td><td>Reviewed the integration points between the QA agent and the builder so failures return actionable repair context.</td></tr>
+        </tbody>
+      </table>
+      <div class="signoff-label">Monthly Verification — July 2026</div>
+      <table class="signoff">
+        <thead>
+          <tr>
+            <th style="width:44%">Supervisor's Comments for July 2026</th>
+            <th style="width:28%">Supervisor's Signature</th>
+            <th style="width:28%">Co-Supervisor's Signature</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td></td>
+            <td class="rule">Signature &amp; Date</td>
+            <td class="rule">Signature &amp; Date</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="month">
+      <div class="month-title">August 2026<span class="count">6 entries</span></div>
+      <table class="work">
+        <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
+        <thead>
+          <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
+        </thead>
+        <tbody>
+        <tr><td class="no">35</td><td class="date">16.08.2026</td><td>Added the QA agent component and the testing user interface into the shared Studio.</td></tr>
+        <tr><td class="no">36</td><td class="date">18.08.2026</td><td>Aligned the QA run API with the shared runs service so test progress can be polled from the interface.</td></tr>
+        <tr><td class="no">37</td><td class="date">22.08.2026</td><td>Reviewed the tester module split and the security shim added on the builder side for the QA interface.</td></tr>
+        <tr><td class="no">38</td><td class="date">24.08.2026</td><td>Split the test-harness foundations into reusable modules.</td></tr>
+        <tr><td class="no">39</td><td class="date">25.08.2026</td><td>Added harness installation support and mock handling so test runs execute in isolation.</td></tr>
+        <tr><td class="no">40</td><td class="date">25.08.2026</td><td>Split the QA session foundations so each test run keeps its own isolated state and snapshot.</td></tr>
+        </tbody>
+      </table>
+      <div class="signoff-label">Monthly Verification — August 2026</div>
+      <table class="signoff">
+        <thead>
+          <tr>
+            <th style="width:44%">Supervisor's Comments for August 2026</th>
+            <th style="width:28%">Supervisor's Signature</th>
+            <th style="width:28%">Co-Supervisor's Signature</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td></td>
+            <td class="rule">Signature &amp; Date</td>
+            <td class="rule">Signature &amp; Date</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  <h2><span class="n">4.</span>Consolidated Monthly Verification</h2>
+    <table class="signoff compact">
+      <thead>
+        <tr>
+          <th style="width:26%;text-align:left">Month</th>
+          <th style="width:14%">Entries Logged</th>
+          <th style="width:30%">Supervisor's Signature</th>
+          <th style="width:30%">Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>March 2026</td><td style="text-align:center">5</td><td></td><td></td></tr>
+        <tr><td>April 2026</td><td style="text-align:center">10</td><td></td><td></td></tr>
+        <tr><td>May 2026</td><td style="text-align:center">11</td><td></td><td></td></tr>
+        <tr><td>June 2026</td><td style="text-align:center">4</td><td></td><td></td></tr>
+        <tr><td>July 2026</td><td style="text-align:center">4</td><td></td><td></td></tr>
+        <tr><td>August 2026</td><td style="text-align:center">6</td><td></td><td></td></tr>
+        <tr><td><strong>Total</strong></td><td style="text-align:center"><strong>40</strong></td><td></td><td></td></tr>
+      </tbody>
+    </table>
+
+  <h2><span class="n">5.</span>Project Work Planned Before the Next Evaluation Period</h2>
+  <ol class="plan">
+      <li>Complete the end-to-end stage — preflight, console capture, normalisation and grounding — and converge it against real generated applications.</li>
+      <li>Finish the unit-test authoring and repair loop so failing generated tests are corrected rather than discarded.</li>
+      <li>Complete API verification and the security checks, and bind every verdict to stored evidence.</li>
+      <li>Improve the repair-feedback loop so Agent 2 receives clearer defect context and regression indicators.</li>
+      <li>Tighten the QA handoff artefacts consumed by Agent 4 so deployment gating is stricter and more reliable.</li>
+  </ol>
+
+  <h2><span class="n">6.</span>Declaration and Signatures</h2>
+  <div class="declaration">
+    I certify that the work recorded in this log book for the period
+    23 March 2026 to 25 August 2026 was carried out by me as the individual component
+    contribution to research project R26-SE-009, and that the group-level
+    contributions recorded here were made jointly with the other project members.
+  </div>
+
+  <table class="finalsign">
+    <tbody>
+      <tr>
+        <td style="width:50%">
+          <span class="role">Student</span>
+          <div class="line">Hamna Hakeem (IT22516916) — Signature &amp; Date</div>
+        </td>
+        <td style="width:50%">
+          <span class="role">Supervisor</span>
+          <div class="line">Prof. Nuwan Kodagoda — Signature &amp; Date</div>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <span class="role">Co-Supervisor</span>
+          <div class="line">Mr. Eishan Weerasinghe — Signature &amp; Date</div>
+        </td>
+        <td>
+          <span class="role">Overall Supervisor Comments</span>
+          <div class="line">Comments</div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="footer-id">
+    R26-SE-009 &nbsp;·&nbsp; Self-Optimized LLM Multi-Agent System for Software Engineering &nbsp;·&nbsp;
+    Agent 3 &nbsp;·&nbsp; Hamna Hakeem &nbsp;·&nbsp; 23.03.2026 – 25.08.2026
+  </div>
+
+</div>
+</body>
+</html>
