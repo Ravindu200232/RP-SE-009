@@ -86,7 +86,11 @@ def _fill_missing_images(arch, proj_dir: Path, why: str = "an edit", *,
     if explicit_request:
         agent.enabled = True
         # From: agents/features/image_generator.py
-        if not agent.available():
+        # Only an address on this machine can be started from here. A remote
+        # Fooocus has to be running already, and with no address configured
+        # there is nothing to start it for.
+        # From: agents/features/image_settings.py
+        if not agent.available() and is_local_host(agent.host):
             # From: agents/features/runtime/images/image_service.py
             why_start = start_fooocus()
             if not why_start:
@@ -103,8 +107,8 @@ def _fill_missing_images(arch, proj_dir: Path, why: str = "an edit", *,
     if not agent.enabled or not agent.available():
         # From: agents/build/tester_common.py
         elog("WARN", f"   🖼 {len(missing)} picture(s) {why} added are not "
-                     f"drawn — image generation is off or no Fooocus is "
-                     f"answering: {', '.join(sorted(missing))}")
+                     f"drawn — {agent.why_unavailable()}: "
+                     f"{', '.join(sorted(missing))}")
         return 0
 
     idea = (arch.plan or {}).get("description") or (arch.plan or {}).get("title") or ""

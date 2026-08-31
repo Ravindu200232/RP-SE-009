@@ -167,7 +167,7 @@ function ImageField({ value, onChange }) {
       <span className={cn('mt-1 block text-[10px]', !result ? 'text-muted2'
         : result.ok ? 'text-ink' : 'text-deep')}>
         {testing ? 'asking that address…'
-          : said || 'Leave empty to use a Fooocus on this machine.'}
+          : said || 'The address Fooocus answers on — on this machine or over a tunnel.'}
       </span>
     </div>
   )

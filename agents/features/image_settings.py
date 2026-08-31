@@ -6,6 +6,7 @@ import random
 import re
 import time
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import requests
 
@@ -16,7 +17,15 @@ class _NoQueue(Exception):
     """This Gradio has no WebSocket queue — try the newer HTTP protocol."""
 
 
-DEFAULT_HOSTS = ("http://127.0.0.1:7865", "http://127.0.0.1:7860")
+# Said whenever no address is configured, so the picker, the feature run and
+# the Settings probe all name the same one place to go and fix it.
+NO_HOST_SET = "no Fooocus address is set — add one in Settings"
+
+
+# Addresses that name this machine. Fooocus is only ever started here for
+# one of these: a remote address has to be running already, and launching a
+# local copy on its behalf would leave a process nothing connects to.
+LOCAL_HOST_NAMES = ("127.0.0.1", "localhost", "0.0.0.0", "::1")
 
 
 PROMPT_LABEL = None
@@ -58,6 +67,19 @@ def clean_host(raw: str) -> str:
     if host and not re.match(r"^https?://", host, re.I):
         host = "http://" + host
     return host
+
+
+# Whether an address points at Fooocus on this machine.
+def is_local_host(raw: str) -> bool:
+    """Whether an address points at Fooocus on this machine."""
+    host = clean_host(raw)
+    if not host:
+        return False
+    try:
+        name = urlsplit(host).hostname or ""
+    except ValueError:
+        return False
+    return name.lower() in LOCAL_HOST_NAMES
 
 
 # Fooocus reports a gallery file before that file is readable, so the fetch

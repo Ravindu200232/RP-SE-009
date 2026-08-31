@@ -234,8 +234,8 @@ def run_image_stage(arch, proj_dir: Path) -> int:
     # From: agents/features/image_generator.py
     if not agent.available():
         # From: agents/build/tester_common.py
-        elog("WARN", "   ⚠ No Fooocus is answering — the planned images are "
-                     "skipped. Start it, or set its address in Settings.")
+        elog("WARN", "   ⚠ The planned images are skipped — "
+                     f"{agent.why_unavailable()}")
         return 0
 
     ephase({"phase": -21, "title": f"Generating {len(plan_images)} image(s)",

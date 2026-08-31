@@ -47,8 +47,7 @@ def run_image_edit(proj_name: str, instruction: str, element: dict,
             return
         # From: agents/features/image_generator.py
         if not agent.available():
-            eerr("No Fooocus is answering — start it, or set its address in "
-                 "Settings")
+            eerr(f"No picture was drawn — {agent.why_unavailable()}")
             return
 
         ephase({"phase": -21, "title": "Drawing the picture", "status": "active"})
