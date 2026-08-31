@@ -14,11 +14,16 @@ one per group member, in the departmental periodic log entry format.
 
 1. Project and student details
 2. Summary of RP work carried out during the reporting period
-3. Date-wise RP work — split into monthly blocks, **each followed by a monthly
-   supervisor / co-supervisor verification block for signing**
-4. Consolidated monthly verification roll-up
-5. Project work planned before the next evaluation period
-6. Declaration and signatures
+3. Date-wise RP work — grouped by month for readability, with no signing inside
+4. Project work planned before the next evaluation period
+5. Declaration, supervisor's comments box, and **a single signature block at the
+   end** — student, supervisor and co-supervisor side by side
+
+## Presentation
+
+Plain black and white throughout: no fills, no tints, no colour anywhere. Structure is
+carried by rule weight and type weight instead of shading, so the document prints the
+same on any printer and photocopies cleanly.
 
 ## Rebuilding
 

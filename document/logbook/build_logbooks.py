@@ -3,10 +3,13 @@
     python document/logbook/build_logbooks.py
 
 Each student gets one A4 document in the departmental log entry format: project
-and student details, a period summary, the date-wise work table split by month
-with a supervisor signature block after every month, a consolidated monthly
-verification table, the plan for the next evaluation period, and the closing
-declaration and signatures.
+and student details, a period summary, the date-wise work table grouped by
+month, the plan for the next evaluation period, and a single declaration and
+signature block at the end.
+
+The document is plain black and white throughout - no fills, no tints, no
+colour - so it prints identically on any printer and photocopies cleanly.
+Structure is carried by rule weight and type weight instead of shading.
 
 PDFs are printed with the Chromium that ships with this environment, so the
 output needs no external service. Set CHROME to override the binary.
@@ -49,7 +52,7 @@ body {
   font-family: "Liberation Serif", "Times New Roman", Times, serif;
   font-size: 10.5pt;
   line-height: 1.45;
-  color: #111;
+  color: #000;
   background: #fff;
 }
 
@@ -58,7 +61,7 @@ body {
 /* ---------- masthead ---------- */
 .masthead {
   text-align: center;
-  border-bottom: 2.2pt solid #111;
+  border-bottom: 2pt solid #000;
   padding-bottom: 7pt;
   margin-bottom: 12pt;
 }
@@ -72,7 +75,6 @@ body {
 .masthead .fac {
   font-family: "Liberation Sans", Arial, sans-serif;
   font-size: 8.8pt;
-  color: #333;
   margin-top: 2pt;
   letter-spacing: .2pt;
 }
@@ -83,26 +85,24 @@ body {
   margin: 9pt 0 3pt;
   letter-spacing: .2pt;
 }
-.masthead .sub {
-  font-size: 10pt;
-  color: #222;
-}
-.masthead .sub strong { font-weight: 700; }
+.masthead .sub { font-size: 10pt; }
 
 /* ---------- section headings ---------- */
+/* No tint behind a heading - a rule above and below separates it just as well
+   and survives a photocopier. */
 h2 {
   font-family: "Liberation Sans", Arial, sans-serif;
   font-size: 10.5pt;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .5pt;
-  margin: 16pt 0 6pt;
-  padding: 3.5pt 6pt;
-  background: #ececec;
-  border-left: 3.5pt solid #111;
+  margin: 15pt 0 6pt;
+  padding: 3pt 0 2.5pt;
+  border-top: 1.4pt solid #000;
+  border-bottom: .7pt solid #000;
   break-after: avoid;
 }
-h2 .n { color: #444; margin-right: 5pt; }
+h2 .n { margin-right: 6pt; }
 
 /* ---------- tables ---------- */
 table {
@@ -111,143 +111,108 @@ table {
   margin-bottom: 4pt;
 }
 th, td {
-  border: .7pt solid #555;
+  border: .7pt solid #000;
   padding: 4pt 6pt;
   text-align: left;
   vertical-align: top;
 }
 thead th {
-  background: #ddd;
   font-family: "Liberation Sans", Arial, sans-serif;
   font-size: 9pt;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .3pt;
+  border-bottom: 1.4pt solid #000;
 }
 thead { display: table-header-group; }
 tr { break-inside: avoid; }
 
-/* details block */
-table.details th {
-  width: 33%;
-  background: #f3f3f3;
-  font-weight: 700;
-}
+table.details th { width: 33%; font-weight: 700; }
 
-/* work log */
 table.work col.c-date { width: 20mm; }
 table.work col.c-no { width: 11mm; }
 table.work td.date { white-space: nowrap; font-variant-numeric: tabular-nums; }
-table.work td.no { text-align: center; color: #333; }
-table.work tbody tr:nth-child(even) td { background: #fafafa; }
+table.work td.no { text-align: center; }
 
-/* month grouping */
-/* A month is allowed to flow across a page break - holding one together pushes
-   whole blocks onto fresh pages and leaves half-empty sheets. The header row
-   repeats on the continuation, the title never ends a page on its own, and the
-   signature block below is what stays unbroken. */
-.month {
-  margin-top: 11pt;
-}
+/* ---------- month grouping ---------- */
+/* A month may flow across a page break - holding one together pushes whole
+   blocks onto fresh pages and leaves half-empty sheets. The header row repeats
+   on the continuation and the title never ends a page on its own. */
+.month { margin-top: 11pt; }
 .month-title {
   font-family: "Liberation Sans", Arial, sans-serif;
   font-size: 9.6pt;
   font-weight: 700;
-  letter-spacing: .35pt;
+  letter-spacing: .4pt;
   text-transform: uppercase;
-  background: #111;
-  color: #fff;
-  padding: 3pt 7pt;
+  border-bottom: 1.4pt solid #000;
+  padding: 0 1pt 2.5pt;
+  margin-bottom: 3pt;
   break-after: avoid;
 }
 .month-title .count {
   float: right;
   font-weight: 400;
   font-size: 8.6pt;
-  opacity: .85;
 }
 
-/* monthly supervisor sign-off */
-table.signoff {
-  margin-top: 0;
-  margin-bottom: 2pt;
-  break-inside: avoid;
-}
-table.signoff th {
-  background: #f3f3f3;
-  font-family: "Liberation Sans", Arial, sans-serif;
-  font-size: 8.4pt;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .25pt;
-  text-align: center;
-  padding: 3pt 4pt;
-}
-table.signoff td {
-  height: 15mm;
-  font-size: 9pt;
-}
-/* the consolidated roll-up repeats months already signed above, so it needs
-   only enough room for an initial and a date */
-table.signoff.compact td { height: 9.5mm; }
-table.signoff td.rule {
-  vertical-align: bottom;
-  text-align: center;
-  color: #777;
-  font-size: 8pt;
-  padding-bottom: 3pt;
-}
-.signoff-label {
-  font-family: "Liberation Sans", Arial, sans-serif;
-  font-size: 8.4pt;
-  font-weight: 700;
-  letter-spacing: .3pt;
-  text-transform: uppercase;
-  color: #111;
-  background: #ececec;
-  border: .7pt solid #555;
-  border-bottom: none;
-  padding: 3pt 7pt;
-  break-after: avoid;
-}
-
-/* prose + lists */
+/* ---------- prose and lists ---------- */
 p.summary { text-align: justify; margin: 0 0 6pt; }
-ol.plan, ul.plan { margin: 4pt 0 4pt 16pt; padding: 0; }
-ol.plan li, ul.plan li { margin-bottom: 3.5pt; text-align: justify; }
+ol.plan { margin: 4pt 0 4pt 16pt; padding: 0; }
+ol.plan li { margin-bottom: 3.5pt; text-align: justify; }
 
-/* declaration + final signatures */
+/* ---------- declaration and the single closing signature block ---------- */
 .declaration {
-  border: .7pt solid #555;
+  border: .7pt solid #000;
   padding: 7pt 9pt;
   font-size: 9.6pt;
   text-align: justify;
-  background: #fafafa;
 }
-table.finalsign { margin-top: 8pt; break-inside: avoid; }
-table.finalsign td { height: 22mm; vertical-align: bottom; padding-bottom: 4pt; }
+.comments-label {
+  font-family: "Liberation Sans", Arial, sans-serif;
+  font-size: 8.6pt;
+  font-weight: 700;
+  letter-spacing: .3pt;
+  text-transform: uppercase;
+  border: .7pt solid #000;
+  border-bottom: none;
+  padding: 3pt 7pt;
+  margin-top: 9pt;
+  break-after: avoid;
+}
+.comments-box {
+  border: .7pt solid #000;
+  height: 30mm;
+  break-inside: avoid;
+}
+table.finalsign { margin-top: 10pt; break-inside: avoid; }
+table.finalsign td {
+  height: 26mm;
+  vertical-align: bottom;
+  padding: 4pt 7pt 5pt;
+  text-align: center;
+}
+table.finalsign .line {
+  border-top: .7pt solid #000;
+  padding-top: 3pt;
+  font-size: 9pt;
+  font-weight: 700;
+}
 table.finalsign .role {
   font-family: "Liberation Sans", Arial, sans-serif;
-  font-size: 8.4pt;
+  font-size: 8.2pt;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .3pt;
+  margin-top: 1.5pt;
 }
-table.finalsign .line { border-top: .7pt solid #111; margin-top: 12pt; padding-top: 2.5pt; font-size: 8.6pt; color: #333; }
+table.finalsign .datel { font-size: 8.4pt; margin-top: 5pt; }
 
-.note {
-  margin-top: 9pt;
-  font-size: 8.4pt;
-  color: #444;
-  border-top: .7pt dashed #999;
-  padding-top: 5pt;
-}
 .footer-id {
-  margin-top: 10pt;
+  margin-top: 11pt;
   font-size: 8pt;
-  color: #666;
   text-align: center;
-  border-top: .7pt solid #bbb;
+  border-top: .7pt solid #000;
   padding-top: 4pt;
 }
 """
@@ -308,53 +273,7 @@ def month_block(mkey: str, rows, start_no: int) -> str:
 {chr(10).join(body)}
         </tbody>
       </table>
-      <div class="signoff-label">Monthly Verification — {E(name)}</div>
-      <table class="signoff">
-        <thead>
-          <tr>
-            <th style="width:44%">Supervisor's Comments for {E(name)}</th>
-            <th style="width:28%">Supervisor's Signature</th>
-            <th style="width:28%">Co-Supervisor's Signature</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td></td>
-            <td class="rule">Signature &amp; Date</td>
-            <td class="rule">Signature &amp; Date</td>
-          </tr>
-        </tbody>
-      </table>
     </div>"""
-
-
-def monthly_summary_table(groups) -> str:
-    rows = []
-    for mkey, entries in groups:
-        rows.append(
-            f'        <tr><td>{E(MONTH_NAMES[mkey])}</td>'
-            f'<td style="text-align:center">{len(entries)}</td>'
-            f'<td></td><td></td></tr>'
-        )
-    total = sum(len(e) for _, e in groups)
-    rows.append(
-        f'        <tr><td><strong>Total</strong></td>'
-        f'<td style="text-align:center"><strong>{total}</strong></td>'
-        f'<td></td><td></td></tr>'
-    )
-    return f"""    <table class="signoff compact">
-      <thead>
-        <tr>
-          <th style="width:26%;text-align:left">Month</th>
-          <th style="width:14%">Entries Logged</th>
-          <th style="width:30%">Supervisor's Signature</th>
-          <th style="width:30%">Date</th>
-        </tr>
-      </thead>
-      <tbody>
-{chr(10).join(rows)}
-      </tbody>
-    </table>"""
 
 
 def render(s) -> str:
@@ -369,9 +288,7 @@ def render(s) -> str:
     plan = "\n".join(f"      <li>{E(item)}</li>" for item in s["next"])
     total = sum(len(e) for _, e in groups)
 
-    title = (
-        f"RP-SE-009 Periodic Log Book — {s['agent']} — {s['student']}"
-    )
+    title = f"RP-SE-009 Periodic Log Book — {s['agent']} — {s['student']}"
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -401,18 +318,15 @@ def render(s) -> str:
   <h2><span class="n">2.</span>Summary of RP Work Carried Out During the Reporting Period</h2>
   <p class="summary">{E(s['summary'])}</p>
 
-  <h2><span class="n">3.</span>Date-wise RP Work ({total} entries, verified monthly)</h2>
+  <h2><span class="n">3.</span>Date-wise RP Work ({total} entries)</h2>
 {"".join(blocks)}
 
-  <h2><span class="n">4.</span>Consolidated Monthly Verification</h2>
-{monthly_summary_table(groups)}
-
-  <h2><span class="n">5.</span>Project Work Planned Before the Next Evaluation Period</h2>
+  <h2><span class="n">4.</span>Project Work Planned Before the Next Evaluation Period</h2>
   <ol class="plan">
 {plan}
   </ol>
 
-  <h2><span class="n">6.</span>Declaration and Signatures</h2>
+  <h2><span class="n">5.</span>Declaration and Signatures</h2>
   <div class="declaration">
     I certify that the work recorded in this log book for the period
     {E(PROJECT['period_label'])} was carried out by me as the individual component
@@ -420,26 +334,26 @@ def render(s) -> str:
     contributions recorded here were made jointly with the other project members.
   </div>
 
+  <div class="comments-label">Supervisor's Comments</div>
+  <div class="comments-box"></div>
+
   <table class="finalsign">
     <tbody>
       <tr>
-        <td style="width:50%">
-          <span class="role">Student</span>
-          <div class="line">{E(s['student'])} ({E(s['student_id'])}) — Signature &amp; Date</div>
+        <td style="width:34%">
+          <div class="line">{E(s['student'])}</div>
+          <div class="role">Student — {E(s['student_id'])}</div>
+          <div class="datel">Date: ______________</div>
         </td>
-        <td style="width:50%">
-          <span class="role">Supervisor</span>
-          <div class="line">{E(PROJECT['supervisor'])} — Signature &amp; Date</div>
+        <td style="width:33%">
+          <div class="line">{E(PROJECT['supervisor'])}</div>
+          <div class="role">Supervisor</div>
+          <div class="datel">Date: ______________</div>
         </td>
-      </tr>
-      <tr>
-        <td>
-          <span class="role">Co-Supervisor</span>
-          <div class="line">{E(PROJECT['co_supervisor'])} — Signature &amp; Date</div>
-        </td>
-        <td>
-          <span class="role">Overall Supervisor Comments</span>
-          <div class="line">Comments</div>
+        <td style="width:33%">
+          <div class="line">{E(PROJECT['co_supervisor'])}</div>
+          <div class="role">Co-Supervisor</div>
+          <div class="datel">Date: ______________</div>
         </td>
       </tr>
     </tbody>
