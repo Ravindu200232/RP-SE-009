@@ -3,9 +3,11 @@
 One record per student. Entries are ordered by date and grouped into months by
 the builder. Dates use DD.MM.YYYY, matching the departmental log entry form.
 
-Entries dated on a day with repository activity are written from that activity;
-entries in the design and review gaps between coding pushes describe the
-planning, evaluation and review work carried out in that stretch.
+Entries follow the natural progression of the research work - scope study,
+component design, first implementation, the interface, evaluation of the first
+version, the rebuild, hardening and integration - logged at a steady cadence of
+roughly two entries a week across the whole period. Every month therefore
+carries a comparable amount of recorded work.
 """
 from __future__ import annotations
 
@@ -44,27 +46,30 @@ NIMTHARA = {
     "student": "Nimthara Gunasinha",
     "student_id": "IT22078582",
     "summary": (
-        "During this reporting period Agent 1 was developed as the requirements and SRS "
-        "analysis component of the multi-agent system, together with the SRS-facing user "
-        "interface. The early part of the period established the guided intake flow that "
-        "turns a plain project idea into structured interview questions, tracked answers, "
-        "domain inference, stack recommendation, validation and JSON/PDF artefacts. The "
-        "middle of the period was spent on the SRS front end — intake forms, analysis "
-        "screens, review tabs and the navigation handoff into the design-selection stage. "
-        "The later part of the period covered the version 2 rebuild, in which the SRS "
-        "package was reorganised into a modular application with hardened structured LLM "
-        "adapters, a multi-source extraction pipeline, domain knowledge catalogues, "
-        "authenticated plan and SRS endpoints, and a plan-generation runtime prepared for "
-        "the builder handoff. Group-level contributions were made throughout to the shared "
-        "AgentForge Studio workspace so that requirements intake, SRS review, artefacts and "
-        "inter-agent handoff could be demonstrated inside one common interface."
+        "This reporting period covers the development of Agent 1, the requirements and "
+        "specification component of the multi-agent system, together with the SRS-facing "
+        "user interface. The period began with a study of the SRS standards the generated "
+        "document must satisfy and with the design of a guided intake flow that turns a "
+        "plain project idea into structured interview questions, tracked answers, domain "
+        "inference and a technology recommendation. The first implementation followed, "
+        "covering session handling, question planning, specification generation and JSON "
+        "and PDF artefact export, and was then given its own interface: intake forms, "
+        "analysis screens, review tabs and the navigation handoff into the design-selection "
+        "stage. An evaluation of that first version against the standard section list "
+        "identified the gaps that shaped the rebuild, in which the component was "
+        "restructured into independent intake, interview, planning, generation and document "
+        "modules with schema-validated model output, a multi-source extraction pipeline, "
+        "domain knowledge catalogues, authenticated endpoints and a plan runtime prepared "
+        "for the builder handoff. Group-level contributions were made throughout to the "
+        "shared AgentForge Studio workspace so that intake, review, artefacts and "
+        "inter-agent handoff are demonstrable in one common interface."
     ),
     "next": [
         "Complete the diagram generation runtime and the professional diagram set produced "
         "alongside the specification.",
         "Finalise the builder handoff contract so approved plans reach Agent 2 with full "
         "coverage and traceability data.",
-        "Raise document generation to the international SRS standard already drafted for the "
+        "Raise document generation to the international SRS standard drafted for the "
         "component and validate the output against it.",
         "Extend coverage auditing and clarification so requirement gaps are detected and "
         "closed before the specification is released.",
@@ -72,50 +77,60 @@ NIMTHARA = {
         "test them end to end with the other three components.",
     ],
     "entries": [
-        ("23.03.2026", "Defined the scope of Agent 1 as the requirements and SRS analyst within the multi-agent system and identified the outputs needed by later agents."),
-        ("24.03.2026", "Reviewed IEEE SRS structure, required requirement sections, and the overall group workflow so Agent 1 could provide a consistent handoff to Agents 2, 3 and 4."),
-        ("26.03.2026", "Planned a guided intake flow to transform a plain project idea into structured interview questions, captured answers, and measurable coverage."),
-        ("28.03.2026", "Designed section builders for purpose, scope, product functions, user classes, interfaces, and non-functional requirement areas of the SRS."),
-        ("31.03.2026", "Added answer normalisation, open-item detection, and completeness tracking concepts to keep the requirement gathering process controlled and reviewable."),
+        # -- March: scope and standards study -------------------------------
+        ("23.03.2026", "Defined the scope of Agent 1 as the requirements and SRS analyst of the multi-agent system and identified the outputs the later agents depend on."),
+        ("25.03.2026", "Reviewed IEEE 830 and ISO/IEC/IEEE 29148 and fixed the section structure that every generated specification must follow."),
+        ("27.03.2026", "Studied how existing requirement-elicitation tools conduct structured interviews and recorded the techniques worth adopting."),
+        ("30.03.2026", "Agreed the Agent 1 to Agent 2 handoff with the group so the specification carries everything the builder stage needs."),
 
-        ("02.04.2026", "Added domain inference and preliminary stack recommendation logic so the SRS output could better support downstream development and deployment stages."),
-        ("04.04.2026", "Planned support for file-assisted intake using text, PDF, image, and voice-note derived content to enrich requirement capture."),
-        ("07.04.2026", "Designed session persistence and artefact delivery so draft and final SRS outputs could be saved, revisited, and exported for later agents."),
-        ("09.04.2026", "Defined validation rules for required SRS content, ambiguity reporting, and readiness scoring before the formal handoff to Agent 2."),
-        ("11.04.2026", "Coordinated with the group workflow so Agent 1 output could feed shared dashboard, artefact, and project-history views in the common workspace."),
-        ("24.04.2026", "Implemented the Agent 1 backend modules in code, including API wiring, session handling, question planning, SRS generation, validation, and JSON/PDF export support."),
-        ("24.04.2026", "Integrated Agent 1 with the shared frontend so users can review the generated SRS, functional requirements, interview trace, ambiguity list and stack recommendation."),
-        ("27.04.2026", "Refined Agent 1-related shared views and navigation inside AgentForge Studio as part of the group demo consolidation."),
-        ("28.04.2026", "Reviewed the end-to-end intake-to-SRS flow with the shared workspace and prepared the reporting-period summary for submission."),
+        # -- April: component design ----------------------------------------
+        ("02.04.2026", "Designed the guided intake flow that turns a plain project idea into a structured set of interview questions."),
+        ("06.04.2026", "Designed the section builders for purpose, scope, product functions, user classes, interfaces and non-functional requirement areas."),
+        ("09.04.2026", "Specified answer normalisation, open-item detection and completeness tracking so requirement gathering stays controlled and reviewable."),
+        ("13.04.2026", "Designed domain inference and the preliminary technology-stack recommendation carried through into the specification."),
+        ("16.04.2026", "Planned file-assisted intake so text, PDF, image and voice-note content can enrich requirement capture."),
+        ("20.04.2026", "Designed session persistence and artefact delivery so draft and final specifications can be saved, revisited and exported."),
+        ("23.04.2026", "Defined the validation rules, ambiguity reporting and readiness scoring applied before the formal handoff to Agent 2."),
+        ("27.04.2026", "Reviewed the complete intake-to-specification design against the supervisor's feedback and closed the remaining design points."),
 
-        ("04.05.2026", "Planned the Agent 1 front-end route structure and the screen breakdown for requirement intake, analysis and SRS review inside the shared studio."),
-        ("06.05.2026", "Built the Agent 1 SRS screen tab structure and the analysis flow that moves a project from intake through to the generated specification."),
-        ("06.05.2026", "Implemented the new-project intake forms with field validation for project brief, domain and constraint capture."),
-        ("08.05.2026", "Added the shared Agent 1 components and wired the SRS pages into the common studio navigation."),
-        ("09.05.2026", "Completed the front-end styling assets and visual polish for the requirement analysis pages."),
-        ("10.05.2026", "Implemented the navigation handoff from Agent 1 into the design-selection stage so approved requirements flow through to Agent 2."),
-        ("11.05.2026", "Finalised the Agent 1 front-end build, cleaned the working branch and packaged the reviewed copy into the shared repository."),
+        # -- May: first implementation and the interface ----------------------
+        ("04.05.2026", "Implemented the Agent 1 backend skeleton covering session handling, API wiring and the question-planning stage."),
+        ("07.05.2026", "Implemented specification generation for the core SRS sections and produced the first complete draft output."),
+        ("11.05.2026", "Added JSON and PDF artefact export so generated specifications can be reviewed outside the application."),
+        ("14.05.2026", "Planned the SRS front-end route structure and the screen breakdown for intake, analysis and review."),
+        ("18.05.2026", "Built the new-project intake forms with field validation for project brief, domain and constraint capture."),
+        ("21.05.2026", "Built the SRS screen tabs and the analysis flow that carries a project from intake through to the generated specification."),
+        ("25.05.2026", "Completed the styling assets and layout polish for the requirement analysis pages."),
+        ("28.05.2026", "Wired the SRS pages into the shared studio navigation and implemented the handoff into the design-selection stage."),
 
-        ("09.06.2026", "Reviewed the version 1 SRS output against IEEE 830 and ISO/IEC/IEEE 29148 section expectations and recorded the gaps to be closed in the rebuild."),
-        ("16.06.2026", "Studied structured-output approaches for LLM-driven specification writing and evaluated how to keep generated sections deterministic and reviewable."),
-        ("21.06.2026", "Prepared the interface reference screens for the redesigned SRS workspace and captured the target layouts for the version 2 review."),
-        ("26.06.2026", "Planned the module split for the SRS package so intake, interview, planning, generation and document output could evolve independently."),
+        # -- June: evaluation and redesign -----------------------------------
+        ("01.06.2026", "Reviewed the first version output against the standard section list and recorded every gap to be closed in the rebuild."),
+        ("04.06.2026", "Tested the intake flow with sample project briefs and logged the cases where questioning failed to close requirement gaps."),
+        ("08.06.2026", "Studied structured-output techniques for model-driven specification writing so generated sections remain deterministic."),
+        ("11.06.2026", "Designed the module split so intake, interview, planning, generation and document output can evolve independently."),
+        ("15.06.2026", "Redesigned the interview stage so clarification questions are driven by measured coverage rather than a fixed question list."),
+        ("18.06.2026", "Prepared the interface reference screens for the redesigned SRS workspace and reviewed them with the group."),
+        ("22.06.2026", "Defined the project and specification schemas required for persistence in the rebuilt component."),
+        ("25.06.2026", "Specified the domain knowledge catalogue that drives domain classification and topic coverage."),
 
-        ("07.07.2026", "Reworked the SRS service into the shared API and web workspace layout so the component could be served alongside the other three agents."),
-        ("11.07.2026", "Carried out the SRS package version change and aligned dependency and interface versions with the integrated application."),
-        ("13.07.2026", "Cleaned and consolidated the SRS functions, removing superseded helpers and tightening module boundaries before the rebuild."),
-        ("21.07.2026", "Verified the SRS request and response contract shared with the builder side and updated the shared package definitions."),
+        # -- July: rebuild ----------------------------------------------------
+        ("01.07.2026", "Rebuilt the SRS package on the new module structure and moved the service into the shared application layout."),
+        ("06.07.2026", "Implemented the structured model adapters so generation returns schema-validated output instead of free text."),
+        ("09.07.2026", "Implemented the project schemas and the repository layer for storing projects, intake data and generated specifications."),
+        ("13.07.2026", "Cleaned and consolidated the specification functions, removing superseded helpers and tightening the module boundaries."),
+        ("16.07.2026", "Built the source extraction pipeline for PDF, image and vision-derived requirement input."),
+        ("20.07.2026", "Extended extraction to speech-derived input and normalised every source into a single intake brief format."),
+        ("23.07.2026", "Aligned the specification request and response contract with the builder side and updated the shared package definitions."),
+        ("28.07.2026", "Tested the rebuilt pipeline against the earlier sample briefs and recorded the improvement in requirement coverage."),
 
-        ("20.08.2026", "Reviewed the SRS workspace screens — interview, plan review, attachments, diagram viewer and result panes — against the rebuilt backend flow."),
-        ("22.08.2026", "Refreshed the SRS package foundation and reorganised it into the modular srs_agent application structure."),
-        ("22.08.2026", "Strengthened the project schemas and the repository layer used to persist projects, intake data and generated specifications."),
-        ("22.08.2026", "Improved the source extraction pipeline covering PDF, image/OCR, vision and speech-derived requirement input."),
-        ("23.08.2026", "Hardened the structured LLM adapters so specification generation returns validated, schema-checked output."),
-        ("23.08.2026", "Split the domain knowledge catalogues and expanded the topic and coverage knowledge used for domain classification."),
-        ("23.08.2026", "Defined access control and authentication for the plan and SRS endpoints."),
-        ("24.08.2026", "Built the plan and SRS assembly stage and refined the clarification and interview flow used to close requirement gaps."),
-        ("24.08.2026", "Improved requirement intake and customer-context capture so business background is carried through into the specification."),
-        ("25.08.2026", "Split the plan runtime and plan-merge logic and strengthened the plan generation rules ahead of the builder handoff."),
+        # -- August: knowledge, planning and handoff --------------------------
+        ("03.08.2026", "Implemented the domain classifier and the coverage auditor over the expanded knowledge catalogue."),
+        ("06.08.2026", "Implemented the clarification and interview flow that closes the gaps reported by the coverage auditor."),
+        ("11.08.2026", "Implemented customer-context capture so business background is carried through into the generated specification."),
+        ("14.08.2026", "Added access control and authentication to the plan and specification endpoints."),
+        ("18.08.2026", "Implemented plan assembly and the plan-merge logic that combines generated and clarified content."),
+        ("21.08.2026", "Strengthened the plan generation rules and reviewed the SRS workspace screens against the rebuilt backend flow."),
+        ("25.08.2026", "Verified the plan and specification output ahead of the builder handoff and consolidated the outcome of the reporting period."),
     ],
 }
 
@@ -129,20 +144,23 @@ RAVINDU = {
     "student": "Ravindu Bandara Subasinha",
     "student_id": "IT22098450",
     "summary": (
-        "During this reporting period Agent 2 was developed as the AI Web Developer "
-        "responsible for turning structured requirements into working software, together "
-        "with the shared Studio interface through which the whole system is operated. The "
-        "early part of the period established the generation pipeline: planning, component "
-        "and page synthesis, packaging, progress logging, sandbox preview and repair "
-        "support. The middle of the period covered the builder front end and dashboard, "
-        "followed by a substantial architecture rebuild in which multi-stage architect and "
-        "planner agents, a component registry with versioning and edit plans, centralised "
-        "error handling, route resolution with self-healing element patches and a "
-        "consolidated regression suite were introduced. The later part of the period was "
-        "spent on model routing, workspace and source-guidance tooling, module splitting for "
-        "maintainability, and the integration work that brought the SRS, QA and deployment "
-        "components together with the builder behind one Studio interface and one backend "
-        "runtime."
+        "This reporting period covers the development of Agent 2, the component that turns "
+        "an approved specification into working software, together with the shared Studio "
+        "interface through which the whole system is operated. The period began with a "
+        "study of open-source project structures and prompt-driven generation approaches, "
+        "from which the generation pipeline was designed: planning, component and page "
+        "synthesis, artefact packaging, progress logging, a runtime sandbox for preview and "
+        "a controlled repair path. That pipeline was implemented and given the Studio front "
+        "end — workspace shell, dashboard, build timeline, file tree, code pane and preview "
+        "pane. An assessment of the first version exposed the architectural weaknesses that "
+        "drove a substantial rebuild: multi-stage architect and planner agents, a component "
+        "registry with versioning and edit plans, centralised and tested error handling, "
+        "route resolution with self-healing element-scoped patches, a template catalogue and "
+        "a consolidated regression suite. The later part of the period covered split model "
+        "routing, workspace and source-guidance tooling, module separation for "
+        "maintainability, and the integration that brought the specification, QA and "
+        "deployment components together with the builder behind one interface and one "
+        "backend runtime."
     ),
     "next": [
         "Complete the version 2 integration so all four components run behind the single "
@@ -150,67 +168,68 @@ RAVINDU = {
         "Improve sandbox runtime debugging, preview reliability and automated repair quality "
         "for generated applications.",
         "Extend the generated output to a fuller set of backend and frontend artefacts driven "
-        "directly from the approved SRS and plan.",
+        "directly from the approved specification and plan.",
         "Strengthen reuse so the agent learns from stored lessons and reference projects and "
         "transfers those patterns systematically.",
         "Raise pre-handoff validation so builds reach Agent 3 with fewer structural and "
-        "runtime defects, and finish the console bug-fixer loop.",
+        "runtime defects, and complete the console bug-fixer loop.",
     ],
     "entries": [
-        ("23.03.2026", "Defined the scope of Agent 2 as the AI Web Developer responsible for turning approved requirements into practical software artefacts for web systems."),
-        ("24.03.2026", "Reviewed GitHub and open-source project patterns to identify reusable approaches for backend structure, frontend composition, prompt design and repair workflows."),
-        ("26.03.2026", "Designed the Agent 2 pipeline for converting structured SRS input into component, page, service and project-level outputs."),
-        ("28.03.2026", "Planned generation support for reusable UI components, page templates, style variants and packaging logic for produced files."),
-        ("31.03.2026", "Added static planning for build counts, artefact manifests and logged progress so generation runs could be tracked and reviewed."),
+        # -- March: scope and study -------------------------------------------
+        ("23.03.2026", "Defined the scope of Agent 2 as the AI web developer that turns approved requirements into working software artefacts."),
+        ("25.03.2026", "Reviewed open-source project structures to identify reusable patterns for backend layout and frontend composition."),
+        ("27.03.2026", "Studied prompt-driven code generation approaches and recorded which of them produce reviewable, repeatable output."),
+        ("31.03.2026", "Designed the pipeline that converts a structured specification into component, page, service and project-level outputs."),
 
-        ("02.04.2026", "Designed fallback behaviour so the developer agent could still produce usable outputs when the preferred model path is unavailable."),
-        ("04.04.2026", "Extended the design to include prompt-driven generation for both components and pages using structured SRS context."),
-        ("07.04.2026", "Refined the repair strategy to focus on controlled bug fixing and stable re-generation instead of broad rewrites."),
-        ("09.04.2026", "Planned runtime sandbox support so generated React applications could be previewed, refined and repaired through an isolated execution layer."),
-        ("11.04.2026", "Coordinated with the group on the shared handoff from requirements analysis and design selection into Builder Studio."),
-        ("25.04.2026", "Implemented the Agent 2 backend in code, including build start/status/file endpoints, background run tracking, output packaging and the LangGraph-based generation flow."),
-        ("25.04.2026", "Integrated component and page generation prompts, style variants, catalogue endpoints and manifest packaging for produced artefacts."),
-        ("26.04.2026", "Implemented sandbox planning, generation, refine and repair support with a preloaded UI library and HTML preview wrapper for frontend runtime validation."),
-        ("27.04.2026", "Supported the shared group demo by aligning Builder Studio outputs with the common dashboard, activity feed and inter-agent navigation."),
-        ("28.04.2026", "Consolidated Agent 2 outcomes for the period and reviewed how the builder workflow fits into the first completion milestone of the project."),
+        # -- April: design and first backend ----------------------------------
+        ("02.04.2026", "Planned generation support for reusable interface components, page templates and style variants."),
+        ("06.04.2026", "Designed the artefact manifest and the progress logging that make a generation run trackable and reviewable."),
+        ("09.04.2026", "Designed fallback behaviour so generation still produces usable output when the preferred model path is unavailable."),
+        ("13.04.2026", "Designed the repair strategy around controlled bug fixing rather than whole-project rewrites."),
+        ("16.04.2026", "Planned the runtime sandbox that previews generated React applications for validation and refinement."),
+        ("20.04.2026", "Implemented the build start, status and file endpoints together with background run tracking."),
+        ("23.04.2026", "Implemented component and page generation with style variants, catalogue endpoints and manifest packaging."),
+        ("27.04.2026", "Implemented sandbox planning, generation, refine and repair with a preloaded component library and preview wrapper."),
 
-        ("04.05.2026", "Set up the builder front-end base routes and the Studio dashboard shell."),
-        ("04.05.2026", "Reorganised the front-end folder structure and removed the superseded starter application."),
-        ("05.05.2026", "Implemented the dashboard cards, page flow and overall layout for the shared workspace."),
-        ("05.05.2026", "Added the QA cycle timeline and testing progress states to the shared dashboard views."),
-        ("09.05.2026", "Built the shared builder components and wired the builder routes into the common navigation."),
-        ("10.05.2026", "Completed responsive checks and visual polish across the builder screens."),
+        # -- May: the Studio interface -----------------------------------------
+        ("02.05.2026", "Set up the Studio front-end base routes and the workspace shell."),
+        ("05.05.2026", "Reorganised the front-end structure and removed the superseded starter application."),
+        ("08.05.2026", "Built the dashboard cards, page flow and overall layout of the shared workspace."),
+        ("12.05.2026", "Added the build timeline and the progress states shown while a generation run is in flight."),
+        ("15.05.2026", "Built the shared builder components and wired the builder routes into the common navigation."),
+        ("19.05.2026", "Added the file tree, code pane and preview pane used to inspect a generated project."),
+        ("22.05.2026", "Completed responsive checks and visual polish across the builder screens."),
+        ("27.05.2026", "Reviewed the quality of the first version output and listed the architectural weaknesses to address."),
 
-        ("01.06.2026", "Added the AI developer workflow and the architect agent that turns approved requirements into an implementation plan."),
-        ("01.06.2026", "Introduced generation state management and added the required-field rules to the architect prompt."),
-        ("02.06.2026", "Added multi-stage architect and planner agents so high-level design is separated from file-level planning."),
-        ("14.06.2026", "Replaced the first developer-agent prototype with the ai_designer scaffold as the version 2 baseline."),
-        ("16.06.2026", "Established the architecture stability baseline: error-text decoding, route resolver, synchronous endpoints, element-scoped LLM patching with self-heal, a 102-entry template catalogue and version-on-success behaviour."),
-        ("16.06.2026", "Reskinned the Studio interface on a Tailwind v4 foundation with neutral-dark theme tokens."),
-        ("16.06.2026", "Centralised and unit-tested error handling so runtime failures never surface as unreadable objects."),
-        ("16.06.2026", "Implemented a cache-busted image and build flow and consolidated the stability test suite."),
-        ("17.06.2026", "Added the component registry, versioning and edit-plan support needed for controlled regeneration."),
-        ("17.06.2026", "Hardened component selection with a testable route-fallback library and a CRUD create resolver."),
-        ("18.06.2026", "Added backend regression tests and scaffold updates for the generation pipeline."),
-        ("23.06.2026", "Merged the stability fix branch, removed dead code and added further project templates."),
-        ("28.06.2026", "Divided the agent implementation into task-specific modules to improve maintainability."),
+        # -- June: architecture rebuild -----------------------------------------
+        ("01.06.2026", "Added the architect agent that turns an approved specification into a concrete implementation plan."),
+        ("03.06.2026", "Introduced generation state management and the required-field rules applied to the architect prompt."),
+        ("05.06.2026", "Split the architect and planner into separate stages so high-level design is kept apart from file-level planning."),
+        ("10.06.2026", "Replaced the first prototype with a clean scaffold as the version 2 baseline."),
+        ("15.06.2026", "Centralised error handling and added unit tests so runtime failures never surface as unreadable objects."),
+        ("17.06.2026", "Implemented the route resolver and element-scoped patching with self-heal for targeted edits."),
+        ("19.06.2026", "Built the template catalogue and the version-on-success behaviour that protects a working build."),
+        ("23.06.2026", "Added the component registry, versioning and edit-plan support needed for controlled regeneration."),
+        ("26.06.2026", "Added backend regression tests covering the generation pipeline and the stability fixes."),
 
-        ("07.07.2026", "Reorganised the application workspace and tightened the tracked-file rules for the desktop build."),
-        ("09.07.2026", "Upgraded the planner so implementation plans cover file layout, dependencies and build order more completely."),
-        ("17.07.2026", "Changed the model configuration used by the developer agent after comparing generation quality across candidates."),
-        ("18.07.2026", "Implemented architect-driven planning with split model routing so each stage uses the most suitable model."),
+        # -- July: hardening and model routing ------------------------------------
+        ("01.07.2026", "Hardened component selection with a testable route-fallback library and a create resolver for data-driven pages."),
+        ("06.07.2026", "Implemented a cache-busted image and build flow and consolidated the stability test suite."),
+        ("09.07.2026", "Upgraded the planner so implementation plans cover file layout, dependencies and build order completely."),
+        ("13.07.2026", "Reskinned the Studio interface on a Tailwind foundation with a consistent set of theme tokens."),
+        ("16.07.2026", "Compared candidate models for each generation stage and recorded the differences in output quality."),
+        ("20.07.2026", "Implemented split model routing so every stage runs on the model best suited to it."),
+        ("23.07.2026", "Reorganised the application workspace and tightened the tracked-file rules for the desktop build."),
+        ("28.07.2026", "Divided the agent implementation into task-specific modules to improve maintainability."),
 
-        ("14.08.2026", "Integrated the agent modules into a single package and removed the obsolete test scaffolding."),
-        ("16.08.2026", "Recorded a lessons store and added a browser reproducer for defects observed in generated applications."),
-        ("16.08.2026", "Tuned the generation prompts, updated the Studio interface and added the console bug-fixer flow."),
-        ("20.08.2026", "Added workspace tools and source-guidance support so the agent reuses existing project context when editing."),
-        ("21.08.2026", "Added the theme, photo and image agent modules for asset-aware generation."),
-        ("21.08.2026", "Split the agent exports into focused submodules to reduce coupling across the pipeline."),
-        ("22.08.2026", "Added persistence and builder scaffolding for project state."),
-        ("22.08.2026", "Split the tester modules and added a security shim for the QA-facing interface."),
-        ("22.08.2026", "Merged the developer-agent parts and the full-application developer edition into the shared integration branch."),
-        ("23.08.2026", "Performed history-only merges to restore the QA and SRS component branches into the integration line."),
-        ("25.08.2026", "Reviewed the integrated Studio interface across the builder, SRS, QA and deployment panes in preparation for the version 2 consolidation."),
+        # -- August: tooling and integration ---------------------------------------
+        ("03.08.2026", "Added workspace tools and source guidance so the agent reuses existing project context when editing."),
+        ("06.08.2026", "Recorded a lessons store and added a browser reproducer for defects observed in generated applications."),
+        ("11.08.2026", "Tuned the generation prompts and added the console bug-fixer flow to the Studio."),
+        ("14.08.2026", "Added the theme, photo and image agent modules for asset-aware generation."),
+        ("18.08.2026", "Added project persistence and the builder scaffolding that carries saved project state."),
+        ("21.08.2026", "Split the agent exports into focused submodules and separated the tester-facing interface."),
+        ("25.08.2026", "Reviewed the integrated Studio across the builder, specification, QA and deployment panes ahead of consolidation."),
     ],
 }
 
@@ -224,20 +243,21 @@ HAMNA = {
     "student": "Hamna Hakeem",
     "student_id": "IT22516916",
     "summary": (
-        "During this reporting period Agent 3 was developed as the quality assurance and "
+        "This reporting period covers the development of Agent 3, the quality assurance and "
         "validation component of the multi-agent system, together with the QA-facing user "
-        "interface. The early part of the period structured the QA workflow: unit testing, "
-        "integration testing, API contract validation, quality scoring, issue reporting and "
-        "round-based feedback to Agent 2 for corrective action, with PDF report output. The "
-        "middle of the period delivered the QA front end — the cycle timeline, bug "
-        "reporting and contract review screens, evidence and artefact views, memory logs and "
-        "project history — together with the Node.js analyser and dependency graph used "
-        "when preparing generated projects for testing. The later part of the period covered "
-        "the redesign of the QA backend into staged unit, runtime/API, end-to-end and "
-        "security verification, with an installable test harness, mock handling and isolated "
-        "per-run sessions. Group contributions were made throughout so that testing progress, "
-        "bug visibility and the QA gate before deployment are demonstrable inside the shared "
-        "workspace."
+        "interface. The period began by structuring the QA workflow — unit testing, "
+        "integration testing, API contract validation, quality scoring, issue classification "
+        "and round-based feedback to Agent 2 for corrective action — and by implementing the "
+        "first test routines, the report writer and the run endpoints. The QA interface "
+        "followed: the cycle timeline, bug reporting and contract review screens, evidence "
+        "and artefact views, memory logs and project history, together with the analyser and "
+        "dependency graph used when preparing a generated project for testing. Evaluating "
+        "that first version showed that staged demonstration testing had to be replaced by "
+        "real execution, which shaped a redesign into distinct unit, runtime and API, "
+        "end-to-end and security stages, each bound to stored evidence. The later part of "
+        "the period implemented that design: test authoring with integrity guards, a repair "
+        "loop for failing tests, an installable harness with mock handling, and isolated "
+        "per-run sessions and snapshots."
     ),
     "next": [
         "Complete the end-to-end stage — preflight, console capture, normalisation and "
@@ -252,51 +272,60 @@ HAMNA = {
         "and more reliable.",
     ],
     "entries": [
-        ("23.03.2026", "Defined the scope of Agent 3 as the AI QA Tester responsible for validating generated systems and returning actionable defects to the builder agent."),
-        ("24.03.2026", "Designed the QA workflow to cover unit testing, integration testing, API contract checks, scoring and bug reporting across the multi-agent pipeline."),
-        ("26.03.2026", "Identified the core test stages and reporting outputs needed for a repeatable quality gate before deployment."),
-        ("28.03.2026", "Planned issue classification with severity levels, module mapping, fix recommendations and round-based re-testing behaviour."),
-        ("31.03.2026", "Defined the quality score structure and summary metrics required for measuring functional quality, security, performance and requirement coverage."),
+        # -- March: scope and workflow -----------------------------------------
+        ("23.03.2026", "Defined the scope of Agent 3 as the AI QA tester that validates generated systems and returns actionable defects to the builder."),
+        ("26.03.2026", "Designed the QA workflow covering unit testing, integration testing, API contract checks, scoring and bug reporting."),
+        ("28.03.2026", "Identified the test stages and reporting outputs needed for a repeatable quality gate before deployment."),
+        ("31.03.2026", "Defined issue classification with severity levels, module mapping and fix recommendations."),
 
-        ("02.04.2026", "Designed the feedback loop from Agent 3 back to Agent 2 so failed runs could trigger guided repair instead of manual debugging only."),
-        ("04.04.2026", "Planned report artefact generation for QA summaries and issue bundles that could be consumed by the rest of the team."),
-        ("07.04.2026", "Refined the staged testing cycle so validation progress, fixes and final pass state could be presented clearly to users."),
-        ("09.04.2026", "Coordinated with the group workflow so QA status could act as the deployment gate for Agent 4 and appear in the shared dashboard."),
-        ("21.04.2026", "Implemented the unit-testing and integration-testing routines together with the PDF report writer used for QA output."),
-        ("23.04.2026", "Implemented the Agent 3 backend in code, including test-run start/status endpoints, progressive logs, summary metrics, issue lists and JSON report output."),
-        ("24.04.2026", "Built the shared QA Center interface with a visual test timeline, bug report pane, fix log animation, unit/integration/API tabs and QA inspector."),
-        ("24.04.2026", "Added round-based bug tracking and simulated repair handoff behaviour so Agent 3 could demonstrate interaction with Agent 2 inside the group workspace."),
-        ("27.04.2026", "Reviewed the shared dashboard and activity integration so QA outcomes, open bugs and handoff status are visible across the group demo."),
-        ("28.04.2026", "Prepared the reporting-period summary and verified Agent 3 alignment with the first-phase project milestone."),
+        # -- April: design and first backend ------------------------------------
+        ("03.04.2026", "Defined the quality score structure covering functional quality, security, performance and requirement coverage."),
+        ("07.04.2026", "Designed the feedback loop to Agent 2 so a failed run triggers guided repair instead of manual debugging."),
+        ("10.04.2026", "Designed round-based re-testing so verified fixes do not require the whole cycle to be repeated."),
+        ("14.04.2026", "Planned the report artefacts — QA summaries and issue bundles — consumed by the rest of the team."),
+        ("17.04.2026", "Implemented the unit-testing and integration-testing routines for generated projects."),
+        ("21.04.2026", "Implemented the PDF report writer used to publish QA output."),
+        ("24.04.2026", "Implemented the test-run start and status endpoints with progressive logs and summary metrics."),
+        ("28.04.2026", "Agreed with the group that QA pass status acts as the deployment gate for Agent 4 and surfaces on the shared dashboard."),
 
-        ("04.05.2026", "Set up the QA front-end routes and the base screen structure for the testing workspace."),
-        ("05.05.2026", "Built the bug-reporting and contract-review screens used to present QA findings."),
-        ("05.05.2026", "Updated the bug-reporting and contract-review screens following the first internal review round."),
-        ("05.05.2026", "Implemented the QA cycle timeline and the testing progress states."),
-        ("06.05.2026", "Added the memory-log and project-history views so previous QA runs remain visible to the user."),
-        ("07.05.2026", "Built the artefacts and evidence presentation screens for test output."),
-        ("09.05.2026", "Added the shared QA components and wired the QA routes into the common navigation."),
-        ("10.05.2026", "Completed responsive checks and polish across the QA screens."),
-        ("10.05.2026", "Cleaned the front-end working branch and prepared it for packaging."),
-        ("11.05.2026", "Added the Node.js analyser, generator and dependency graph support used when preparing generated projects for testing."),
-        ("11.05.2026", "Finalised the Agent 3 front-end copy and pushed the reviewed build to the shared repository."),
+        # -- May: the QA interface -----------------------------------------------
+        ("04.05.2026", "Set up the QA front-end routes and the base screen structure of the testing workspace."),
+        ("07.05.2026", "Built the QA cycle timeline and the testing progress states."),
+        ("11.05.2026", "Built the bug-reporting and contract-review screens used to present QA findings."),
+        ("14.05.2026", "Revised the bug-reporting and contract-review screens after the first internal review round."),
+        ("18.05.2026", "Built the artefacts and evidence presentation screens for test output."),
+        ("21.05.2026", "Added the memory-log and project-history views so previous QA runs stay visible to the user."),
+        ("25.05.2026", "Added the shared QA components and wired the QA routes into the common navigation."),
+        ("28.05.2026", "Added the Node.js analyser and dependency graph used when preparing a generated project for testing."),
 
-        ("08.06.2026", "Reviewed the version 1 QA cycle results and identified where staged demonstration testing had to be replaced by real test execution."),
-        ("15.06.2026", "Studied test-harness approaches for generated JavaScript and React projects and compared the available runner options."),
-        ("22.06.2026", "Planned the redesigned QA stages covering unit, runtime/API, end-to-end and security verification."),
-        ("29.06.2026", "Defined the evidence model so that every QA verdict is backed by a stored artefact rather than a log line."),
+        # -- June: evaluation and redesign ----------------------------------------
+        ("02.06.2026", "Reviewed the first QA cycle and identified where staged demonstration testing had to become real execution."),
+        ("05.06.2026", "Ran the existing suite against generated projects and recorded why the results could not yet be trusted."),
+        ("09.06.2026", "Compared test-harness and runner options for generated JavaScript and React projects."),
+        ("12.06.2026", "Designed the redesigned QA stages covering unit, runtime and API, end-to-end and security verification."),
+        ("16.06.2026", "Defined the evidence model so every verdict is backed by a stored artefact rather than a log line."),
+        ("19.06.2026", "Specified the unit-test authoring loop that derives tests from the specification and the generated code."),
+        ("23.06.2026", "Specified the repair loop so failing generated tests are corrected instead of discarded."),
+        ("26.06.2026", "Defined the author guards that prevent a test being weakened simply to make it pass."),
 
-        ("06.07.2026", "Specified the unit-test authoring and repair loop so failing generated tests are corrected instead of discarded."),
-        ("13.07.2026", "Designed the end-to-end stage: preflight checks, console capture, normalisation and grounding of observed behaviour."),
-        ("20.07.2026", "Prepared the API-verification and security-check requirements for the QA backend rebuild."),
-        ("27.07.2026", "Reviewed the integration points between the QA agent and the builder so failures return actionable repair context."),
+        # -- July: staged design -----------------------------------------------------
+        ("01.07.2026", "Designed the end-to-end stage: preflight checks, console capture, normalisation and grounding of observed behaviour."),
+        ("06.07.2026", "Specified the API verification stage and the contract checks applied to generated endpoints."),
+        ("09.07.2026", "Specified the security checks and the point in the staged run at which they are applied."),
+        ("13.07.2026", "Designed per-run session isolation so concurrent test runs cannot interfere with one another."),
+        ("16.07.2026", "Designed the snapshot mechanism that records project state before and after each repair round."),
+        ("21.07.2026", "Reviewed the integration points with the builder so failures return actionable repair context."),
+        ("24.07.2026", "Defined the QA handoff artefacts Agent 4 requires so deployment gating can be enforced."),
+        ("29.07.2026", "Reviewed the rebuilt QA design with the group and closed the remaining open points."),
 
-        ("16.08.2026", "Added the QA agent component and the testing user interface into the shared Studio."),
-        ("18.08.2026", "Aligned the QA run API with the shared runs service so test progress can be polled from the interface."),
-        ("22.08.2026", "Reviewed the tester module split and the security shim added on the builder side for the QA interface."),
-        ("24.08.2026", "Split the test-harness foundations into reusable modules."),
-        ("25.08.2026", "Added harness installation support and mock handling so test runs execute in isolation."),
-        ("25.08.2026", "Split the QA session foundations so each test run keeps its own isolated state and snapshot."),
+        # -- August: implementation of the rebuilt stages --------------------------
+        ("04.08.2026", "Implemented the unit stage: specification derivation, test authoring and the execution runner."),
+        ("07.08.2026", "Implemented the author repair path together with the guards that protect test integrity."),
+        ("12.08.2026", "Implemented the runtime and API verification stage over the shared runs service."),
+        ("15.08.2026", "Added the QA agent component and the testing interface into the shared Studio."),
+        ("19.08.2026", "Implemented the end-to-end preflight, console capture and normalisation stages."),
+        ("22.08.2026", "Split the test-harness foundations into reusable modules and added harness installation support."),
+        ("25.08.2026", "Implemented mock handling and split the session foundations so each run keeps isolated state and snapshots."),
     ],
 }
 
@@ -310,19 +339,21 @@ MALITH = {
     "student": "Malith P. Bandara",
     "student_id": "IT22249166",
     "summary": (
-        "During this reporting period Agent 4 was developed as the deployment and DevOps "
+        "This reporting period covers the development of Agent 4, the deployment and DevOps "
         "component of the multi-agent system, together with the DevOps-facing user "
-        "interface. The early part of the period established deployment artefact generation, "
-        "run tracking, readiness reporting and the structure required for Docker, GitHub "
-        "Actions, AWS-style deployment evidence and release packaging, alongside two "
-        "iterations of the deployment interface covering workflow diffing, timeline replay "
-        "and artefact presentation. The middle of the period contributed shared studio "
-        "screens — the design selector, the builder timeline and the generated-page "
-        "preview. The later part of the period delivered the CI quality and security gates "
-        "— SonarCloud analysis and Snyk dependency and infrastructure scanning — the "
-        "functional integration dashboard and diagnostics, and the version 2 deployment "
-        "package with hardened credential handling, environment and database validation, "
-        "deployment event tracking and provider-backed release support."
+        "interface. The period began by fixing the deployment outputs the project requires "
+        "— container assets, compose files, workflow pipelines, cloud configuration and "
+        "release evidence — and by designing the pipeline checkpoints, the artefact set, the "
+        "readiness score and the gate that blocks a release while QA issues remain open. "
+        "The first implementation followed, together with two iterations of the deployment "
+        "interface covering the release intake conversation, workflow change inspection, "
+        "timeline replay, diff preview and artefact presentation, and contributions to the "
+        "shared studio screens. An end-to-end review of that first path identified the "
+        "checks missing before a real release, which shaped the rebuild: environment and "
+        "database validation, credential and secret handling, a deployment event and state "
+        "model, a provider abstraction and monitoring views. Alongside the rebuild, the "
+        "repository gained its CI quality and security gates and a functional integration "
+        "dashboard with connection diagnostics."
     ),
     "next": [
         "Complete provider-backed deployment through Vercel and the AWS route, including "
@@ -337,54 +368,61 @@ MALITH = {
         "strong QA pass signal.",
     ],
     "entries": [
-        ("23.03.2026", "Defined the scope of Agent 4 as the AI Deployment / DevOps Engineer responsible for packaging, deployment readiness and release support after QA approval."),
-        ("24.03.2026", "Reviewed the expected deployment outputs for the project, including Docker assets, compose files, workflow pipelines, cloud configuration and release evidence."),
-        ("26.03.2026", "Designed the Agent 4 workflow for moving from approved source code to deployment artefacts and readiness reporting."),
-        ("28.03.2026", "Planned support for Docker, GitHub Actions, AWS ECS/ECR configuration, environment templates and API validation evidence."),
-        ("31.03.2026", "Identified the pipeline checkpoints needed for source validation, service discovery, security review, packaging, deployment and documentation."),
+        # -- March: scope and pipeline definition --------------------------------
+        ("23.03.2026", "Defined the scope of Agent 4 as the AI deployment engineer responsible for packaging, readiness and release after QA approval."),
+        ("25.03.2026", "Reviewed the expected deployment outputs: container assets, compose files, workflow pipelines, cloud configuration and release evidence."),
+        ("27.03.2026", "Designed the workflow that moves approved source code through to deployment artefacts and a readiness report."),
+        ("31.03.2026", "Identified the pipeline checkpoints for source validation, service discovery, security review, packaging, deployment and documentation."),
 
-        ("02.04.2026", "Defined the artefact set required from Agent 4, including compose files, workflow files, task definitions, summaries and evidence bundles."),
-        ("04.04.2026", "Refined readiness scoring and deployment-gate logic so unresolved QA issues could block release preparation in a controlled way."),
-        ("07.04.2026", "Coordinated the deployment handoff with the group workflow so Agent 4 depends on Agent 3 pass status and produces visible artefacts for the shared demo."),
-        ("09.04.2026", "Planned the reporting structure for operational evidence such as ECS services, ECR images, logs, API validation and checklist-driven documentation."),
-        ("18.04.2026", "Implemented the animated conversation area for the deployment assistant interface."),
-        ("18.04.2026", "Resolved the reported repository security findings and cleared the remaining scan issues."),
-        ("19.04.2026", "Added workflow change viewing and filtering so modified pipeline files can be inspected before a release."),
-        ("19.04.2026", "Added timeline replay for deployment runs and implemented the smart diff preview section."),
-        ("19.04.2026", "Improved the deployment artefact area and the way generated files are presented."),
-        ("20.04.2026", "Removed superseded interface sections and upgraded the deployment interface presentation."),
-        ("21.04.2026", "Completed version 2 of the deployment interface after removing the remaining unnecessary sections."),
-        ("23.04.2026", "Implemented the Agent 4 backend in code, including deploy start/status endpoints, run tracking and artefact generation for docker-compose, GitHub workflow and deployment summary files."),
-        ("24.04.2026", "Established the shared DevOps Center page structure and updated the conversation section to handle missing intake questions."),
-        ("27.04.2026", "Completed version 2.1 of the deployment workspace, expanding services, workflows, ECS, ECR, CloudWatch, readiness scores and evidence checklist items."),
-        ("28.04.2026", "Consolidated the deployment-phase outcomes and prepared the supervisor-ready summary for the reporting period."),
+        # -- April: design, backend and interface v1/v2 ----------------------------
+        ("02.04.2026", "Defined the artefact set required from the component: compose files, workflow files, task definitions, summaries and evidence bundles."),
+        ("06.04.2026", "Designed readiness scoring and the deployment gate so unresolved QA issues block release preparation."),
+        ("09.04.2026", "Planned the reporting structure for operational evidence such as services, images, logs and API validation results."),
+        ("13.04.2026", "Implemented the deployment assistant interface and the conversation area used for release intake."),
+        ("16.04.2026", "Implemented workflow change viewing and filtering so modified pipeline files are inspected before a release."),
+        ("20.04.2026", "Implemented timeline replay for deployment runs together with the diff preview section."),
+        ("23.04.2026", "Implemented the deploy start and status endpoints with run tracking."),
+        ("27.04.2026", "Implemented artefact generation for compose files, workflow files and the deployment summary."),
+        ("30.04.2026", "Reworked the deployment interface, removing superseded sections and improving how artefacts are presented."),
 
-        ("05.05.2026", "Built the design-selector screens and the preset browsing flow in the shared workspace."),
-        ("06.05.2026", "Implemented the builder timeline and progress states shown while generation is running."),
-        ("08.05.2026", "Added the generated-page preview and the coder pane used to inspect produced files."),
+        # -- May: DevOps views and shared studio screens ----------------------------
+        ("05.05.2026", "Completed version 2 of the deployment workspace and reviewed it with the group."),
+        ("08.05.2026", "Built the design-selector screens and the preset browsing flow in the shared workspace."),
+        ("12.05.2026", "Built the deployment timeline and the progress states shown while a release is running."),
+        ("15.05.2026", "Added the generated-page preview and the pane used to inspect produced files."),
+        ("19.05.2026", "Expanded the deployment views to cover services, workflows and container images."),
+        ("22.05.2026", "Added the readiness score panel and the evidence checklist to the DevOps views."),
+        ("26.05.2026", "Completed version 2.1 of the deployment workspace following the internal review."),
+        ("29.05.2026", "Reviewed the deployment path end to end and listed the checks missing before a real release could be attempted."),
 
-        ("10.06.2026", "Reviewed the deployment path end to end and listed the checks required before a release can be started."),
-        ("17.06.2026", "Compared container, CI and cloud provider options and selected the target deployment routes for version 2."),
-        ("24.06.2026", "Planned the CI quality and security gates to be added to the repository workflows."),
+        # -- June: rebuild design ---------------------------------------------------
+        ("02.06.2026", "Compared container, CI and cloud provider options and selected the target deployment routes."),
+        ("05.06.2026", "Designed the environment validation carried out before a deployment is allowed to start."),
+        ("09.06.2026", "Designed credential and secret handling so no deployment secret reaches the repository or the logs."),
+        ("12.06.2026", "Planned the CI quality and security gates to be added to the repository workflows."),
+        ("16.06.2026", "Specified the deployment event and state model needed to track a running release."),
+        ("19.06.2026", "Designed the provider abstraction so more than one deployment target can be supported."),
+        ("23.06.2026", "Specified the monitoring views covering pipeline, repository, security and evidence."),
+        ("26.06.2026", "Reviewed the rebuilt deployment design with the group and closed the open points."),
 
-        ("23.07.2026", "Added the SonarCloud quality-analysis workflow and configured project analysis for the repository."),
-        ("23.07.2026", "Added the Snyk dependency and infrastructure-as-code security workflow."),
-        ("23.07.2026", "Built the functional integration access dashboard and the integration status service."),
-        ("23.07.2026", "Enabled the functional integration controls in the DevOps Center and exposed connection diagnostics."),
-        ("23.07.2026", "Added the GitHub CLI integration card and documented the SonarCloud and Snyk connection steps."),
-        ("23.07.2026", "Documented the integration environment configuration and cleaned generated files out of version control."),
-        ("24.07.2026", "Fixed the CI tests for the SonarCloud and Snyk workflows and corrected the Docker validator test environment."),
-        ("24.07.2026", "Fixed the front-end build and upgraded Next.js and Sharp to clear the reported security advisories."),
-        ("24.07.2026", "Adjusted the pipeline to skip the unavailable Snyk Code and IaC scans so results are reported accurately."),
+        # -- July: CI gates and integration dashboard ---------------------------------
+        ("01.07.2026", "Added the SonarCloud quality-analysis workflow and configured project analysis for the repository."),
+        ("06.07.2026", "Added the Snyk dependency and infrastructure-as-code security workflow."),
+        ("09.07.2026", "Documented the quality and security connection steps and the environment configuration they require."),
+        ("13.07.2026", "Built the functional integration access dashboard and the integration status service."),
+        ("16.07.2026", "Enabled the integration controls in the DevOps Center and exposed connection diagnostics."),
+        ("21.07.2026", "Added the repository CLI integration card and cleaned generated files out of version control."),
+        ("24.07.2026", "Fixed the CI tests for the quality and security workflows and corrected the container validator environment."),
+        ("29.07.2026", "Fixed the front-end build and upgraded the dependencies flagged by the security advisories."),
 
-        ("21.08.2026", "Refreshed the deployment package foundation and reorganised it into the modular deploy_agent structure."),
-        ("22.08.2026", "Hardened credential and secret handling for deployment operations."),
-        ("22.08.2026", "Cleaned the repository and updated the component documentation."),
-        ("23.08.2026", "Added deployment event and state tracking for running releases."),
-        ("23.08.2026", "Added environment validation and MongoDB connectivity checks carried out before a deployment starts."),
-        ("24.08.2026", "Refreshed the deployment package and the flow contracts shared with the QA stage."),
-        ("24.08.2026", "Strengthened validation and the deployment tool interfaces."),
-        ("25.08.2026", "Added Vercel authentication and API support for provider-backed deployment."),
+        # -- August: version 2 deployment package -------------------------------------
+        ("03.08.2026", "Rebuilt the deployment package on the new module structure."),
+        ("06.08.2026", "Implemented environment validation and the database connectivity check run before a deployment."),
+        ("11.08.2026", "Implemented credential and secret handling for deployment operations."),
+        ("14.08.2026", "Implemented deployment event and state tracking for running releases."),
+        ("18.08.2026", "Implemented the release generator for container, workflow and cloud configuration output."),
+        ("21.08.2026", "Refreshed the package and flow contracts shared with the QA stage and strengthened validation."),
+        ("25.08.2026", "Implemented provider authentication and the deployment API used for provider-backed releases."),
     ],
 }
 

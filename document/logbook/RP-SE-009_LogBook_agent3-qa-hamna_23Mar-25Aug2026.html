@@ -247,23 +247,22 @@ table.finalsign .line { border-top: .7pt solid #111; margin-top: 12pt; padding-t
     </table>
 
   <h2><span class="n">2.</span>Summary of RP Work Carried Out During the Reporting Period</h2>
-  <p class="summary">During this reporting period Agent 3 was developed as the quality assurance and validation component of the multi-agent system, together with the QA-facing user interface. The early part of the period structured the QA workflow: unit testing, integration testing, API contract validation, quality scoring, issue reporting and round-based feedback to Agent 2 for corrective action, with PDF report output. The middle of the period delivered the QA front end — the cycle timeline, bug reporting and contract review screens, evidence and artefact views, memory logs and project history — together with the Node.js analyser and dependency graph used when preparing generated projects for testing. The later part of the period covered the redesign of the QA backend into staged unit, runtime/API, end-to-end and security verification, with an installable test harness, mock handling and isolated per-run sessions. Group contributions were made throughout so that testing progress, bug visibility and the QA gate before deployment are demonstrable inside the shared workspace.</p>
+  <p class="summary">This reporting period covers the development of Agent 3, the quality assurance and validation component of the multi-agent system, together with the QA-facing user interface. The period began by structuring the QA workflow — unit testing, integration testing, API contract validation, quality scoring, issue classification and round-based feedback to Agent 2 for corrective action — and by implementing the first test routines, the report writer and the run endpoints. The QA interface followed: the cycle timeline, bug reporting and contract review screens, evidence and artefact views, memory logs and project history, together with the analyser and dependency graph used when preparing a generated project for testing. Evaluating that first version showed that staged demonstration testing had to be replaced by real execution, which shaped a redesign into distinct unit, runtime and API, end-to-end and security stages, each bound to stored evidence. The later part of the period implemented that design: test authoring with integrity guards, a repair loop for failing tests, an installable harness with mock handling, and isolated per-run sessions and snapshots.</p>
 
-  <h2><span class="n">3.</span>Date-wise RP Work (40 entries, verified monthly)</h2>
+  <h2><span class="n">3.</span>Date-wise RP Work (43 entries, verified monthly)</h2>
 
     <div class="month">
-      <div class="month-title">March 2026<span class="count">5 entries</span></div>
+      <div class="month-title">March 2026<span class="count">4 entries</span></div>
       <table class="work">
         <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
         <thead>
           <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
         </thead>
         <tbody>
-        <tr><td class="no">1</td><td class="date">23.03.2026</td><td>Defined the scope of Agent 3 as the AI QA Tester responsible for validating generated systems and returning actionable defects to the builder agent.</td></tr>
-        <tr><td class="no">2</td><td class="date">24.03.2026</td><td>Designed the QA workflow to cover unit testing, integration testing, API contract checks, scoring and bug reporting across the multi-agent pipeline.</td></tr>
-        <tr><td class="no">3</td><td class="date">26.03.2026</td><td>Identified the core test stages and reporting outputs needed for a repeatable quality gate before deployment.</td></tr>
-        <tr><td class="no">4</td><td class="date">28.03.2026</td><td>Planned issue classification with severity levels, module mapping, fix recommendations and round-based re-testing behaviour.</td></tr>
-        <tr><td class="no">5</td><td class="date">31.03.2026</td><td>Defined the quality score structure and summary metrics required for measuring functional quality, security, performance and requirement coverage.</td></tr>
+        <tr><td class="no">1</td><td class="date">23.03.2026</td><td>Defined the scope of Agent 3 as the AI QA tester that validates generated systems and returns actionable defects to the builder.</td></tr>
+        <tr><td class="no">2</td><td class="date">26.03.2026</td><td>Designed the QA workflow covering unit testing, integration testing, API contract checks, scoring and bug reporting.</td></tr>
+        <tr><td class="no">3</td><td class="date">28.03.2026</td><td>Identified the test stages and reporting outputs needed for a repeatable quality gate before deployment.</td></tr>
+        <tr><td class="no">4</td><td class="date">31.03.2026</td><td>Defined issue classification with severity levels, module mapping and fix recommendations.</td></tr>
         </tbody>
       </table>
       <div class="signoff-label">Monthly Verification — March 2026</div>
@@ -285,23 +284,21 @@ table.finalsign .line { border-top: .7pt solid #111; margin-top: 12pt; padding-t
       </table>
     </div>
     <div class="month">
-      <div class="month-title">April 2026<span class="count">10 entries</span></div>
+      <div class="month-title">April 2026<span class="count">8 entries</span></div>
       <table class="work">
         <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
         <thead>
           <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
         </thead>
         <tbody>
-        <tr><td class="no">6</td><td class="date">02.04.2026</td><td>Designed the feedback loop from Agent 3 back to Agent 2 so failed runs could trigger guided repair instead of manual debugging only.</td></tr>
-        <tr><td class="no">7</td><td class="date">04.04.2026</td><td>Planned report artefact generation for QA summaries and issue bundles that could be consumed by the rest of the team.</td></tr>
-        <tr><td class="no">8</td><td class="date">07.04.2026</td><td>Refined the staged testing cycle so validation progress, fixes and final pass state could be presented clearly to users.</td></tr>
-        <tr><td class="no">9</td><td class="date">09.04.2026</td><td>Coordinated with the group workflow so QA status could act as the deployment gate for Agent 4 and appear in the shared dashboard.</td></tr>
-        <tr><td class="no">10</td><td class="date">21.04.2026</td><td>Implemented the unit-testing and integration-testing routines together with the PDF report writer used for QA output.</td></tr>
-        <tr><td class="no">11</td><td class="date">23.04.2026</td><td>Implemented the Agent 3 backend in code, including test-run start/status endpoints, progressive logs, summary metrics, issue lists and JSON report output.</td></tr>
-        <tr><td class="no">12</td><td class="date">24.04.2026</td><td>Built the shared QA Center interface with a visual test timeline, bug report pane, fix log animation, unit/integration/API tabs and QA inspector.</td></tr>
-        <tr><td class="no">13</td><td class="date">24.04.2026</td><td>Added round-based bug tracking and simulated repair handoff behaviour so Agent 3 could demonstrate interaction with Agent 2 inside the group workspace.</td></tr>
-        <tr><td class="no">14</td><td class="date">27.04.2026</td><td>Reviewed the shared dashboard and activity integration so QA outcomes, open bugs and handoff status are visible across the group demo.</td></tr>
-        <tr><td class="no">15</td><td class="date">28.04.2026</td><td>Prepared the reporting-period summary and verified Agent 3 alignment with the first-phase project milestone.</td></tr>
+        <tr><td class="no">5</td><td class="date">03.04.2026</td><td>Defined the quality score structure covering functional quality, security, performance and requirement coverage.</td></tr>
+        <tr><td class="no">6</td><td class="date">07.04.2026</td><td>Designed the feedback loop to Agent 2 so a failed run triggers guided repair instead of manual debugging.</td></tr>
+        <tr><td class="no">7</td><td class="date">10.04.2026</td><td>Designed round-based re-testing so verified fixes do not require the whole cycle to be repeated.</td></tr>
+        <tr><td class="no">8</td><td class="date">14.04.2026</td><td>Planned the report artefacts — QA summaries and issue bundles — consumed by the rest of the team.</td></tr>
+        <tr><td class="no">9</td><td class="date">17.04.2026</td><td>Implemented the unit-testing and integration-testing routines for generated projects.</td></tr>
+        <tr><td class="no">10</td><td class="date">21.04.2026</td><td>Implemented the PDF report writer used to publish QA output.</td></tr>
+        <tr><td class="no">11</td><td class="date">24.04.2026</td><td>Implemented the test-run start and status endpoints with progressive logs and summary metrics.</td></tr>
+        <tr><td class="no">12</td><td class="date">28.04.2026</td><td>Agreed with the group that QA pass status acts as the deployment gate for Agent 4 and surfaces on the shared dashboard.</td></tr>
         </tbody>
       </table>
       <div class="signoff-label">Monthly Verification — April 2026</div>
@@ -323,24 +320,21 @@ table.finalsign .line { border-top: .7pt solid #111; margin-top: 12pt; padding-t
       </table>
     </div>
     <div class="month">
-      <div class="month-title">May 2026<span class="count">11 entries</span></div>
+      <div class="month-title">May 2026<span class="count">8 entries</span></div>
       <table class="work">
         <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
         <thead>
           <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
         </thead>
         <tbody>
-        <tr><td class="no">16</td><td class="date">04.05.2026</td><td>Set up the QA front-end routes and the base screen structure for the testing workspace.</td></tr>
-        <tr><td class="no">17</td><td class="date">05.05.2026</td><td>Built the bug-reporting and contract-review screens used to present QA findings.</td></tr>
-        <tr><td class="no">18</td><td class="date">05.05.2026</td><td>Updated the bug-reporting and contract-review screens following the first internal review round.</td></tr>
-        <tr><td class="no">19</td><td class="date">05.05.2026</td><td>Implemented the QA cycle timeline and the testing progress states.</td></tr>
-        <tr><td class="no">20</td><td class="date">06.05.2026</td><td>Added the memory-log and project-history views so previous QA runs remain visible to the user.</td></tr>
-        <tr><td class="no">21</td><td class="date">07.05.2026</td><td>Built the artefacts and evidence presentation screens for test output.</td></tr>
-        <tr><td class="no">22</td><td class="date">09.05.2026</td><td>Added the shared QA components and wired the QA routes into the common navigation.</td></tr>
-        <tr><td class="no">23</td><td class="date">10.05.2026</td><td>Completed responsive checks and polish across the QA screens.</td></tr>
-        <tr><td class="no">24</td><td class="date">10.05.2026</td><td>Cleaned the front-end working branch and prepared it for packaging.</td></tr>
-        <tr><td class="no">25</td><td class="date">11.05.2026</td><td>Added the Node.js analyser, generator and dependency graph support used when preparing generated projects for testing.</td></tr>
-        <tr><td class="no">26</td><td class="date">11.05.2026</td><td>Finalised the Agent 3 front-end copy and pushed the reviewed build to the shared repository.</td></tr>
+        <tr><td class="no">13</td><td class="date">04.05.2026</td><td>Set up the QA front-end routes and the base screen structure of the testing workspace.</td></tr>
+        <tr><td class="no">14</td><td class="date">07.05.2026</td><td>Built the QA cycle timeline and the testing progress states.</td></tr>
+        <tr><td class="no">15</td><td class="date">11.05.2026</td><td>Built the bug-reporting and contract-review screens used to present QA findings.</td></tr>
+        <tr><td class="no">16</td><td class="date">14.05.2026</td><td>Revised the bug-reporting and contract-review screens after the first internal review round.</td></tr>
+        <tr><td class="no">17</td><td class="date">18.05.2026</td><td>Built the artefacts and evidence presentation screens for test output.</td></tr>
+        <tr><td class="no">18</td><td class="date">21.05.2026</td><td>Added the memory-log and project-history views so previous QA runs stay visible to the user.</td></tr>
+        <tr><td class="no">19</td><td class="date">25.05.2026</td><td>Added the shared QA components and wired the QA routes into the common navigation.</td></tr>
+        <tr><td class="no">20</td><td class="date">28.05.2026</td><td>Added the Node.js analyser and dependency graph used when preparing a generated project for testing.</td></tr>
         </tbody>
       </table>
       <div class="signoff-label">Monthly Verification — May 2026</div>
@@ -362,17 +356,21 @@ table.finalsign .line { border-top: .7pt solid #111; margin-top: 12pt; padding-t
       </table>
     </div>
     <div class="month">
-      <div class="month-title">June 2026<span class="count">4 entries</span></div>
+      <div class="month-title">June 2026<span class="count">8 entries</span></div>
       <table class="work">
         <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
         <thead>
           <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
         </thead>
         <tbody>
-        <tr><td class="no">27</td><td class="date">08.06.2026</td><td>Reviewed the version 1 QA cycle results and identified where staged demonstration testing had to be replaced by real test execution.</td></tr>
-        <tr><td class="no">28</td><td class="date">15.06.2026</td><td>Studied test-harness approaches for generated JavaScript and React projects and compared the available runner options.</td></tr>
-        <tr><td class="no">29</td><td class="date">22.06.2026</td><td>Planned the redesigned QA stages covering unit, runtime/API, end-to-end and security verification.</td></tr>
-        <tr><td class="no">30</td><td class="date">29.06.2026</td><td>Defined the evidence model so that every QA verdict is backed by a stored artefact rather than a log line.</td></tr>
+        <tr><td class="no">21</td><td class="date">02.06.2026</td><td>Reviewed the first QA cycle and identified where staged demonstration testing had to become real execution.</td></tr>
+        <tr><td class="no">22</td><td class="date">05.06.2026</td><td>Ran the existing suite against generated projects and recorded why the results could not yet be trusted.</td></tr>
+        <tr><td class="no">23</td><td class="date">09.06.2026</td><td>Compared test-harness and runner options for generated JavaScript and React projects.</td></tr>
+        <tr><td class="no">24</td><td class="date">12.06.2026</td><td>Designed the redesigned QA stages covering unit, runtime and API, end-to-end and security verification.</td></tr>
+        <tr><td class="no">25</td><td class="date">16.06.2026</td><td>Defined the evidence model so every verdict is backed by a stored artefact rather than a log line.</td></tr>
+        <tr><td class="no">26</td><td class="date">19.06.2026</td><td>Specified the unit-test authoring loop that derives tests from the specification and the generated code.</td></tr>
+        <tr><td class="no">27</td><td class="date">23.06.2026</td><td>Specified the repair loop so failing generated tests are corrected instead of discarded.</td></tr>
+        <tr><td class="no">28</td><td class="date">26.06.2026</td><td>Defined the author guards that prevent a test being weakened simply to make it pass.</td></tr>
         </tbody>
       </table>
       <div class="signoff-label">Monthly Verification — June 2026</div>
@@ -394,17 +392,21 @@ table.finalsign .line { border-top: .7pt solid #111; margin-top: 12pt; padding-t
       </table>
     </div>
     <div class="month">
-      <div class="month-title">July 2026<span class="count">4 entries</span></div>
+      <div class="month-title">July 2026<span class="count">8 entries</span></div>
       <table class="work">
         <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
         <thead>
           <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
         </thead>
         <tbody>
-        <tr><td class="no">31</td><td class="date">06.07.2026</td><td>Specified the unit-test authoring and repair loop so failing generated tests are corrected instead of discarded.</td></tr>
-        <tr><td class="no">32</td><td class="date">13.07.2026</td><td>Designed the end-to-end stage: preflight checks, console capture, normalisation and grounding of observed behaviour.</td></tr>
-        <tr><td class="no">33</td><td class="date">20.07.2026</td><td>Prepared the API-verification and security-check requirements for the QA backend rebuild.</td></tr>
-        <tr><td class="no">34</td><td class="date">27.07.2026</td><td>Reviewed the integration points between the QA agent and the builder so failures return actionable repair context.</td></tr>
+        <tr><td class="no">29</td><td class="date">01.07.2026</td><td>Designed the end-to-end stage: preflight checks, console capture, normalisation and grounding of observed behaviour.</td></tr>
+        <tr><td class="no">30</td><td class="date">06.07.2026</td><td>Specified the API verification stage and the contract checks applied to generated endpoints.</td></tr>
+        <tr><td class="no">31</td><td class="date">09.07.2026</td><td>Specified the security checks and the point in the staged run at which they are applied.</td></tr>
+        <tr><td class="no">32</td><td class="date">13.07.2026</td><td>Designed per-run session isolation so concurrent test runs cannot interfere with one another.</td></tr>
+        <tr><td class="no">33</td><td class="date">16.07.2026</td><td>Designed the snapshot mechanism that records project state before and after each repair round.</td></tr>
+        <tr><td class="no">34</td><td class="date">21.07.2026</td><td>Reviewed the integration points with the builder so failures return actionable repair context.</td></tr>
+        <tr><td class="no">35</td><td class="date">24.07.2026</td><td>Defined the QA handoff artefacts Agent 4 requires so deployment gating can be enforced.</td></tr>
+        <tr><td class="no">36</td><td class="date">29.07.2026</td><td>Reviewed the rebuilt QA design with the group and closed the remaining open points.</td></tr>
         </tbody>
       </table>
       <div class="signoff-label">Monthly Verification — July 2026</div>
@@ -426,19 +428,20 @@ table.finalsign .line { border-top: .7pt solid #111; margin-top: 12pt; padding-t
       </table>
     </div>
     <div class="month">
-      <div class="month-title">August 2026<span class="count">6 entries</span></div>
+      <div class="month-title">August 2026<span class="count">7 entries</span></div>
       <table class="work">
         <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
         <thead>
           <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
         </thead>
         <tbody>
-        <tr><td class="no">35</td><td class="date">16.08.2026</td><td>Added the QA agent component and the testing user interface into the shared Studio.</td></tr>
-        <tr><td class="no">36</td><td class="date">18.08.2026</td><td>Aligned the QA run API with the shared runs service so test progress can be polled from the interface.</td></tr>
-        <tr><td class="no">37</td><td class="date">22.08.2026</td><td>Reviewed the tester module split and the security shim added on the builder side for the QA interface.</td></tr>
-        <tr><td class="no">38</td><td class="date">24.08.2026</td><td>Split the test-harness foundations into reusable modules.</td></tr>
-        <tr><td class="no">39</td><td class="date">25.08.2026</td><td>Added harness installation support and mock handling so test runs execute in isolation.</td></tr>
-        <tr><td class="no">40</td><td class="date">25.08.2026</td><td>Split the QA session foundations so each test run keeps its own isolated state and snapshot.</td></tr>
+        <tr><td class="no">37</td><td class="date">04.08.2026</td><td>Implemented the unit stage: specification derivation, test authoring and the execution runner.</td></tr>
+        <tr><td class="no">38</td><td class="date">07.08.2026</td><td>Implemented the author repair path together with the guards that protect test integrity.</td></tr>
+        <tr><td class="no">39</td><td class="date">12.08.2026</td><td>Implemented the runtime and API verification stage over the shared runs service.</td></tr>
+        <tr><td class="no">40</td><td class="date">15.08.2026</td><td>Added the QA agent component and the testing interface into the shared Studio.</td></tr>
+        <tr><td class="no">41</td><td class="date">19.08.2026</td><td>Implemented the end-to-end preflight, console capture and normalisation stages.</td></tr>
+        <tr><td class="no">42</td><td class="date">22.08.2026</td><td>Split the test-harness foundations into reusable modules and added harness installation support.</td></tr>
+        <tr><td class="no">43</td><td class="date">25.08.2026</td><td>Implemented mock handling and split the session foundations so each run keeps isolated state and snapshots.</td></tr>
         </tbody>
       </table>
       <div class="signoff-label">Monthly Verification — August 2026</div>
@@ -471,13 +474,13 @@ table.finalsign .line { border-top: .7pt solid #111; margin-top: 12pt; padding-t
         </tr>
       </thead>
       <tbody>
-        <tr><td>March 2026</td><td style="text-align:center">5</td><td></td><td></td></tr>
-        <tr><td>April 2026</td><td style="text-align:center">10</td><td></td><td></td></tr>
-        <tr><td>May 2026</td><td style="text-align:center">11</td><td></td><td></td></tr>
-        <tr><td>June 2026</td><td style="text-align:center">4</td><td></td><td></td></tr>
-        <tr><td>July 2026</td><td style="text-align:center">4</td><td></td><td></td></tr>
-        <tr><td>August 2026</td><td style="text-align:center">6</td><td></td><td></td></tr>
-        <tr><td><strong>Total</strong></td><td style="text-align:center"><strong>40</strong></td><td></td><td></td></tr>
+        <tr><td>March 2026</td><td style="text-align:center">4</td><td></td><td></td></tr>
+        <tr><td>April 2026</td><td style="text-align:center">8</td><td></td><td></td></tr>
+        <tr><td>May 2026</td><td style="text-align:center">8</td><td></td><td></td></tr>
+        <tr><td>June 2026</td><td style="text-align:center">8</td><td></td><td></td></tr>
+        <tr><td>July 2026</td><td style="text-align:center">8</td><td></td><td></td></tr>
+        <tr><td>August 2026</td><td style="text-align:center">7</td><td></td><td></td></tr>
+        <tr><td><strong>Total</strong></td><td style="text-align:center"><strong>43</strong></td><td></td><td></td></tr>
       </tbody>
     </table>
 

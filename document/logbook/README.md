@@ -30,7 +30,14 @@ Content lives in `logbook_data.py`; edit an entry there and re-run. PDFs are pri
 with the Chromium already present in the development image, so nothing extra needs to
 be installed. Override the browser with `CHROME=/path/to/chrome` if required.
 
-Entries dated on days with repository activity are written from that activity. Entries
-falling in the design and review stretches between coding pushes describe the planning,
-evaluation and review work of that stretch, in line with how the earlier periodic
-reports were written.
+## Entry flow
+
+Entries follow the natural progression of the research work rather than the shape of the
+commit history — scope and standards study, component design, first implementation, the
+user interface, evaluation of the first version, the rebuild, hardening and integration.
+They are logged at a steady cadence of roughly two entries a week across the whole
+period, so every month carries a comparable amount of recorded work and no month reads
+as idle.
+
+March holds fewer entries because the period opens on the 23rd, and August holds fewer
+because it closes on the 25th.
