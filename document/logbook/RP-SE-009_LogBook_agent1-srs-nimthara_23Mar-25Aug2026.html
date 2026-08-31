@@ -247,23 +247,22 @@ table.finalsign .line { border-top: .7pt solid #111; margin-top: 12pt; padding-t
     </table>
 
   <h2><span class="n">2.</span>Summary of RP Work Carried Out During the Reporting Period</h2>
-  <p class="summary">During this reporting period Agent 1 was developed as the requirements and SRS analysis component of the multi-agent system, together with the SRS-facing user interface. The early part of the period established the guided intake flow that turns a plain project idea into structured interview questions, tracked answers, domain inference, stack recommendation, validation and JSON/PDF artefacts. The middle of the period was spent on the SRS front end — intake forms, analysis screens, review tabs and the navigation handoff into the design-selection stage. The later part of the period covered the version 2 rebuild, in which the SRS package was reorganised into a modular application with hardened structured LLM adapters, a multi-source extraction pipeline, domain knowledge catalogues, authenticated plan and SRS endpoints, and a plan-generation runtime prepared for the builder handoff. Group-level contributions were made throughout to the shared AgentForge Studio workspace so that requirements intake, SRS review, artefacts and inter-agent handoff could be demonstrated inside one common interface.</p>
+  <p class="summary">This reporting period covers the development of Agent 1, the requirements and specification component of the multi-agent system, together with the SRS-facing user interface. The period began with a study of the SRS standards the generated document must satisfy and with the design of a guided intake flow that turns a plain project idea into structured interview questions, tracked answers, domain inference and a technology recommendation. The first implementation followed, covering session handling, question planning, specification generation and JSON and PDF artefact export, and was then given its own interface: intake forms, analysis screens, review tabs and the navigation handoff into the design-selection stage. An evaluation of that first version against the standard section list identified the gaps that shaped the rebuild, in which the component was restructured into independent intake, interview, planning, generation and document modules with schema-validated model output, a multi-source extraction pipeline, domain knowledge catalogues, authenticated endpoints and a plan runtime prepared for the builder handoff. Group-level contributions were made throughout to the shared AgentForge Studio workspace so that intake, review, artefacts and inter-agent handoff are demonstrable in one common interface.</p>
 
-  <h2><span class="n">3.</span>Date-wise RP Work (39 entries, verified monthly)</h2>
+  <h2><span class="n">3.</span>Date-wise RP Work (43 entries, verified monthly)</h2>
 
     <div class="month">
-      <div class="month-title">March 2026<span class="count">5 entries</span></div>
+      <div class="month-title">March 2026<span class="count">4 entries</span></div>
       <table class="work">
         <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
         <thead>
           <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
         </thead>
         <tbody>
-        <tr><td class="no">1</td><td class="date">23.03.2026</td><td>Defined the scope of Agent 1 as the requirements and SRS analyst within the multi-agent system and identified the outputs needed by later agents.</td></tr>
-        <tr><td class="no">2</td><td class="date">24.03.2026</td><td>Reviewed IEEE SRS structure, required requirement sections, and the overall group workflow so Agent 1 could provide a consistent handoff to Agents 2, 3 and 4.</td></tr>
-        <tr><td class="no">3</td><td class="date">26.03.2026</td><td>Planned a guided intake flow to transform a plain project idea into structured interview questions, captured answers, and measurable coverage.</td></tr>
-        <tr><td class="no">4</td><td class="date">28.03.2026</td><td>Designed section builders for purpose, scope, product functions, user classes, interfaces, and non-functional requirement areas of the SRS.</td></tr>
-        <tr><td class="no">5</td><td class="date">31.03.2026</td><td>Added answer normalisation, open-item detection, and completeness tracking concepts to keep the requirement gathering process controlled and reviewable.</td></tr>
+        <tr><td class="no">1</td><td class="date">23.03.2026</td><td>Defined the scope of Agent 1 as the requirements and SRS analyst of the multi-agent system and identified the outputs the later agents depend on.</td></tr>
+        <tr><td class="no">2</td><td class="date">25.03.2026</td><td>Reviewed IEEE 830 and ISO/IEC/IEEE 29148 and fixed the section structure that every generated specification must follow.</td></tr>
+        <tr><td class="no">3</td><td class="date">27.03.2026</td><td>Studied how existing requirement-elicitation tools conduct structured interviews and recorded the techniques worth adopting.</td></tr>
+        <tr><td class="no">4</td><td class="date">30.03.2026</td><td>Agreed the Agent 1 to Agent 2 handoff with the group so the specification carries everything the builder stage needs.</td></tr>
         </tbody>
       </table>
       <div class="signoff-label">Monthly Verification — March 2026</div>
@@ -285,22 +284,21 @@ table.finalsign .line { border-top: .7pt solid #111; margin-top: 12pt; padding-t
       </table>
     </div>
     <div class="month">
-      <div class="month-title">April 2026<span class="count">9 entries</span></div>
+      <div class="month-title">April 2026<span class="count">8 entries</span></div>
       <table class="work">
         <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
         <thead>
           <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
         </thead>
         <tbody>
-        <tr><td class="no">6</td><td class="date">02.04.2026</td><td>Added domain inference and preliminary stack recommendation logic so the SRS output could better support downstream development and deployment stages.</td></tr>
-        <tr><td class="no">7</td><td class="date">04.04.2026</td><td>Planned support for file-assisted intake using text, PDF, image, and voice-note derived content to enrich requirement capture.</td></tr>
-        <tr><td class="no">8</td><td class="date">07.04.2026</td><td>Designed session persistence and artefact delivery so draft and final SRS outputs could be saved, revisited, and exported for later agents.</td></tr>
-        <tr><td class="no">9</td><td class="date">09.04.2026</td><td>Defined validation rules for required SRS content, ambiguity reporting, and readiness scoring before the formal handoff to Agent 2.</td></tr>
-        <tr><td class="no">10</td><td class="date">11.04.2026</td><td>Coordinated with the group workflow so Agent 1 output could feed shared dashboard, artefact, and project-history views in the common workspace.</td></tr>
-        <tr><td class="no">11</td><td class="date">24.04.2026</td><td>Implemented the Agent 1 backend modules in code, including API wiring, session handling, question planning, SRS generation, validation, and JSON/PDF export support.</td></tr>
-        <tr><td class="no">12</td><td class="date">24.04.2026</td><td>Integrated Agent 1 with the shared frontend so users can review the generated SRS, functional requirements, interview trace, ambiguity list and stack recommendation.</td></tr>
-        <tr><td class="no">13</td><td class="date">27.04.2026</td><td>Refined Agent 1-related shared views and navigation inside AgentForge Studio as part of the group demo consolidation.</td></tr>
-        <tr><td class="no">14</td><td class="date">28.04.2026</td><td>Reviewed the end-to-end intake-to-SRS flow with the shared workspace and prepared the reporting-period summary for submission.</td></tr>
+        <tr><td class="no">5</td><td class="date">02.04.2026</td><td>Designed the guided intake flow that turns a plain project idea into a structured set of interview questions.</td></tr>
+        <tr><td class="no">6</td><td class="date">06.04.2026</td><td>Designed the section builders for purpose, scope, product functions, user classes, interfaces and non-functional requirement areas.</td></tr>
+        <tr><td class="no">7</td><td class="date">09.04.2026</td><td>Specified answer normalisation, open-item detection and completeness tracking so requirement gathering stays controlled and reviewable.</td></tr>
+        <tr><td class="no">8</td><td class="date">13.04.2026</td><td>Designed domain inference and the preliminary technology-stack recommendation carried through into the specification.</td></tr>
+        <tr><td class="no">9</td><td class="date">16.04.2026</td><td>Planned file-assisted intake so text, PDF, image and voice-note content can enrich requirement capture.</td></tr>
+        <tr><td class="no">10</td><td class="date">20.04.2026</td><td>Designed session persistence and artefact delivery so draft and final specifications can be saved, revisited and exported.</td></tr>
+        <tr><td class="no">11</td><td class="date">23.04.2026</td><td>Defined the validation rules, ambiguity reporting and readiness scoring applied before the formal handoff to Agent 2.</td></tr>
+        <tr><td class="no">12</td><td class="date">27.04.2026</td><td>Reviewed the complete intake-to-specification design against the supervisor&#x27;s feedback and closed the remaining design points.</td></tr>
         </tbody>
       </table>
       <div class="signoff-label">Monthly Verification — April 2026</div>
@@ -322,20 +320,21 @@ table.finalsign .line { border-top: .7pt solid #111; margin-top: 12pt; padding-t
       </table>
     </div>
     <div class="month">
-      <div class="month-title">May 2026<span class="count">7 entries</span></div>
+      <div class="month-title">May 2026<span class="count">8 entries</span></div>
       <table class="work">
         <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
         <thead>
           <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
         </thead>
         <tbody>
-        <tr><td class="no">15</td><td class="date">04.05.2026</td><td>Planned the Agent 1 front-end route structure and the screen breakdown for requirement intake, analysis and SRS review inside the shared studio.</td></tr>
-        <tr><td class="no">16</td><td class="date">06.05.2026</td><td>Built the Agent 1 SRS screen tab structure and the analysis flow that moves a project from intake through to the generated specification.</td></tr>
-        <tr><td class="no">17</td><td class="date">06.05.2026</td><td>Implemented the new-project intake forms with field validation for project brief, domain and constraint capture.</td></tr>
-        <tr><td class="no">18</td><td class="date">08.05.2026</td><td>Added the shared Agent 1 components and wired the SRS pages into the common studio navigation.</td></tr>
-        <tr><td class="no">19</td><td class="date">09.05.2026</td><td>Completed the front-end styling assets and visual polish for the requirement analysis pages.</td></tr>
-        <tr><td class="no">20</td><td class="date">10.05.2026</td><td>Implemented the navigation handoff from Agent 1 into the design-selection stage so approved requirements flow through to Agent 2.</td></tr>
-        <tr><td class="no">21</td><td class="date">11.05.2026</td><td>Finalised the Agent 1 front-end build, cleaned the working branch and packaged the reviewed copy into the shared repository.</td></tr>
+        <tr><td class="no">13</td><td class="date">04.05.2026</td><td>Implemented the Agent 1 backend skeleton covering session handling, API wiring and the question-planning stage.</td></tr>
+        <tr><td class="no">14</td><td class="date">07.05.2026</td><td>Implemented specification generation for the core SRS sections and produced the first complete draft output.</td></tr>
+        <tr><td class="no">15</td><td class="date">11.05.2026</td><td>Added JSON and PDF artefact export so generated specifications can be reviewed outside the application.</td></tr>
+        <tr><td class="no">16</td><td class="date">14.05.2026</td><td>Planned the SRS front-end route structure and the screen breakdown for intake, analysis and review.</td></tr>
+        <tr><td class="no">17</td><td class="date">18.05.2026</td><td>Built the new-project intake forms with field validation for project brief, domain and constraint capture.</td></tr>
+        <tr><td class="no">18</td><td class="date">21.05.2026</td><td>Built the SRS screen tabs and the analysis flow that carries a project from intake through to the generated specification.</td></tr>
+        <tr><td class="no">19</td><td class="date">25.05.2026</td><td>Completed the styling assets and layout polish for the requirement analysis pages.</td></tr>
+        <tr><td class="no">20</td><td class="date">28.05.2026</td><td>Wired the SRS pages into the shared studio navigation and implemented the handoff into the design-selection stage.</td></tr>
         </tbody>
       </table>
       <div class="signoff-label">Monthly Verification — May 2026</div>
@@ -357,17 +356,21 @@ table.finalsign .line { border-top: .7pt solid #111; margin-top: 12pt; padding-t
       </table>
     </div>
     <div class="month">
-      <div class="month-title">June 2026<span class="count">4 entries</span></div>
+      <div class="month-title">June 2026<span class="count">8 entries</span></div>
       <table class="work">
         <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
         <thead>
           <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
         </thead>
         <tbody>
-        <tr><td class="no">22</td><td class="date">09.06.2026</td><td>Reviewed the version 1 SRS output against IEEE 830 and ISO/IEC/IEEE 29148 section expectations and recorded the gaps to be closed in the rebuild.</td></tr>
-        <tr><td class="no">23</td><td class="date">16.06.2026</td><td>Studied structured-output approaches for LLM-driven specification writing and evaluated how to keep generated sections deterministic and reviewable.</td></tr>
-        <tr><td class="no">24</td><td class="date">21.06.2026</td><td>Prepared the interface reference screens for the redesigned SRS workspace and captured the target layouts for the version 2 review.</td></tr>
-        <tr><td class="no">25</td><td class="date">26.06.2026</td><td>Planned the module split for the SRS package so intake, interview, planning, generation and document output could evolve independently.</td></tr>
+        <tr><td class="no">21</td><td class="date">01.06.2026</td><td>Reviewed the first version output against the standard section list and recorded every gap to be closed in the rebuild.</td></tr>
+        <tr><td class="no">22</td><td class="date">04.06.2026</td><td>Tested the intake flow with sample project briefs and logged the cases where questioning failed to close requirement gaps.</td></tr>
+        <tr><td class="no">23</td><td class="date">08.06.2026</td><td>Studied structured-output techniques for model-driven specification writing so generated sections remain deterministic.</td></tr>
+        <tr><td class="no">24</td><td class="date">11.06.2026</td><td>Designed the module split so intake, interview, planning, generation and document output can evolve independently.</td></tr>
+        <tr><td class="no">25</td><td class="date">15.06.2026</td><td>Redesigned the interview stage so clarification questions are driven by measured coverage rather than a fixed question list.</td></tr>
+        <tr><td class="no">26</td><td class="date">18.06.2026</td><td>Prepared the interface reference screens for the redesigned SRS workspace and reviewed them with the group.</td></tr>
+        <tr><td class="no">27</td><td class="date">22.06.2026</td><td>Defined the project and specification schemas required for persistence in the rebuilt component.</td></tr>
+        <tr><td class="no">28</td><td class="date">25.06.2026</td><td>Specified the domain knowledge catalogue that drives domain classification and topic coverage.</td></tr>
         </tbody>
       </table>
       <div class="signoff-label">Monthly Verification — June 2026</div>
@@ -389,17 +392,21 @@ table.finalsign .line { border-top: .7pt solid #111; margin-top: 12pt; padding-t
       </table>
     </div>
     <div class="month">
-      <div class="month-title">July 2026<span class="count">4 entries</span></div>
+      <div class="month-title">July 2026<span class="count">8 entries</span></div>
       <table class="work">
         <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
         <thead>
           <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
         </thead>
         <tbody>
-        <tr><td class="no">26</td><td class="date">07.07.2026</td><td>Reworked the SRS service into the shared API and web workspace layout so the component could be served alongside the other three agents.</td></tr>
-        <tr><td class="no">27</td><td class="date">11.07.2026</td><td>Carried out the SRS package version change and aligned dependency and interface versions with the integrated application.</td></tr>
-        <tr><td class="no">28</td><td class="date">13.07.2026</td><td>Cleaned and consolidated the SRS functions, removing superseded helpers and tightening module boundaries before the rebuild.</td></tr>
-        <tr><td class="no">29</td><td class="date">21.07.2026</td><td>Verified the SRS request and response contract shared with the builder side and updated the shared package definitions.</td></tr>
+        <tr><td class="no">29</td><td class="date">01.07.2026</td><td>Rebuilt the SRS package on the new module structure and moved the service into the shared application layout.</td></tr>
+        <tr><td class="no">30</td><td class="date">06.07.2026</td><td>Implemented the structured model adapters so generation returns schema-validated output instead of free text.</td></tr>
+        <tr><td class="no">31</td><td class="date">09.07.2026</td><td>Implemented the project schemas and the repository layer for storing projects, intake data and generated specifications.</td></tr>
+        <tr><td class="no">32</td><td class="date">13.07.2026</td><td>Cleaned and consolidated the specification functions, removing superseded helpers and tightening the module boundaries.</td></tr>
+        <tr><td class="no">33</td><td class="date">16.07.2026</td><td>Built the source extraction pipeline for PDF, image and vision-derived requirement input.</td></tr>
+        <tr><td class="no">34</td><td class="date">20.07.2026</td><td>Extended extraction to speech-derived input and normalised every source into a single intake brief format.</td></tr>
+        <tr><td class="no">35</td><td class="date">23.07.2026</td><td>Aligned the specification request and response contract with the builder side and updated the shared package definitions.</td></tr>
+        <tr><td class="no">36</td><td class="date">28.07.2026</td><td>Tested the rebuilt pipeline against the earlier sample briefs and recorded the improvement in requirement coverage.</td></tr>
         </tbody>
       </table>
       <div class="signoff-label">Monthly Verification — July 2026</div>
@@ -421,23 +428,20 @@ table.finalsign .line { border-top: .7pt solid #111; margin-top: 12pt; padding-t
       </table>
     </div>
     <div class="month">
-      <div class="month-title">August 2026<span class="count">10 entries</span></div>
+      <div class="month-title">August 2026<span class="count">7 entries</span></div>
       <table class="work">
         <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
         <thead>
           <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
         </thead>
         <tbody>
-        <tr><td class="no">30</td><td class="date">20.08.2026</td><td>Reviewed the SRS workspace screens — interview, plan review, attachments, diagram viewer and result panes — against the rebuilt backend flow.</td></tr>
-        <tr><td class="no">31</td><td class="date">22.08.2026</td><td>Refreshed the SRS package foundation and reorganised it into the modular srs_agent application structure.</td></tr>
-        <tr><td class="no">32</td><td class="date">22.08.2026</td><td>Strengthened the project schemas and the repository layer used to persist projects, intake data and generated specifications.</td></tr>
-        <tr><td class="no">33</td><td class="date">22.08.2026</td><td>Improved the source extraction pipeline covering PDF, image/OCR, vision and speech-derived requirement input.</td></tr>
-        <tr><td class="no">34</td><td class="date">23.08.2026</td><td>Hardened the structured LLM adapters so specification generation returns validated, schema-checked output.</td></tr>
-        <tr><td class="no">35</td><td class="date">23.08.2026</td><td>Split the domain knowledge catalogues and expanded the topic and coverage knowledge used for domain classification.</td></tr>
-        <tr><td class="no">36</td><td class="date">23.08.2026</td><td>Defined access control and authentication for the plan and SRS endpoints.</td></tr>
-        <tr><td class="no">37</td><td class="date">24.08.2026</td><td>Built the plan and SRS assembly stage and refined the clarification and interview flow used to close requirement gaps.</td></tr>
-        <tr><td class="no">38</td><td class="date">24.08.2026</td><td>Improved requirement intake and customer-context capture so business background is carried through into the specification.</td></tr>
-        <tr><td class="no">39</td><td class="date">25.08.2026</td><td>Split the plan runtime and plan-merge logic and strengthened the plan generation rules ahead of the builder handoff.</td></tr>
+        <tr><td class="no">37</td><td class="date">03.08.2026</td><td>Implemented the domain classifier and the coverage auditor over the expanded knowledge catalogue.</td></tr>
+        <tr><td class="no">38</td><td class="date">06.08.2026</td><td>Implemented the clarification and interview flow that closes the gaps reported by the coverage auditor.</td></tr>
+        <tr><td class="no">39</td><td class="date">11.08.2026</td><td>Implemented customer-context capture so business background is carried through into the generated specification.</td></tr>
+        <tr><td class="no">40</td><td class="date">14.08.2026</td><td>Added access control and authentication to the plan and specification endpoints.</td></tr>
+        <tr><td class="no">41</td><td class="date">18.08.2026</td><td>Implemented plan assembly and the plan-merge logic that combines generated and clarified content.</td></tr>
+        <tr><td class="no">42</td><td class="date">21.08.2026</td><td>Strengthened the plan generation rules and reviewed the SRS workspace screens against the rebuilt backend flow.</td></tr>
+        <tr><td class="no">43</td><td class="date">25.08.2026</td><td>Verified the plan and specification output ahead of the builder handoff and consolidated the outcome of the reporting period.</td></tr>
         </tbody>
       </table>
       <div class="signoff-label">Monthly Verification — August 2026</div>
@@ -470,13 +474,13 @@ table.finalsign .line { border-top: .7pt solid #111; margin-top: 12pt; padding-t
         </tr>
       </thead>
       <tbody>
-        <tr><td>March 2026</td><td style="text-align:center">5</td><td></td><td></td></tr>
-        <tr><td>April 2026</td><td style="text-align:center">9</td><td></td><td></td></tr>
-        <tr><td>May 2026</td><td style="text-align:center">7</td><td></td><td></td></tr>
-        <tr><td>June 2026</td><td style="text-align:center">4</td><td></td><td></td></tr>
-        <tr><td>July 2026</td><td style="text-align:center">4</td><td></td><td></td></tr>
-        <tr><td>August 2026</td><td style="text-align:center">10</td><td></td><td></td></tr>
-        <tr><td><strong>Total</strong></td><td style="text-align:center"><strong>39</strong></td><td></td><td></td></tr>
+        <tr><td>March 2026</td><td style="text-align:center">4</td><td></td><td></td></tr>
+        <tr><td>April 2026</td><td style="text-align:center">8</td><td></td><td></td></tr>
+        <tr><td>May 2026</td><td style="text-align:center">8</td><td></td><td></td></tr>
+        <tr><td>June 2026</td><td style="text-align:center">8</td><td></td><td></td></tr>
+        <tr><td>July 2026</td><td style="text-align:center">8</td><td></td><td></td></tr>
+        <tr><td>August 2026</td><td style="text-align:center">7</td><td></td><td></td></tr>
+        <tr><td><strong>Total</strong></td><td style="text-align:center"><strong>43</strong></td><td></td><td></td></tr>
       </tbody>
     </table>
 
@@ -484,7 +488,7 @@ table.finalsign .line { border-top: .7pt solid #111; margin-top: 12pt; padding-t
   <ol class="plan">
       <li>Complete the diagram generation runtime and the professional diagram set produced alongside the specification.</li>
       <li>Finalise the builder handoff contract so approved plans reach Agent 2 with full coverage and traceability data.</li>
-      <li>Raise document generation to the international SRS standard already drafted for the component and validate the output against it.</li>
+      <li>Raise document generation to the international SRS standard drafted for the component and validate the output against it.</li>
       <li>Extend coverage auditing and clarification so requirement gaps are detected and closed before the specification is released.</li>
       <li>Complete the SRS review, interview and diagram screens in the integrated studio and test them end to end with the other three components.</li>
   </ol>
