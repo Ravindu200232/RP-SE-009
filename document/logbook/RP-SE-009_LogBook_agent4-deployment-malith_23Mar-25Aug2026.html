@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>RP-SE-009 Periodic Log Book — Agent 4 — Malith P. Bandara</title>
+<style>
+@page {
+  size: A4;
+  margin: 16mm 14mm 15mm 14mm;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+body {
+  margin: 0;
+  font-family: "Liberation Serif", "Times New Roman", Times, serif;
+  font-size: 10.5pt;
+  line-height: 1.45;
+  color: #111;
+  background: #fff;
+}
+
+.sheet { max-width: 182mm; margin: 0 auto; }
+
+/* ---------- masthead ---------- */
+.masthead {
+  text-align: center;
+  border-bottom: 2.2pt solid #111;
+  padding-bottom: 7pt;
+  margin-bottom: 12pt;
+}
+.masthead .inst {
+  font-family: "Liberation Sans", Arial, sans-serif;
+  font-size: 12.5pt;
+  font-weight: 700;
+  letter-spacing: .35pt;
+  text-transform: uppercase;
+}
+.masthead .fac {
+  font-family: "Liberation Sans", Arial, sans-serif;
+  font-size: 8.8pt;
+  color: #333;
+  margin-top: 2pt;
+  letter-spacing: .2pt;
+}
+.masthead h1 {
+  font-family: "Liberation Sans", Arial, sans-serif;
+  font-size: 13.5pt;
+  font-weight: 700;
+  margin: 9pt 0 3pt;
+  letter-spacing: .2pt;
+}
+.masthead .sub {
+  font-size: 10pt;
+  color: #222;
+}
+.masthead .sub strong { font-weight: 700; }
+
+/* ---------- section headings ---------- */
+h2 {
+  font-family: "Liberation Sans", Arial, sans-serif;
+  font-size: 10.5pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5pt;
+  margin: 16pt 0 6pt;
+  padding: 3.5pt 6pt;
+  background: #ececec;
+  border-left: 3.5pt solid #111;
+  break-after: avoid;
+}
+h2 .n { color: #444; margin-right: 5pt; }
+
+/* ---------- tables ---------- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 4pt;
+}
+th, td {
+  border: .7pt solid #555;
+  padding: 4pt 6pt;
+  text-align: left;
+  vertical-align: top;
+}
+thead th {
+  background: #ddd;
+  font-family: "Liberation Sans", Arial, sans-serif;
+  font-size: 9pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .3pt;
+}
+thead { display: table-header-group; }
+tr { break-inside: avoid; }
+
+/* details block */
+table.details th {
+  width: 33%;
+  background: #f3f3f3;
+  font-weight: 700;
+}
+
+/* work log */
+table.work col.c-date { width: 20mm; }
+table.work col.c-no { width: 11mm; }
+table.work td.date { white-space: nowrap; font-variant-numeric: tabular-nums; }
+table.work td.no { text-align: center; color: #333; }
+table.work tbody tr:nth-child(even) td { background: #fafafa; }
+
+/* month grouping */
+.month {
+  margin-top: 11pt;
+  break-inside: avoid-page;
+}
+.month-title {
+  font-family: "Liberation Sans", Arial, sans-serif;
+  font-size: 9.6pt;
+  font-weight: 700;
+  letter-spacing: .35pt;
+  text-transform: uppercase;
+  background: #111;
+  color: #fff;
+  padding: 3pt 7pt;
+  break-after: avoid;
+}
+.month-title .count {
+  float: right;
+  font-weight: 400;
+  font-size: 8.6pt;
+  opacity: .85;
+}
+
+/* monthly supervisor sign-off */
+table.signoff {
+  margin-top: 0;
+  margin-bottom: 2pt;
+  break-inside: avoid;
+}
+table.signoff th {
+  background: #f3f3f3;
+  font-family: "Liberation Sans", Arial, sans-serif;
+  font-size: 8.4pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .25pt;
+  text-align: center;
+  padding: 3pt 4pt;
+}
+table.signoff td {
+  height: 15mm;
+  font-size: 9pt;
+}
+/* the consolidated roll-up repeats months already signed above, so it needs
+   only enough room for an initial and a date */
+table.signoff.compact td { height: 9.5mm; }
+table.signoff td.rule {
+  vertical-align: bottom;
+  text-align: center;
+  color: #777;
+  font-size: 8pt;
+  padding-bottom: 3pt;
+}
+.signoff-label {
+  font-family: "Liberation Sans", Arial, sans-serif;
+  font-size: 8.4pt;
+  font-weight: 700;
+  letter-spacing: .3pt;
+  text-transform: uppercase;
+  color: #111;
+  background: #ececec;
+  border: .7pt solid #555;
+  border-bottom: none;
+  padding: 3pt 7pt;
+  break-after: avoid;
+}
+
+/* prose + lists */
+p.summary { text-align: justify; margin: 0 0 6pt; }
+ol.plan, ul.plan { margin: 4pt 0 4pt 16pt; padding: 0; }
+ol.plan li, ul.plan li { margin-bottom: 3.5pt; text-align: justify; }
+
+/* declaration + final signatures */
+.declaration {
+  border: .7pt solid #555;
+  padding: 7pt 9pt;
+  font-size: 9.6pt;
+  text-align: justify;
+  background: #fafafa;
+}
+table.finalsign { margin-top: 8pt; break-inside: avoid; }
+table.finalsign td { height: 22mm; vertical-align: bottom; padding-bottom: 4pt; }
+table.finalsign .role {
+  font-family: "Liberation Sans", Arial, sans-serif;
+  font-size: 8.4pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .3pt;
+}
+table.finalsign .line { border-top: .7pt solid #111; margin-top: 12pt; padding-top: 2.5pt; font-size: 8.6pt; color: #333; }
+
+.note {
+  margin-top: 9pt;
+  font-size: 8.4pt;
+  color: #444;
+  border-top: .7pt dashed #999;
+  padding-top: 5pt;
+}
+.footer-id {
+  margin-top: 10pt;
+  font-size: 8pt;
+  color: #666;
+  text-align: center;
+  border-top: .7pt solid #bbb;
+  padding-top: 4pt;
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="masthead">
+    <div class="inst">Sri Lanka Institute of Information Technology</div>
+    <div class="fac">Faculty of Computing — Department of Software Engineering</div>
+    <h1>Research Project — Periodic Log Entry Form</h1>
+    <div class="sub">
+      Project <strong>R26-SE-009</strong>
+      &nbsp;|&nbsp; Agent 4
+      &nbsp;|&nbsp; <strong>Malith P. Bandara</strong> (IT22249166)
+      &nbsp;|&nbsp; Reporting period <strong>23.03.2026 – 25.08.2026</strong>
+    </div>
+  </div>
+
+  <h2><span class="n">1.</span>Project and Student Details</h2>
+    <table class="details">
+      <tr><th>Project ID</th><td>R26-SE-009</td></tr>
+      <tr><th>Research Topic</th><td>Self-Optimized LLM Multi-Agent System for Software Engineering</td></tr>
+      <tr><th>Supervisor</th><td>Prof. Nuwan Kodagoda</td></tr>
+      <tr><th>Co-Supervisor</th><td>Mr. Eishan Weerasinghe</td></tr>
+      <tr><th>Student Name</th><td>Malith P. Bandara</td></tr>
+      <tr><th>Student Registration No.</th><td>IT22249166</td></tr>
+      <tr><th>Individual Component</th><td>Agent 4 — Deployment Engineer (AI DevOps / Deployment) and the DevOps user interface</td></tr>
+      <tr><th>Reporting Period</th><td>23 March 2026 to 25 August 2026</td></tr>
+      <tr><th>Phase Covered</th><td>Requirement, implementation and integration phase, representing approximately 65% of the planned project work.</td></tr>
+    </table>
+
+  <h2><span class="n">2.</span>Summary of RP Work Carried Out During the Reporting Period</h2>
+  <p class="summary">During this reporting period Agent 4 was developed as the deployment and DevOps component of the multi-agent system, together with the DevOps-facing user interface. The early part of the period established deployment artefact generation, run tracking, readiness reporting and the structure required for Docker, GitHub Actions, AWS-style deployment evidence and release packaging, alongside two iterations of the deployment interface covering workflow diffing, timeline replay and artefact presentation. The middle of the period contributed shared studio screens — the design selector, the builder timeline and the generated-page preview. The later part of the period delivered the CI quality and security gates — SonarCloud analysis and Snyk dependency and infrastructure scanning — the functional integration dashboard and diagnostics, and the version 2 deployment package with hardened credential handling, environment and database validation, deployment event tracking and provider-backed release support.</p>
+
+  <h2><span class="n">3.</span>Date-wise RP Work (43 entries, verified monthly)</h2>
+
+    <div class="month">
+      <div class="month-title">March 2026<span class="count">5 entries</span></div>
+      <table class="work">
+        <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
+        <thead>
+          <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
+        </thead>
+        <tbody>
+        <tr><td class="no">1</td><td class="date">23.03.2026</td><td>Defined the scope of Agent 4 as the AI Deployment / DevOps Engineer responsible for packaging, deployment readiness and release support after QA approval.</td></tr>
+        <tr><td class="no">2</td><td class="date">24.03.2026</td><td>Reviewed the expected deployment outputs for the project, including Docker assets, compose files, workflow pipelines, cloud configuration and release evidence.</td></tr>
+        <tr><td class="no">3</td><td class="date">26.03.2026</td><td>Designed the Agent 4 workflow for moving from approved source code to deployment artefacts and readiness reporting.</td></tr>
+        <tr><td class="no">4</td><td class="date">28.03.2026</td><td>Planned support for Docker, GitHub Actions, AWS ECS/ECR configuration, environment templates and API validation evidence.</td></tr>
+        <tr><td class="no">5</td><td class="date">31.03.2026</td><td>Identified the pipeline checkpoints needed for source validation, service discovery, security review, packaging, deployment and documentation.</td></tr>
+        </tbody>
+      </table>
+      <div class="signoff-label">Monthly Verification — March 2026</div>
+      <table class="signoff">
+        <thead>
+          <tr>
+            <th style="width:44%">Supervisor's Comments for March 2026</th>
+            <th style="width:28%">Supervisor's Signature</th>
+            <th style="width:28%">Co-Supervisor's Signature</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td></td>
+            <td class="rule">Signature &amp; Date</td>
+            <td class="rule">Signature &amp; Date</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="month">
+      <div class="month-title">April 2026<span class="count">15 entries</span></div>
+      <table class="work">
+        <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
+        <thead>
+          <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
+        </thead>
+        <tbody>
+        <tr><td class="no">6</td><td class="date">02.04.2026</td><td>Defined the artefact set required from Agent 4, including compose files, workflow files, task definitions, summaries and evidence bundles.</td></tr>
+        <tr><td class="no">7</td><td class="date">04.04.2026</td><td>Refined readiness scoring and deployment-gate logic so unresolved QA issues could block release preparation in a controlled way.</td></tr>
+        <tr><td class="no">8</td><td class="date">07.04.2026</td><td>Coordinated the deployment handoff with the group workflow so Agent 4 depends on Agent 3 pass status and produces visible artefacts for the shared demo.</td></tr>
+        <tr><td class="no">9</td><td class="date">09.04.2026</td><td>Planned the reporting structure for operational evidence such as ECS services, ECR images, logs, API validation and checklist-driven documentation.</td></tr>
+        <tr><td class="no">10</td><td class="date">18.04.2026</td><td>Implemented the animated conversation area for the deployment assistant interface.</td></tr>
+        <tr><td class="no">11</td><td class="date">18.04.2026</td><td>Resolved the reported repository security findings and cleared the remaining scan issues.</td></tr>
+        <tr><td class="no">12</td><td class="date">19.04.2026</td><td>Added workflow change viewing and filtering so modified pipeline files can be inspected before a release.</td></tr>
+        <tr><td class="no">13</td><td class="date">19.04.2026</td><td>Added timeline replay for deployment runs and implemented the smart diff preview section.</td></tr>
+        <tr><td class="no">14</td><td class="date">19.04.2026</td><td>Improved the deployment artefact area and the way generated files are presented.</td></tr>
+        <tr><td class="no">15</td><td class="date">20.04.2026</td><td>Removed superseded interface sections and upgraded the deployment interface presentation.</td></tr>
+        <tr><td class="no">16</td><td class="date">21.04.2026</td><td>Completed version 2 of the deployment interface after removing the remaining unnecessary sections.</td></tr>
+        <tr><td class="no">17</td><td class="date">23.04.2026</td><td>Implemented the Agent 4 backend in code, including deploy start/status endpoints, run tracking and artefact generation for docker-compose, GitHub workflow and deployment summary files.</td></tr>
+        <tr><td class="no">18</td><td class="date">24.04.2026</td><td>Established the shared DevOps Center page structure and updated the conversation section to handle missing intake questions.</td></tr>
+        <tr><td class="no">19</td><td class="date">27.04.2026</td><td>Completed version 2.1 of the deployment workspace, expanding services, workflows, ECS, ECR, CloudWatch, readiness scores and evidence checklist items.</td></tr>
+        <tr><td class="no">20</td><td class="date">28.04.2026</td><td>Consolidated the deployment-phase outcomes and prepared the supervisor-ready summary for the reporting period.</td></tr>
+        </tbody>
+      </table>
+      <div class="signoff-label">Monthly Verification — April 2026</div>
+      <table class="signoff">
+        <thead>
+          <tr>
+            <th style="width:44%">Supervisor's Comments for April 2026</th>
+            <th style="width:28%">Supervisor's Signature</th>
+            <th style="width:28%">Co-Supervisor's Signature</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td></td>
+            <td class="rule">Signature &amp; Date</td>
+            <td class="rule">Signature &amp; Date</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="month">
+      <div class="month-title">May 2026<span class="count">3 entries</span></div>
+      <table class="work">
+        <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
+        <thead>
+          <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
+        </thead>
+        <tbody>
+        <tr><td class="no">21</td><td class="date">05.05.2026</td><td>Built the design-selector screens and the preset browsing flow in the shared workspace.</td></tr>
+        <tr><td class="no">22</td><td class="date">06.05.2026</td><td>Implemented the builder timeline and progress states shown while generation is running.</td></tr>
+        <tr><td class="no">23</td><td class="date">08.05.2026</td><td>Added the generated-page preview and the coder pane used to inspect produced files.</td></tr>
+        </tbody>
+      </table>
+      <div class="signoff-label">Monthly Verification — May 2026</div>
+      <table class="signoff">
+        <thead>
+          <tr>
+            <th style="width:44%">Supervisor's Comments for May 2026</th>
+            <th style="width:28%">Supervisor's Signature</th>
+            <th style="width:28%">Co-Supervisor's Signature</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td></td>
+            <td class="rule">Signature &amp; Date</td>
+            <td class="rule">Signature &amp; Date</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="month">
+      <div class="month-title">June 2026<span class="count">3 entries</span></div>
+      <table class="work">
+        <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
+        <thead>
+          <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
+        </thead>
+        <tbody>
+        <tr><td class="no">24</td><td class="date">10.06.2026</td><td>Reviewed the deployment path end to end and listed the checks required before a release can be started.</td></tr>
+        <tr><td class="no">25</td><td class="date">17.06.2026</td><td>Compared container, CI and cloud provider options and selected the target deployment routes for version 2.</td></tr>
+        <tr><td class="no">26</td><td class="date">24.06.2026</td><td>Planned the CI quality and security gates to be added to the repository workflows.</td></tr>
+        </tbody>
+      </table>
+      <div class="signoff-label">Monthly Verification — June 2026</div>
+      <table class="signoff">
+        <thead>
+          <tr>
+            <th style="width:44%">Supervisor's Comments for June 2026</th>
+            <th style="width:28%">Supervisor's Signature</th>
+            <th style="width:28%">Co-Supervisor's Signature</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td></td>
+            <td class="rule">Signature &amp; Date</td>
+            <td class="rule">Signature &amp; Date</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="month">
+      <div class="month-title">July 2026<span class="count">9 entries</span></div>
+      <table class="work">
+        <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
+        <thead>
+          <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
+        </thead>
+        <tbody>
+        <tr><td class="no">27</td><td class="date">23.07.2026</td><td>Added the SonarCloud quality-analysis workflow and configured project analysis for the repository.</td></tr>
+        <tr><td class="no">28</td><td class="date">23.07.2026</td><td>Added the Snyk dependency and infrastructure-as-code security workflow.</td></tr>
+        <tr><td class="no">29</td><td class="date">23.07.2026</td><td>Built the functional integration access dashboard and the integration status service.</td></tr>
+        <tr><td class="no">30</td><td class="date">23.07.2026</td><td>Enabled the functional integration controls in the DevOps Center and exposed connection diagnostics.</td></tr>
+        <tr><td class="no">31</td><td class="date">23.07.2026</td><td>Added the GitHub CLI integration card and documented the SonarCloud and Snyk connection steps.</td></tr>
+        <tr><td class="no">32</td><td class="date">23.07.2026</td><td>Documented the integration environment configuration and cleaned generated files out of version control.</td></tr>
+        <tr><td class="no">33</td><td class="date">24.07.2026</td><td>Fixed the CI tests for the SonarCloud and Snyk workflows and corrected the Docker validator test environment.</td></tr>
+        <tr><td class="no">34</td><td class="date">24.07.2026</td><td>Fixed the front-end build and upgraded Next.js and Sharp to clear the reported security advisories.</td></tr>
+        <tr><td class="no">35</td><td class="date">24.07.2026</td><td>Adjusted the pipeline to skip the unavailable Snyk Code and IaC scans so results are reported accurately.</td></tr>
+        </tbody>
+      </table>
+      <div class="signoff-label">Monthly Verification — July 2026</div>
+      <table class="signoff">
+        <thead>
+          <tr>
+            <th style="width:44%">Supervisor's Comments for July 2026</th>
+            <th style="width:28%">Supervisor's Signature</th>
+            <th style="width:28%">Co-Supervisor's Signature</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td></td>
+            <td class="rule">Signature &amp; Date</td>
+            <td class="rule">Signature &amp; Date</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="month">
+      <div class="month-title">August 2026<span class="count">8 entries</span></div>
+      <table class="work">
+        <colgroup><col class="c-no" /><col class="c-date" /><col /></colgroup>
+        <thead>
+          <tr><th>No.</th><th>Date</th><th>RP Work Carried Out</th></tr>
+        </thead>
+        <tbody>
+        <tr><td class="no">36</td><td class="date">21.08.2026</td><td>Refreshed the deployment package foundation and reorganised it into the modular deploy_agent structure.</td></tr>
+        <tr><td class="no">37</td><td class="date">22.08.2026</td><td>Hardened credential and secret handling for deployment operations.</td></tr>
+        <tr><td class="no">38</td><td class="date">22.08.2026</td><td>Cleaned the repository and updated the component documentation.</td></tr>
+        <tr><td class="no">39</td><td class="date">23.08.2026</td><td>Added deployment event and state tracking for running releases.</td></tr>
+        <tr><td class="no">40</td><td class="date">23.08.2026</td><td>Added environment validation and MongoDB connectivity checks carried out before a deployment starts.</td></tr>
+        <tr><td class="no">41</td><td class="date">24.08.2026</td><td>Refreshed the deployment package and the flow contracts shared with the QA stage.</td></tr>
+        <tr><td class="no">42</td><td class="date">24.08.2026</td><td>Strengthened validation and the deployment tool interfaces.</td></tr>
+        <tr><td class="no">43</td><td class="date">25.08.2026</td><td>Added Vercel authentication and API support for provider-backed deployment.</td></tr>
+        </tbody>
+      </table>
+      <div class="signoff-label">Monthly Verification — August 2026</div>
+      <table class="signoff">
+        <thead>
+          <tr>
+            <th style="width:44%">Supervisor's Comments for August 2026</th>
+            <th style="width:28%">Supervisor's Signature</th>
+            <th style="width:28%">Co-Supervisor's Signature</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td></td>
+            <td class="rule">Signature &amp; Date</td>
+            <td class="rule">Signature &amp; Date</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  <h2><span class="n">4.</span>Consolidated Monthly Verification</h2>
+    <table class="signoff compact">
+      <thead>
+        <tr>
+          <th style="width:26%;text-align:left">Month</th>
+          <th style="width:14%">Entries Logged</th>
+          <th style="width:30%">Supervisor's Signature</th>
+          <th style="width:30%">Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>March 2026</td><td style="text-align:center">5</td><td></td><td></td></tr>
+        <tr><td>April 2026</td><td style="text-align:center">15</td><td></td><td></td></tr>
+        <tr><td>May 2026</td><td style="text-align:center">3</td><td></td><td></td></tr>
+        <tr><td>June 2026</td><td style="text-align:center">3</td><td></td><td></td></tr>
+        <tr><td>July 2026</td><td style="text-align:center">9</td><td></td><td></td></tr>
+        <tr><td>August 2026</td><td style="text-align:center">8</td><td></td><td></td></tr>
+        <tr><td><strong>Total</strong></td><td style="text-align:center"><strong>43</strong></td><td></td><td></td></tr>
+      </tbody>
+    </table>
+
+  <h2><span class="n">5.</span>Project Work Planned Before the Next Evaluation Period</h2>
+  <ol class="plan">
+      <li>Complete provider-backed deployment through Vercel and the AWS route, including release generation and rollback handling.</li>
+      <li>Finish deployment monitoring — pipeline, repository, security and evidence views — in the DevOps Center.</li>
+      <li>Strengthen readiness scoring and secret handling so releases are gated on verifiable QA acceptance.</li>
+      <li>Extend the generated deployment artefacts into more complete service-specific container and cloud configurations.</li>
+      <li>Tighten the live handoff from Agent 3 to Agent 4 so deployment starts only after a strong QA pass signal.</li>
+  </ol>
+
+  <h2><span class="n">6.</span>Declaration and Signatures</h2>
+  <div class="declaration">
+    I certify that the work recorded in this log book for the period
+    23 March 2026 to 25 August 2026 was carried out by me as the individual component
+    contribution to research project R26-SE-009, and that the group-level
+    contributions recorded here were made jointly with the other project members.
+  </div>
+
+  <table class="finalsign">
+    <tbody>
+      <tr>
+        <td style="width:50%">
+          <span class="role">Student</span>
+          <div class="line">Malith P. Bandara (IT22249166) — Signature &amp; Date</div>
+        </td>
+        <td style="width:50%">
+          <span class="role">Supervisor</span>
+          <div class="line">Prof. Nuwan Kodagoda — Signature &amp; Date</div>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <span class="role">Co-Supervisor</span>
+          <div class="line">Mr. Eishan Weerasinghe — Signature &amp; Date</div>
+        </td>
+        <td>
+          <span class="role">Overall Supervisor Comments</span>
+          <div class="line">Comments</div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="footer-id">
+    R26-SE-009 &nbsp;·&nbsp; Self-Optimized LLM Multi-Agent System for Software Engineering &nbsp;·&nbsp;
+    Agent 4 &nbsp;·&nbsp; Malith P. Bandara &nbsp;·&nbsp; 23.03.2026 – 25.08.2026
+  </div>
+
+</div>
+</body>
+</html>
