@@ -41,7 +41,14 @@ if not exist "desktop\node_modules\.bin\electron.cmd" (
   )
 )
 
-rem `start` returns this launcher immediately; Electron shows startup/install
-rem progress and starts root server.py + studio/npm itself.
-start "" /b cmd /c "npm --prefix desktop start"
+rem Electron shows startup/install progress and starts root server.py +
+rem studio/npm itself, so this launcher only has to hand off and leave.
+rem
+rem It hands off through Start-Process rather than `start "" /b`. The /b form
+rem means "no new window", which sounds right and is not: the child inherits
+rem THIS console, so the black cmd window stayed on screen for the whole
+rem session and closing it killed the app. Start-Process gives Electron its
+rem own detached, hidden process instead, and the console closes on exit below.
+rem The working directory is already this folder, from the cd /d above.
+powershell -NoProfile -WindowStyle Hidden -Command "Start-Process -FilePath cmd.exe -ArgumentList '/c','npm --prefix desktop start' -WindowStyle Hidden"
 exit /b 0

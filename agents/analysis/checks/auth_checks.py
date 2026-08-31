@@ -10,6 +10,8 @@ from agents.analysis.analysis_shared import (
     _strip_noncode,
     re,
 )
+# Source: planning_helpers.py — the same auth route spellings the planner allows.
+from agents.planner.planning.planning_helpers import SIGN_IN_PATHS, SIGN_UP_PATHS
 
 class AuthChecksMixin:
     """Keep auth checks behavior together."""
@@ -72,7 +74,53 @@ class AuthChecksMixin:
             seed, redirect = body.find("ensureSeeded("), body.find("redirect(")
             # From: agents/analysis/analysis_shared.py
             if seed >= 0 and 0 <= redirect < seed: out.append(Finding("blocker", "SEED_BEHIND_AUTH", "ensureSeeded runs after an auth redirect and cannot create the first demo identity", rel, "seed before reading the session"))
-        return out + self.role_contract_findings() + self.role_page_findings() + self.auth_flow_findings()
+        return out + self.role_contract_findings() + self.role_page_findings() + self.auth_flow_findings() + self.navbar_auth_findings()
+
+    # An auth page asks for exactly one thing, so the shared bar has to stand down on it — a nav full of
+    # destinations invites the visitor to leave before they finish signing in. The contract says to do it inside
+    # the Navbar with the current pathname, so this reads the Navbar rather than guessing at layouts.
+    def navbar_auth_findings(self):
+        """No Navbar and no Footer on the planned sign-in and sign-up routes."""
+        # From: agents/analysis/checks/scan_state.py
+        plan, files = getattr(self.arch, "plan", None) or {}, self.code_files()
+        owner = next((rel for rel in ("components/Chrome.jsx", "components/Chrome.js",
+                                      "app/layout.jsx", "app/layout.js")
+                      if files.get(rel)), "")
+        auth_paths = sorted({str(route.get("path") or "") for route in plan.get("routes") or []
+                             if str(route.get("path") or "") in SIGN_IN_PATHS | SIGN_UP_PATHS})
+        if not owner or not auth_paths:
+            return []
+        # Naming the path is not standing down on it: a Navbar reads
+        # `usePathname()` and spells `/login` for its own active-link highlight
+        # and sign-in link while still rendering on every route.
+        showing = [path for path in auth_paths
+                   if not self._chrome_stands_down(files[owner], path)]
+        if not showing:
+            return []
+        # From: agents/analysis/analysis_shared.py
+        return [Finding("major", "NAVBAR_ON_AUTH_PAGE", f"the shared Navbar and Footer still render on {', '.join(showing)}, so the auth form competes with a bar full of destinations", owner, f"in components/Chrome.jsx read usePathname() from next/navigation and return the children alone, with no Navbar and no Footer, on {', '.join(auth_paths)}", [owner])]
+
+    # Does the shared frame actually stand down on this path, rather than merely name it?.
+    @staticmethod
+    def _chrome_stands_down(body: str, path: str) -> bool:
+        """Does the shared frame stand down on this path, rather than name it?"""
+        # From: agents/analysis/analysis_shared.py
+        quoted = re.compile(r"['\"`]" + re.escape(path) + r"['\"`]")
+        # `const BARE = ['/login', '/register']`, tested further down the file.
+        holders = {m.group(1) for m in
+                   re.finditer(r"(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:new\s+Set\s*\(\s*)?\[[^\]]*\]", body)
+                   if quoted.search(m.group(0))}
+        # From: agents/analysis/analysis_shared.py
+        for hit in re.finditer(r"return\s+([^;\n]{0,160})", body):
+            guard = body[max(0, hit.start() - 300):hit.start()]
+            if "pathname" not in guard:
+                continue
+            if not (quoted.search(guard) or any(name in guard for name in holders)):
+                continue
+            # The early return for an auth route renders neither piece of chrome.
+            if "Navbar" not in hit.group(1) and "Footer" not in hit.group(1):
+                return True
+        return False
 
     # Inspect the generated source for role contract problems and return evidence only when a real issue is found.
     def role_contract_findings(self):
@@ -81,14 +129,26 @@ class AuthChecksMixin:
         accounts = [a for a in plan.get("demo_accounts") or [] if isinstance(a, dict)]
         required = {self._role_key(a.get("role")) for a in accounts if a.get("role")}
         for flow in plan.get("workflows") or []:
+            # One workflow usually serves several roles, so `who` comes back as
+            # "Customer/Store manager/Admin". Canonicalizing that whole string
+            # asked for a role named `customerstoremanageradmin`, which no seed
+            # can ever satisfy.
             if isinstance(flow, dict):
-                role = self._role_key(flow.get("who"))
-                if role not in {"", "public", "visitor", "anonymous", "signedout"}: required.add(role)
+                for role in (self._role_key(x) for x in self._role_values(flow.get("who"))):
+                    if role not in {"", "public", "visitor", "anonymous", "signedout"}: required.add(role)
         for phase in plan.get("phases") or []:
             for item in phase.get("files") or []:
                 # From: agents/analysis/analysis_shared.py
                 # From: agents/planner/builder/project_memory.py
                 if isinstance(item, dict) and (m := re.match(r"\s*ROLE\s+([^—:-]+)", str(item.get("purpose") or ""), re.I)): required.update(self._role_key(x) for x in self._role_values(m.group(1)))
+        # Only a name the plan declares is a role. That `ROLE\s+` match also
+        # reads prose: the purpose "Role management API" — the API that manages
+        # roles — asked for a role named `managementapi`, and every invented
+        # name became a blocker no repair round could ever close.
+        declared = {self._role_key(role.get("name")) for role in
+                    (plan.get("roles_and_access") or {}).get("roles") or []
+                    if isinstance(role, dict)}
+        required &= declared | {self._role_key(a.get("role")) for a in accounts if a.get("role")}
         by_role, by_email = {}, {}
         for account in accounts:
             role, email = self._role_key(account.get("role")), str(account.get("email") or "").lower()

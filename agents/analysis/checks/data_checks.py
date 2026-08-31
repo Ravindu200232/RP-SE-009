@@ -11,6 +11,23 @@ from agents.analysis.analysis_shared import (
     _strip_noncode,
     re,
 )
+# Source: image_plan.py — the same field words that decided which rows got a picture.
+from agents.planner.planning.image_plan import IMAGE_FIELD_WORDS
+
+# A picture the plan named, written as the page should write it.
+_GENERATED_LITERAL_RE = re.compile(
+    r"/generated/([A-Za-z0-9._-]+)\.(?:png|jpg|jpeg|webp)")
+# A filename the page assembles at runtime, optionally behind a fixed prefix.
+_GENERATED_DYNAMIC_RE = re.compile(
+    r"/generated/([A-Za-z0-9._-]*)\$\{([^}]{1,120})\}")
+_IMAGE_TAG_RE = re.compile(r"<(?:Image|img)\b[^>]*?>", re.S | re.I)
+# One opening <button …> tag, so its attributes can be read without its children.
+_BUTTON_TAG_RE = re.compile(r"<button\b[^>]*>", re.S | re.I)
+# A control that tells the visitor, in the shipped product, that it does nothing.
+_NOT_IMPLEMENTED_RE = re.compile(
+    r"['\"`][^'\"`]{0,80}(?:not implemented|coming soon|not available in this|"
+    r"not yet (?:implemented|available)|placeholder only|"
+    r"demo only)[^'\"`]{0,80}['\"`]", re.I)
 
 class DataChecksMixin:
     """Keep data checks behavior together."""
@@ -31,6 +48,13 @@ class DataChecksMixin:
             if rel.startswith(("app/", "components/")):
                 # From: agents/analysis/analysis_shared.py
                 if re.search(r"href\s*=\s*['\"]#['\"]|onClick\s*=\s*\{\s*\(?[^=]*=>\s*\{\s*\}\s*\}", body, re.S): out.append(Finding("major", "INERT_CONTROL", "renders a visible control with no reachable action", rel, "wire the accepted capability or remove the control", [rel]))
+                # The two shapes above are the ones a model writes when it knows it is stubbing. The commoner
+                # miss is a button that simply never got a handler — "Add New" beside an address book, styled
+                # and clickable and wired to nothing. Only counted where the file has no <form>, because there
+                # a typeless button is the submit button and its action lives on the form.
+                elif "<form" not in body and (dead := [tag for tag in _BUTTON_TAG_RE.findall(body) if "onClick" not in tag and "type=" not in tag and "disabled" not in tag]): out.append(Finding("major", "INERT_CONTROL", f"{len(dead)} button(s) render with no click handler and no form to submit, so pressing them does nothing", rel, "give each button its real action, or remove it", [rel]))
+                # From: agents/analysis/analysis_shared.py
+                if admits := _NOT_IMPLEMENTED_RE.findall(body): out.append(Finding("major", "UNBUILT_PROMISE", f"ships a control that tells the visitor it does not work: {admits[0][:80]}", rel, "implement the action this control offers, or remove the control", [rel]))
                 # From: agents/analysis/analysis_shared.py
                 if re.search(r"\b(?:window\.)?alert\s*\(", body): out.append(Finding("blocker", "NATIVE_ALERT", "uses a blocking browser alert instead of the app's required React toast UI", rel, "replace it with toast.success/toast.error through the shared ToastHost", [rel]))
                 # From: agents/analysis/analysis_shared.py
@@ -83,6 +107,76 @@ class DataChecksMixin:
                 # From: agents/analysis/analysis_shared.py
                 out.append(Finding("blocker", "ENTITY_FLOW_MISSING", f"planned collection '{name}' is only seeded or never used by application source", "lib/seed.js", "connect this entity through a real page/API read or write in its planned user journey"))
         return out
+
+    # Pictures are drawn before the app first serves, so a planned key nothing renders is GPU time spent on a file
+    # no visitor ever sees, and a rendered path with no file behind it is a 404 in the finished product. Neither
+    # shows up anywhere else: the build is clean, every route answers 200, and the app just looks unfinished.
+    def _image_contract_findings(self):
+        """Planned pictures must be rendered, and rendered paths must exist."""
+        # From: agents/analysis/checks/scan_state.py
+        plan, out = getattr(self.arch, "plan", None) or {}, []
+        planned = {str(image.get("key") or "").strip(): image
+                   for image in plan.get("images") or [] if image.get("key")}
+        if not planned:
+            return out
+        drawn = {path.stem for path in
+                 (self.project_dir / "public" / "generated").glob("*.*")
+                 if path.is_file()}
+
+        # A seeded row keeps its picture in a field, so its page renders the
+        # field and never the literal path. Without this every seeded picture
+        # would be reported unused.
+        owners = {}
+        for model in plan.get("data_model") or []:
+            collection = str(model.get("collection") or "").strip().lower().replace("_", "-")
+            for field in model.get("fields") or []:
+                name = str(field.get("name") or "")
+                if collection and any(word in name.lower() for word in IMAGE_FIELD_WORDS):
+                    owners[collection] = name
+                    break
+
+        literals, rendered = {}, set()
+        # From: agents/analysis/checks/scan_state.py
+        for rel, body in self.code_files().items():
+            if "seed" in rel.lower():
+                continue                    # storing a path is not showing it
+            for name in _GENERATED_LITERAL_RE.findall(body):
+                literals.setdefault(name, rel)
+            for tag in _IMAGE_TAG_RE.findall(body):
+                rendered |= {field for field in owners.values() if field in tag}
+            for prefix, expression in _GENERATED_DYNAMIC_RE.findall(body):
+                why = self._unresolvable_image(prefix, expression, drawn)
+                if why:
+                    # From: agents/analysis/analysis_shared.py
+                    out.append(Finding("blocker", "UNRESOLVABLE_IMAGE_PATH", f"builds its image path at runtime and {why}; the plan drew {', '.join(sorted(planned)[:8])}", rel, "render a planned key as a literal /generated/<key>.png instead of composing the filename", [rel]))
+
+        for name, rel in sorted(literals.items()):
+            if name not in drawn:
+                # From: agents/analysis/analysis_shared.py
+                out.append(Finding("blocker", "MISSING_IMAGE_FILE", f"renders /generated/{name}.png and no such file exists; the plan drew {', '.join(sorted(planned)[:8])}", rel, "point this at one of the planned image keys", [rel]))
+
+        for key, image in planned.items():
+            if key in literals or key not in drawn:
+                continue                    # unused only counts once it exists
+            collection, _, tail = key.rpartition("-")
+            if tail.isdigit() and owners.get(collection) in rendered:
+                continue                    # shown through its row's field
+            # From: agents/analysis/analysis_shared.py
+            out.append(Finding("major", "UNUSED_PLANNED_IMAGE", f"public/generated/{key}.png was drawn for \"{str(image.get('purpose') or '')[:120]}\" and no page renders it", "", f"render /generated/{key}.png where the plan asked for it", []))
+        return out
+
+    # Say why a runtime-built image path can never name a file that was drawn.
+    def _unresolvable_image(self, prefix: str, expression: str, drawn: set) -> str:
+        """Say why a runtime-built image path can never name a file that was drawn."""
+        if prefix and not any(name.startswith(prefix) for name in drawn):
+            return f"no generated file starts with '{prefix}'"
+        # `${product.sku.toLowerCase().replace(...)}` — the picture pass resolves
+        # a bare field to its seeded values and gives up on anything transformed,
+        # so nothing was ever drawn under the transformed name.
+        tail = expression.strip().split(".")[-1].strip()
+        if not tail.isidentifier():
+            return f"`{expression.strip()}` transforms the value into a name nothing was drawn under"
+        return ""
 
     # Inspect the generated source for planned data problems and return evidence only when a real issue is found.
     def planned_data_findings(self):

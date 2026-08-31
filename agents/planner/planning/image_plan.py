@@ -35,10 +35,14 @@ def _design_archetype(seed: str) -> str:
 SHELL_FILES = (
     ("app/layout.jsx", "server",
      "Root shell: import ./globals.css, render <html>/<body>, and wrap "
-     "{children} in the shared Navbar and Footer so every route has the "
-     "same chrome"),
+     "{children} in <Chrome> so every route gets the shared frame"),
+    ("components/Chrome.jsx", "client",
+     "Owns which routes wear the shared frame: renders Navbar above "
+     "{children} and Footer below on every route, except the planned "
+     "sign-in and sign-up paths, where it returns {children} alone so the "
+     "auth form stands on an empty page"),
     ("components/Navbar.jsx", "client",
-     "Global navigation for every route: brand, the planned destinations "
+     "Global navigation: brand, the planned destinations "
      "with an active state, a working mobile menu, and session-aware "
      "actions when the plan has accounts"),
     ("components/Footer.jsx", "server",
@@ -151,7 +155,7 @@ def _plan_images(plan: dict, design: dict, source_input: str) -> list[dict]:
     context = _text(plan["project"].get("summary") or plan.get("description"), 180)
     if not asked:
         for extra in listed:
-            _add_listed_image(add, extra, title)
+            _add_listed_image(add_image_slot, extra, title)
         return out
     add_image_slot("banner", "Hero banner across the top of the public landing page",
         f'wide premium advertisement for {title}; visually represent {context}; '
@@ -202,12 +206,12 @@ def _plan_images(plan: dict, design: dict, source_input: str) -> list[dict]:
                 "square")
 
     for extra in listed:
-        _add_listed_image(add, extra, title)
+        _add_listed_image(add_image_slot, extra, title)
     return out
 
 
 # Queue one picture exactly as the model described it.
-def _add_listed_image(add, extra: dict, title: str) -> None:
+def _add_listed_image(add_image_slot, extra: dict, title: str) -> None:
     """Queue one picture exactly as the model described it."""
     # From: agents/planner/planning/planning_helpers.py
     purpose = _text(extra.get("purpose"), 300)
