@@ -1,6 +1,7 @@
 AgentForge repository test result
 =================================
 Status: PASS
+<<<<<<< HEAD
 Run at (UTC): 2026-08-31T20:28:37+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
@@ -11,6 +12,18 @@ Failures: 0
 Errors: 0
 Skipped: 0
 Duration: 5.032s
+=======
+Run at (UTC): 2026-08-30T10:54:49+00:00
+Command: python test/run_suite.py
+Python: 3.14.5
+Unit tests: 169
+Integration tests: 24
+Total tests run: 193
+Failures: 0
+Errors: 0
+Skipped: 0
+Duration: 11.286s
+>>>>>>> 3a41b4fbff696370bbc747898d7a6ef4c0697a57
 
 Detailed results
 ----------------
@@ -133,6 +146,41 @@ test_nested_secret_fields_are_redacted_recursively (test.unit.deployment.test_se
 test_safe_json_never_serializes_nested_credentials (test.unit.deployment.test_security.DeploymentSecurityTests.test_safe_json_never_serializes_nested_credentials) ... ok
 test_secret_names_are_detected_without_hiding_normal_metadata (test.unit.deployment.test_security.DeploymentSecurityTests.test_secret_names_are_detected_without_hiding_normal_metadata) ... ok
 test_secret_values_embedded_in_log_text_are_redacted (test.unit.deployment.test_security.DeploymentSecurityTests.test_secret_values_embedded_in_log_text_are_redacted) ... ok
+test_dataset_is_not_empty (test.unit.eval.test_dataset.DatasetLoadTests.test_dataset_is_not_empty) ... ok
+test_every_case_has_an_id_a_brief_and_a_claim (test.unit.eval.test_dataset.DatasetLoadTests.test_every_case_has_an_id_a_brief_and_a_claim) ... ok
+test_ids_are_unique (test.unit.eval.test_dataset.DatasetLoadTests.test_ids_are_unique) ... ok
+test_malformed_json_column_is_rejected_at_load (test.unit.eval.test_dataset.DatasetLoadTests.test_malformed_json_column_is_rejected_at_load) ... ok
+test_non_english_briefs_survive_decoding (test.unit.eval.test_dataset.DatasetLoadTests.test_non_english_briefs_survive_decoding)
+Sinhala and Tamil rows must load as script, not as mojibake. ... ok
+test_tiers_are_within_range (test.unit.eval.test_dataset.DatasetLoadTests.test_tiers_are_within_range) ... ok
+test_categories_are_reported_in_first_seen_order (test.unit.eval.test_dataset.DatasetSelectionTests.test_categories_are_reported_in_first_seen_order) ... ok
+test_select_by_category_is_case_insensitive (test.unit.eval.test_dataset.DatasetSelectionTests.test_select_by_category_is_case_insensitive) ... ok
+test_select_by_id_and_limit (test.unit.eval.test_dataset.DatasetSelectionTests.test_select_by_id_and_limit) ... ok
+test_select_by_tier (test.unit.eval.test_dataset.DatasetSelectionTests.test_select_by_tier) ... ok
+test_assert_valid_passes (test.unit.eval.test_dataset.DatasetSoundnessTests.test_assert_valid_passes) ... ok
+test_customization_rows_carry_an_edit_and_an_expectation (test.unit.eval.test_dataset.DatasetSoundnessTests.test_customization_rows_carry_an_edit_and_an_expectation) ... ok
+test_dataset_validates (test.unit.eval.test_dataset.DatasetSoundnessTests.test_dataset_validates) ... ok
+test_each_category_maps_to_one_claim (test.unit.eval.test_dataset.DatasetSoundnessTests.test_each_category_maps_to_one_claim) ... ok
+test_expectation_keys_are_all_known (test.unit.eval.test_dataset.DatasetSoundnessTests.test_expectation_keys_are_all_known)
+An unknown key would be ignored at grading time and score a free pass. ... ok
+test_matrix_covers_every_scale_of_each_pair (test.unit.eval.test_dataset.DatasetSoundnessTests.test_matrix_covers_every_scale_of_each_pair)
+A pair present at one scale must be present at all four. ... ok
+test_matrix_rows_name_a_complete_cell (test.unit.eval.test_dataset.DatasetSoundnessTests.test_matrix_rows_name_a_complete_cell) ... ok
+test_non_english_rows_declare_their_language (test.unit.eval.test_dataset.DatasetSoundnessTests.test_non_english_rows_declare_their_language) ... ok
+test_public_cases_do_not_demand_a_role_taxonomy (test.unit.eval.test_dataset.DatasetSoundnessTests.test_public_cases_do_not_demand_a_role_taxonomy) ... ok
+test_role_and_table_bounds_do_not_contradict (test.unit.eval.test_dataset.DatasetSoundnessTests.test_role_and_table_bounds_do_not_contradict) ... ok
+test_report_names_every_category (test.unit.eval.test_dataset.ReportTests.test_report_names_every_category) ... ok
+test_report_names_every_claim (test.unit.eval.test_dataset.ReportTests.test_report_names_every_claim) ... ok
+test_report_records_a_clean_integrity_check (test.unit.eval.test_dataset.ReportTests.test_report_records_a_clean_integrity_check) ... ok
+test_report_states_the_case_count (test.unit.eval.test_dataset.ReportTests.test_report_states_the_case_count) ... ok
+test_accepts_a_sound_case (test.unit.eval.test_dataset.ValidatorTests.test_accepts_a_sound_case) ... ok
+test_assert_valid_raises_on_an_unsound_case (test.unit.eval.test_dataset.ValidatorTests.test_assert_valid_raises_on_an_unsound_case) ... ok
+test_catches_diagram_both_required_and_not_applicable (test.unit.eval.test_dataset.ValidatorTests.test_catches_diagram_both_required_and_not_applicable) ... ok
+test_catches_floor_above_ceiling (test.unit.eval.test_dataset.ValidatorTests.test_catches_floor_above_ceiling) ... ok
+test_catches_public_case_demanding_roles (test.unit.eval.test_dataset.ValidatorTests.test_catches_public_case_demanding_roles) ... ok
+test_catches_table_both_required_and_forbidden (test.unit.eval.test_dataset.ValidatorTests.test_catches_table_both_required_and_forbidden) ... ok
+test_catches_unknown_expectation_key (test.unit.eval.test_dataset.ValidatorTests.test_catches_unknown_expectation_key) ... ok
+test_catches_wrong_value_type (test.unit.eval.test_dataset.ValidatorTests.test_catches_wrong_value_type) ... ok
 test_advancing_to_a_later_business_step_counts_as_progress (test.unit.qa_agents.test_e2e_engine.ConvergencePolicyTests.test_advancing_to_a_later_business_step_counts_as_progress) ... ok
 test_evidence_exhaustion_can_stop_immediately (test.unit.qa_agents.test_e2e_engine.ConvergencePolicyTests.test_evidence_exhaustion_can_stop_immediately) ... ok
 test_failure_messages_ignore_runtime_specific_ids_ports_and_timings (test.unit.qa_agents.test_e2e_engine.ConvergencePolicyTests.test_failure_messages_ignore_runtime_specific_ids_ports_and_timings) ... ok
@@ -199,6 +247,10 @@ test_studio_retries_projects_and_models_and_keeps_cloud_fallbacks (test.integrat
 test_ui_handler_keeps_the_real_http_handler_base (test.integration.test_runtime_composition.StudioStartupResilienceTests.test_ui_handler_keeps_the_real_http_handler_base) ... ok
 
 ----------------------------------------------------------------------
+<<<<<<< HEAD
 Ran 169 tests in 5.032s
+=======
+Ran 193 tests in 11.286s
+>>>>>>> 3a41b4fbff696370bbc747898d7a6ef4c0697a57
 
 OK
