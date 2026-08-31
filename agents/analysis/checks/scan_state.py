@@ -78,7 +78,7 @@ class ScanStateMixin:
         # From: agents/analysis/checks/code_checks.py
         # From: agents/analysis/checks/data_checks.py
         # From: agents/analysis/checks/route_checks.py
-        report.findings += self._code_invariants() + self._auth_invariants() + self._data_ui_invariants() + self._data_contract_findings() + self._cross_file_invariants() + self.fetch_contract_findings(report.routes) + self.contract_findings(report.routes) + self.capability_shape_findings()
+        report.findings += self._code_invariants() + self._auth_invariants() + self._data_ui_invariants() + self._data_contract_findings() + self._image_contract_findings() + self._cross_file_invariants() + self.fetch_contract_findings(report.routes) + self.contract_findings(report.routes) + self.capability_shape_findings()
         # From: agents/analysis/checks/auth_checks.py
         # From: agents/analysis/checks/code_checks.py
         # From: agents/analysis/checks/data_checks.py

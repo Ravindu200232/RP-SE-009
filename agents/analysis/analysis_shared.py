@@ -35,7 +35,7 @@ NEXT_ROOTS = ("app/", "components/", "lib/")
 ROOT_SOURCE = {"middleware.js", "middleware.jsx", "instrumentation.js"}
 MAX_FILE_BYTES = 200_000
 SEVERITIES = ("blocker", "major", "minor")
-REPAIRABLE_MAJOR = frozenset({"UNBUILT_PROMISE", "BROKEN_CONTRACT", "MISSING_PLANNED_DATA", "INERT_CONTROL", "ROLE_REDIRECT", "ROLE_HOME_MISSING", "ROLE_PAGE_UNGUARDED", "MISSING_WORKFLOW_CONTROL", "SEED_IN_LAYOUT", "LINT", "DEAD_LINK"})
+REPAIRABLE_MAJOR = frozenset({"UNBUILT_PROMISE", "BROKEN_CONTRACT", "MISSING_PLANNED_DATA", "INERT_CONTROL", "ROLE_REDIRECT", "ROLE_HOME_MISSING", "ROLE_PAGE_UNGUARDED", "MISSING_WORKFLOW_CONTROL", "SEED_IN_LAYOUT", "LINT", "DEAD_LINK", "UNUSED_PLANNED_IMAGE", "NAVBAR_ON_AUTH_PAGE"})
 PROSE_PATH_RE = re.compile(r"`((?:app|components|lib)/[^`]+?\.jsx?)`")
 PLACEHOLDER_RE = re.compile(r"[*?<>\s]|\.\.\.")
 LINK_HREF_RE = re.compile(r"""<Link\b[^>]*?href\s*=\s*(?:["'](/[^"']*)["']|\{\s*["'](/[^"']*)["']\s*\})""")

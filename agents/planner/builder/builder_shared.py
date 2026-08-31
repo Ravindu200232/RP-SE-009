@@ -119,6 +119,16 @@ GLOBAL SHELL AND PAGE LAYOUT
   control on a page after the session ends. While `useSession()` is still
   loading, render the same layout with a neutral placeholder so the bar does not
   jump.
+- The sign-in and sign-up routes render with NO Navbar and NO Footer — the form
+  on an empty page. An auth page asks for one thing, and a bar full of
+  destinations invites the visitor to leave before they finish. `app/layout.jsx`
+  is a server component and cannot read the path, so the decision lives in the
+  client component `components/Chrome.jsx`: it reads `usePathname()` from
+  next/navigation, returns `{children}` alone on those two planned paths, and
+  wraps them in Navbar and Footer everywhere else. The root layout renders
+  `<Chrome>{children}</Chrome>` and nothing else around it. Do not try to solve
+  this with a route group: `app/(auth)/layout.jsx` still nests inside the root
+  layout, so its chrome renders anyway unless every other page moves too.
 - Implement each page from its `layout` and `sections`: same order, same grid,
   same above-the-fold focus, collapsing at 360px as planned. A planned section is
   a real populated block, never a heading over a placeholder.

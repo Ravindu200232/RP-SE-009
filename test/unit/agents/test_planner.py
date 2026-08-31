@@ -68,7 +68,9 @@ def _model_plan() -> dict:
         },
         "file_plan": [
             {"path": "app/layout.jsx", "kind": "server",
-             "purpose": "Root shell wrapping every route in Navbar and Footer"},
+             "purpose": "Root shell wrapping every route in Chrome"},
+            {"path": "components/Chrome.jsx", "kind": "client",
+             "purpose": "Owns which routes wear the Navbar and Footer"},
             {"path": "components/Navbar.jsx", "kind": "client",
              "purpose": "Global navigation",
              "contracts": ["Global navigation: /, /products"]},
@@ -80,8 +82,8 @@ def _model_plan() -> dict:
         "tasks": [
             {"id": 0, "title": "App shell and global navigation",
              "goal": "Wrap every route in one shared shell",
-             "files": ["app/layout.jsx", "components/Navbar.jsx",
-                       "components/Footer.jsx"]},
+             "files": ["app/layout.jsx", "components/Chrome.jsx",
+                       "components/Navbar.jsx", "components/Footer.jsx"]},
             {"id": 1, "title": "Inventory", "goal": "Build inventory",
              "files": ["app/page.jsx", "app/products/page.jsx"],
              "requirement_ids": ["REQ-001"]},
@@ -367,13 +369,14 @@ class UnifiedPlannerTests(unittest.TestCase):
         plan = PlannerAgent(None, "test-model").normalize(_model_plan())
 
         files = {file["path"] for file in plan["file_plan"]}
-        self.assertLessEqual({"app/layout.jsx", "components/Navbar.jsx",
+        self.assertLessEqual({"app/layout.jsx", "components/Chrome.jsx",
+                              "components/Navbar.jsx",
                               "components/Footer.jsx"}, files)
         first = plan["tasks"][0]
         self.assertEqual(first["title"], "App shell and global navigation")
         self.assertEqual({file["path"] for file in first["files"]},
-                         {"app/layout.jsx", "components/Navbar.jsx",
-                          "components/Footer.jsx"})
+                         {"app/layout.jsx", "components/Chrome.jsx",
+                          "components/Navbar.jsx", "components/Footer.jsx"})
         navbar = next(file for file in plan["file_plan"]
                       if file["path"] == "components/Navbar.jsx")
         self.assertIn("/products", "".join(navbar["contracts"]))

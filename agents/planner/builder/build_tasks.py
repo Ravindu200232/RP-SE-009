@@ -123,7 +123,7 @@ class BuildTasksMixin:
         try:
             # From: agents/planner/builder/builder_setup.py
             # From: agents/planner/builder/write_stream.py
-            calls = self._stream(self.convo, lambda delta: (raw.append(delta), parser.feed(delta)), temperature=0.35)
+            calls = self._stream(self.convo, lambda delta: (raw.append(delta), parser.feed(delta)), temperature=0.6)
         except Exception as exc:
             self._log("ERROR", f"   ❌ Generation failed: {exc}")
             calls = []

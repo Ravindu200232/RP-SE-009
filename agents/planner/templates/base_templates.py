@@ -182,16 +182,22 @@ export async function GET() {
   try {
 __AUTH_ENSURE__    await exported[name]()
     const db = await getDb()
+    // Every shortfall in one message. Throwing on the first one told a repair
+    // pass about exactly one collection, so a seed that came up short on three
+    // of them needed three whole rounds — and the loop ran out of rounds well
+    // before it ran out of collections, leaving the app serving empty lists.
+    const gaps = []
     for (const row of REQUIRED_SEEDS) {
       const count = await db.collection(row.collection).countDocuments({})
-      if (count < row.count) throw new Error(`Seed incomplete: ${row.collection} has ${count}/${row.count} rows`)
+      if (count < row.count) gaps.push(`${row.collection} has ${count}/${row.count} rows`)
     }
     for (const account of DEMO_ACCOUNTS) {
       const user = await db.collection('user').findOne({ email: account.email })
       const credential = user && await db.collection('account').findOne({ userId: { $in: [user._id, user._id.toString()] }, providerId: 'credential' })
       if (!user || !credential || String(user.role || '') !== String(account.role || ''))
-        throw new Error(`Demo account not persisted with role: ${account.email}`)
+        gaps.push(`demo account ${account.email} is missing, has no credential, or lost its ${account.role} role`)
     }
+    if (gaps.length) throw new Error(`Seed incomplete: ${gaps.join('; ')}`)
     return Response.json({ ok: true, ran: true, accounts: DEMO_ACCOUNTS.length, collections: REQUIRED_SEEDS.length })
   } catch (error) {
     return Response.json({ ok: false, error: String(error) }, { status: 500 })
