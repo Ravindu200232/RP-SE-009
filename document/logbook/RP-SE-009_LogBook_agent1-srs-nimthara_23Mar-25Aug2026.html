@@ -111,9 +111,12 @@ table.work td.no { text-align: center; color: #333; }
 table.work tbody tr:nth-child(even) td { background: #fafafa; }
 
 /* month grouping */
+/* A month is allowed to flow across a page break - holding one together pushes
+   whole blocks onto fresh pages and leaves half-empty sheets. The header row
+   repeats on the continuation, the title never ends a page on its own, and the
+   signature block below is what stays unbroken. */
 .month {
   margin-top: 11pt;
-  break-inside: avoid-page;
 }
 .month-title {
   font-family: "Liberation Sans", Arial, sans-serif;
