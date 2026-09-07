@@ -1,19 +1,26 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-07T16:51:54+00:00
+Run at (UTC): 2026-09-07T16:56:14+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 161
+Unit tests: 168
 Integration tests: 23
-Total tests run: 184
+Total tests run: 191
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 1.586s
+Duration: 6.210s
 
 Detailed results
 ----------------
+test_a_review_pass_is_offered_nothing_that_can_change_anything (test.unit.builder.test_agent_passes.AgentPassTests.test_a_review_pass_is_offered_nothing_that_can_change_anything) ... ok
+test_a_snapshot_describes_the_run_without_needing_a_model (test.unit.builder.test_agent_passes.AgentPassTests.test_a_snapshot_describes_the_run_without_needing_a_model) ... ok
+test_planning_investigates_and_ends_on_a_submitted_plan (test.unit.builder.test_agent_passes.AgentPassTests.test_planning_investigates_and_ends_on_a_submitted_plan) ... ok
+test_the_build_pass_receives_the_plan_and_the_design (test.unit.builder.test_agent_passes.AgentPassTests.test_the_build_pass_receives_the_plan_and_the_design) ... ok
+test_the_design_contract_is_decided_and_written_without_asking (test.unit.builder.test_agent_passes.AgentPassTests.test_the_design_contract_is_decided_and_written_without_asking) ... ok
+test_the_planning_pass_investigates_but_does_not_implement (test.unit.builder.test_agent_passes.AgentPassTests.test_the_planning_pass_investigates_but_does_not_implement) ... ok
+test_work_with_no_interface_gets_no_design_contract (test.unit.builder.test_agent_passes.AgentPassTests.test_work_with_no_interface_gets_no_design_contract) ... ok
 test_a_compound_command_is_judged_by_its_worst_segment (test.unit.builder.test_engine.CommandPolicyTests.test_a_compound_command_is_judged_by_its_worst_segment) ... ok
 test_an_interpreter_running_a_script_is_not_read_only (test.unit.builder.test_engine.CommandPolicyTests.test_an_interpreter_running_a_script_is_not_read_only) ... ok
 test_read_only_commands_are_safe (test.unit.builder.test_engine.CommandPolicyTests.test_read_only_commands_are_safe) ... ok
@@ -203,6 +210,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 184 tests in 1.586s
+Ran 191 tests in 6.210s
 
 OK
