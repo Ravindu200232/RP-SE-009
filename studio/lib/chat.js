@@ -13,9 +13,10 @@
  * usually the interesting one.
  */
 
-/** Consecutive work of the same kind collapses into one turn. */
-const GROUP_MS = 60_000
-const MAX_TURNS = 120
+// Every action is its own row. Grouping consecutive reads under one icon
+// saved space and made three separate steps look like one, which is the
+// opposite of what a step-by-step feed is for.
+const MAX_TURNS = 160
 
 const KINDS = [
   // [pattern, kind, how to title it]
@@ -74,24 +75,15 @@ function classify(row) {
 
 export function chatTurns(logs = [], chat = []) {
   const turns = []
+  let previous = ''
   for (const row of logs) {
     const event = classify(row)
     if (!event) continue
-
-    const last = turns.at(-1)
-    if (last && last.role === 'activity' && last.kind === event.kind
-        && row.at - last.at < GROUP_MS) {
-      // Same kind of work, still going: extend the turn rather than add one.
-      if (!last.items.some(item => item.title === event.title)) {
-        last.items.push({ title: event.title, detail: event.detail })
-      }
-      last.at = row.at
-      continue
-    }
-    turns.push({
-      role: 'activity', kind: event.kind, at: row.at,
-      items: [{ title: event.title, detail: event.detail }],
-    })
+    // The engine echoes a command as both "Ran x" and "$ x"; one row, not two.
+    if (event.title === previous) continue
+    previous = event.title
+    turns.push({ role: 'activity', kind: event.kind, at: row.at,
+                 title: event.title, detail: event.detail })
   }
 
   for (const entry of chat) turns.push({ ...entry, role: entry.role || 'assistant' })

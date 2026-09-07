@@ -49,6 +49,7 @@ export default function AgentChat() {
   const project = useStore(s => s.project)
   const question = useStore(s => s.question)
   const stats = useStore(s => s.runStats)
+  const agentState = useStore(s => s.agentState)
   const pushChat = useStore(s => s.pushChat)
 
   // Collapsing gives the whole width back to the work when someone wants it.
@@ -306,7 +307,33 @@ const Row = ({ label, value }) => (
   </div>
 )
 
-function Turn({ turn }) {
+/**
+ * The model composing its next move.
+ *
+ * Between a request going out and the tool call coming back there is nothing
+ * to log, and an empty feed for twenty seconds reads as a stall. The word and
+ * the animation are the whole message: the reasoning text itself is the
+ * model's working, not the user's.
+ */
+function Thinking() {
+  return (
+    <div className="flex items-center gap-2.5 py-0.5">
+      <span className="grid size-6 shrink-0 place-items-center rounded-full bg-tint text-accent">
+        <Sparkles className="size-3 animate-pulse" />
+      </span>
+      <span className="text-[12px] font-medium text-muted">Thinking</span>
+      <span className="flex gap-1" aria-hidden="true">
+        {[0, 1, 2].map(i => (
+          <span key={i}
+                className="size-1 animate-bounce rounded-full bg-accent/60"
+                style={{ animationDelay: `${i * 140}ms`, animationDuration: '900ms' }} />
+        ))}
+      </span>
+    </div>
+  )
+}
+
+function Turn({ turn, live }) {
   if (turn.role === 'user') {
     return (
       <div className="flex justify-end">
@@ -344,22 +371,14 @@ function Turn({ turn }) {
     <div className="flex gap-2.5">
       <span className={cn('mt-0.5 grid size-6 shrink-0 place-items-center rounded-full',
         KIND_TONE[turn.kind] || 'bg-tint text-accent')}>
-        <Icon className="size-3" />
+        {/* The step actually happening spins; the ones behind it do not. */}
+        {live ? <Loader2 className="size-3 animate-spin" /> : <Icon className="size-3" />}
       </span>
-      <div className="min-w-0 flex-1 space-y-1">
-        {turn.items.slice(-14).map((item, i) => (
-          <div key={i}>
-            <p className={cn('break-words text-[12px] font-medium',
-              turn.kind === 'warn' ? 'text-bad' : 'text-ink')}>{item.title}</p>
-            {item.detail && (
-              <p className="text-[11px] leading-relaxed text-muted">{item.detail}</p>
-            )}
-          </div>
-        ))}
-        {turn.items.length > 14 && (
-          <p className="text-[10.5px] text-muted2">
-            …and {turn.items.length - 14} more
-          </p>
+      <div className="min-w-0 flex-1">
+        <p className={cn('break-words text-[12px] font-medium',
+          turn.kind === 'warn' ? 'text-bad' : 'text-ink')}>{turn.title}</p>
+        {turn.detail && (
+          <p className="mt-0.5 text-[11px] leading-relaxed text-muted">{turn.detail}</p>
         )}
       </div>
     </div>
@@ -368,6 +387,5 @@ function Turn({ turn }) {
 
 function lastLine(turn) {
   if (!turn) return ''
-  if (turn.role === 'activity') return turn.items.at(-1)?.title || ''
   return turn.title || turn.text || ''
 }

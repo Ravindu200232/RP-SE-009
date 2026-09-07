@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-07T17:21:44+00:00
+Run at (UTC): 2026-09-07T20:50:04+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 170
+Unit tests: 192
 Integration tests: 24
-Total tests run: 194
+Total tests run: 216
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 6.202s
+Duration: 13.994s
 
 Detailed results
 ----------------
@@ -58,6 +58,20 @@ test_an_ambiguous_edit_is_refused_rather_than_guessed (test.unit.builder.test_en
 test_arguments_are_coerced_rather_than_rejected_for_their_type (test.unit.builder.test_engine.ToolRegistryTests.test_arguments_are_coerced_rather_than_rejected_for_their_type) ... ok
 test_editing_json_by_path_keeps_it_valid_json (test.unit.builder.test_engine.ToolRegistryTests.test_editing_json_by_path_keeps_it_valid_json) ... ok
 test_writing_over_an_existing_file_needs_saying_so (test.unit.builder.test_engine.ToolRegistryTests.test_writing_over_an_existing_file_needs_saying_so) ... ok
+test_an_empty_expectation_is_refused_rather_than_always_passing (test.unit.builder.test_journeys.AssertionShapeTests.test_an_empty_expectation_is_refused_rather_than_always_passing) ... ok
+test_an_unknown_assertion_names_the_ones_that_exist (test.unit.builder.test_journeys.AssertionShapeTests.test_an_unknown_assertion_names_the_ones_that_exist) ... ok
+test_text_and_url_assertions_report_what_they_actually_saw (test.unit.builder.test_journeys.AssertionShapeTests.test_text_and_url_assertions_report_what_they_actually_saw) ... ok
+test_a_cancellation_beside_a_real_failure_still_fails (test.unit.builder.test_journeys.DiagnosticsTests.test_a_cancellation_beside_a_real_failure_still_fails) ... ok
+test_a_cancelled_request_does_not_fail_the_journey (test.unit.builder.test_journeys.DiagnosticsTests.test_a_cancelled_request_does_not_fail_the_journey)
+The one that mattered. ... ok
+test_a_clean_page_passes (test.unit.builder.test_journeys.DiagnosticsTests.test_a_clean_page_passes) ... ok
+test_a_console_error_fails_the_journey (test.unit.builder.test_journeys.DiagnosticsTests.test_a_console_error_fails_the_journey) ... ok
+test_a_genuinely_failed_request_fails_the_journey (test.unit.builder.test_journeys.DiagnosticsTests.test_a_genuinely_failed_request_fails_the_journey) ... ok
+test_a_server_error_fails_the_journey (test.unit.builder.test_journeys.DiagnosticsTests.test_a_server_error_fails_the_journey) ... ok
+test_cancellations_are_still_visible_when_a_failure_is_investigated (test.unit.builder.test_journeys.DiagnosticsTests.test_cancellations_are_still_visible_when_a_failure_is_investigated) ... ok
+test_a_connection_that_was_refused_is_a_failure (test.unit.builder.test_journeys.RequestClassificationTests.test_a_connection_that_was_refused_is_a_failure) ... ok
+test_cdp_calling_a_request_cancelled_is_believed (test.unit.builder.test_journeys.RequestClassificationTests.test_cdp_calling_a_request_cancelled_is_believed) ... ok
+test_the_error_text_is_the_backstop (test.unit.builder.test_journeys.RequestClassificationTests.test_the_error_text_is_the_backstop) ... ok
 test_every_offered_cloud_entry_carries_the_window_it_will_request (test.unit.builder.test_llm_client.CatalogueShapeTests.test_every_offered_cloud_entry_carries_the_window_it_will_request) ... ok
 test_the_catalogue_falls_back_to_known_cloud_models_when_empty (test.unit.builder.test_llm_client.CatalogueShapeTests.test_the_catalogue_falls_back_to_known_cloud_models_when_empty) ... ok
 test_a_cloud_model_reporting_no_window_still_gets_the_default (test.unit.builder.test_llm_client.CloudContextTests.test_a_cloud_model_reporting_no_window_still_gets_the_default) ... ok
@@ -169,6 +183,15 @@ test_each_failure_kind_is_named_rather_than_lumped_together (test.unit.qa.test_q
 test_failures_are_grouped_so_the_round_summary_says_something (test.unit.qa.test_qa_agent.UnitStageTests.test_failures_are_grouped_so_the_round_summary_says_something) ... ok
 test_line_numbers_do_not_make_the_same_failure_look_new (test.unit.qa.test_qa_agent.UnitStageTests.test_line_numbers_do_not_make_the_same_failure_look_new) ... ok
 test_the_same_failures_twice_are_recognised_as_no_progress (test.unit.qa.test_qa_agent.UnitStageTests.test_the_same_failures_twice_are_recognised_as_no_progress) ... ok
+test_a_failing_journey_is_repaired_and_the_owner_is_named (test.unit.qa.test_qa_stages.E2EStageTests.test_a_failing_journey_is_repaired_and_the_owner_is_named) ... ok
+test_a_journey_that_never_passes_is_reported_not_retried_forever (test.unit.qa.test_qa_stages.E2EStageTests.test_a_journey_that_never_passes_is_reported_not_retried_forever) ... ok
+test_a_stage_with_no_journeys_says_so (test.unit.qa.test_qa_stages.E2EStageTests.test_a_stage_with_no_journeys_says_so) ... ok
+test_passing_journeys_end_the_stage_without_repair (test.unit.qa.test_qa_stages.E2EStageTests.test_passing_journeys_end_the_stage_without_repair) ... ok
+test_a_broken_harness_stops_before_anything_is_authored (test.unit.qa.test_qa_stages.UnitStageTests.test_a_broken_harness_stops_before_anything_is_authored) ... ok
+test_a_failure_that_changes_is_repaired_again (test.unit.qa.test_qa_stages.UnitStageTests.test_a_failure_that_changes_is_repaired_again) ... ok
+test_a_green_suite_is_reported_after_one_round (test.unit.qa.test_qa_stages.UnitStageTests.test_a_green_suite_is_reported_after_one_round) ... ok
+test_a_runner_that_collects_nothing_is_a_problem_not_a_pass (test.unit.qa.test_qa_stages.UnitStageTests.test_a_runner_that_collects_nothing_is_a_problem_not_a_pass) ... ok
+test_the_same_failure_twice_ends_the_round_rather_than_looping (test.unit.qa.test_qa_stages.UnitStageTests.test_the_same_failure_twice_ends_the_round_rather_than_looping) ... ok
 test_build_and_resume_contracts (test.unit.services.test_server_wiring.MessageDispatchTests.test_build_and_resume_contracts) ... ok
 test_edit_action_contracts (test.unit.services.test_server_wiring.MessageDispatchTests.test_edit_action_contracts) ... ok
 test_invalid_or_incomplete_action_is_ignored (test.unit.services.test_server_wiring.MessageDispatchTests.test_invalid_or_incomplete_action_is_ignored) ... ok
@@ -215,6 +238,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 194 tests in 6.202s
+Ran 216 tests in 13.994s
 
 OK

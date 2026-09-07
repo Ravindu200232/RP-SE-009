@@ -37,6 +37,26 @@ CONNECT_TIMEOUT = 15
 CALL_TIMEOUT = 25
 MAX_STEPS = 80
 
+# Network errors that mean "this request was called off", not "this app is
+# broken". Route prefetches, an aborted fetch on navigation and a client-side
+# block all land here, and none of them is a defect in the product.
+CANCELLED_ERRORS = frozenset({
+    "net::ERR_ABORTED",
+    "net::ERR_BLOCKED_BY_CLIENT",
+    "net::ERR_CACHE_MISS",
+})
+
+
+def request_outcome(params: dict) -> str:
+    """Was this request called off, or did it genuinely fail?
+
+    CDP answers it directly with `canceled`; the error text is the backstop
+    for the cases where it does not set the flag.
+    """
+    if params.get("canceled") or str(params.get("errorText", "")) in CANCELLED_ERRORS:
+        return "request cancelled"
+    return "request failed"
+
 
 # ---------------------------------------------------------------------------
 # Finding a browser
@@ -237,7 +257,14 @@ class Page:
         def failed(params, session):
             if session != self.session:
                 return
-            self._note("request failed", params.get("errorText", ""), params.get("url", ""))
+            # A cancelled request is not a broken one. A framework that
+            # prefetches routes cancels those prefetches on every navigation,
+            # so counting them as defects fails every journey on every app and
+            # the repair loop can never converge. CDP says so itself with
+            # `canceled`; the error text is the backstop for the cases where
+            # it does not.
+            self._note(request_outcome(params), str(params.get("errorText", "")),
+                       params.get("url", ""))
 
         def response(params, session):
             if session != self.session:

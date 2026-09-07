@@ -136,7 +136,13 @@ function handle(m) {
   switch (m.type) {
     case 'log':          s.addLog(m.level, m.text); break
 
-    case 'project':      s.bumpProjects(); break
+    case 'project':
+      // The directory exists now, so the run has a name. Adopting it here is
+      // what lets the chat header, the file tree and the preview all say what
+      // is being built instead of waiting for the run to finish.
+      if (m.project) useStore.setState({ project: m.project })
+      s.bumpProjects()
+      break
 
     case 'step':         s.setStep(STEP_ALIAS[m.step] || m.step, m.status); break
     case 'progress':     s.setProgress(m.step, m.pct); break
@@ -192,6 +198,7 @@ function handle(m) {
       s.setBusy(false)
       s.setWorkKind('')
       s.testDone()
+      s.setAgentState('')
       resetStreamQueue()
       useStore.setState({ liveFile: null, liveBuf: '', e2eLive: null })
       s.pushChat({ role: 'assistant', tone: 'ok', title: 'Finished',
@@ -207,6 +214,7 @@ function handle(m) {
       s.setBusy(false)
       s.setWorkKind('')
       s.testDone()
+      s.setAgentState('')
       resetStreamQueue()
       useStore.setState({ liveFile: null, liveBuf: '', e2eLive: null, project: '' })
       s.setQaReport(null)
@@ -222,6 +230,7 @@ function handle(m) {
       s.setBusy(false)
       s.setWorkKind('')
       s.testDone()
+      s.setAgentState('')
       resetStreamQueue()
       useStore.setState({ liveFile: null, liveBuf: '', e2eLive: null })
       s.pushChat({ role: 'assistant', tone: 'bad', title: 'That did not work',
@@ -250,6 +259,7 @@ function handle(m) {
                    kind: m.kind, design: m.design })
       break
     case 'memory':       s.setRunStats(m); break
+    case 'agent_state':  s.setAgentState(m.state || ''); break
     case 'mongo':        break
     case 'command':      break
     case 'demo_accounts': break

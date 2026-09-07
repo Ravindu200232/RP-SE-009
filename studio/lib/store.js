@@ -105,6 +105,11 @@ export const useStore = create((set, get) => ({
   runStats: null,
   setRunStats: (runStats) => set({ runStats }),
 
+  // Composing the next move, or carrying one out. The gap between the two is
+  // where a feed looks stalled, so it is shown rather than left blank.
+  agentState: '',
+  setAgentState: (agentState) => set({ agentState }),
+
   // What the agent and the user actually said to each other, as opposed to the
   // tool activity the chat panel derives from `logs`.
   chat: [],
@@ -184,7 +189,8 @@ export const useStore = create((set, get) => ({
 
       // Clear project state before opening another project.
   reset: (project) => set({
-    project, logs: [], chat: [], runStats: null, steps: {}, phases: [], files: {},
+    project, logs: [], chat: [], runStats: null, agentState: '',
+    steps: {}, phases: [], files: {},
     activeFile: null, liveFile: null, liveBuf: '', follow: true,
     progress: emptyProgress(),
     tests: emptyTests(),

@@ -110,11 +110,16 @@ class StudioBridge:
         # approaches the top of the band without ever claiming to reach it.
         step = int(p.get("iteration") or 1)
         self._stats(iterations=step)
+        # The model is composing its next move. Between here and the tool call
+        # that follows there is nothing to log, and an empty feed reads as a
+        # stall rather than as thinking.
+        emit({"type": "agent_state", "state": "thinking", "iteration": step})
         eprog(_phase_label(self.phase), self._band(1 - 0.94 ** step))
 
     def on_tool_start(self, p):
         self.stats["tools"] += 1
         tool = p.get("tool", "")
+        emit({"type": "agent_state", "state": "working", "tool": tool})
         if tool in QUIET_TOOLS:
             return
         word = TOOL_WORDS.get(tool, tool)

@@ -57,6 +57,7 @@ def _assert(page, step: dict) -> tuple[bool, str]:
         want = int(expected or 0)
         return found == want, f"{selector} matched {found} element(s), expected {want}"
     if kind == "noDiagnostics":
+        # "request cancelled" is deliberately absent: see CANCELLED_ERRORS.
         critical = [d for d in page.diagnostics
                     if d["kind"] in ("page error", "console error", "request failed")
                     or d["kind"].startswith("HTTP 5")]
