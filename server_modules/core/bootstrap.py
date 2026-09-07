@@ -35,52 +35,26 @@ except ImportError:
 sys.path.insert(0, str(Path(__file__).parent))
 
 
-sys.path.insert(0, str(Path(__file__).parent / "srs-agent"))
-from agents.build.tester_browser import TesterAgent
-from agents.build.tester_common import set_emit as set_tester_emit
-from agents.analysis.analyzer import (AnalyzerAgent, AnalyzerReport, Finding,
-                             REPAIRABLE_MAJOR)
-from agents.core import nextdocs
-from agents.planner.architecture import ArchitectAgent, FileStreamParser
-from agents.core.exports_checks import check_named_imports
-from agents.core.exports_syntax import check_syntax, syntax_messages
-from agents.features.features_apply import FeaturesAgent
-from agents.features.features_common import FeatureSpec
-from agents.features.capture import PENCIL_SYSTEM, capture_region
-from agents.features.images import ImageAgent
-from agents.features.source_guidance import feature_image_requested
-from agents.features.picker import (ELEMENT_EDIT_SYSTEM, ElementResolver, describe,
-                           guard_scope, looks_like_addition, looks_like_global,
-                           looks_like_page_only, looks_like_removal,
-                           looks_like_retext, routes_rendering)
-from agents.data.mongo_lifecycle import MONGO
-from agents.data.mongo_common import db_name_for
-from agents.core import cancel
-from agents.analysis.bugfixer_apply import BugFixerAgent
-from agents.core.commands import CommandRunner
-from agents.core.workspace import WorkspaceTools, TOOL_HELP
-from qa_agent.e2e.e2e import E2EAgent
-from qa_agent.e2e.debugger_investigate import AgenticE2EDebugger
-from qa_agent.e2e.debugger_common import DebugNotebook
-from qa_agent.unit.snapshot import FileSnapshot
-from qa_agent.core.session_files import QASession
-from qa_agent.unit.harness_install import TestHarness
-from qa_agent.unit.spec import TestFailure, select_targets
-from qa_agent.unit.author_write import UnitTestAuthor
-from qa_agent.unit.runner import VitestRunner
-from qa_agent.e2e.e2e import KIND_SELECTOR
-from qa_agent.e2e.e2e_progress import (
-    failure_signature as _e2e_failure_signature,
-    failure_severity as _e2e_failure_severity,
-    measure_progress as _e2e_progress,
-    normalize_message as _e2e_norm_message,
-    extend_round_budget as _e2e_extend_budget,
-    stop_after_no_progress as _e2e_stop_no_progress,
-    MIN_REPAIR_ROUNDS as E2E_MIN_FIX,
-)
-from agents.core.ollama_client import (OllamaClient, is_cloud_model, max_context,
-                                  get_local_host, load_settings, save_settings,
-                                  set_default_client)
+
+# Each agent is its own package beside this file. Adding them to the path here
+# keeps every import below a plain one, and keeps the server from caring where
+# on disk they sit. `__file__` is the repository root: these runtime parts are
+# executed into one shared namespace by server_runtime.py.
+_REPO_ROOT = Path(__file__).resolve().parent
+for _agent_root in ("srs-agent", "builder-agent", "qa-agent", "deployment-agent"):
+    _path = str(_REPO_ROOT / _agent_root)
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
+
+from builder_agent.llm import (OllamaClient, is_cloud_model, max_context,
+                               get_local_host, load_settings, save_settings,
+                               set_default_client)
+from server_modules.services import cancel
+from server_modules.services.images import ImageAgent
+from server_modules.services.mongo import MONGO
+from server_modules.services.mongo_common import db_name_for
+from server_modules.services.sources import feature_image_requested
+
 import shutil
 import copy
 

@@ -1,0 +1,120 @@
+"""A static security pass over the generated application.
+
+Six checks, chosen because they are the mistakes a code generator actually
+makes and because each one is decidable from the source without running
+anything. This is not a penetration test and does not claim to be: it is the
+sweep that catches an admin route with no authorisation check before anybody
+deploys it.
+
+Every finding names a file and a line, so it is verifiable rather than
+advisory.
+"""
+from __future__ import annotations
+
+import json
+import re
+import subprocess
+from pathlib import Path
+
+CHECKS = {
+    "UNGUARDED_ROUTE": "API handlers that write without checking who is asking",
+    "UNGUARDED_PAGE": "a page under a role-gated section with no guard of its own",
+    "EXPOSED_SECRET": "a NEXT_PUBLIC_ variable holding something secret",
+    "FAKE_HASH": "passwords stored without hashing",
+    "QUERY_INJECTION": "user input reaching a query unchecked",
+    "UNSAFE_HTML": "dangerouslySetInnerHTML on something a user supplied",
+}
+
+WRITE_METHODS = re.compile(r"export\s+async\s+function\s+(POST|PUT|PATCH|DELETE)\b")
+AUTH_HINTS = re.compile(
+    r"auth|session|getServerSession|currentUser|verifyToken|requireUser|requireRole|"
+    r"isAdmin|jwt\.verify|cookies\(\)|withAuth|checkPermission", re.I)
+SECRET_NAMES = re.compile(
+    r"NEXT_PUBLIC_[A-Z0-9_]*(SECRET|KEY|TOKEN|PASSWORD|PRIVATE|CREDENTIAL)", re.I)
+PASSWORD_ASSIGN = re.compile(r"password\s*[:=]\s*(?:body|req|data|input|form)\b", re.I)
+HASH_HINTS = re.compile(r"bcrypt|argon2|scrypt|pbkdf2|createHash|hashSync|hash\(", re.I)
+UNSAFE_HTML = re.compile(r"dangerouslySetInnerHTML")
+INJECTION = re.compile(r"\$where|\bnew\s+Function\b|eval\s*\(", re.I)
+ROLE_SEGMENT = re.compile(r"/(admin|dashboard|account|manage|staff|owner)(/|$)", re.I)
+
+SKIP_DIRS = {"node_modules", ".next", ".git", "coverage", "test", "__pycache__",
+             ".agentforge", ".agent"}
+
+
+def _sources(root: Path, limit: int = 900):
+    for path in root.rglob("*"):
+        if not path.is_file() or path.suffix not in (".js", ".jsx", ".ts", ".tsx", ".mjs"):
+            continue
+        if any(part in SKIP_DIRS for part in path.parts):
+            continue
+        yield path
+        limit -= 1
+        if limit <= 0:
+            return
+
+
+def _finding(root: Path, path: Path, line: int, code: str, detail: str) -> dict:
+    return {"code": code, "file": path.relative_to(root).as_posix(), "line": line,
+            "what": CHECKS[code], "detail": detail[:240]}
+
+
+def scan(root: Path | str) -> list[dict]:
+    root = Path(root)
+    findings = []
+    for path in _sources(root):
+        try:
+            body = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        relative = path.relative_to(root).as_posix()
+        lines = body.splitlines()
+
+        if relative.startswith(("app/api/", "src/app/api/")) and path.name.startswith("route."):
+            for match in WRITE_METHODS.finditer(body):
+                if not AUTH_HINTS.search(body):
+                    line = body[:match.start()].count("\n") + 1
+                    findings.append(_finding(root, path, line, "UNGUARDED_ROUTE",
+                                             f"{match.group(1)} handler with no authorisation check"))
+                    break
+
+        if path.name.startswith("page.") and ROLE_SEGMENT.search("/" + relative):
+            if not AUTH_HINTS.search(body):
+                findings.append(_finding(root, path, 1, "UNGUARDED_PAGE",
+                                         "role-gated path with no guard in the page"))
+
+        for number, line in enumerate(lines, 1):
+            if SECRET_NAMES.search(line):
+                findings.append(_finding(root, path, number, "EXPOSED_SECRET", line.strip()))
+            if UNSAFE_HTML.search(line):
+                findings.append(_finding(root, path, number, "UNSAFE_HTML", line.strip()))
+            if INJECTION.search(line):
+                findings.append(_finding(root, path, number, "QUERY_INJECTION", line.strip()))
+            if PASSWORD_ASSIGN.search(line) and not HASH_HINTS.search(body):
+                findings.append(_finding(root, path, number, "FAKE_HASH",
+                                         "password stored without a hashing call in this file"))
+        if len(findings) > 200:
+            break
+    return findings[:200]
+
+
+def audit(root: Path | str, run=None) -> dict:
+    """Dependency advisories, by severity. Empty when npm cannot answer."""
+    root = Path(root)
+    try:
+        if run is not None:
+            result = run("npm audit --json")
+            body = result.get("stdout") or ""
+        else:
+            completed = subprocess.run(["npm", "audit", "--json"], cwd=str(root),
+                                       capture_output=True, text=True, timeout=180, check=False)
+            body = completed.stdout
+        data = json.loads(body or "{}")
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return {}
+    counts = ((data.get("metadata") or {}).get("vulnerabilities") or {})
+    return {name: value for name, value in counts.items()
+            if isinstance(value, int) and value and name != "total"}
+
+
+def review(root: Path | str, run=None) -> dict:
+    return {"findings": scan(root), "audit": audit(root, run)}

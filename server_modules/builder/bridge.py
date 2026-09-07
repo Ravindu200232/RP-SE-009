@@ -1,0 +1,175 @@
+# Translates engine events into the messages the studio already speaks.
+"""The one place the engine and the studio meet.
+
+The engine publishes what happened; the studio renders a specific vocabulary.
+Rather than teaching either about the other, this subscribes to the event bus
+and re-emits. Nothing in the engine knows a studio exists, and nothing in the
+studio knows what an agent loop is.
+
+Progress numbers are honest ranges, not a countdown. The engine cannot know how
+many steps a build will take - that is the point of an agent - so a phase
+occupies a band and the studio's own model creeps within it.
+"""
+
+# Where each phase sits on the single progress bar the studio paints.
+PHASE_BAND = {
+    "plan": (4, 20),
+    "design": (20, 24),
+    "build": (24, 74),
+    "unit": (74, 86),
+    "e2e": (86, 95),
+    "security": (95, 97),
+}
+
+# Tools worth a line in the activity feed, and how to say them in English.
+TOOL_WORDS = {
+    "writeFile": "Writing", "patchFile": "Editing", "editFile": "Editing",
+    "patchJson": "Editing", "deleteFile": "Removing", "readFile": "Reading",
+    "search": "Searching", "grepSearch": "Searching", "globFiles": "Searching",
+    "executeTerminal": "Running", "runTests": "Testing",
+    "browserRunJourney": "Checking in the browser", "browserOpen": "Opening",
+    "browserScreenshot": "Photographing", "readSkill": "Reading",
+    "defineVerificationScope": "Deciding what to prove",
+    "inspectProject": "Looking at the project", "inspectError": "Reading the failure",
+}
+
+QUIET_TOOLS = {"testingStatus", "backgroundProcess", "listSkills",
+               "recallKnowledge", "recallCompactedContext"}
+
+
+class StudioBridge:
+    """Subscribes to one run and speaks studio."""
+
+    def __init__(self, events, *, kind: str = "build", phases=("build",)):
+        self.events = events
+        self.kind = kind
+        self.phases = list(phases)
+        self.phase = self.phases[0] if self.phases else "build"
+        self.streaming_file = ""
+        self.tests_started = False
+        self.attach()
+
+    # -- wiring ----------------------------------------------------------
+    def attach(self):
+        bus = self.events
+        bus.on("agent:start", self.on_start)
+        bus.on("notice", self.on_notice)
+        bus.on("phase", self.on_phase)
+        bus.on("iteration", self.on_iteration)
+        bus.on("tool:start", self.on_tool_start)
+        bus.on("tool:end", self.on_tool_end)
+        bus.on("file", self.on_file)
+        bus.on("test", self.on_test)
+        bus.on("e2e", self.on_e2e)
+        bus.on("context", self.on_context)
+        bus.on("plan", self.on_plan)
+        bus.on("agent:error", self.on_error)
+
+    def _band(self, fraction: float) -> int:
+        low, high = PHASE_BAND.get(self.phase, (24, 74))
+        return int(low + (high - low) * max(0.0, min(1.0, fraction)))
+
+    # -- handlers --------------------------------------------------------
+    def on_start(self, p):
+        elog("INFO", f"   {p.get('model')} · {p.get('stack')} · {p.get('quality')} profile")
+        eprog(_phase_label(self.phase), self._band(0.05))
+
+    def on_notice(self, p):
+        elog({"warn": "WARN", "error": "ERROR"}.get(p.get("level"), "INFO"),
+             f"   {p.get('message', '')}")
+
+    def on_phase(self, p):
+        phase = str(p.get("phase") or "")
+        if phase in PHASE_BAND:
+            self.phase = phase
+        title = p.get("title") or phase
+        status = p.get("status") or "active"
+        ephase({"phase": self.phases.index(phase) + 1 if phase in self.phases else 0,
+                "title": title, "status": status})
+        if status == "active":
+            eprog(title, self._band(0.02))
+        estep(_step_for(phase), "active" if status == "active" else
+              "done" if status == "done" else "error")
+
+    def on_iteration(self, p):
+        # The bar has to move while a long phase runs, but the engine has no
+        # step count to divide by. A settling curve is honest about that: it
+        # approaches the top of the band without ever claiming to reach it.
+        step = int(p.get("iteration") or 1)
+        eprog(_phase_label(self.phase), self._band(1 - 0.94 ** step))
+
+    def on_tool_start(self, p):
+        tool = p.get("tool", "")
+        if tool in QUIET_TOOLS:
+            return
+        word = TOOL_WORDS.get(tool, tool)
+        summary = str(p.get("summary") or "")[:90]
+        elog("INFO", f"   {word} {summary}".rstrip())
+
+    def on_tool_end(self, p):
+        if p.get("ok") or p.get("tool") in QUIET_TOOLS:
+            return
+        detail = str(p.get("detail") or "").strip().splitlines()
+        elog("WARN", f"   ⚠ {p.get('tool')}: {detail[0][:220] if detail else 'failed'}")
+
+    def on_file(self, p):
+        name = p.get("name", "")
+        content = p.get("content") or ""
+        note = p.get("note", "written")
+        if note == "deleted":
+            efile(name, 0, "")
+            elog("INFO", f"   removed {name}")
+            return
+        # The studio's code pane follows a file as it lands. The engine writes
+        # a file at once rather than a token at a time, so the stream is opened
+        # and closed around the finished text: the pane still jumps to the file
+        # being worked on, which is the part anyone actually watches.
+        estream_start(name)
+        estream_end(name, content)
+        efile(name, len(content), content)
+        elog("INFO", f"   {note} {name} ({len(content.splitlines())} lines)")
+
+    def on_test(self, p):
+        state = p.get("state")
+        if state == "scope":
+            elog("INFO", f"   scope: {p.get('requirements')} requirement(s)"
+                         + ("" if p.get("sealed") else ", still open"))
+        elif state == "run":
+            if not self.tests_started:
+                emit({"type": "test_start"})
+                self.tests_started = True
+            emit({"type": "test_run", "attempt": 1})
+            elog("INFO", f"   running {p.get('kind')}/{p.get('suite')}")
+        elif state == "result":
+            emit({"type": "test_result", "status": p.get("status"),
+                  "msg": f"{p.get('kind')}/{p.get('suite')}",
+                  "detail": str(p.get("detail") or "")[:400]})
+        elif state == "visual":
+            elog("INFO", f"   captured {p.get('view')} at {p.get('width')}px")
+
+    def on_e2e(self, p):
+        emit({"type": "e2e_event", **{k: v for k, v in p.items() if k != "type"}})
+
+    def on_context(self, p):
+        ememory({"tokens": p.get("tokens"), "limit": p.get("limit"),
+                 "percent": p.get("percent")})
+
+    def on_plan(self, p):
+        plan = str(p.get("plan") or "")
+        if plan:
+            echat(plan[:4000])
+
+    def on_error(self, p):
+        elog("ERROR", f"   {p.get('message', 'the run failed')}")
+
+
+def _phase_label(phase: str) -> str:
+    return {"plan": "Planning…", "design": "Choosing the design…",
+            "build": "Building…", "unit": "Unit tests…",
+            "e2e": "Browser journeys…", "security": "Security review…"}.get(phase, "Working…")
+
+
+def _step_for(phase: str) -> str:
+    # The studio's step rail has four lanes; the engine has more phases.
+    return {"plan": "plan", "design": "plan", "build": "build",
+            "unit": "test", "e2e": "test", "security": "verify"}.get(phase, "build")

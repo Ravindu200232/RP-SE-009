@@ -7,6 +7,7 @@ import { useStore } from '@/lib/store'
 import { Badge, Button, Empty } from '../ui'
 import { cn } from '@/lib/utils'
 import Overview from './Overview'
+import Evidence from './Evidence'
 import UnitTests from './UnitTests'
 import Timeline from './Timeline'
 import EndToEnd from './EndToEnd'
@@ -22,6 +23,7 @@ import { unitTestStatus } from '@/lib/test-counts'
 
 const VIEWS = [
   { id: 'overview', label: 'Overview', C: Overview },
+  { id: 'evidence', label: 'Evidence', C: Evidence },
   { id: 'unit', label: 'Unit Testing', C: UnitTests },
   { id: 'timeline', label: 'Test Timeline', C: Timeline },
   { id: 'e2e', label: 'Integration', C: EndToEnd },

@@ -100,6 +100,13 @@ export const useStore = create((set, get) => ({
     logs: [...s.logs.slice(-800), { level, text, at: Date.now() }],
   })),
 
+  // What the agent and the user actually said to each other, as opposed to the
+  // tool activity the chat panel derives from `logs`.
+  chat: [],
+  pushChat: (entry) => set(s => ({
+    chat: [...s.chat.slice(-200), { at: Date.now(), ...entry }],
+  })),
+
   steps: {},
   setStep: (id, status) => set(s => ({ steps: { ...s.steps, [id]: status } })),
   progress: emptyProgress(),
@@ -172,7 +179,7 @@ export const useStore = create((set, get) => ({
 
       // Clear project state before opening another project.
   reset: (project) => set({
-    project, logs: [], steps: {}, phases: [], files: {},
+    project, logs: [], chat: [], steps: {}, phases: [], files: {},
     activeFile: null, liveFile: null, liveBuf: '', follow: true,
     progress: emptyProgress(),
     tests: emptyTests(),

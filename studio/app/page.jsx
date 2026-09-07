@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Eye, Code2, FileText, FlaskConical, Plus, Rocket } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { answerQuestion, connect, send } from '@/lib/ws'
-import { consoleReport, forgetConsole } from '@/lib/console-log'
+import { forgetConsole } from '@/lib/console-log'
 import { api } from '@/lib/api'
 import { catalogue } from '@/lib/models'
 import { readFolder } from '@/lib/importer'
@@ -13,13 +13,10 @@ import Home from '@/components/Home'
 import PreviewPane from '@/components/PreviewPane'
 import CodePane from '@/components/CodePane'
 import SettingsModal from '@/components/SettingsModal'
-import TunePrompt from '@/components/TunePrompt'
 import TestingResult from '@/components/testing/TestingResult'
 import SrsResult from '@/components/srs/SrsResult'
 import DeployPanel from '@/components/deploy/DeployPanel'
-import EditAttach from '@/components/EditAttach'
-import { useEditAttachments } from '@/lib/use-edit-attachments'
-import { Badge, Button, Modal } from '@/components/ui'
+import { Badge, Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { projectUnitTestStatus } from '@/lib/test-counts'
 
@@ -47,7 +44,7 @@ async function retry(fn, times, waitMs) {
 }
 
 /** Show a paused picker question and its answers. */
-function ScopeQuestion({ onType }) {
+function ScopeQuestion() {
   const question = useStore(s => s.question)
   if (!question) return null
 
@@ -68,7 +65,7 @@ function ScopeQuestion({ onType }) {
       <div className="mt-2 flex flex-wrap gap-1.5">
         {(question.options || []).map((option, i) => (
           <button key={option} title={option}
-                  onClick={() => { if (!answerQuestion(option)) onType(option) }}
+                  onClick={() => answerQuestion(option)}
                   className="border border-line2 bg-panel px-2.5 py-1
                              text-left text-[11px] font-semibold text-ink
                              transition-colors hover:border-accent hover:text-accent">
@@ -91,8 +88,6 @@ export default function Studio() {
   const setView = useStore(s => s.setView)
   const project = useStore(s => s.project)
   const busy = useStore(s => s.busy)
-  const askOpen = useStore(s => s.askOpen)
-  const setAskOpen = useStore(s => s.setAskOpen)
   const testsRunning = useStore(s => s.tests.running)
   const qa = useStore(s => s.qaReport)
   const setQa = useStore(s => s.setQaReport)
@@ -101,11 +96,7 @@ export default function Studio() {
   const [projects, setProjects] = useState([])
   const [cat, setCat] = useState(() => catalogue(null))
   const [screen, setScreen] = useState('home')
-  const [ask, setAsk] = useState('')
-  const [reading, setReading] = useState(false)
-  const attach = useEditAttachments()
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [pendingAsk, setPendingAsk] = useState(null)
 
   const refreshProjects = () => api.projects()
     .then(r => setProjects(Array.isArray(r) ? r : (r.projects || [])))
@@ -276,52 +267,6 @@ export default function Studio() {
     }
   }
 
-  function fireAsk(payload, text, shown, hadConsole) {
-    const st = useStore.getState()
-    send({ ...payload, prompt: text })
-    if (hadConsole) st.addLog('INFO', 'Sent with what the browser had already logged')
-    forgetConsole()
-    st.addLog('INFO', 'Update: ' + shown)
-    st.setBusy(true)
-    attach.reset()
-    setAsk('')
-    setPendingAsk(null)
-  }
-
-  async function sendAsk() {
-    const v = ask.trim()
-    if (!v || !project) return
-    const st = useStore.getState()
-
-    let full = v
-    if (attach.items.length) {
-      setReading(true)
-      try {
-        full = v + await attach.collect(project)
-      } catch (e) {
-        st.addLog('WARN', `${e.message}`)
-      }
-      setReading(false)
-    }
-
-    const payload = {
-      type: 'agent_update', project, route: st.previewRoute || '',
-      model: st.models.builder || st.models.agent,
-      think: st.think,
-      qa_model: st.models.qa || '', console: consoleReport(),
-    }
-
-    let tuned = full
-    try {
-      const r = await api.tune({ prompt: full, project,
-                                 route: payload.route, model: payload.model })
-      tuned = (r?.prompt || '').trim() || full
-    } catch (e) {
-      st.addLog('WARN', `Could not reword the request (${e.message}) — sending it as typed`)
-    }
-
-    setPendingAsk({ payload, shown: v, typed: full, tuned })
-  }
   return (
     <div className="flex h-full bg-[radial-gradient(circle_at_20%_0%,#f8faff_0%,#edf1f7_42%,#e7ebf3_100%)] p-2.5 dark:bg-[radial-gradient(circle_at_20%_0%,#1a2030_0%,#111722_42%,#0c1119_100%)]">
       <Sidebar models={cat} projects={projects} onOpen={openProject}
@@ -336,56 +281,6 @@ export default function Studio() {
         <SettingsModal onClose={() => setSettingsOpen(false)}
                        onSaved={() => api.models().then(r => setCat(catalogue(r)))
                                         .catch(() => { })} />
-      )}
-
-      {askOpen && (
-        <Modal onClose={() => setAskOpen(false)} className="max-w-[640px]">
-          <h2 className="text-[15px] font-semibold text-ink">Ask about this app</h2>
-          <p className="mt-1 text-[11.5px] text-muted">
-            Describe a change, report a bug, or ask a question. What the
-            browser has already logged is sent with it.
-          </p>
-
-          <textarea value={ask} autoFocus rows={5}
-                    placeholder={project
-                      ? 'e.g. the booking button on /rooms does nothing'
-                      : 'Open a project first'}
-                    disabled={!project || busy || reading}
-                    onChange={e => setAsk(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                        setAskOpen(false)
-                        sendAsk()
-                      }
-                    }}
-                    className="mt-4 w-full resize-y rounded-xl border border-line bg-white/65 px-3 py-2.5 text-[12.5px] leading-relaxed shadow-sm outline-none focus:border-accent disabled:opacity-45 dark:bg-white/5" />
-
-          {project && <EditAttach attach={attach} disabled={busy || reading} className="mt-2" />}
-
-          <footer className="mt-5 flex items-center gap-2 border-t border-line/70 pt-4">
-            <span className="flex-1 text-[10.5px] text-muted2">⌘↵ / Ctrl↵ to send</span>
-            <Button variant="outline" onClick={() => setAskOpen(false)}>Cancel</Button>
-            <Button variant="solid" disabled={!project || busy || reading || !ask.trim()}
-                    onClick={() => { setAskOpen(false); sendAsk() }}>
-              Send
-            </Button>
-          </footer>
-        </Modal>
-      )}
-
-      {pendingAsk && (
-        <TunePrompt
-          typed={pendingAsk.shown}
-          tuned={pendingAsk.tuned}
-          onSend={(text) => fireAsk(pendingAsk.payload, text, pendingAsk.shown, Boolean(pendingAsk.payload.console))}
-          onSendTyped={() => fireAsk(pendingAsk.payload, pendingAsk.typed, pendingAsk.shown, Boolean(pendingAsk.payload.console))}
-          onCancel={() => setPendingAsk(null)}
-          onRetune={async (text) => {
-            const r = await api.tune({ prompt: text, project,
-                                       route: pendingAsk.payload.route,
-                                       model: pendingAsk.payload.model })
-            return (r?.prompt || '').trim()
-          }} />
       )}
 
       <div className="ml-2.5 flex min-w-0 flex-1 flex-col overflow-hidden rounded-[30px] bg-panel/92 shadow-[0_28px_75px_rgba(30,41,59,.13)] ring-1 ring-white/75 backdrop-blur-2xl dark:shadow-[0_28px_75px_rgba(0,0,0,.42)] dark:ring-white/[.055]">
@@ -438,7 +333,7 @@ export default function Studio() {
         ) : (
           <div className="flex min-h-0 flex-1 bg-bg/40">
             <div className="relative flex min-w-0 flex-1 flex-col">
-              <ScopeQuestion onType={setAsk} />
+              <ScopeQuestion />
 
               <PreviewPane key={`preview-${project}`} hidden={view !== 'preview'} />
               <CodePane hidden={view !== 'code'} />

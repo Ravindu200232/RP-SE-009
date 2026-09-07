@@ -30,15 +30,26 @@ The builder is requirement-driven rather than CRUD-specific. Apps may be authent
 ## Main capabilities
 
 - SRS interview, structured requirements and rich native diagrams.
-- Plan-to-code preflight before E2E testing.
-- Next.js application generation with MongoDB support.
-- Vitest unit-test authoring and retained whole-suite reporting.
-- Playwright E2E journeys with source/DOM grounding, console/page-error evidence and repair.
-- Stage-level E2E scoring, for example `10/12 = 83%`, plus an aggregate score across final accepted journeys.
-- Runtime, API, security and deployment verification.
+- An agentic builder: a ReAct loop with native tool calling, which plans,
+  chooses a design system, writes the application and proves it works. There is
+  no approval gate and no hard-coded build pipeline; the destructive-command
+  denylist still holds in every case.
+- Two application stacks: Next.js + MongoDB, and MERN behind one API gateway.
+- Verified starting points, so a build begins at the part that differs rather
+  than at twenty boilerplate files written from memory.
+- Vitest unit-test authoring, run for real and measured from the runner's own
+  coverage report.
+- End-to-end journeys in an isolated direct-CDP browser, scored per stage —
+  for example `10/12 = 83%` — with unreached stages recorded as unreached.
+- A verification ledger that refuses to let a run report completion on a claim
+  rather than on evidence, surfaced in the Studio's Testing → Evidence view.
+- Runtime, security and deployment verification.
+- Point-and-edit: click an element or draw on the page and the agent edits the
+  source that renders it.
+- A chat stream beside the preview: the build as a conversation, and the place
+  to ask for the next change.
 - Vercel and AWS deployment onboarding.
 - Electron shell that owns the Python backend and Studio processes.
-- Live Builder and SRS/Planner activity feeds with paced, latest-five updates.
 
 ## Requirements
 
@@ -84,22 +95,23 @@ The Studio is served through Electron at `http://localhost:3000/__agentforge`; t
 agentforge/
 ├── server.py                    stable backend entrypoint
 ├── server_runtime.py            ordered server-runtime assembler
-├── agents/
-│   ├── planner/                 requirements → design/routes/architecture/E2E plan
-│   ├── build/                   browser/runtime validation
-│   ├── analysis/                diagnosis and evidence-backed repairs
-│   ├── features/                feature/edit/image selection helpers
-│   ├── data/                    MongoDB lifecycle/data helpers
-│   ├── core/                    shared model, command and workspace tools
-│   └── server/                  server-side builder/edit orchestration
-├── qa_agent/
-│   ├── unit/                    Vitest authoring, harness and execution
-│   ├── e2e/                     journeys, grounding, browser and repair evidence
-│   ├── verification/            API, security and PDF reporting
-│   ├── core/                    QA session state
-│   └── server/                  server-side QA stages
+├── builder-agent/builder_agent/
+│   ├── loop.py                  the ReAct engine
+│   ├── agent.py                 one build: plan -> design -> build -> verify
+│   ├── evidence.py              the verification ledger
+│   ├── browser.py, journeys.py  isolated direct-CDP browser and E2E journeys
+│   ├── tools/                   files, search, terminal, verification, browser
+│   ├── assets/                  bundled skills and verified stack templates
+│   └── cli.py                   builder-agent run | plan | review | chat
+├── qa-agent/qa_agent/
+│   ├── harness.py               makes the runner work before authoring
+│   ├── unit.py, e2e.py          the two suites, at the deep profile
+│   ├── security.py              six static checks
+│   └── report.py                the Studio record and the PDF
 ├── server_modules/
 │   ├── core/                    process/runtime lifecycle
+│   ├── services/                MongoDB, cancellation, images, pickers
+│   ├── builder/                 studio bridge: pipeline, edits, media, QA
 │   ├── srs/                     SRS bridge/API
 │   ├── deploy/                  deployment bridge/jobs
 │   └── ui/                      backend HTTP routes
@@ -112,15 +124,40 @@ agentforge/
 
 There are intentionally no compatibility-only one-line wrappers for the old flat agent paths. Internal imports point directly to the implementation package that owns the behavior.
 
-## QA model
+## Verification model
+
+Building runs at one quality profile. The deep profile is spent where it pays:
+the unit and end-to-end suites, which are the evidence anyone actually reads.
+
+### The ledger
+
+A run declares what it must prove before it writes tests, and the scope is
+sealed so it cannot be narrowed once a flow turns out to be hard. Every suite
+then names the requirement ids it covers. A final answer is refused while a
+required layer has no current passing evidence: "I have finished" is a claim,
+and only the ledger closes the gate. Anything genuinely unprovable is recorded
+as a limitation, which is never a pass.
+
+A pass taken before the last edit is marked *outdated* rather than discarded:
+voiding everything on every keystroke is how a repair loop stops converging.
+The finished article is re-verified once, at the revision it is finished at.
 
 ### Unit tests
 
-Targeted feature updates merge their latest Vitest result into the existing suite snapshot instead of replacing unrelated results. The Overview therefore represents the current whole suite rather than only the last touched feature.
+Counts come from Vitest's own assertion rows, and coverage from the runner's
+`coverage-summary.json`. A suite that exits 0 below the coverage floor is a
+failure. Repair stops when the same failures repeat with nothing changed in
+between.
 
 ### E2E tests
 
-Before a browser journey begins, QA compares the approved plan/requirements with the generated source and repairs evidence-backed mismatches. Browser execution then records every declared stage as `pass`, `fail` or `not_reached`.
+Journeys run in the engine's isolated direct-CDP browser: no test framework is
+generated into the project in order to verify it. Every journey ends with a
+diagnostics check, so a page that renders while throwing in the console or
+answering 500 fails. Failures are classified by owner - a wrong locator, a
+missing control, or broken production behaviour - which is what makes repair
+converge. Browser execution records every declared stage as `pass`, `fail` or
+`not_reached`.
 
 For a 12-stage journey where stage 11 fails:
 
@@ -150,7 +187,8 @@ For public applications the planner must not invent authentication just to satis
 Fast repository checks used before packaging include:
 
 ```bash
-python -m compileall -q agents qa_agent server_modules server.py server_runtime.py srs-agent/srs_agent deployment-agent/deploy_agent
+python -m compileall -q builder-agent/builder_agent qa-agent/qa_agent server_modules server.py server_runtime.py srs-agent/srs_agent deployment-agent/deploy_agent
+python test/run_suite.py
 python studio/scripts/verify_ui_contract.py
 node studio/scripts/verify_activity.mjs
 node studio/scripts/verify_progress.mjs
@@ -170,6 +208,6 @@ npm --prefix studio run build
 
 ## Repository hygiene
 
-Generated projects, Node modules, Python caches, logs and packaging outputs are ignored. Note that `/build/` is root-anchored in `.gitignore`: `agents/build/` is application source and must be committed.
+Generated projects, Node modules, Python caches, logs and packaging outputs are ignored.
 
 Keep implementation files focused and below 1000 lines where practical. New code belongs in the narrowest pipeline package and should use direct imports rather than compatibility façade modules.

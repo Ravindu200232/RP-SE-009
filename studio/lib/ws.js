@@ -194,6 +194,9 @@ function handle(m) {
       s.testDone()
       resetStreamQueue()
       useStore.setState({ liveFile: null, liveBuf: '', e2eLive: null })
+      s.pushChat({ role: 'assistant', tone: 'ok', title: 'Finished',
+                   text: 'The app is running in the preview. Ask for a change '
+                       + 'here, or open Testing for the evidence.' })
   // Invalidate the cached QA report after project changes.
       s.setQaReport(null)
       if (m.project) useStore.setState({ project: m.project })
@@ -207,6 +210,9 @@ function handle(m) {
       resetStreamQueue()
       useStore.setState({ liveFile: null, liveBuf: '', e2eLive: null, project: '' })
       s.setQaReport(null)
+      s.pushChat({ role: 'assistant', tone: 'bad', title: 'Stopped',
+                   text: m.project ? `${m.project} and its specification were removed.`
+                                   : 'The run was cancelled.' })
       s.addLog('WARN', m.project
         ? `cancelled — ${m.project} and its specification were removed`
         : 'cancelled')
@@ -218,11 +224,16 @@ function handle(m) {
       s.testDone()
       resetStreamQueue()
       useStore.setState({ liveFile: null, liveBuf: '', e2eLive: null })
+      s.pushChat({ role: 'assistant', tone: 'bad', title: 'That did not work',
+                   text: m.text || 'The run failed.' })
       s.addLog('ERROR', m.text || 'failed')
       break
 
     // Question that paused the run.
     case 'ask':
+      s.pushChat({ role: 'assistant', title: 'One thing first',
+                   text: `${m.file || 'That element'} appears on `
+                       + `${(m.routes || []).length} routes. Which did you mean?` })
       useStore.setState({ question: {
         kind: m.kind || 'scope', file: m.file || '', route: m.route || '',
         routes: m.routes || [], options: m.options || [],
@@ -231,7 +242,9 @@ function handle(m) {
 
     case 'detected':     s.addLog('INFO', `type: ${m.site_type} · ${m.strategy}`); break
     case 'chat_intent':  s.addLog('INFO', `${m.intent || 'ask'} — ${m.summary || ''}`); break
-    case 'agent_msg':    s.addLog('INFO', m.text); break
+    case 'agent_msg':
+      s.pushChat({ role: 'assistant', text: m.text })
+      break
     case 'memory':       break
     case 'mongo':        break
     case 'command':      break

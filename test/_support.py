@@ -7,7 +7,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-for source_root in (ROOT, ROOT / "srs-agent", ROOT / "deployment-agent"):
+for source_root in (ROOT, ROOT / "srs-agent", ROOT / "deployment-agent",
+                    ROOT / "builder-agent", ROOT / "qa-agent"):
     value = str(source_root)
     if value not in sys.path:
         sys.path.insert(0, value)
@@ -130,7 +131,7 @@ def fake_ollama(daemon, api_key="", host="http://localhost:11434"):
     so a context-window assertion measures the code under test rather than
     whatever the developer happens to have configured.
     """
-    from agents.core import ollama_client as oc
+    from builder_agent import llm as oc
 
     previous = oc._CLIENT
     missing = ROOT / "test" / "results" / "__no_such_settings__.json"

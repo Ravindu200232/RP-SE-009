@@ -9,10 +9,11 @@ def text(path):
 
 
 required = {
-    "feature approval": ("app/page.jsx", "setPendingAsk({ payload"),
-    "prompt review": ("app/page.jsx", "<TunePrompt"),
-    "preview activity drawer": ("components/PreviewConsoleDrawer.jsx", "<Activity className="),
-    "preview terminal drawer": ("components/PreviewConsoleDrawer.jsx", "<SquareTerminal className="),
+    "chat composer": ("components/AgentChat.jsx", "type: 'agent_update'"),
+    "chat prompt review": ("components/AgentChat.jsx", "<TunePrompt"),
+    "chat turns from the run": ("lib/chat.js", "export function chatTurns"),
+    "chat answers a paused question": ("components/AgentChat.jsx", "answerQuestion(typed)"),
+    "agent turns in the store": ("lib/store.js", "pushChat:"),
     "human activity mapper": ("lib/activity.js", "Creating the build plan"),
     "unit-test activity": ("lib/activity.js", "Creating unit tests"),
     "E2E activity": ("lib/activity.js", "Starting end-to-end testing"),
@@ -24,7 +25,11 @@ required = {
     "builder light color scope": ("components/BuildOverlay.jsx", 'data-theme="light"'),
     "builder unframed activity": ("components/BuildOverlay.jsx", 'section className="flex min-h-[560px] flex-col p-6"'),
     "builder unframed flow": ("components/BuildOverlay.jsx", 'section className="relative flex min-h-[560px] items-center justify-center overflow-hidden p-5"'),
-    "preview drawer mounted": ("components/PreviewPane.jsx", "<PreviewConsoleDrawer"),
+    "chat mounted beside the preview": ("components/PreviewPane.jsx", "<AgentChat"),
+    "select tool": ("components/PreviewPane.jsx", "element_edit"),
+    "pencil tool": ("components/PreviewPane.jsx", "pencil_edit"),
+    "test evidence view": ("components/testing/TestingResult.jsx", "label: 'Evidence'"),
+    "verification ledger rendered": ("components/testing/Evidence.jsx", "qa?.report?.evidence"),
     "sequential E2E overlay": ("components/LiveE2EOverlay.jsx", "Live browser test"),
     "parallel QA view": ("components/testing/TestingResult.jsx", "E2ELiveLanes"),
     "SRS file intake": ("components/srs/Attachments.jsx", "PDF / image"),
@@ -37,6 +42,10 @@ required = {
 }
 
 forbidden = {
+    # The terminal pane was replaced by the chat stream: raw backend lines
+    # scrolled past faster than anyone could read them.
+    "terminal drawer": ("components/PreviewPane.jsx", "PreviewConsoleDrawer"),
+    "ask modal": ("app/page.jsx", "askOpen &&"),
     "team planner picker": ("components/Sidebar.jsx", 'label="Planner"'),
     "team design picker": ("components/Sidebar.jsx", 'label="Design"'),
     "team builder picker": ("components/Sidebar.jsx", 'label="Builder"'),
