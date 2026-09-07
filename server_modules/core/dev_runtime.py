@@ -208,7 +208,7 @@ def ensure_node_deps(proj_dir: Path) -> bool:
     first = not (proj_dir / "node_modules").is_dir()
     elog("INFO", "📦 Installing dependencies (npm install)…")
 
-    from qa_agent.unit.harness_common import NPM_LOCK
+    from server_modules.services import NPM_LOCK
     with NPM_LOCK:
         try:
             r = cancel.run(
@@ -232,6 +232,30 @@ def ensure_node_deps(proj_dir: Path) -> bool:
         except Exception as e:
             elog("ERROR", f"   ❌ npm install crashed: {e}")
             return False
+
+
+def _next_major(proj_dir: Path) -> int:
+    """The installed Next.js major version, or 0 when it cannot be read."""
+    try:
+        manifest = proj_dir / "node_modules" / "next" / "package.json"
+        if manifest.is_file():
+            version = json.loads(manifest.read_text(encoding="utf-8")).get("version", "")
+        else:
+            version = (json.loads((proj_dir / "package.json").read_text(encoding="utf-8"))
+                       .get("dependencies", {}).get("next", ""))
+        found = re.search(r"(\d+)", version or "")
+        return int(found.group(1)) if found else 0
+    except Exception:                                                # noqa: BLE001
+        return 0
+
+
+def _bundler_flag(proj_dir: Path) -> list:
+    """Keep Next 16 on Webpack, where its diagnostics still name real files.
+
+    Turbopack reports the same failures in a different vocabulary, and the
+    repair loop reads those messages to find the file at fault.
+    """
+    return ["--webpack"] if _next_major(proj_dir) >= 16 else []
 
 
 def detect_stack(proj_dir: Path) -> str:
@@ -350,7 +374,7 @@ def start_next(proj_dir: Path, port: int = DEV_PORT):
     active_vite["stack"] = "next"
 
     next_bin = proj_dir / "node_modules" / "next" / "dist" / "bin" / "next"
-    flags = bundler_flag(proj_dir)
+    flags = _bundler_flag(proj_dir)
     if next_bin.exists():
         argv = [NODE_BIN, str(next_bin), "dev", *flags,
                 "--port", str(port), "--hostname", "127.0.0.1"]

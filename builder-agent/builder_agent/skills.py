@@ -27,6 +27,8 @@ MANIFEST = SKILL_ROOT / "skill-pack.json"
 SKILL_NAME = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$", re.I)
 VERIFICATION_PHASES = frozenset({"unit", "e2e", "runtime"})
 MAX_SKILL_BYTES = 96 * 1024
+# Suffixes that keep an example file inert inside a skill or template.
+GUARD_SUFFIXES = (".txt", ".tpl")
 
 
 def _normalise(value) -> str:
@@ -208,6 +210,13 @@ def catalog(workspace: Path | str) -> list[dict]:
     return list(found.values())
 
 
+def _unguarded(path: str) -> str:
+    for guard in GUARD_SUFFIXES:
+        if path.endswith(guard):
+            return path[: -len(guard)]
+    return path
+
+
 def read_skill(workspace: Path | str, name: str, resource: str = "") -> str:
     """Read a skill body, or one of the files it references."""
     if not SKILL_NAME.match(str(name or "")):
@@ -223,12 +232,18 @@ def read_skill(workspace: Path | str, name: str, resource: str = "") -> str:
             resolved.relative_to(base.resolve())
         except (OSError, ValueError):
             raise ValueError(f"{resource!r} is outside the {name} skill.") from None
-        if resolved.is_file():
-            return resolved.read_text(encoding="utf-8", errors="replace")[:MAX_SKILL_BYTES]
+        # Example files carry a guard suffix so npm does not treat a sketch as
+        # a workspace and the project's own runner does not collect its tests.
+        # The model asks for the logical name, which is the right thing to ask
+        # for, so resolve the suffix here rather than spending a turn on it.
+        for candidate in (resolved, *(resolved.with_name(resolved.name + guard)
+                                      for guard in GUARD_SUFFIXES)):
+            if candidate.is_file():
+                return candidate.read_text(encoding="utf-8", errors="replace")[:MAX_SKILL_BYTES]
         # The skill is real but that file is not. Naming what it does have
         # saves the turn that would otherwise be spent guessing again.
-        have = sorted(item.relative_to(base).as_posix() for item in base.rglob("*")
-                      if item.is_file())
+        have = sorted({_unguarded(item.relative_to(base).as_posix())
+                       for item in base.rglob("*") if item.is_file()})
         raise ValueError(f"The {name} skill has no file {resource!r}. It contains: "
                          + ", ".join(have[:20]))
     raise ValueError(f"No skill named {name!r}. Call listSkills for the catalog.")

@@ -16,6 +16,7 @@ import SettingsModal from '@/components/SettingsModal'
 import TestingResult from '@/components/testing/TestingResult'
 import SrsResult from '@/components/srs/SrsResult'
 import DeployPanel from '@/components/deploy/DeployPanel'
+import AgentChat from '@/components/AgentChat'
 import { Badge, Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { projectUnitTestStatus } from '@/lib/test-counts'
@@ -332,6 +333,11 @@ export default function Studio() {
           <Home onStarted={() => setScreen('workspace')} />
         ) : (
           <div className="flex min-h-0 flex-1 bg-bg/40">
+            {/* The conversation sits beside the work rather than on top of
+                it. As a drawer it covered the thing it was describing, and
+                collapsing it to get the preview back hid the agent. */}
+            <AgentChat />
+
             <div className="relative flex min-w-0 flex-1 flex-col">
               <ScopeQuestion />
 
@@ -343,7 +349,7 @@ export default function Studio() {
                 <DeployPanel key={`deploy-${project}`}
                              onSettings={() => setSettingsOpen(true)} />
               )}
-</div>
+            </div>
           </div>
         )}
       </div>

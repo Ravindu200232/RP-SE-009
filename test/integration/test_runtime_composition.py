@@ -78,6 +78,27 @@ class SharedRuntimeCompositionTests(unittest.TestCase):
         for part in runtime_parts():
             self.assertFalse(part.startswith(("builder-agent/", "qa-agent/")), part)
 
+    def test_no_runtime_part_imports_a_package_that_no_longer_exists(self):
+        """A stale import inside a function fails only when that path runs.
+
+        `from qa_agent.unit.harness_common import NPM_LOCK` sat inside
+        `ensure_node_deps`, so it survived every import check and every test,
+        and would have failed the first time a real build installed anything.
+        """
+        gone = ("agents.", "qa_agent.unit", "qa_agent.e2e", "qa_agent.core",
+                "qa_agent.server", "qa_agent.verification")
+        offenders = []
+        for part in runtime_parts():
+            source = (ROOT / part).read_text(encoding="utf-8")
+            for number, line in enumerate(source.splitlines(), 1):
+                text = line.strip()
+                if not text.startswith(("import ", "from ")):
+                    continue
+                if any(f"{prefix}" in text for prefix in gone):
+                    offenders.append(f"{part}:{number}: {text}")
+
+        self.assertEqual(offenders, [])
+
     def test_stable_server_entrypoint_delegates_to_shared_runtime(self):
         tree = ast.parse((ROOT / "server.py").read_text(encoding="utf-8"))
         imports = {

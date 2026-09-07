@@ -18,7 +18,6 @@ import EditAttach from './EditAttach'
 import BuildOverlay from './BuildOverlay'
 import TunePrompt from './TunePrompt'
 import LiveE2EOverlay from './LiveE2EOverlay'
-import AgentChat from './AgentChat'
 import { cn } from '@/lib/utils'
 
 const ACCEPT_PICTURE = '.png,.jpg,.jpeg,.webp,.gif,.bmp,image/*'
@@ -504,7 +503,6 @@ export default function PreviewPane({ hidden }) {
           </div>
         </div>
 
-        <AgentChat />
       </div>
     </div>
   )

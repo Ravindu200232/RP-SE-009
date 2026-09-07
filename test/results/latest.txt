@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-07T16:56:14+00:00
+Run at (UTC): 2026-09-07T17:21:44+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 168
-Integration tests: 23
-Total tests run: 191
+Unit tests: 170
+Integration tests: 24
+Total tests run: 194
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 6.210s
+Duration: 6.202s
 
 Detailed results
 ----------------
@@ -107,10 +107,13 @@ test_an_unverified_hunch_is_never_recorded_as_knowledge (test.unit.builder.test_
 test_lessons_become_an_ordinary_skill_in_the_next_project (test.unit.builder.test_project_setup.KnowledgeTests.test_lessons_become_an_ordinary_skill_in_the_next_project) ... ok
 test_routes_are_read_from_where_the_files_sit (test.unit.builder.test_project_setup.ProjectLayoutTests.test_routes_are_read_from_where_the_files_sit) ... ok
 test_the_signature_changes_only_when_the_project_does (test.unit.builder.test_project_setup.ProjectLayoutTests.test_the_signature_changes_only_when_the_project_does) ... ok
+test_a_missing_resource_lists_what_the_skill_does_have (test.unit.builder.test_project_setup.SkillPackTests.test_a_missing_resource_lists_what_the_skill_does_have) ... ok
 test_a_project_that_overrides_a_skill_keeps_its_own_version (test.unit.builder.test_project_setup.SkillPackTests.test_a_project_that_overrides_a_skill_keeps_its_own_version) ... ok
 test_a_request_that_rules_a_term_out_does_not_get_its_skill (test.unit.builder.test_project_setup.SkillPackTests.test_a_request_that_rules_a_term_out_does_not_get_its_skill) ... ok
 test_a_resource_path_cannot_escape_the_skill_it_belongs_to (test.unit.builder.test_project_setup.SkillPackTests.test_a_resource_path_cannot_escape_the_skill_it_belongs_to) ... ok
 test_a_skill_belonging_to_another_stack_is_never_selectable (test.unit.builder.test_project_setup.SkillPackTests.test_a_skill_belonging_to_another_stack_is_never_selectable) ... ok
+test_an_example_file_is_read_by_the_name_it_would_really_have (test.unit.builder.test_project_setup.SkillPackTests.test_an_example_file_is_read_by_the_name_it_would_really_have)
+Sketch files carry a guard suffix; the model asks for the real name. ... ok
 test_every_dependency_a_skill_declares_actually_exists (test.unit.builder.test_project_setup.SkillPackTests.test_every_dependency_a_skill_declares_actually_exists) ... ok
 test_every_manifest_entry_ships_a_skill_directory (test.unit.builder.test_project_setup.SkillPackTests.test_every_manifest_entry_ships_a_skill_directory) ... ok
 test_installing_copies_the_selected_skills_into_the_project (test.unit.builder.test_project_setup.SkillPackTests.test_installing_copies_the_selected_skills_into_the_project) ... ok
@@ -204,12 +207,14 @@ test_electron_backend_ports_match_the_python_runtime (test.integration.test_runt
 test_electron_package_points_to_the_real_desktop_entrypoint (test.integration.test_runtime_composition.DesktopProcessContractTests.test_electron_package_points_to_the_real_desktop_entrypoint) ... ok
 test_every_shared_runtime_part_exists_in_the_repository (test.integration.test_runtime_composition.SharedRuntimeCompositionTests.test_every_shared_runtime_part_exists_in_the_repository) ... ok
 test_full_app_runtime_mounts_srs_qa_deployment_builder_and_ui (test.integration.test_runtime_composition.SharedRuntimeCompositionTests.test_full_app_runtime_mounts_srs_qa_deployment_builder_and_ui) ... ok
+test_no_runtime_part_imports_a_package_that_no_longer_exists (test.integration.test_runtime_composition.SharedRuntimeCompositionTests.test_no_runtime_part_imports_a_package_that_no_longer_exists)
+A stale import inside a function fails only when that path runs. ... ok
 test_runtime_parts_are_unique_and_bootstrap_before_consumers (test.integration.test_runtime_composition.SharedRuntimeCompositionTests.test_runtime_parts_are_unique_and_bootstrap_before_consumers) ... ok
 test_stable_server_entrypoint_delegates_to_shared_runtime (test.integration.test_runtime_composition.SharedRuntimeCompositionTests.test_stable_server_entrypoint_delegates_to_shared_runtime) ... ok
 test_the_agents_are_importable_packages_beside_the_server (test.integration.test_runtime_composition.SharedRuntimeCompositionTests.test_the_agents_are_importable_packages_beside_the_server)
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 191 tests in 6.210s
+Ran 194 tests in 6.202s
 
 OK

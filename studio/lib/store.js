@@ -100,6 +100,11 @@ export const useStore = create((set, get) => ({
     logs: [...s.logs.slice(-800), { level, text, at: Date.now() }],
   })),
 
+  // What the console shows about the run itself: the model, how much of its
+  // context window is in use, and how much work it has done.
+  runStats: null,
+  setRunStats: (runStats) => set({ runStats }),
+
   // What the agent and the user actually said to each other, as opposed to the
   // tool activity the chat panel derives from `logs`.
   chat: [],
@@ -179,7 +184,7 @@ export const useStore = create((set, get) => ({
 
       // Clear project state before opening another project.
   reset: (project) => set({
-    project, logs: [], chat: [], steps: {}, phases: [], files: {},
+    project, logs: [], chat: [], runStats: null, steps: {}, phases: [], files: {},
     activeFile: null, liveFile: null, liveBuf: '', follow: true,
     progress: emptyProgress(),
     tests: emptyTests(),

@@ -243,9 +243,13 @@ function handle(m) {
     case 'detected':     s.addLog('INFO', `type: ${m.site_type} · ${m.strategy}`); break
     case 'chat_intent':  s.addLog('INFO', `${m.intent || 'ask'} — ${m.summary || ''}`); break
     case 'agent_msg':
-      s.pushChat({ role: 'assistant', text: m.text })
+      // The plan and the design contract arrive this way. They are the two
+      // things the build is about to act on, so they get their own shape
+      // rather than being flattened into one more grey paragraph.
+      s.pushChat({ role: 'assistant', text: m.text, title: m.title,
+                   kind: m.kind, design: m.design })
       break
-    case 'memory':       break
+    case 'memory':       s.setRunStats(m); break
     case 'mongo':        break
     case 'command':      break
     case 'demo_accounts': break

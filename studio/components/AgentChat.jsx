@@ -1,19 +1,23 @@
 'use client'
 
 /**
- * The conversation with the agent, docked under the preview.
+ * The conversation with the agent, beside the work.
  *
- * This replaced a terminal pane. A terminal is the right tool when you are
- * debugging the backend and the wrong one when you are watching an app get
- * built: the interesting line scrolls past between two hundred npm warnings.
- * A chat keeps the same information in the order a person reads it, and gives
- * them somewhere to answer from.
+ * This replaced a terminal drawer, twice over. A terminal is the right tool
+ * when you are debugging the backend and the wrong one when you are watching
+ * an app get built: the interesting line scrolls past between two hundred npm
+ * warnings. And a drawer, however good its contents, covers the preview it is
+ * describing — so you close it, and then you cannot see the agent.
+ *
+ * A column solves both. The stream, the plan, the design and the run's context
+ * are always visible on the left; the preview, code, tests and deployment keep
+ * the whole right-hand side.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ChevronDown, CircleAlert, CircleCheck, FileCode2, FlaskConical, Loader2,
-  MessageSquare, Search, Send, Sparkles, Wrench,
+  MessageSquare, Palette, Search, Send, Sparkles, Terminal, Wrench,
 } from 'lucide-react'
 
 import { api } from '@/lib/api'
@@ -27,8 +31,10 @@ import EditAttach from './EditAttach'
 import TunePrompt from './TunePrompt'
 
 const ICONS = {
-  plan: Search, build: FileCode2, test: FlaskConical, fix: Wrench,
-  verify: CircleCheck, done: Sparkles, warn: CircleAlert, setup: Sparkles,
+  read: Search, plan: Search, write: FileCode2, build: FileCode2,
+  test: FlaskConical, run: Terminal, fix: Wrench, design: Palette,
+  verify: CircleCheck, done: CircleCheck, warn: CircleAlert,
+  setup: Sparkles, note: Sparkles,
 }
 
 const KIND_TONE = {
@@ -42,8 +48,10 @@ export default function AgentChat() {
   const busy = useStore(s => s.busy)
   const project = useStore(s => s.project)
   const question = useStore(s => s.question)
+  const stats = useStore(s => s.runStats)
   const pushChat = useStore(s => s.pushChat)
 
+  // Collapsing gives the whole width back to the work when someone wants it.
   const [open, setOpen] = useState(true)
   const [text, setText] = useState('')
   const [reading, setReading] = useState(false)
@@ -52,6 +60,10 @@ export default function AgentChat() {
   const end = useRef(null)
 
   const turns = useMemo(() => chatTurns(logs, chat), [logs, chat])
+
+  useEffect(() => {
+    if (busy) setOpen(true)     // a run is the thing you watch
+  }, [busy])
 
   useEffect(() => {
     if (open) end.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
@@ -112,8 +124,20 @@ export default function AgentChat() {
     setPending(null)
   }
 
+  if (!open) {
+    return (
+      <div className="flex w-[46px] shrink-0 flex-col items-center gap-3 border-r border-line/60 bg-panel/70 py-3">
+        <button onClick={() => setOpen(true)} title="Show the agent"
+                className="grid size-8 place-items-center rounded-xl text-accent transition-colors hover:bg-accent/10">
+          <MessageSquare className="size-4" />
+        </button>
+        {busy && <Loader2 className="size-3.5 animate-spin text-accent" />}
+      </div>
+    )
+  }
+
   return (
-    <div className="pointer-events-none absolute inset-x-4 bottom-3 z-[45]">
+    <aside className="flex w-[var(--chat-w,380px)] shrink-0 flex-col overflow-hidden border-r border-line/60 bg-panel/80">
       {pending && (
         <TunePrompt
           typed={pending.shown} tuned={pending.tuned}
@@ -128,55 +152,51 @@ export default function AgentChat() {
           }} />
       )}
 
-      <div className={cn(
-        'pointer-events-auto mx-auto flex w-full max-w-[980px] flex-col overflow-hidden',
-        'rounded-[22px] border border-white/70 bg-white/92 shadow-[0_22px_55px_rgba(15,23,42,.18)]',
-        'backdrop-blur-2xl transition-all duration-300 dark:border-white/10 dark:bg-[#111824]/94',
-        open ? 'h-[360px]' : 'h-[52px]')}>
-
-        <header className="flex h-[52px] shrink-0 items-center gap-2 px-3">
-          <MessageSquare className="size-3.5 text-accent" />
-          <span className="text-[12px] font-semibold text-ink">Agent</span>
+      <header className="shrink-0 border-b border-line/60 px-3.5 py-3">
+        <div className="flex items-center gap-2">
+          <span className="grid size-7 place-items-center rounded-xl bg-accent/10 text-accent">
+            <MessageSquare className="size-3.5" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[12.5px] font-semibold leading-none text-ink">Agent</p>
+            <p className="mt-1 truncate text-[10px] text-muted2">
+              {project || 'no project open'}
+            </p>
+          </div>
+          <span className="flex-1" />
           {busy && (
             <span className="flex items-center gap-1.5 rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-semibold text-accent">
               <Loader2 className="size-2.5 animate-spin" /> working
             </span>
           )}
-          {!open && turns.length > 0 && (
-            <span className="min-w-0 flex-1 truncate text-[11px] text-muted">
-              {lastLine(turns.at(-1))}
-            </span>
-          )}
-          <span className="flex-1" />
-          <button onClick={() => setOpen(v => !v)}
-                  title={open ? 'Collapse' : 'Expand'}
+          <button onClick={() => setOpen(false)} title="Hide the agent"
                   className="grid size-7 place-items-center rounded-lg text-muted transition-colors hover:bg-black/[.05] hover:text-ink dark:hover:bg-white/[.06]">
-            <ChevronDown className={cn('size-3.5 transition-transform', open || 'rotate-180')} />
+            <ChevronDown className="size-3.5 -rotate-90" />
           </button>
-        </header>
+        </div>
+      </header>
 
-        {open && (
-          <>
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-2">
-              <div className="mx-auto max-w-[760px] space-y-3">
-                {turns.map((turn, i) => <Turn key={`${turn.at}-${i}`} turn={turn} />)}
-                {!turns.length && (
-                  <p className="py-10 text-center text-[11.5px] text-muted">
-                    {project ? 'Ask for a change, or report something that is broken.'
-                             : 'Open a project to talk to the agent.'}
-                  </p>
-                )}
-                <div ref={end} />
-              </div>
-            </div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-3.5 py-3">
+        <div className="space-y-3">
+          {turns.map((turn, i) => <Turn key={`${turn.at}-${i}`} turn={turn} />)}
+          {!turns.length && (
+            <p className="py-10 text-center text-[11.5px] text-muted">
+              {project ? 'Ask for a change, or report something that is broken.'
+                       : 'Open a project to talk to the agent.'}
+            </p>
+          )}
+          <div ref={end} />
+        </div>
+      </div>
 
-            <footer className="shrink-0 border-t border-line/60 px-3 py-2.5">
-              <div className="mx-auto flex max-w-[760px] items-end gap-2">
+      <footer className="shrink-0 border-t border-line/60 px-3 py-2.5">
+              <div className="flex items-end gap-2">
                 <textarea
                   value={text} rows={1}
                   disabled={!project || busy || reading}
                   placeholder={question
                     ? 'Answer the question above…'
+                    : busy ? 'The agent is working — this opens again when it finishes'
                     : project ? 'Describe a change, or what is broken…'
                               : 'Open a project first'}
                   onChange={e => setText(e.target.value)}
@@ -192,23 +212,105 @@ export default function AgentChat() {
                 </button>
               </div>
               {project && (
-                <div className="mx-auto max-w-[760px]">
-                  <EditAttach attach={attach} disabled={busy || reading} className="mt-1.5" />
-                </div>
+                <EditAttach attach={attach} disabled={busy || reading} className="mt-1.5" />
               )}
-            </footer>
-          </>
+      </footer>
+
+      <StatusLine stats={stats} />
+    </aside>
+  )
+}
+
+/**
+ * What the run is costing, along the bottom.
+ *
+ * The context bar is the number that decides whether a long build survives:
+ * when it fills, older history is summarised and the model works from a
+ * checkpoint instead of the transcript. Watching it fill is how you know that
+ * is about to happen, so it is a bar rather than a percentage in a tooltip.
+ */
+function StatusLine({ stats }) {
+  if (!stats) return null
+  const percent = Math.max(0, Math.min(100, Number(stats.percent) || 0))
+  const spent = (Number(stats.sent) || 0) + (Number(stats.received) || 0)
+  return (
+    <div className="shrink-0 border-t border-line/60 bg-panel2/50 px-3.5 py-2">
+      <div className="flex items-center gap-2">
+        <span className="font-mono text-[9.5px] text-muted2">context</span>
+        <span className="h-[5px] min-w-0 flex-1 overflow-hidden rounded-full bg-line">
+          <span className={cn('block h-full rounded-full transition-[width] duration-500',
+            percent >= 90 ? 'bg-bad' : percent >= 70 ? 'bg-warn' : 'bg-accent')}
+                style={{ width: `${percent}%` }} />
+        </span>
+        <span className="font-mono text-[9.5px] tabular-nums text-muted">
+          {compact(stats.tokens)}/{compact(stats.limit)}
+        </span>
+      </div>
+      <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[9.5px] text-muted2">
+        {stats.model && <span title="model">{stats.model}</span>}
+        {stats.requests > 0 && <span title="requests to the model">{stats.requests} req</span>}
+        {spent > 0 && (
+          <span title="tokens sent / received across the run">
+            {compact(stats.sent)}↑ {compact(stats.received)}↓
+          </span>
         )}
+        {stats.iterations > 0 && <span title="loop steps">{stats.iterations} steps</span>}
+        {stats.tools > 0 && <span title="tool calls">{stats.tools} tools</span>}
+        {stats.files > 0 && <span title="files written">{stats.files} files</span>}
       </div>
     </div>
   )
 }
 
+function compact(n) {
+  const value = Number(n) || 0
+  return value >= 1000 ? `${Math.round(value / 100) / 10}k` : String(value)
+}
+
+/** The design the customiser chose, as the swatches it actually picked. */
+function DesignCard({ design }) {
+  const tokens = design?.tokens || {}
+  const swatches = ['primary', 'accent', 'background', 'surface', 'text']
+    .filter(role => tokens[role])
+  return (
+    <div className="mt-1.5 rounded-xl border border-line/70 bg-panel2/60 p-3">
+      <p className="text-[12px] font-semibold text-ink">{design.palette}</p>
+      <p className="mt-0.5 text-[11px] leading-relaxed text-muted">{design.mood}</p>
+      {swatches.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {swatches.map(role => (
+            <span key={role} title={`${role} ${tokens[role]}`}
+                  className="flex items-center gap-1.5 rounded-lg border border-line/70 bg-panel px-1.5 py-1">
+              <span className="size-3 rounded-[4px] ring-1 ring-black/[.08]"
+                    style={{ background: tokens[role] }} />
+              <span className="font-mono text-[9.5px] text-muted2">{tokens[role]}</span>
+            </span>
+          ))}
+        </div>
+      )}
+      <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10.5px] text-muted">
+        <Row label="Theme" value={design.theme} />
+        <Row label="Type" value={design.font} />
+        <Row label="Corners" value={design.radius} />
+        <Row label="Spacing" value={design.density} />
+      </dl>
+      <p className="mt-2 font-mono text-[9.5px] text-muted2">{design.path}</p>
+    </div>
+  )
+}
+
+const Row = ({ label, value }) => (
+  <div className="flex gap-1.5">
+    <dt className="text-muted2">{label}</dt>
+    <dd className="truncate text-ink">{value}</dd>
+  </div>
+)
+
 function Turn({ turn }) {
   if (turn.role === 'user') {
     return (
       <div className="flex justify-end">
-        <p className="max-w-[76%] rounded-2xl rounded-br-md bg-accent px-3.5 py-2 text-[12px] leading-relaxed text-white shadow-sm">
+        <p className="max-w-[88%] rounded-2xl rounded-br-md bg-accent px-3.5 py-2 text-[12px] leading-relaxed text-white shadow-sm">
           {turn.text}
         </p>
       </div>
@@ -216,16 +318,22 @@ function Turn({ turn }) {
   }
 
   if (turn.role === 'assistant') {
+    const Icon = turn.kind === 'plan' ? Search
+      : turn.kind === 'design' ? Palette : Sparkles
     return (
       <div className="flex gap-2.5">
         <span className={cn('mt-0.5 grid size-6 shrink-0 place-items-center rounded-full',
           turn.tone === 'bad' ? 'bg-bad/12 text-bad'
             : turn.tone === 'ok' ? 'bg-ok-tint text-ok' : 'bg-tint text-accent')}>
-          <Sparkles className="size-3" />
+          <Icon className="size-3" />
         </span>
         <div className="min-w-0 flex-1">
           {turn.title && <p className="text-[12px] font-semibold text-ink">{turn.title}</p>}
-          <p className="whitespace-pre-wrap text-[12px] leading-relaxed text-muted">{turn.text}</p>
+          {turn.kind === 'design' && turn.design
+            ? <DesignCard design={turn.design} />
+            : turn.kind === 'plan'
+              ? <pre className="mt-1 max-h-[280px] overflow-auto whitespace-pre-wrap rounded-xl border border-line/70 bg-panel2/60 p-3 font-mono text-[11px] leading-relaxed text-ink">{turn.text}</pre>
+              : <p className="whitespace-pre-wrap text-[12px] leading-relaxed text-muted">{turn.text}</p>}
         </div>
       </div>
     )
@@ -239,14 +347,20 @@ function Turn({ turn }) {
         <Icon className="size-3" />
       </span>
       <div className="min-w-0 flex-1 space-y-1">
-        {turn.items.map((item, i) => (
+        {turn.items.slice(-14).map((item, i) => (
           <div key={i}>
-            <p className="text-[12px] font-medium text-ink">{item.title}</p>
+            <p className={cn('break-words text-[12px] font-medium',
+              turn.kind === 'warn' ? 'text-bad' : 'text-ink')}>{item.title}</p>
             {item.detail && (
               <p className="text-[11px] leading-relaxed text-muted">{item.detail}</p>
             )}
           </div>
         ))}
+        {turn.items.length > 14 && (
+          <p className="text-[10.5px] text-muted2">
+            …and {turn.items.length - 14} more
+          </p>
+        )}
       </div>
     </div>
   )

@@ -61,14 +61,35 @@ def project_name_for(prompt: str) -> str:
     return candidate
 
 
+def _write_env(proj_dir: Path) -> None:
+    """Give the app its database connection before it is asked to connect.
+
+    A generated app that has to invent its own connection string either
+    hard-codes one or guesses a database name that collides with the last
+    project's collections. Writing it here makes both impossible.
+    """
+    target = proj_dir / ".env.local"
+    wanted = f"MONGODB_URI={MONGO.uri_for(proj_dir.name)}"
+    try:
+        existing = target.read_text("utf-8") if target.is_file() else ""
+        if "MONGODB_URI=" in existing:
+            return
+        target.write_text((existing + "\n" if existing.strip() else "") + wanted + "\n",
+                          encoding="utf-8")
+    except OSError as error:
+        elog("WARN", f"   ⚠ .env.local could not be written: {error}")
+
+
 def _prepare_workspace(prompt: str, project: str, srs_id: str) -> Path:
     if project:
         proj_dir = PROD_DIR / project
         proj_dir.mkdir(parents=True, exist_ok=True)
+        _write_env(proj_dir)
         return proj_dir
     name = project_name_for(prompt)
     proj_dir = PROD_DIR / name
     proj_dir.mkdir(parents=True, exist_ok=True)
+    _write_env(proj_dir)
     eproject(name)
     if srs_id:
         try:
@@ -87,9 +108,13 @@ def _brief(proj_dir: Path, prompt: str) -> str:
         spec = ""
     if spec:
         parts += ["", "APPROVED SPECIFICATION (build to this):", spec]
-    parts += ["", f"MongoDB is available at {MONGO.uri()} — use the database "
-                  f"`{db_name_for(proj_dir.name)}`. Read it from MONGODB_URI in the "
-                  "environment; never hard-code a connection string."]
+    # The per-project database keeps generated apps out of each other's
+    # collections, and the URI reaches the app through its environment so
+    # nothing has to be hard-coded into the source.
+    parts += ["", f"MongoDB is running and this project's database is "
+                  f"`{db_name_for(proj_dir.name)}`. Read the connection string from "
+                  f"MONGODB_URI in the environment (it is set to "
+                  f"{MONGO.uri_for(proj_dir.name)}); never hard-code one."]
     return "\n".join(parts)
 
 

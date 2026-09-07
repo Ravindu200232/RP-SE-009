@@ -192,7 +192,6 @@ class UIHandler(SimpleHTTPRequestHandler):
             if qa.get("error"):
                 return self._json(qa, 404)
             try:
-                from qa_agent.verification.report_pdf import build_qa_pdf
                 out = (PROD_DIR / proj / ".agentforge" / "qa"
                        / "Test_Report.pdf")
                 build_qa_pdf(qa, out, project=proj)

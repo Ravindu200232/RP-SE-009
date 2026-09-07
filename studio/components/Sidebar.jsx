@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Moon, Sun, FolderUp, Settings, Download, ExternalLink, Search, Play, Trash2,
+  PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react'
 import { useStore, KEYS } from '@/lib/store'
 import { api } from '@/lib/api'
@@ -16,6 +17,9 @@ export default function Sidebar({
   models: cat, projects, onOpen, onImport, onSettings, onZip, onResume, onDeleted,
 }) {
   const s = useStore()
+  // Collapsed, the sidebar keeps only what you would reopen it for: which
+  // project is live, and whether anything is running.
+  const [collapsed, setCollapsed] = useState(false)
   const { models, think, images, project, status, statusText, theme } = s
   const folderRef = useRef(null)
   const [q, setQ] = useState('')
@@ -151,6 +155,40 @@ export default function Sidebar({
   const dot = { live: 'bg-ok', busy: 'bg-warn', connecting: 'bg-muted2' }[status]
     || 'bg-bad'
 
+  if (collapsed) {
+    return (
+      <aside className="glass-panel flex w-[56px] shrink-0 flex-col items-center gap-2 overflow-hidden rounded-[24px] py-3">
+        <Tip text="Show the sidebar" side="right">
+          <button onClick={() => setCollapsed(false)}
+                  className="grid size-9 place-items-center rounded-xl text-ink transition-colors hover:bg-ink/[.07]">
+            <PanelLeftOpen className="size-4" />
+          </button>
+        </Tip>
+        <span className={cn('size-2 shrink-0 rounded-full', dot)} title={statusText} />
+        <span className="my-1 h-px w-6 bg-line2" />
+        <Tip text="Settings" side="right">
+          <button onClick={onSettings}
+                  className="grid size-9 place-items-center rounded-xl text-muted transition-colors hover:bg-ink/[.07] hover:text-ink">
+            <Settings className="size-3.5" />
+          </button>
+        </Tip>
+        <Tip text="Resume this build where it stopped" side="right">
+          <button onClick={onResume} disabled={!project || status === 'busy'}
+                  className="grid size-9 place-items-center rounded-xl text-muted transition-colors hover:bg-ink/[.07] hover:text-ink disabled:pointer-events-none disabled:text-faint">
+            <Play className="size-3.5" />
+          </button>
+        </Tip>
+        <span className="flex-1" />
+        {project && (
+          <span className="max-h-[220px] [writing-mode:vertical-rl] truncate text-[10px] font-semibold text-muted"
+                title={project}>
+            {project}
+          </span>
+        )}
+      </aside>
+    )
+  }
+
   return (
     <aside className="glass-panel flex w-[var(--sidebar-w)] shrink-0 flex-col overflow-hidden rounded-[24px]">
       <header className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-line/70 px-4 py-4">
@@ -169,13 +207,21 @@ export default function Sidebar({
             </span>
           </div>
         </div>
-        <Tip text="Toggle theme">
-          <Button variant="outline" size="icon" className="size-[28px]"
-                  onClick={() => s.setTheme(theme === 'dark' ? 'light' : 'dark')}>
-            <Moon className="hidden size-3.5 dark:block" />
-            <Sun className="size-3.5 dark:hidden" />
-          </Button>
-        </Tip>
+        <span className="flex items-center gap-1">
+          <Tip text="Toggle theme">
+            <Button variant="outline" size="icon" className="size-[28px]"
+                    onClick={() => s.setTheme(theme === 'dark' ? 'light' : 'dark')}>
+              <Moon className="hidden size-3.5 dark:block" />
+              <Sun className="size-3.5 dark:hidden" />
+            </Button>
+          </Tip>
+          <Tip text="Hide the sidebar">
+            <Button variant="outline" size="icon" className="size-[28px]"
+                    onClick={() => setCollapsed(true)}>
+              <PanelLeftClose className="size-3.5" />
+            </Button>
+          </Tip>
+        </span>
       </header>
 
       <div className="mx-3 mt-3 flex items-center gap-2 rounded-xl border border-line/70 bg-white/45 px-3 py-2 shadow-sm dark:bg-white/[.025]">

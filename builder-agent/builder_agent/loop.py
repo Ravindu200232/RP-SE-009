@@ -269,7 +269,10 @@ class Loop:
             tools = self.registry.schemas(excluded)
             messages = self.memory.build()
             measurement = self.budget.measure(messages, tools)
-            self.events.emit("context", **measurement.as_event())
+            # The window in use, and what the run has spent getting here. Both
+            # are the same question asked two ways, so they travel together.
+            self.events.emit("context", **measurement.as_event(),
+                             **{f"used_{k}": v for k, v in self.router.usage.items()})
 
             if measurement.should_compact:
                 if self.compactor.compact(tools).get("compacted"):

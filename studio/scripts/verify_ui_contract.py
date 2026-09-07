@@ -14,6 +14,15 @@ required = {
     "chat turns from the run": ("lib/chat.js", "export function chatTurns"),
     "chat answers a paused question": ("components/AgentChat.jsx", "answerQuestion(typed)"),
     "agent turns in the store": ("lib/store.js", "pushChat:"),
+    "run context in the store": ("lib/store.js", "setRunStats:"),
+    "status line at the foot of the chat": ("components/AgentChat.jsx", "function StatusLine"),
+    "context window is a bar": ("components/AgentChat.jsx", "percent >= 90 ? 'bg-bad'"),
+    "tokens and requests are shown": ("components/AgentChat.jsx", "{stats.requests} req"),
+    "the engine reports what it spent": ("../builder-agent/builder_agent/loop.py", "used_"),
+    "the plan is shown": ("components/AgentChat.jsx", "turn.kind === 'plan'"),
+    "the design is shown": ("components/AgentChat.jsx", "function DesignCard"),
+    "chat opens itself for a run": ("components/AgentChat.jsx", "if (busy) setOpen(true)"),
+    "nothing is dropped from the stream": ("lib/chat.js", "usually the interesting one"),
     "human activity mapper": ("lib/activity.js", "Creating the build plan"),
     "unit-test activity": ("lib/activity.js", "Creating unit tests"),
     "E2E activity": ("lib/activity.js", "Starting end-to-end testing"),
@@ -25,7 +34,8 @@ required = {
     "builder light color scope": ("components/BuildOverlay.jsx", 'data-theme="light"'),
     "builder unframed activity": ("components/BuildOverlay.jsx", 'section className="flex min-h-[560px] flex-col p-6"'),
     "builder unframed flow": ("components/BuildOverlay.jsx", 'section className="relative flex min-h-[560px] items-center justify-center overflow-hidden p-5"'),
-    "chat mounted beside the preview": ("components/PreviewPane.jsx", "<AgentChat"),
+    "chat is a column beside the work": ("app/page.jsx", "<AgentChat />"),
+    "chat is not a drawer": ("components/AgentChat.jsx", "<aside className=\"flex w-["),
     "select tool": ("components/PreviewPane.jsx", "element_edit"),
     "pencil tool": ("components/PreviewPane.jsx", "pencil_edit"),
     "test evidence view": ("components/testing/TestingResult.jsx", "label: 'Evidence'"),
@@ -39,6 +49,7 @@ required = {
     "AWS Console browser login": ("components/deploy/DeployAccounts.jsx", "tool: 'aws-console-login'"),
     "isolated AWS Console profile": ("components/deploy/DeployAccounts.jsx", "const AWS_CONSOLE_PROFILE = 'agentforge-console'"),
     "sidebar model picker": ("components/Sidebar.jsx", 'label="Model"'),
+    "sidebar collapses": ("components/Sidebar.jsx", "if (collapsed) {"),
 }
 
 forbidden = {
@@ -46,6 +57,9 @@ forbidden = {
     # scrolled past faster than anyone could read them.
     "terminal drawer": ("components/PreviewPane.jsx", "PreviewConsoleDrawer"),
     "ask modal": ("app/page.jsx", "askOpen &&"),
+    # A drawer covers the preview it is describing; the chat is a column now.
+    "chat drawer": ("components/AgentChat.jsx", "absolute inset-x-4 bottom-3"),
+    "chat inside the preview": ("components/PreviewPane.jsx", "AgentChat"),
     "team planner picker": ("components/Sidebar.jsx", 'label="Planner"'),
     "team design picker": ("components/Sidebar.jsx", 'label="Design"'),
     "team builder picker": ("components/Sidebar.jsx", 'label="Builder"'),

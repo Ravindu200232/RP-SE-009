@@ -23,6 +23,7 @@ from .browser import Browser
 from .config import Config
 from .design import choose as choose_design
 from .design import design_contract_message, write_design_skill
+from .design import tokens as design_tokens
 from .errors import AbortError, ConfigError
 from .events import Events
 from .llm import OllamaClient, Router
@@ -94,9 +95,16 @@ class BuilderAgent:
         self.design = written
         self.events.emit("phase", phase="design", title="Design system", status="done",
                          palette=selection["paletteName"], theme=selection["themeMode"])
-        self.events.emit("notice", level="info",
-                         message=f"Design contract: {selection['paletteName']} "
-                                 f"({selection['themeMode']} default) written to {written['path']}.")
+        self.events.emit("design", **{
+            "palette": selection["paletteName"], "mood": selection["mood"],
+            "theme": selection["themeMode"], "font": selection["font"],
+            "radius": selection["radius"], "density": selection["density"],
+            "typeScale": selection["typeScale"], "path": written["path"],
+            "tokens": design_tokens(selection["palette"], selection["themeMode"]),
+            "summary": (f"{selection['paletteName']} - {selection['mood']} "
+                        f"Default theme {selection['themeMode']}; {selection['font']} type, "
+                        f"{selection['radius']} corners, {selection['density']} spacing."),
+        })
         return written
 
     def build(self, task: str, *, plan: str = "") -> Outcome:

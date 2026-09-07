@@ -81,6 +81,31 @@ class SkillPackTests(unittest.TestCase):
         self.assertEqual((target / "SKILL.md").read_text(), "mine")
         self.assertEqual(read_skill(self.root, "runtime"), "mine")
 
+    def test_an_example_file_is_read_by_the_name_it_would_really_have(self):
+        """Sketch files carry a guard suffix; the model asks for the real name.
+
+        `.txt` keeps npm from treating a sketch as a workspace and keeps the
+        project's runner from collecting its tests. Asking the model to know
+        that would cost a turn every time, so the suffix resolves here.
+        """
+        install_skill_pack(self.root, "build a nextjs shop", "nextjs-mongo")
+
+        body = read_skill(self.root, "nextjs-sketch", "sketch/test/product.model.test.js")
+
+        self.assertIn("vitest", body)
+
+    def test_a_missing_resource_lists_what_the_skill_does_have(self):
+        install_skill_pack(self.root, "build a nextjs shop", "nextjs-mongo")
+
+        with self.assertRaises(ValueError) as caught:
+            read_skill(self.root, "nextjs-sketch", "sketch/test/nope.js")
+
+        message = str(caught.exception)
+        self.assertIn("has no file", message)
+        self.assertIn("SKILL.md", message)
+        # Listed by their logical names, not their guarded ones.
+        self.assertNotIn(".test.js.txt", message)
+
     def test_a_resource_path_cannot_escape_the_skill_it_belongs_to(self):
         install_skill_pack(self.root, "build an app", "nextjs-mongo")
         with self.assertRaises(ValueError):

@@ -47,6 +47,12 @@ class StudioBridge:
         self.phase = self.phases[0] if self.phases else "build"
         self.streaming_file = ""
         self.tests_started = False
+        # What the console shows about the run itself, kept here so every
+        # update carries the whole picture rather than one changed field.
+        self.stats = {"model": "", "iterations": 0, "tools": 0, "files": 0,
+                      "tokens": 0, "limit": 0, "percent": 0, "phase": self.phase,
+                      "requests": 0, "sent": 0, "received": 0}
+        self.files_seen = set()
         self.attach()
 
     # -- wiring ----------------------------------------------------------
@@ -63,6 +69,7 @@ class StudioBridge:
         bus.on("e2e", self.on_e2e)
         bus.on("context", self.on_context)
         bus.on("plan", self.on_plan)
+        bus.on("design", self.on_design)
         bus.on("agent:error", self.on_error)
 
     def _band(self, fraction: float) -> int:
@@ -70,8 +77,14 @@ class StudioBridge:
         return int(low + (high - low) * max(0.0, min(1.0, fraction)))
 
     # -- handlers --------------------------------------------------------
+    def _stats(self, **patch):
+        self.stats.update(patch, phase=self.phase)
+        ememory(dict(self.stats))
+
     def on_start(self, p):
         elog("INFO", f"   {p.get('model')} · {p.get('stack')} · {p.get('quality')} profile")
+        self._stats(model=str(p.get("model") or ""), stack=str(p.get("stack") or ""),
+                    quality=str(p.get("quality") or ""))
         eprog(_phase_label(self.phase), self._band(0.05))
 
     def on_notice(self, p):
@@ -96,9 +109,11 @@ class StudioBridge:
         # step count to divide by. A settling curve is honest about that: it
         # approaches the top of the band without ever claiming to reach it.
         step = int(p.get("iteration") or 1)
+        self._stats(iterations=step)
         eprog(_phase_label(self.phase), self._band(1 - 0.94 ** step))
 
     def on_tool_start(self, p):
+        self.stats["tools"] += 1
         tool = p.get("tool", "")
         if tool in QUIET_TOOLS:
             return
@@ -127,6 +142,8 @@ class StudioBridge:
         estream_start(name)
         estream_end(name, content)
         efile(name, len(content), content)
+        self.files_seen.add(name)
+        self._stats(files=len(self.files_seen))
         elog("INFO", f"   {note} {name} ({len(content.splitlines())} lines)")
 
     def on_test(self, p):
@@ -151,16 +168,26 @@ class StudioBridge:
         emit({"type": "e2e_event", **{k: v for k, v in p.items() if k != "type"}})
 
     def on_context(self, p):
-        ememory({"tokens": p.get("tokens"), "limit": p.get("limit"),
-                 "percent": p.get("percent")})
+        self._stats(tokens=int(p.get("tokens") or 0), limit=int(p.get("limit") or 0),
+                    percent=int(p.get("percent") or 0),
+                    requests=int(p.get("used_requests") or 0),
+                    sent=int(p.get("used_prompt") or 0),
+                    received=int(p.get("used_completion") or 0))
 
     def on_plan(self, p):
+        """The plan is the thing the build is about to do. Show it in full."""
         plan = str(p.get("plan") or "")
         if plan:
-            echat(plan[:4000])
+            emit({"type": "agent_msg", "kind": "plan", "title": "The plan",
+                  "text": plan[:8000]})
 
     def on_error(self, p):
         elog("ERROR", f"   {p.get('message', 'the run failed')}")
+
+    def on_design(self, payload) -> None:
+        """The design customiser's answer, shown rather than only written."""
+        emit({"type": "agent_msg", "kind": "design", "title": "Design system",
+              "text": payload.get("summary", ""), "design": payload})
 
 
 def _phase_label(phase: str) -> str:

@@ -545,8 +545,12 @@ def _srs_brief(proj_dir: Path, model: str) -> str:
 
     text = "\n".join(parts)
 
-    from agents.planner.architecture import CHARS_PER_TOKEN, HISTORY_BUDGET
-    budget = int(max_context(model) * HISTORY_BUDGET * CHARS_PER_TOKEN / 6)
+    # How much of the window a specification may occupy before it crowds out
+    # the conversation it is meant to inform. A share, not a fixed number of
+    # characters: the same brief is comfortable on a 256K model and fatal on
+    # an 8K one.
+    SPEC_SHARE, CHARS_PER_TOKEN = 0.35, 3
+    budget = int(max_context(model) * SPEC_SHARE * CHARS_PER_TOKEN / 6)
     if len(text) > budget:
         cut = text.rfind("\n", 0, budget)
         dropped = text[cut:].count("\n- ") if cut > 0 else text.count("\n- ")
