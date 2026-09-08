@@ -16,6 +16,7 @@ an approval prompt is a convenience; skipping verification would be a lie.
 """
 from __future__ import annotations
 
+import re
 import uuid
 from pathlib import Path
 
@@ -41,19 +42,38 @@ from .tools import build_registry, review_registry
 # accepted, and the alternative is a build that never starts.
 MAX_PLAN_REVISIONS = 3
 
-# Work with no user interface: a design contract for a cron job is noise.
-NON_UI_TERMS = ("cli", "command line", "cron", "worker", "script", "library",
-                "migration", "seed script", "api only", "headless")
-UI_TERMS = ("page", "pages", "screen", "ui", "ux", "component", "layout", "design",
-            "dashboard", "form", "site", "website", "app", "application", "portal",
-            "landing", "theme", "style", "styling", "responsive")
+# Work that genuinely has no user interface. A design contract for a cron job
+# is noise, and this is the only case where it is.
+NON_UI_TERMS = ("cli", "command line", "cron job", "cron", "worker", "daemon",
+                "library", "migration", "seed script", "api only", "api-only",
+                "backend only", "headless", "batch job")
 
 
-def wants_design(task: str) -> bool:
-    text = f" {str(task or '').lower()} "
+# A plan that files a .jsx or a page is building a user interface, whatever the
+# request happened to call it.
+_UI_FILES = re.compile(r"\.(?:jsx|tsx|css|scss|html)\b|/page\.|components?/")
+
+
+def wants_design(task: str, plan: str = "") -> bool:
+    """Does this piece of work put something on a screen?
+
+    Yes, unless the request says otherwise. Both supported stacks *are* web
+    applications - that is the builder contract - so a UI is the default case,
+    not the exception.
+
+    This used to require a literal "app", "page" or "site" in the request, and
+    nobody writes those words: "a plant nursery where a visitor browses plants
+    on /plants and adds one to a basket" is obviously a user interface and
+    matched none of them, so every real request silently lost its design.
+
+    The plan is better evidence than the request, which is why it is offered
+    here: a plan that files components has settled the question.
+    """
+    text = f" {re.sub(r'[^a-z0-9/ ]+', ' ', str(task or '').lower())} "
     if any(f" {term} " in text for term in NON_UI_TERMS):
-        return False
-    return any(f" {term} " in text for term in UI_TERMS)
+        # Unless the plan it produced is full of pages and components anyway.
+        return bool(plan) and bool(_UI_FILES.search(str(plan)))
+    return True
 
 
 class BuilderAgent:
@@ -125,11 +145,13 @@ class BuilderAgent:
         self.events.emit("phase", phase="plan", title="Planning", status="done")
         return outcome
 
-    def apply_design(self, task: str) -> dict | None:
+    def apply_design(self, task: str, plan: str = "") -> dict | None:
         """Decide the look, offer it for adjustment, and write it as a contract."""
-        if not wants_design(task):
+        if not wants_design(task, plan):
             return None
-        form = form_payload(task)
+        # The plan names the screens and the domain far more precisely than the
+        # request does, so it is part of what the design is chosen from.
+        form = form_payload(f"{task}\n{plan}"[:8000])
         answer = self.approvals.ask(
             "design", form, default={"decision": "apply"}, cancel=self.cancel)
         if answer.get("decision") == "skip":
@@ -185,7 +207,7 @@ class BuilderAgent:
                                  message="Planning did not complete; building from the request "
                                          "directly.")
                 self.plan_text = ""
-            self.apply_design(task)
+            self.apply_design(task, plan=self.plan_text)
             return self.build(task, plan=self.plan_text)
         finally:
             self._finish()

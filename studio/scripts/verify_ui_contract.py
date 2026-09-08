@@ -23,6 +23,10 @@ required = {
     "the design is shown": ("components/AgentChat.jsx", "function DesignCard"),
     "the plan can be accepted or revised": ("components/AgentDecision.jsx", "function PlanDecision"),
     "the design can be customised": ("components/AgentDecision.jsx", "function DesignDecision"),
+    "the whole catalogue is offered": ("components/AgentDecision.jsx", 'label="Voice"'),
+    "the screens are chosen too": ("components/AgentDecision.jsx", "togglePage"),
+    "a design is the default, not the exception":
+        ("../builder-agent/builder_agent/agent.py", "nobody writes those words"),
     "a decision has a deadline": ("components/AgentDecision.jsx", "function Countdown"),
     "decisions reach the run": ("lib/api.js", "decide: (body)"),
     "the gate expires into the default": ("../builder-agent/builder_agent/approvals.py", "timedOut"),

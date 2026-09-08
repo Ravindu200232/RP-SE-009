@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-08T14:04:07+00:00
+Run at (UTC): 2026-09-08T14:22:39+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 201
+Unit tests: 207
 Integration tests: 24
-Total tests run: 225
+Total tests run: 231
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 8.620s
+Duration: 9.478s
 
 Detailed results
 ----------------
@@ -125,6 +125,12 @@ test_the_choice_is_deterministic (test.unit.builder.test_project_setup.DesignCon
 test_the_contract_is_written_where_the_model_will_read_it (test.unit.builder.test_project_setup.DesignContractTests.test_the_contract_is_written_where_the_model_will_read_it) ... ok
 test_the_foreground_on_a_fill_is_measured_not_assumed (test.unit.builder.test_project_setup.DesignContractTests.test_the_foreground_on_a_fill_is_measured_not_assumed) ... ok
 test_the_subject_of_the_product_outvotes_the_shape_of_it (test.unit.builder.test_project_setup.DesignContractTests.test_the_subject_of_the_product_outvotes_the_shape_of_it) ... ok
+test_a_plan_that_files_components_settles_it (test.unit.builder.test_project_setup.DesignReachTests.test_a_plan_that_files_components_settles_it) ... ok
+test_every_chosen_dimension_reaches_the_written_contract (test.unit.builder.test_project_setup.DesignReachTests.test_every_chosen_dimension_reaches_the_written_contract) ... ok
+test_the_catalogue_covers_every_dimension_the_contract_states (test.unit.builder.test_project_setup.DesignReachTests.test_the_catalogue_covers_every_dimension_the_contract_states) ... ok
+test_the_requests_people_actually_write_get_a_design (test.unit.builder.test_project_setup.DesignReachTests.test_the_requests_people_actually_write_get_a_design) ... ok
+test_the_screens_a_request_implies_are_preselected (test.unit.builder.test_project_setup.DesignReachTests.test_the_screens_a_request_implies_are_preselected) ... ok
+test_work_with_no_screen_still_gets_none (test.unit.builder.test_project_setup.DesignReachTests.test_work_with_no_screen_still_gets_none) ... ok
 test_a_fresh_installation_has_nothing_to_publish (test.unit.builder.test_project_setup.KnowledgeTests.test_a_fresh_installation_has_nothing_to_publish) ... ok
 test_a_verified_lesson_is_recalled_by_what_it_is_about (test.unit.builder.test_project_setup.KnowledgeTests.test_a_verified_lesson_is_recalled_by_what_it_is_about) ... ok
 test_an_unverified_hunch_is_never_recorded_as_knowledge (test.unit.builder.test_project_setup.KnowledgeTests.test_an_unverified_hunch_is_never_recorded_as_knowledge) ... ok
@@ -248,6 +254,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 225 tests in 8.620s
+Ran 231 tests in 9.478s
 
 OK

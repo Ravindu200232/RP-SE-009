@@ -133,7 +133,15 @@ function DesignDecision({ question, left, sending, onAnswer }) {
   const [pick, setPick] = useState({
     palette: chosen.palette, font: chosen.font, radius: chosen.radius,
     density: chosen.density, typeScale: chosen.typeScale, themeMode: chosen.themeMode,
+    border: chosen.border, elevation: chosen.elevation, motion: chosen.motion,
+    tone: chosen.tone, contrast: chosen.contrast, container: chosen.container,
+    pages: chosen.pages || [],
   })
+  const set = (field, value) => setPick(p => ({ ...p, [field]: value }))
+  const togglePage = id => setPick(p => ({
+    ...p,
+    pages: p.pages.includes(id) ? p.pages.filter(x => x !== id) : [...p.pages, id],
+  }))
 
   const palette = useMemo(
     () => (question.palettes || []).find(p => p.id === pick.palette) || question.palettes?.[0],
@@ -183,22 +191,60 @@ function DesignDecision({ question, left, sending, onAnswer }) {
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Type">
               <Choices options={(question.fonts || []).map(f => ({ id: f.id, label: f.name }))}
-                       value={pick.font} onChange={v => setPick(p => ({ ...p, font: v }))} />
+                       value={pick.font} onChange={v => set('font', v)} />
             </Field>
             <Field label="Theme">
-              <Choices options={(question.themeModes || []).map(m => ({ id: m, label: m }))}
-                       value={pick.themeMode}
-                       onChange={v => setPick(p => ({ ...p, themeMode: v }))} />
+              <Choices options={ids(question.themeModes)} value={pick.themeMode}
+                       onChange={v => set('themeMode', v)} />
             </Field>
             <Field label="Corners">
-              <Choices options={(question.radii || []).map(r => ({ id: r.id, label: r.id }))}
-                       value={pick.radius} onChange={v => setPick(p => ({ ...p, radius: v }))} />
+              <Choices options={ids(question.radii)} value={pick.radius}
+                       onChange={v => set('radius', v)} />
             </Field>
             <Field label="Spacing">
-              <Choices options={(question.densities || []).map(d => ({ id: d.id, label: d.id }))}
-                       value={pick.density} onChange={v => setPick(p => ({ ...p, density: v }))} />
+              <Choices options={ids(question.densities)} value={pick.density}
+                       onChange={v => set('density', v)} />
+            </Field>
+            <Field label="Borders">
+              <Choices options={ids(question.borders)} value={pick.border}
+                       onChange={v => set('border', v)} />
+            </Field>
+            <Field label="Depth">
+              <Choices options={ids(question.elevations)} value={pick.elevation}
+                       onChange={v => set('elevation', v)} />
+            </Field>
+            <Field label="Motion">
+              <Choices options={ids(question.motions)} value={pick.motion}
+                       onChange={v => set('motion', v)} />
+            </Field>
+            <Field label="Voice">
+              <Choices options={ids(question.tones)} value={pick.tone}
+                       onChange={v => set('tone', v)} />
+            </Field>
+            <Field label="Contrast">
+              <Choices options={(question.contrasts || []).map(c => ({
+                         id: c.id, label: c.id.toUpperCase() }))}
+                       value={pick.contrast} onChange={v => set('contrast', v)} />
+            </Field>
+            <Field label="Width">
+              <Choices options={ids(question.containers)} value={pick.container}
+                       onChange={v => set('container', v)} />
             </Field>
           </div>
+
+          <Field label={`Screens (${pick.pages.length})`}>
+            <div className="flex flex-wrap gap-1">
+              {(question.pages || []).map(page => (
+                <button key={page.id} onClick={() => togglePage(page.id)} title={page.label}
+                        className={cn('rounded-lg border px-2 py-1 text-[10.5px] transition-colors',
+                          pick.pages.includes(page.id)
+                            ? 'border-accent bg-accent/[.07] text-accent'
+                            : 'border-line text-muted hover:text-ink')}>
+                  {page.label}
+                </button>
+              ))}
+            </div>
+          </Field>
         </div>
 
         <Preview tokens={tokens} radius={pick.radius} question={question} pick={pick} />
@@ -271,6 +317,9 @@ const Field = ({ label, children }) => (
     {children}
   </div>
 )
+
+/** A catalogue row renders as its own id: they are already the human word. */
+const ids = (rows) => (rows || []).map(row => ({ id: row.id, label: row.id }))
 
 const Choices = ({ options, value, onChange }) => (
   <div className="flex flex-wrap gap-1">

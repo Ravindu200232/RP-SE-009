@@ -70,7 +70,8 @@ PALETTES = [
      "dark": {"primary": "#38BDF8", "primaryHover": "#7DD3FC", "accent": "#22D3EE"}},
     {"id": "forest-sage", "name": "Forest Sage", "neutral": "stone",
      "mood": "Grounded, sustainable, calm. Wellness, farming, education, climate.",
-     "domains": ("farm", "agri", "garden", "eco", "green", "climate", "wellness", "yoga",
+     "domains": ("farm", "agri", "garden", "gardening", "nursery", "plant", "plants",
+                 "seed", "florist", "eco", "green", "climate", "wellness", "yoga",
                  "fitness", "gym", "nature", "recycle", "environment", "organic"),
      "light": {"primary": "#15803D", "primaryHover": "#166534", "accent": "#84CC16"},
      "dark": {"primary": "#4ADE80", "primaryHover": "#86EFAC", "accent": "#A3E635"}},
@@ -90,7 +91,7 @@ PALETTES = [
     {"id": "rose-clay", "name": "Rose Clay", "neutral": "sand",
      "mood": "Soft, human, editorial. Portfolios, lifestyle, boutique commerce.",
      "domains": ("portfolio", "blog", "wedding", "beauty", "salon", "fashion", "boutique",
-                 "lifestyle", "bakery", "florist", "craft"),
+                 "lifestyle", "bakery", "craft"),
      "light": {"primary": "#BE4A5C", "primaryHover": "#9F3A4B", "accent": "#D97757"},
      "dark": {"primary": "#F19AA6", "primaryHover": "#F7BFC6", "accent": "#E79479"}},
     {"id": "cyber-teal", "name": "Cyber Teal", "neutral": "navy",
@@ -151,6 +152,72 @@ TYPE_SCALES = {"compact": (1.2, 14), "balanced": (1.25, 15),
 RADII = {"square": "0px", "subtle": "4px", "rounded": "8px", "soft": "14px", "pillowy": "22px"}
 DENSITIES = {"compact": (4, 32), "cozy": (4, 40), "comfortable": (8, 48)}
 
+BORDERS = {
+    "hairline": ("1px", "One thin rule. Separation comes mostly from spacing."),
+    "defined": ("1.5px", "Visible structure without weight. Good on dense screens."),
+    "bold": ("2px", "Strong outlines. Editorial and high-contrast."),
+}
+ELEVATION = {
+    "flat": "No shadows. Separation comes from borders alone.",
+    "subtle": "A hairline shadow on raised surfaces only.",
+    "layered": "A clear three-step scale: card, popover, modal.",
+    "dramatic": "Deep, tinted shadows. Marketing pages.",
+}
+MOTION = {
+    "none": "No transitions. Instant, and maximally accessible.",
+    "subtle": "120-180ms fades and 2px shifts.",
+    "expressive": "200-320ms springs, slide-ins, staggered lists.",
+}
+THEME_MODES = {
+    "light": "One light theme. Fastest to build and verify.",
+    "dark": "One dark theme.",
+    "both": "Both token sets, a working toggle, and the choice remembered.",
+}
+TONES = {
+    "professional": "Precise, calm, no exclamation marks.",
+    "friendly": "Warm and plain-spoken. Contractions welcome.",
+    "playful": "Light humour, personality in empty states.",
+    "bold": "Short, confident, declarative.",
+    "minimal": "Say the least that works. Labels over sentences.",
+    "luxury": "Restrained, spacious, understated.",
+}
+CONTRAST = {
+    "aa": "WCAG AA: 4.5:1 body text, 3:1 large text and UI. The baseline.",
+    "aaa": "WCAG AAA: 7:1 body text. Stricter, and it constrains muted greys.",
+}
+CONTAINERS = {
+    "1120": "Focused app content.",
+    "1280": "The common default.",
+    "1440": "Wide dashboards and tables.",
+    "full": "Edge to edge, with page gutters.",
+}
+
+# The screens most products have. Core ones are assumed; the rest are offered
+# because naming them up front is what stops a build shipping five pages and
+# calling it done.
+PAGES = [
+    ("landing", "Landing / home", True), ("login", "Login", False),
+    ("register", "Register", False), ("dashboard", "Dashboard", False),
+    ("list", "List / index", True), ("detail", "Detail view", True),
+    ("create-edit", "Create / edit form", False), ("search", "Search results", False),
+    ("profile", "Profile / account", False), ("settings", "Settings", False),
+    ("checkout", "Cart / checkout", False), ("admin", "Admin console", False),
+    ("not-found", "404 / error", True),
+]
+
+# Which extra screens a request is asking for, by the words people use for them.
+PAGE_SIGNALS = {
+    "login": ("login", "sign in", "signin", "account", "owner", "admin", "auth"),
+    "register": ("register", "sign up", "signup", "create an account"),
+    "dashboard": ("dashboard", "overview", "analytics", "reports"),
+    "create-edit": ("add", "edit", "create", "manage", "update"),
+    "search": ("search", "filter", "find"),
+    "profile": ("profile", "my account", "my bookings", "my orders"),
+    "settings": ("settings", "preferences", "configuration"),
+    "checkout": ("cart", "basket", "checkout", "payment", "order", "book"),
+    "admin": ("admin", "owner", "manager", "staff", "back office"),
+}
+
 # Data-dense products get tighter defaults; consumer products get roomier ones.
 SHAPE_FOR_PALETTE = {
     "midnight-indigo": ("balanced", "rounded", "cozy"),
@@ -169,6 +236,14 @@ GENERIC_DOMAINS = frozenset({
     "dashboard", "admin", "portal", "management", "tracker", "task", "project",
     "shop", "store", "booking", "event", "chat", "social", "data", "monitor",
 })
+
+# How a palette's mood reads in words, so the copy matches the colours.
+TONE_FOR_PALETTE = {
+    "midnight-indigo": "professional", "ocean-slate": "professional",
+    "forest-sage": "friendly", "sunset-ember": "friendly",
+    "royal-violet": "bold", "rose-clay": "luxury",
+    "cyber-teal": "minimal", "mono-contrast": "minimal",
+}
 
 _HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
 
@@ -225,11 +300,21 @@ def choose(task: str) -> dict:
     scale, radius, density = SHAPE_FOR_PALETTE[best["id"]]
     dark_first = any(word in corpus for word in
                      (" dark ", " night ", " terminal ", " console ", " developer "))
+    pages = sorted({page for page, _, core in PAGES if core} |
+                   {page for page, words in PAGE_SIGNALS.items()
+                    if any(f" {word} " in corpus for word in words)})
     return {
         "palette": best["id"], "paletteName": best["name"], "mood": best["mood"],
         "font": FONT_FOR_PALETTE[best["id"]],
         "typeScale": scale, "radius": radius, "density": density,
         "themeMode": "dark" if dark_first else "light",
+        "border": "bold" if best["id"] == "mono-contrast" else "hairline",
+        "elevation": "flat" if best["id"] == "mono-contrast" else "subtle",
+        "motion": "subtle",
+        "tone": TONE_FOR_PALETTE.get(best["id"], "professional"),
+        "contrast": "aa",
+        "container": "1440" if density == "compact" else "1280",
+        "pages": pages,
         "matched": best_score > 0,
     }
 
@@ -254,7 +339,15 @@ def form_payload(task: str) -> dict:
         "radii": [{"id": name, "value": value} for name, value in RADII.items()],
         "densities": [{"id": name, "unit": unit, "control": control}
                       for name, (unit, control) in DENSITIES.items()],
-        "themeModes": ["light", "dark"],
+        "borders": [{"id": name, "value": value, "hint": hint}
+                    for name, (value, hint) in BORDERS.items()],
+        "elevations": [{"id": name, "hint": hint} for name, hint in ELEVATION.items()],
+        "motions": [{"id": name, "hint": hint} for name, hint in MOTION.items()],
+        "themeModes": [{"id": name, "hint": hint} for name, hint in THEME_MODES.items()],
+        "tones": [{"id": name, "hint": hint} for name, hint in TONES.items()],
+        "contrasts": [{"id": name, "hint": hint} for name, hint in CONTRAST.items()],
+        "containers": [{"id": name, "hint": hint} for name, hint in CONTAINERS.items()],
+        "pages": [{"id": page, "label": label, "core": core} for page, label, core in PAGES],
     }
 
 
@@ -273,13 +366,23 @@ def apply_answer(chosen: dict, answer: dict | None) -> dict:
         "typeScale": set(TYPE_SCALES),
         "radius": set(RADII),
         "density": set(DENSITIES),
-        "themeMode": {"light", "dark"},
+        "themeMode": set(THEME_MODES),
+        "border": set(BORDERS),
+        "elevation": set(ELEVATION),
+        "motion": set(MOTION),
+        "tone": set(TONES),
+        "contrast": set(CONTRAST),
+        "container": set(CONTAINERS),
     }
     picked = dict(chosen)
     for field, valid in allowed.items():
         value = answer.get(field)
         if isinstance(value, str) and value in valid:
             picked[field] = value
+    wanted_pages = answer.get("pages")
+    if isinstance(wanted_pages, list):
+        known = {page for page, _, _ in PAGES}
+        picked["pages"] = sorted({p for p in wanted_pages if p in known})
     if picked["palette"] != chosen["palette"]:
         palette = next(p for p in PALETTES if p["id"] == picked["palette"])
         picked["paletteName"], picked["mood"] = palette["name"], palette["mood"]
@@ -343,8 +446,25 @@ def render_skill(selection: dict, goal: str = "") -> str:
         f"- Corner radius: {RADII[selection['radius']]} on cards, inputs and buttons.",
         f"- Spacing unit: {DENSITIES[selection['density']][0]}px; every gap is a multiple of it.",
         f"- Control height: {DENSITIES[selection['density']][1]}px for buttons and inputs.",
-        f"- Default theme: {selection['themeMode']}. Both modes must work; "
-        'the dark tokens go under `[data-theme="dark"]`.', "",
+        f"- Borders: {BORDERS[selection.get('border', 'hairline')][0]}. "
+        f"{BORDERS[selection.get('border', 'hairline')][1]}",
+        f"- Elevation: {ELEVATION[selection.get('elevation', 'subtle')]}",
+        f"- Motion: {MOTION[selection.get('motion', 'subtle')]}",
+        f"- Content width: {selection.get('container', '1280')}"
+        + ("px" if str(selection.get("container", "1280")).isdigit() else "") + ". "
+        + CONTAINERS[selection.get("container", "1280")],
+        f"- Theme: {THEME_MODES[selection.get('themeMode', 'light')]}"
+        + (' The dark tokens go under `[data-theme="dark"]`.'
+           if selection.get("themeMode") != "light" else ""), "",
+        "## Voice", "",
+        f"- {selection.get('tone', 'professional').title()}: "
+        f"{TONES[selection.get('tone', 'professional')]}",
+        f"- Contrast: {CONTRAST[selection.get('contrast', 'aa')]}", "",
+        "## Screens this product needs", "",
+        "Every one of these gets its loading, empty, error and success state. A screen "
+        "with only its happy path is not finished.", "",
+        *[f"- {label}" for page, label, _ in PAGES if page in (selection.get("pages") or [])],
+        "",
         "## Rules", "",
         "- Body text on the page background is "
         f"{ratio}:1 - keep every text/background pair at 4.5:1 or better.",

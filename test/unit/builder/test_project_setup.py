@@ -216,6 +216,68 @@ class DesignContractTests(unittest.TestCase):
         self.assertEqual(written["path"], ".agents/skills/design-system/SKILL.md")
 
 
+class DesignReachTests(unittest.TestCase):
+    """Which requests get a design contract at all.
+
+    This was the bug that made the customiser look absent: the check wanted a
+    literal "app", "page" or "site" in the request, and nobody writes those.
+    Every realistic prompt silently lost its design.
+    """
+
+    def test_the_requests_people_actually_write_get_a_design(self):
+        from builder_agent.agent import wants_design
+        for prompt in (
+            "A plant nursery. A visitor browses plants on /plants and adds one to a basket.",
+            "A small bookshop with a cart and an owner who marks orders fulfilled.",
+            "A boutique hotel. A guest browses rooms with photos and books one.",
+            "hospital patient records with three roles",
+        ):
+            self.assertTrue(wants_design(prompt), prompt)
+
+    def test_work_with_no_screen_still_gets_none(self):
+        from builder_agent.agent import wants_design
+        for prompt in ("write a cron job that prunes old sessions",
+                       "add a seed script", "a command line tool that exports orders",
+                       "an api only service", "build a library for currency formatting"):
+            self.assertFalse(wants_design(prompt), prompt)
+
+    def test_a_plan_that_files_components_settles_it(self):
+        from builder_agent.agent import wants_design
+        self.assertTrue(wants_design(
+            "a worker that emails receipts",
+            plan="Phase 3: app/receipts/page.jsx and components/ReceiptRow.jsx"))
+
+    def test_the_catalogue_covers_every_dimension_the_contract_states(self):
+        form = design.form_payload("a plant nursery with a basket")
+        for key in ("palettes", "fonts", "typeScales", "radii", "densities", "borders",
+                    "elevations", "motions", "themeModes", "tones", "contrasts",
+                    "containers", "pages"):
+            self.assertTrue(form[key], key)
+        # Light, dark, and both - a toggle is a real choice, not an afterthought.
+        self.assertEqual({m["id"] for m in form["themeModes"]}, {"light", "dark", "both"})
+
+    def test_the_screens_a_request_implies_are_preselected(self):
+        chosen = design.choose("a shop where a visitor fills a basket and an admin "
+                               "signs in to see orders")
+        for page in ("landing", "list", "detail", "checkout", "login", "admin"):
+            self.assertIn(page, chosen["pages"], page)
+
+    def test_every_chosen_dimension_reaches_the_written_contract(self):
+        root = Path(tempfile.mkdtemp())
+        selection = design.apply_answer(design.choose("a plant nursery"), {
+            "themeMode": "both", "tone": "playful", "border": "bold",
+            "motion": "expressive", "contrast": "aaa", "container": "1440"})
+        design.write_design_skill(root, selection, "nursery")
+
+        body = (root / ".agents/skills/design-system/SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("Playful", body)
+        self.assertIn("WCAG AAA", body)
+        self.assertIn("1440px", body)
+        self.assertIn("springs", body)          # expressive motion
+        self.assertIn("Strong outlines", body)  # bold borders
+        self.assertIn('[data-theme="dark"]', body)
+
+
 class ProjectLayoutTests(unittest.TestCase):
     def test_routes_are_read_from_where_the_files_sit(self):
         root = Path(tempfile.mkdtemp())
