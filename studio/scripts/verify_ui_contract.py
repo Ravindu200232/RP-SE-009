@@ -41,7 +41,11 @@ required = {
     "nothing is dropped from the stream": ("lib/chat.js", "usually the interesting one"),
     "one row per action": ("lib/chat.js", "Every action is its own row"),
     "the live step is animated": ("components/AgentChat.jsx", "live ? <Loader2"),
+    "the last row is the live one": ("components/AgentChat.jsx", "live={busy && i === turns.length - 1}"),
     "thinking is shown as thinking": ("components/AgentChat.jsx", "function Thinking"),
+    "thinking is actually rendered": ("components/AgentChat.jsx", "agentState === 'thinking' && <Thinking />"),
+    "a frame never blocks the socket it arrives on":
+        ("../builder-agent/builder_agent/browser.py", "def post"),
     "the engine reports thinking": ("../server_modules/builder/bridge.py", '"state": "thinking"'),
     "SRS planner animation": ("components/srs/SrsActivity.jsx", "/__agentforge/srs-planner.gif"),
     "a run can be stopped from the chat": ("components/AgentChat.jsx", "function CancelRun"),

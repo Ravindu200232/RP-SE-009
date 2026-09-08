@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-08T15:01:15+00:00
+Run at (UTC): 2026-09-08T15:11:15+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 224
+Unit tests: 229
 Integration tests: 24
-Total tests run: 248
+Total tests run: 253
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 10.613s
+Duration: 11.495s
 
 Detailed results
 ----------------
@@ -66,6 +66,9 @@ test_writing_over_an_existing_file_needs_saying_so (test.unit.builder.test_engin
 test_an_empty_expectation_is_refused_rather_than_always_passing (test.unit.builder.test_journeys.AssertionShapeTests.test_an_empty_expectation_is_refused_rather_than_always_passing) ... ok
 test_an_unknown_assertion_names_the_ones_that_exist (test.unit.builder.test_journeys.AssertionShapeTests.test_an_unknown_assertion_names_the_ones_that_exist) ... ok
 test_text_and_url_assertions_report_what_they_actually_saw (test.unit.builder.test_journeys.AssertionShapeTests.test_text_and_url_assertions_report_what_they_actually_saw) ... ok
+test_a_run_with_nowhere_to_send_frames_does_not_stream (test.unit.builder.test_journeys.BrowserWatchTests.test_a_run_with_nowhere_to_send_frames_does_not_stream) ... ok
+test_every_tab_the_agent_opens_is_streamed_to_the_studio (test.unit.builder.test_journeys.BrowserWatchTests.test_every_tab_the_agent_opens_is_streamed_to_the_studio)
+Not only journeys: most browser work is opening a page and looking. ... ok
 test_a_cancellation_beside_a_real_failure_still_fails (test.unit.builder.test_journeys.DiagnosticsTests.test_a_cancellation_beside_a_real_failure_still_fails) ... ok
 test_a_cancelled_request_does_not_fail_the_journey (test.unit.builder.test_journeys.DiagnosticsTests.test_a_cancelled_request_does_not_fail_the_journey)
 The one that mattered. ... ok
@@ -82,6 +85,11 @@ test_one_match_needs_no_index (test.unit.builder.test_journeys.LocatorTests.test
 test_a_connection_that_was_refused_is_a_failure (test.unit.builder.test_journeys.RequestClassificationTests.test_a_connection_that_was_refused_is_a_failure) ... ok
 test_cdp_calling_a_request_cancelled_is_believed (test.unit.builder.test_journeys.RequestClassificationTests.test_cdp_calling_a_request_cancelled_is_believed) ... ok
 test_the_error_text_is_the_backstop (test.unit.builder.test_journeys.RequestClassificationTests.test_the_error_text_is_the_backstop) ... ok
+test_a_frame_for_another_tab_is_not_this_tab_s_frame (test.unit.builder.test_journeys.ScreencastTests.test_a_frame_for_another_tab_is_not_this_tab_s_frame) ... ok
+test_a_frame_is_acknowledged_without_waiting_for_the_reply (test.unit.builder.test_journeys.ScreencastTests.test_a_frame_is_acknowledged_without_waiting_for_the_reply)
+The handler runs on the socket's thread; `send` there deadlocks it. ... ok
+test_one_tab_streams_once_however_often_it_is_asked (test.unit.builder.test_journeys.ScreencastTests.test_one_tab_streams_once_however_often_it_is_asked)
+A journey on an already-watched tab must not open a second cast. ... ok
 test_every_offered_cloud_entry_carries_the_window_it_will_request (test.unit.builder.test_llm_client.CatalogueShapeTests.test_every_offered_cloud_entry_carries_the_window_it_will_request) ... ok
 test_the_catalogue_falls_back_to_known_cloud_models_when_empty (test.unit.builder.test_llm_client.CatalogueShapeTests.test_the_catalogue_falls_back_to_known_cloud_models_when_empty) ... ok
 test_a_cloud_model_reporting_no_window_still_gets_the_default (test.unit.builder.test_llm_client.CloudContextTests.test_a_cloud_model_reporting_no_window_still_gets_the_default) ... ok
@@ -278,6 +286,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 248 tests in 10.613s
+Ran 253 tests in 11.495s
 
 OK

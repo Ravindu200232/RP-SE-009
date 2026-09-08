@@ -129,6 +129,7 @@ class Cdp:
     def __init__(self, url: str) -> None:
         self.url = url
         self._id = 0
+        self._id_lock = threading.Lock()
         self._pending: dict[int, asyncio.Future] = {}
         self._events: dict[str, list] = {}
         self._ws = None
@@ -182,12 +183,47 @@ class Cdp:
     def on(self, method: str, handler) -> None:
         self._events.setdefault(method, []).append(handler)
 
+    def _next_id(self) -> int:
+        with self._id_lock:
+            self._id += 1
+            return self._id
+
+    def post(self, method: str, params: dict | None = None,
+             session: str | None = None) -> None:
+        """Send a message and do not wait for its reply.
+
+        Event handlers run on the reader's own thread, so a handler that calls
+        `send` blocks the loop that has to read the answer it is waiting for -
+        a deadlock that only ends when the call times out, with the whole
+        connection stalled until it does.
+
+        Screencast acknowledgements are the case that matters: one per frame,
+        and Chrome stops sending frames until each is answered. Nothing here
+        needs the reply, so nothing waits for it.
+        """
+        if self.closed or self._ws is None:
+            return
+        message = {"id": self._next_id(), "method": method, "params": params or {}}
+        if session:
+            message["sessionId"] = session
+        payload = json.dumps(message)
+
+        async def _send():
+            try:
+                await self._ws.send(payload)
+            except Exception:  # noqa: BLE001 - a dropped ack is not a failed run
+                pass
+
+        try:
+            asyncio.run_coroutine_threadsafe(_send(), self._loop)
+        except RuntimeError:                 # the loop is closing; so is the run
+            pass
+
     def send(self, method: str, params: dict | None = None, session: str | None = None,
              timeout: float = CALL_TIMEOUT) -> dict:
         if self.closed or self._ws is None:
             raise ToolError("Browser debugging connection is not open.")
-        self._id += 1
-        message = {"id": self._id, "method": method, "params": params or {}}
+        message = {"id": self._next_id(), "method": method, "params": params or {}}
         if session:
             message["sessionId"] = session
 
@@ -296,12 +332,12 @@ class Page:
         def frame(params, session):
             if session != self.session:
                 return
+            # This runs on the socket's own thread. The acknowledgement is
+            # posted, never sent: waiting for its reply here would block the
+            # reader that has to deliver it.
+            self.cdp.post("Page.screencastFrameAck",
+                          {"sessionId": params.get("sessionId")}, self.session)
             data = params.get("data") or ""
-            try:
-                self.cdp.send("Page.screencastFrameAck",
-                              {"sessionId": params.get("sessionId")}, self.session, timeout=5)
-            except ToolError:
-                return
             if data:
                 on_frame("data:image/jpeg;base64," + data)
 
@@ -609,6 +645,10 @@ class Browser:
         session = self.cdp.send("Target.attachToTarget",
                                 {"targetId": target, "flatten": True})["sessionId"]
         page = Page(self.cdp, target, session)
+        # A tab created at a URL never goes through `navigate`, so this is the
+        # only place its address is recorded — and the address is what the
+        # studio labels the stream with.
+        page.url_cached = "" if url == "about:blank" else str(url)
         self.pages[target] = page
         self.active = target
         self._watch(page)

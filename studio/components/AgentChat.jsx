@@ -204,7 +204,13 @@ export default function AgentChat() {
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3.5 py-3">
         <div className="space-y-3">
-          {turns.map((turn, i) => <Turn key={`${turn.at}-${i}`} turn={turn} />)}
+          {/* The last row is the one happening now, so it is the one that
+              spins; the rows behind it have already happened. */}
+          {turns.map((turn, i) => (
+            <Turn key={`${turn.at}-${i}`} turn={turn}
+                  live={busy && i === turns.length - 1} />
+          ))}
+          {busy && agentState === 'thinking' && <Thinking />}
           {!turns.length && (
             <p className="py-10 text-center text-[11.5px] text-muted">
               {project ? 'Ask for a change, or report something that is broken.'

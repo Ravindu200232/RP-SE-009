@@ -8,9 +8,11 @@ because nothing was ever broken.
 """
 from __future__ import annotations
 
+import types
 import unittest
 
 from test import _support  # noqa: F401
+from builder_agent import browser
 from builder_agent.browser import CANCELLED_ERRORS, request_outcome
 from builder_agent.errors import ToolError
 from builder_agent.journeys import _assert, diagnostics_report
@@ -159,6 +161,88 @@ class AssertionShapeTests(unittest.TestCase):
         with self.assertRaises(ToolError) as caught:
             _assert(FakePage(), {"type": "looksNice"})
         self.assertIn("textIncludes", str(caught.exception))
+
+
+class ScreencastTests(unittest.TestCase):
+    """What the studio shows of the agent's browser depends on one message."""
+
+    def cast(self):
+        """A page whose transport records what it was asked to do."""
+        cdp = types.SimpleNamespace(
+            handlers={}, sent=[], posted=[],
+            on=lambda method, handler: cdp.handlers.setdefault(method, []).append(handler),
+            send=lambda *a, **k: cdp.sent.append(a) or {},
+            post=lambda *a, **k: cdp.posted.append(a))
+        page = browser.Page.__new__(browser.Page)
+        page.cdp, page.session = cdp, "s1"
+        frames = []
+        page.start_screencast(frames.append)
+        return cdp, page, frames
+
+    def test_a_frame_is_acknowledged_without_waiting_for_the_reply(self):
+        """The handler runs on the socket's thread; `send` there deadlocks it.
+
+        Chrome sends the next frame only once the last one is acknowledged, so
+        an acknowledgement that blocks stops the stream after frame one — which
+        is exactly what a still, silent preview looked like.
+        """
+        cdp, _, frames = self.cast()
+        opening = list(cdp.sent)                # starting the cast is the caller's
+        cdp.handlers["Page.screencastFrame"][0](
+            {"data": "AAAA", "sessionId": 7}, "s1")
+
+        self.assertEqual([call[0] for call in cdp.posted], ["Page.screencastFrameAck"])
+        self.assertEqual(cdp.posted[0][1], {"sessionId": 7})
+        self.assertEqual(cdp.sent, opening)     # the frame itself waited on nothing
+        self.assertEqual(frames, ["data:image/jpeg;base64,AAAA"])
+
+    def test_a_frame_for_another_tab_is_not_this_tab_s_frame(self):
+        cdp, _, frames = self.cast()
+        cdp.handlers["Page.screencastFrame"][0]({"data": "AAAA"}, "other")
+        self.assertEqual(frames, [])
+        self.assertEqual(cdp.posted, [])
+
+    def test_one_tab_streams_once_however_often_it_is_asked(self):
+        """A journey on an already-watched tab must not open a second cast."""
+        cdp, page, _ = self.cast()
+        page.start_screencast(lambda frame: None)
+        self.assertEqual(len(cdp.handlers["Page.screencastFrame"]), 1)
+        self.assertEqual([call[0] for call in cdp.sent], ["Page.startScreencast"])
+
+
+class BrowserWatchTests(unittest.TestCase):
+    def test_every_tab_the_agent_opens_is_streamed_to_the_studio(self):
+        """Not only journeys: most browser work is opening a page and looking."""
+        events = Recorder()
+        engine = browser.Browser.__new__(browser.Browser)
+        engine.events = events
+        page = types.SimpleNamespace(
+            url_cached="http://localhost:3200/plants", started=[],
+            start_screencast=lambda on_frame: page.started.append(on_frame))
+
+        engine._watch(page)
+        page.started[0]("data:image/jpeg;base64,AAAA")
+
+        self.assertEqual(events.seen, [("browser", {
+            "state": "frame", "frame": "data:image/jpeg;base64,AAAA",
+            "url": "http://localhost:3200/plants"})])
+
+    def test_a_run_with_nowhere_to_send_frames_does_not_stream(self):
+        engine = browser.Browser.__new__(browser.Browser)
+        engine.events = None
+        page = types.SimpleNamespace(started=[],
+                                     start_screencast=lambda f: page.started.append(f))
+        engine._watch(page)
+        self.assertEqual(page.started, [])
+
+
+class Recorder:
+    def __init__(self):
+        self.seen = []
+
+    def emit(self, event, /, **payload):
+        self.seen.append((event, payload))
+
 
 
 if __name__ == "__main__":
