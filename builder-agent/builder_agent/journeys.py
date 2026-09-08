@@ -45,8 +45,9 @@ def _assert(page, step: dict) -> tuple[bool, str]:
         return hit, f"URL {url!r} {'contains' if hit else 'does not contain'} {expected!r}"
     if kind == "visible":
         try:
-            page.locate(step.get("role"), step.get("name"), step.get("selector"))
-            return True, f"{step.get('role') or step.get('selector')} is present"
+            page.locate(step.get("role"), step.get("name"), step.get("selector"),
+                        step.get("index"))
+            return True, f"{step.get('name') or step.get('role') or step.get('selector')} is present"
         except ToolError as error:
             return False, str(error)
     if kind == "count":
@@ -118,26 +119,36 @@ def run_journey(browser, sandbox, evidence, *, suite: str, covers, steps,
         page.navigate(start_url)
 
     if events:
-        events.emit("e2e", state="journey_start", suite=suite, steps=len(steps),
-                    url=start_url or page.url)
+        events.emit("e2e", state="journey_start", suite=suite, title=suite,
+                    steps=len(steps), total=len(steps), url=start_url or page.url)
+        # Watching costs one JPEG every other frame and is what turns a browser
+        # stage from a progress bar into something you can actually see.
+        page.start_screencast(lambda frame: events.emit("e2e", state="frame",
+                                                        suite=suite, frame=frame))
 
     trace, failed = [], None
     for index, step in enumerate(steps, 1):
         step = step if isinstance(step, dict) else {}
         action = str(step.get("action") or step.get("type") or "").strip()
         label = f"{index}. {action or 'assert'}"
+        if events:
+            events.emit("e2e", state="step", suite=suite, index=index, total=len(steps),
+                        verb=_verb(action, step), label=_label(step),
+                        value=str(step.get("url") or step.get("text") or
+                                  step.get("expected") or ""))
         try:
             if action == "navigate":
                 page.navigate(str(step["url"]))
                 trace.append(f"{label} -> {page.url}")
             elif action == "click":
-                page.click(page.locate(step.get("role", "button"), step.get("name"),
-                                       step.get("selector")))
+                page.click(page.locate(step.get("role"), step.get("name"),
+                                       step.get("selector"), step.get("index")))
                 page.wait_ready(6)
                 trace.append(f"{label} {step.get('name') or step.get('selector')}")
             elif action in ("type", "fill"):
                 page.fill(page.locate(step.get("role", "textbox"), step.get("name"),
-                                      step.get("selector")), str(step.get("text", "")))
+                                      step.get("selector"), step.get("index")),
+                          str(step.get("text", "")))
                 trace.append(f"{label} {step.get('name') or step.get('selector')}")
             elif action == "press":
                 page.press(str(step.get("key", "Enter")))
@@ -173,8 +184,10 @@ def run_journey(browser, sandbox, evidence, *, suite: str, covers, steps,
             failed = f"The journey completed but the page reported problems: {detail}"
 
     if events:
-        events.emit("e2e", state="journey_done", suite=suite,
-                    status="failed" if failed else "passed", url=page.url)
+        page.stop_screencast()
+        events.emit("e2e", state="journey_done", suite=suite, title=suite,
+                    status="failed" if failed else "passed", url=page.url,
+                    message=failed or "")
 
     body = "\n".join(trace)
     if failed:
@@ -198,6 +211,22 @@ def run_journey(browser, sandbox, evidence, *, suite: str, covers, steps,
     return {"ok": True,
             "content": (f"E2E journey passed.\nSuite: {suite}\n"
                         f"Covered: {', '.join(covered) or 'no scoped ids'}\n{body}")}
+
+
+_VERBS = {"navigate": "GOTO", "click": "CLICK", "type": "FILL", "fill": "FILL",
+          "press": "PRESS", "wait": "WAIT", "screenshot": "SHOT"}
+
+
+def _verb(action: str, step: dict) -> str:
+    """What this step is doing, in the vocabulary the studio already renders."""
+    if action in _VERBS:
+        return _VERBS[action]
+    return "CHECK"
+
+
+def _label(step: dict) -> str:
+    return str(step.get("name") or step.get("selector") or step.get("url")
+               or step.get("expected") or step.get("type") or "")[:80]
 
 
 def journey_fingerprint(suite: str, failure: str) -> str:

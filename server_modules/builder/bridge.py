@@ -70,6 +70,8 @@ class StudioBridge:
         bus.on("context", self.on_context)
         bus.on("plan", self.on_plan)
         bus.on("design", self.on_design)
+        bus.on("approval", self.on_approval)
+        bus.on("approval:resolved", self.on_approval_resolved)
         bus.on("agent:error", self.on_error)
 
     def _band(self, fraction: float) -> int:
@@ -188,6 +190,15 @@ class StudioBridge:
 
     def on_error(self, p):
         elog("ERROR", f"   {p.get('message', 'the run failed')}")
+
+    def on_approval(self, payload) -> None:
+        """A question the run is waiting on. The studio answers it or it expires."""
+        emit({"type": "approval", **payload})
+        elog("INFO", f"   waiting for a decision: {payload.get('kind')}")
+
+    def on_approval_resolved(self, payload) -> None:
+        emit({"type": "approval_resolved", **payload})
+        elog("INFO", f"   {payload.get('kind')}: {payload.get('decision')}")
 
     def on_design(self, payload) -> None:
         """The design customiser's answer, shown rather than only written."""

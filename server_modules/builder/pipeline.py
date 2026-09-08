@@ -118,9 +118,16 @@ def _brief(proj_dir: Path, prompt: str) -> str:
     return "\n".join(parts)
 
 
-def _config(proj_dir: Path, prompt: str, model: str, think) -> Config:
+# How long a question waits for the studio before the build carries on with
+# what it would have done anyway. Long enough to read a plan; short enough that
+# a closed browser does not strand a run.
+GATE_TIMEOUT = 600
+
+
+def _config(proj_dir: Path, prompt: str, model: str, think, gates: bool = False) -> Config:
     return Config(workspace=proj_dir, model=model or default_agent_model(),
-                  host=ollama.host, stack=detect_stack(prompt), think=bool(think))
+                  host=ollama.host, stack=detect_stack(prompt), think=bool(think),
+                  extra={"gates": gates, "gate_timeout": GATE_TIMEOUT})
 
 
 def _cancelled() -> bool:
@@ -129,6 +136,42 @@ def _cancelled() -> bool:
         return False
     except Exception:                                                # noqa: BLE001
         return True
+
+
+# --------------------------------------------------------------------------
+# Answering a question the run asked
+# --------------------------------------------------------------------------
+# A run blocks on its own thread, so the HTTP handler needs a way to reach the
+# registry it is waiting on. Runs are rare and short-lived, so a list of the
+# live ones is simpler than a lookup table nothing else would use.
+_LIVE_APPROVALS = []
+_APPROVALS_LOCK = threading.Lock()
+
+
+def register_approvals(approvals) -> None:
+    with _APPROVALS_LOCK:
+        _LIVE_APPROVALS.append(approvals)
+
+
+def forget_approvals(approvals) -> None:
+    with _APPROVALS_LOCK:
+        if approvals in _LIVE_APPROVALS:
+            _LIVE_APPROVALS.remove(approvals)
+
+
+def resolve_decision(decision_id: str, answer: dict) -> dict:
+    """Hand one answer to whichever run is waiting for it."""
+    with _APPROVALS_LOCK:
+        registries = list(_LIVE_APPROVALS)
+    for approvals in registries:
+        if approvals.resolve(decision_id, answer):
+            return {"ok": True}
+    return {"error": "that question is no longer waiting for an answer"}
+
+
+def pending_decisions() -> list:
+    with _APPROVALS_LOCK:
+        return [row for approvals in _LIVE_APPROVALS for row in approvals.list()]
 
 
 # --------------------------------------------------------------------------
@@ -191,14 +234,21 @@ def restore_snapshot(project: str, snap_id: str) -> dict:
 # --------------------------------------------------------------------------
 def _run_agent(proj_dir: Path, brief: str, model: str, think, *, phases, kind: str,
                plan: bool = True):
-    """One builder-agent run, wired to the studio."""
+    """One builder-agent run, wired to the studio.
+
+    A full build asks about its plan and its design, because the studio can
+    answer. An edit does not: there is no plan to review, and the design was
+    settled when the project was built.
+    """
     events = Events()
     StudioBridge(events, kind=kind, phases=list(phases))
-    agent = BuilderAgent(_config(proj_dir, brief, model, think), events=events,
+    agent = BuilderAgent(_config(proj_dir, brief, model, think, gates=plan), events=events,
                          cancel=_cancelled)
+    register_approvals(agent.approvals)
     try:
         return agent, (agent.run(brief) if plan else agent.build(brief))
     finally:
+        forget_approvals(agent.approvals)
         agent._finish()
 
 

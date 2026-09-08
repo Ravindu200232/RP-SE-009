@@ -297,6 +297,10 @@ class UIHandler(SimpleHTTPRequestHandler):
             sid = str(self._body().get("srs_id", "")).strip()
             out = discard_srs(sid)
             return self._json(out, 400 if out.get("error") else 200)
+        if path == "/decision":
+            body = self._body()
+            out = resolve_decision(str(body.get("id", "")), body)
+            return self._json(out, 404 if out.get("error") else 200)
         if path == "/build/cancel":
             out = cancel.request()
             return self._json(out, 200 if out.get("ok") else 409)

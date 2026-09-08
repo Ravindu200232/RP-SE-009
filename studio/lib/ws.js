@@ -199,6 +199,7 @@ function handle(m) {
       s.setWorkKind('')
       s.testDone()
       s.setAgentState('')
+      s.setApproval(null)
       resetStreamQueue()
       useStore.setState({ liveFile: null, liveBuf: '', e2eLive: null })
       s.pushChat({ role: 'assistant', tone: 'ok', title: 'Finished',
@@ -215,6 +216,7 @@ function handle(m) {
       s.setWorkKind('')
       s.testDone()
       s.setAgentState('')
+      s.setApproval(null)
       resetStreamQueue()
       useStore.setState({ liveFile: null, liveBuf: '', e2eLive: null, project: '' })
       s.setQaReport(null)
@@ -231,6 +233,7 @@ function handle(m) {
       s.setWorkKind('')
       s.testDone()
       s.setAgentState('')
+      s.setApproval(null)
       resetStreamQueue()
       useStore.setState({ liveFile: null, liveBuf: '', e2eLive: null })
       s.pushChat({ role: 'assistant', tone: 'bad', title: 'That did not work',
@@ -260,6 +263,14 @@ function handle(m) {
       break
     case 'memory':       s.setRunStats(m); break
     case 'agent_state':  s.setAgentState(m.state || ''); break
+    case 'approval':     s.setApproval(m); break
+    case 'approval_resolved':
+      s.setApproval(null)
+      s.pushChat({ role: 'assistant', title: m.kind === 'plan' ? 'The plan' : 'Design system',
+                   text: m.decision === 'revise' ? 'Sent back for another round.'
+                       : m.decision === 'skip' ? 'Left for the build to decide.'
+                       : 'Accepted.' })
+      break
     case 'mongo':        break
     case 'command':      break
     case 'demo_accounts': break

@@ -138,7 +138,7 @@ export default function AgentChat() {
   }
 
   return (
-    <aside className="flex w-[var(--chat-w,380px)] shrink-0 flex-col overflow-hidden border-r border-line/60 bg-panel/80">
+    <aside className="flex w-[var(--chat-w,460px)] shrink-0 flex-col overflow-hidden border-r border-line/60 bg-panel/80">
       {pending && (
         <TunePrompt
           typed={pending.shown} tuned={pending.tuned}

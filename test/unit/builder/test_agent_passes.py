@@ -15,6 +15,7 @@ from test import _support  # noqa: F401
 from builder_agent.agent import BuilderAgent, wants_design
 from builder_agent.config import Config
 from builder_agent.events import Events
+from builder_agent.approvals import Approvals
 from builder_agent.llm import Reply, ToolCall
 
 PLAN = ("Goal: a hotel booking site.\n"
@@ -126,6 +127,79 @@ class AgentPassTests(unittest.TestCase):
             self.assertNotIn(name, offered)
         self.assertIn("readFile", offered)
         self.assertIn("reviewChanges", offered)
+
+    def test_a_plan_can_be_accepted(self):
+        self.agent.approvals = Approvals(self.events, enabled=True, timeout=5)
+        asked = []
+        self.events.on("approval", lambda p: (
+            asked.append(p),
+            self.agent.approvals.resolve(p["id"], {"decision": "accept"})))
+        self.script([Reply(calls=[ToolCall("a", "submitPlan", {"plan": PLAN})])])
+
+        self.agent.plan("build a hotel booking site")
+
+        self.assertEqual(len(asked), 1)
+        self.assertEqual(asked[0]["kind"], "plan")
+        self.assertIn("Phase 1 - models", asked[0]["plan"])
+        self.assertEqual(self.agent.plan_text, PLAN)
+
+    def test_a_plan_sent_back_is_written_again_with_the_feedback(self):
+        self.agent.approvals = Approvals(self.events, enabled=True, timeout=5)
+        rounds = []
+
+        def answer(payload):
+            rounds.append(payload)
+            decision = "revise" if len(rounds) == 1 else "accept"
+            self.agent.approvals.resolve(payload["id"],
+                                         {"decision": decision, "feedback": "use two roles"})
+        self.events.on("approval", answer)
+        router = self.script([
+            Reply(calls=[ToolCall("a", "submitPlan", {"plan": PLAN})]),
+            Reply(calls=[ToolCall("b", "submitPlan",
+                                  {"plan": PLAN + "\nPhase 3 - roles."})]),
+        ])
+
+        self.agent.plan("build a hotel booking site")
+
+        self.assertEqual(len(rounds), 2)
+        # The second planning pass is told what was wrong with the first.
+        second = "\n".join(m.get("content") or "" for m in router.asked[1])
+        self.assertIn("use two roles", second)
+        self.assertIn("Phase 3 - roles.", self.agent.plan_text)
+
+    def test_nobody_answering_lets_the_build_start_anyway(self):
+        self.agent.approvals = Approvals(self.events, enabled=True, timeout=1)
+        self.script([Reply(calls=[ToolCall("a", "submitPlan", {"plan": PLAN})])])
+
+        outcome = self.agent.plan("build a hotel booking site")
+
+        self.assertEqual(outcome.status, "completed")
+        self.assertEqual(self.agent.plan_text, PLAN)
+
+    def test_the_design_answer_is_applied_and_junk_in_it_is_not(self):
+        self.agent.approvals = Approvals(self.events, enabled=True, timeout=5)
+        self.events.on("approval", lambda p: self.agent.approvals.resolve(p["id"], {
+            "decision": "apply",
+            "selection": {"palette": "mono-contrast", "radius": "square",
+                          "font": "not-a-font"}}))
+
+        written = self.agent.apply_design("build a hotel booking site")
+
+        self.assertEqual(written["selection"]["palette"], "mono-contrast")
+        self.assertEqual(written["selection"]["radius"], "square")
+        # An unknown id keeps what was chosen rather than failing the build.
+        self.assertEqual(written["selection"]["font"],
+                         self.agent.design["selection"]["font"])
+        self.assertIn("Mono Contrast",
+                      (self.root / ".agents/skills/design-system/SKILL.md").read_text(encoding="utf-8"))
+
+    def test_the_design_can_be_left_to_the_build(self):
+        self.agent.approvals = Approvals(self.events, enabled=True, timeout=5)
+        self.events.on("approval",
+                       lambda p: self.agent.approvals.resolve(p["id"], {"decision": "skip"}))
+
+        self.assertIsNone(self.agent.apply_design("build a hotel booking site"))
+        self.assertFalse((self.root / ".agents/skills/design-system").exists())
 
     def test_a_snapshot_describes_the_run_without_needing_a_model(self):
         snapshot = self.agent.snapshot()

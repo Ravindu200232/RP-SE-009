@@ -110,6 +110,11 @@ export const useStore = create((set, get) => ({
   agentState: '',
   setAgentState: (agentState) => set({ agentState }),
 
+  // The one question a run is waiting on, if any. It carries its own deadline
+  // and clears itself, so a closed dialog costs a choice and not a build.
+  approval: null,
+  setApproval: (approval) => set({ approval }),
+
   // What the agent and the user actually said to each other, as opposed to the
   // tool activity the chat panel derives from `logs`.
   chat: [],
@@ -189,7 +194,7 @@ export const useStore = create((set, get) => ({
 
       // Clear project state before opening another project.
   reset: (project) => set({
-    project, logs: [], chat: [], runStats: null, agentState: '',
+    project, logs: [], chat: [], runStats: null, agentState: '', approval: null,
     steps: {}, phases: [], files: {},
     activeFile: null, liveFile: null, liveBuf: '', follow: true,
     progress: emptyProgress(),

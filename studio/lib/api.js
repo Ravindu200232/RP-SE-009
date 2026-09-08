@@ -32,6 +32,9 @@ export const api = {
   // Stop the running build.
   cancelBuild: () => post('/build/cancel', {}),
 
+  // Answer a question the run is waiting on: the plan, or the design.
+  decide: (body) => post('/decision', body),
+
   // Throw away a specification that has not been approved.
   discardSrs: (srs_id) => post('/discard-srs', { srs_id }),
   undo: (project, id) => post('/undo', { project, id }),

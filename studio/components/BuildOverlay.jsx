@@ -156,7 +156,7 @@ export default function BuildOverlay() {
          className="absolute inset-0 z-[20] overflow-y-auto bg-white">
       <div className="absolute right-6 top-6 z-20"><CancelBuild /></div>
 
-      <div className="mx-auto grid min-h-full w-full max-w-[1260px] items-center gap-7 px-7 py-10 lg:grid-cols-[.84fr_1.16fr]">
+      <div className="mx-auto grid min-h-full w-full max-w-[1260px] items-center gap-7 px-7 py-10 lg:grid-cols-[.9fr_1.1fr]">
         <section className="flex min-h-[560px] flex-col p-6">
           <div className="flex items-center gap-3">
             <span className="grid size-10 place-items-center rounded-[15px] bg-accent text-white shadow-[0_10px_24px_rgba(93,106,251,.24)]"><Icon className="size-4.5" /></span>

@@ -93,7 +93,9 @@ def register(registry):
         name="browserRunJourney", risk=MODERATE, handler=browser_run_journey,
         description="Run a bounded browser journey in the engine's isolated browser and record "
                     "it as end-to-end evidence. Steps are actions and assertions; a diagnostics "
-                    "check runs at the end, so console errors and 5xx responses fail the journey.",
+                    "check runs at the end, so console errors and 5xx responses fail the journey. "
+                    "Repeated controls on a list page are normal - disambiguate them with index, "
+                    "not by changing the product.",
         parameters={"type": "object", "required": ["suite", "steps"], "properties": {
             "suite": {"type": "string", "description": "Stable name for this journey."},
             "covers": {"type": "array", "description": "Requirement ids this journey proves."},
@@ -107,7 +109,10 @@ def register(registry):
                       '{action:"wait",ms}, {action:"screenshot",view,width}. '
                       'Assertions: {type:"textIncludes",expected}, {type:"urlIncludes",expected}, '
                       '{type:"visible",role,name}, {type:"count",selector,expected}, '
-                      '{type:"noDiagnostics"}.'},
+                      '{type:"noDiagnostics"}. '
+                      'Any locator also takes index: a list page repeats the same control on '
+                      'every row, so index:0 takes the first, index:-1 the last. Omitting role '
+                      'searches every role.'},
         }},
         summarize=lambda a: a.get("suite", "journey")))
 

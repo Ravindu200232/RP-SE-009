@@ -279,6 +279,46 @@ class Page:
         self.cdp.on("Network.loadingFailed", failed)
         self.cdp.on("Network.responseReceived", response)
 
+    # -- watching --------------------------------------------------------
+    def start_screencast(self, on_frame, quality: int = 55, width: int = 900) -> None:
+        """Stream what this tab is showing, frame by frame.
+
+        The journeys run headless, so without this a browser stage is a
+        progress bar and a log line: you cannot see the page the assertion
+        failed on. Every frame must be acknowledged or Chrome stops sending
+        them after the first.
+        """
+        def frame(params, session):
+            if session != self.session:
+                return
+            data = params.get("data") or ""
+            try:
+                self.cdp.send("Page.screencastFrameAck",
+                              {"sessionId": params.get("sessionId")}, self.session, timeout=5)
+            except ToolError:
+                return
+            if data:
+                on_frame("data:image/jpeg;base64," + data)
+
+        self.cdp.on("Page.screencastFrame", frame)
+        try:
+            self.cdp.send("Page.startScreencast",
+                          {"format": "jpeg", "quality": quality, "maxWidth": width,
+                           "maxHeight": int(width * 0.75), "everyNthFrame": 2},
+                          self.session)
+            self._casting = True
+        except ToolError:
+            self._casting = False       # watching is a convenience, never a gate
+
+    def stop_screencast(self) -> None:
+        if not getattr(self, "_casting", False):
+            return
+        self._casting = False
+        try:
+            self.cdp.send("Page.stopScreencast", {}, self.session, timeout=5)
+        except ToolError:
+            pass
+
     def _note(self, kind: str, text: str, url: str = "") -> None:
         # Bounded: a page in a redirect loop can emit thousands of these, and
         # the useful ones are always the first few.
@@ -356,37 +396,49 @@ class Page:
         body = "\n".join(unique[:limit]) or "(no named accessible controls)"
         return head + body
 
-    def locate(self, role: str | None, name: str | None, selector: str | None) -> int:
-        """Resolve one element, or say precisely why it could not."""
+    def locate(self, role: str | None, name: str | None, selector: str | None,
+               index: int | None = None) -> int:
+        """Resolve one element, or say precisely why it could not.
+
+        `index` picks from an ordered set of equal matches. A list page renders
+        the same control once per row - "View & Book" on every room card - and
+        that is correct product UI, not a defect. Without a way to say "the
+        first one" no list page could ever be tested, which made ambiguity a
+        dead end rather than something the journey could resolve.
+        """
         if selector:
             document = self.cdp.send("DOM.getDocument", {"depth": 0, "pierce": True},
                                      self.session).get("root", {})
-            found = self.cdp.send("DOM.querySelector",
+            found = self.cdp.send("DOM.querySelectorAll",
                                   {"nodeId": document.get("nodeId"), "selector": selector},
                                   self.session)
-            node_id = found.get("nodeId")
-            if not node_id:
+            node_ids = found.get("nodeIds") or []
+            if not node_ids:
                 raise ToolError(f"E2E_SELECTOR_MISMATCH: no element matches selector "
                                 f"{selector!r}. Repair owner: the journey locator, unless the "
                                 "UI contract itself is missing.")
+            node_id = self._pick(node_ids, index, f"selector {selector!r}")
             described = self.cdp.send("DOM.describeNode", {"nodeId": node_id}, self.session)
             return described["node"]["backendNodeId"]
 
-        role = (role or "").lower()
-        matches = [n for n in self.a11y() if n["role"] == role and n["backendDOMNodeId"]]
+        # A missing role means "any role". Requiring one made an omitted role
+        # match nothing at all and report "no accessible  exists".
+        role = (role or "").lower().strip()
+        nodes = [n for n in self.a11y() if n["backendDOMNodeId"]]
+        matches = [n for n in nodes if n["role"] == role] if role else nodes
+        described_role = role or "control"
+
         if name is None:
-            if len(matches) == 1:
-                return matches[0]["backendDOMNodeId"]
             if not matches:
-                raise ToolError(f"E2E_UI_TARGET_MISSING: no accessible {role} exists on this page. "
-                                "Repair owner: the product UI, route or state.")
-            raise ToolError(f"E2E_SELECTOR_AMBIGUOUS: {len(matches)} accessible {role} controls "
-                            "were found. Repair owner: the journey locator - give a name or a "
-                            "stable CSS selector.")
+                raise ToolError(f"E2E_UI_TARGET_MISSING: no accessible {described_role} exists on "
+                                "this page. Repair owner: the product UI, route or state.")
+            return self._pick([n["backendDOMNodeId"] for n in matches], index,
+                              f"role {described_role}")
 
         if not matches:
-            raise ToolError(f"E2E_UI_TARGET_MISSING: no accessible {role} exists while the journey "
-                            f"expected {name!r}. Repair owner: the product UI, route or state.")
+            raise ToolError(f"E2E_UI_TARGET_MISSING: no accessible {described_role} exists while "
+                            f"the journey expected {name!r}. Repair owner: the product UI, route "
+                            "or state.")
 
         wanted = _normalise(name)
         for candidates, label in (
@@ -394,19 +446,32 @@ class Page:
             ([n for n in matches if _normalise(n["name"]) == wanted], "normalised"),
             ([n for n in matches if wanted and wanted in _normalise(n["name"])], "containing"),
         ):
-            if len(candidates) == 1:
-                return candidates[0]["backendDOMNodeId"]
-            if len(candidates) > 1:
-                names = " | ".join(c["name"][:80] for c in candidates[:5])
-                raise ToolError(f"E2E_SELECTOR_AMBIGUOUS: {label} match for {name!r} on role "
-                                f"{role} hits {len(candidates)} controls ({names}). Repair owner: "
-                                "the journey locator - use a more specific name or a CSS selector.")
+            if candidates:
+                return self._pick([n["backendDOMNodeId"] for n in candidates], index,
+                                  f"{label} match for {name!r} on role {described_role}")
 
         observed = " | ".join(n["name"][:60] for n in matches[:8] if n["name"])
-        raise ToolError(f"E2E_SELECTOR_MISMATCH: no accessible {role} named {name!r}."
-                        + (f" Observed {role} names: {observed}." if observed else "")
+        raise ToolError(f"E2E_SELECTOR_MISMATCH: no accessible {described_role} named {name!r}."
+                        + (f" Observed names: {observed}." if observed else "")
                         + " Repair owner: the journey locator if one of those is the intended "
                           "target; otherwise the product UI, route or state.")
+
+    @staticmethod
+    def _pick(node_ids: list, index: int | None, what: str) -> int:
+        """One node from an ordered set, or an error that says how to choose."""
+        if index is not None:
+            position = int(index)
+            if not -len(node_ids) <= position < len(node_ids):
+                raise ToolError(f"E2E_SELECTOR_MISMATCH: index {position} is out of range for "
+                                f"{what}, which matched {len(node_ids)} element(s). Repair owner: "
+                                "the journey locator.")
+            return node_ids[position]
+        if len(node_ids) == 1:
+            return node_ids[0]
+        raise ToolError(f"E2E_SELECTOR_AMBIGUOUS: {what} hits {len(node_ids)} controls. Repair "
+                        "owner: the journey locator - add index:0 for the first of them (or any "
+                        "position, -1 for the last), or use a more specific name or CSS selector. "
+                        "Repeated controls on a list page are normal and are not a product defect.")
 
     # -- interaction -----------------------------------------------------
     def _box(self, backend_id: int) -> tuple[float, float]:

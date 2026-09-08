@@ -17,6 +17,7 @@ import TestingResult from '@/components/testing/TestingResult'
 import SrsResult from '@/components/srs/SrsResult'
 import DeployPanel from '@/components/deploy/DeployPanel'
 import AgentChat from '@/components/AgentChat'
+import AgentDecision from '@/components/AgentDecision'
 import { Badge, Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { projectUnitTestStatus } from '@/lib/test-counts'
@@ -277,6 +278,8 @@ export default function Studio() {
                  refreshProjects()
                  if (project === name) setScreen('home')
                }} />
+
+      <AgentDecision />
 
       {settingsOpen && (
         <SettingsModal onClose={() => setSettingsOpen(false)}

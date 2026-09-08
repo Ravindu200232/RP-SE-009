@@ -1,23 +1,28 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-07T20:50:04+00:00
+Run at (UTC): 2026-09-08T14:04:07+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 192
+Unit tests: 201
 Integration tests: 24
-Total tests run: 216
+Total tests run: 225
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 13.994s
+Duration: 8.620s
 
 Detailed results
 ----------------
+test_a_plan_can_be_accepted (test.unit.builder.test_agent_passes.AgentPassTests.test_a_plan_can_be_accepted) ... ok
+test_a_plan_sent_back_is_written_again_with_the_feedback (test.unit.builder.test_agent_passes.AgentPassTests.test_a_plan_sent_back_is_written_again_with_the_feedback) ... ok
 test_a_review_pass_is_offered_nothing_that_can_change_anything (test.unit.builder.test_agent_passes.AgentPassTests.test_a_review_pass_is_offered_nothing_that_can_change_anything) ... ok
 test_a_snapshot_describes_the_run_without_needing_a_model (test.unit.builder.test_agent_passes.AgentPassTests.test_a_snapshot_describes_the_run_without_needing_a_model) ... ok
+test_nobody_answering_lets_the_build_start_anyway (test.unit.builder.test_agent_passes.AgentPassTests.test_nobody_answering_lets_the_build_start_anyway) ... ok
 test_planning_investigates_and_ends_on_a_submitted_plan (test.unit.builder.test_agent_passes.AgentPassTests.test_planning_investigates_and_ends_on_a_submitted_plan) ... ok
 test_the_build_pass_receives_the_plan_and_the_design (test.unit.builder.test_agent_passes.AgentPassTests.test_the_build_pass_receives_the_plan_and_the_design) ... ok
+test_the_design_answer_is_applied_and_junk_in_it_is_not (test.unit.builder.test_agent_passes.AgentPassTests.test_the_design_answer_is_applied_and_junk_in_it_is_not) ... ok
+test_the_design_can_be_left_to_the_build (test.unit.builder.test_agent_passes.AgentPassTests.test_the_design_can_be_left_to_the_build) ... ok
 test_the_design_contract_is_decided_and_written_without_asking (test.unit.builder.test_agent_passes.AgentPassTests.test_the_design_contract_is_decided_and_written_without_asking) ... ok
 test_the_planning_pass_investigates_but_does_not_implement (test.unit.builder.test_agent_passes.AgentPassTests.test_the_planning_pass_investigates_but_does_not_implement) ... ok
 test_work_with_no_interface_gets_no_design_contract (test.unit.builder.test_agent_passes.AgentPassTests.test_work_with_no_interface_gets_no_design_contract) ... ok
@@ -69,6 +74,11 @@ test_a_console_error_fails_the_journey (test.unit.builder.test_journeys.Diagnost
 test_a_genuinely_failed_request_fails_the_journey (test.unit.builder.test_journeys.DiagnosticsTests.test_a_genuinely_failed_request_fails_the_journey) ... ok
 test_a_server_error_fails_the_journey (test.unit.builder.test_journeys.DiagnosticsTests.test_a_server_error_fails_the_journey) ... ok
 test_cancellations_are_still_visible_when_a_failure_is_investigated (test.unit.builder.test_journeys.DiagnosticsTests.test_cancellations_are_still_visible_when_a_failure_is_investigated) ... ok
+test_ambiguity_says_how_to_resolve_it (test.unit.builder.test_journeys.LocatorTests.test_ambiguity_says_how_to_resolve_it) ... ok
+test_an_index_chooses_from_a_repeated_control (test.unit.builder.test_journeys.LocatorTests.test_an_index_chooses_from_a_repeated_control)
+A list page repeats its controls once per row. That is correct UI. ... ok
+test_an_index_past_the_end_is_the_journey_being_wrong (test.unit.builder.test_journeys.LocatorTests.test_an_index_past_the_end_is_the_journey_being_wrong) ... ok
+test_one_match_needs_no_index (test.unit.builder.test_journeys.LocatorTests.test_one_match_needs_no_index) ... ok
 test_a_connection_that_was_refused_is_a_failure (test.unit.builder.test_journeys.RequestClassificationTests.test_a_connection_that_was_refused_is_a_failure) ... ok
 test_cdp_calling_a_request_cancelled_is_believed (test.unit.builder.test_journeys.RequestClassificationTests.test_cdp_calling_a_request_cancelled_is_believed) ... ok
 test_the_error_text_is_the_backstop (test.unit.builder.test_journeys.RequestClassificationTests.test_the_error_text_is_the_backstop) ... ok
@@ -238,6 +248,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 216 tests in 13.994s
+Ran 225 tests in 8.620s
 
 OK

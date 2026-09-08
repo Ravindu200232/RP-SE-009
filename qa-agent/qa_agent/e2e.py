@@ -41,8 +41,12 @@ its URL before you test anything.
    deliberate - fix the app, not the assertion.
 
 Route each failure by its owner:
-- E2E_SELECTOR_MISMATCH or E2E_SELECTOR_AMBIGUOUS: your locator is wrong. Read
-  the snapshot again and use the accessible name that is really there.
+- E2E_SELECTOR_AMBIGUOUS: the page has several of that control, which on a list
+  page is correct and expected. Add index:0 to take the first (index:-1 the
+  last), or use a more specific name or CSS selector. Do not change the product
+  to make a list stop repeating itself.
+- E2E_SELECTOR_MISMATCH: your locator names something that is not there. Read
+  the snapshot again and use the accessible name that really exists.
 - E2E_UI_TARGET_MISSING: the product is missing the control the journey needs.
   Build it, or fix the route or state that should have produced it.
 - An assertion, console, network or 5xx failure: the product is broken. Fix it.

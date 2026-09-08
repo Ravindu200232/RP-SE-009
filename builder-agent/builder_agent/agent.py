@@ -19,10 +19,12 @@ from __future__ import annotations
 import uuid
 from pathlib import Path
 
+from .approvals import Approvals
 from .browser import Browser
 from .config import Config
+from .design import apply_answer as apply_design_answer
 from .design import choose as choose_design
-from .design import design_contract_message, write_design_skill
+from .design import design_contract_message, form_payload, write_design_skill
 from .design import tokens as design_tokens
 from .errors import AbortError, ConfigError
 from .events import Events
@@ -33,6 +35,11 @@ from .processes import Processes
 from .prompts import task_message
 from .sandbox import Sandbox
 from .tools import build_registry, review_registry
+
+# How many times a rejected plan may be sent back before the build proceeds
+# anyway. A plan nobody accepts after this many tries is not going to be
+# accepted, and the alternative is a build that never starts.
+MAX_PLAN_REVISIONS = 3
 
 # Work with no user interface: a design contract for a cron job is noise.
 NON_UI_TERMS = ("cli", "command line", "cron", "worker", "script", "library",
@@ -58,6 +65,10 @@ class BuilderAgent:
         self.config = config
         self.events = events or Events()
         self.cancel = cancel or (lambda: False)
+        # Only a surface that can actually answer turns these on; everywhere
+        # else they resolve to the default immediately.
+        self.approvals = Approvals(self.events, enabled=bool(config.extra.get("gates")),
+                                   timeout=float(config.extra.get("gate_timeout", 300)))
         self.sandbox = Sandbox(config.workspace)
         self.memory = Memory(budget_tokens=config.context_tokens)
         self.processes = Processes(events=self.events)
@@ -75,22 +86,58 @@ class BuilderAgent:
 
     # -- passes ----------------------------------------------------------
     def plan(self, task: str) -> Outcome:
-        """Investigate the project, then write the plan the build executes."""
+        """Investigate the project, then write the plan the build executes.
+
+        The plan is offered for review before anything is built. Nobody has to
+        answer: the gate expires into "accept", because a plan is cheap to
+        change now and the alternative is a build that never starts.
+        """
         self.events.emit("phase", phase="plan", title="Planning", status="active")
-        loop = self._loop(self.registry.subset(
-            [name for name, tool in self.registry.tools.items()
-             if tool.review_safe or name in ("executeTerminal",)]),
-            plan_only=True)
-        outcome = loop.run(task)
-        self.plan_text = loop.state.get("plan") or outcome.result
+        request = task
+
+        for revision in range(MAX_PLAN_REVISIONS + 1):
+            loop = self._loop(self.registry.subset(
+                [name for name, tool in self.registry.tools.items()
+                 if tool.review_safe or name in ("executeTerminal",)]),
+                plan_only=True)
+            outcome = loop.run(request)
+            self.plan_text = loop.state.get("plan") or outcome.result
+
+            answer = self.approvals.ask(
+                "plan", {"plan": self.plan_text, "goal": task[:400],
+                         "revision": revision, "maxRevisions": MAX_PLAN_REVISIONS},
+                default={"decision": "accept"}, cancel=self.cancel)
+            if answer.get("decision") != "revise" or revision >= MAX_PLAN_REVISIONS:
+                break
+
+            feedback = str(answer.get("feedback") or "").strip()
+            self.events.emit("notice", level="info",
+                             message=f"Revising the plan (round {revision + 2})"
+                                     + (f": {feedback[:160]}" if feedback else "."))
+            request = "\n".join([
+                f"Revise the plan for this request:\n\n{task}", "",
+                "The previous plan was sent back. What was asked for:",
+                feedback or "(nothing specific - reconsider the approach yourself)", "",
+                "Previous plan:", self.plan_text[:6000], "",
+                "Produce a new plan that addresses this. Do not simply restate the old one.",
+            ])
+
         self.events.emit("phase", phase="plan", title="Planning", status="done")
         return outcome
 
     def apply_design(self, task: str) -> dict | None:
-        """Decide the look, and write it into the project as a contract."""
+        """Decide the look, offer it for adjustment, and write it as a contract."""
         if not wants_design(task):
             return None
-        selection = choose_design(task)
+        form = form_payload(task)
+        answer = self.approvals.ask(
+            "design", form, default={"decision": "apply"}, cancel=self.cancel)
+        if answer.get("decision") == "skip":
+            self.events.emit("notice", level="info",
+                             message="Design contract skipped; the build will choose its own look.")
+            return None
+
+        selection = apply_design_answer(form["chosen"], answer.get("selection"))
         written = write_design_skill(self.sandbox.root, selection, goal=task[:300])
         self.design = written
         self.events.emit("phase", phase="design", title="Design system", status="done",
@@ -155,6 +202,7 @@ class BuilderAgent:
 
     def _finish(self) -> None:
         """Leave services running for the preview; take everything else down."""
+        self.approvals.cancel_all()
         self.memory.close_pending_tools(
             "The run ended before this tool reported a result. Verify the current state before "
             "retrying it.")

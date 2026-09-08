@@ -100,6 +100,42 @@ class RequestClassificationTests(unittest.TestCase):
             self.assertEqual(self.classify(error), "request failed", error)
 
 
+class LocatorTests(unittest.TestCase):
+    """Choosing one element out of several, and saying how when it cannot."""
+
+    def pick(self, count, index=None):
+        from builder_agent.browser import Page
+        return Page._pick(list(range(100, 100 + count)), index, "role link")
+
+    def test_one_match_needs_no_index(self):
+        self.assertEqual(self.pick(1), 100)
+
+    def test_an_index_chooses_from_a_repeated_control(self):
+        """A list page repeats its controls once per row. That is correct UI.
+
+        Without a way to say which one, no list page could ever be tested and
+        the stage told the model to fix a product that was not broken.
+        """
+        self.assertEqual(self.pick(3, 0), 100)
+        self.assertEqual(self.pick(3, 2), 102)
+        self.assertEqual(self.pick(3, -1), 102)
+
+    def test_ambiguity_says_how_to_resolve_it(self):
+        with self.assertRaises(ToolError) as caught:
+            self.pick(3)
+        message = str(caught.exception)
+        self.assertIn("E2E_SELECTOR_AMBIGUOUS", message)
+        self.assertIn("index:0", message)
+        # And that a repeated control is not something to "fix" in the product.
+        self.assertIn("not a product defect", message)
+
+    def test_an_index_past_the_end_is_the_journey_being_wrong(self):
+        with self.assertRaises(ToolError) as caught:
+            self.pick(2, 5)
+        self.assertIn("out of range", str(caught.exception))
+        self.assertIn("E2E_SELECTOR_MISMATCH", str(caught.exception))
+
+
 class AssertionShapeTests(unittest.TestCase):
     def test_an_empty_expectation_is_refused_rather_than_always_passing(self):
         for kind in ("textIncludes", "urlIncludes"):

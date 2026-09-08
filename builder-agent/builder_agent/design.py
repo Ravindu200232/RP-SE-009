@@ -234,6 +234,59 @@ def choose(task: str) -> dict:
     }
 
 
+def form_payload(task: str) -> dict:
+    """Everything a design form needs to render, plus what was chosen for it.
+
+    Pure data, so the studio, the CLI and a test all render the same catalogue
+    and there is no second list to keep in step.
+    """
+    chosen = choose(task)
+    return {
+        "chosen": chosen,
+        "palettes": [{
+            "id": p["id"], "name": p["name"], "mood": p["mood"],
+            "light": tokens(p["id"], "light"), "dark": tokens(p["id"], "dark"),
+        } for p in PALETTES],
+        "fonts": [{"id": f["id"], "name": f["name"], "heading": f["heading"],
+                   "body": f["body"]} for f in FONTS],
+        "typeScales": [{"id": name, "base": base, "ratio": ratio}
+                       for name, (ratio, base) in TYPE_SCALES.items()],
+        "radii": [{"id": name, "value": value} for name, value in RADII.items()],
+        "densities": [{"id": name, "unit": unit, "control": control}
+                      for name, (unit, control) in DENSITIES.items()],
+        "themeModes": ["light", "dark"],
+    }
+
+
+def apply_answer(chosen: dict, answer: dict | None) -> dict:
+    """Fold a form answer onto the chosen defaults, ignoring anything unknown.
+
+    The answer arrives over HTTP, so nothing here trusts its shape: an
+    unrecognised id keeps the default rather than failing the build at the one
+    step that was meant to be optional.
+    """
+    if not isinstance(answer, dict):
+        return chosen
+    allowed = {
+        "palette": {p["id"] for p in PALETTES},
+        "font": {f["id"] for f in FONTS},
+        "typeScale": set(TYPE_SCALES),
+        "radius": set(RADII),
+        "density": set(DENSITIES),
+        "themeMode": {"light", "dark"},
+    }
+    picked = dict(chosen)
+    for field, valid in allowed.items():
+        value = answer.get(field)
+        if isinstance(value, str) and value in valid:
+            picked[field] = value
+    if picked["palette"] != chosen["palette"]:
+        palette = next(p for p in PALETTES if p["id"] == picked["palette"])
+        picked["paletteName"], picked["mood"] = palette["name"], palette["mood"]
+    picked["matched"] = True
+    return picked
+
+
 def render_tokens_css(selection: dict) -> str:
     """The contract as CSS custom properties, both modes."""
     scale, base = TYPE_SCALES[selection["typeScale"]]
