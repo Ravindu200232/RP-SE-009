@@ -42,11 +42,20 @@ def write(project_dir: Path | str, payload: dict) -> Path:
 
 def assemble(*, project: str, project_dir: Path, unit, e2e, security: dict,
              evidence: dict, runtime: list, manifest: dict, tests: dict,
-             history: list, performance: dict | None = None) -> dict:
-    """Build the studio-shaped record from the stage results."""
+             history: list, performance: dict | None = None,
+             stages: tuple = (), complete: bool = True) -> dict:
+    """Build the studio-shaped record from the stage results.
+
+    `stages` names what has actually run. A record written half way through a
+    verification is real evidence about the stages it names and says nothing
+    about the ones it does not - which is different from, and much more useful
+    than, no record at all.
+    """
     return {
         "project": project,
         "generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "stages": list(stages),
+        "complete": bool(complete),
         "vitest": unit.report,
         "manifest": manifest,
         "tests": tests,

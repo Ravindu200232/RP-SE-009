@@ -175,10 +175,12 @@ function handle(m) {
     case 'e2e_parallel':  s.e2eParallelEvent(m); break
     case 'e2e_event': {
       s.e2eEvent(m)
+      // A journey no longer carries its own picture: there is one browser and
+      // it streams into the preview. What survives here is where it is and
+      // what it is doing.
       const prior = m.state === 'journey_start' ? {} : (s.e2eLive || {})
       const at = Date.now()
-      s.setE2eLive({ ...prior, ...m,
-        frame: m.state === 'journey_start' ? '' : (m.frame ?? prior.frame ?? ''), at })
+      s.setE2eLive({ ...prior, ...m, at })
       if (m.state === 'journey_done') {
         const version = ++e2eVersion
         setTimeout(() => {

@@ -300,7 +300,6 @@ export const useStore = create((set, get) => ({
       message: m.message ?? (state === 'journey_start' ? '' : old.message),
       index: Number.isFinite(Number(m.index)) ? Number(m.index) : old.index,
       total: Number.isFinite(Number(m.total)) ? Number(m.total) : old.total,
-      frame: m.frame || old.frame,
       ok: m.ok ?? old.ok,
       updatedAt: Date.now(),
     }
@@ -330,7 +329,7 @@ function emptyTests() {
 function emptyE2eLane(lane) {
   return {
     lane, state: 'idle', title: '', role: '', route: '', label: '',
-    message: '', index: 0, total: 0, frame: '', ok: null, updatedAt: 0,
+    message: '', index: 0, total: 0, ok: null, updatedAt: 0,
   }
 }
 

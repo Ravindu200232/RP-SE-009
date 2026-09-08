@@ -13,6 +13,11 @@ export default function Overview({ qa, live }) {
   if (!last && !r && !v) {
     return <Empty>Nothing has been recorded for this project yet.</Empty>
   }
+  // A record is written as each stage finishes, so what is on screen can be a
+  // verification that is still running — or one that was stopped part way. The
+  // numbers are real either way; what they do not yet cover is worth saying.
+  const partial = qa && qa.complete === false
+  const ran = qa?.stages || []
 
   const perf = qa?.performance?.scores || {}
   const sec = r?.security?.findings || []
@@ -26,6 +31,17 @@ export default function Overview({ qa, live }) {
   const roundAverage = history.length ? Math.round(history.reduce((sum, x) => sum + Number(x.rate || 0), 0) / history.length) : null
 
   return (
+    <div className="space-y-3">
+      {partial && (
+        <p className="rounded-panel border border-accent/30 bg-accent/5 px-3 py-2 text-[11px] text-muted">
+          <b className="text-ink">Part way through.</b>{' '}
+          {ran.length
+            ? `${ran.join(' and ')} ${ran.length === 1 ? 'has' : 'have'} run so far.`
+            : 'No stage has finished yet.'}{' '}
+          Everything below is what has been proved up to this point.
+        </p>
+      )}
+
     <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(290px,1fr))]">
       <Card title="Round one" hint="what the generated tests did before any repair">
         {last ? (
@@ -168,6 +184,7 @@ export default function Overview({ qa, live }) {
           ) : <p className="text-[11.5px] text-ok">No runtime errors.</p>
         ) : <Empty>No record.</Empty>}
       </Card>
+    </div>
     </div>
   )
 }

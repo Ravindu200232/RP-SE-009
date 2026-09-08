@@ -145,8 +145,14 @@ that once beats patching each symptom. Then rerun only the affected files with
 runTests before the whole suite."""
 
 
-def run_stage(*, agent, workspace: Path, run_command, events=None, floor: int = 95) -> UnitResult:
-    """Author, run and repair the unit suite. Returns what the runner reported."""
+def run_stage(*, agent, workspace: Path, run_command, events=None, floor: int = 95,
+              on_round=None) -> UnitResult:
+    """Author, run and repair the unit suite. Returns what the runner reported.
+
+    `on_round` is called after every round with the result so far. Repair can
+    take a dozen rounds, and a run that is stopped during them should still
+    leave behind the rounds it did.
+    """
     workspace = Path(workspace)
     result = UnitResult()
 
@@ -179,6 +185,8 @@ def run_stage(*, agent, workspace: Path, run_command, events=None, floor: int = 
             events.emit("test", state="result", kind="unit", suite="vitest",
                         status="passed" if not failures else "failed",
                         detail=f"{counts['passed']}/{counts['total']} passing")
+        if on_round:
+            on_round(result)
 
         result.skipped = counts["skipped"]
         if not failures and counts["total"]:

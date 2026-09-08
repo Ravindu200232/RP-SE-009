@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-08T15:11:15+00:00
+Run at (UTC): 2026-09-08T15:26:33+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 229
+Unit tests: 234
 Integration tests: 24
-Total tests run: 253
+Total tests run: 258
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 11.495s
+Duration: 10.122s
 
 Detailed results
 ----------------
@@ -213,6 +213,12 @@ test_a_failing_journey_is_repaired_and_the_owner_is_named (test.unit.qa.test_qa_
 test_a_journey_that_never_passes_is_reported_not_retried_forever (test.unit.qa.test_qa_stages.E2EStageTests.test_a_journey_that_never_passes_is_reported_not_retried_forever) ... ok
 test_a_stage_with_no_journeys_says_so (test.unit.qa.test_qa_stages.E2EStageTests.test_a_stage_with_no_journeys_says_so) ... ok
 test_passing_journeys_end_the_stage_without_repair (test.unit.qa.test_qa_stages.E2EStageTests.test_passing_journeys_end_the_stage_without_repair) ... ok
+test_a_finished_record_says_so (test.unit.qa.test_qa_stages.PartialRecordTests.test_a_finished_record_says_so) ... ok
+test_a_partial_record_reads_back_the_same_way_a_whole_one_does (test.unit.qa.test_qa_stages.PartialRecordTests.test_a_partial_record_reads_back_the_same_way_a_whole_one_does) ... ok
+test_a_record_names_the_stages_it_actually_contains (test.unit.qa.test_qa_stages.PartialRecordTests.test_a_record_names_the_stages_it_actually_contains) ... ok
+test_a_stage_with_nobody_listening_still_runs (test.unit.qa.test_qa_stages.UnitRoundReportingTests.test_a_stage_with_nobody_listening_still_runs) ... ok
+test_every_repair_round_is_offered_for_saving_as_it_happens (test.unit.qa.test_qa_stages.UnitRoundReportingTests.test_every_repair_round_is_offered_for_saving_as_it_happens)
+Repair can take a dozen rounds; each one is worth keeping. ... ok
 test_a_broken_harness_stops_before_anything_is_authored (test.unit.qa.test_qa_stages.UnitStageTests.test_a_broken_harness_stops_before_anything_is_authored) ... ok
 test_a_failure_that_changes_is_repaired_again (test.unit.qa.test_qa_stages.UnitStageTests.test_a_failure_that_changes_is_repaired_again) ... ok
 test_a_green_suite_is_reported_after_one_round (test.unit.qa.test_qa_stages.UnitStageTests.test_a_green_suite_is_reported_after_one_round) ... ok
@@ -286,6 +292,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 253 tests in 11.495s
+Ran 258 tests in 10.122s
 
 OK

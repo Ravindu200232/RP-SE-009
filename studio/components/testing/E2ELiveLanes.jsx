@@ -1,5 +1,16 @@
 'use client'
 
+/**
+ * The journeys running in parallel, and how far each one has got.
+ *
+ * Each lane used to reserve most of its card for a screenshot of its own
+ * browser. There is one browser now and it streams into the preview, so that
+ * space was a black rectangle that never filled in — and it pushed the step
+ * the lane is actually on down to a line of small print.
+ *
+ * The step is the card now.
+ */
+
 import { useStore } from '@/lib/store'
 
 function tone(state, ok) {
@@ -38,7 +49,7 @@ export default function E2ELiveLanes() {
         </span>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-2 gap-3">
+      <div className="grid min-h-0 flex-1 auto-rows-min grid-cols-1 gap-3 overflow-y-auto sm:grid-cols-2">
         {lanes.map((lane, i) => {
           const pct = lane.total ? Math.min(100, Math.round((lane.index / lane.total) * 100)) : 0
           return (
@@ -52,33 +63,21 @@ export default function E2ELiveLanes() {
                 <span className="text-[9px] uppercase tracking-wide text-muted">{label(lane.state)}</span>
               </div>
 
-              <div className="relative min-h-0 flex-1 bg-black/90">
-                {lane.frame ? (
-                  <img src={lane.frame} alt={`E2E lane ${lane.lane || i + 1}`}
-                       className="h-full w-full object-contain" />
-                ) : (
-                  <div className="grid h-full place-items-center px-4 text-center text-[10px] text-muted">
-                    {lane.label || 'Browser lane is warming up…'}
-                  </div>
-                )}
-              </div>
-
-              <div className="shrink-0 space-y-1.5 border-t border-line/70 px-3 py-2">
+              <div className="space-y-2 px-3 py-2.5">
+                <p className={`text-[11px] leading-relaxed ${lane.message ? 'text-bad' : 'text-ink'}`}>
+                  {lane.message || lane.label || 'Waiting for a browser lane'}
+                </p>
                 <div className="flex items-center gap-2 text-[9.5px] text-muted">
                   <span className="truncate">{lane.role || 'browser'}</span>
                   <span>·</span>
                   <code className="min-w-0 flex-1 truncate">{lane.route || '/'}</code>
-                  <span>{lane.total ? `${lane.index}/${lane.total}` : ''}</span>
+                  <span className="tabular-nums">{lane.total ? `${lane.index}/${lane.total}` : ''}</span>
                 </div>
                 <div className="h-1 overflow-hidden rounded-full bg-panel2">
-                  <div className="h-full bg-accent transition-[width] duration-200"
+                  <div className={`h-full transition-[width] duration-200 ${
+                    lane.ok === false ? 'bg-bad' : 'bg-accent'}`}
                        style={{ width: `${pct}%` }} />
                 </div>
-                {(lane.message || lane.label) && (
-                  <p className={`truncate text-[9.5px] ${lane.message ? 'text-bad' : 'text-muted'}`}>
-                    {lane.message || lane.label}
-                  </p>
-                )}
               </div>
             </section>
           )

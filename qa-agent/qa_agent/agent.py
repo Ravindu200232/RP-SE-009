@@ -108,33 +108,64 @@ class QAAgent:
 
         try:
             unit_result = unit_stage.UnitResult()
+            e2e_result = e2e_stage.E2EResult()
+            findings = {"findings": [], "audit": {}}
+            done: list = []
+            record = {}
+            path = None
+
+            def save(complete: bool = False):
+                """Put on disk what has been established so far.
+
+                A verification that is cancelled, killed or still repairing
+                used to leave nothing behind at all: the Testing panel said
+                "nothing has been recorded for this project" after twelve
+                rounds of real unit runs. Every stage now lands as it finishes,
+                so what was proved survives whatever happens next.
+                """
+                nonlocal record, path
+                record = report.assemble(
+                    project=self.project, project_dir=self.project_dir,
+                    unit=unit_result, e2e=e2e_result, security=findings,
+                    evidence=self.agent.memory.evidence.summary(),
+                    runtime=self._runtime_notes(), manifest=self._manifest(),
+                    tests=harness.collect_test_sources(self.project_dir),
+                    history=report.append_history(existing, unit_result.rounds),
+                    performance=existing.get("performance"),
+                    stages=tuple(done), complete=complete)
+                path = report.write(self.project_dir, record)
+                self.events.emit("test", state="report", project=self.project,
+                                 stages=list(done), complete=complete)
+
+            def _round_saved(partial):
+                """Each repair round is worth keeping on its own."""
+                nonlocal unit_result
+                unit_result = partial
+                save()
+
             if self.run_unit:
                 self.events.emit("phase", phase="unit", title="Unit tests", status="active")
                 unit_result = unit_stage.run_stage(
                     agent=self.agent, workspace=self.project_dir, run_command=self._run,
-                    events=self.events, floor=int(VERIFY_QUALITY.unit_floor))
+                    events=self.events, floor=int(VERIFY_QUALITY.unit_floor),
+                    on_round=_round_saved)
                 self.events.emit("phase", phase="unit", title="Unit tests", status="done")
+                done.append("unit")
+                save()
 
-            e2e_result = e2e_stage.E2EResult()
             if self.run_e2e:
                 self.events.emit("phase", phase="e2e", title="End-to-end", status="active")
                 e2e_result = e2e_stage.run_stage(
                     agent=self.agent, workspace=self.project_dir, events=self.events)
                 self.events.emit("phase", phase="e2e", title="End-to-end", status="done")
+                done.append("e2e")
+                save()
 
             self.events.emit("phase", phase="security", title="Security review", status="active")
             findings = security.review(self.project_dir, self._run)
             self.events.emit("phase", phase="security", title="Security review", status="done")
-
-            record = report.assemble(
-                project=self.project, project_dir=self.project_dir,
-                unit=unit_result, e2e=e2e_result, security=findings,
-                evidence=self.agent.memory.evidence.summary(),
-                runtime=self._runtime_notes(), manifest=self._manifest(),
-                tests=harness.collect_test_sources(self.project_dir),
-                history=report.append_history(existing, unit_result.rounds),
-                performance=existing.get("performance"))
-            path = report.write(self.project_dir, record)
+            done.append("security")
+            save(complete=True)
 
             counts = unit_result.counts
             e2e_report = e2e_result.as_report()

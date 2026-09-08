@@ -14,6 +14,7 @@ from pathlib import Path
 
 from test import _support  # noqa: F401
 from qa_agent import e2e as e2e_stage
+from qa_agent import report
 from qa_agent import harness, unit as unit_stage
 
 
@@ -43,7 +44,9 @@ class FakeAgent:
         return type("O", (), {"status": "completed", "result": ""})()
 
 
-class UnitStageTests(unittest.TestCase):
+class UnitFixture:
+    """A workspace with a vitest that reports whatever the test scripts."""
+
     def setUp(self):
         self.root = Path(tempfile.mkdtemp())
         (self.root / "package.json").write_text(
@@ -75,6 +78,8 @@ class UnitStageTests(unittest.TestCase):
             return {"exitCode": 0, "stdout": "", "stderr": ""}
         return run
 
+
+class UnitStageTests(UnitFixture, unittest.TestCase):
     def test_a_green_suite_is_reported_after_one_round(self):
         green = vitest([("test/a.test.js", "one", "passed")])
         result = unit_stage.run_stage(agent=FakeAgent(), workspace=self.root,
@@ -204,6 +209,76 @@ def _failing(report):
     return any(case["status"] == "failed"
                for suite in report.get("testResults", [])
                for case in suite.get("assertionResults", []))
+
+
+class PartialRecordTests(unittest.TestCase):
+    """A verification that is stopped part way still has to leave its evidence.
+
+    The Testing panel read one file, written only after the last stage passed.
+    So a run that was cancelled, crashed, or spent twelve rounds repairing unit
+    tests left nothing behind at all, and the panel said "nothing has been
+    recorded for this project" about a project that had just been tested for
+    twenty minutes.
+    """
+
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+
+    def test_a_record_names_the_stages_it_actually_contains(self):
+        record = report.assemble(
+            project="shop", project_dir=self.root,
+            unit=unit_stage.UnitResult(), e2e=e2e_stage.E2EResult(),
+            security={"findings": [], "audit": {}}, evidence={}, runtime=[],
+            manifest={}, tests={}, history=[], stages=("unit",), complete=False)
+
+        self.assertEqual(record["stages"], ["unit"])
+        self.assertFalse(record["complete"])
+
+    def test_a_finished_record_says_so(self):
+        record = report.assemble(
+            project="shop", project_dir=self.root,
+            unit=unit_stage.UnitResult(), e2e=e2e_stage.E2EResult(),
+            security={"findings": [], "audit": {}}, evidence={}, runtime=[],
+            manifest={}, tests={}, history=[],
+            stages=("unit", "e2e", "security"))
+
+        self.assertTrue(record["complete"])
+        self.assertEqual(record["stages"], ["unit", "e2e", "security"])
+
+    def test_a_partial_record_reads_back_the_same_way_a_whole_one_does(self):
+        written = report.assemble(
+            project="shop", project_dir=self.root,
+            unit=unit_stage.UnitResult(), e2e=e2e_stage.E2EResult(),
+            security={"findings": [], "audit": {}}, evidence={}, runtime=[],
+            manifest={}, tests={}, history=[], stages=("unit",), complete=False)
+        report.write(self.root, written)
+
+        read_back = report.read(self.root, "shop")
+        self.assertNotIn("error", read_back)
+        self.assertEqual(read_back["stages"], ["unit"])
+        self.assertFalse(read_back["complete"])
+
+
+class UnitRoundReportingTests(UnitFixture, unittest.TestCase):
+    def test_every_repair_round_is_offered_for_saving_as_it_happens(self):
+        """Repair can take a dozen rounds; each one is worth keeping."""
+        red = vitest([("test/a.test.js", "one", "failed")])
+        green = vitest([("test/a.test.js", "one", "passed")])
+        seen = []
+
+        unit_stage.run_stage(
+            agent=FakeAgent(), workspace=self.root,
+            run_command=self.runner([red, green]),
+            on_round=lambda partial: seen.append(len(partial.rounds)))
+
+        self.assertEqual(seen, [1, 2])
+
+    def test_a_stage_with_nobody_listening_still_runs(self):
+        green = vitest([("test/a.test.js", "one", "passed")])
+        result = unit_stage.run_stage(agent=FakeAgent(), workspace=self.root,
+                                      run_command=self.runner([green]))
+        self.assertTrue(result.ran)
+
 
 
 if __name__ == "__main__":
