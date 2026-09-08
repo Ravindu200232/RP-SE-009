@@ -18,7 +18,8 @@ from builder_agent.knowledge import Knowledge
 from builder_agent.layout import format_layout, inspect_layout
 from builder_agent.skills import (SKILL_ROOT, catalog, install_skill_pack, read_manifest,
                                   read_skill, select)
-from builder_agent.templates import install_template, is_greenfield, template_notice
+from builder_agent.templates import (_package_name, install_template, is_greenfield,
+                                     template_notice)
 
 
 class SkillPackTests(unittest.TestCase):
@@ -131,8 +132,17 @@ class StackTemplateTests(unittest.TestCase):
 
     def test_the_root_manifest_takes_the_folder_name_so_npm_can_install_it(self):
         install_template(self.root, "nextjs-mongo")
-        self.assertIn(f'"name": "{self.root.name.lower()}"',
+        self.assertIn(f'"name": "{_package_name(self.root)}"',
                       (self.root / "package.json").read_text(encoding="utf-8"))
+
+    def test_a_folder_name_npm_would_reject_is_made_installable(self):
+        """npm refuses leading dots, capitals and spaces; the folder may have them."""
+        for folder, expected in (("My Shop", "my-shop"), ("_draft_", "draft"),
+                                 (".hidden", "hidden"), ("plant nursery!", "plant-nursery")):
+            with self.subTest(folder=folder):
+                workspace = self.root / folder
+                workspace.mkdir()
+                self.assertEqual(_package_name(workspace), expected)
 
     def test_a_workspace_that_already_has_a_project_is_never_touched(self):
         (self.root / "package.json").write_text('{"name":"mine"}', encoding="utf-8")

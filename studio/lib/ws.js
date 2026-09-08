@@ -11,8 +11,6 @@ const WORK_KIND = {
   agent_update: 'repair', agent_resume: 'build',
   feature: 'feature',
   element_edit: 'select',
-  pencil_edit: 'pencil',
-  image_edit: 'image', image_swap: 'image',
 }
 
 let sock = null
@@ -200,6 +198,7 @@ function handle(m) {
       s.testDone()
       s.setAgentState('')
       s.setApproval(null)
+      s.setBrowserFrame(null)
       resetStreamQueue()
       useStore.setState({ liveFile: null, liveBuf: '', e2eLive: null })
       s.pushChat({ role: 'assistant', tone: 'ok', title: 'Finished',
@@ -217,6 +216,7 @@ function handle(m) {
       s.testDone()
       s.setAgentState('')
       s.setApproval(null)
+      s.setBrowserFrame(null)
       resetStreamQueue()
       useStore.setState({ liveFile: null, liveBuf: '', e2eLive: null, project: '' })
       s.setQaReport(null)
@@ -234,6 +234,7 @@ function handle(m) {
       s.testDone()
       s.setAgentState('')
       s.setApproval(null)
+      s.setBrowserFrame(null)
       resetStreamQueue()
       useStore.setState({ liveFile: null, liveBuf: '', e2eLive: null })
       s.pushChat({ role: 'assistant', tone: 'bad', title: 'That did not work',
@@ -264,6 +265,7 @@ function handle(m) {
     case 'memory':       s.setRunStats(m); break
     case 'agent_state':  s.setAgentState(m.state || ''); break
     case 'approval':     s.setApproval(m); break
+    case 'browser_frame': s.setBrowserFrame(m); break
     case 'approval_resolved':
       s.setApproval(null)
       s.pushChat({ role: 'assistant', title: m.kind === 'plan' ? 'The plan' : 'Design system',

@@ -231,6 +231,11 @@ class Page:
         self.target_id = target_id
         self.session = session
         self.diagnostics: list[dict] = []
+        # Last known address, updated on navigation. A screencast frame arrives
+        # on the socket thread, and asking the page for its URL from there
+        # would block that thread on a reply it is itself responsible for
+        # reading.
+        self.url_cached = ""
         self._install_listeners()
 
     def _install_listeners(self) -> None:
@@ -300,6 +305,8 @@ class Page:
             if data:
                 on_frame("data:image/jpeg;base64," + data)
 
+        if getattr(self, "_casting", False):
+            return                      # already streaming; one cast per tab
         self.cdp.on("Page.screencastFrame", frame)
         try:
             self.cdp.send("Page.startScreencast",
@@ -330,8 +337,10 @@ class Page:
 
     # -- navigation ------------------------------------------------------
     def navigate(self, url: str, timeout: float = 30) -> None:
+        self.url_cached = str(url)
         self.cdp.send("Page.navigate", {"url": url}, self.session, timeout=timeout)
         self.wait_ready(timeout)
+        self.url_cached = self.url or self.url_cached
 
     def wait_ready(self, timeout: float = 30) -> None:
         deadline = time.time() + timeout
@@ -602,7 +611,22 @@ class Browser:
         page = Page(self.cdp, target, session)
         self.pages[target] = page
         self.active = target
+        self._watch(page)
         return page
+
+    def _watch(self, page: Page) -> None:
+        """Show what this tab is looking at, for as long as it is open.
+
+        The browser runs headless, so anything it does is invisible unless it
+        is streamed. Starting only inside a journey meant a build that opened a
+        page and photographed it — which is most of the visual review — showed
+        nothing at all.
+        """
+        if not self.events:
+            return
+        page.start_screencast(
+            lambda frame: self.events.emit("browser", state="frame", frame=frame,
+                                           url=page.url_cached))
 
     def fresh_session(self) -> None:
         """Start from a clean auth/storage state, as a real first visit would."""

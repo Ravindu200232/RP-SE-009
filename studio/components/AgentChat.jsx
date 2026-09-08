@@ -17,7 +17,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ChevronDown, CircleAlert, CircleCheck, FileCode2, FlaskConical, Loader2,
-  MessageSquare, Palette, Search, Send, Sparkles, Terminal, Wrench,
+  MessageSquare, MousePointerClick, Palette, Pencil, Search, Send, Sparkles,
+  Square, Terminal, Wrench, X,
 } from 'lucide-react'
 
 import { api } from '@/lib/api'
@@ -51,6 +52,9 @@ export default function AgentChat() {
   const stats = useStore(s => s.runStats)
   const agentState = useStore(s => s.agentState)
   const pushChat = useStore(s => s.pushChat)
+  const selection = useStore(s => s.selection)
+  const removeSelection = useStore(s => s.removeSelection)
+  const clearSelection = useStore(s => s.clearSelection)
 
   // Collapsing gives the whole width back to the work when someone wants it.
   const [open, setOpen] = useState(true)
@@ -59,12 +63,21 @@ export default function AgentChat() {
   const [pending, setPending] = useState(null)
   const attach = useEditAttachments()
   const end = useRef(null)
+  const box = useRef(null)
 
   const turns = useMemo(() => chatTurns(logs, chat), [logs, chat])
 
   useEffect(() => {
     if (busy) setOpen(true)     // a run is the thing you watch
   }, [busy])
+
+  // Pointing at something in the preview is the start of a sentence, so the
+  // box that finishes it comes to meet you.
+  useEffect(() => {
+    if (!selection.length) return
+    setOpen(true)
+    box.current?.focus()
+  }, [selection.length])
 
   useEffect(() => {
     if (open) end.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
@@ -92,13 +105,19 @@ export default function AgentChat() {
       setReading(false)
     }
 
+    const route = selection[0]?.route || useStore.getState().previewRoute || ''
     const payload = {
-      type: 'agent_update', project,
-      route: useStore.getState().previewRoute || '',
+      type: selection.length ? 'element_edit' : 'agent_update',
+      project, route,
       model: useStore.getState().models.builder || useStore.getState().models.agent,
       think: useStore.getState().think,
       qa_model: useStore.getState().models.qa || '',
       console: consoleReport(),
+    }
+    if (selection.length) {
+      payload.elements = selection.filter(s => s.kind === 'element').map(s => s.info)
+      payload.shots = selection.filter(s => s.shot)
+        .map(s => ({ kind: s.kind, image: s.shot, label: s.label }))
     }
 
     // The same rewording pass the Ask dialog used, kept because it is what
@@ -111,16 +130,19 @@ export default function AgentChat() {
     } catch {
       // The request is still sendable exactly as typed.
     }
-    setPending({ payload, shown: typed, typed: full, tuned })
+    setPending({ payload, shown: typed, typed: full, tuned,
+                 shots: selection.filter(s => s.shot).map(s => s.shot) })
   }
 
   function fire(payload, body, shown) {
     const s = useStore.getState()
-    pushChat({ role: 'user', text: shown, at: Date.now() })
+    pushChat({ role: 'user', text: shown, at: Date.now(),
+               shots: pending?.shots || [] })
     send({ ...payload, prompt: body })
     forgetConsole()
     s.setBusy(true)
     attach.reset()
+    clearSelection()
     setText('')
     setPending(null)
   }
@@ -166,9 +188,12 @@ export default function AgentChat() {
           </div>
           <span className="flex-1" />
           {busy && (
-            <span className="flex items-center gap-1.5 rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-semibold text-accent">
-              <Loader2 className="size-2.5 animate-spin" /> working
-            </span>
+            <>
+              <span className="flex items-center gap-1.5 rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-semibold text-accent">
+                <Loader2 className="size-2.5 animate-spin" /> working
+              </span>
+              <CancelRun />
+            </>
           )}
           <button onClick={() => setOpen(false)} title="Hide the agent"
                   className="grid size-7 place-items-center rounded-lg text-muted transition-colors hover:bg-black/[.05] hover:text-ink dark:hover:bg-white/[.06]">
@@ -191,13 +216,17 @@ export default function AgentChat() {
       </div>
 
       <footer className="shrink-0 border-t border-line/60 px-3 py-2.5">
+              <Attached items={selection} onRemove={removeSelection} />
               <div className="flex items-end gap-2">
                 <textarea
+                  ref={box}
                   value={text} rows={1}
                   disabled={!project || busy || reading}
                   placeholder={question
                     ? 'Answer the question above…'
                     : busy ? 'The agent is working — this opens again when it finishes'
+                    : selection.length
+                      ? 'Say what should change about it…'
                     : project ? 'Describe a change, or what is broken…'
                               : 'Open a project first'}
                   onChange={e => setText(e.target.value)}
@@ -219,6 +248,101 @@ export default function AgentChat() {
 
       <StatusLine stats={stats} />
     </aside>
+  )
+}
+
+/**
+ * What is riding along with the message being written.
+ *
+ * A click in the preview and a stroke of the pencil both land here, each with
+ * its own photograph, and stay until the message is sent. Seeing them stack up
+ * is the only way to know that three clicks attached three things — and the
+ * cross on each one is how you take back the one you did not mean.
+ */
+function Attached({ items, onRemove }) {
+  if (!items.length) return null
+  return (
+    <div className="mb-2 flex flex-wrap gap-1.5">
+      {items.map(item => {
+        const Icon = item.kind === 'drawing' ? Pencil : MousePointerClick
+        return (
+          <span key={item.key} title={item.label}
+                className="group relative flex max-w-[190px] items-center gap-1.5 rounded-lg border border-line/80 bg-panel2/70 py-1 pl-1 pr-1.5">
+            <span className="grid size-8 shrink-0 place-items-center overflow-hidden rounded-md bg-white ring-1 ring-line/70 dark:bg-white/10">
+              {item.state === 'shooting'
+                ? <Loader2 className="size-3 animate-spin text-accent" />
+                : item.shot
+                  ? <img src={item.shot} alt="" className="size-full object-cover object-top" />
+                  : <Icon className="size-3 text-muted2" />}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[10.5px] font-medium text-ink">
+                {item.kind === 'drawing' ? 'Drawing' : shortLabel(item.label)}
+              </span>
+              <span className="block truncate font-mono text-[9px] text-muted2">
+                {item.route || '/'}
+              </span>
+            </span>
+            <button onClick={() => onRemove(item.key)}
+                    title="Remove this from the message"
+                    className="shrink-0 text-muted2 transition-colors hover:text-bad">
+              <X className="size-3" />
+            </button>
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
+/** `<button> Add to basket   /plants` -> `<button> Add to basket`. */
+function shortLabel(label) {
+  const text = String(label || '').split(/\s{2,}/)[0].trim()
+  return text.length > 34 ? text.slice(0, 33) + '…' : text || 'Element'
+}
+
+/**
+ * Stopping the run, from the one place that is always on screen.
+ *
+ * This used to live on the build screen, which is gone; the chat header is
+ * where someone looks when they want a run to stop, because it is what they
+ * are already watching.
+ */
+function CancelRun() {
+  const [asking, setAsking] = useState(false)
+  const [sending, setSending] = useState(false)
+  const addLog = useStore(s => s.addLog)
+
+  async function stop() {
+    setSending(true)
+    try {
+      await api.cancelBuild()
+    } catch (e) {
+      addLog('WARN', `could not cancel — ${e.message}`)
+      setSending(false)
+      setAsking(false)
+    }
+  }
+
+  if (!asking) return (
+    <button onClick={() => setAsking(true)} title="Stop this run"
+            className="grid size-7 place-items-center rounded-lg text-muted transition-colors hover:bg-bad/10 hover:text-bad">
+      <Square className="size-3" />
+    </button>
+  )
+
+  return (
+    <span className="flex items-center gap-1">
+      <button onClick={stop} disabled={sending}
+              className="inline-flex items-center gap-1 rounded-full bg-bad px-2 py-0.5 text-[10px] font-semibold text-white disabled:opacity-60">
+        {sending ? <Loader2 className="size-2.5 animate-spin" /> : <Square className="size-2.5" />}
+        {sending ? 'Stopping' : 'Stop'}
+      </button>
+      <button onClick={() => setAsking(false)} disabled={sending}
+              className="rounded-full px-1.5 py-0.5 text-[10px] text-muted hover:text-ink">
+        Keep going
+      </button>
+    </span>
   )
 }
 
@@ -336,7 +460,15 @@ function Thinking() {
 function Turn({ turn, live }) {
   if (turn.role === 'user') {
     return (
-      <div className="flex justify-end">
+      <div className="flex flex-col items-end gap-1.5">
+        {(turn.shots || []).length > 0 && (
+          <div className="flex max-w-[88%] flex-wrap justify-end gap-1.5">
+            {turn.shots.map((shot, i) => (
+              <img key={i} src={shot} alt="What they pointed at"
+                   className="max-h-[104px] rounded-xl border border-line/70 object-cover object-top shadow-sm" />
+            ))}
+          </div>
+        )}
         <p className="max-w-[88%] rounded-2xl rounded-br-md bg-accent px-3.5 py-2 text-[12px] leading-relaxed text-white shadow-sm">
           {turn.text}
         </p>

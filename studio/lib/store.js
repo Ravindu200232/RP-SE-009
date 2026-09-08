@@ -115,6 +115,27 @@ export const useStore = create((set, get) => ({
   approval: null,
   setApproval: (approval) => set({ approval }),
 
+  // The engine's own browser, as it is right now. Headless, so this is the
+  // only way to see what it is doing.
+  browserFrame: null,
+  setBrowserFrame: (browserFrame) => set({ browserFrame }),
+
+  // What the user has pointed at for the message they are still writing:
+  // elements they clicked, regions they drew on. Each one carries its own
+  // screenshot, so the attachment is a picture and not just a selector.
+  selection: [],
+  addSelection: (item) => set(s => (
+    s.selection.some(x => x.key === item.key)
+      ? s
+      : { selection: [...s.selection, item].slice(-8) })),
+  patchSelection: (key, patch) => set(s => ({
+    selection: s.selection.map(x => (x.key === key ? { ...x, ...patch } : x)),
+  })),
+  removeSelection: (key) => set(s => ({
+    selection: s.selection.filter(x => x.key !== key),
+  })),
+  clearSelection: () => set({ selection: [] }),
+
   // What the agent and the user actually said to each other, as opposed to the
   // tool activity the chat panel derives from `logs`.
   chat: [],
@@ -195,6 +216,7 @@ export const useStore = create((set, get) => ({
       // Clear project state before opening another project.
   reset: (project) => set({
     project, logs: [], chat: [], runStats: null, agentState: '', approval: null,
+    browserFrame: null, selection: [],
     steps: {}, phases: [], files: {},
     activeFile: null, liveFile: null, liveBuf: '', follow: true,
     progress: emptyProgress(),

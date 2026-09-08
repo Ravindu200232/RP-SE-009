@@ -190,7 +190,6 @@ Fast repository checks used before packaging include:
 python -m compileall -q builder-agent/builder_agent qa-agent/qa_agent server_modules server.py server_runtime.py srs-agent/srs_agent deployment-agent/deploy_agent
 python test/run_suite.py
 python studio/scripts/verify_ui_contract.py
-node studio/scripts/verify_activity.mjs
 node studio/scripts/verify_progress.mjs
 node studio/scripts/verify_test_counts.mjs
 node studio/scripts/verify_uploads.mjs

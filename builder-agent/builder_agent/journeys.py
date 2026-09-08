@@ -121,10 +121,6 @@ def run_journey(browser, sandbox, evidence, *, suite: str, covers, steps,
     if events:
         events.emit("e2e", state="journey_start", suite=suite, title=suite,
                     steps=len(steps), total=len(steps), url=start_url or page.url)
-        # Watching costs one JPEG every other frame and is what turns a browser
-        # stage from a progress bar into something you can actually see.
-        page.start_screencast(lambda frame: events.emit("e2e", state="frame",
-                                                        suite=suite, frame=frame))
 
     trace, failed = [], None
     for index, step in enumerate(steps, 1):
@@ -184,7 +180,6 @@ def run_journey(browser, sandbox, evidence, *, suite: str, covers, steps,
             failed = f"The journey completed but the page reported problems: {detail}"
 
     if events:
-        page.stop_screencast()
         events.emit("e2e", state="journey_done", suite=suite, title=suite,
                     status="failed" if failed else "passed", url=page.url,
                     message=failed or "")

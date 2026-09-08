@@ -53,7 +53,6 @@ Run at least:
 ```bash
 python -m compileall -q agents qa_agent server_modules server.py server_runtime.py pipeline.py srs-agent/srs_agent deployment-agent/deploy_agent
 python studio/scripts/verify_ui_contract.py
-node studio/scripts/verify_activity.mjs
 node studio/scripts/verify_progress.mjs
 node studio/scripts/verify_test_counts.mjs
 node studio/scripts/verify_uploads.mjs

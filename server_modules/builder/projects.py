@@ -283,7 +283,7 @@ def _message_job(msg: dict):
 
     known = {
         "agent_build", "agent_resume", "chat", "agent_update",
-        "pencil_edit", "element_edit", "image_edit", "feature",
+        "element_edit", "feature",
     }
     if kind not in known:
         return None
@@ -304,15 +304,10 @@ def _message_job(msg: dict):
         return run_chat, (
             project, prompt, model, route, think, qa_model,
             _browser_console(msg))
-    if kind == "pencil_edit" and project and prompt:
-        return run_pencil_edit, (project, prompt, msg, model, think)
     if kind == "element_edit" and project and prompt:
         return run_element_edit, (
-            project, prompt, msg.get("element") or {}, model, think,
-            _browser_console(msg))
-    if kind == "image_edit" and project and prompt:
-        return run_image_edit, (
-            project, prompt, msg.get("element") or {}, model, think)
+            project, prompt, msg.get("elements") or msg.get("element") or {},
+            model, think, _browser_console(msg), msg.get("shots") or [], route)
     if kind == "feature" and project and prompt:
         return run_feature, (
             project, prompt, model, think, qa_model, route,

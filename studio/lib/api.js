@@ -52,6 +52,9 @@ export const api = {
       post('/image-upload', { ...body, filename: file.name, data_base64 }))
   }),
 
+  // Photograph what the user pointed at, so it can travel with the message.
+  shot: (body) => post('/shot', body),
+
   // Read one attachment for an editing chat.
   attach: (file, body) => Promise.resolve(tooBig(file)).then(big => {
     if (big) throw big
@@ -59,12 +62,6 @@ export const api = {
       post('/attach', { ...body, filename: file.name, data_base64 }))
   }),
 
-  // Replace the selected picture with an upload.
-  imageSwap: (file, body) => Promise.resolve(tooBig(file)).then(big => {
-    if (big) throw big
-    return fileToBase64(file).then(data_base64 =>
-      post('/image-swap', { ...body, filename: file.name, data_base64 }))
-  }),
   uploadProject: (body) => post('/upload-project', body),
   mongoPrefetch: () => post('/mongo/prefetch', {}),
 
@@ -196,7 +193,4 @@ export const HTTP_FALLBACK = {
   agent_resume: '/resume',
   feature: '/feature',
   element_edit: '/element-edit',
-
-  image_edit: '/image-edit',
-  pencil_edit: '/pencil-edit',
 }

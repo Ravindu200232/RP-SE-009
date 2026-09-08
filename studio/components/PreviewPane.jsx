@@ -1,32 +1,42 @@
 'use client'
 
+/**
+ * The running app, and the two ways of pointing at it.
+ *
+ * Everything you can do here ends in the same place: an attachment on the
+ * message you are about to send. Clicking an element attaches the element and
+ * a photograph of it; drawing attaches the page with your red line still on
+ * it. Neither one starts a run on its own, because "this bit" is never the
+ * whole request — the sentence in the chat box is the other half.
+ *
+ * The agent's own headless Chrome covers this pane while it is working, since
+ * during a build the preview underneath has nothing in it yet.
+ */
+
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Monitor, Tablet, Smartphone, MousePointerClick, Pencil, Undo2, RotateCw,
-  Image as ImageIcon, ChevronLeft, ChevronRight, Upload, Loader2, Globe,
+  ChevronLeft, ChevronRight, Globe, Eraser,
 } from 'lucide-react'
 import { useStore } from '@/lib/store'
-import { send } from '@/lib/ws'
 import { api } from '@/lib/api'
-import {
-  attachPicker, frameDoc, elementInfo, pickedFrom, pickLabel,
-} from '@/lib/picker'
-import { consoleReport, forgetConsole, watchFrame } from '@/lib/console-log'
-import { Button, Input, Tip } from './ui'
-import { useEditAttachments } from '@/lib/use-edit-attachments'
-import EditAttach from './EditAttach'
-import BuildOverlay from './BuildOverlay'
-import TunePrompt from './TunePrompt'
+import { attachPicker, pickedFrom, pickLabel } from '@/lib/picker'
+import { watchFrame } from '@/lib/console-log'
+import { Tip } from './ui'
+import AgentBrowser from './AgentBrowser'
 import LiveE2EOverlay from './LiveE2EOverlay'
 import { cn } from '@/lib/utils'
-
-const ACCEPT_PICTURE = '.png,.jpg,.jpeg,.webp,.gif,.bmp,image/*'
 
 const VIEWPORTS = [
   { id: 'desktop', label: 'Desktop', w: null, Icon: Monitor },
   { id: 'tablet', label: 'Tablet', w: 834, Icon: Tablet },
   { id: 'mobile', label: 'Mobile', w: 390, Icon: Smartphone },
 ]
+
+// Fewer points than this is a stray click, not a drawing.
+const MIN_INK = 3
+
+let seq = 0
 
 function currentPath(frame) {
   try {
@@ -44,31 +54,24 @@ export default function PreviewPane({ hidden }) {
   const detachRef = useRef(null)
   const strokesRef = useRef([])
   const drawingRef = useRef(false)
-  const swapRef = useRef(null)
   const lastPathRef = useRef('/')
-  const files = useEditAttachments()
-  const [reading, setReading] = useState(false)
 
   const project = useStore(s => s.project)
   const busy = useStore(s => s.busy)
   const addLog = useStore(s => s.addLog)
-  const setBusy = useStore(s => s.setBusy)
   const setPreviewRoute = useStore(s => s.setPreviewRoute)
-  const models = useStore(s => s.models)
-  const think = useStore(s => s.think)
   const undo = useStore(s => s.undo)
   const setUndo = useStore(s => s.setUndo)
   const tests = useStore(s => s.tests)
   const e2eLive = useStore(s => s.e2eLive)
+  const selection = useStore(s => s.selection)
+  const addSelection = useStore(s => s.addSelection)
+  const patchSelection = useStore(s => s.patchSelection)
+  const clearSelection = useStore(s => s.clearSelection)
 
   const [vp, setVp] = useState('desktop')
   const [pickOn, setPickOn] = useState(false)
   const [pencilOn, setPencilOn] = useState(false)
-  const [imageOn, setImageOn] = useState(false)
-  const [picked, setPicked] = useState(null)
-  const [prompt, setPrompt] = useState('')
-  const [tuning, setTuning] = useState(false)
-  const [ask, setAsk] = useState(null)
   const [path, setPath] = useState('/')
   const trail = useRef(['/'])
   const at = useRef(0)
@@ -92,20 +95,50 @@ export default function PreviewPane({ hidden }) {
     setNav({ back: at.current > 0, forward: at.current < trail.current.length - 1 })
   }, [setPreviewRoute])
 
+  /** The viewport a shot has to be taken at, or the box lands on the wrong thing. */
+  const viewportOf = useCallback(() => {
+    const f = frameRef.current
+    return { w: f?.clientWidth || 1280, h: f?.clientHeight || 800, mode: vp }
+  }, [vp])
+
+  /**
+   * Attach one thing to the message, then go and photograph it.
+   *
+   * The chip appears immediately and fills in when the picture arrives — a
+   * capture takes about a second, and a selection that appears to do nothing
+   * for a second gets clicked twice.
+   */
+  const attachShot = useCallback(async (item, body) => {
+    addSelection(item)
+    try {
+      const r = await api.shot(body)
+      patchSelection(item.key, r?.image
+        ? { shot: r.image, state: 'ready' }
+        : { state: 'blank' })
+    } catch (e) {
+      patchSelection(item.key, { state: 'blank' })
+      addLog('WARN', `could not photograph that — ${e.message}`)
+    }
+  }, [addSelection, patchSelection, addLog])
+
   const attach = useCallback(() => {
     detachRef.current?.()
     detachRef.current = attachPicker(frameRef.current, (el) => {
-      setPicked(pickedFrom(frameRef.current, el, vp))
-      setPrompt('')
+      const info = pickedFrom(frameRef.current, el, vp)
+      attachShot(
+        { key: `sel-${++seq}`, kind: 'element', info, state: 'shooting',
+          label: pickLabel(info), route: info.route || currentPath(frameRef.current) },
+        { route: info.route, viewport: info.viewport || viewportOf(),
+          scroll: info.scroll, rect: info.rect })
     })
     if (!detachRef.current) addLog('WARN', 'The preview is not loaded yet')
-  }, [vp, addLog])
+  }, [vp, addLog, attachShot, viewportOf])
 
   useEffect(() => {
-    if (pickOn || imageOn) attach()
+    if (pickOn) attach()
     else { detachRef.current?.(); detachRef.current = null }
     return () => { detachRef.current?.(); detachRef.current = null }
-  }, [pickOn, imageOn, attach])
+  }, [pickOn, attach])
 
   useEffect(() => {
     const f = frameRef.current
@@ -113,18 +146,18 @@ export default function PreviewPane({ hidden }) {
     const onLoad = () => {
       watchFrame(f)
       syncPath('load')
-      if (pickOn || imageOn) attach()
+      if (pickOn) attach()
     }
     f.addEventListener('load', onLoad)
     return () => f.removeEventListener('load', onLoad)
-  }, [pickOn, imageOn, attach, syncPath])
+  }, [pickOn, attach, syncPath])
 
   useEffect(() => {
     const id = setInterval(() => syncPath('poll'), 250)
     return () => clearInterval(id)
   }, [syncPath])
 
-    // Mirror the Playwright route in the visible preview.
+  // Mirror the route the agent's journey is on in the visible preview.
   useEffect(() => {
     const route = String(e2eLive?.route || '')
     if (!tests.running || !route.startsWith('/')) return
@@ -148,7 +181,7 @@ export default function PreviewPane({ hidden }) {
       c.height = Math.round(f.clientHeight * dpr)
       const ctx = c.getContext('2d')
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      ctx.strokeStyle = '#0f6fff'
+      ctx.strokeStyle = '#ff2d55'
       ctx.lineWidth = 3
       ctx.lineCap = 'round'
       ctx.lineJoin = 'round'
@@ -190,11 +223,6 @@ export default function PreviewPane({ hidden }) {
       strokesRef.current.push([{ x: pt.x, y: pt.y }])
       const ctx = c.getContext('2d')
       ctx.beginPath(); ctx.moveTo(pt.cx, pt.cy)
-      try {
-        const d = frameDoc(frameRef.current)
-        const el = d && d.elementFromPoint(pt.cx, pt.cy)
-        if (el) setPicked(elementInfo(frameRef.current, el, vp))
-      } catch { }
     }
     const move = (e) => {
       if (!drawingRef.current) return
@@ -203,12 +231,19 @@ export default function PreviewPane({ hidden }) {
       const ctx = c.getContext('2d')
       ctx.lineTo(pt.cx, pt.cy); ctx.stroke()
     }
+    // Lifting the pen finishes one annotation: it is photographed as it stands
+    // and attached, and the canvas is wiped so the next ring is its own note.
     const up = () => {
       if (!drawingRef.current) return
       drawingRef.current = false
-      if (strokesRef.current.reduce((a, s) => a + s.length, 0) < 3) return
-      setPrompt('')
-      setPicked(p => p || { tag: '', route: path })
+      const strokes = strokesRef.current
+      if (strokes.reduce((a, s) => a + s.length, 0) < MIN_INK) return clearStrokes()
+      const route = currentPath(frameRef.current)
+      attachShot(
+        { key: `sel-${++seq}`, kind: 'drawing', strokes, route, state: 'shooting',
+          label: `Drawing on ${route}` },
+        { route, viewport: viewportOf(), strokes })
+      clearStrokes()
     }
 
     c.addEventListener('pointerdown', down)
@@ -222,27 +257,18 @@ export default function PreviewPane({ hidden }) {
       window.removeEventListener('pointerup', up)
       window.removeEventListener('resize', onResize)
     }
-  }, [pencilOn, point, syncCanvas, vp, path])
+  }, [pencilOn, point, syncCanvas, clearStrokes, attachShot, viewportOf])
 
   function togglePick() {
     if (!project) return addLog('WARN', 'Open a project first')
-    if (!pickOn) { setPencilOn(false); setImageOn(false) }
+    if (!pickOn) setPencilOn(false)
     setPickOn(v => !v)
-    setPicked(null)
   }
 
   function togglePencil() {
     if (!project) return addLog('WARN', 'Open a project first')
-    if (!pencilOn) { setPickOn(false); setImageOn(false) }
+    if (!pencilOn) setPickOn(false)
     setPencilOn(v => { if (v) clearStrokes(); return !v })
-    setPicked(null)
-  }
-
-  function toggleImage() {
-    if (!project) return addLog('WARN', 'Open a project first')
-    if (!imageOn) { setPickOn(false); setPencilOn(false); clearStrokes() }
-    setImageOn(v => !v)
-    setPicked(null)
   }
 
   async function undoLast() {
@@ -284,75 +310,6 @@ export default function PreviewPane({ hidden }) {
     wasBusy.current = busy
   }, [busy])
 
-  async function submit() {
-    const v = prompt.trim()
-    if (!v || !picked) return
-
-    const kind = pencilOn ? 'pencil_edit'
-      : (imageOn || picked.isImage) ? 'image_edit' : 'element_edit'
-
-    let full = v
-    if (files.items.length) {
-      setReading(true)
-      try {
-        full = v + await files.collect(project)
-      } catch (e) {
-        addLog('WARN', `${e.message}`)
-      }
-      setReading(false)
-    }
-
-    const payload = {
-      type: kind, project, element: picked,
-      model: models.builder || models.agent, think,
-      route: picked.route || path, scroll: picked.scroll, viewport: picked.viewport,
-      strokes: pencilOn ? strokesRef.current : undefined,
-      console: consoleReport(),
-    }
-
-    setTuning(true)
-    let said = full
-    try {
-      const r = await api.tune({ prompt: full, element: picked, project,
-                                 route: payload.route, model: payload.model })
-      said = (r?.prompt || '').trim() || full
-    } catch (e) {
-      addLog('WARN', `Could not reword the request (${e.message}) — sending it as typed`)
-    }
-    setTuning(false)
-
-    if (said.trim() === full.trim()) return fire(payload, full, kind, v)
-    setAsk({ payload, kind, typed: full, shown: v, tuned: said })
-  }
-
-  function fire(payload, text, kind, shown) {
-    send({ ...payload, prompt: text })
-    forgetConsole()
-    files.reset()
-    addLog('INFO', (pencilOn ? 'Redesign: '
-      : kind === 'image_edit' ? 'New picture: ' : 'Edit: ') + shown)
-    setBusy(true)
-    setPicked(null)
-    setPrompt('')
-    setAsk(null)
-    if (pencilOn) clearStrokes(); else if (!imageOn) setPickOn(false)
-  }
-
-  async function swapPicture(file) {
-    if (!file || !picked) return
-    const target = picked
-    setBusy(true)
-    setPicked(null)
-    setPrompt('')
-    addLog('INFO', `Your picture: ${file.name}`)
-    try {
-      await api.imageSwap(file, { project, element: target })
-    } catch (e) {
-      setBusy(false)
-      addLog('WARN', `${e.message}`)
-    }
-  }
-
   const width = VIEWPORTS.find(x => x.id === vp)?.w
   const shownPath = tests.running && e2eLive?.route ? e2eLive.route : path
 
@@ -388,17 +345,20 @@ export default function PreviewPane({ hidden }) {
         </div>
 
         <div className="flex items-center gap-1 rounded-full border border-line/80 bg-panel/80 p-1 shadow-sm">
-          <Cell tip="Click an element in the preview to edit it" side="left"
-                on={pickOn} onClick={togglePick} className="rounded-full">
+          <Cell tip="Click elements in the preview to attach them to your message"
+                side="left" on={pickOn} onClick={togglePick} className="rounded-full">
             <MousePointerClick className="size-3.5" />
           </Cell>
-          <Cell tip="Draw over a region and describe the redesign" side="left"
-                on={pencilOn} onClick={togglePencil} className="rounded-full">
+          <Cell tip="Draw on the preview to attach a marked-up screenshot"
+                side="left" on={pencilOn} onClick={togglePencil} className="rounded-full">
             <Pencil className="size-3.5" />
           </Cell>
-          <Cell tip="Click a picture and describe the one you want instead"
-                side="left" on={imageOn} onClick={toggleImage} className="rounded-full">
-            <ImageIcon className="size-3.5" />
+          <Cell tip={selection.length
+                       ? `Clear ${selection.length} attachment${selection.length === 1 ? '' : 's'}`
+                       : 'Nothing attached yet'}
+                side="left" disabled={!selection.length}
+                onClick={() => { clearSelection(); clearStrokes() }} className="rounded-full">
+            <Eraser className="size-3.5" />
           </Cell>
           <Cell tip={undo ? `Undo the last edit (${undo.files.join(', ')})`
                           : 'Nothing to undo yet'}
@@ -409,84 +369,16 @@ export default function PreviewPane({ hidden }) {
       </div>
 
       <div className="relative min-h-0 flex-1 overflow-hidden bg-[radial-gradient(circle_at_top,#f8fbff_0%,#edf2fb_45%,#dfe7f5_100%)] p-4 dark:bg-[radial-gradient(circle_at_top,#1d2333_0%,#151a26_45%,#0f141d_100%)]">
-        <BuildOverlay />
-
-        {ask && (
-          <TunePrompt
-            typed={ask.shown}
-            tuned={ask.tuned}
-            onSend={(text) => fire(ask.payload, text, ask.kind, ask.shown)}
-            onSendTyped={() => fire(ask.payload, ask.typed, ask.kind, ask.shown)}
-            onCancel={() => setAsk(null)}
-            onRetune={async (text) => {
-              try {
-                const r = await api.tune({
-                  prompt: text, element: ask.payload.element, project,
-                  route: ask.payload.route, model: ask.payload.model })
-                return (r?.prompt || '').trim()
-              } catch (e) {
-                addLog('WARN', `Could not reword it (${e.message})`)
-                return ''
-              }
-            }} />
-        )}
-
         <canvas ref={canvasRef}
-                className={cn('absolute z-[5]', pencilOn ? 'block' : 'hidden')}
-                style={{ pointerEvents: pencilOn ? 'auto' : 'none' }} />
+                className={cn('absolute z-[8]', pencilOn ? 'block' : 'hidden')}
+                style={{ pointerEvents: pencilOn ? 'auto' : 'none',
+                         cursor: pencilOn ? 'crosshair' : 'default' }} />
 
-        {picked && (
-          <div className="absolute inset-x-4 bottom-16 z-[46] rounded-[24px] border border-line/80 bg-panel/95 px-4 py-3 shadow-[0_18px_36px_rgba(15,23,42,.12)] backdrop-blur-xl dark:shadow-[0_18px_36px_rgba(0,0,0,.35)]">
-            <div className="mb-2.5 flex items-center gap-2">
-              <span className="rounded-full bg-accent/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
-                {pencilOn ? 'Redesign region' : imageOn ? 'Replace image' : 'Edit selection'}
-              </span>
-              <span className="truncate text-[12px] text-muted">
-                {pencilOn
-                  ? `Selected region · ${picked.tag ? '<' + picked.tag + '>' : ''} · ${path}`
-                  : imageOn && !picked.isImage
-                  ? `That is not a picture · ${picked.tag ? '<' + picked.tag + '>' : ''} · click an image`
-                  : pickLabel(picked)}
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Input autoFocus value={prompt}
-                     placeholder={pencilOn ? 'Describe how this area should look'
-                       : (imageOn || picked.isImage)
-                         ? 'Describe the picture you want instead — or upload one'
-                       : 'Describe the change you want'}
-                     onChange={e => setPrompt(e.target.value)}
-                     onKeyDown={e => {
-                       if (e.key === 'Enter') submit()
-                       if (e.key === 'Escape') setPicked(null)
-                     }} />
-
-              {picked.isImage && (
-                <>
-                  <input ref={swapRef} type="file" hidden accept={ACCEPT_PICTURE}
-                         onChange={e => {
-                           const chosen = e.target.files?.[0]
-                           e.target.value = ''
-                           swapPicture(chosen)
-                         }} />
-                  <Tip text="Use your own picture instead of generating a new one">
-                    <Button variant="outline" onClick={() => swapRef.current?.click()}>
-                      <Upload className="size-3" /> Upload
-                    </Button>
-                  </Tip>
-                </>
-              )}
-
-              <Button variant="solid" onClick={submit} disabled={reading || tuning}>
-                {reading || tuning ? <Loader2 className="size-3 animate-spin" /> : 'Review request'}
-              </Button>
-              <Button variant="outline" onClick={() => { files.reset(); setPicked(null) }}>
-                Cancel
-              </Button>
-            </div>
-
-            <EditAttach attach={files} disabled={reading || tuning} className="mt-2" />
-          </div>
+        {(pickOn || pencilOn) && (
+          <p className="pointer-events-none absolute inset-x-0 top-6 z-[9] mx-auto w-fit rounded-full bg-ink/85 px-3.5 py-1.5 text-[11px] font-medium text-white shadow-lg">
+            {pencilOn ? 'Draw around what you mean — it attaches to the chat'
+                      : 'Click anything — it attaches to the chat'}
+          </p>
         )}
 
         {tests.running && e2eLive && <LiveE2EOverlay event={e2eLive} />}
@@ -496,10 +388,9 @@ export default function PreviewPane({ hidden }) {
                style={{ width: width ? width + 'px' : '100%' }}>
             <iframe ref={frameRef} id="frame" title="preview" src="/"
                     className="absolute inset-0 block h-full w-full border-0 bg-white" />
-            {tests.running && e2eLive?.frame && (
-              <img src={e2eLive.frame} alt="Live Playwright browser"
-                   className="pointer-events-none absolute inset-0 z-[4] h-full w-full object-cover object-top transition-opacity duration-200" />
-            )}
+            {/* While the agent is driving its own browser, that is the more
+                interesting of the two — it is the one being tested. */}
+            <AgentBrowser />
           </div>
         </div>
 

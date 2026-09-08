@@ -64,12 +64,8 @@ class MessageDispatchTests(unittest.TestCase):
              ("demo", "change", "model", "/rooms", None, "qa", "log")),
             ("agent_update", server.run_chat,
              ("demo", "change", "model", "/rooms", None, "qa", "log")),
-            ("pencil_edit", server.run_pencil_edit,
-             ("demo", "change", None, "model", None)),
             ("element_edit", server.run_element_edit,
-             ("demo", "change", element, "model", None, "log")),
-            ("image_edit", server.run_image_edit,
-             ("demo", "change", element, "model", None)),
+             ("demo", "change", element, "model", None, "log", [], "/rooms")),
             ("feature", server.run_feature,
              ("demo", "change", "model", None, "qa", "/rooms", "log")),
         )
@@ -81,14 +77,30 @@ class MessageDispatchTests(unittest.TestCase):
                     "console": "log", "element": element,
                     "build_model": "builder",
                 }
-                if kind == "pencil_edit":
-                    expected_args = (
-                        "demo", "change",
-                        {"type": kind, "model": "model", **message},
-                        "model", None)
                 target, args = self.job(kind, **message)
                 self.assertIs(target, expected_target)
                 self.assertEqual(args, expected_args)
+
+    def test_a_selection_of_several_elements_travels_whole(self):
+        """Clicking three things has to send three things, with their pictures."""
+        elements = [{"tag": "button"}, {"tag": "h1"}, {"tag": "img"}]
+        shots = [{"kind": "element", "image": "AAAA"},
+                 {"kind": "drawing", "image": "BBBB"}]
+        target, args = self.job(
+            "element_edit", project="demo", prompt="tidy these",
+            route="/plants", elements=elements, shots=shots)
+        self.assertIs(target, server.run_element_edit)
+        self.assertEqual(args,
+                         ("demo", "tidy these", elements, "model", None, "",
+                          shots, "/plants"))
+
+    def test_the_removed_editing_actions_are_gone(self):
+        """The pencil and the picture tool are one selection surface now."""
+        for kind in ("pencil_edit", "image_edit"):
+            with self.subTest(kind=kind):
+                self.assertIsNone(self.job(
+                    kind, project="demo", prompt="change",
+                    element={"tag": "button"}))
 
     def test_invalid_or_incomplete_action_is_ignored(self):
         self.assertIsNone(server._message_job({"type": "unknown"}))

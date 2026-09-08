@@ -67,6 +67,7 @@ class StudioBridge:
         bus.on("file", self.on_file)
         bus.on("test", self.on_test)
         bus.on("e2e", self.on_e2e)
+        bus.on("browser", self.on_browser)
         bus.on("context", self.on_context)
         bus.on("plan", self.on_plan)
         bus.on("design", self.on_design)
@@ -173,6 +174,10 @@ class StudioBridge:
 
     def on_e2e(self, p):
         emit({"type": "e2e_event", **{k: v for k, v in p.items() if k != "type"}})
+
+    def on_browser(self, p):
+        """What the engine's browser is looking at, right now."""
+        emit({"type": "browser_frame", "frame": p.get("frame", ""), "url": p.get("url", "")})
 
     def on_context(self, p):
         self._stats(tokens=int(p.get("tokens") or 0), limit=int(p.get("limit") or 0),

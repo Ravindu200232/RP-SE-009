@@ -1,4 +1,10 @@
 # Routes AgentForge UI and API requests.
+
+# Everything else here comes from the runtime parts executed before this one;
+# only real modules are imported.
+from server_modules.services.shots import capture_drawing, capture_element
+
+
 class UIHandler(SimpleHTTPRequestHandler):
 
     protocol_version = "HTTP/1.1"
@@ -417,39 +423,36 @@ class UIHandler(SimpleHTTPRequestHandler):
                 daemon=True
             ).start()
             self._json({"ok": True})
-        elif path == "/pencil-edit":
-            body = self._body()
-            threading.Thread(
-                target=run_pencil_edit,
-                args=(body.get("project", ""), body.get("prompt", ""), body,
-                      body.get("model") or default_agent_model(),
-                      _think_flag(body)),
-                daemon=True
-            ).start()
-            self._json({"ok": True})
         elif path == "/element-edit":
             body = self._body()
             threading.Thread(
                 target=run_element_edit,
                 args=(body.get("project", ""), body.get("prompt", ""),
-                      body.get("element") or {},
+                      body.get("elements") or body.get("element") or {},
                       body.get("model") or default_agent_model(),
-                      _think_flag(body)),
+                      _think_flag(body), _browser_console(body),
+                      body.get("shots") or [], (body.get("route") or "").strip()),
                 daemon=True
             ).start()
             self._json({"ok": True})
-        elif path == "/image-edit":
-
+        elif path == "/shot":
+            # A picture of what they just clicked or drew on, for the message
+            # they are about to send. Answered inline: the chip waits on it.
             body = self._body()
-            threading.Thread(
-                target=run_image_edit,
-                args=(body.get("project", ""), body.get("prompt", ""),
-                      body.get("element") or {},
-                      body.get("model") or default_agent_model(),
-                      _think_flag(body)),
-                daemon=True
-            ).start()
-            self._json({"ok": True})
+            strokes = body.get("strokes") or []
+            route = str(body.get("route") or "/")
+            if strokes:
+                image = capture_drawing(route, viewport=body.get("viewport") or {},
+                                        strokes=strokes, port=DEV_PORT)
+            else:
+                image = capture_element(route,
+                                        viewport=body.get("viewport") or {},
+                                        scroll=body.get("scroll") or {},
+                                        rect=body.get("rect") or {},
+                                        port=DEV_PORT)
+            self._json({"ok": bool(image),
+                        "image": f"data:image/jpeg;base64,{image}" if image else "",
+                        "b64": image})
         elif path == "/attach":
 
             body = self._body()
@@ -462,16 +465,6 @@ class UIHandler(SimpleHTTPRequestHandler):
                 text += "\n… (the rest was left out to keep the prompt workable)"
             got["text"] = text
             self._json({"ok": True, **got})
-        elif path == "/image-swap":
-
-            body = self._body()
-            threading.Thread(
-                target=run_image_swap,
-                args=(body.get("project", ""), body.get("data_base64", ""),
-                      body.get("filename", ""), body.get("element") or {}),
-                daemon=True
-            ).start()
-            self._json({"ok": True})
         elif path == "/undo":
             body = self._body()
             self._json(restore_snapshot(body.get("project", ""),
@@ -774,9 +767,9 @@ class UIHandler(SimpleHTTPRequestHandler):
         """
         Relay the HMR socket byte for byte.
 
-        Dropping it would force a full iframe reload after every element or
-        pencil edit, throwing away scroll position, form state and the
-        logged-in view — exactly the state those tools operate on.
+        Dropping it would force a full iframe reload after every edit,
+        throwing away scroll position, form state and the logged-in view —
+        exactly the state someone is pointing at when they ask for a change.
         """
         try:
             up = socket.create_connection(("127.0.0.1", DEV_PORT), timeout=5)

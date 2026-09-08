@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-08T14:22:39+00:00
+Run at (UTC): 2026-09-08T15:01:15+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 207
+Unit tests: 224
 Integration tests: 24
-Total tests run: 231
+Total tests run: 248
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 9.478s
+Duration: 10.613s
 
 Detailed results
 ----------------
@@ -151,6 +151,8 @@ test_the_catalog_prefers_the_project_copy_of_a_skill (test.unit.builder.test_pro
 test_the_sinhala_forms_studio_users_type_are_understood (test.unit.builder.test_project_setup.SkillPackTests.test_the_sinhala_forms_studio_users_type_are_understood) ... ok
 test_the_stack_core_is_always_selected_whatever_the_request_says (test.unit.builder.test_project_setup.SkillPackTests.test_the_stack_core_is_always_selected_whatever_the_request_says) ... ok
 test_a_file_the_workspace_already_has_survives_scaffolding (test.unit.builder.test_project_setup.StackTemplateTests.test_a_file_the_workspace_already_has_survives_scaffolding) ... ok
+test_a_folder_name_npm_would_reject_is_made_installable (test.unit.builder.test_project_setup.StackTemplateTests.test_a_folder_name_npm_would_reject_is_made_installable)
+npm refuses leading dots, capitals and spaces; the folder may have them. ... ok
 test_a_workspace_that_already_has_a_project_is_never_touched (test.unit.builder.test_project_setup.StackTemplateTests.test_a_workspace_that_already_has_a_project_is_never_touched) ... ok
 test_an_empty_workspace_gets_the_verified_starting_point (test.unit.builder.test_project_setup.StackTemplateTests.test_an_empty_workspace_gets_the_verified_starting_point) ... ok
 test_the_engines_own_directories_do_not_make_a_workspace_non_empty (test.unit.builder.test_project_setup.StackTemplateTests.test_the_engines_own_directories_do_not_make_a_workspace_non_empty) ... ok
@@ -208,9 +210,31 @@ test_a_failure_that_changes_is_repaired_again (test.unit.qa.test_qa_stages.UnitS
 test_a_green_suite_is_reported_after_one_round (test.unit.qa.test_qa_stages.UnitStageTests.test_a_green_suite_is_reported_after_one_round) ... ok
 test_a_runner_that_collects_nothing_is_a_problem_not_a_pass (test.unit.qa.test_qa_stages.UnitStageTests.test_a_runner_that_collects_nothing_is_a_problem_not_a_pass) ... ok
 test_the_same_failure_twice_ends_the_round_rather_than_looping (test.unit.qa.test_qa_stages.UnitStageTests.test_the_same_failure_twice_ends_the_round_rather_than_looping) ... ok
+test_a_data_uri_is_unwrapped_before_it_reaches_the_model (test.unit.services.test_selection_edit.AttachmentShapeTests.test_a_data_uri_is_unwrapped_before_it_reaches_the_model)
+The browser needs the `data:` prefix to render it; Ollama chokes on it. ... ok
+test_a_drawing_is_told_apart_from_a_click (test.unit.services.test_selection_edit.AttachmentShapeTests.test_a_drawing_is_told_apart_from_a_click) ... ok
+test_one_element_or_many_arrive_the_same_way (test.unit.services.test_selection_edit.AttachmentShapeTests.test_one_element_or_many_arrive_the_same_way)
+The old contract sent a bare dict; the studio now sends a list. ... ok
+test_a_box_at_the_top_left_is_not_pushed_off_the_page (test.unit.services.test_selection_edit.ScreenshotGeometryTests.test_a_box_at_the_top_left_is_not_pushed_off_the_page) ... ok
+test_a_drawing_is_photographed_with_room_around_it (test.unit.services.test_selection_edit.ScreenshotGeometryTests.test_a_drawing_is_photographed_with_room_around_it) ... ok
+test_a_stray_click_is_not_a_drawing (test.unit.services.test_selection_edit.ScreenshotGeometryTests.test_a_stray_click_is_not_a_drawing) ... ok
+test_a_tiny_element_still_gets_a_readable_photograph (test.unit.services.test_selection_edit.ScreenshotGeometryTests.test_a_tiny_element_still_gets_a_readable_photograph) ... ok
+test_an_element_box_is_taken_in_page_coordinates (test.unit.services.test_selection_edit.ScreenshotGeometryTests.test_an_element_box_is_taken_in_page_coordinates)
+getBoundingClientRect is viewport-relative; the clip is not. ... ok
+test_a_click_uses_the_element_contract_not_the_drawing_one (test.unit.services.test_selection_edit.SelectionBriefTests.test_a_click_uses_the_element_contract_not_the_drawing_one) ... ok
+test_a_drawing_says_what_the_red_line_means (test.unit.services.test_selection_edit.SelectionBriefTests.test_a_drawing_says_what_the_red_line_means) ... ok
+test_a_model_that_cannot_see_says_so_instead_of_dropping_the_picture (test.unit.services.test_selection_edit.SelectionBriefTests.test_a_model_that_cannot_see_says_so_instead_of_dropping_the_picture)
+Half a request silently ignored is worse than a request that admits it. ... ok
+test_every_selected_element_names_the_file_that_renders_it (test.unit.services.test_selection_edit.SelectionBriefTests.test_every_selected_element_names_the_file_that_renders_it) ... ok
+test_one_element_is_not_described_in_the_plural (test.unit.services.test_selection_edit.SelectionBriefTests.test_one_element_is_not_described_in_the_plural) ... ok
+test_what_the_screenshot_shows_is_folded_into_the_brief (test.unit.services.test_selection_edit.SelectionBriefTests.test_what_the_screenshot_shows_is_folded_into_the_brief) ... ok
+test_a_selection_of_several_elements_travels_whole (test.unit.services.test_server_wiring.MessageDispatchTests.test_a_selection_of_several_elements_travels_whole)
+Clicking three things has to send three things, with their pictures. ... ok
 test_build_and_resume_contracts (test.unit.services.test_server_wiring.MessageDispatchTests.test_build_and_resume_contracts) ... ok
 test_edit_action_contracts (test.unit.services.test_server_wiring.MessageDispatchTests.test_edit_action_contracts) ... ok
 test_invalid_or_incomplete_action_is_ignored (test.unit.services.test_server_wiring.MessageDispatchTests.test_invalid_or_incomplete_action_is_ignored) ... ok
+test_the_removed_editing_actions_are_gone (test.unit.services.test_server_wiring.MessageDispatchTests.test_the_removed_editing_actions_are_gone)
+The pencil and the picture tool are one selection surface now. ... ok
 test_owned_dir_accepts_only_existing_direct_child (test.unit.services.test_server_wiring.OwnedDirectoryTests.test_owned_dir_accepts_only_existing_direct_child) ... ok
 test_owned_dir_rejects_traversal_hidden_and_missing_names (test.unit.services.test_server_wiring.OwnedDirectoryTests.test_owned_dir_rejects_traversal_hidden_and_missing_names) ... ok
 test_entity_hint_singularizes_plain_plural_names (test.unit.srs.test_builder_handoff.BuilderHandoffTests.test_entity_hint_singularizes_plain_plural_names) ... ok
@@ -254,6 +278,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 231 tests in 9.478s
+Ran 248 tests in 10.613s
 
 OK

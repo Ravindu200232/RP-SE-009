@@ -9,7 +9,7 @@ def text(path):
 
 
 required = {
-    "chat composer": ("components/AgentChat.jsx", "type: 'agent_update'"),
+    "chat composer": ("components/AgentChat.jsx", "'element_edit' : 'agent_update'"),
     "chat prompt review": ("components/AgentChat.jsx", "<TunePrompt"),
     "chat turns from the run": ("lib/chat.js", "export function chatTurns"),
     "chat answers a paused question": ("components/AgentChat.jsx", "answerQuestion(typed)"),
@@ -32,27 +32,36 @@ required = {
     "the gate expires into the default": ("../builder-agent/builder_agent/approvals.py", "timedOut"),
     "a journey can pick from repeated controls": ("../builder-agent/builder_agent/browser.py", "def _pick"),
     "the browser streams what it sees": ("../builder-agent/builder_agent/browser.py", "startScreencast"),
+    "it streams whenever it is open": ("../builder-agent/builder_agent/browser.py", "def _watch"),
+    "the preview shows the agent's browser": ("components/AgentBrowser.jsx", "browserFrame"),
+    "the browser is labelled as the agent's": ("components/AgentBrowser.jsx", "agent"),
+    "a finished cast gives the preview back": ("components/AgentBrowser.jsx", "STALE_MS"),
+    "frames reach the studio": ("lib/ws.js", "browser_frame"),
     "chat opens itself for a run": ("components/AgentChat.jsx", "if (busy) setOpen(true)"),
     "nothing is dropped from the stream": ("lib/chat.js", "usually the interesting one"),
     "one row per action": ("lib/chat.js", "Every action is its own row"),
     "the live step is animated": ("components/AgentChat.jsx", "live ? <Loader2"),
     "thinking is shown as thinking": ("components/AgentChat.jsx", "function Thinking"),
     "the engine reports thinking": ("../server_modules/builder/bridge.py", '"state": "thinking"'),
-    "human activity mapper": ("lib/activity.js", "Creating the build plan"),
-    "unit-test activity": ("lib/activity.js", "Creating unit tests"),
-    "E2E activity": ("lib/activity.js", "Starting end-to-end testing"),
-    "builder animation": ("components/BuildOverlay.jsx", "/__agentforge/builder-flow.gif"),
     "SRS planner animation": ("components/srs/SrsActivity.jsx", "/__agentforge/srs-planner.gif"),
-    "builder paced feed": ("components/BuildOverlay.jsx", "}, 10000)"),
-    "builder latest five": ("components/BuildOverlay.jsx", ".slice(-5)"),
-    "builder white full view": ("components/BuildOverlay.jsx", 'overflow-y-auto bg-white'),
-    "builder light color scope": ("components/BuildOverlay.jsx", 'data-theme="light"'),
-    "builder unframed activity": ("components/BuildOverlay.jsx", 'section className="flex min-h-[560px] flex-col p-6"'),
-    "builder unframed flow": ("components/BuildOverlay.jsx", 'section className="relative flex min-h-[560px] items-center justify-center overflow-hidden p-5"'),
+    "a run can be stopped from the chat": ("components/AgentChat.jsx", "function CancelRun"),
     "chat is a column beside the work": ("app/page.jsx", "<AgentChat />"),
     "chat is not a drawer": ("components/AgentChat.jsx", "<aside className=\"flex w-["),
-    "select tool": ("components/PreviewPane.jsx", "element_edit"),
-    "pencil tool": ("components/PreviewPane.jsx", "pencil_edit"),
+    "select tool": ("components/PreviewPane.jsx", "attachPicker"),
+    "pencil tool": ("components/PreviewPane.jsx", "pencilOn"),
+    "what you point at is attached to the message":
+        ("components/PreviewPane.jsx", "const attachShot"),
+    "several things can be attached at once": ("lib/store.js", "addSelection:"),
+    "the attachments are shown in the composer": ("components/AgentChat.jsx", "function Attached"),
+    "the message carries them": ("components/AgentChat.jsx", "payload.shots"),
+    "a drawing is photographed with its red line":
+        ("../server_modules/services/shots.py", "def capture_drawing"),
+    "an element is photographed on its own":
+        ("../server_modules/services/shots.py", "def capture_element"),
+    "the screenshots are read for the agent":
+        ("../server_modules/builder/edits.py", "def _read_shots"),
+    "one browser is kept warm between clicks":
+        ("../server_modules/services/shots.py", "class _Warm"),
     "test evidence view": ("components/testing/TestingResult.jsx", "label: 'Evidence'"),
     "verification ledger rendered": ("components/testing/Evidence.jsx", "qa?.report?.evidence"),
     "sequential E2E overlay": ("components/LiveE2EOverlay.jsx", "Live browser test"),
@@ -78,13 +87,22 @@ forbidden = {
     "team planner picker": ("components/Sidebar.jsx", 'label="Planner"'),
     "team design picker": ("components/Sidebar.jsx", 'label="Design"'),
     "team builder picker": ("components/Sidebar.jsx", 'label="Builder"'),
-    "builder percentage bar": ("components/BuildOverlay.jsx", "Math.round(pct)"),
-    "builder progress rail": ("components/BuildOverlay.jsx", "transition-[width]"),
-    "raw warning card": ("components/BuildOverlay.jsx", "event.kind === 'warn'"),
-    "builder activity card frame": ("components/BuildOverlay.jsx", "rounded-[22px] rounded-bl-[8px]"),
-    "builder two-card shells": ("components/BuildOverlay.jsx", "rounded-[34px] border border-white/80 bg-white/72"),
-    "builder decorative canvas gradient": ("components/BuildOverlay.jsx", "radial-gradient(circle_at_12%_10%"),
     "SRS activity card frame": ("components/srs/SrsActivity.jsx", "rounded-[21px] rounded-bl-[8px]"),
+    # The build screen said in an animation what the chat stream already says
+    # in words, and covered the browser while it did.
+    "build screen": ("components/PreviewPane.jsx", "BuildOverlay"),
+    "decorative build animation": ("components/PreviewPane.jsx", "builder-flow.gif"),
+    # Pointing at something is one gesture with two shapes, not three tools
+    # with three prompt boxes.
+    "picture tool": ("components/PreviewPane.jsx", "image_edit"),
+    "a second prompt box beside the chat": ("components/PreviewPane.jsx", "Review request"),
+}
+
+missing = {
+    # Deleted with the build screen they served.
+    "the build screen": "components/BuildOverlay.jsx",
+    "its activity mapper": "lib/activity.js",
+    "its contract check": "scripts/verify_activity.mjs",
 }
 
 failed = []
@@ -94,7 +112,11 @@ for label, (path, needle) in required.items():
 for label, (path, needle) in forbidden.items():
     if needle in text(path):
         failed.append(f"{label}: unwanted {needle!r} remains in {path}")
+for label, path in missing.items():
+    if (ROOT / path).exists():
+        failed.append(f"{label}: {path} should have been removed")
 
 if failed:
     raise SystemExit("\n".join(failed))
-print(f"Studio UI contracts: {len(required) + len(forbidden)}/{len(required) + len(forbidden)} OK")
+total = len(required) + len(forbidden) + len(missing)
+print(f"Studio UI contracts: {total}/{total} OK")
