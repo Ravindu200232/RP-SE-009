@@ -247,6 +247,11 @@ class UIHandler(SimpleHTTPRequestHandler):
         """
         try:
             fn(path)
+        except (ConnectionAbortedError, ConnectionResetError, BrokenPipeError) as e:
+            # The caller navigated away or reloaded while we were answering.
+            # Nothing failed, there is nobody left to tell, and putting it in
+            # the chat stream reads like the run broke.
+            log.debug(f"api {path}: caller hung up ({e})")
         except Exception as e:
             log.exception(f"api {path}")
             elog("WARN", f"   ⚠ {path} failed: {type(e).__name__}: {e}")

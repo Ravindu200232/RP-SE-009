@@ -375,7 +375,7 @@ export default function PreviewPane({ hidden }) {
                          cursor: pencilOn ? 'crosshair' : 'default' }} />
 
         {(pickOn || pencilOn) && (
-          <p className="pointer-events-none absolute inset-x-0 top-6 z-[9] mx-auto w-fit rounded-full bg-ink/85 px-3.5 py-1.5 text-[11px] font-medium text-white shadow-lg">
+          <p className="pointer-events-none absolute inset-x-0 bottom-7 z-[9] mx-auto w-fit rounded-full bg-ink/85 px-3.5 py-1.5 text-[11px] font-medium text-white shadow-lg">
             {pencilOn ? 'Draw around what you mean — it attaches to the chat'
                       : 'Click anything — it attaches to the chat'}
           </p>
