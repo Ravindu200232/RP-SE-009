@@ -13,21 +13,32 @@ default and carries on. Nothing can wait forever.
 from __future__ import annotations
 
 import threading
+import time
 import uuid
 
 
 class Decision:
     """One pending question and the answer it is waiting for."""
 
-    __slots__ = ("id", "kind", "payload", "default", "answer", "ready")
+    __slots__ = ("id", "kind", "payload", "default", "answer", "ready", "asked_at",
+                 "timeout")
 
-    def __init__(self, kind: str, payload: dict, default: dict) -> None:
+    def __init__(self, kind: str, payload: dict, default: dict,
+                 timeout: float = 300.0) -> None:
         self.id = uuid.uuid4().hex[:12]
         self.kind = kind
         self.payload = payload
         self.default = default
+        self.timeout = float(timeout)
+        self.asked_at = time.time()
         self.answer: dict | None = None
         self.ready = threading.Event()
+
+    def as_question(self) -> dict:
+        """The whole question, for a surface that was not listening when it was asked."""
+        left = self.timeout - (time.time() - self.asked_at)
+        return {"id": self.id, "kind": self.kind,
+                "timeout": max(1, int(left)), **self.payload}
 
 
 class Approvals:
@@ -47,7 +58,8 @@ class Approvals:
         if not self.enabled:
             return dict(default, decision=default.get("decision", "default"), asked=False)
 
-        decision = Decision(kind, payload, default)
+        decision = Decision(kind, payload, default,
+                            timeout if timeout is not None else self.timeout)
         with self._lock:
             self.pending[decision.id] = decision
         self.events.emit("approval", id=decision.id, kind=kind, timeout=timeout or self.timeout,
@@ -91,5 +103,12 @@ class Approvals:
             decision.ready.set()
 
     def list(self) -> list[dict]:
+        """Every question still waiting, in full.
+
+        A websocket message is delivered once. A studio that reloaded, or that
+        was mid-request when the next question arrived, has no other way to
+        find out that a run is waiting on it - and the run then sits there
+        until it times out.
+        """
         with self._lock:
-            return [{"id": d.id, "kind": d.kind} for d in self.pending.values()]
+            return [d.as_question() for d in self.pending.values()]

@@ -1,6 +1,6 @@
 
 import { useStore, KEYS } from './store'
-import { API, HTTP_FALLBACK } from './api'
+import { api, API, HTTP_FALLBACK } from './api'
 
 
 const STEP_ALIAS = { plan: 'build', generate: 'build' }
@@ -58,6 +58,25 @@ function wsUrl() {
   return `ws://${host}:7825`
 }
 
+/**
+ * Ask the backend what it is waiting on.
+ *
+ * A question is announced once, over a socket. A studio that reloaded, or that
+ * connected a second late, never hears it — and the run then waits out its
+ * whole timeout on a question nobody was shown.
+ */
+async function recoverPendingDecision() {
+  try {
+    const { pending } = await api.decisions()
+    const question = (pending || [])[0]
+    const store = useStore.getState()
+    if (question && !store.approval) store.setApproval(question)
+  } catch {
+    // An older backend has no such endpoint; the announcement is all there is.
+  }
+}
+
+
 export function connect() {
   if (typeof window === 'undefined') return
   const s = useStore.getState()
@@ -83,7 +102,9 @@ export function connect() {
   const mine = sock
   // Every handler checks it is still the current socket before it speaks.
   sock.onopen = () => {
-    if (mine === sock) useStore.getState().setStatus('live', 'ready')
+    if (mine !== sock) return
+    useStore.getState().setStatus('live', 'ready')
+    recoverPendingDecision()
   }
   sock.onclose = () => {
     if (mine !== sock) return
@@ -271,7 +292,8 @@ function handle(m) {
       s.setBrowserFrame(m.frame ? m : null)
       break
     case 'approval_resolved':
-      s.setApproval(null)
+      // The next question can already be on screen by the time this lands.
+      if (!m.id || useStore.getState().approval?.id === m.id) s.setApproval(null)
       s.pushChat({ role: 'assistant', title: m.kind === 'plan' ? 'The plan' : 'Design system',
                    text: m.decision === 'revise' ? 'Sent back for another round.'
                        : m.decision === 'skip' ? 'Left for the build to decide.'

@@ -35,6 +35,9 @@ export const api = {
   // Answer a question the run is waiting on: the plan, or the design.
   decide: (body) => post('/decision', body),
 
+  // What a run is waiting on right now, for a studio that missed the message.
+  decisions: () => req('/decisions'),
+
   // Throw away a specification that has not been approved.
   discardSrs: (srs_id) => post('/discard-srs', { srs_id }),
   undo: (project, id) => post('/undo', { project, id }),

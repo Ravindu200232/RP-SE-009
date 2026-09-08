@@ -21,9 +21,21 @@ import { useStore } from '@/lib/store'
 import { Button, Modal } from './ui'
 import { cn } from '@/lib/utils'
 
+/**
+ * Close the question that was answered, and only that one.
+ *
+ * Answering the plan is an await, and the run does not wait for it: by the
+ * time the request comes back the next question - the design - has already
+ * arrived over the socket. Clearing unconditionally here threw that one away,
+ * so accepting a plan looked like the design customiser had been skipped.
+ */
+function dismiss(id) {
+  const store = useStore.getState()
+  if (!id || store.approval?.id === id) store.setApproval(null)
+}
+
 export default function AgentDecision() {
   const question = useStore(s => s.approval)
-  const clear = useStore(s => s.setApproval)
   const [sending, setSending] = useState('')
   const [left, setLeft] = useState(0)
 
@@ -34,22 +46,23 @@ export default function AgentDecision() {
     const tick = setInterval(() => {
       const remaining = Math.round((deadline - Date.now()) / 1000)
       setLeft(remaining)
-      if (remaining <= 0) clear(null)
+      if (remaining <= 0) dismiss(question.id)
     }, 1000)
     return () => clearInterval(tick)
-  }, [question, clear])
+  }, [question])
 
   if (!question) return null
 
   async function answer(body) {
+    const answered = question.id
     setSending(body.decision)
     try {
-      await api.decide({ id: question.id, ...body })
+      await api.decide({ id: answered, ...body })
     } catch (e) {
       useStore.getState().addLog('WARN', `Could not send that decision — ${e.message}`)
     }
     setSending('')
-    clear(null)
+    dismiss(answered)
   }
 
   return question.kind === 'plan'

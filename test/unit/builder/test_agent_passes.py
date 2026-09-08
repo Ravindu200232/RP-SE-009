@@ -8,6 +8,8 @@ written into the project, and that the build pass actually receives it.
 from __future__ import annotations
 
 import tempfile
+import threading
+import time
 import unittest
 from pathlib import Path
 
@@ -207,6 +209,59 @@ class AgentPassTests(unittest.TestCase):
         self.assertEqual(snapshot["stack"], "nextjs-mongo")
         self.assertEqual(snapshot["quality"], "default")
         self.assertIn("evidence", snapshot)
+
+
+class PendingQuestionTests(unittest.TestCase):
+    """A question announced once must still be findable by a late arrival."""
+
+    def gate(self, timeout=300.0):
+        from builder_agent.approvals import Approvals
+        from builder_agent.events import Events
+        return Approvals(Events(), enabled=True, timeout=timeout)
+
+    def test_a_waiting_question_can_be_read_back_in_full(self):
+        """The studio reloads, and the run is still waiting on it."""
+        approvals = self.gate()
+        asked = threading.Thread(
+            target=approvals.ask,
+            args=("design", {"palettes": [{"id": "slate"}], "chosen": {"palette": "slate"}},
+                  {"decision": "apply"}),
+            daemon=True)
+        asked.start()
+        for _ in range(200):                       # let the gate publish
+            if approvals.list():
+                break
+            time.sleep(0.01)
+
+        waiting = approvals.list()
+        self.assertEqual(len(waiting), 1)
+        question = waiting[0]
+        self.assertEqual(question["kind"], "design")
+        self.assertEqual(question["palettes"], [{"id": "slate"}])
+        self.assertEqual(question["chosen"], {"palette": "slate"})
+        self.assertGreater(question["timeout"], 0)
+
+        self.assertTrue(approvals.resolve(question["id"], {"decision": "apply"}))
+        asked.join(timeout=5)
+        self.assertEqual(approvals.list(), [])
+
+    def test_the_time_left_shrinks_rather_than_restarting(self):
+        """A recovered question shows what is left, not the whole budget."""
+        from builder_agent.approvals import Decision
+        decision = Decision("plan", {"plan": "do it"}, {"decision": "accept"}, timeout=300)
+        decision.asked_at -= 120
+        self.assertLessEqual(decision.as_question()["timeout"], 181)
+        self.assertGreater(decision.as_question()["timeout"], 170)
+
+    def test_a_question_nobody_can_answer_is_not_published(self):
+        from builder_agent.approvals import Approvals
+        from builder_agent.events import Events
+        approvals = Approvals(Events(), enabled=False)
+        answer = approvals.ask("plan", {"plan": "x"}, {"decision": "accept"})
+        self.assertEqual(answer["decision"], "accept")
+        self.assertFalse(answer["asked"])
+        self.assertEqual(approvals.list(), [])
+
 
 
 if __name__ == "__main__":

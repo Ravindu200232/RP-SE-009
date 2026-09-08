@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-08T15:55:31+00:00
+Run at (UTC): 2026-09-08T16:04:36+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 236
+Unit tests: 239
 Integration tests: 24
-Total tests run: 260
+Total tests run: 263
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 10.117s
+Duration: 10.675s
 
 Detailed results
 ----------------
@@ -26,6 +26,11 @@ test_the_design_can_be_left_to_the_build (test.unit.builder.test_agent_passes.Ag
 test_the_design_contract_is_decided_and_written_without_asking (test.unit.builder.test_agent_passes.AgentPassTests.test_the_design_contract_is_decided_and_written_without_asking) ... ok
 test_the_planning_pass_investigates_but_does_not_implement (test.unit.builder.test_agent_passes.AgentPassTests.test_the_planning_pass_investigates_but_does_not_implement) ... ok
 test_work_with_no_interface_gets_no_design_contract (test.unit.builder.test_agent_passes.AgentPassTests.test_work_with_no_interface_gets_no_design_contract) ... ok
+test_a_question_nobody_can_answer_is_not_published (test.unit.builder.test_agent_passes.PendingQuestionTests.test_a_question_nobody_can_answer_is_not_published) ... ok
+test_a_waiting_question_can_be_read_back_in_full (test.unit.builder.test_agent_passes.PendingQuestionTests.test_a_waiting_question_can_be_read_back_in_full)
+The studio reloads, and the run is still waiting on it. ... ok
+test_the_time_left_shrinks_rather_than_restarting (test.unit.builder.test_agent_passes.PendingQuestionTests.test_the_time_left_shrinks_rather_than_restarting)
+A recovered question shows what is left, not the whole budget. ... ok
 test_a_compound_command_is_judged_by_its_worst_segment (test.unit.builder.test_engine.CommandPolicyTests.test_a_compound_command_is_judged_by_its_worst_segment) ... ok
 test_an_interpreter_running_a_script_is_not_read_only (test.unit.builder.test_engine.CommandPolicyTests.test_an_interpreter_running_a_script_is_not_read_only) ... ok
 test_read_only_commands_are_safe (test.unit.builder.test_engine.CommandPolicyTests.test_read_only_commands_are_safe) ... ok
@@ -296,6 +301,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 260 tests in 10.117s
+Ran 263 tests in 10.675s
 
 OK

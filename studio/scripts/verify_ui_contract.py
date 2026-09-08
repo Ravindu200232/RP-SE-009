@@ -28,6 +28,9 @@ required = {
     "a design is the default, not the exception":
         ("../builder-agent/builder_agent/agent.py", "nobody writes those words"),
     "a decision has a deadline": ("components/AgentDecision.jsx", "function Countdown"),
+    "answering one question does not close the next":
+        ("components/AgentDecision.jsx", "store.approval?.id === id"),
+    "nor does the resolution that follows it": ("lib/ws.js", "approval?.id === m.id"),
     "decisions reach the run": ("lib/api.js", "decide: (body)"),
     "the gate expires into the default": ("../builder-agent/builder_agent/approvals.py", "timedOut"),
     "a journey can pick from repeated controls": ("../builder-agent/builder_agent/browser.py", "def _pick"),

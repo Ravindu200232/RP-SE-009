@@ -187,6 +187,8 @@ class UIHandler(SimpleHTTPRequestHandler):
             self._json(MONGO.status())
         elif path.startswith("/files/"):
             self._json(get_project_files(path[7:].strip("/")))
+        elif path == "/decisions":
+            self._json({"pending": pending_decisions()})
         elif path.startswith("/qa/"):
             self._json(read_qa_results(path[4:].strip("/")))
         elif path.startswith("/srs-results/"):
