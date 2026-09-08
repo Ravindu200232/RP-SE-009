@@ -124,9 +124,13 @@ def _brief(proj_dir: Path, prompt: str) -> str:
 GATE_TIMEOUT = 600
 
 
-def _config(proj_dir: Path, prompt: str, model: str, think, gates: bool = False) -> Config:
+def _config(proj_dir: Path, prompt: str, model: str, think, gates: bool = False,
+            stack: str = "") -> Config:
+    # A stack chosen in the studio is a decision; reading it out of the wording
+    # of the brief is a guess, and only the fallback.
     return Config(workspace=proj_dir, model=model or default_agent_model(),
-                  host=ollama.host, stack=detect_stack(prompt), think=bool(think),
+                  host=ollama.host, stack=stack or detect_stack(prompt),
+                  think=bool(think),
                   extra={"gates": gates, "gate_timeout": GATE_TIMEOUT})
 
 
@@ -233,7 +237,7 @@ def restore_snapshot(project: str, snap_id: str) -> dict:
 # The runs
 # --------------------------------------------------------------------------
 def _run_agent(proj_dir: Path, brief: str, model: str, think, *, phases, kind: str,
-               plan: bool = True):
+               plan: bool = True, stack: str = ""):
     """One builder-agent run, wired to the studio.
 
     A full build asks about its plan and its design, because the studio can
@@ -242,8 +246,8 @@ def _run_agent(proj_dir: Path, brief: str, model: str, think, *, phases, kind: s
     """
     events = Events()
     StudioBridge(events, kind=kind, phases=list(phases))
-    agent = BuilderAgent(_config(proj_dir, brief, model, think, gates=plan), events=events,
-                         cancel=_cancelled)
+    agent = BuilderAgent(_config(proj_dir, brief, model, think, gates=plan, stack=stack),
+                         events=events, cancel=_cancelled)
     register_approvals(agent.approvals)
     try:
         return agent, (agent.run(brief) if plan else agent.build(brief))
@@ -290,7 +294,8 @@ def _finish(project: str, url: str, outcome, qa_outcome=None) -> None:
 
 
 def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
-                       project: str = "", logo: str = "", srs_id: str = "") -> None:
+                       project: str = "", logo: str = "", srs_id: str = "",
+                       stack: str = "") -> None:
     """Build an application from a request, then prove it works."""
     started = time.time()
     cancel.clear() if hasattr(cancel, "clear") else None
@@ -309,7 +314,7 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
             brief += f"\n\nA logo has already been generated at {logo}; use it in the header."
 
         agent, outcome = _run_agent(proj_dir, brief, model, think,
-                                    phases=BUILD_PHASES, kind="build")
+                                    phases=BUILD_PHASES, kind="build", stack=stack)
         if outcome.status == "cancelled":
             return ecancel({"project": name})
 

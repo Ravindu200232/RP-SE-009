@@ -424,7 +424,8 @@ class UIHandler(SimpleHTTPRequestHandler):
                       _think_flag(body),
                       (body.get("qa_model") or "").strip(),
                       "", str(body.get("logo", "")).strip(),
-                      str(body.get("srs_id", "")).strip()),
+                      str(body.get("srs_id", "")).strip(),
+                      str(body.get("stack", "")).strip()),
                 daemon=True
             ).start()
             self._json({"ok": True})

@@ -197,18 +197,27 @@ class Evidence:
         page = self._clean_requirements(requirements)
         existing = {item["id"]: item for item in self.scope["requirements"]}
         additions = []
+        widened = []
         for item in page:
             prior = existing.get(item["id"])
             if prior:
-                if json.dumps(prior, sort_keys=True) != json.dumps(item, sort_keys=True):
-                    raise ToolError(f"Requirement {item['id']} already exists with different evidence.")
+                if prior["description"] != item["description"]:
+                    raise ToolError(
+                        f"Requirement {item['id']} already exists with a different description. "
+                        "Add a new requirement rather than redefining this one.")
+                # Asking to prove more of the same requirement is a promise
+                # kept, not a scope changed; asking to prove less is not.
+                extra = [k for k in item["evidence"] if k not in prior["evidence"]]
+                if extra:
+                    prior["evidence"] = prior["evidence"] + extra
+                    widened.append(f"{item['id']} (+{', '.join(extra)})")
                 continue  # An exact retry after a transport hiccup is idempotent.
             existing[item["id"]] = item
             additions.append(item)
         sealed = self.scope["finalized"] if finalize is None and not additions else bool(finalize)
         if finalize is None and additions:
             sealed = False
-        if additions or self.scope["finalized"] != sealed:
+        if additions or widened or self.scope["finalized"] != sealed:
             self.changed()
             self.scope = {**self.scope,
                           "requirements": self.scope["requirements"] + additions,
@@ -244,7 +253,12 @@ class Evidence:
             requirement = next((r for r in self.scope["requirements"] if r["id"] == ident), None)
             if not requirement:
                 raise ToolError(f"Unknown verification requirement: {ident}")
-            if kind not in requirement["evidence"]:
+            # Runtime is required of every run whatever the requirements say, so
+            # it must be recordable against any of them. Refusing it left runs
+            # in a corner: the completion gate demanded runtime evidence, the
+            # ledger refused to accept it, and widening the requirement was
+            # refused as well.
+            if kind != "runtime" and kind not in requirement["evidence"]:
                 raise ToolError(f"Requirement {ident} does not call for {kind} evidence.")
         return clean
 

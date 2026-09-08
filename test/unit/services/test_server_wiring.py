@@ -50,7 +50,16 @@ class MessageDispatchTests(unittest.TestCase):
         self.assertIs(target, server.run_agent_pipeline)
         self.assertEqual(
             args,
-            ("build", "model", False, "qa", "", "logo.png", "spec"))
+            ("build", "model", False, "qa", "", "logo.png", "spec", ""))
+
+    def test_a_stack_chosen_in_the_studio_reaches_the_run(self):
+        """Reading it out of the wording of the brief is the fallback, not the rule."""
+        _, args = self.job("agent_build", prompt="a shop",
+                           stack=" mern-microservices ")
+        self.assertEqual(args[-1], "mern-microservices")
+
+        _, args = self.job("agent_build", prompt="a shop")
+        self.assertEqual(args[-1], "")
 
         target, args = self.job(
             "agent_resume", project=" demo ", qa_model="qa", think=True)

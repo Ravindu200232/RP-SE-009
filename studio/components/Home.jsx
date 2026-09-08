@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ArrowRight, Languages, Loader2, PencilLine, Sparkles } from 'lucide-react'
+import { ArrowRight, Languages, Layers, Loader2, PencilLine, Sparkles } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { send } from '@/lib/ws'
 import { api } from '@/lib/api'
@@ -15,6 +15,7 @@ import PlanReview from './srs/PlanReview'
 import SrsReview from './srs/SrsReview'
 import SrsActivity from './srs/SrsActivity'
 import { displaySrsLanguages, SRS_LANGUAGES } from '@/lib/languages'
+import { STACKS } from '@/lib/stacks'
 
 
 const EXAMPLES = [
@@ -51,6 +52,9 @@ export default function Home({ onStarted }) {
   const [logoFor, setLogoFor] = useState(null)
   const [srsError, setSrsError] = useState('')
   const [srsLanguage, setSrsLanguage] = useState('en')
+  // "" means the engine reads the brief, which is what it did before there was
+  // anywhere to say otherwise.
+  const [stack, setStack] = useState('')
   const [languageOptions, setLanguageOptions] = useState(SRS_LANGUAGES)
   const box = useRef(null)
   const attach = useAttachments()
@@ -83,7 +87,7 @@ export default function Home({ onStarted }) {
     if (srs) s.addLog('INFO', 'Building from the SRS you approved')
     send({ type: 'agent_build', prompt: p, model: builderModel,
            builder_model: builderModel, planner_model: plannerModel,
-           design_model: designModel,
+           design_model: designModel, stack,
            think, qa_model: models.qa, logo, srs_id: srs || '',
            uploads: uploads && Object.keys(uploads).length ? uploads : undefined })
   }
@@ -228,6 +232,33 @@ export default function Home({ onStarted }) {
                     className="ml-11 h-9 w-full max-w-none rounded-xl border border-line bg-white px-3 text-[11.5px] font-medium text-ink outline-none transition focus:border-accent dark:bg-white/[.06] sm:ml-0 sm:w-auto sm:max-w-[230px]">
               {languageOptions.map(language => (
                 <option key={language.code} value={language.code}>{language.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* The stack used to be read out of the wording of the brief, which
+              worked until someone wanted microservices without writing the
+              word. It is a decision, so it is asked as one — and "read the
+              brief" stays the default, because most people do not care. */}
+          <div className="mx-4 mb-3 flex flex-wrap items-center gap-3 rounded-2xl border border-line/70 bg-white/45 px-3.5 py-3 dark:bg-white/[.025]">
+            <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent">
+              <Layers className="size-4" />
+            </span>
+            <label htmlFor="build-stack" className="min-w-[210px] flex-1">
+              <span className="block font-display text-[11.5px] font-semibold text-ink">
+                2. Choose the stack
+              </span>
+              <span className="block text-[10.5px] leading-relaxed text-muted2">
+                {STACKS.find(option => option.id === stack)?.blurb
+                  || 'Read from what you wrote — microservices if you ask for them, one Next.js app otherwise.'}
+              </span>
+            </label>
+            <select id="build-stack" value={stack}
+                    onChange={event => setStack(event.target.value)}
+                    className="ml-11 h-9 w-full max-w-none rounded-xl border border-line bg-white px-3 text-[11.5px] font-medium text-ink outline-none transition focus:border-accent dark:bg-white/[.06] sm:ml-0 sm:w-auto sm:max-w-[230px]">
+              <option value="">Read it from the brief</option>
+              {STACKS.map(option => (
+                <option key={option.id} value={option.id}>{option.name}</option>
               ))}
             </select>
           </div>

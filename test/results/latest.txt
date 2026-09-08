@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-08T15:33:16+00:00
+Run at (UTC): 2026-09-08T15:55:31+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 235
+Unit tests: 236
 Integration tests: 24
-Total tests run: 259
+Total tests run: 260
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 13.686s
+Duration: 10.117s
 
 Detailed results
 ----------------
@@ -246,6 +246,8 @@ test_one_element_is_not_described_in_the_plural (test.unit.services.test_selecti
 test_what_the_screenshot_shows_is_folded_into_the_brief (test.unit.services.test_selection_edit.SelectionBriefTests.test_what_the_screenshot_shows_is_folded_into_the_brief) ... ok
 test_a_selection_of_several_elements_travels_whole (test.unit.services.test_server_wiring.MessageDispatchTests.test_a_selection_of_several_elements_travels_whole)
 Clicking three things has to send three things, with their pictures. ... ok
+test_a_stack_chosen_in_the_studio_reaches_the_run (test.unit.services.test_server_wiring.MessageDispatchTests.test_a_stack_chosen_in_the_studio_reaches_the_run)
+Reading it out of the wording of the brief is the fallback, not the rule. ... ok
 test_build_and_resume_contracts (test.unit.services.test_server_wiring.MessageDispatchTests.test_build_and_resume_contracts) ... ok
 test_edit_action_contracts (test.unit.services.test_server_wiring.MessageDispatchTests.test_edit_action_contracts) ... ok
 test_invalid_or_incomplete_action_is_ignored (test.unit.services.test_server_wiring.MessageDispatchTests.test_invalid_or_incomplete_action_is_ignored) ... ok
@@ -294,6 +296,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 259 tests in 13.686s
+Ran 260 tests in 10.117s
 
 OK
