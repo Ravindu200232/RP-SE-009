@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-08T15:26:33+00:00
+Run at (UTC): 2026-09-08T15:33:16+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 234
+Unit tests: 235
 Integration tests: 24
-Total tests run: 258
+Total tests run: 259
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 10.122s
+Duration: 13.686s
 
 Detailed results
 ----------------
@@ -67,6 +67,8 @@ test_an_empty_expectation_is_refused_rather_than_always_passing (test.unit.build
 test_an_unknown_assertion_names_the_ones_that_exist (test.unit.builder.test_journeys.AssertionShapeTests.test_an_unknown_assertion_names_the_ones_that_exist) ... ok
 test_text_and_url_assertions_report_what_they_actually_saw (test.unit.builder.test_journeys.AssertionShapeTests.test_text_and_url_assertions_report_what_they_actually_saw) ... ok
 test_a_run_with_nowhere_to_send_frames_does_not_stream (test.unit.builder.test_journeys.BrowserWatchTests.test_a_run_with_nowhere_to_send_frames_does_not_stream) ... ok
+test_closing_the_browser_says_so_rather_than_going_quiet (test.unit.builder.test_journeys.BrowserWatchTests.test_closing_the_browser_says_so_rather_than_going_quiet)
+A last frame left on screen is a preview nobody can use. ... ok
 test_every_tab_the_agent_opens_is_streamed_to_the_studio (test.unit.builder.test_journeys.BrowserWatchTests.test_every_tab_the_agent_opens_is_streamed_to_the_studio)
 Not only journeys: most browser work is opening a page and looking. ... ok
 test_a_cancellation_beside_a_real_failure_still_fails (test.unit.builder.test_journeys.DiagnosticsTests.test_a_cancellation_beside_a_real_failure_still_fails) ... ok
@@ -292,6 +294,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 258 tests in 10.122s
+Ran 259 tests in 13.686s
 
 OK

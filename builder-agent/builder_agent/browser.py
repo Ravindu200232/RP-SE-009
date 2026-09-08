@@ -684,6 +684,9 @@ class Browser:
         self.attempts.clear()
 
     def close(self) -> None:
+        # Say so, or the last frame sits over the preview until it goes stale.
+        if self.events:
+            self.events.emit("browser", state="closed", frame="", url="")
         if self.cdp:
             self.cdp.close()
         self.cdp = None

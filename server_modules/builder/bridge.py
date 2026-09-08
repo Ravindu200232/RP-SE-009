@@ -176,8 +176,13 @@ class StudioBridge:
         emit({"type": "e2e_event", **{k: v for k, v in p.items() if k != "type"}})
 
     def on_browser(self, p):
-        """What the engine's browser is looking at, right now."""
-        emit({"type": "browser_frame", "frame": p.get("frame", ""), "url": p.get("url", "")})
+        """What the engine's browser is looking at, right now.
+
+        An empty frame means it has closed: the studio gives the preview back
+        rather than holding the last picture over it.
+        """
+        emit({"type": "browser_frame", "frame": p.get("frame", ""),
+              "url": p.get("url", ""), "state": p.get("state", "frame")})
 
     def on_context(self, p):
         self._stats(tokens=int(p.get("tokens") or 0), limit=int(p.get("limit") or 0),

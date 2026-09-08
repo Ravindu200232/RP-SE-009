@@ -17,10 +17,11 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '@/lib/store'
 
-// A cast that has gone quiet for this long is over — the tab closed, or the
-// run moved on to work that is not in a browser. Holding a frozen frame on
-// top of a working preview is worse than showing nothing.
-const STALE_MS = 8000
+// The browser says when it closes, and the run says when it ends, so this is
+// only the backstop for a stream that dies without either. It is generous on
+// purpose: Chrome sends a frame when the page changes, and a journey reading
+// a static page can be quiet for a while without being over.
+const STALE_MS = 45000
 
 export default function AgentBrowser() {
   const shot = useStore(s => s.browserFrame)

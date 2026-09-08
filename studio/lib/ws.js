@@ -267,7 +267,9 @@ function handle(m) {
     case 'memory':       s.setRunStats(m); break
     case 'agent_state':  s.setAgentState(m.state || ''); break
     case 'approval':     s.setApproval(m); break
-    case 'browser_frame': s.setBrowserFrame(m); break
+    case 'browser_frame':
+      s.setBrowserFrame(m.frame ? m : null)
+      break
     case 'approval_resolved':
       s.setApproval(null)
       s.pushChat({ role: 'assistant', title: m.kind === 'plan' ? 'The plan' : 'Design system',

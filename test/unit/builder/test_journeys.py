@@ -227,6 +227,18 @@ class BrowserWatchTests(unittest.TestCase):
             "state": "frame", "frame": "data:image/jpeg;base64,AAAA",
             "url": "http://localhost:3200/plants"})])
 
+    def test_closing_the_browser_says_so_rather_than_going_quiet(self):
+        """A last frame left on screen is a preview nobody can use."""
+        events = Recorder()
+        engine = browser.Browser.__new__(browser.Browser)
+        engine.events, engine.cdp, engine.process = events, None, None
+        engine.pages, engine.active, engine.profile = {}, None, None
+
+        engine.close()
+
+        self.assertEqual(events.seen,
+                         [("browser", {"state": "closed", "frame": "", "url": ""})])
+
     def test_a_run_with_nowhere_to_send_frames_does_not_stream(self):
         engine = browser.Browser.__new__(browser.Browser)
         engine.events = None
