@@ -109,6 +109,8 @@ def register(registry):
                       '{action:"wait",ms}, {action:"screenshot",view,width}. '
                       'Assertions: {type:"textIncludes",expected}, {type:"urlIncludes",expected}, '
                       '{type:"visible",role,name}, {type:"count",selector,expected}, '
+                      '{type:"httpStatus",url,expected:409} asserts an observed exact-URL 4xx response; '
+                      'pair it with the visible error-state assertion before noDiagnostics. '
                       '{type:"noDiagnostics"}. '
                       'Any locator also takes index: a list page repeats the same control on '
                       'every row, so index:0 takes the first, index:-1 the last. Omitting role '

@@ -346,34 +346,49 @@ def _redact_uri(uri: str) -> str:
 
 def _open_project(proj_name: str):
     """Bring an existing project's preview up, and always say what happened."""
+    request = uuid.uuid4().hex
     try:
         proj_dir = PROD_DIR / proj_name
         if not proj_dir.is_dir():
             return eerr(f"there is no project called {proj_name}")
-        working_on(proj_dir.name)
-        stack = stack_of(proj_dir) or detect_stack(proj_dir)
-        # Opening a project is arriving at it fresh; the previous conversation
-        # about it belonged to a session that has ended.
-        forget_session(proj_dir.name)
-        # Switching projects has to be one movement. Whatever was serving
-        # before is still holding the ports this one needs - one public port
-        # for a single application, one per service for a set of them - and
-        # letting it hold them means the new project comes up half-started
-        # with an error nobody asked to see.
-        release_other_sessions(proj_dir.name)
-        freed = free_declared_ports(proj_dir)
+        with _PREVIEW_LOCK:
+            active_vite["request"] = request
+            working_on(proj_dir.name)
+            stack = stack_of(proj_dir) or detect_stack(proj_dir)
+            # Reopening releases processes while keeping the conversation.
+            with _SESSIONS_LOCK:
+                session = _SESSIONS.get(proj_dir.name)
+            if session:
+                session["agent"].dispose()
+            release_other_sessions(proj_dir.name)
+            _stop_dev_proc()
+            freed = free_declared_ports(proj_dir)
         elog("INFO", f"📂 Opening {proj_name} ({stack})")
         if freed:
             log.info(f"freed ports {', '.join(str(port) for port in freed)} for {proj_name}")
         MONGO.ensure_running()
-        if not ensure_node_deps(proj_dir):
+        installed = ensure_node_deps(proj_dir)
+        if active_vite.get("request") != request:
+            return
+        if not installed:
             return eerr("the dependencies could not be installed")
-        start_dev_server(proj_dir, stack)
-        if wait_for_dev(stack):
-            return edone(f"http://localhost:{DEV_PORT}", proj_name)
-        why = (dev_stderr(stack) or "").strip().splitlines()
-        eerr(f"{proj_name} did not start"
-             + (f" — {why[-1][:200]}" if why else ". Its dev server never answered."))
+        started = start_dev_server(proj_dir, stack, request=request)
+        if active_vite.get("request") != request:
+            return
+        if started is False:
+            return eerr(f"{proj_name} could not start; see the startup output above")
+        ready = wait_for_dev(stack)
+        with _PREVIEW_LOCK:
+            if active_vite.get("request") != request:
+                return
+            if ready:
+                return edone(f"http://localhost:{DEV_PORT}", proj_name)
+            why = (dev_stderr(stack) or "").strip().splitlines()
+            _stop_dev_proc()
+            eerr(f"{proj_name} did not start"
+                 + (f" — {why[-1][:200]}" if why else ". Its dev server never answered."))
     except Exception as error:                                       # noqa: BLE001
+        if active_vite.get("request") != request:
+            return
         log.exception("open project")
         eerr(f"{proj_name} could not be opened: {error}")

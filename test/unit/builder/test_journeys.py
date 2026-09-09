@@ -35,6 +35,39 @@ def note(kind, text="", url=""):
     return {"kind": kind, "text": text, "url": url}
 
 
+class ExpectedHttpResponseTests(unittest.TestCase):
+    def page(self):
+        return FakePage([
+            {"kind": "HTTP 409", "text": "Conflict", "url": "http://localhost:3200/api/register",
+             "source": "network", "requestId": "duplicate", "status": 409},
+            {"kind": "console error", "text": "Failed to load resource: the server responded with a status of 409 (Conflict)",
+             "url": "http://localhost:3200/api/register", "source": "network", "requestId": "duplicate"},
+        ], text="An account with this email already exists")
+
+    def test_expected_duplicate_response_and_visible_error_are_valid_browser_evidence(self):
+        page = self.page()
+        self.assertFalse(_assert(page, {"type": "noDiagnostics"})[0])
+        self.assertTrue(_assert(page, {"type": "httpStatus", "url": "/api/register", "expected": 409})[0])
+        self.assertTrue(_assert(page, {"type": "textIncludes", "expected": "already exists"})[0])
+        self.assertTrue(_assert(page, {"type": "noDiagnostics"})[0])
+        self.assertIn("409", diagnostics_report(page))
+
+    def test_wrong_url_or_status_does_not_acknowledge_the_error(self):
+        for url, status in (("/api/login", 409), ("/api/register", 400)):
+            page = self.page()
+            self.assertFalse(_assert(page, {"type": "httpStatus", "url": url, "expected": status})[0])
+            self.assertFalse(_assert(page, {"type": "noDiagnostics"})[0])
+
+    def test_expected_409_does_not_hide_crashes_server_errors_or_another_request(self):
+        for extra in (note("page error", "TypeError"), note("HTTP 503", "Unavailable"),
+                      {**self.page().diagnostics[-1], "requestId": "different"},
+                      {**self.page().diagnostics[-1], "source": "javascript"}):
+            page = self.page()
+            _assert(page, {"type": "httpStatus", "url": "/api/register", "expected": 409})
+            page.diagnostics.append(extra)
+            self.assertFalse(_assert(page, {"type": "noDiagnostics"})[0])
+
+
 class JourneyRepairTests(unittest.TestCase):
     def test_a_corrected_locator_retries_the_same_suite_without_a_product_edit(self):
         page = FakePage(text="Your books")

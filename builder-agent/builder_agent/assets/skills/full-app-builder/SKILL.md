@@ -9,7 +9,11 @@ Use this skill when the user asks to create, generate, or substantially complete
 
 ## Discover before acting
 
+For a focused change to an existing application, start with the requested behaviour and its affected files. Read only skills that resolve a concrete uncertainty; the full greenfield stack checklist is not the starting sequence for every feature. Plan evidence kinds together so the first test execution records unit/runtime/browser results with matching requirement IDs. A targeted test already run through `runTests` does not need another execution merely to enter a later phase.
+
 Use the existing conversation, verification scope and evidence when continuing a run. A new phase does not invalidate current reads or passing checks. Inspect missing evidence first; reread files when their content is missing, changed, or needed to resolve a specific uncertainty. Preserve the approved product and design.
+
+A follow-up chat message continues the same project conversation. Interpret references such as "that page" or "add this too" using the earlier request, implementation, and decisions already in memory. Apply the new request to the current application; reopen broad discovery only when the requested change or missing context calls for it. Reuse unchanged skill text from the transcript and inspect the current files affected by the new work.
 
 Read the request, machine project-layout snapshot, project guidance, manifests, lockfiles, existing source, environment examples, scripts, and task-matched project skills. Use the snapshot's observed script commands/test roots/config candidates and call `search` before any uncertain file or directory; never probe guessed path/extension variants. Detect the actual operating system and shell. Treat the selected builder contract and installed compatible versions as authoritative. When a required command or API is uncertain or could have changed, inspect local CLI help and current official documentation rather than relying on model memory. In Ultra, prefer `webResearch` so one bounded tool call both discovers and reads relevant source pages before the first stateful terminal command; snippets alone are not enough. Use `recallKnowledge` to reuse prior project-verified lessons, but re-check current code and time-sensitive docs.
 

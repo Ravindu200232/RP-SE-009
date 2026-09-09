@@ -14,6 +14,7 @@ import hashlib
 import re
 import time
 from pathlib import Path
+from urllib.parse import urljoin
 
 from .errors import ToolError
 
@@ -56,17 +57,50 @@ def _assert(page, step: dict) -> tuple[bool, str]:
         found = int(page.evaluate(f"document.querySelectorAll({selector!r}).length") or 0)
         want = int(expected or 0)
         return found == want, f"{selector} matched {found} element(s), expected {want}"
+    if kind == "httpStatus":
+        url = str(step.get("url") or "").strip()
+        status = int(expected or 0)
+        if not url or not 400 <= status < 500:
+            raise ToolError('httpStatus needs an exact URL and an expected 4xx status for an error-path assertion.')
+        url = urljoin(page.url, url)
+        observed = [d for d in page.diagnostics
+                    if d.get("source") == "network" and d.get("status") == status and d.get("url") == url]
+        if not observed:
+            return False, f"No observed HTTP {status} response from {url}"
+        confirmed = getattr(page, "asserted_http_responses", [])
+        for response in observed:
+            if response not in confirmed:
+                confirmed.append(response)
+        page.asserted_http_responses = confirmed
+        return True, f"observed expected HTTP {status} from {url}"
     if kind == "noDiagnostics":
         # "request cancelled" is deliberately absent: see CANCELLED_ERRORS.
         critical = [d for d in page.diagnostics
-                    if d["kind"] in ("page error", "console error", "request failed")
-                    or d["kind"].startswith("HTTP 5")]
+                    if (d["kind"] in ("page error", "console error", "request failed")
+                        or d["kind"].startswith("HTTP 5"))
+                    and not _asserted_http_diagnostic(page, d)]
         if not critical:
             return True, "no critical browser diagnostics"
         detail = "; ".join(f"{d['kind']}: {_clip(d['text'], 160)}" for d in critical[:5])
         return False, f"{len(critical)} critical browser diagnostic(s): {detail}"
     raise ToolError(f"Unsupported assertion type: {kind!r}. Use textIncludes, urlIncludes, "
-                    "visible, count or noDiagnostics.")
+                    "visible, count, httpStatus or noDiagnostics.")
+
+
+def _asserted_http_diagnostic(page, diagnostic):
+    """Only a browser network message for an already asserted 4xx is expected."""
+    if diagnostic.get("source") != "network" or diagnostic.get("kind") != "console error":
+        return False
+    match = re.search(r"Failed to load resource:.*?status of (4\d\d)\b", diagnostic.get("text", ""))
+    if not match:
+        return False
+    for response in getattr(page, "asserted_http_responses", []):
+        if response.get("status") != int(match.group(1)) or response.get("url") != diagnostic.get("url"):
+            continue
+        if diagnostic.get("requestId") and response.get("requestId") != diagnostic["requestId"]:
+            continue
+        return True
+    return False
 
 
 def _retry_assert(page, step: dict) -> tuple[bool, str]:

@@ -286,7 +286,8 @@ class Page:
                 return
             entry = params.get("entry") or {}
             if entry.get("level") == "error":
-                self._note("console error", entry.get("text", ""), entry.get("url", ""))
+                self._note("console error", entry.get("text", ""), entry.get("url", ""),
+                           source=entry.get("source"), requestId=entry.get("networkRequestId"))
 
         def exception(params, session):
             if session != self.session:
@@ -312,8 +313,9 @@ class Page:
                 return
             info = params.get("response") or {}
             status = int(info.get("status") or 0)
-            if status >= 500:
-                self._note(f"HTTP {status}", info.get("statusText", ""), info.get("url", ""))
+            if status >= 400:
+                self._note(f"HTTP {status}", info.get("statusText", ""), info.get("url", ""),
+                           source="network", requestId=params.get("requestId"), status=status)
 
         self.cdp.on("Log.entryAdded", console)
         self.cdp.on("Runtime.exceptionThrown", exception)
@@ -362,14 +364,15 @@ class Page:
         except ToolError:
             pass
 
-    def _note(self, kind: str, text: str, url: str = "") -> None:
+    def _note(self, kind: str, text: str, url: str = "", **metadata) -> None:
         # Bounded: a page in a redirect loop can emit thousands of these, and
         # the useful ones are always the first few.
         if len(self.diagnostics) < 60:
-            self.diagnostics.append({"kind": kind, "text": str(text)[:400], "url": str(url)[:300]})
+            self.diagnostics.append({"kind": kind, "text": str(text)[:400], "url": str(url)[:300], **metadata})
 
     def reset_diagnostics(self) -> None:
         self.diagnostics = []
+        self.asserted_http_responses = []
 
     # -- navigation ------------------------------------------------------
     def navigate(self, url: str, timeout: float = 30) -> None:

@@ -53,3 +53,24 @@ assert.equal(unit.unit, 'files'); assert.equal(unit.passed, 1); assert.equal(uni
 const detailed = counts.namespace.unitTestStatus({ numPassedTests: 99, testResults: [{ assertionResults: [{ status: 'failed' }] }] })
 assert.equal(detailed.passed, 0); assert.equal(detailed.failed, 1)
 console.log('Testing results: websocket updates, project isolation, request ordering and honest file/case counts PASS')
+
+const sent = []
+Socket.last.readyState = 1
+Socket.last.send = value => sent.push(JSON.parse(value))
+Socket.last.close = () => { Socket.last.closed = true }
+state.setWorkKind = kind => { state.workKind = kind }
+state.setBusy = value => { state.busy = value }
+state.setBusyProject = project => { state.busyProject = project }
+const prompt = 'create signup page for the customer to craete account'
+ws.namespace.send({ type: 'agent_update', project: 'hotel', prompt })
+assert.equal(sent[0].prompt, prompt, 'the user wording reaches the transport unchanged')
+assert.equal(state.workKind, 'edit', 'chat requests are not classified as bug repair')
+ws.namespace.send({ type: 'element_edit', project: 'hotel', prompt: 'Make this title larger',
+  elements: [{ tag: 'h1', text: 'Create your account', route: '/signup' }] })
+ws.namespace.answerQuestion('only on /signup')
+assert.ok(sent[2].prompt.startsWith('Make this title larger'), 'scope answers retain the requested edit')
+assert.equal(sent[2].elements[0].route, '/signup')
+ws.namespace.disconnect()
+assert.equal(Socket.last.onmessage, null, 'unmount removes the old stream listener')
+assert.equal(Socket.last.closed, true)
+console.log('Chat: original prompt, element context, scope answer and socket cleanup PASS')

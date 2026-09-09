@@ -73,6 +73,21 @@ class LoopTests(unittest.TestCase):
                     verification_kinds=verification_kinds)
 
     # -- executing -------------------------------------------------------
+    def test_follow_up_receives_the_previous_final_answer(self):
+        suggestion = "Use either 'Browse meals' or 'Find your next meal' for the landing button."
+        loop = self.build([turn(content=suggestion), turn(content="Updated the button.")])
+        loop.testing_enabled = False  # This conversation does not run application tests.
+
+        loop.run("Suggest two labels for the landing page button")
+        saved = loop.memory.serialize()
+        loop.memory.restore(saved)  # The same transcript must also survive persistence.
+        loop.run("Use the second label you suggested")
+
+        messages = self.router.requests[1]["messages"]
+        self.assertTrue(any(message["role"] == "assistant"
+                            and message.get("content") == suggestion for message in messages),
+                        "the follow-up provider request lost the assistant's final answer")
+
     def test_unit_stage_can_finish_without_launching_unassigned_browser_and_runtime_work(self):
         loop = self.build([], verification_kinds=("unit",))
         evidence = loop.memory.evidence

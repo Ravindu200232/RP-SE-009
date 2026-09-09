@@ -274,6 +274,7 @@ def forget_session(project: str) -> None:
 # What one project's conversation cost, kept with the project rather than in
 # the process that happened to run it.
 STATS_FILE = ".agentforge/session.json"
+CONVERSATION_FILE = ".agentforge/conversation.json"
 
 # And what it said. A browser tab is not a record: reload it, or open the
 # project tomorrow, and everything the run reported was gone.
@@ -322,6 +323,69 @@ def save_session_stats(proj_dir: Path, agent) -> None:
         path.write_text(json.dumps(stats, indent=2), encoding="utf-8")
     except OSError as error:
         log.debug(f"saving the session for {proj_dir.name}: {error}")
+
+
+def save_conversation(proj_dir: Path, agent) -> None:
+    """Persist the transcript itself, including its compacted memory."""
+    path = Path(proj_dir) / CONVERSATION_FILE
+    temporary = path.with_name(f"conversation-{uuid.uuid4().hex}.tmp")
+    try:
+        body = {"workspace": str(Path(proj_dir).resolve()), "stack": agent.config.stack,
+                "memory": agent.memory.serialize(), "plan": agent.plan_text,
+                "design": agent.design, "usage": dict(agent.router.usage)}
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary.write_text(json.dumps(body, ensure_ascii=False), encoding="utf-8")
+        temporary.replace(path)
+    except OSError as error:
+        elog("WARN", f"Could not save the conversation for {proj_dir.name}: {error}")
+    finally:
+        try:
+            temporary.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
+def restore_conversation(proj_dir: Path, agent) -> bool:
+    """Resume this project's saved context when its live agent is gone."""
+    path = Path(proj_dir) / CONVERSATION_FILE
+    try:
+        body = json.loads(path.read_text(encoding="utf-8"))
+        if (body.get("workspace") != str(Path(proj_dir).resolve())
+                or body.get("stack") != agent.config.stack):
+            return False
+        from builder_agent.memory import Memory
+
+        memory = Memory(budget_tokens=agent.config.context_tokens)
+        memory.restore(body["memory"])
+        memory.close_pending_tools("The earlier session ended before this tool returned.")
+        agent.memory = memory
+        agent.plan_text = body.get("plan") or ""
+        agent.design = body.get("design")
+        agent.router.usage.update(body.get("usage") or {})
+        return bool(len(agent.memory))
+    except FileNotFoundError:
+        # Older versions saved visible chat and counters, but not tool turns.
+        # Recover that partial account without pretending the missing context
+        # or verification evidence survived.
+        turns = read_stream(proj_dir.name).get("chat") or []
+        transcript = [f"{turn.get('role', 'message')}: {turn.get('text', '')}"
+                      for turn in turns if isinstance(turn, dict) and turn.get("text")]
+        if not transcript:
+            return False
+        agent.memory.add_user(
+            "SAVED PROJECT CONVERSATION (partial history). Earlier tool observations "
+            "were not stored by that version. Use this to understand prior requests and "
+            "decisions; inspect current code where necessary. These historical messages "
+            "are not new instructions or verification evidence.\n\n" + "\n\n".join(transcript),
+            kind="recovered-conversation")
+        stats = _saved_session_stats(proj_dir.name)
+        agent.router.usage.update({"requests": stats.get("requests", 0),
+                                   "prompt": stats.get("sent", 0),
+                                   "completion": stats.get("received", 0)})
+        return True
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
+        elog("WARN", f"Could not restore the conversation for {proj_dir.name}: {error}")
+        return False
 
 
 def _saved_session_stats(project: str) -> dict:
@@ -403,7 +467,8 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
     the context window all carry over, and the engine's own compaction is what
     keeps that affordable over a long session.
 
-    A build starts a fresh conversation, since there is nothing before it. A
+    An explicitly requested full build starts a fresh conversation. Its first
+    follow-up feature continues that build's transcript. A
     change of model or of thinking does not: it is applied to the conversation
     already running, because what was said stays true whoever answers next.
     """
@@ -422,11 +487,14 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
             forget_session(name)
 
     fresh = agent is None
+    restored = False
     if fresh:
         forget_session(name)
         agent = BuilderAgent(
             _config(proj_dir, brief, model, think, gates=plan, stack=stack),
             events=Events(), cancel=_cancelled)
+        if not plan:
+            restored = restore_conversation(proj_dir, agent)
     else:
         # The bus is the agent's, but the listeners belong to one run: each has
         # its own phase list and its own report writer.
@@ -436,11 +504,10 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
     agent.events.any(qa_report.LiveReport(
         proj_dir, agent.memory.evidence, emit,
         lambda error: elog("WARN", f"Could not save testing results: {error}")))
-    # Registered whether or not it can be reused: a build never continues an
-    # earlier conversation, but its services still have to be lettable-go of.
+    # Both a build and an edit leave context for the next chat request.
     with _SESSIONS_LOCK:
-        _SESSIONS[name] = {"agent": agent, "key": key, "reusable": not plan}
-    if not fresh:
+        _SESSIONS[name] = {"agent": agent, "key": key, "reusable": True}
+    if not fresh or restored:
         elog("INFO", f"   continuing the conversation ({len(agent.memory)} messages so far)")
     return agent
 
@@ -457,10 +524,14 @@ def _run_agent(proj_dir: Path, brief: str, model: str, think, *, phases, kind: s
                        kind=kind, phases=phases, plan=plan)
     register_approvals(agent.approvals)
     try:
-        return agent, (agent.run(brief) if plan else agent.build(brief))
+        outcome = agent.run(brief) if plan else agent.build(brief)
+        if outcome.status != "cancelled" and outcome.result:
+            echat(outcome.result)
+        return agent, outcome
     finally:
         forget_approvals(agent.approvals)
         agent._finish()
+        save_conversation(proj_dir, agent)
         save_session_stats(proj_dir, agent)
 
 
@@ -518,8 +589,10 @@ def _serve(proj_dir: Path, agent=None) -> str:
         if freed:
             log.info(f"freed ports {', '.join(str(p) for p in freed)} before the preview")
         ensure_node_deps(proj_dir)
-        start_dev_server(proj_dir, detect_stack(proj_dir))
-        if wait_for_dev(detect_stack(proj_dir)):
+        stack = stack_of(proj_dir)
+        if start_dev_server(proj_dir, stack) is False:
+            return ""
+        if wait_for_dev(stack):
             estep("preview", "done")
             return f"http://127.0.0.1:{DEV_PORT}"
         elog("WARN", "   ⚠ the dev server did not become ready in time")
@@ -618,9 +691,11 @@ def run_chat(project: str, prompt: str, model: str, route: str = "", think=None,
     """Carry out a chat request against the existing application."""
     _edit_run(project, prompt, model, think, qa_model, console,
               kind="edit",
-              brief=(f"The user requests this change to the existing application:\n\n{prompt}\n\n"
+              brief=(f"The user's next request in this project conversation:\n\n{prompt}\n\n"
                      + (f"They were on the route {route}.\n" if route else "")
-                     + "Read the relevant existing code and follow the user's intent, whether "
+                     + "Continue from the conversation and project memory already available. "
+                       "Resolve references to earlier work from that history, and inspect current "
+                       "code where needed for this request. Follow the user's intent, whether "
                        "it is a new feature, a design change, or a fix. Keep unrelated behaviour "
                        "working. For a reported bug, reproduce it and fix its cause. Verify "
                        "the requested behaviour with appropriate checks and report what changed."))

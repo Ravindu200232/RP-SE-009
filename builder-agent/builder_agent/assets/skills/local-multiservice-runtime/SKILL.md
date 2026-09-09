@@ -1,7 +1,8 @@
 ---
 name: local-multiservice-runtime
 description: Run and supervise a multi-service Node/React application locally without Docker using one root command, deterministic readiness, prefixed logs, graceful shutdown, and a single public origin.
-compatibility: AgentX mern-microservices local development and E2E.
+metadata:
+  compatibility: AgentX mern-microservices local development and E2E.
 ---
 
 # Docker-free local multi-service runtime
@@ -30,4 +31,4 @@ the browser will use and require a real page back, not merely a status from a
 health route. Only then is "all services ready" true.
 
 ## Verification
-Prove: cold start, readiness, representative UI/API request, internal service failure behavior, graceful Ctrl+C/shutdown, and immediate second start on the same configured ports.
+When creating or changing the supervisor, prove cold start, readiness, representative UI/API requests, internal service failure behaviour, graceful shutdown, and a second start. For an ordinary feature in an existing app, reuse its healthy gateway and prove the changed route plus affected service integration. The supervisor lifecycle tests need another run only when its behaviour changes.

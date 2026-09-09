@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-09T06:25:18+00:00
+Run at (UTC): 2026-09-09T08:28:29+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 323
+Unit tests: 347
 Integration tests: 24
-Total tests run: 347
+Total tests run: 371
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 15.366s
+Duration: 16.108s
 
 Detailed results
 ----------------
@@ -98,6 +98,9 @@ test_a_console_error_fails_the_journey (test.unit.builder.test_journeys.Diagnost
 test_a_genuinely_failed_request_fails_the_journey (test.unit.builder.test_journeys.DiagnosticsTests.test_a_genuinely_failed_request_fails_the_journey) ... ok
 test_a_server_error_fails_the_journey (test.unit.builder.test_journeys.DiagnosticsTests.test_a_server_error_fails_the_journey) ... ok
 test_cancellations_are_still_visible_when_a_failure_is_investigated (test.unit.builder.test_journeys.DiagnosticsTests.test_cancellations_are_still_visible_when_a_failure_is_investigated) ... ok
+test_expected_409_does_not_hide_crashes_server_errors_or_another_request (test.unit.builder.test_journeys.ExpectedHttpResponseTests.test_expected_409_does_not_hide_crashes_server_errors_or_another_request) ... ok
+test_expected_duplicate_response_and_visible_error_are_valid_browser_evidence (test.unit.builder.test_journeys.ExpectedHttpResponseTests.test_expected_duplicate_response_and_visible_error_are_valid_browser_evidence) ... ok
+test_wrong_url_or_status_does_not_acknowledge_the_error (test.unit.builder.test_journeys.ExpectedHttpResponseTests.test_wrong_url_or_status_does_not_acknowledge_the_error) ... ok
 test_a_corrected_locator_retries_the_same_suite_without_a_product_edit (test.unit.builder.test_journeys.JourneyRepairTests.test_a_corrected_locator_retries_the_same_suite_without_a_product_edit) ... ok
 test_ambiguity_says_how_to_resolve_it (test.unit.builder.test_journeys.LocatorTests.test_ambiguity_says_how_to_resolve_it) ... ok
 test_an_index_chooses_from_a_repeated_control (test.unit.builder.test_journeys.LocatorTests.test_an_index_chooses_from_a_repeated_control)
@@ -144,6 +147,7 @@ test_an_empty_workspace_is_scaffolded_from_the_verified_template (test.unit.buil
 test_an_unknown_tool_is_answered_with_the_tools_that_do_exist (test.unit.builder.test_loop.LoopTests.test_an_unknown_tool_is_answered_with_the_tools_that_do_exist) ... ok
 test_cancelling_ends_the_run_without_reporting_a_failure (test.unit.builder.test_loop.LoopTests.test_cancelling_ends_the_run_without_reporting_a_failure) ... ok
 test_evidence_closes_the_gate_and_the_run_finishes (test.unit.builder.test_loop.LoopTests.test_evidence_closes_the_gate_and_the_run_finishes) ... ok
+test_follow_up_receives_the_previous_final_answer (test.unit.builder.test_loop.LoopTests.test_follow_up_receives_the_previous_final_answer) ... ok
 test_project_changing_command_invalidates_evidence_once (test.unit.builder.test_loop.LoopTests.test_project_changing_command_invalidates_evidence_once) ... ok
 test_read_only_terminal_observation_keeps_current_test_evidence (test.unit.builder.test_loop.LoopTests.test_read_only_terminal_observation_keeps_current_test_evidence) ... ok
 test_the_pinned_frame_carries_the_stack_layout_and_skills (test.unit.builder.test_loop.LoopTests.test_the_pinned_frame_carries_the_stack_layout_and_skills) ... ok
@@ -289,6 +293,26 @@ test_live_result_saved_before_done_with_full_e2e_trace_and_retry_history (test.u
 test_recovers_file_outcomes_sources_routes_and_screenshots (test.unit.qa.test_reporting_artifacts.ReportingArtifactsTests.test_recovers_file_outcomes_sources_routes_and_screenshots) ... ok
 test_retry_does_not_reuse_previous_assertion_report (test.unit.qa.test_reporting_artifacts.ReportingArtifactsTests.test_retry_does_not_reuse_previous_assertion_report) ... ok
 test_screenshot_access_stays_in_project_image_folders (test.unit.qa.test_reporting_artifacts.ReportingArtifactsTests.test_screenshot_access_stays_in_project_image_folders) ... ok
+test_backend_restart_restores_the_actual_transcript (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_backend_restart_restores_the_actual_transcript) ... ok
+test_completed_reply_reaches_the_project_chat (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_completed_reply_reaches_the_project_chat) ... ok
+test_explicit_new_build_starts_its_own_conversation (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_explicit_new_build_starts_its_own_conversation) ... ok
+test_failed_save_leaves_the_previous_transcript_intact (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_failed_save_leaves_the_previous_transcript_intact) ... ok
+test_first_feature_keeps_the_build_transcript (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_first_feature_keeps_the_build_transcript) ... ok
+test_older_projects_recover_saved_chat_without_inventing_tool_evidence (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_older_projects_recover_saved_chat_without_inventing_tool_evidence) ... ok
+test_opening_the_preview_keeps_the_conversation (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_opening_the_preview_keeps_the_conversation) ... ok
+test_restart_preserves_compaction_design_and_usage (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_restart_preserves_compaction_design_and_usage) ... ok
+test_saved_conversation_cannot_cross_project_boundaries (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_saved_conversation_cannot_cross_project_boundaries) ... ok
+test_switching_projects_restores_the_right_history (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_switching_projects_restores_the_right_history) ... ok
+test_hoisted_workspace_dependencies_are_ready (test.unit.services.test_dependency_readiness.DependencyReadinessTests.test_hoisted_workspace_dependencies_are_ready) ... ok
+test_nested_workspace_install_is_resolved_before_root (test.unit.services.test_dependency_readiness.DependencyReadinessTests.test_nested_workspace_install_is_resolved_before_root) ... ok
+test_a_failed_internal_service_cannot_be_hidden_by_the_gateway (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_a_failed_internal_service_cannot_be_hidden_by_the_gateway) ... ok
+test_a_missing_client_bundle_cannot_be_reported_ready (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_a_missing_client_bundle_cannot_be_reported_ready) ... ok
+test_client_and_all_declared_services_are_probed (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_client_and_all_declared_services_are_probed) ... ok
+test_local_port_override_does_not_wait_for_the_example_port (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_local_port_override_does_not_wait_for_the_example_port) ... ok
+test_old_startup_cannot_claim_the_next_projects_ready_response (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_old_startup_cannot_claim_the_next_projects_ready_response) ... ok
+test_only_a_missing_or_changed_client_bundle_is_built (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_only_a_missing_or_changed_client_bundle_is_built) ... ok
+test_replaced_open_never_stops_or_completes_the_new_project (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_replaced_open_never_stops_or_completes_the_new_project) ... ok
+test_root_supervisor_receives_project_environment_and_public_port (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_root_supervisor_receives_project_environment_and_public_port) ... ok
 test_a_data_uri_is_unwrapped_before_it_reaches_the_model (test.unit.services.test_selection_edit.AttachmentShapeTests.test_a_data_uri_is_unwrapped_before_it_reaches_the_model)
 The browser needs the `data:` prefix to render it; Ollama chokes on it. ... ok
 test_a_drawing_is_told_apart_from_a_click (test.unit.services.test_selection_edit.AttachmentShapeTests.test_a_drawing_is_told_apart_from_a_click) ... ok
@@ -406,6 +430,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 347 tests in 15.366s
+Ran 371 tests in 16.107s
 
 OK

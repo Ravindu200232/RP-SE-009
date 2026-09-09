@@ -20,6 +20,8 @@ Use AgentX `browserRunJourney` as the only E2E harness. It drives an isolated in
 
 ## Assertions and state
 
+- For an intentional error path, assert the actual response with `{type:"httpStatus", url:"/api/your-route", expected:409}` (use the exact route and expected 4xx), then assert the visible error state. This accounts for that response's browser-generated network message in `noDiagnostics`; it does not hide JavaScript errors, other requests, or 5xx failures. Preserve the correct API error status. A duplicate account returning 409 is expected behaviour, not a reason to repeatedly repair the application or record an impossible-test limitation.
+
 - Assert the outcome after each material action: URL, visible text/control, value, business-state result and `noDiagnostics` where appropriate.
 - Keep journey diagnostics across steps so a snapshot cannot erase an earlier page, console, request, or HTTP failure.
 - Cover each sealed E2E requirement only when the journey truly crosses its public browser boundary.

@@ -193,7 +193,7 @@ export default function AgentChat() {
           {busy && agentState === 'thinking' && <Thinking />}
           {!turns.length && (
             <p className="py-10 text-center text-[11.5px] text-muted">
-              {project ? 'Ask for a change, or report something that is broken.'
+              {project ? 'Continue this project with your next request.'
                        : 'Open a project to talk to the agent.'}
             </p>
           )}
@@ -206,6 +206,7 @@ export default function AgentChat() {
               <div className="flex items-end gap-2">
                 <textarea
                   ref={box}
+                  aria-label="Continue this project"
                   value={text} rows={1}
                   disabled={!project || busy || reading}
                   placeholder={question
@@ -213,7 +214,7 @@ export default function AgentChat() {
                     : busy ? 'The agent is working — this opens again when it finishes'
                     : selection.length
                       ? 'Say what should change about it…'
-                    : project ? 'Describe a change, or what is broken…'
+                    : project ? 'What would you like to do next?'
                               : 'Open a project first'}
                   onChange={e => setText(e.target.value)}
                   onKeyDown={e => {

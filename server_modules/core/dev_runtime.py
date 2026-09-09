@@ -194,11 +194,36 @@ def _deps_ready(proj_dir: Path) -> bool:
         pkg = json.loads((proj_dir / "package.json").read_text(encoding="utf-8"))
     except Exception:
         return False
-    deps = {**pkg.get("dependencies", {}), **pkg.get("devDependencies", {})}
-    if not deps:
+    manifests = [(proj_dir, pkg)]
+    workspaces = pkg.get("workspaces") or []
+    if isinstance(workspaces, dict):
+        workspaces = workspaces.get("packages") or []
+    try:
+        for pattern in workspaces:
+            for directory in proj_dir.glob(pattern):
+                manifest = directory / "package.json"
+                if manifest.is_file():
+                    manifests.append((directory, json.loads(manifest.read_text(encoding="utf-8"))))
+    except (OSError, ValueError):
         return False
 
-    return all((nm / name / "package.json").exists() for name in deps)
+    for directory, manifest in manifests:
+        deps = {**manifest.get("dependencies", {}), **manifest.get("devDependencies", {})}
+        # Node resolves from the package outward; npm workspaces commonly hoist
+        # to the root while version conflicts remain inside a workspace.
+        locations = []
+        current = directory
+        while True:
+            locations.append(current / "node_modules")
+            if current == proj_dir:
+                break
+            if not current.is_relative_to(proj_dir):
+                return False
+            current = current.parent
+        if any(not any((location / name / "package.json").is_file() for location in locations)
+               for name in deps):
+            return False
+    return True
 
 
 def ensure_node_deps(proj_dir: Path) -> bool:
@@ -318,17 +343,20 @@ def declared_ports(proj_dir: Path) -> list[int]:
     a run whose gateway came up while every service behind it died on a port
     an earlier run had never let go of.
     """
-    ports, seen = [], set()
+    return list(dict.fromkeys(_declared_port_values(proj_dir).values()))
+
+
+def _declared_port_values(proj_dir: Path) -> dict:
+    ports = {}
     for name in (".env.local", ".env", ".env.example"):
         try:
             body = (Path(proj_dir) / name).read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
-        for _, value in _PORT_LINE.findall(body):
+        for key, value in _PORT_LINE.findall(body):
             port = int(value)
-            if 1024 <= port <= 65535 and port not in seen:
-                seen.add(port)
-                ports.append(port)
+            if 1024 <= port <= 65535:
+                ports.setdefault(key, port)
     return ports
 
 
@@ -351,7 +379,8 @@ def _kill_port(port: int):
             for line in out.splitlines():
                 parts = line.split()
 
-                if len(parts) >= 5 and parts[1].rsplit(":", 1)[-1] == str(port):
+                if (len(parts) >= 5 and parts[3] == "LISTENING"
+                        and parts[1].rsplit(":", 1)[-1] == str(port)):
                     pids.add(parts[-1])
             for pid in pids - {"0", "4"}:
                 subprocess.run(["taskkill", "/F", "/T", "/PID", pid],
@@ -388,13 +417,14 @@ def _stop_dev_proc():
 
 
 _ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+_PREVIEW_LOCK = threading.RLock()
 
 
 def _strip_ansi(text: str) -> str:
     return _ANSI_RE.sub("", text or "")
 
 
-def start_next(proj_dir: Path, port: int = DEV_PORT):
+def start_next(proj_dir: Path, port: int = DEV_PORT, stack: str = "next"):
     """
     Start `next dev` on DEV_PORT.
 
@@ -407,18 +437,22 @@ def start_next(proj_dir: Path, port: int = DEV_PORT):
     _kill_port(port)
     active_vite["stderr_lines"] = []
     active_vite["ready"] = False
-    active_vite["stack"] = "next"
+    active_vite["stack"] = stack
+    label = "MERN" if stack == "mern-microservices" else "Next.js"
 
     next_bin = proj_dir / "node_modules" / "next" / "dist" / "bin" / "next"
-    flags = _bundler_flag(proj_dir)
-    if next_bin.exists():
+    flags = _bundler_flag(proj_dir) if stack != "mern-microservices" else []
+    if stack == "mern-microservices":
+        # The project's supervisor starts its workspaces and the public client.
+        argv = [NPM_BIN, "run", "dev"]
+    elif next_bin.exists():
         argv = [NODE_BIN, str(next_bin), "dev", *flags,
                 "--port", str(port), "--hostname", "127.0.0.1"]
     else:
         argv = [NPM_BIN, "run", "dev", "--", *flags,
                 "--port", str(port), "--hostname", "127.0.0.1"]
 
-    env = {**os.environ,
+    env = {**os.environ, **_project_env(proj_dir),
            "NEXT_TELEMETRY_DISABLED": "1",
            "PORT": str(port),
            "NODE_ENV": "development",
@@ -429,16 +463,22 @@ def start_next(proj_dir: Path, port: int = DEV_PORT):
     kwargs = ({"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
               if os.name == "nt" else {"start_new_session": True})
 
+    try:
+        p = subprocess.Popen(
+            argv, cwd=proj_dir,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, encoding="utf-8", errors="replace", env=env, **kwargs)
+        active_vite["proc"] = p
+    except Exception as error:
+        elog("ERROR", f"   {label} could not start: {error}")
+        return False
+
     def _run():
         try:
-            p = subprocess.Popen(
-                argv, cwd=proj_dir,
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                text=True, encoding="utf-8", errors="replace", env=env, **kwargs)
-            active_vite["proc"] = p
-
             def _pump(stream, is_err):
                 for line in stream:
+                    if active_vite.get("proc") is not p:
+                        return
                     l = _strip_ansi(line).strip()
                     if not l:
                         continue
@@ -451,16 +491,61 @@ def start_next(proj_dir: Path, port: int = DEV_PORT):
                         active_vite["ready"] = True
                     if is_err or any(k in l for k in
                                      ("Error", "error", "Failed to compile")):
-                        elog("WARN", f"   [next] {l[:140]}")
+                        elog("WARN", f"   [{label}] {l[:140]}")
                     else:
-                        elog("INFO", f"   [next] {l[:140]}")
+                        elog("INFO", f"   [{label}] {l[:140]}")
 
             threading.Thread(target=_pump, args=(p.stderr, True), daemon=True).start()
             _pump(p.stdout, False)
         except Exception as e:
-            elog("ERROR", f"   Next.js crashed: {e}")
+            elog("ERROR", f"   {label} log stream ended: {e}")
 
     threading.Thread(target=_run, daemon=True).start()
+    return True
+
+
+def _project_env(proj_dir: Path) -> dict:
+    values = {}
+    for name in (".env", ".env.local"):
+        path = Path(proj_dir) / name
+        if not path.is_file():
+            continue
+        for line in path.read_text(encoding="utf-8").splitlines():
+            key, separator, value = line.strip().removeprefix("export ").partition("=")
+            if separator and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key.strip()):
+                value = value.strip()
+                if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+                    value = value[1:-1]
+                values[key.strip()] = value
+    return values
+
+
+def _ensure_client_bundle(proj_dir: Path) -> bool:
+    """Build a static workspace client only when its sources are newer."""
+    client = Path(proj_dir) / "client"
+    if not (client / "package.json").is_file():
+        return True
+    manifest = json.loads((Path(proj_dir) / "package.json").read_text(encoding="utf-8"))
+    if not manifest.get("scripts", {}).get("build"):
+        return True
+    index = client / "dist" / "index.html"
+    built = index.stat().st_mtime if index.is_file() else 0
+    changed = not built
+    for directory, folders, files in os.walk(client):
+        folders[:] = [name for name in folders if name not in {"node_modules", "dist", ".git", "coverage"}]
+        if any((Path(directory) / name).stat().st_mtime > built for name in files):
+            changed = True
+            break
+    if not changed:
+        return True
+    elog("INFO", "   Building the updated client bundle…")
+    result = cancel.run([NPM_BIN, "run", "build"], cwd=proj_dir,
+                        capture_output=True, text=True, encoding="utf-8", errors="replace",
+                        timeout=NEXT_READY_TIMEOUT)
+    if result.returncode:
+        elog("ERROR", f"Client build failed: {(result.stderr or result.stdout or '')[-1600:]}")
+        return False
+    return True
 
 
 def wait_for_next(timeout: int = NEXT_READY_TIMEOUT, port: int = DEV_PORT) -> bool:
@@ -553,12 +638,17 @@ def dev_log_since(mark: int, limit: int = 60) -> str:
     return "\n".join(fresh[-limit:])
 
 
-def start_dev_server(proj_dir: Path, stack: str = None):
+def start_dev_server(proj_dir: Path, stack: str = None, *, request=None):
     """Dispatch to the right dev server for the project's stack."""
-    stack = stack or detect_stack(proj_dir)
-
-    active_vite["dir"] = str(Path(proj_dir).resolve())
-    start_next(proj_dir)
+    stack = stack_of(proj_dir) or stack
+    if stack == "mern-microservices" and not _ensure_client_bundle(proj_dir):
+        return False
+    with _PREVIEW_LOCK:
+        if request is not None and active_vite.get("request") != request:
+            return False
+        _stop_dev_proc()
+        active_vite["dir"] = str(Path(proj_dir).resolve())
+        return start_next(proj_dir, stack=stack)
 
 
 def _dev_alive(timeout: float = 2.0) -> bool:
@@ -573,7 +663,47 @@ def _dev_alive(timeout: float = 2.0) -> bool:
 
 
 def wait_for_dev(stack: str = "next", timeout: int = None) -> bool:
-    return wait_for_next(timeout or NEXT_READY_TIMEOUT)
+    owner = active_vite.get("proc")
+    directory = active_vite.get("dir")
+
+    def still_current():
+        return active_vite.get("proc") is owner and active_vite.get("dir") == directory
+
+    if stack == "mern-microservices":
+        import urllib.request
+
+        root = Path(active_vite["dir"])
+        urls = [f"http://127.0.0.1:{DEV_PORT}/"]
+        urls += [f"http://127.0.0.1:{port}/health"
+                 for name, port in _declared_port_values(root).items()
+                 if name != "PORT" and port != DEV_PORT]
+        deadline = time.monotonic() + (timeout or NEXT_READY_TIMEOUT)
+        pending = urls
+        while time.monotonic() < deadline:
+            if not still_current():
+                return False
+            proc = active_vite.get("proc")
+            if proc is not None and proc.poll() is not None:
+                elog("ERROR", "   MERN supervisor exited during startup")
+                return False
+            pending = []
+            for url in urls:
+                try:
+                    with urllib.request.urlopen(url, timeout=max(.01, min(2, deadline - time.monotonic()))) as response:
+                        if response.status >= 400:
+                            pending.append(url)
+                except Exception:
+                    pending.append(url)
+            if not still_current():
+                return False
+            if not pending:
+                elog("INFO", "   ✅ Client and all configured services are ready")
+                return True
+            time.sleep(min(.3, max(0, deadline - time.monotonic())))
+        elog("ERROR", f"   Startup did not become ready: {', '.join(pending)}")
+        return False
+    ready = wait_for_next(timeout or NEXT_READY_TIMEOUT)
+    return ready and still_current()
 
 
 def dev_stderr(stack: str = "next") -> str:

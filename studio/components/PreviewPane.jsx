@@ -41,7 +41,7 @@ let seq = 0
 function currentPath(frame) {
   try {
     const loc = frame?.contentWindow?.location
-    if (!loc) return '/'
+    if (!loc || !loc.pathname?.startsWith('/') || !/^https?:$/.test(loc.protocol)) return '/'
     return `${loc.pathname || '/'}${loc.search || ''}${loc.hash || ''}`
   } catch {
     return '/'
@@ -294,19 +294,23 @@ export default function PreviewPane({ hidden }) {
     setNav({ back: next > 0, forward: next < trail.current.length - 1 })
   }
 
-  function reloadPreview() {
+  function reloadPreview(fromRoot = false) {
     const f = frameRef.current
     if (!f) return
-    try {
-      f.contentWindow.location.reload()
-    } catch {
-      f.src = currentPath(f)
-    }
+    // An iframe mounted before startup may still be about:blank or a browser
+    // error document. Reloading that document never reaches the ready app.
+    f.src = fromRoot === true ? '/' : currentPath(f)
   }
 
   const wasBusy = useRef(false)
+  const hasReadyPreview = useRef(!busy)
   useEffect(() => {
-    if (wasBusy.current && !busy) reloadPreview()
+    if (wasBusy.current && !busy) {
+      // The shared public origin may still display the previous project's
+      // route while this one starts. Its first ready navigation begins at /.
+      reloadPreview(!hasReadyPreview.current)
+      hasReadyPreview.current = true
+    }
     wasBusy.current = busy
   }, [busy])
 
