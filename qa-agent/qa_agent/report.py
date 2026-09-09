@@ -54,23 +54,66 @@ def write(project_dir: Path | str, payload: dict) -> Path:
 
 
 def _runner_counts(output: str) -> dict | None:
-    """Read Vitest's printed totals without inventing individual test cases."""
+    """Read Vitest's printed totals without inventing individual test cases.
+
+    `npm test --workspaces` runs the runner once per workspace and prints a
+    summary for each, so a microservices project prints four. Reading only the
+    first reported one service's tests as the whole project's: eight passing
+    across one file, for a repository with four services and a client.
+    """
     output = re.sub(r"\x1b\[[0-9;]*m", "", output)
-    cases = re.search(r"^\s*Tests\s+(.+)$", output, re.M)
-    if not cases:
+    lines = re.findall(r"^\s*Tests\s+(.+)$", output, re.M)
+    if not lines:
         return None
-    values = {status: int(count) for count, status in re.findall(
-        r"(\d+)\s+(passed|failed|skipped|todo)", cases.group(1))}
-    if not values:
+
+    totals = {"passed": 0, "failed": 0, "skipped": 0, "todo": 0}
+    counted = 0
+    seen = False
+    for line in lines:
+        values = {status: int(count) for count, status in re.findall(
+            r"(\d+)\s+(passed|failed|skipped|todo)", line)}
+        if not values:
+            continue
+        seen = True
+        for status, count in values.items():
+            totals[status] += count
+        total = re.search(r"\((\d+)\)", line)
+        counted += int(total.group(1)) if total else sum(values.values())
+    if not seen:
         return None
-    total = re.search(r"\((\d+)\)", cases.group(1))
-    files = re.search(r"^\s*Test Files\s+.*?\((\d+)\)", output, re.M)
-    return {"source": "runner-summary", "numPassedTests": values.get("passed", 0),
-            "numFailedTests": values.get("failed", 0),
-            "numPendingTests": values.get("skipped", 0),
-            "numTodoTests": values.get("todo", 0),
-            "numTotalTests": int(total.group(1)) if total else sum(values.values()),
-            "numTotalTestSuites": int(files.group(1)) if files else 0}
+
+    files = sum(int(match) for match in
+                re.findall(r"^\s*Test Files\s+.*?\((\d+)\)", output, re.M))
+    return {"source": "runner-summary", "numPassedTests": totals["passed"],
+            "numFailedTests": totals["failed"],
+            "numPendingTests": totals["skipped"],
+            "numTodoTests": totals["todo"],
+            "numTotalTests": counted,
+            "numTotalTestSuites": files}
+
+
+def _report_size(row: dict) -> tuple:
+    """How much of the project one unit run actually covered.
+
+    A run that wrote a machine-readable report beats one that only printed
+    totals, because only the first carries the individual cases; after that,
+    more tests is a wider run.
+    """
+    report = row.get("report") or _runner_counts(row.get("output", "")) or {}
+    detailed = bool(report.get("testResults"))
+    return (detailed, int(report.get("numTotalTests") or 0))
+
+
+def _widest_unit_run(rows: list) -> dict:
+    """The run that says the most about the project, not the last one taken.
+
+    A verification runs several unit suites - the scaffold baseline, the whole
+    workspace, then one service on its own while it is repaired - and every one
+    of them is current at this revision. Reading the last of those published
+    whichever narrow suite happened to be repaired last as the project's whole
+    result.
+    """
+    return max(rows, key=_report_size, default={})
 
 
 def from_evidence(*, project: str, project_dir: Path, evidence: dict,
@@ -84,7 +127,7 @@ def from_evidence(*, project: str, project_dir: Path, evidence: dict,
               if row.get("status") not in ("retired", "outdated")]
     unit_rows = sorted((row for row in suites if row.get("kind") == "unit"),
                        key=lambda row: row.get("sequence", 0))
-    latest = unit_rows[-1] if unit_rows else {}
+    latest = _widest_unit_run(unit_rows)
     unit_report = latest.get("report") or _runner_counts(latest.get("output", ""))
     unit = UnitResult(ran=bool(unit_rows), report=unit_report,
                       coverage=latest.get("coverage"))

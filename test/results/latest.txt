@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-09T04:05:55+00:00
+Run at (UTC): 2026-09-09T04:11:53+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 273
+Unit tests: 279
 Integration tests: 24
-Total tests run: 297
+Total tests run: 303
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 14.955s
+Duration: 14.106s
 
 Detailed results
 ----------------
@@ -234,6 +234,15 @@ test_each_failure_kind_is_named_rather_than_lumped_together (test.unit.qa.test_q
 test_failures_are_grouped_so_the_round_summary_says_something (test.unit.qa.test_qa_agent.UnitStageTests.test_failures_are_grouped_so_the_round_summary_says_something) ... ok
 test_line_numbers_do_not_make_the_same_failure_look_new (test.unit.qa.test_qa_agent.UnitStageTests.test_line_numbers_do_not_make_the_same_failure_look_new) ... ok
 test_the_same_failures_twice_are_recognised_as_no_progress (test.unit.qa.test_qa_agent.UnitStageTests.test_the_same_failures_twice_are_recognised_as_no_progress) ... ok
+test_a_failure_in_one_workspace_survives_the_totals (test.unit.qa.test_qa_agent.UnitTotalsTests.test_a_failure_in_one_workspace_survives_the_totals) ... ok
+test_a_project_that_never_ran_a_unit_suite_is_not_a_crash (test.unit.qa.test_qa_agent.UnitTotalsTests.test_a_project_that_never_ran_a_unit_suite_is_not_a_crash) ... ok
+test_a_run_that_saved_its_cases_beats_a_bigger_one_that_did_not (test.unit.qa.test_qa_agent.UnitTotalsTests.test_a_run_that_saved_its_cases_beats_a_bigger_one_that_did_not)
+Only a real report carries the individual assertions the panel lists. ... ok
+test_every_workspace_summary_is_counted_not_only_the_first (test.unit.qa.test_qa_agent.UnitTotalsTests.test_every_workspace_summary_is_counted_not_only_the_first)
+`npm test --workspaces` prints one summary per workspace. ... ok
+test_output_with_no_summary_at_all_reports_nothing (test.unit.qa.test_qa_agent.UnitTotalsTests.test_output_with_no_summary_at_all_reports_nothing) ... ok
+test_the_widest_run_is_published_not_the_last_one (test.unit.qa.test_qa_agent.UnitTotalsTests.test_the_widest_run_is_published_not_the_last_one)
+A repair re-runs one service; that is not the project's result. ... ok
 test_a_failing_journey_is_repaired_and_the_owner_is_named (test.unit.qa.test_qa_stages.E2EStageTests.test_a_failing_journey_is_repaired_and_the_owner_is_named) ... ok
 test_a_journey_that_never_passes_is_reported_not_retried_forever (test.unit.qa.test_qa_stages.E2EStageTests.test_a_journey_that_never_passes_is_reported_not_retried_forever) ... ok
 test_a_stage_with_no_journeys_says_so (test.unit.qa.test_qa_stages.E2EStageTests.test_a_stage_with_no_journeys_says_so) ... ok
@@ -339,6 +348,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 297 tests in 14.955s
+Ran 303 tests in 14.106s
 
 OK

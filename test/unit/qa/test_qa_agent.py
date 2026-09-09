@@ -399,5 +399,69 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(out.read_bytes()[:4], b"%PDF")
 
 
+class UnitTotalsTests(unittest.TestCase):
+    """What the Testing panel says ran, against what actually ran."""
+
+    def workspace_output(self, *pairs):
+        parts = []
+        for name, files, tests in pairs:
+            parts.append(f"> {name} test\n Test Files  {files} passed ({files})\n"
+                         f"      Tests  {tests} passed ({tests})\n")
+        return "\n".join(parts)
+
+    def test_every_workspace_summary_is_counted_not_only_the_first(self):
+        """`npm test --workspaces` prints one summary per workspace."""
+        output = self.workspace_output(("auth-service", 2, 11), ("recipes-service", 3, 19),
+                                       ("community-service", 2, 14), ("client", 4, 21))
+
+        counts = report._runner_counts(output)
+
+        self.assertEqual(counts["numTotalTests"], 65)
+        self.assertEqual(counts["numTotalTestSuites"], 11)
+        self.assertEqual(counts["numPassedTests"], 65)
+
+    def test_a_failure_in_one_workspace_survives_the_totals(self):
+        output = ("> a test\n Test Files  1 passed (1)\n      Tests  8 passed (8)\n"
+                  "> b test\n Test Files  1 failed (1)\n      Tests  2 failed | 3 passed (5)\n")
+
+        counts = report._runner_counts(output)
+
+        self.assertEqual(counts["numFailedTests"], 2)
+        self.assertEqual(counts["numPassedTests"], 11)
+        self.assertEqual(counts["numTotalTests"], 13)
+
+    def test_output_with_no_summary_at_all_reports_nothing(self):
+        self.assertIsNone(report._runner_counts("npm ERR! missing script: test"))
+
+    def test_the_widest_run_is_published_not_the_last_one(self):
+        """A repair re-runs one service; that is not the project's result."""
+        rows = [
+            {"suite": "scaffold-baseline", "sequence": 1,
+             "output": " Test Files  1 passed (1)\n      Tests  4 passed (4)\n"},
+            {"suite": "all-services-unit", "sequence": 2,
+             "output": " Test Files  11 passed (11)\n      Tests  65 passed (65)\n"},
+            {"suite": "auth-service-unit", "sequence": 3,
+             "output": " Test Files  1 passed (1)\n      Tests  8 passed (8)\n"},
+        ]
+
+        widest = report._widest_unit_run(rows)
+
+        self.assertEqual(widest["suite"], "all-services-unit")
+
+    def test_a_run_that_saved_its_cases_beats_a_bigger_one_that_did_not(self):
+        """Only a real report carries the individual assertions the panel lists."""
+        detailed = {"suite": "with-report", "sequence": 1, "report": {
+            "testResults": [{"name": "a.test.js", "assertionResults": [{"status": "passed"}]}],
+            "numTotalTests": 20}}
+        bigger = {"suite": "totals-only", "sequence": 2,
+                  "output": " Test Files  9 passed (9)\n      Tests  40 passed (40)\n"}
+
+        self.assertEqual(report._widest_unit_run([detailed, bigger])["suite"], "with-report")
+
+    def test_a_project_that_never_ran_a_unit_suite_is_not_a_crash(self):
+        self.assertEqual(report._widest_unit_run([]), {})
+
+
+
 if __name__ == "__main__":
     unittest.main()
