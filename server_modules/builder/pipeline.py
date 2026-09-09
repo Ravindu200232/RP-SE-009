@@ -13,6 +13,7 @@ and publishes the evidence it already produced.
 
 import re
 import shutil
+import threading
 import time
 import uuid
 from pathlib import Path
@@ -238,6 +239,76 @@ def restore_snapshot(project: str, snap_id: str) -> dict:
 # --------------------------------------------------------------------------
 # The runs
 # --------------------------------------------------------------------------
+# One live agent per project, so the next thing said in the chat is the next
+# thing said in the same conversation.
+_SESSIONS: dict[str, dict] = {}
+_SESSIONS_LOCK = threading.Lock()
+
+
+def _session_key(model: str, think, stack: str) -> tuple:
+    """What a session is; changing any of it is a different conversation."""
+    return (str(model or ""), bool(think), str(stack or ""))
+
+
+def forget_session(project: str) -> None:
+    """Drop the conversation about a project that is closing or gone."""
+    with _SESSIONS_LOCK:
+        session = _SESSIONS.pop(str(project or ""), None)
+    if session:
+        try:
+            session["agent"].dispose()
+        except Exception as error:                                   # noqa: BLE001
+            log.debug(f"disposing the session for {project}: {error}")
+
+
+def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
+               *, kind: str, phases, plan: bool):
+    """The agent already talking about this project, or a new one.
+
+    A chat message is the next line of a conversation, not the first line of a
+    new one. Keeping the agent alive between messages is what makes "no, the
+    other button" mean anything: the transcript, the verification ledger and
+    the context window all carry over, and the engine's own compaction is what
+    keeps that affordable over a long session.
+
+    A build starts a fresh conversation - there is nothing before it - and so
+    does a change of model, stack or thinking, because none of those can be
+    applied to a transcript that was written under the old ones.
+    """
+    name = proj_dir.name
+    key = _session_key(model, think, stack)
+    agent = None
+    if not plan:
+        with _SESSIONS_LOCK:
+            session = _SESSIONS.get(name)
+        if session and session["key"] == key:
+            agent = session["agent"]
+        elif session:
+            forget_session(name)
+
+    fresh = agent is None
+    if fresh:
+        forget_session(name)
+        agent = BuilderAgent(
+            _config(proj_dir, brief, model, think, gates=plan, stack=stack),
+            events=Events(), cancel=_cancelled)
+    else:
+        # The bus is the agent's, but the listeners belong to one run: each has
+        # its own phase list and its own report writer.
+        agent.events.clear()
+
+    StudioBridge(agent.events, kind=kind, phases=list(phases))
+    agent.events.any(qa_report.LiveReport(
+        proj_dir, agent.memory.evidence, emit,
+        lambda error: elog("WARN", f"Could not save testing results: {error}")))
+    if not plan:
+        with _SESSIONS_LOCK:
+            _SESSIONS[name] = {"agent": agent, "key": key}
+    if not fresh:
+        elog("INFO", f"   continuing the conversation ({len(agent.memory)} messages so far)")
+    return agent
+
+
 def _run_agent(proj_dir: Path, brief: str, model: str, think, *, phases, kind: str,
                plan: bool = True, stack: str = ""):
     """One builder-agent run, wired to the studio.
@@ -246,14 +317,9 @@ def _run_agent(proj_dir: Path, brief: str, model: str, think, *, phases, kind: s
     answer. An edit does not: there is no plan to review, and the design was
     settled when the project was built.
     """
-    events = Events()
-    StudioBridge(events, kind=kind, phases=list(phases))
-    agent = BuilderAgent(_config(proj_dir, brief, model, think, gates=plan, stack=stack),
-                         events=events, cancel=_cancelled)
+    agent = _agent_for(proj_dir, brief, model, think, stack,
+                       kind=kind, phases=phases, plan=plan)
     register_approvals(agent.approvals)
-    events.any(qa_report.LiveReport(
-        proj_dir, agent.memory.evidence, emit,
-        lambda error: elog("WARN", f"Could not save testing results: {error}")))
     try:
         return agent, (agent.run(brief) if plan else agent.build(brief))
     finally:

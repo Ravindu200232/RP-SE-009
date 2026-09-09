@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-09T02:07:32+00:00
+Run at (UTC): 2026-09-09T02:25:39+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 259
+Unit tests: 265
 Integration tests: 24
-Total tests run: 283
+Total tests run: 289
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 10.334s
+Duration: 10.057s
 
 Detailed results
 ----------------
@@ -265,11 +265,19 @@ Half a request silently ignored is worse than a request that admits it. ... ok
 test_every_selected_element_names_the_file_that_renders_it (test.unit.services.test_selection_edit.SelectionBriefTests.test_every_selected_element_names_the_file_that_renders_it) ... ok
 test_one_element_is_not_described_in_the_plural (test.unit.services.test_selection_edit.SelectionBriefTests.test_one_element_is_not_described_in_the_plural) ... ok
 test_what_the_screenshot_shows_is_folded_into_the_brief (test.unit.services.test_selection_edit.SelectionBriefTests.test_what_the_screenshot_shows_is_folded_into_the_brief) ... ok
+test_changing_the_model_is_a_different_conversation (test.unit.services.test_server_wiring.ChatSessionTests.test_changing_the_model_is_a_different_conversation)
+A transcript written under one model cannot be handed to another. ... ok
+test_forgetting_a_project_disposes_its_agent (test.unit.services.test_server_wiring.ChatSessionTests.test_forgetting_a_project_disposes_its_agent) ... ok
+test_forgetting_a_project_nobody_was_talking_about_is_fine (test.unit.services.test_server_wiring.ChatSessionTests.test_forgetting_a_project_nobody_was_talking_about_is_fine) ... ok
+test_forgetting_survives_an_agent_that_cannot_be_disposed (test.unit.services.test_server_wiring.ChatSessionTests.test_forgetting_survives_an_agent_that_cannot_be_disposed)
+A session that will not close must still be let go of. ... ok
+test_the_same_project_keeps_one_conversation (test.unit.services.test_server_wiring.ChatSessionTests.test_the_same_project_keeps_one_conversation) ... ok
 test_a_selection_of_several_elements_travels_whole (test.unit.services.test_server_wiring.MessageDispatchTests.test_a_selection_of_several_elements_travels_whole)
 Clicking three things has to send three things, with their pictures. ... ok
 test_a_stack_chosen_in_the_studio_reaches_the_run (test.unit.services.test_server_wiring.MessageDispatchTests.test_a_stack_chosen_in_the_studio_reaches_the_run)
 Reading it out of the wording of the brief is the fallback, not the rule. ... ok
 test_build_and_resume_contracts (test.unit.services.test_server_wiring.MessageDispatchTests.test_build_and_resume_contracts) ... ok
+test_chat_can_add_features_without_calling_every_request_a_bug (test.unit.services.test_server_wiring.MessageDispatchTests.test_chat_can_add_features_without_calling_every_request_a_bug) ... ok
 test_edit_action_contracts (test.unit.services.test_server_wiring.MessageDispatchTests.test_edit_action_contracts) ... ok
 test_invalid_or_incomplete_action_is_ignored (test.unit.services.test_server_wiring.MessageDispatchTests.test_invalid_or_incomplete_action_is_ignored) ... ok
 test_the_removed_editing_actions_are_gone (test.unit.services.test_server_wiring.MessageDispatchTests.test_the_removed_editing_actions_are_gone)
@@ -321,6 +329,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 283 tests in 10.334s
+Ran 289 tests in 10.057s
 
 OK

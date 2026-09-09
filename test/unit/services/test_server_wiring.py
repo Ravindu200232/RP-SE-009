@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import tempfile
+import types
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -211,6 +212,51 @@ class MessageDispatchTests(unittest.TestCase):
     def test_invalid_or_incomplete_action_is_ignored(self):
         self.assertIsNone(server._message_job({"type": "unknown"}))
         self.assertIsNone(self.job("feature", project="demo"))
+
+
+class ChatSessionTests(unittest.TestCase):
+    """A second message continues the first conversation, not a new one."""
+
+    def setUp(self):
+        server._SESSIONS.clear()
+        self.addCleanup(server._SESSIONS.clear)
+
+    def test_the_same_project_keeps_one_conversation(self):
+        key = server._session_key("deepseek", False, "nextjs-mongo")
+        self.assertEqual(key, server._session_key("deepseek", False, "nextjs-mongo"))
+
+    def test_changing_the_model_is_a_different_conversation(self):
+        """A transcript written under one model cannot be handed to another."""
+        base = server._session_key("deepseek", False, "nextjs-mongo")
+        self.assertNotEqual(base, server._session_key("qwen", False, "nextjs-mongo"))
+        self.assertNotEqual(base, server._session_key("deepseek", True, "nextjs-mongo"))
+        self.assertNotEqual(base, server._session_key("deepseek", False, "mern-microservices"))
+
+    def test_forgetting_a_project_disposes_its_agent(self):
+        disposed = []
+        server._SESSIONS["demo"] = {
+            "agent": types.SimpleNamespace(dispose=lambda: disposed.append(True)),
+            "key": server._session_key("m", False, "s")}
+
+        server.forget_session("demo")
+
+        self.assertEqual(disposed, [True])
+        self.assertNotIn("demo", server._SESSIONS)
+
+    def test_forgetting_survives_an_agent_that_cannot_be_disposed(self):
+        """A session that will not close must still be let go of."""
+        def boom():
+            raise RuntimeError("browser already gone")
+
+        server._SESSIONS["demo"] = {"agent": types.SimpleNamespace(dispose=boom),
+                                    "key": server._session_key("m", False, "s")}
+        server.forget_session("demo")
+        self.assertNotIn("demo", server._SESSIONS)
+
+    def test_forgetting_a_project_nobody_was_talking_about_is_fine(self):
+        server.forget_session("never-opened")
+        self.assertEqual(server._SESSIONS, {})
+
 
 
 if __name__ == "__main__":

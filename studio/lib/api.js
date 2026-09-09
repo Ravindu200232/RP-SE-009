@@ -45,9 +45,6 @@ export const api = {
   logoPrompt: (prompt, model, opts) => localJob('/logo-prompt', { prompt, model }, opts),
   image: (body, opts) => localJob('/image', body, opts),
 
-  // Several whole-app visual directions, generated in parallel.
-  tune: (body, opts) => localJob('/tune', body, opts),
-
   // The same answer as `image`, from a file instead of a prompt.
   imageUpload: (file, body) => Promise.resolve(tooBig(file)).then(big => {
     if (big) throw big

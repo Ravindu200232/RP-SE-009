@@ -72,6 +72,8 @@ def delete_project(proj_name: str) -> dict:
         PROD_DIR, proj_name, "project name", "project")
     if error:
         return {"error": error}
+    # Nothing may keep talking about a project that is gone.
+    forget_session(name)
 
     if active_vite.get("dir") == str(resolved):
         elog("INFO", f"   ⏹ Stopping the dev server before deleting {name}")
@@ -343,6 +345,9 @@ def _open_project(proj_name: str):
         if not proj_dir.is_dir():
             return eerr(f"there is no project called {proj_name}")
         stack = detect_stack(proj_dir)
+        # Opening a project is arriving at it fresh; the previous conversation
+        # about it belonged to a session that has ended.
+        forget_session(proj_dir.name)
         elog("INFO", f"📂 Opening {proj_name} ({stack})")
         MONGO.ensure_running()
         if not ensure_node_deps(proj_dir):

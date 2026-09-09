@@ -29,7 +29,6 @@ import { useEditAttachments } from '@/lib/use-edit-attachments'
 import { answerQuestion, send } from '@/lib/ws'
 import { cn } from '@/lib/utils'
 import EditAttach from './EditAttach'
-import TunePrompt from './TunePrompt'
 
 const ICONS = {
   read: Search, plan: Search, write: FileCode2, build: FileCode2,
@@ -60,7 +59,6 @@ export default function AgentChat() {
   const [open, setOpen] = useState(true)
   const [text, setText] = useState('')
   const [reading, setReading] = useState(false)
-  const [pending, setPending] = useState(null)
   const attach = useEditAttachments()
   const end = useRef(null)
   const box = useRef(null)
@@ -119,32 +117,28 @@ export default function AgentChat() {
         .map(s => ({ kind: s.kind, image: s.shot, label: s.label }))
     }
 
-    // The same rewording pass the Ask dialog used, kept because it is what
-    // turns "the button is broken" into something an agent can act on.
-    let tuned = full
-    try {
-      const r = await api.tune({ prompt: full, project, route: payload.route,
-                                 model: payload.model })
-      tuned = (r?.prompt || '').trim() || full
-    } catch {
-      // The request is still sendable exactly as typed.
-    }
-    setPending({ payload, shown: typed, typed: full, tuned,
-                 shots: selection.filter(s => s.shot).map(s => s.shot) })
+    fire(payload, full, typed, selection.filter(s => s.shot).map(s => s.shot))
     setReading(false)
   }
 
-  function fire(payload, body, shown) {
+  /**
+   * Say it, and it goes.
+   *
+   * A dialog used to open here first, offering a reworded version of the
+   * sentence and asking whether that was what you meant. It was answering a
+   * question nobody had: pasting a stack trace and being asked to approve a
+   * paraphrase of it is a step between you and the agent, not a help. What
+   * you typed is what the agent gets.
+   */
+  function fire(payload, body, shown, shots = []) {
     const s = useStore.getState()
-    pushChat({ role: 'user', text: shown, at: Date.now(),
-               shots: pending?.shots || [] })
+    pushChat({ role: 'user', text: shown, at: Date.now(), shots })
     send({ ...payload, prompt: body })
     forgetConsole()
     s.setBusy(true)
     attach.reset()
     clearSelection()
     setText('')
-    setPending(null)
   }
 
   if (!open) {
@@ -161,20 +155,6 @@ export default function AgentChat() {
 
   return (
     <aside className="flex w-[var(--chat-w,460px)] shrink-0 flex-col overflow-hidden border-r border-line/60 bg-panel/80">
-      {pending && (
-        <TunePrompt
-          typed={pending.shown} tuned={pending.tuned}
-          onSend={body => fire(pending.payload, body, pending.shown)}
-          onSendTyped={() => fire(pending.payload, pending.typed, pending.shown)}
-          onCancel={() => setPending(null)}
-          onRetune={async body => {
-            const r = await api.tune({ prompt: body, project,
-                                       route: pending.payload.route,
-                                       model: pending.payload.model })
-            return (r?.prompt || '').trim()
-          }} />
-      )}
-
       <header className="shrink-0 border-b border-line/60 px-3.5 py-3">
         <div className="flex items-center gap-2">
           <span className="grid size-7 place-items-center rounded-xl bg-accent/10 text-accent">

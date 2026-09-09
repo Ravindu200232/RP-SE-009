@@ -10,7 +10,7 @@ def text(path):
 
 required = {
     "chat composer": ("components/AgentChat.jsx", "'element_edit' : 'agent_update'"),
-    "chat prompt review": ("components/AgentChat.jsx", "<TunePrompt"),
+    "what you type is what is sent": ("components/AgentChat.jsx", "Say it, and it goes"),
     "chat turns from the run": ("lib/chat.js", "export function chatTurns"),
     "chat answers a paused question": ("components/AgentChat.jsx", "answerQuestion(typed)"),
     "agent turns in the store": ("lib/store.js", "pushChat:"),
@@ -107,6 +107,9 @@ forbidden = {
     # Pointing at something is one gesture with two shapes, not three tools
     # with three prompt boxes.
     "picture tool": ("components/PreviewPane.jsx", "image_edit"),
+    # Being asked to approve a paraphrase of your own sentence is a step
+    # between you and the agent, not a help.
+    "a paraphrase to approve": ("components/AgentChat.jsx", "TunePrompt"),
     "a second prompt box beside the chat": ("components/PreviewPane.jsx", "Review request"),
 }
 
@@ -115,6 +118,7 @@ missing = {
     "the build screen": "components/BuildOverlay.jsx",
     "its activity mapper": "lib/activity.js",
     "its contract check": "scripts/verify_activity.mjs",
+    "the rewording dialog": "components/TunePrompt.jsx",
 }
 
 failed = []
