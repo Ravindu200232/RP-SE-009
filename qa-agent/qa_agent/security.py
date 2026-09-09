@@ -29,8 +29,12 @@ HASH_HINTS = re.compile(r"bcrypt|argon2|scrypt|pbkdf2|createHash|hashSync|hash\(
 UNSAFE_HTML = re.compile(r"dangerouslySetInnerHTML")
 INJECTION = re.compile(r"\$where|\bnew\s+Function\b|eval\s*\(", re.I)
 
-SKIP_DIRS = {"node_modules", ".next", ".git", "coverage", "test", "__pycache__",
-             ".agentforge", ".agent"}
+# Build output is not source. `.next` was here because the Next stack writes
+# there; Vite writes to `dist` and CRA to `build`, and a minified React runtime
+# contains every dangerous-looking string there is - four findings against one
+# bundle marked a clean MERN build unverified.
+SKIP_DIRS = {"node_modules", ".next", "dist", "build", ".git", "coverage", "test",
+             "__pycache__", ".agentforge", ".agent"}
 
 
 def _sources(root: Path, limit: int = 900):

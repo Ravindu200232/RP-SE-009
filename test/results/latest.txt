@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-09T02:39:44+00:00
+Run at (UTC): 2026-09-09T03:21:35+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 269
+Unit tests: 270
 Integration tests: 24
-Total tests run: 293
+Total tests run: 294
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 14.067s
+Duration: 13.872s
 
 Detailed results
 ----------------
@@ -185,6 +185,8 @@ test_a_workspace_that_already_has_a_project_is_never_touched (test.unit.builder.
 test_an_empty_workspace_gets_the_verified_starting_point (test.unit.builder.test_project_setup.StackTemplateTests.test_an_empty_workspace_gets_the_verified_starting_point) ... ok
 test_the_engines_own_directories_do_not_make_a_workspace_non_empty (test.unit.builder.test_project_setup.StackTemplateTests.test_the_engines_own_directories_do_not_make_a_workspace_non_empty) ... ok
 test_the_microservices_template_keeps_its_scaffold_directory_inert (test.unit.builder.test_project_setup.StackTemplateTests.test_the_microservices_template_keeps_its_scaffold_directory_inert) ... ok
+test_the_notice_says_how_to_replace_what_it_says_to_replace (test.unit.builder.test_project_setup.StackTemplateTests.test_the_notice_says_how_to_replace_what_it_says_to_replace)
+It asks for the placeholder page to be replaced; writeFile refuses that. ... ok
 test_the_root_manifest_takes_the_folder_name_so_npm_can_install_it (test.unit.builder.test_project_setup.StackTemplateTests.test_the_root_manifest_takes_the_folder_name_so_npm_can_install_it) ... ok
 test_environment_style_secret_line_keeps_the_key_but_hides_the_value (test.unit.deployment.test_security.DeploymentSecurityTests.test_environment_style_secret_line_keeps_the_key_but_hides_the_value) ... ok
 test_hash_helpers_produce_the_same_artifact_digest (test.unit.deployment.test_security.DeploymentSecurityTests.test_hash_helpers_produce_the_same_artifact_digest) ... ok
@@ -333,6 +335,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 293 tests in 14.067s
+Ran 294 tests in 13.872s
 
 OK

@@ -135,6 +135,13 @@ class StackTemplateTests(unittest.TestCase):
         self.assertIn(f'"name": "{_package_name(self.root)}"',
                       (self.root / "package.json").read_text(encoding="utf-8"))
 
+    def test_the_notice_says_how_to_replace_what_it_says_to_replace(self):
+        """It asks for the placeholder page to be replaced; writeFile refuses that."""
+        notice = template_notice(install_template(self.root, "nextjs-mongo"))
+        self.assertIn("replace them", notice)
+        self.assertIn("overwrite:true", notice)
+        self.assertIn("patchFile", notice)
+
     def test_a_folder_name_npm_would_reject_is_made_installable(self):
         """npm refuses leading dots, capitals and spaces; the folder may have them."""
         for folder, expected in (("My Shop", "my-shop"), ("_draft_", "draft"),

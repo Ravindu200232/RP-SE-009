@@ -126,6 +126,9 @@ def template_notice(result: Scaffold) -> str:
         "What is deliberately absent is yours to write: models, routes, pages, components, each "
         "service's own server, and the real stylesheet. The placeholder page and starter "
         "stylesheet exist only so the scaffold builds; replace them.",
+        "Every path above is a file that already exists, so writeFile refuses it: to replace one "
+        "outright pass overwrite:true, and to change part of one use patchFile. Reading the "
+        "error to discover that costs a turn per file.",
         "If a scaffold/ directory is present it holds skeletons to copy, not files to run - read "
         "its README before adding a service or any other repeated part.",
         "Run the install once, then the tests, before adding features: a scaffold that does not "
