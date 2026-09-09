@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-09T05:37:55+00:00
+Run at (UTC): 2026-09-09T05:44:52+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 308
+Unit tests: 311
 Integration tests: 24
-Total tests run: 332
+Total tests run: 335
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 14.279s
+Duration: 14.248s
 
 Detailed results
 ----------------
@@ -342,9 +342,14 @@ test_build_registers_and_releases_cancellation (test.unit.services.test_server_w
 test_cancel_adapter_returns_the_requested_state (test.unit.services.test_server_wiring.PipelineLifecycleTests.test_cancel_adapter_returns_the_requested_state) ... ok
 test_completed_e2e_finishes_without_starting_a_second_qa_agent (test.unit.services.test_server_wiring.PipelineLifecycleTests.test_completed_e2e_finishes_without_starting_a_second_qa_agent) ... ok
 test_done_requires_completed_build_and_passing_qa (test.unit.services.test_server_wiring.PipelineLifecycleTests.test_done_requires_completed_build_and_passing_qa) ... ok
+test_a_live_conversation_is_preferred_to_the_written_one (test.unit.services.test_server_wiring.SessionStatsTests.test_a_live_conversation_is_preferred_to_the_written_one)
+The file is what a project last spent; the session is what it holds. ... ok
 test_a_live_conversation_reports_what_it_is_holding (test.unit.services.test_server_wiring.SessionStatsTests.test_a_live_conversation_reports_what_it_is_holding) ... ok
 test_a_project_with_no_conversation_reports_nothing_rather_than_zeroes (test.unit.services.test_server_wiring.SessionStatsTests.test_a_project_with_no_conversation_reports_nothing_rather_than_zeroes)
 Blank is honest; zero would claim a context that was measured. ... ok
+test_nothing_is_written_for_an_agent_that_cannot_be_measured (test.unit.services.test_server_wiring.SessionStatsTests.test_nothing_is_written_for_an_agent_that_cannot_be_measured) ... ok
+test_what_a_run_spent_is_written_down_with_the_project (test.unit.services.test_server_wiring.SessionStatsTests.test_what_a_run_spent_is_written_down_with_the_project)
+A conversation dies with the backend; the project outlives it. ... ok
 test_entity_hint_singularizes_plain_plural_names (test.unit.srs.test_builder_handoff.BuilderHandoffTests.test_entity_hint_singularizes_plain_plural_names) ... ok
 test_page_and_api_paths_follow_next_app_router_layout (test.unit.srs.test_builder_handoff.BuilderHandoffTests.test_page_and_api_paths_follow_next_app_router_layout) ... ok
 test_reference_field_preserves_object_id_semantics (test.unit.srs.test_builder_handoff.BuilderHandoffTests.test_reference_field_preserves_object_id_semantics) ... ok
@@ -386,6 +391,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 332 tests in 14.279s
+Ran 335 tests in 14.248s
 
 OK

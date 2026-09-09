@@ -1,6 +1,7 @@
 """Focused contracts for the compact server action helpers."""
 from __future__ import annotations
 
+import json
 import tempfile
 import types
 import unittest
@@ -385,6 +386,33 @@ class SessionStatsTests(unittest.TestCase):
         """Blank is honest; zero would claim a context that was measured."""
         self.assertEqual(server.session_stats("never-opened"), {})
         self.assertEqual(server.session_stats(""), {})
+
+    def test_what_a_run_spent_is_written_down_with_the_project(self):
+        """A conversation dies with the backend; the project outlives it."""
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            agent = server._SESSIONS.get("x") or None
+            self.seed("saved")
+            agent = server._SESSIONS["saved"]["agent"]
+
+            server.save_session_stats(root, agent)
+
+            written = json.loads((root / server.STATS_FILE).read_text(encoding="utf-8"))
+            self.assertEqual(written["model"], "ollama/deepseek")
+            self.assertEqual(written["requests"], 4)
+            self.assertGreater(written["tokens"], 0)
+
+    def test_a_live_conversation_is_preferred_to_the_written_one(self):
+        """The file is what a project last spent; the session is what it holds."""
+        self.seed("shop")
+        live = server.session_stats("shop")
+        self.assertEqual(live["messages"], 6)
+
+    def test_nothing_is_written_for_an_agent_that_cannot_be_measured(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            server.save_session_stats(root, None)
+            self.assertFalse((root / server.STATS_FILE).exists())
 
 
 

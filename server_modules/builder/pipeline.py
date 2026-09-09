@@ -268,18 +268,35 @@ def forget_session(project: str) -> None:
             log.debug(f"disposing the session for {project}: {error}")
 
 
-def session_stats(project: str) -> dict:
-    """The context a project's conversation is already holding.
+# What one project's conversation cost, kept with the project rather than in
+# the process that happened to run it.
+STATS_FILE = ".agentforge/session.json"
 
-    The status line is fed by events, and events only arrive while something
-    is running. Switching to a project whose conversation is alive but idle
-    left the line blank, and it came back at zero on the next message as
-    though nothing had been said - which was exactly the reset the session was
-    built to prevent, showing through in the one place a person reads it.
-    """
-    with _SESSIONS_LOCK:
-        session = _SESSIONS.get(str(project or ""))
-    agent = session["agent"] if session else None
+
+def save_session_stats(proj_dir: Path, agent) -> None:
+    """Write down what this run spent, so the project can say so later."""
+    stats = _measure(agent)
+    if not stats:
+        return
+    try:
+        path = Path(proj_dir) / STATS_FILE
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(stats, indent=2), encoding="utf-8")
+    except OSError as error:
+        log.debug(f"saving the session for {proj_dir.name}: {error}")
+
+
+def _saved_session_stats(project: str) -> dict:
+    try:
+        data = json.loads((PROD_DIR / str(project or "") / STATS_FILE)
+                          .read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _measure(agent) -> dict:
+    """One agent's context and spend, in the shape the status line reads."""
     if agent is None:
         return {}
     try:
@@ -288,7 +305,7 @@ def session_stats(project: str) -> dict:
         budget = ContextBudget(agent.config.context_tokens)
         measurement = budget.measure(agent.memory.build(), fresh=True).as_event()
     except Exception as error:                                       # noqa: BLE001
-        log.debug(f"measuring the session for {project}: {error}")
+        log.debug(f"measuring a session: {error}")
         measurement = {}
     usage = dict(getattr(agent.router, "usage", {}) or {})
     return {"model": agent.router.label, "stack": agent.config.stack,
@@ -296,6 +313,28 @@ def session_stats(project: str) -> dict:
             "requests": usage.get("requests", 0),
             "sent": usage.get("prompt", 0), "received": usage.get("completion", 0),
             **measurement}
+
+
+def session_stats(project: str) -> dict:
+    """The context a project's conversation is already holding.
+
+    The status line is fed by events, and events only arrive while something
+    is running. Switching to a project whose conversation is alive but idle
+    left the line blank, and it came back at zero on the next message as
+    though nothing had been said - which was exactly the reset the session was
+    built to prevent, showing through in the one place a person reads it.
+
+    A conversation lives in the process that is running it, and the backend
+    outlives none of its restarts, so what a project last spent is written
+    down with the project. A live session wins; the file answers for one that
+    has ended.
+    """
+    with _SESSIONS_LOCK:
+        session = _SESSIONS.get(str(project or ""))
+    agent = session["agent"] if session else None
+    if agent is None:
+        return _saved_session_stats(project)
+    return _measure(agent)
 
 
 def release_other_sessions(keep: str) -> list:
@@ -384,6 +423,7 @@ def _run_agent(proj_dir: Path, brief: str, model: str, think, *, phases, kind: s
     finally:
         forget_approvals(agent.approvals)
         agent._finish()
+        save_session_stats(proj_dir, agent)
 
 
 def _verify(proj_dir: Path, project: str, model: str, think, qa_model: str, *, memory=None):
