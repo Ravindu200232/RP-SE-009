@@ -416,5 +416,115 @@ class SessionStatsTests(unittest.TestCase):
 
 
 
+class ProjectStreamTests(unittest.TestCase):
+    """A browser tab is not a record of what happened to a project."""
+
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        self.previous = server.PROD_DIR
+        server.PROD_DIR = self.root
+        self.addCleanup(setattr, server, "PROD_DIR", self.previous)
+        (self.root / "shop").mkdir()
+
+    def test_what_a_project_said_is_read_back_after_it_is_written(self):
+        logs = [{"level": "INFO", "text": "Reading app/page.jsx", "at": 1},
+                {"level": "SUCCESS", "text": "written lib/db.js", "at": 2}]
+        chat = [{"role": "user", "text": "add a footer", "at": 3}]
+
+        self.assertEqual(server.write_stream("shop", logs, chat)["ok"], True)
+        back = server.read_stream("shop")
+
+        self.assertEqual(back["logs"], logs)
+        self.assertEqual(back["chat"], chat)
+
+    def test_only_the_newest_is_kept_because_a_stream_is_not_an_archive(self):
+        logs = [{"text": f"line {i}"} for i in range(server.STREAM_LOGS + 400)]
+        chat = [{"text": f"turn {i}"} for i in range(server.STREAM_TURNS + 40)]
+
+        server.write_stream("shop", logs, chat)
+        back = server.read_stream("shop")
+
+        self.assertEqual(len(back["logs"]), server.STREAM_LOGS)
+        self.assertEqual(len(back["chat"]), server.STREAM_TURNS)
+        self.assertEqual(back["logs"][-1], logs[-1])       # the newest survives
+        self.assertEqual(back["chat"][-1], chat[-1])
+
+    def test_a_project_that_has_said_nothing_reads_back_as_nothing(self):
+        self.assertEqual(server.read_stream("shop"), {})
+        self.assertEqual(server.read_stream("no-such-project"), {})
+
+    def test_a_stream_cannot_be_written_outside_the_project_store(self):
+        """The project name reaches this from a request body."""
+        for name in ("../escape", "..\\escape", "", ".hidden"):
+            with self.subTest(name=name):
+                self.assertIn("error", server.write_stream(name, [], []))
+
+
+
+class RunIsolationTests(unittest.TestCase):
+    """A run must not reach outside the project it was given, or speak for it."""
+
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        self.previous = server.PROD_DIR
+        server.PROD_DIR = self.root
+        self.addCleanup(setattr, server, "PROD_DIR", self.previous)
+        (self.root / "shop").mkdir()
+        self.said = []
+        self.previous_eerr = server.eerr
+        server.eerr = self.said.append
+        self.addCleanup(setattr, server, "eerr", self.previous_eerr)
+
+    def test_a_run_with_no_project_is_refused_the_projects_store(self):
+        """`PROD_DIR / ""` is a directory, so the existence check passed: one
+        run read the store's git history and wrote an app into the middle of
+        the other projects."""
+        for name in ("", "   ", None):
+            with self.subTest(name=name):
+                self.assertIsNone(server._workspace(name))
+
+    def test_a_run_cannot_climb_out_of_the_projects_store(self):
+        for name in ("../..", "..\\escape", "shop/../..", ".hidden"):
+            with self.subTest(name=name):
+                self.assertIsNone(server._workspace(name))
+
+    def test_a_named_project_resolves_to_itself(self):
+        self.assertEqual(server._workspace("shop"), (self.root / "shop").resolve())
+
+    def test_refusing_says_why_rather_than_failing_silently(self):
+        server._workspace("")
+        self.assertTrue(self.said, "the studio has to be told the run was refused")
+
+
+class MessageOwnershipTests(unittest.TestCase):
+    """Whose work a message reports, so one project's feed stays its own."""
+
+    def setUp(self):
+        self.addCleanup(server.working_on, "")
+
+    def test_a_run_stamps_its_own_name_on_what_it_reports(self):
+        server.working_on("shop")
+        stamped = server.stamp_owner({"type": "log", "text": "npm install"})
+        self.assertEqual(stamped["project"], "shop")
+
+    def test_a_message_that_already_names_a_project_keeps_that_name(self):
+        """`done` names the project that finished, which may not be this one."""
+        server.working_on("shop")
+        stamped = server.stamp_owner({"type": "done", "project": "other"})
+        self.assertEqual(stamped["project"], "other")
+
+    def test_a_thread_that_owns_no_project_speaks_for_the_server(self):
+        server.working_on("")
+        message = {"type": "log", "text": "listening on 7825"}
+        self.assertNotIn("project", server.stamp_owner(message))
+
+    def test_stamping_does_not_alter_the_message_it_was_given(self):
+        server.working_on("shop")
+        message = {"type": "log", "text": "x"}
+        server.stamp_owner(message)
+        self.assertNotIn("project", message)
+
+
+
 if __name__ == "__main__":
     unittest.main()

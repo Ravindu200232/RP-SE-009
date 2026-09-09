@@ -187,6 +187,8 @@ class UIHandler(SimpleHTTPRequestHandler):
             self._json(MONGO.status())
         elif path.startswith("/files/"):
             self._json(get_project_files(path[7:].strip("/")))
+        elif path.startswith("/stream/"):
+            self._json({"stream": read_stream(path[8:].strip("/"))})
         elif path.startswith("/session/"):
             self._json({"stats": session_stats(path[9:].strip("/"))})
         elif path == "/decisions":
@@ -453,6 +455,10 @@ class UIHandler(SimpleHTTPRequestHandler):
                 daemon=True
             ).start()
             self._json({"ok": True})
+        elif path == "/stream":
+            body = self._body()
+            self._json(write_stream(str(body.get("project") or ""),
+                                    body.get("logs"), body.get("chat")))
         elif path == "/shot":
             # A picture of what they just clicked or drew on, for the message
             # they are about to send. Answered inline: the chip waits on it.

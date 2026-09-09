@@ -200,6 +200,17 @@ export default function Studio() {
       })
       .catch(() => { /* an older backend has no session to report */ })
 
+    // Everything this project has already said. A browser tab is not a
+    // record: without this, reloading the studio or opening the project
+    // tomorrow showed an empty feed for work that had really happened.
+    api.stream(name)
+      .then(({ stream }) => {
+        const store = useStore.getState()
+        if (store.project !== name) return
+        if (stream?.logs?.length || stream?.chat?.length) store.adoptStream(stream)
+      })
+      .catch(() => { /* an older backend keeps no stream */ })
+
     try {
       await api.open(name)
 

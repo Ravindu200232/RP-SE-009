@@ -139,6 +139,22 @@ export function disconnect() {
   resetStreamQueue()
 }
 
+/**
+ * Write down what this project has said.
+ *
+ * Called when a run ends, which is when the account of it is complete and
+ * when losing it would cost the most.
+ */
+function keepStream(project) {
+  const s = useStore.getState()
+  const name = project || s.project
+  if (!name) return
+  api.saveStream(name, s.logs, s.chat).catch(() => {
+    // An older backend keeps no stream; the session still has it in memory.
+  })
+}
+
+
 export function send(obj) {
   if (obj && obj.type) {
     useStore.getState().setWorkKind(WORK_KIND[obj.type] || 'build')
@@ -166,7 +182,29 @@ export function send(obj) {
   }).catch(err => useStore.getState().addLog('WARN', `send failed: ${err.message}`))
 }
 
+/**
+ * Is this message about the project on screen?
+ *
+ * A run keeps going while you look elsewhere, and its output used to land in
+ * whichever feed happened to be open: another project's npm commands
+ * appearing in this one's stream. A message that names a project is only for
+ * that project; one that names none is about the server and is for everyone.
+ *
+ * A build announces the name it has just been given through `project`, and
+ * ends through `done` or `cancelled`, so those three arrive before - or after
+ * - it is the project on screen and are always let through.
+ */
+function meantForMe(m) {
+  const mine = useStore.getState().project
+  if (!m?.project || !mine) return true
+  if (m.type === 'project' || m.type === 'done' || m.type === 'cancelled') return true
+  return m.project === mine
+}
+
+
 function handle(m) {
+  if (!meantForMe(m)) return
+
   const s = useStore.getState()
   switch (m.type) {
     case 'log':          s.addLog(m.level, m.text); break
@@ -241,6 +279,7 @@ function handle(m) {
   // Close every stream when the run ends.
     case 'done':
       s.setBusy(false)
+      keepStream(s.busyProject)
       s.setBusyProject('')
       s.setWorkKind('')
       s.testDone()
@@ -261,6 +300,7 @@ function handle(m) {
     // Cancelled is not an error and must not read like one.
     case 'cancelled':
       s.setBusy(false)
+      keepStream(s.busyProject)
       s.setBusyProject('')
       s.setWorkKind('')
       s.testDone()
@@ -280,6 +320,7 @@ function handle(m) {
       break
     case 'error':
       s.setBusy(false)
+      keepStream(s.busyProject)
       s.setBusyProject('')
       s.setWorkKind('')
       s.testDone()

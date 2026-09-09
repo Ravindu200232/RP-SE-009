@@ -41,6 +41,10 @@ export const api = {
   // What a project's conversation is already holding, for the status line.
   session: (project) => req(`/session/${encodeURIComponent(project)}`),
 
+  // Everything that has happened to a project, so a reload does not lose it.
+  stream: (project) => req(`/stream/${encodeURIComponent(project)}`),
+  saveStream: (project, logs, chat) => post('/stream', { project, logs, chat }),
+
   // Throw away a specification that has not been approved.
   discardSrs: (srs_id) => post('/discard-srs', { srs_id }),
   undo: (project, id) => post('/undo', { project, id }),

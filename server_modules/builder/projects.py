@@ -72,8 +72,14 @@ def delete_project(proj_name: str) -> dict:
         PROD_DIR, proj_name, "project name", "project")
     if error:
         return {"error": error}
-    # Nothing may keep talking about a project that is gone.
+    # Nothing may keep talking about a project that is gone - and nothing may
+    # keep writing one back. Disposing the session stops its dev servers; only
+    # a cancellation stops the loop, which had carried on recreating a deleted
+    # project file by file.
     forget_session(name)
+    stopped = cancel.request()
+    if stopped.get("ok"):
+        elog("INFO", f"   ⏹ Stopped the run working on {name}")
 
     if active_vite.get("dir") == str(resolved):
         elog("INFO", f"   ⏹ Stopping the dev server before deleting {name}")
@@ -344,11 +350,21 @@ def _open_project(proj_name: str):
         proj_dir = PROD_DIR / proj_name
         if not proj_dir.is_dir():
             return eerr(f"there is no project called {proj_name}")
-        stack = detect_stack(proj_dir)
+        working_on(proj_dir.name)
+        stack = stack_of(proj_dir) or detect_stack(proj_dir)
         # Opening a project is arriving at it fresh; the previous conversation
         # about it belonged to a session that has ended.
         forget_session(proj_dir.name)
+        # Switching projects has to be one movement. Whatever was serving
+        # before is still holding the ports this one needs - one public port
+        # for a single application, one per service for a set of them - and
+        # letting it hold them means the new project comes up half-started
+        # with an error nobody asked to see.
+        release_other_sessions(proj_dir.name)
+        freed = free_declared_ports(proj_dir)
         elog("INFO", f"📂 Opening {proj_name} ({stack})")
+        if freed:
+            log.info(f"freed ports {', '.join(str(port) for port in freed)} for {proj_name}")
         MONGO.ensure_running()
         if not ensure_node_deps(proj_dir):
             return eerr("the dependencies could not be installed")

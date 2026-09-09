@@ -218,7 +218,10 @@ def _trim_undo(proj_dir: Path) -> None:
 
 
 def restore_snapshot(project: str, snap_id: str) -> dict:
-    proj_dir = PROD_DIR / str(project or "")
+    # Undo writes files back, so it is told which project as strictly as a run.
+    name, proj_dir, error = _owned_dir(PROD_DIR, project, "project name", "project")
+    if error:
+        return {"error": error}
     store = proj_dir / ".agentforge" / "undo" / str(snap_id or "")
     if not store.is_dir():
         return {"error": "that undo point is no longer available"}
@@ -271,6 +274,41 @@ def forget_session(project: str) -> None:
 # What one project's conversation cost, kept with the project rather than in
 # the process that happened to run it.
 STATS_FILE = ".agentforge/session.json"
+
+# And what it said. A browser tab is not a record: reload it, or open the
+# project tomorrow, and everything the run reported was gone.
+STREAM_FILE = ".agentforge/stream.json"
+STREAM_LOGS = 1500
+STREAM_TURNS = 300
+
+
+def read_stream(project: str) -> dict:
+    """The account of what has happened to this project so far."""
+    try:
+        data = json.loads((PROD_DIR / str(project or "") / STREAM_FILE)
+                          .read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    return {"logs": list(data.get("logs") or [])[-STREAM_LOGS:],
+            "chat": list(data.get("chat") or [])[-STREAM_TURNS:]}
+
+
+def write_stream(project: str, logs, chat) -> dict:
+    """Keep the newest of it. A stream is a record, not an archive."""
+    name, proj_dir, error = _owned_dir(PROD_DIR, project, "project name", "project")
+    if error:
+        return {"error": error}
+    body = {"logs": list(logs or [])[-STREAM_LOGS:],
+            "chat": list(chat or [])[-STREAM_TURNS:]}
+    try:
+        path = proj_dir / STREAM_FILE
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(body), encoding="utf-8")
+    except OSError as write_error:
+        return {"error": str(write_error)}
+    return {"ok": True, "logs": len(body["logs"]), "chat": len(body["chat"])}
 
 
 def save_session_stats(proj_dir: Path, agent) -> None:
@@ -440,6 +478,22 @@ def _verify(proj_dir: Path, project: str, model: str, think, qa_model: str, *, m
         qa.dispose()
 
 
+def _workspace(project: str):
+    """The project a run may touch, or nothing at all.
+
+    `PROD_DIR / ""` is the directory every project lives in, and it is a
+    directory, so the check that a workspace exists passed for a run that had
+    been given no project at all. One did: it read the store's git history,
+    listed the other projects, and started writing an application into the
+    middle of them. A name has to name a project.
+    """
+    name, resolved, error = _owned_dir(PROD_DIR, project, "project name", "project")
+    if error:
+        eerr(error)
+        return None
+    return resolved
+
+
 def _serve(proj_dir: Path, agent=None) -> str:
     """Bring the app up so the preview and the journeys have something to hit.
 
@@ -515,6 +569,7 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
     try:
         proj_dir = _prepare_workspace(prompt, project, srs_id)
         name = proj_dir.name
+        working_on(name)
         cancel.note(project=name, srs_id=srs_id)
         resuming = bool(project)
         elog("INFO", f"🏗️  {'Resuming' if resuming else 'Building'} {name}")
@@ -576,9 +631,10 @@ def _edit_run(project: str, prompt: str, model, think, qa_model: str, console: s
     cancel.begin()
     cancel.note(project=project)
     try:
-        proj_dir = PROD_DIR / str(project or "")
-        if not proj_dir.is_dir():
-            return eerr(f"there is no project called {project}")
+        proj_dir = _workspace(project)
+        if proj_dir is None:
+            return
+        working_on(proj_dir.name)
         elog("INFO", f"✏️  {prompt[:160]}")
         estep("build", "active")
         MONGO.ensure_running()

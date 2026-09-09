@@ -227,8 +227,27 @@ export const useStore = create((set, get) => ({
   busyProject: '',
   setBusyProject: (busyProject) => set({ busyProject }),
 
-      // Set this project's stream aside, and take up the next one's.
-  reset: (project) => set(state => ({
+  /**
+   * Put a project's saved stream back, behind anything that has arrived since.
+   *
+   * The fetch that reads it races the socket that is already reporting: a run
+   * started the moment the project opened would otherwise have its first lines
+   * overwritten by a record written before they happened.
+   */
+  adoptStream: (stream) => set(state => ({
+    logs: [...(stream.logs || []), ...state.logs],
+    chat: [...(stream.chat || []), ...state.chat],
+  })),
+
+      // Set this project's stream aside, and take up the next one's. What is
+      // set aside is also written down, because a tab that is closed next
+      // takes the in-memory copy with it.
+  reset: (project) => set(state => {
+    if (state.project && (state.logs.length || state.chat.length)) {
+      import('./api').then(({ api }) =>
+        api.saveStream(state.project, state.logs, state.chat).catch(() => { }))
+    }
+    return {
     streams: state.project
       ? { ...state.streams,
           [state.project]: { logs: state.logs, chat: state.chat,
@@ -247,7 +266,8 @@ export const useStore = create((set, get) => ({
     previewRoute: '/',
     e2eLive: null,
     e2eParallel: emptyE2eParallel(),
-  })),
+    }
+  }),
 
   tests: emptyTests(),
   testStart: () => set({

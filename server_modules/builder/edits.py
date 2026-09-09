@@ -134,9 +134,9 @@ def run_element_edit(project: str, prompt: str, elements, model: str,
                      route: str = "") -> None:
     """Act on whatever the user attached: elements, drawings, or both."""
     try:
-        proj_dir = PROD_DIR / str(project or "")
-        if not proj_dir.is_dir():
-            return eerr(f"there is no project called {project}")
+        proj_dir = _workspace(project)
+        if proj_dir is None:
+            return
         picked = _as_list(elements)[:MAX_SELECTED]
         pictures = _as_list(shots)[:MAX_SELECTED]
         if not picked and not pictures:

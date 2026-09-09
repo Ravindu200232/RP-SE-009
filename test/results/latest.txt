@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-09T06:07:41+00:00
+Run at (UTC): 2026-09-09T06:25:18+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 311
+Unit tests: 323
 Integration tests: 24
-Total tests run: 335
+Total tests run: 347
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 14.449s
+Duration: 15.366s
 
 Detailed results
 ----------------
@@ -336,12 +336,27 @@ test_edit_action_contracts (test.unit.services.test_server_wiring.MessageDispatc
 test_invalid_or_incomplete_action_is_ignored (test.unit.services.test_server_wiring.MessageDispatchTests.test_invalid_or_incomplete_action_is_ignored) ... ok
 test_the_removed_editing_actions_are_gone (test.unit.services.test_server_wiring.MessageDispatchTests.test_the_removed_editing_actions_are_gone)
 The pencil and the picture tool are one selection surface now. ... ok
+test_a_message_that_already_names_a_project_keeps_that_name (test.unit.services.test_server_wiring.MessageOwnershipTests.test_a_message_that_already_names_a_project_keeps_that_name)
+`done` names the project that finished, which may not be this one. ... ok
+test_a_run_stamps_its_own_name_on_what_it_reports (test.unit.services.test_server_wiring.MessageOwnershipTests.test_a_run_stamps_its_own_name_on_what_it_reports) ... ok
+test_a_thread_that_owns_no_project_speaks_for_the_server (test.unit.services.test_server_wiring.MessageOwnershipTests.test_a_thread_that_owns_no_project_speaks_for_the_server) ... ok
+test_stamping_does_not_alter_the_message_it_was_given (test.unit.services.test_server_wiring.MessageOwnershipTests.test_stamping_does_not_alter_the_message_it_was_given) ... ok
 test_owned_dir_accepts_only_existing_direct_child (test.unit.services.test_server_wiring.OwnedDirectoryTests.test_owned_dir_accepts_only_existing_direct_child) ... ok
 test_owned_dir_rejects_traversal_hidden_and_missing_names (test.unit.services.test_server_wiring.OwnedDirectoryTests.test_owned_dir_rejects_traversal_hidden_and_missing_names) ... ok
 test_build_registers_and_releases_cancellation (test.unit.services.test_server_wiring.PipelineLifecycleTests.test_build_registers_and_releases_cancellation) ... ok
 test_cancel_adapter_returns_the_requested_state (test.unit.services.test_server_wiring.PipelineLifecycleTests.test_cancel_adapter_returns_the_requested_state) ... ok
 test_completed_e2e_finishes_without_starting_a_second_qa_agent (test.unit.services.test_server_wiring.PipelineLifecycleTests.test_completed_e2e_finishes_without_starting_a_second_qa_agent) ... ok
 test_done_requires_completed_build_and_passing_qa (test.unit.services.test_server_wiring.PipelineLifecycleTests.test_done_requires_completed_build_and_passing_qa) ... ok
+test_a_project_that_has_said_nothing_reads_back_as_nothing (test.unit.services.test_server_wiring.ProjectStreamTests.test_a_project_that_has_said_nothing_reads_back_as_nothing) ... ok
+test_a_stream_cannot_be_written_outside_the_project_store (test.unit.services.test_server_wiring.ProjectStreamTests.test_a_stream_cannot_be_written_outside_the_project_store)
+The project name reaches this from a request body. ... ok
+test_only_the_newest_is_kept_because_a_stream_is_not_an_archive (test.unit.services.test_server_wiring.ProjectStreamTests.test_only_the_newest_is_kept_because_a_stream_is_not_an_archive) ... ok
+test_what_a_project_said_is_read_back_after_it_is_written (test.unit.services.test_server_wiring.ProjectStreamTests.test_what_a_project_said_is_read_back_after_it_is_written) ... ok
+test_a_named_project_resolves_to_itself (test.unit.services.test_server_wiring.RunIsolationTests.test_a_named_project_resolves_to_itself) ... ok
+test_a_run_cannot_climb_out_of_the_projects_store (test.unit.services.test_server_wiring.RunIsolationTests.test_a_run_cannot_climb_out_of_the_projects_store) ... ok
+test_a_run_with_no_project_is_refused_the_projects_store (test.unit.services.test_server_wiring.RunIsolationTests.test_a_run_with_no_project_is_refused_the_projects_store)
+`PROD_DIR / ""` is a directory, so the existence check passed: one ... ok
+test_refusing_says_why_rather_than_failing_silently (test.unit.services.test_server_wiring.RunIsolationTests.test_refusing_says_why_rather_than_failing_silently) ... ok
 test_a_live_conversation_is_preferred_to_the_written_one (test.unit.services.test_server_wiring.SessionStatsTests.test_a_live_conversation_is_preferred_to_the_written_one)
 The file is what a project last spent; the session is what it holds. ... ok
 test_a_live_conversation_reports_what_it_is_holding (test.unit.services.test_server_wiring.SessionStatsTests.test_a_live_conversation_reports_what_it_is_holding) ... ok
@@ -391,6 +406,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 335 tests in 14.448s
+Ran 347 tests in 15.366s
 
 OK

@@ -199,9 +199,36 @@ def default_agent_model() -> str:
     return DEFAULT_BUILD
 
 
+# Which project the thread emitting a message is working on. A run has its own
+# thread, so this is per-run without anything having to be threaded through
+# every call that reports something.
+RUN = threading.local()
+
+
+def working_on(project: str = ""):
+    """Say which project this thread's messages belong to."""
+    RUN.project = str(project or "")
+
+
+def stamp_owner(msg: dict) -> dict:
+    """Name the project a message came from, unless it already names one."""
+    if "project" in msg:
+        return msg
+    owner = getattr(RUN, "project", "")
+    return {**msg, "project": owner} if owner else msg
+
+
 def emit(msg: dict):
+    """Publish one message, stamped with the project it came from.
+
+    Without the stamp every client showed every line: a run left going in one
+    project wrote its output into whichever project was on screen, so a food
+    delivery app's feed filled up with another project's npm commands. A
+    message that already names its project keeps that name; one that names
+    none is about the server itself and is shown wherever anyone is looking.
+    """
     if MAIN_LOOP is None: return
-    data = json.dumps(msg, ensure_ascii=False)
+    data = json.dumps(stamp_owner(msg), ensure_ascii=False)
     async def _s():
         dead = set()
         for ws in list(clients):
