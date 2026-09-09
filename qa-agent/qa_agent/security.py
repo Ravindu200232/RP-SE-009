@@ -29,19 +29,47 @@ HASH_HINTS = re.compile(r"bcrypt|argon2|scrypt|pbkdf2|createHash|hashSync|hash\(
 UNSAFE_HTML = re.compile(r"dangerouslySetInnerHTML")
 INJECTION = re.compile(r"\$where|\bnew\s+Function\b|eval\s*\(", re.I)
 
-# Build output is not source. `.next` was here because the Next stack writes
-# there; Vite writes to `dist` and CRA to `build`, and a minified React runtime
-# contains every dangerous-looking string there is - four findings against one
-# bundle marked a clean MERN build unverified.
-SKIP_DIRS = {"node_modules", ".next", "dist", "build", ".git", "coverage", "test",
-             "__pycache__", ".agentforge", ".agent"}
+SKIP_DIRS = {"node_modules", ".next", ".git", "coverage", "test", "__pycache__",
+             ".agentforge", ".agent"}
+
+
+def ignored_dirs(root: Path | str) -> set[str]:
+    """What this project says is not its source, read from its own .gitignore.
+
+    Build output is not source, and a minified bundle contains every
+    dangerous-looking string there is: four findings against one Vite bundle
+    were enough to mark a clean build unverified. Where that output lands is
+    the project's decision though - Next writes `.next`, Vite writes `dist`,
+    the next stack will write somewhere else - so it is read from the project
+    rather than listed here.
+
+    Only plain entries are honoured. A pattern with no slash matches a
+    directory of that name at any depth, which is what git does with it;
+    globs, negations and rooted paths are left alone, because half-reading a
+    pattern language is worse than not reading it.
+    """
+    names = set()
+    try:
+        lines = (Path(root) / ".gitignore").read_text(
+            encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return names
+    for line in lines:
+        entry = line.strip().rstrip("/")
+        if not entry or entry.startswith(("#", "!", "/")) or "/" in entry:
+            continue
+        if any(character in entry for character in "*?[]"):
+            continue
+        names.add(entry)
+    return names
 
 
 def _sources(root: Path, limit: int = 900):
+    skip = SKIP_DIRS | ignored_dirs(root)
     for path in root.rglob("*"):
         if not path.is_file() or path.suffix not in (".js", ".jsx", ".ts", ".tsx", ".mjs"):
             continue
-        if any(part in SKIP_DIRS for part in path.parts):
+        if any(part in skip for part in path.parts):
             continue
         yield path
         limit -= 1
