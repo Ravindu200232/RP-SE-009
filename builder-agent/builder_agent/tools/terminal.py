@@ -52,16 +52,14 @@ def execute_terminal(args, ctx):
                     message=f"$ {command[:200]}" + (" (service)" if service else ""))
     result = ctx.processes.run(command, cwd, timeout=timeout, service=service)
 
-    # A command the model declared as project-changing invalidates evidence
-    # recorded before it ran; so does any write it performed.
-    if args.get("changesProject") and not service:
-        ctx.memory.evidence.changed()
+    # The loop owns revision updates. A service or diagnostic does not change
+    # source merely because it was launched through the terminal tool.
     ctx.memory.digest["actions"] = (ctx.memory.digest["actions"] + [f"ran: {command[:160]}"])[-40:]
     ctx.memory.evidence.observe_process(result)
 
     ok = result.get("pending") or result.get("exitCode") == 0
     return {"ok": bool(ok), "content": format_result(result), "process": result,
-            "mutates": risk != SAFE}
+            "mutates": bool(args.get("changesProject")) and not service}
 
 
 def wait_for_process(args, ctx):

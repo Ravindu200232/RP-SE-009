@@ -11,9 +11,9 @@ import { unitTestStatus } from '@/lib/test-counts'
 export default function UnitTests({ qa }) {
   const [open, setOpen] = useState(() => new Set())
 
-  const v = qa?.vitest
+  const v = qa?.vitest || qa?.savedVitest
   if (!v) {
-    return <Empty>No unit-test report yet — the suite has not run for this project.</Empty>
+    return <Empty>No saved unit-test report for this project yet.</Empty>
   }
 
   const suites = (v.testResults || []).map(t => ({
@@ -29,8 +29,25 @@ export default function UnitTests({ qa }) {
     .filter(c => ['skipped', 'pending', 'todo'].includes(c.status))
   const unit = unitTestStatus(v)
 
+  if (v.fileResults) return (
+    <div className="space-y-4">
+      <Summary><Stat n={`${unit.passed}/${unit.total}`} label="files passed" tone="text-ok" />
+        <Stat n={unit.failed} label="files failed" tone={unit.failed ? 'text-bad' : undefined} /></Summary>
+      <p className="text-[11.5px] text-muted">{v.note}</p>
+      <p className="font-mono text-[10px] text-muted2">Vitest cache · {new Date(v.recordedAt).toLocaleString()}</p>
+      <div className="space-y-1.5">{v.fileResults.map(row => (
+        <div key={row.file} className="flex items-center gap-3 rounded-panel border border-line bg-panel px-3 py-2.5">
+          <code className="min-w-0 flex-1 break-all text-[11px] text-ink">{row.file}</code>
+          <span className="text-[10px] text-muted">{row.duration == null ? '—' : `${Math.round(row.duration)}ms`}</span>
+          <Badge tone={row.status === 'failed' ? 'bad' : 'ok'}>{row.status}</Badge>
+        </div>
+      ))}</div>
+    </div>
+  )
+
   return (
     <div>
+      {qa.unitEvidenceStatus === 'outdated' && <p className="mb-3 text-[11px] text-warn">These saved unit results precede the latest code changes.</p>}
       <Summary>
         <Stat n={unit.passed} label="passing" tone="text-ok" />
         <Stat n={unit.failed} label="failing"
@@ -43,6 +60,7 @@ export default function UnitTests({ qa }) {
           {v.startTime ? new Date(v.startTime).toLocaleString() : ''}
         </span>
       </Summary>
+      {!suites.length && <p className="mb-4 text-[11.5px] text-muted">Saved runner totals. Individual assertion details were not saved.</p>}
 
       {skipped.length > 0 && (
         <p className="mb-3 text-[11.5px] text-warn">

@@ -29,10 +29,12 @@ def submit_plan(args, ctx):
 def review_changes(args, ctx):
     """The current diff, or the working tree when there is no repository."""
     try:
-        result = subprocess.run(["git", "diff", "--stat", "HEAD"], cwd=ctx.sandbox.root,
-                                capture_output=True, text=True, timeout=30, check=False)
-        detail = subprocess.run(["git", "diff", "HEAD"], cwd=ctx.sandbox.root,
-                                capture_output=True, text=True, timeout=60, check=False)
+        result = subprocess.run(["git", "diff", "--stat", "HEAD", "--", "."], cwd=ctx.sandbox.root,
+                                capture_output=True, text=True, encoding="utf-8", errors="replace",
+                                timeout=30, check=False)
+        detail = subprocess.run(["git", "diff", "HEAD", "--", "."], cwd=ctx.sandbox.root,
+                                capture_output=True, text=True, encoding="utf-8", errors="replace",
+                                timeout=60, check=False)
     except (OSError, subprocess.SubprocessError) as error:
         return {"ok": False, "content": f"Could not read the change set: {error}"}
     if result.returncode != 0:
@@ -41,7 +43,8 @@ def review_changes(args, ctx):
                 "Inspect the files the task touched directly."}
     body = (detail.stdout or "")[:30_000]
     return {"ok": True, "content": f"{result.stdout}\n\n{body}" if body else
-            "No uncommitted changes."}
+            "Git reports no tracked changes under this workspace. Inspect any files created "
+            "by this task directly, including untracked or ignored files."}
 
 
 def inspect_error(args, ctx):

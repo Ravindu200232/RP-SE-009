@@ -189,6 +189,14 @@ class UIHandler(SimpleHTTPRequestHandler):
             self._json(get_project_files(path[7:].strip("/")))
         elif path == "/decisions":
             self._json({"pending": pending_decisions()})
+        elif path.startswith("/qa-screenshot/"):
+            from urllib.parse import parse_qs, unquote
+            query = parse_qs(urlsplit(self.path).query)
+            try:
+                data = read_qa_screenshot(unquote(path[15:].strip("/")), query.get("path", [""])[0])
+                self._plain(200, data, "image/png", extra=(("Cache-Control", "no-cache"),))
+            except (OSError, ValueError):
+                self._json({"error": "Screenshot not found"}, 404)
         elif path.startswith("/qa/"):
             self._json(read_qa_results(path[4:].strip("/")))
         elif path.startswith("/srs-results/"):

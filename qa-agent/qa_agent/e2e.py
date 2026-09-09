@@ -23,6 +23,11 @@ MAX_ROUNDS = 3
 
 AUTHOR_BRIEF = """Prove this application works end to end, in a real browser.
 
+Continue from the build's context and recorded journeys when available. Read
+the browser-e2e skill and the evidence first. Reuse current passing journeys;
+run missing, failed or stale ones, and add coverage for any unproved critical
+path. A phase change alone does not make a passed journey stale.
+
 The app must already be running. Start it as a managed service with
 executeTerminal(service:true) if it is not, and confirm readiness by reaching
 its URL before you test anything.
@@ -30,8 +35,9 @@ its URL before you test anything.
 1. Discover the real routes and controls: read the project layout, open the
    app with browserOpen and read the accessible tree with browserSnapshot.
    Never guess a selector.
-2. Call defineVerificationScope with the critical user journeys this product
-   has - each one a complete path a real user takes, end to end. Seal it.
+2. Reuse the existing scope and extend it for missing critical user journeys.
+   If no scope exists, call defineVerificationScope and seal it. Each journey
+   is a complete path a real user takes, end to end.
 3. Run each journey with browserRunJourney, giving it a stable suite name, a
    startUrl, the requirement ids in covers, and steps that assert real
    outcomes: the text that proves the action worked, the URL it lands on, the
@@ -138,7 +144,7 @@ def journeys_from_evidence(evidence: dict) -> list[Journey]:
                 hit_failure = True
             else:
                 status = "passed"
-            stages.append({"name": label[:180], "status": status})
+            stages.append({"index": int(number), "name": label, "label": label, "status": status})
         if record.get("status") == "failed" and not hit_failure and stages:
             stages[-1]["status"] = "failed"
         journeys.append(Journey(title=record.get("suite", "journey"),
@@ -163,7 +169,7 @@ def _is_failed(number: str, label: str, record: dict) -> bool:
 def run_stage(*, agent, workspace: Path, events=None) -> E2EResult:
     """Author, run and repair the browser journeys."""
     result = E2EResult()
-    agent.build(AUTHOR_BRIEF)
+    agent.build(AUTHOR_BRIEF, verification_kinds=("e2e",))
     result.ran = True
 
     for _ in range(MAX_ROUNDS):
@@ -178,7 +184,7 @@ def run_stage(*, agent, workspace: Path, events=None) -> E2EResult:
             break
         listing = "\n".join(f"- {item['suite']}: {item['reason']}" for item in result.failures[:8])
         before = len(agent.memory.digest["files"])
-        agent.build(REPAIR_BRIEF.format(failures=listing))
+        agent.build(REPAIR_BRIEF.format(failures=listing), verification_kinds=("e2e",))
         result.fixed += max(0, len(agent.memory.digest["files"]) - before)
 
     evidence = agent.memory.evidence.summary()

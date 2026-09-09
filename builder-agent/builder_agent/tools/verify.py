@@ -11,6 +11,7 @@ summary of its coverage is not coverage.
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 
 from ..errors import ToolError
@@ -86,12 +87,22 @@ def run_tests(args, ctx):
 
     cwd = ctx.sandbox.resolve(args.get("cwd") or ".", must_exist=True)
     ctx.events.emit("test", state="run", kind=kind, suite=suite, command=command[:200])
+    started = time.time()
     result = ctx.processes.run(command, cwd,
                                timeout=float(args.get("timeoutSeconds") or 900),
                                service=False, yield_after=900)
     record["processId"] = result.get("processId")
     if not result.get("pending"):
         result["coverage"] = _read_coverage(ctx, args.get("coverageReports"))
+        if kind == "unit" and args.get("reportPath"):
+            try:
+                path = ctx.sandbox.resolve(args["reportPath"], must_exist=True)
+                data = json.loads(path.read_text(encoding="utf-8"))
+                if (path.stat().st_mtime >= started and isinstance(data, dict)
+                        and isinstance(data.get("testResults"), list)):
+                    record["report"] = data
+            except (OSError, ValueError, ToolError):
+                pass  # The command result remains evidence when no fresh JSON exists.
     ctx.memory.evidence.observe(record, result)
 
     body = format_result(result)
@@ -149,7 +160,6 @@ def register(registry):
                         "requirements": {"type": "array", "description":
                                          '[{id, description, evidence:["unit","e2e"]}]'},
                         "finalize": {"type": "boolean", "default": True},
-                        "unitCoverageTarget": {"type": "number"},
                         "e2eCoverageTarget": {"type": "number"},
                     }},
         summarize=lambda a: str(a.get("projectType", "scope"))))
@@ -166,8 +176,8 @@ def register(registry):
     registry.add(Tool(
         name="runTests", risk=MODERATE, handler=run_tests,
         description="Run a test suite and record its exit code as evidence. Name the requirement "
-                    "ids in covers, and pass coverageReports so unit coverage is measured from "
-                    "the runner's own report.",
+                    "ids in covers. Optional coverageReports provide diagnostic percentages; "
+                    "they do not determine pass/fail.",
         parameters={"type": "object",
                     "required": ["kind", "suite", "command"], "properties": {
                         "kind": {"type": "string", "enum": ["unit", "e2e", "runtime"]},
@@ -175,6 +185,8 @@ def register(registry):
                         "command": {"type": "string"},
                         "cwd": {"type": "string"},
                         "testFiles": {"type": "array"},
+                        "reportPath": {"type": "string", "description":
+                                       "Optional Vitest JSON output from this same run, for per-case reporting."},
                         "covers": {"type": "array", "description": "Requirement ids this proves."},
                         "coverageReports": {"type": "array", "description":
                                             'e.g. ["coverage/coverage-summary.json"]'},

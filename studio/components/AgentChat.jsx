@@ -95,14 +95,13 @@ export default function AgentChat() {
     }
 
     let full = typed
+    setReading(true)
     if (attach.items.length) {
-      setReading(true)
       try {
         full = typed + await attach.collect(project)
       } catch (e) {
         useStore.getState().addLog('WARN', e.message)
       }
-      setReading(false)
     }
 
     const route = selection[0]?.route || useStore.getState().previewRoute || ''
@@ -132,6 +131,7 @@ export default function AgentChat() {
     }
     setPending({ payload, shown: typed, typed: full, tuned,
                  shots: selection.filter(s => s.shot).map(s => s.shot) })
+    setReading(false)
   }
 
   function fire(payload, body, shown) {

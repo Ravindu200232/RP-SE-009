@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-08T16:04:36+00:00
+Run at (UTC): 2026-09-09T02:07:32+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 239
+Unit tests: 259
 Integration tests: 24
-Total tests run: 263
+Total tests run: 283
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 10.675s
+Duration: 10.334s
 
 Detailed results
 ----------------
@@ -39,7 +39,7 @@ test_writing_to_a_file_is_a_mutation_even_from_a_read_command (test.unit.builder
 test_a_decorated_requirement_id_resolves_to_its_base (test.unit.builder.test_engine.EvidenceLedgerTests.test_a_decorated_requirement_id_resolves_to_its_base) ... ok
 test_a_limitation_is_recorded_as_unverified_never_as_a_pass (test.unit.builder.test_engine.EvidenceLedgerTests.test_a_limitation_is_recorded_as_unverified_never_as_a_pass) ... ok
 test_a_pass_taken_before_the_last_edit_is_outdated_not_missing (test.unit.builder.test_engine.EvidenceLedgerTests.test_a_pass_taken_before_the_last_edit_is_outdated_not_missing) ... ok
-test_a_passing_suite_below_the_coverage_floor_is_still_a_failure (test.unit.builder.test_engine.EvidenceLedgerTests.test_a_passing_suite_below_the_coverage_floor_is_still_a_failure) ... ok
+test_a_passing_suite_keeps_coverage_as_information (test.unit.builder.test_engine.EvidenceLedgerTests.test_a_passing_suite_keeps_coverage_as_information) ... ok
 test_a_run_is_not_ready_until_every_declared_layer_has_evidence (test.unit.builder.test_engine.EvidenceLedgerTests.test_a_run_is_not_ready_until_every_declared_layer_has_evidence) ... ok
 test_a_suite_that_exits_non_zero_is_a_failure_whatever_it_prints (test.unit.builder.test_engine.EvidenceLedgerTests.test_a_suite_that_exits_non_zero_is_a_failure_whatever_it_prints) ... ok
 test_an_unknown_requirement_id_is_refused_rather_than_silently_dropped (test.unit.builder.test_engine.EvidenceLedgerTests.test_an_unknown_requirement_id_is_refused_rather_than_silently_dropped) ... ok
@@ -68,6 +68,11 @@ test_an_ambiguous_edit_is_refused_rather_than_guessed (test.unit.builder.test_en
 test_arguments_are_coerced_rather_than_rejected_for_their_type (test.unit.builder.test_engine.ToolRegistryTests.test_arguments_are_coerced_rather_than_rejected_for_their_type) ... ok
 test_editing_json_by_path_keeps_it_valid_json (test.unit.builder.test_engine.ToolRegistryTests.test_editing_json_by_path_keeps_it_valid_json) ... ok
 test_writing_over_an_existing_file_needs_saying_so (test.unit.builder.test_engine.ToolRegistryTests.test_writing_over_an_existing_file_needs_saying_so) ... ok
+test_green_checks_finish_without_chasing_a_coverage_percentage (test.unit.builder.test_flow_regressions.CoverageCompletionTests.test_green_checks_finish_without_chasing_a_coverage_percentage) ... ok
+test_real_test_failures_still_need_repair (test.unit.builder.test_flow_regressions.CoverageCompletionTests.test_real_test_failures_still_need_repair) ... ok
+test_design_does_not_invent_screens_from_request_or_plan_words (test.unit.builder.test_flow_regressions.DesignScopeTests.test_design_does_not_invent_screens_from_request_or_plan_words) ... ok
+test_explicit_screen_selection_still_reaches_the_contract (test.unit.builder.test_flow_regressions.DesignScopeTests.test_explicit_screen_selection_still_reaches_the_contract) ... ok
+test_windows_metadata_names_the_command_processor_that_executes_commands (test.unit.builder.test_flow_regressions.ShellContextTests.test_windows_metadata_names_the_command_processor_that_executes_commands) ... ok
 test_an_empty_expectation_is_refused_rather_than_always_passing (test.unit.builder.test_journeys.AssertionShapeTests.test_an_empty_expectation_is_refused_rather_than_always_passing) ... ok
 test_an_unknown_assertion_names_the_ones_that_exist (test.unit.builder.test_journeys.AssertionShapeTests.test_an_unknown_assertion_names_the_ones_that_exist) ... ok
 test_text_and_url_assertions_report_what_they_actually_saw (test.unit.builder.test_journeys.AssertionShapeTests.test_text_and_url_assertions_report_what_they_actually_saw) ... ok
@@ -84,6 +89,7 @@ test_a_console_error_fails_the_journey (test.unit.builder.test_journeys.Diagnost
 test_a_genuinely_failed_request_fails_the_journey (test.unit.builder.test_journeys.DiagnosticsTests.test_a_genuinely_failed_request_fails_the_journey) ... ok
 test_a_server_error_fails_the_journey (test.unit.builder.test_journeys.DiagnosticsTests.test_a_server_error_fails_the_journey) ... ok
 test_cancellations_are_still_visible_when_a_failure_is_investigated (test.unit.builder.test_journeys.DiagnosticsTests.test_cancellations_are_still_visible_when_a_failure_is_investigated) ... ok
+test_a_corrected_locator_retries_the_same_suite_without_a_product_edit (test.unit.builder.test_journeys.JourneyRepairTests.test_a_corrected_locator_retries_the_same_suite_without_a_product_edit) ... ok
 test_ambiguity_says_how_to_resolve_it (test.unit.builder.test_journeys.LocatorTests.test_ambiguity_says_how_to_resolve_it) ... ok
 test_an_index_chooses_from_a_repeated_control (test.unit.builder.test_journeys.LocatorTests.test_an_index_chooses_from_a_repeated_control)
 A list page repeats its controls once per row. That is correct UI. ... ok
@@ -129,10 +135,13 @@ test_an_empty_workspace_is_scaffolded_from_the_verified_template (test.unit.buil
 test_an_unknown_tool_is_answered_with_the_tools_that_do_exist (test.unit.builder.test_loop.LoopTests.test_an_unknown_tool_is_answered_with_the_tools_that_do_exist) ... ok
 test_cancelling_ends_the_run_without_reporting_a_failure (test.unit.builder.test_loop.LoopTests.test_cancelling_ends_the_run_without_reporting_a_failure) ... ok
 test_evidence_closes_the_gate_and_the_run_finishes (test.unit.builder.test_loop.LoopTests.test_evidence_closes_the_gate_and_the_run_finishes) ... ok
+test_project_changing_command_invalidates_evidence_once (test.unit.builder.test_loop.LoopTests.test_project_changing_command_invalidates_evidence_once) ... ok
+test_read_only_terminal_observation_keeps_current_test_evidence (test.unit.builder.test_loop.LoopTests.test_read_only_terminal_observation_keeps_current_test_evidence) ... ok
 test_the_pinned_frame_carries_the_stack_layout_and_skills (test.unit.builder.test_loop.LoopTests.test_the_pinned_frame_carries_the_stack_layout_and_skills) ... ok
 test_the_same_failing_action_is_stopped_rather_than_repeated_forever (test.unit.builder.test_loop.LoopTests.test_the_same_failing_action_is_stopped_rather_than_repeated_forever) ... ok
 test_tool_calls_in_one_turn_run_in_order_and_all_report_back (test.unit.builder.test_loop.LoopTests.test_tool_calls_in_one_turn_run_in_order_and_all_report_back) ... ok
 test_tool_schemas_are_trimmed_rather_than_letting_the_request_fail (test.unit.builder.test_loop.LoopTests.test_tool_schemas_are_trimmed_rather_than_letting_the_request_fail) ... ok
+test_unit_stage_can_finish_without_launching_unassigned_browser_and_runtime_work (test.unit.builder.test_loop.LoopTests.test_unit_stage_can_finish_without_launching_unassigned_browser_and_runtime_work) ... ok
 test_an_unrecognised_product_still_gets_a_complete_contract (test.unit.builder.test_project_setup.DesignContractTests.test_an_unrecognised_product_still_gets_a_complete_contract) ... ok
 test_different_products_get_different_designs (test.unit.builder.test_project_setup.DesignContractTests.test_different_products_get_different_designs) ... ok
 test_every_palette_reads_at_the_contrast_it_promises (test.unit.builder.test_project_setup.DesignContractTests.test_every_palette_reads_at_the_contrast_it_promises) ... ok
@@ -142,9 +151,9 @@ test_the_foreground_on_a_fill_is_measured_not_assumed (test.unit.builder.test_pr
 test_the_subject_of_the_product_outvotes_the_shape_of_it (test.unit.builder.test_project_setup.DesignContractTests.test_the_subject_of_the_product_outvotes_the_shape_of_it) ... ok
 test_a_plan_that_files_components_settles_it (test.unit.builder.test_project_setup.DesignReachTests.test_a_plan_that_files_components_settles_it) ... ok
 test_every_chosen_dimension_reaches_the_written_contract (test.unit.builder.test_project_setup.DesignReachTests.test_every_chosen_dimension_reaches_the_written_contract) ... ok
+test_screen_inventory_is_left_to_the_approved_plan (test.unit.builder.test_project_setup.DesignReachTests.test_screen_inventory_is_left_to_the_approved_plan) ... ok
 test_the_catalogue_covers_every_dimension_the_contract_states (test.unit.builder.test_project_setup.DesignReachTests.test_the_catalogue_covers_every_dimension_the_contract_states) ... ok
 test_the_requests_people_actually_write_get_a_design (test.unit.builder.test_project_setup.DesignReachTests.test_the_requests_people_actually_write_get_a_design) ... ok
-test_the_screens_a_request_implies_are_preselected (test.unit.builder.test_project_setup.DesignReachTests.test_the_screens_a_request_implies_are_preselected) ... ok
 test_work_with_no_screen_still_gets_none (test.unit.builder.test_project_setup.DesignReachTests.test_work_with_no_screen_still_gets_none) ... ok
 test_a_fresh_installation_has_nothing_to_publish (test.unit.builder.test_project_setup.KnowledgeTests.test_a_fresh_installation_has_nothing_to_publish) ... ok
 test_a_verified_lesson_is_recalled_by_what_it_is_about (test.unit.builder.test_project_setup.KnowledgeTests.test_a_verified_lesson_is_recalled_by_what_it_is_about) ... ok
@@ -180,6 +189,9 @@ test_nested_secret_fields_are_redacted_recursively (test.unit.deployment.test_se
 test_safe_json_never_serializes_nested_credentials (test.unit.deployment.test_security.DeploymentSecurityTests.test_safe_json_never_serializes_nested_credentials) ... ok
 test_secret_names_are_detected_without_hiding_normal_metadata (test.unit.deployment.test_security.DeploymentSecurityTests.test_secret_names_are_detected_without_hiding_normal_metadata) ... ok
 test_secret_values_embedded_in_log_text_are_redacted (test.unit.deployment.test_security.DeploymentSecurityTests.test_secret_values_embedded_in_log_text_are_redacted) ... ok
+test_existing_unit_and_e2e_results_make_a_report_without_reexecuting (test.unit.qa.test_qa_agent.BuildEvidenceReportTests.test_existing_unit_and_e2e_results_make_a_report_without_reexecuting) ... ok
+test_stale_evidence_is_not_relabelled_as_current_passing_tests (test.unit.qa.test_qa_agent.BuildEvidenceReportTests.test_stale_evidence_is_not_relabelled_as_current_passing_tests) ... ok
+test_qa_keeps_builder_reads_and_evidence_while_using_its_own_model (test.unit.qa.test_qa_agent.ContextHandoffTests.test_qa_keeps_builder_reads_and_evidence_while_using_its_own_model) ... ok
 test_a_failure_with_no_step_number_still_marks_something_failed (test.unit.qa.test_qa_agent.E2EStageTests.test_a_failure_with_no_step_number_still_marks_something_failed) ... ok
 test_a_passing_journey_scores_every_stage (test.unit.qa.test_qa_agent.E2EStageTests.test_a_passing_journey_scores_every_stage) ... ok
 test_only_journeys_are_read_from_the_ledger (test.unit.qa.test_qa_agent.E2EStageTests.test_only_journeys_are_read_from_the_ledger) ... ok
@@ -196,15 +208,15 @@ test_history_keeps_the_first_round_of_each_run_only (test.unit.qa.test_qa_agent.
 test_reading_back_what_was_written_returns_the_same_record (test.unit.qa.test_qa_agent.ReportTests.test_reading_back_what_was_written_returns_the_same_record) ... ok
 test_the_pdf_renders_the_same_evidence (test.unit.qa.test_qa_agent.ReportTests.test_the_pdf_renders_the_same_evidence) ... ok
 test_the_record_is_the_shape_the_studio_reads (test.unit.qa.test_qa_agent.ReportTests.test_the_record_is_the_shape_the_studio_reads) ... ok
+test_a_dashboard_name_does_not_imply_private_data_or_accounts (test.unit.qa.test_qa_agent.SecurityScanTests.test_a_dashboard_name_does_not_imply_private_data_or_accounts) ... ok
 test_a_hashed_password_is_not_reported (test.unit.qa.test_qa_agent.SecurityScanTests.test_a_hashed_password_is_not_reported) ... ok
 test_a_password_stored_without_hashing_is_reported (test.unit.qa.test_qa_agent.SecurityScanTests.test_a_password_stored_without_hashing_is_reported) ... ok
 test_a_public_page_is_not_expected_to_guard_itself (test.unit.qa.test_qa_agent.SecurityScanTests.test_a_public_page_is_not_expected_to_guard_itself) ... ok
 test_a_public_variable_that_is_not_a_secret_is_left_alone (test.unit.qa.test_qa_agent.SecurityScanTests.test_a_public_variable_that_is_not_a_secret_is_left_alone) ... ok
+test_a_public_write_handler_does_not_invent_an_authentication_requirement (test.unit.qa.test_qa_agent.SecurityScanTests.test_a_public_write_handler_does_not_invent_an_authentication_requirement) ... ok
 test_a_read_only_handler_is_not_treated_as_a_write (test.unit.qa.test_qa_agent.SecurityScanTests.test_a_read_only_handler_is_not_treated_as_a_write) ... ok
-test_a_role_gated_page_with_no_guard_is_reported (test.unit.qa.test_qa_agent.SecurityScanTests.test_a_role_gated_page_with_no_guard_is_reported) ... ok
 test_a_secret_behind_a_public_variable_is_reported (test.unit.qa.test_qa_agent.SecurityScanTests.test_a_secret_behind_a_public_variable_is_reported) ... ok
 test_a_write_handler_that_checks_the_session_is_not_reported (test.unit.qa.test_qa_agent.SecurityScanTests.test_a_write_handler_that_checks_the_session_is_not_reported) ... ok
-test_a_write_handler_with_no_authorisation_check_is_reported (test.unit.qa.test_qa_agent.SecurityScanTests.test_a_write_handler_with_no_authorisation_check_is_reported) ... ok
 test_an_unavailable_audit_is_empty_rather_than_an_error (test.unit.qa.test_qa_agent.SecurityScanTests.test_an_unavailable_audit_is_empty_rather_than_an_error) ... ok
 test_every_finding_names_a_file_and_a_line (test.unit.qa.test_qa_agent.SecurityScanTests.test_every_finding_names_a_file_and_a_line) ... ok
 test_the_project_s_own_tests_and_dependencies_are_not_scanned (test.unit.qa.test_qa_agent.SecurityScanTests.test_the_project_s_own_tests_and_dependencies_are_not_scanned) ... ok
@@ -231,6 +243,10 @@ test_a_failure_that_changes_is_repaired_again (test.unit.qa.test_qa_stages.UnitS
 test_a_green_suite_is_reported_after_one_round (test.unit.qa.test_qa_stages.UnitStageTests.test_a_green_suite_is_reported_after_one_round) ... ok
 test_a_runner_that_collects_nothing_is_a_problem_not_a_pass (test.unit.qa.test_qa_stages.UnitStageTests.test_a_runner_that_collects_nothing_is_a_problem_not_a_pass) ... ok
 test_the_same_failure_twice_ends_the_round_rather_than_looping (test.unit.qa.test_qa_stages.UnitStageTests.test_the_same_failure_twice_ends_the_round_rather_than_looping) ... ok
+test_live_result_saved_before_done_with_full_e2e_trace_and_retry_history (test.unit.qa.test_reporting_artifacts.ReportingArtifactsTests.test_live_result_saved_before_done_with_full_e2e_trace_and_retry_history) ... ok
+test_recovers_file_outcomes_sources_routes_and_screenshots (test.unit.qa.test_reporting_artifacts.ReportingArtifactsTests.test_recovers_file_outcomes_sources_routes_and_screenshots) ... ok
+test_retry_does_not_reuse_previous_assertion_report (test.unit.qa.test_reporting_artifacts.ReportingArtifactsTests.test_retry_does_not_reuse_previous_assertion_report) ... ok
+test_screenshot_access_stays_in_project_image_folders (test.unit.qa.test_reporting_artifacts.ReportingArtifactsTests.test_screenshot_access_stays_in_project_image_folders) ... ok
 test_a_data_uri_is_unwrapped_before_it_reaches_the_model (test.unit.services.test_selection_edit.AttachmentShapeTests.test_a_data_uri_is_unwrapped_before_it_reaches_the_model)
 The browser needs the `data:` prefix to render it; Ollama chokes on it. ... ok
 test_a_drawing_is_told_apart_from_a_click (test.unit.services.test_selection_edit.AttachmentShapeTests.test_a_drawing_is_told_apart_from_a_click) ... ok
@@ -260,6 +276,10 @@ test_the_removed_editing_actions_are_gone (test.unit.services.test_server_wiring
 The pencil and the picture tool are one selection surface now. ... ok
 test_owned_dir_accepts_only_existing_direct_child (test.unit.services.test_server_wiring.OwnedDirectoryTests.test_owned_dir_accepts_only_existing_direct_child) ... ok
 test_owned_dir_rejects_traversal_hidden_and_missing_names (test.unit.services.test_server_wiring.OwnedDirectoryTests.test_owned_dir_rejects_traversal_hidden_and_missing_names) ... ok
+test_build_registers_and_releases_cancellation (test.unit.services.test_server_wiring.PipelineLifecycleTests.test_build_registers_and_releases_cancellation) ... ok
+test_cancel_adapter_returns_the_requested_state (test.unit.services.test_server_wiring.PipelineLifecycleTests.test_cancel_adapter_returns_the_requested_state) ... ok
+test_completed_e2e_finishes_without_starting_a_second_qa_agent (test.unit.services.test_server_wiring.PipelineLifecycleTests.test_completed_e2e_finishes_without_starting_a_second_qa_agent) ... ok
+test_done_requires_completed_build_and_passing_qa (test.unit.services.test_server_wiring.PipelineLifecycleTests.test_done_requires_completed_build_and_passing_qa) ... ok
 test_entity_hint_singularizes_plain_plural_names (test.unit.srs.test_builder_handoff.BuilderHandoffTests.test_entity_hint_singularizes_plain_plural_names) ... ok
 test_page_and_api_paths_follow_next_app_router_layout (test.unit.srs.test_builder_handoff.BuilderHandoffTests.test_page_and_api_paths_follow_next_app_router_layout) ... ok
 test_reference_field_preserves_object_id_semantics (test.unit.srs.test_builder_handoff.BuilderHandoffTests.test_reference_field_preserves_object_id_semantics) ... ok
@@ -301,6 +321,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 263 tests in 10.675s
+Ran 283 tests in 10.334s
 
 OK

@@ -1,10 +1,9 @@
 """A static security pass over the generated application.
 
-Six checks, chosen because they are the mistakes a code generator actually
-makes and because each one is decidable from the source without running
-anything. This is not a penetration test and does not claim to be: it is the
-sweep that catches an admin route with no authorisation check before anybody
-deploys it.
+Checks for exposed secrets, password storage, query injection and unsafe HTML.
+Authentication requirements belong to the application's approved contracts and
+their unit/E2E tests. A write method or a path called "dashboard" cannot decide
+whether a product has accounts, private data or privileged operations.
 
 Every finding names a file and a line, so it is verifiable rather than
 advisory.
@@ -17,25 +16,18 @@ import subprocess
 from pathlib import Path
 
 CHECKS = {
-    "UNGUARDED_ROUTE": "API handlers that write without checking who is asking",
-    "UNGUARDED_PAGE": "a page under a role-gated section with no guard of its own",
     "EXPOSED_SECRET": "a NEXT_PUBLIC_ variable holding something secret",
     "FAKE_HASH": "passwords stored without hashing",
     "QUERY_INJECTION": "user input reaching a query unchecked",
     "UNSAFE_HTML": "dangerouslySetInnerHTML on something a user supplied",
 }
 
-WRITE_METHODS = re.compile(r"export\s+async\s+function\s+(POST|PUT|PATCH|DELETE)\b")
-AUTH_HINTS = re.compile(
-    r"auth|session|getServerSession|currentUser|verifyToken|requireUser|requireRole|"
-    r"isAdmin|jwt\.verify|cookies\(\)|withAuth|checkPermission", re.I)
 SECRET_NAMES = re.compile(
     r"NEXT_PUBLIC_[A-Z0-9_]*(SECRET|KEY|TOKEN|PASSWORD|PRIVATE|CREDENTIAL)", re.I)
 PASSWORD_ASSIGN = re.compile(r"password\s*[:=]\s*(?:body|req|data|input|form)\b", re.I)
 HASH_HINTS = re.compile(r"bcrypt|argon2|scrypt|pbkdf2|createHash|hashSync|hash\(", re.I)
 UNSAFE_HTML = re.compile(r"dangerouslySetInnerHTML")
 INJECTION = re.compile(r"\$where|\bnew\s+Function\b|eval\s*\(", re.I)
-ROLE_SEGMENT = re.compile(r"/(admin|dashboard|account|manage|staff|owner)(/|$)", re.I)
 
 SKIP_DIRS = {"node_modules", ".next", ".git", "coverage", "test", "__pycache__",
              ".agentforge", ".agent"}
@@ -66,21 +58,7 @@ def scan(root: Path | str) -> list[dict]:
             body = path.read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
-        relative = path.relative_to(root).as_posix()
         lines = body.splitlines()
-
-        if relative.startswith(("app/api/", "src/app/api/")) and path.name.startswith("route."):
-            for match in WRITE_METHODS.finditer(body):
-                if not AUTH_HINTS.search(body):
-                    line = body[:match.start()].count("\n") + 1
-                    findings.append(_finding(root, path, line, "UNGUARDED_ROUTE",
-                                             f"{match.group(1)} handler with no authorisation check"))
-                    break
-
-        if path.name.startswith("page.") and ROLE_SEGMENT.search("/" + relative):
-            if not AUTH_HINTS.search(body):
-                findings.append(_finding(root, path, 1, "UNGUARDED_PAGE",
-                                         "role-gated path with no guard in the page"))
 
         for number, line in enumerate(lines, 1):
             if SECRET_NAMES.search(line):

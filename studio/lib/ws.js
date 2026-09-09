@@ -1,6 +1,7 @@
 
 import { useStore, KEYS } from './store'
 import { api, API, HTTP_FALLBACK } from './api'
+import { refreshQaReport } from './qa-results'
 
 
 const STEP_ALIAS = { plan: 'build', generate: 'build' }
@@ -8,7 +9,7 @@ const STEP_ALIAS = { plan: 'build', generate: 'build' }
 // What each outgoing message is, in the terms the overlay presents.
 const WORK_KIND = {
   agent_build: 'build',
-  agent_update: 'repair', agent_resume: 'build',
+  agent_update: 'edit', agent_resume: 'build',
   feature: 'feature',
   element_edit: 'select',
 }
@@ -49,7 +50,7 @@ export function answerQuestion(prompt) {
   if (!base) return false
   useStore.getState().addLog('INFO', `Edit: ${prompt}`)
   useStore.getState().setBusy(true)
-  send({ ...base, prompt })
+  send({ ...base, prompt: `${base.prompt}\n\nScope clarification: ${prompt}` })
   return true
 }
 
@@ -123,6 +124,19 @@ export function connect() {
   }
 
   if (typeof window !== 'undefined') window.__studioFeed = handle
+  return disconnect
+}
+
+export function disconnect() {
+  clearTimeout(retry)
+  retry = null
+  if (sock) {
+    sock.onopen = sock.onclose = sock.onerror = sock.onmessage = null
+    sock.close()
+    sock = null
+  }
+  flushStream()
+  resetStreamQueue()
 }
 
 export function send(obj) {
@@ -192,6 +206,11 @@ function handle(m) {
       break
     case 'test_run':     s.testRun(m.attempt); break
     case 'test_result':  s.testResult(m); break
+    case 'test_report': {
+      if (m.project === s.project) refreshQaReport(m.project)
+        .catch(error => useStore.getState().addLog('WARN', `Testing results: ${error.message}`))
+      break
+    }
     case 'test_fixing':  s.testFixing(m); break
     case 'e2e_parallel':  s.e2eParallelEvent(m); break
     case 'e2e_event': {
@@ -228,8 +247,9 @@ function handle(m) {
                    text: 'The app is running in the preview. Ask for a change '
                        + 'here, or open Testing for the evidence.' })
   // Invalidate the cached QA report after project changes.
-      s.setQaReport(null)
       if (m.project) useStore.setState({ project: m.project })
+      if (m.project) refreshQaReport(m.project)
+        .catch(error => useStore.getState().addLog('WARN', `Testing results: ${error.message}`))
       s.bumpProjects()
       break
     // Cancelled is not an error and must not read like one.

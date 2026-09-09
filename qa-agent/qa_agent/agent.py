@@ -28,6 +28,7 @@ if str(_ROOT / "builder-agent") not in sys.path:
 
 from builder_agent import BuilderAgent, Config, Events, VERIFY_QUALITY  # noqa: E402
 from builder_agent.layout import inspect_layout  # noqa: E402
+from builder_agent.memory import Memory  # noqa: E402
 
 from . import e2e as e2e_stage  # noqa: E402
 from . import harness, report, security, unit as unit_stage  # noqa: E402
@@ -47,7 +48,8 @@ class QAAgent:
 
     def __init__(self, *, project: str, project_dir: Path | str, model: str,
                  host: str = "", stack: str = "", events: Events | None = None,
-                 think: bool = False, cancel=None, unit: bool = True, e2e: bool = True) -> None:
+                 think: bool = False, cancel=None, unit: bool = True, e2e: bool = True,
+                 memory: Memory | None = None) -> None:
         self.project = project
         self.project_dir = Path(project_dir)
         self.events = events or Events()
@@ -58,7 +60,9 @@ class QAAgent:
         self.config = Config(workspace=self.project_dir, model=model, host=host,
                              stack=stack or "", quality=VERIFY_QUALITY, think=think,
                              unit_tests=unit, e2e_tests=e2e)
-        self.agent = BuilderAgent(self.config, events=self.events, cancel=cancel)
+        # Continue the completed build's transcript and evidence. QA can use a
+        # different model/profile without relearning the whole application.
+        self.agent = BuilderAgent(self.config, events=self.events, cancel=cancel, memory=memory)
 
     # -- helpers ---------------------------------------------------------
     def _run(self, command: str, timeout: int = 900) -> dict:

@@ -19,7 +19,6 @@ from .errors import ToolError
 
 MAX_STEPS = 80
 STEP_TIMEOUT = 15.0
-FAILURE_LIMIT = 2
 
 
 def _clip(value, limit: int = 400) -> str:
@@ -101,14 +100,6 @@ def run_journey(browser, sandbox, evidence, *, suite: str, covers, steps,
     if not isinstance(steps, list) or not steps or len(steps) > MAX_STEPS:
         raise ToolError(f"Provide 1-{MAX_STEPS} journey steps.")
 
-    key = str(suite).strip().lower()
-    attempt = browser.attempts.get(key, {"revision": evidence.revision, "failures": 0})
-    if attempt["revision"] == evidence.revision and attempt["failures"] >= FAILURE_LIMIT:
-        raise ToolError(
-            f'"{suite}" has already failed {attempt["failures"]} times at this project revision '
-            f"with no repair in between: {_clip(attempt.get('last'), 300)}. Repair the owner "
-            "the failure named, then rerun this one suite. Rerunning it unchanged cannot pass.")
-
     covered = evidence.validate_covers("e2e", covers or [])
     page = browser.page(tab_id)
     if fresh_session:
@@ -186,21 +177,14 @@ def run_journey(browser, sandbox, evidence, *, suite: str, covers, steps,
 
     body = "\n".join(trace)
     if failed:
-        attempt = {"revision": evidence.revision, "failures": attempt["failures"] + 1,
-                   "last": failed}
-        browser.attempts[key] = attempt
         evidence.record_external(kind="e2e", suite=suite, source="direct-CDP journey",
                                  covers=covered, status="failed", output=body, reason=failed)
-        guard = (f" Failure limit {FAILURE_LIMIT} reached; an unchanged retry of this suite is "
-                 "blocked until the project or runtime state changes."
-                 if attempt["failures"] >= FAILURE_LIMIT else "")
         raise ToolError(
             f"{failed}\n\nURL: {page.url}\n{body}\n\n{diagnostics_report(page)}\n"
             f"Page text: {_clip(page.text(), 800)}\n\n"
-            f"Recorded as a failed E2E suite.{guard} Repair the owner named in the failure, "
+            "Recorded as a failed E2E suite. Repair the owner named in the failure, "
             "then rerun only this suite. Do not take another snapshot of an unchanged page.")
 
-    browser.attempts.pop(key, None)
     evidence.record_external(kind="e2e", suite=suite, source="direct-CDP journey",
                              covers=covered, status="passed", output=body)
     return {"ok": True,

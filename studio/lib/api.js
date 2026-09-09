@@ -69,6 +69,7 @@ export const api = {
   mongoPrefetch: () => post('/mongo/prefetch', {}),
 
   qa: (project) => req(`/qa/${encodeURIComponent(project)}`),
+  qaScreenshotUrl: (project, path, at = '') => `${API}/qa-screenshot/${encodeURIComponent(project)}?path=${encodeURIComponent(path)}&v=${encodeURIComponent(at)}`,
   qaPdfUrl: (project) => `${API}/qa-pdf/${encodeURIComponent(project)}`,
 
   srsResults: (project) => req(`/srs-results/${encodeURIComponent(project)}`),

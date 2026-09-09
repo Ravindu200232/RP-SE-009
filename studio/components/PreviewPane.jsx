@@ -403,6 +403,7 @@ function Cell({ tip, on, className, children, ...rest }) {
   return (
     <Tip text={tip}>
       <button {...rest}
+              aria-label={tip} aria-pressed={typeof on === 'boolean' ? on : undefined}
               className={cn('grid h-9 place-items-center px-2 text-ink transition-colors',
                 on ? 'bg-accent text-white shadow-sm'
                    : 'hover:bg-ink/[.06] dark:hover:bg-white/[.06]',

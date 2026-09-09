@@ -192,31 +192,16 @@ CONTAINERS = {
     "full": "Edge to edge, with page gutters.",
 }
 
-# The screens most products have. Core ones are assumed; the rest are offered
-# because naming them up front is what stops a build shipping five pages and
-# calling it done.
+# Optional additions. The approved plan owns the actual route inventory.
 PAGES = [
-    ("landing", "Landing / home", True), ("login", "Login", False),
+    ("landing", "Landing / home", False), ("login", "Login", False),
     ("register", "Register", False), ("dashboard", "Dashboard", False),
-    ("list", "List / index", True), ("detail", "Detail view", True),
+    ("list", "List / index", False), ("detail", "Detail view", False),
     ("create-edit", "Create / edit form", False), ("search", "Search results", False),
     ("profile", "Profile / account", False), ("settings", "Settings", False),
     ("checkout", "Cart / checkout", False), ("admin", "Admin console", False),
-    ("not-found", "404 / error", True),
+    ("not-found", "404 / error", False),
 ]
-
-# Which extra screens a request is asking for, by the words people use for them.
-PAGE_SIGNALS = {
-    "login": ("login", "sign in", "signin", "account", "owner", "admin", "auth"),
-    "register": ("register", "sign up", "signup", "create an account"),
-    "dashboard": ("dashboard", "overview", "analytics", "reports"),
-    "create-edit": ("add", "edit", "create", "manage", "update"),
-    "search": ("search", "filter", "find"),
-    "profile": ("profile", "my account", "my bookings", "my orders"),
-    "settings": ("settings", "preferences", "configuration"),
-    "checkout": ("cart", "basket", "checkout", "payment", "order", "book"),
-    "admin": ("admin", "owner", "manager", "staff", "back office"),
-}
 
 # Data-dense products get tighter defaults; consumer products get roomier ones.
 SHAPE_FOR_PALETTE = {
@@ -300,9 +285,6 @@ def choose(task: str) -> dict:
     scale, radius, density = SHAPE_FOR_PALETTE[best["id"]]
     dark_first = any(word in corpus for word in
                      (" dark ", " night ", " terminal ", " console ", " developer "))
-    pages = sorted({page for page, _, core in PAGES if core} |
-                   {page for page, words in PAGE_SIGNALS.items()
-                    if any(f" {word} " in corpus for word in words)})
     return {
         "palette": best["id"], "paletteName": best["name"], "mood": best["mood"],
         "font": FONT_FOR_PALETTE[best["id"]],
@@ -314,7 +296,7 @@ def choose(task: str) -> dict:
         "tone": TONE_FOR_PALETTE.get(best["id"], "professional"),
         "contrast": "aa",
         "container": "1440" if density == "compact" else "1280",
-        "pages": pages,
+        "pages": [],
         "matched": best_score > 0,
     }
 
@@ -461,8 +443,10 @@ def render_skill(selection: dict, goal: str = "") -> str:
         f"{TONES[selection.get('tone', 'professional')]}",
         f"- Contrast: {CONTRAST[selection.get('contrast', 'aa')]}", "",
         "## Screens this product needs", "",
-        "Every one of these gets its loading, empty, error and success state. A screen "
-        "with only its happy path is not finished.", "",
+        "Implement the screens and routes in the approved plan. Apply this design to those "
+        "screens without adding routes based on domain words or generic UI examples. "
+        "The following are additions explicitly selected in the design form; an empty list "
+        "keeps the approved plan's scope unchanged.", "",
         *[f"- {label}" for page, label, _ in PAGES if page in (selection.get("pages") or [])],
         "",
         "## Rules", "",

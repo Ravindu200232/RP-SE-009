@@ -16,9 +16,11 @@ import BugReports from './BugReports'
 import Security from './Security'
 import Performance from './Performance'
 import Coder from './Coder'
+import Screenshots from './Screenshots'
 import E2ELiveLanes from './E2ELiveLanes'
 import { e2eStageSummary } from '@/lib/e2e-rate'
 import { unitTestStatus } from '@/lib/test-counts'
+import { refreshQaReport } from '@/lib/qa-results'
 
 
 const VIEWS = [
@@ -26,12 +28,13 @@ const VIEWS = [
   { id: 'evidence', label: 'Evidence', C: Evidence },
   { id: 'unit', label: 'Unit Testing', C: UnitTests },
   { id: 'timeline', label: 'Test Timeline', C: Timeline },
-  { id: 'e2e', label: 'Integration', C: EndToEnd },
+  { id: 'e2e', label: 'Integration (E2E)', C: EndToEnd },
   { id: 'routes', label: 'API Contracts', C: Routes },
   { id: 'bugs', label: 'Bug Reports', C: BugReports },
   { id: 'security', label: 'Security', C: Security },
   { id: 'perf', label: 'Performance', C: Performance },
   { id: 'coder', label: 'Coder', C: Coder },
+  { id: 'screenshots', label: 'Screenshots', C: Screenshots },
 ]
 
 export default function TestingResult() {
@@ -39,7 +42,6 @@ export default function TestingResult() {
   const live = useStore(s => s.tests)
   const e2eLive = useStore(s => s.e2eParallel)
   const qa = useStore(s => s.qaReport)
-  const setQa = useStore(s => s.setQaReport)
   const addLog = useStore(s => s.addLog)
   const [sub, setSub] = useState('overview')
   const [state, setState] = useState('idle')
@@ -78,7 +80,8 @@ export default function TestingResult() {
     let last
     for (let i = 0; i < 4; i++) {
       try {
-        setQa(await api.qa(project))
+        await refreshQaReport(project)
+        if (useStore.getState().project !== project) return
         setState('ready')
         return
       } catch (e) {
@@ -101,26 +104,6 @@ export default function TestingResult() {
 
   if (!project) return <Empty>Open a project to see its test results.</Empty>
 
-  if (live.running) {
-    if (e2eLive?.active || e2eLive?.lanes?.some(l => l.title)) {
-      return <E2ELiveLanes />
-    }
-    return (
-      <div className="grid h-full place-items-center p-8 text-center">
-        <div>
-          <div className="mx-auto mb-3 flex size-9 items-center justify-center
-                          rounded-full border border-accent/30 bg-accent/10">
-            <span className="size-2 animate-pulse rounded-full bg-accent" />
-          </div>
-          <p className="text-[13px] text-ink">The build is still running.</p>
-          <p className="mx-auto mt-1.5 max-w-[380px] text-[11.5px] leading-relaxed text-muted">
-            Unit tests and route checks appear here first. The view switches to
-            four live browser lanes when the end-to-end stage starts.
-          </p>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -143,7 +126,7 @@ export default function TestingResult() {
             results keep moving while tests are repaired and re-run. */}
         <Button variant="outline" disabled={!project || state !== 'ready' || pdf}
                 onClick={downloadPdf}
-                title="Every tab in this report as a PDF — the summary, each test case, the timeline, the bugs, security, performance, and the test sources">
+                title="Download the saved testing report as a PDF">
           {pdf ? <Loader2 className="size-3 animate-spin" />
                : <Download className="size-3" />} PDF
         </Button>
@@ -157,9 +140,11 @@ export default function TestingResult() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-5">
-        {state === 'loading' && <Empty>Reading the results…</Empty>}
+        {state === 'loading' && !qa && <Empty>Reading the results…</Empty>}
         {state === 'error' && <Empty bad>Could not read them — {error}</Empty>}
-        {(state === 'ready' || state === 'idle') && <View qa={qa} live={live} />}
+        {live.running && <p className="mb-3 text-[11px] text-accent">Testing is running. Completed results update here as each check finishes.</p>}
+        {sub === 'e2e' && live.running && e2eLive?.active && <div className="mb-4"><E2ELiveLanes /></div>}
+        {qa?.project === project && <View qa={qa} live={live} />}
       </div>
     </div>
   )
@@ -169,25 +154,29 @@ export default function TestingResult() {
 function badges(qa) {
   const out = {}
   const r = qa?.report
-  const v = qa?.vitest
+  const v = qa?.vitest || qa?.savedVitest
   if (v) {
     const unit = unitTestStatus(v)
-    out.unit = { n: `${unit.passed}/${unit.total}`,
+    out.unit = { n: `${unit.passed}/${unit.total}${unit.unit === 'files' ? ' files' : ''}${qa.unitEvidenceStatus === 'outdated' ? ' saved' : ''}`,
                  bad: unit.failed > 0 }
   }
   if (r) {
     const bugs = r.suite?.unresolved?.length || 0
-    out.bugs = { n: bugs, bad: bugs > 0 }
+    out.bugs = { n: qa?.resolvedBugs?.length ? `${bugs} open · ${qa.resolvedBugs.length} fixed` : bugs, bad: bugs > 0 }
   }
   if (r?.e2e) {
     const e = e2eStageSummary(r.e2e)
     if (e.total) out.e2e = { n: `${e.passed}/${e.total}`, bad: e.passed !== e.total }
+    else if (r.e2e.recordedOutcomes?.length) out.e2e = { n: `${r.e2e.recordedOutcomes.length} saved`, bad: false }
   }
   if (r?.security) {
     const sec = r.security.findings?.length || 0
     out.security = { n: sec, bad: sec > 0 }
   }
-  if (qa?.history?.length) out.timeline = { n: qa.history.length, bad: false }
+  const timeline = qa?.timeline?.length || qa?.history?.length
+  if (timeline) out.timeline = { n: timeline, bad: false }
+  if (qa?.screenshots?.length) out.screenshots = { n: qa.screenshots.length, bad: false }
+  if (qa?.contracts?.length) out.routes = { n: qa.contracts.length, bad: false }
   return out
 }
 

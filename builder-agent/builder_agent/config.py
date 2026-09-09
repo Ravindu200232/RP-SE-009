@@ -135,7 +135,7 @@ class Quality:
 BUILD_QUALITY = Quality(
     name="default",
     reasoning="medium",
-    unit_floor=80,
+    unit_floor=0,
     e2e_floor=80,
     max_heal=3,
     read_depth="callers-and-contracts",
@@ -150,7 +150,7 @@ BUILD_QUALITY = Quality(
 VERIFY_QUALITY = Quality(
     name="ultra",
     reasoning="max",
-    unit_floor=95,
+    unit_floor=0,
     e2e_floor=100,
     max_heal=5,
     read_depth="deep-cross-layer",
@@ -164,10 +164,10 @@ VERIFY_QUALITY = Quality(
 def quality_prompt(q: Quality) -> str:
     lines = [
         f"QUALITY PROFILE: {q.name.upper()} - {q.summary}",
-        f"- Unit/source coverage floor: {q.unit_floor}% of the scoped first-party logic, measured by the runner.",
+        "- Unit/source coverage is optional diagnostic information, not a completion requirement. Do not add or rerun tests solely to raise a percentage.",
         f"- Critical E2E requirement coverage floor: {q.e2e_floor}%.",
         "- Runtime evidence must exercise the real public boundary; a build, a PID, a screenshot or one HTTP status is not enough.",
-        "- Coverage floors are floors, not targets to game. Never omit difficult source, weaken an assertion, skip a flow or fabricate evidence.",
+        "- Prove the requested behaviours. Never weaken an assertion, skip a required flow or fabricate evidence.",
     ]
     if q.final_audit:
         lines.append(

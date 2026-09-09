@@ -5,11 +5,13 @@ description: Build or substantially extend a complete application from requireme
 
 # Full application builder
 
-Use this skill when the user asks to create, generate, or substantially complete an application. The product stack is fixed: Next.js JavaScript + MongoDB/Mongoose, Vitest unit/integration verification, and AgentX direct-CDP browser E2E. Discover versions, paths, scripts and product requirements; never choose another application stack.
+Use this skill when the user asks to create, generate, or substantially complete an application. Use the stack selected by the user and the matching sketch, with Vitest unit/integration verification and AgentX direct-CDP browser E2E. Discover versions, paths, scripts and product requirements; preserve the approved stack.
 
 ## Discover before acting
 
-Read the request, machine project-layout snapshot, project guidance, manifests, lockfiles, existing source, environment examples, scripts, and task-matched project skills. Use the snapshot's observed script commands/test roots/config candidates and call `search` before any uncertain file or directory; never probe guessed path/extension variants. Detect the actual operating system and shell. Treat the fixed Next.js/MongoDB builder contract and installed compatible versions as authoritative. When a required command or API is uncertain or could have changed, inspect local CLI help and current official documentation rather than relying on model memory. In Ultra, prefer `webResearch` so one bounded tool call both discovers and reads relevant source pages before the first stateful terminal command; snippets alone are not enough. Use `recallKnowledge` to reuse prior project-verified lessons, but re-check current code and time-sensitive docs.
+Use the existing conversation, verification scope and evidence when continuing a run. A new phase does not invalidate current reads or passing checks. Inspect missing evidence first; reread files when their content is missing, changed, or needed to resolve a specific uncertainty. Preserve the approved product and design.
+
+Read the request, machine project-layout snapshot, project guidance, manifests, lockfiles, existing source, environment examples, scripts, and task-matched project skills. Use the snapshot's observed script commands/test roots/config candidates and call `search` before any uncertain file or directory; never probe guessed path/extension variants. Detect the actual operating system and shell. Treat the selected builder contract and installed compatible versions as authoritative. When a required command or API is uncertain or could have changed, inspect local CLI help and current official documentation rather than relying on model memory. In Ultra, prefer `webResearch` so one bounded tool call both discovers and reads relevant source pages before the first stateful terminal command; snippets alone are not enough. Use `recallKnowledge` to reuse prior project-verified lessons, but re-check current code and time-sensitive docs.
 
 For a greenfield workspace, decide one canonical application/source root from the generator output plus observed alias/baseUrl configuration before writing feature files. Never create a second parallel `lib`/`models`/`components`/route tree outside the configured source root merely because the workspace root is convenient. Re-run `inspectProject` after scaffold promotion or any structural move.
 
@@ -17,14 +19,18 @@ For a greenfield workspace, inspect existing AgentX metadata before scaffolding.
 
 ## Required delivery order
 
+For an assigned verification pass (for example QA unit or QA E2E), apply only that pass's part of this workflow and return its evidence to the caller. Do not restart other phases or declare them blocked; the calling workflow handles them. Product repairs remain available when a test exposes a defect.
+
+Derive authentication and authorization from the approved product requirements. For accounts, private data or privileged operations, verify both allowed and denied access in unit and browser tests. Public products without accounts can expose public write routes; do not invent login because an HTTP method writes data or a route is named dashboard.
+
 1. **Generate the application.** Convert the requirements into one coherent architecture and implement complete vertical flows, including validation, authorization, persistence, errors, loading/empty states, navigation, and responsive UI. Read the `frontend-design` skill before writing the first page and apply it as you write: composition, spacing rhythm and hierarchy are decided in the markup, and a styling pass afterwards can only tidy what the structure already got wrong. Do not stop at a scaffold or a collection of disconnected pages. Finish every file the accepted scope needs before running any verification: no test file, no build, no browser until the application itself is complete.
-2. **Build and debug the Next.js/MongoDB application.** Discover the repository's package manager and actual scripts, then run its finite lint/build commands. Exercise real Next.js routes, server actions/route handlers, MongoDB persistence, auth boundaries, and startup behavior. Do not introduce another framework or database.
-3. **Run focused unit/component tests.** Re-read the Vitest skill at this phase boundary, then use the project's Vitest configuration and scripts. Write the whole suite first, run it once, and repair every reported failure together — grouping them by shared root cause — before the next run. Cover critical business rules, changed/high-risk paths, validation, authorization, and every repaired regression. Prefer meaningful coverage of changed code over an artificial whole-project 100% target.
-4. **Run critical E2E journeys.** Re-read the browser-e2e skill and use AgentX `browserRunJourney` against the real app for authentication, checkout/payment, role workflows, and other product-critical flows. Derive journeys from real requirements and inspect live controls before locators. Do not generate project E2E framework files.
-5. **Verify the runtime.** Start task-owned services on available configured ports, wait for observable readiness, probe representative pages/APIs/assets/persistence/failure paths, and inspect browser console plus failed requests. Long-lived services belong in background process management; finite build/test/install commands must finish.
-6. **Review the UI visually.** Inventory all user-visible routes and cover them with lightweight runtime/browser smoke checks. Capture fresh desktop and narrow/mobile screenshots for representative layouts, critical/high-risk states, and any page where smoke checks expose a defect. Check blank/white screens, missing content, overlap, clipping, overflow, placement, spacing, contrast, typography, loading/error/empty states, animations, and responsive reflow. Fix reproducible defects and recapture affected views.
-7. **Run the final regression.** After the last code change, rerun the production build, affected unit tests, the full selected unit regression, critical E2E regression, runtime readiness probes, and any stale visual reviews. Completion requires current passing evidence or an honestly reported external blocker.
-8. **Hand the project over.** Put a short "Built with" section at the very top of the project README, before the usual setup instructions, so the choices made during the build are visible to whoever opens the repository next — including a later run of this agent.
+2. **Build the application.** Discover the repository's package manager and actual scripts, then run its finite lint/build commands. Repair build failures before starting the runtime. Write the README's "Built with" and run instructions now, alongside the implementation; documentation writes after verification would unnecessarily make the finished evidence stale.
+3. **Verify the runtime.** Start task-owned services on available configured ports, wait for observable readiness, and record representative pages/APIs/assets/persistence/failure probes with `runTests(kind="runtime")`. Keep the ready service for the later browser journeys. Long-lived services belong in background process management; finite commands must finish.
+4. **Run focused unit/component tests.** Re-read the Vitest skill at this phase boundary. Write the suite from real behavior, then run it through `runTests` with requirement IDs. Read failures together and repair their shared causes before another execution. Cover critical business rules, changed/high-risk paths, validation, and repaired regressions. Coverage percentages are optional diagnostics; do not add or rerun tests solely to raise them.
+5. **Review the UI visually.** Inventory user-visible routes and inspect representative desktop/mobile layouts and critical states. Check missing content, overlap, overflow, contrast, typography and loading/error states. Fix reproducible defects and recapture affected views before final E2E.
+6. **Run critical E2E journeys.** Re-read the browser-e2e skill and use `browserRunJourney` against the ready app. Derive journeys from the approved requirements and observed controls; exercise authentication, payments or roles only when the product includes them. Do not generate project E2E framework files.
+7. **Finish after E2E.** When the required runtime, unit and E2E evidence is current and passing, report Done. Reuse these results for the report; do not start a second QA authoring pass, reread the whole project or rerun checks to improve a coverage number. A real failure still needs a repair and an affected check.
+8. **Hand the project over.** Summarize the working URL and the current verification results. The README written during implementation starts with a short "Built with" section before the setup instructions, so the choices remain visible to whoever opens the repository next. Do not rewrite it at every completion attempt.
 
    It records what was actually used, not what was intended:
 
@@ -72,10 +78,11 @@ them:
 2. **Never batch two patches to the same file in one turn.** The second carries
    a revision the first has already invalidated. Patch, see the new revision,
    then patch again.
-3. **`writeFile` creates; it never replaces.** For a file that already exists
-   use `patchFile`, or `editFile` for a tiny exact-string change. If you are
-   unsure whether a path exists, `listDir` or `readFile` first — a failed write
-   costs more than the check.
+3. **Choose the write operation from the existing file.** Use `patchFile` for
+   a partial change, or `editFile` for a tiny exact-string change. If a scaffold
+   file must be replaced in full, read it first and use `writeFile` with
+   `overwrite:true` in the initial call. For a new file, leave overwrite off.
+   File tools create parent directories; a separate shell mkdir is unnecessary.
 4. **Never repair a JSON manifest with line patches.** Use `patchJson` path
    operations. Hand-managing commas and braces in `package.json` is where
    malformed-manifest failures come from, and a broken manifest blocks every
@@ -113,9 +120,9 @@ For a full application, keep these outcomes in order:
 3. architecture + contracts + data/journey map,
 4. dependency-ordered implementation,
 5. project-native build/static checks where applicable,
-6. unit/component evidence,
-7. asserted critical E2E journeys,
-8. real runtime/readiness/public-boundary evidence,
+6. real runtime/readiness/public-boundary evidence,
+7. unit/component evidence,
+8. asserted critical E2E journeys,
 9. selected visual evidence where applicable,
 10. final risk audit when the profile requires it.
 

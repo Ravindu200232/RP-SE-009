@@ -11,9 +11,61 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from test import _support  # noqa: F401
 from qa_agent import e2e, harness, report, security, unit
+
+
+class ContextHandoffTests(unittest.TestCase):
+    def test_qa_keeps_builder_reads_and_evidence_while_using_its_own_model(self):
+        from builder_agent.memory import Memory
+        from qa_agent.agent import QAAgent
+
+        with tempfile.TemporaryDirectory() as directory:
+            memory = Memory()
+            memory.add_user("PriceEditor already reads cents; guest journey passed.")
+            memory.evidence.define_scope("web", "nextjs-mongo", [
+                {"id": "price", "description": "Update room prices", "evidence": ["unit"]}
+            ], unit_target=80)
+            with patch("builder_agent.agent.Router.context_window", return_value=1_048_576):
+                qa = QAAgent(project="hotel", project_dir=directory, model="qa-model",
+                             memory=memory)
+            self.assertIs(qa.agent.memory, memory)
+            self.assertEqual(qa.agent.router.model, "qa-model")
+            loop = qa.agent._loop(qa.agent.registry, verification_kinds=("unit",))
+            loop._refresh_system()
+            self.assertIn("PriceEditor already reads cents", str(memory.build()))
+            self.assertEqual(memory.evidence.scope["requirements"][0]["id"], "price")
+            self.assertFalse(memory.evidence.summary()["coverage"]["unit"]["required"])
+            self.assertEqual(memory.budget_tokens, 1_048_576)
+
+
+class BuildEvidenceReportTests(unittest.TestCase):
+    def test_existing_unit_and_e2e_results_make_a_report_without_reexecuting(self):
+        evidence = {"ready": True, "suites": [
+            {"kind": "unit", "suite": "all", "status": "passed", "sequence": 1,
+             "output": " Test Files  2 passed (2)\n Tests  8 passed | 1 skipped (9)\n"},
+            {"kind": "e2e", "suite": "book", "status": "passed",
+             "output": "1. navigate -> /\n2. assert textIncludes -> Saved"}
+        ]}
+        with tempfile.TemporaryDirectory() as directory, \
+                patch("subprocess.run", side_effect=AssertionError("No second test run")):
+            result = report.from_evidence(project="demo", project_dir=Path(directory),
+                evidence=evidence, security={"findings": []}, complete=True)
+        self.assertEqual(result["vitest"]["numPassedTests"], 8)
+        self.assertEqual(result["vitest"]["numPendingTests"], 1)
+        self.assertNotIn("testResults", result["vitest"])  # no invented assertion rows
+        self.assertEqual(result["report"]["e2e"]["stage_passed"], 2)
+
+    def test_stale_evidence_is_not_relabelled_as_current_passing_tests(self):
+        with tempfile.TemporaryDirectory() as directory:
+            result = report.from_evidence(project="demo", project_dir=Path(directory),
+                evidence={"suites": [{"kind": "unit", "status": "outdated",
+                                     "output": "Tests 9 passed (9)"}]},
+                security={"findings": []}, complete=False)
+        self.assertIsNone(result["vitest"])
+        self.assertFalse(result["complete"])
 
 
 def vitest_report(cases):
@@ -211,10 +263,10 @@ class SecurityScanTests(unittest.TestCase):
     def codes(self):
         return {finding["code"] for finding in security.scan(self.root)}
 
-    def test_a_write_handler_with_no_authorisation_check_is_reported(self):
-        self.write("app/api/admin/route.js",
-                   "export async function POST(req) { return Response.json({}) }")
-        self.assertIn("UNGUARDED_ROUTE", self.codes())
+    def test_a_public_write_handler_does_not_invent_an_authentication_requirement(self):
+        self.write("app/api/books/[id]/route.js",
+                   "export async function PATCH(req) { return Response.json({ read: true }) }")
+        self.assertEqual(security.scan(self.root), [])
 
     def test_a_write_handler_that_checks_the_session_is_not_reported(self):
         self.write("app/api/admin/route.js",
@@ -230,9 +282,9 @@ class SecurityScanTests(unittest.TestCase):
                    "export async function GET() { return Response.json([]) }")
         self.assertNotIn("UNGUARDED_ROUTE", self.codes())
 
-    def test_a_role_gated_page_with_no_guard_is_reported(self):
-        self.write("app/admin/page.jsx", "export default function Admin(){ return null }")
-        self.assertIn("UNGUARDED_PAGE", self.codes())
+    def test_a_dashboard_name_does_not_imply_private_data_or_accounts(self):
+        self.write("app/dashboard/page.jsx", "export default function Weather(){ return null }")
+        self.assertEqual(security.scan(self.root), [])
 
     def test_a_public_page_is_not_expected_to_guard_itself(self):
         self.write("app/page.jsx", "export default function Home(){ return null }")

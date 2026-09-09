@@ -25,14 +25,16 @@ export default function EndToEnd({ qa }) {
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[.16em] text-muted2">Final browser proof</p>
               <h3 className="mt-1 font-display text-[20px] font-semibold text-ink">
-                {score.total ? `${score.passed}/${score.total} stages passed` : 'No stages measured'}
+                {score.total ? `${score.passed}/${score.total} stages passed` : 'E2E step results unavailable'}
               </h3>
               <p className="mt-1 max-w-[720px] text-[11px] leading-relaxed text-muted">
-                Only the latest accepted run of each journey is counted. Repair and re-author retries never inflate the score.
+                {score.total
+                  ? 'Only the latest accepted run of each journey is counted. Repair and re-author retries never inflate the score.'
+                  : 'A pass rate cannot be calculated without saved step results. Any saved journey outcomes are listed below.'}
               </p>
             </div>
             <div className="flex flex-wrap gap-1.5">
-              <Badge tone={failed ? 'bad' : 'ok'}>{failed ? `${failed} failure(s)` : 'browser gate green'}</Badge>
+              <Badge tone={failed ? 'bad' : score.total ? 'ok' : 'mute'}>{failed ? `${failed} failure(s)` : score.total ? 'recorded stages passed' : 'step evidence unavailable'}</Badge>
               {score.notReached ? <Badge>{score.notReached} not reached</Badge> : null}
               {e2e.fixed ? <Badge>{e2e.fixed} repaired file(s)</Badge> : null}
             </div>
@@ -40,7 +42,12 @@ export default function EndToEnd({ qa }) {
         </Panel>
       </div>
 
-      {!e2e.ran && <Panel className="p-4 text-[11.5px] text-muted">The stage did not run.</Panel>}
+      {!e2e.ran && <Panel className="p-4 text-[11.5px] text-muted">No complete browser-stage trace was saved for this project.</Panel>}
+      {(e2e.recordedOutcomes || []).map((row, index) => <Panel key={index} className="p-4">
+        <div className="flex flex-wrap gap-2"><Badge>historical outcome</Badge><b className="text-[12px] text-ink">{row.suite}</b></div>
+        <p className="mt-2 text-[11.5px] text-ink">{row.detail}</p>
+        <p className="mt-1 text-[10px] text-muted">{row.at} · {row.source}. Individual steps were not saved.</p>
+      </Panel>)}
 
       {flows.length > 0 && (
         <div className="grid gap-2">
@@ -78,6 +85,18 @@ export default function EndToEnd({ qa }) {
 }
 
 function ScoreCard({ score }) {
+  if (!score.total) return (
+    <Panel className="flex items-center gap-4 p-4">
+      <div className="grid size-20 shrink-0 place-items-center rounded-full border-8 border-line text-muted2">
+        <CircleDashed className="size-7" />
+      </div>
+      <div>
+        <p className="text-[10px] uppercase tracking-[.14em] text-muted2">E2E pass rate</p>
+        <p className="mt-1 font-display text-[18px] font-semibold text-ink">Not available</p>
+        <p className="mt-1 text-[10.5px] text-muted">Step details were not saved.</p>
+      </div>
+    </Panel>
+  )
   const deg = Math.max(0, Math.min(360, score.rate * 3.6))
   return (
     <Panel className="relative overflow-hidden p-4">
@@ -123,16 +142,16 @@ function Journey({ flow }) {
             {score.total ? `${score.passed}/${score.total} stages passed · ${score.rate}%` : 'No measurable browser stages'}
           </div>
         </div>
-        <div className="w-28">
+        {score.total > 0 && <div className="w-28">
           <div className="mb-1 flex justify-between text-[9px] text-muted2"><span>proof</span><span>{score.rate}%</span></div>
           <div className="h-1.5 overflow-hidden rounded-full bg-line"><div className="h-full rounded-full bg-ok transition-all" style={{ width: `${score.rate}%` }} /></div>
-        </div>
+        </div>}
       </button>
       {open && (
         <div className="border-t border-line bg-panel2/25 px-4 py-3">
           {stages.length ? (
             <ol className="space-y-2">
-              {stages.map((stage, i) => <Stage key={`${stage.index}-${i}`} stage={stage} />)}
+              {stages.map((stage, i) => <Stage key={`${stage.index}-${i}`} stage={{ ...stage, index: stage.index || i + 1 }} />)}
             </ol>
           ) : <p className="text-[10.5px] text-muted">This older run has no stage ledger.</p>}
         </div>
@@ -142,6 +161,8 @@ function Journey({ flow }) {
 }
 
 function Stage({ stage }) {
+  stage = { ...stage, label: stage.label || stage.name,
+            status: ({ passed: 'pass', failed: 'fail' })[stage.status] || stage.status }
   const Icon = stage.status === 'pass' ? CircleCheck : stage.status === 'fail' ? CircleX : CircleDashed
   return (
     <li className="flex items-start gap-2.5 text-[10.5px]">

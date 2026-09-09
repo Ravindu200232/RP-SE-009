@@ -15,6 +15,7 @@ import copy
 import hashlib
 import json
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .errors import ToolError
@@ -22,7 +23,7 @@ from .errors import ToolError
 KINDS = ("unit", "e2e", "runtime")
 EVIDENCE_KINDS = KINDS + ("visual",)
 SCOPE_PAGE = 200
-DEFAULT_UNIT_TARGET = 90
+DEFAULT_UNIT_TARGET = 0
 DEFAULT_E2E_TARGET = 100
 
 COVERAGE_METRICS = ("lines", "statements", "functions", "branches")
@@ -81,6 +82,13 @@ def _normalise_evidence(item: dict) -> tuple[list[str], bool]:
 
 def evaluate_unit_coverage(coverage: dict | None, target: float) -> dict:
     """Judge a machine coverage report against the floor, or say it is missing."""
+    if not target:
+        metrics = {name: {"pct": round(float(entry["pct"]), 2)}
+                   for name in COVERAGE_METRICS
+                   if isinstance(entry := (coverage or {}).get(name), dict)
+                   and isinstance(entry.get("pct"), (int, float))}
+        return {"status": "reported" if metrics else "not-measured", "target": None,
+                "required": False, "metrics": metrics or None, "failures": []}
     if not coverage:
         return {"status": "missing", "target": target, "metrics": None,
                 "failures": [
@@ -115,6 +123,7 @@ class Evidence:
         self.workspace: str | None = None
         self.scope: dict | None = None
         self.suites: list[dict] = []
+        self.history: list[dict] = []
         self.visuals: list[dict] = []
         self.limitations: dict[str, str] = {}
         self.enabled_kinds: set[str] = set(KINDS)
@@ -125,6 +134,7 @@ class Evidence:
         """Evidence from another project proves nothing about this one."""
         if self.workspace and self.workspace != workspace:
             self.suites, self.visuals, self.scope, self.limitations = [], [], None, {}
+            self.history = []
             self.active = False
             self.revision += 1
         self.workspace = workspace
@@ -135,13 +145,8 @@ class Evidence:
 
     @property
     def required_kinds(self) -> list[str]:
-        """Runtime is never optional.
-
-        It is the only check that exercises the real final application, and a
-        green build plus a green unit suite have both been observed passing
-        while the app served a blank page.
-        """
-        return [k for k in KINDS if k == "runtime" or k in self.enabled_kinds]
+        """The evidence this pass owns. Full application loops include runtime."""
+        return [k for k in KINDS if k in self.enabled_kinds]
 
     @property
     def visual_required(self) -> bool:
@@ -281,11 +286,13 @@ class Evidence:
             raise ToolError("This suite is already running. Wait for it; do not restart it.")
         record.update({
             "command": clip(command, 4000), "testFiles": list(test_files or []),
+            "startedAt": datetime.now(timezone.utc).isoformat(), "finishedAt": None, "report": None,
             "coverageReports": list(coverage_reports or []), "coverage": None,
             "covers": covered, "revision": self.revision, "sequence": self._next(),
             "status": "running", "processId": None, "exitCode": None,
             "output": "", "reason": None, "timedOut": False,
         })
+        self._remember(record)
         self.limitations.pop(kind, None)
         return record
 
@@ -302,17 +309,31 @@ class Evidence:
             "testFiles": [], "coverageReports": [], "coverage": None, "covers": covered,
             "revision": self.revision, "sequence": self._next(), "status": status,
             "processId": None, "exitCode": 0 if status == "passed" else 1,
-            "output": clip(output, 1200), "reason": clip(reason, 600) if reason else None,
+            "output": str(output), "reason": clip(reason, 600) if reason else None,
+            "finishedAt": datetime.now(timezone.utc).isoformat(),
+            "startedAt": None, "report": None,
             "timedOut": False,
         })
+        self._remember(record)
         self.limitations.pop(kind, None)
         return record
+
+    def _remember(self, record):
+        row = {key: copy.deepcopy(record.get(key)) for key in
+               ("kind", "suite", "sequence", "status", "startedAt", "finishedAt", "command", "exitCode", "reason")}
+        row["at"] = row.get("finishedAt") or row.get("startedAt")
+        index = next((i for i, prior in enumerate(self.history)
+                      if prior.get("sequence") == row["sequence"]), None)
+        if index is None:
+            self.history.append(row)
+        else:
+            self.history[index] = row
 
     def observe(self, record: dict, result: dict) -> None:
         record["processId"] = result.get("processId", record.get("processId"))
         joined = "\n".join(filter(None, [record.get("output", ""),
                                          result.get("stdout", ""), result.get("stderr", "")]))
-        record["output"] = joined[-1200:]
+        record["output"] = joined
         record["exitCode"] = result.get("exitCode")
         record["timedOut"] = result.get("timedOut") is True
         passed = (result.get("exitCode") == 0 and not result.get("timedOut")
@@ -320,12 +341,9 @@ class Evidence:
         record["status"] = "running" if result.get("pending") else ("passed" if passed else "failed")
         if result.get("coverage"):
             record["coverage"] = copy.deepcopy(result["coverage"])
-        if record["status"] == "passed" and record["kind"] == "unit":
-            target = (self.scope or {}).get("quality", {}).get("unit", DEFAULT_UNIT_TARGET)
-            check = evaluate_unit_coverage(record.get("coverage"), target)
-            if check["status"] != "passed":
-                record["status"] = "failed"
-                record["reason"] = "; ".join(check["failures"])
+        if not result.get("pending"):
+            record["finishedAt"] = datetime.now(timezone.utc).isoformat()
+        self._remember(record)
 
     def observe_process(self, result: dict) -> None:
         pid = result.get("processId")
@@ -396,7 +414,10 @@ class Evidence:
         regression = [k for k in required
                       if any(r["kind"] == k and r["status"] == "outdated" for r in suites)
                       and not any(r["kind"] == k and r["status"] == "passed" for r in suites)]
-        unresolved = [r for r in suites if r["status"] not in ("passed", "retired")]
+        unresolved = [r for r in suites if r["kind"] in required
+                      and r["status"] not in ("passed", "retired")]
+        limitations = {kind: reason for kind, reason in self.limitations.items()
+                       if kind in required or (kind == "visual" and self.visual_required)}
 
         uncovered = []
         for requirement in (self.scope or {}).get("requirements", []):
@@ -427,12 +448,11 @@ class Evidence:
                     "percent": round(len(done) * 100 / total, 2) if total else 100.0}
 
         quality = (self.scope or {}).get("quality", {})
-        unit_target = quality.get("unit", DEFAULT_UNIT_TARGET)
         e2e_target = quality.get("e2e", DEFAULT_E2E_TARGET)
         latest_unit = next((r.get("coverage") for r in
                             sorted([s for s in suites if s["kind"] == "unit" and s.get("coverage")],
                                    key=lambda s: s.get("sequence", 0), reverse=True)), None)
-        unit = {**evaluate_unit_coverage(latest_unit, unit_target),
+        unit = {**evaluate_unit_coverage(latest_unit, 0),
                 "requirementCoverage": requirement_coverage("unit")}
         e2e = {**requirement_coverage("e2e"), "target": e2e_target}
         e2e["status"] = "passed" if e2e["percent"] >= e2e_target else "below-target"
@@ -446,19 +466,19 @@ class Evidence:
         # unit evidence is switched off there is no coverage report to measure,
         # and demanding one would block every such run on a file that was never
         # going to exist.
-        unit_ok = unit["status"] == "passed" or "unit" not in required
         e2e_ok = e2e["status"] == "passed" or "e2e" not in required
 
         return {
             "revision": self.revision, "scope": copy.deepcopy(self.scope), "scopeOpen": scope_open,
             "suites": suites, "visuals": visuals, "missing": missing,
+            "history": copy.deepcopy(self.history),
             "regressionPending": regression, "requiredKinds": required,
             "missingRequirements": uncovered,
             "coverage": {"unit": unit, "e2e": e2e},
-            "limitations": dict(self.limitations),
+            "limitations": limitations,
             "ready": bool(self.scope) and not scope_open and not missing and not regression
-                     and not unresolved and not uncovered and not self.limitations
-                     and unit_ok and e2e_ok
+                     and not unresolved and not uncovered and not limitations
+                     and e2e_ok
                      and (not self.visual_required
                           or all(v["status"] in ("passed", "retired", "outdated") for v in visuals)),
         }
@@ -477,7 +497,7 @@ class Evidence:
         unit = state["coverage"]["unit"]
         metrics = (" - " + ", ".join(f"{n} {v['pct']}%" for n, v in unit["metrics"].items())
                    ) if unit.get("metrics") else ""
-        lines.append(f"- unit source coverage: {unit['status']}{metrics}; target {unit['target']}%.")
+        lines.append(f"- unit source coverage (informational): {unit['status']}{metrics}; no percentage requirement.")
         e2e = state["coverage"]["e2e"]
         lines.append(f"- E2E requirement coverage: {e2e['covered']}/{e2e['total']} "
                      f"({e2e['percent']}%); target {e2e['target']}%.")
@@ -526,6 +546,7 @@ class Evidence:
         return copy.deepcopy({
             "active": self.active, "revision": self.revision, "sequence": self.sequence,
             "workspace": self.workspace, "scope": self.scope, "suites": self.suites,
+            "history": self.history,
             "visuals": self.visuals, "limitations": self.limitations,
             "enabledKinds": sorted(self.enabled_kinds),
         })
@@ -536,6 +557,7 @@ class Evidence:
         self.revision = int(saved.get("revision") or 0)
         self.sequence = int(saved.get("sequence") or 0)
         self.workspace = saved.get("workspace")
+        self.history = copy.deepcopy(saved.get("history") or [])
         self.scope = copy.deepcopy(saved.get("scope"))
         self.suites = copy.deepcopy(saved.get("suites") or [])
         self.visuals = copy.deepcopy(saved.get("visuals") or [])

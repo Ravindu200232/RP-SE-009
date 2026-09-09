@@ -81,7 +81,9 @@ required = {
     "isolated AWS Console profile": ("components/deploy/DeployAccounts.jsx", "const AWS_CONSOLE_PROFILE = 'agentforge-console'"),
     "sidebar model picker": ("components/Sidebar.jsx", 'label="Model"'),
     "the stack is chosen, not guessed": ("components/Home.jsx", "2. Choose the stack"),
-    "the chosen stack travels with the build": ("components/Home.jsx", "design_model: designModel, stack"),
+    "the build is configured before it starts": ("components/BuildSetup.jsx", "Configure your build"),
+    "that dialog offers the model and the stack": ("components/BuildSetup.jsx", "build-setup-stack"),
+    "the chosen stack travels with the build": ("components/Home.jsx", "config?.stack || stack"),
     "the engine prefers a chosen stack": ("../server_modules/builder/pipeline.py", "stack or detect_stack"),
     "sidebar collapses": ("components/Sidebar.jsx", "if (collapsed) {"),
 }

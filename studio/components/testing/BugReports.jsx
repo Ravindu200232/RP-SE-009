@@ -11,13 +11,23 @@ export default function BugReports({ qa }) {
   const suspects = r.suite?.suspects || []
   const quarantined = r.suite?.quarantined || []
   const failures = r.suite?.failures || []
+  const resolved = qa?.resolvedBugs || []
 
-  if (!unresolved.length && !suspects.length && !quarantined.length && !failures.length) {
-    return <p className="text-[12px] text-ok">Nothing open. The suite ended clean.</p>
+  if (!unresolved.length && !suspects.length && !quarantined.length && !failures.length && !resolved.length) {
+    return <p className="text-[12px] text-muted">{qa.complete ? 'No unresolved failures recorded.' : 'No open failures in the saved partial report. Verification is incomplete.'}</p>
   }
 
   return (
     <div className="space-y-4">
+      {resolved.length > 0 && <section className="space-y-2">
+        <h3 className="text-[12px] font-semibold text-ink">Recorded fixes</h3>
+        {resolved.map((row, index) => <Panel key={index} className="p-3.5">
+          <div className="mb-2 flex flex-wrap gap-2"><Tag>historical fix</Tag><b className="text-[12px] text-ink">{row.problem}</b></div>
+          <p className="text-[11px] text-muted">{row.cause}</p>
+          <p className="mt-2 text-[11px] text-ink">{row.verification}</p>
+          <p className="mt-1 text-[10px] text-muted2">{row.at} · .agent/knowledge.json</p>
+        </Panel>)}
+      </section>}
       {unresolved.length > 0 && (
         <div className="space-y-2">
           {unresolved.map((u, i) => (

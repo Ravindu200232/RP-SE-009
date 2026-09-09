@@ -266,11 +266,10 @@ class DesignReachTests(unittest.TestCase):
         # Light, dark, and both - a toggle is a real choice, not an afterthought.
         self.assertEqual({m["id"] for m in form["themeModes"]}, {"light", "dark", "both"})
 
-    def test_the_screens_a_request_implies_are_preselected(self):
+    def test_screen_inventory_is_left_to_the_approved_plan(self):
         chosen = design.choose("a shop where a visitor fills a basket and an admin "
                                "signs in to see orders")
-        for page in ("landing", "list", "detail", "checkout", "login", "admin"):
-            self.assertIn(page, chosen["pages"], page)
+        self.assertEqual(chosen["pages"], [])
 
     def test_every_chosen_dimension_reaches_the_written_contract(self):
         root = Path(tempfile.mkdtemp())

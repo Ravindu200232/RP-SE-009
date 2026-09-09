@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from test import _support  # noqa: F401
@@ -62,14 +63,52 @@ class LoopTests(unittest.TestCase):
         self.events.any(lambda event, payload: self.seen.append(event))
 
     def build(self, turns, **overrides):
+        verification_kinds = overrides.pop("verification_kinds", None)
         config = Config(workspace=self.root, model="scripted",
                         state_root=self.root / ".state", **overrides)
         self.router = ScriptedRouter(turns)
         return Loop(config=config, registry=build_registry(), router=self.router,
                     memory=Memory(), sandbox=Sandbox(self.root), events=self.events,
-                    processes=Processes(self.events), browser=Browser(self.events))
+                    processes=Processes(self.events), browser=Browser(self.events),
+                    verification_kinds=verification_kinds)
 
     # -- executing -------------------------------------------------------
+    def test_unit_stage_can_finish_without_launching_unassigned_browser_and_runtime_work(self):
+        loop = self.build([], verification_kinds=("unit",))
+        evidence = loop.memory.evidence
+        evidence.define_scope("web", "nextjs-mongo", [
+            {"id": "validation", "description": "reject invalid inputs", "evidence": ["unit"]}])
+        self.assertTrue(loop._completion_block())
+        record = evidence.start("unit", "validation", "vitest run --coverage", [], ["validation"])
+        evidence.observe(record, {"exitCode": 0, "coverage": {
+            kind: {"pct": 100} for kind in ("lines", "statements", "functions", "branches")}})
+        self.assertEqual(loop._completion_block(), "")
+        self.assertEqual(evidence.required_kinds, ["unit"])
+
+    def test_read_only_terminal_observation_keeps_current_test_evidence(self):
+        loop = self.build([])
+        record = loop.memory.evidence.start(
+            kind="unit", suite="books", command="npm test", test_files=[], covers=[])
+        loop.memory.evidence.observe(record, {"exitCode": 0, "stdout": "passed", "stderr": ""})
+        revision = loop.memory.evidence.revision
+        with patch.object(loop.processes, "run", return_value={
+            "exitCode": 0, "elapsed": 0.1, "stdout": "v24.19.0", "stderr": ""}) as command:
+            result = loop._run_one(call("executeTerminal", command="node --version", changesProject=False))
+            command.assert_called_once()
+            self.assertTrue(result["ok"])
+        self.assertEqual(loop.memory.evidence.revision, revision)
+        self.assertEqual(record["revision"], loop.memory.evidence.revision)
+
+    def test_project_changing_command_invalidates_evidence_once(self):
+        loop = self.build([])
+        revision = loop.memory.evidence.revision
+        with patch.object(loop.processes, "run", return_value={
+            "exitCode": 0, "elapsed": 0.1, "stdout": "installed", "stderr": ""}) as command:
+            result = loop._run_one(call("executeTerminal", command="npm install", changesProject=True))
+            command.assert_called_once()
+            self.assertTrue(result["ok"])
+        self.assertEqual(loop.memory.evidence.revision, revision + 1)
+
     def test_tool_calls_in_one_turn_run_in_order_and_all_report_back(self):
         loop = self.build([
             turn(call("writeFile", filePath="a.js", content="one"),

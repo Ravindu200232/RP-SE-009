@@ -12,8 +12,8 @@ the seams between those. What actually matters is narrower:
 4. Repair, bounded by the failure signature: the same failure twice with no
    edit in between ends the round instead of looping.
 
-The floor is measured from the runner's coverage report, so "95% coverage" is
-a number the tool produced, not a number the model claimed.
+Coverage can be reported as diagnostic information. It does not cause repairs
+or block a passing suite.
 """
 from __future__ import annotations
 
@@ -107,21 +107,29 @@ def top_classes(failures: list[dict], limit: int = 5) -> list[dict]:
             for label, count in sorted(tally.items(), key=lambda kv: -kv[1])[:limit]]
 
 
-AUTHOR_BRIEF = """Write and prove the unit suite for this application.
+AUTHOR_BRIEF = """Complete the unit verification for this application.
 
 Work at the deepest level you can: read the source before you test it, and test
 what the code actually does rather than what its name suggests.
 
-1. Read the project layout, then read every module you are about to test. Use
-   search rather than guessing at a path.
-2. Call defineVerificationScope with the behaviours this application must
-   prove: domain logic, every route handler's contract, validation and error
-   paths, and each model's constraints. Seal the scope.
-3. Write tests under test/ as `<name>.test.js`, importing through the `@/`
+The preceding build's reads, decisions and evidence remain in this conversation
+when available. Continue from them. Inspect the recorded evidence and saved
+test results first, then read source and existing tests for the missing or
+changed behaviours. A transition into QA is not a reason to reread every file
+or rewrite an existing suite. Reading another part of a saved report is not a
+reason to execute the tests again.
+Do not add or rerun tests solely to improve coverage percentages.
+
+1. Read the vitest skill and use the project layout to locate the modules you
+   need. Reuse current source already in context; read missing or changed context.
+2. Reuse the existing verification scope and extend it for missing behaviours.
+   If there is no scope, call defineVerificationScope for domain logic, route
+   contracts, validation/error paths and model constraints, then seal it.
+3. Add or repair tests under test/ as `<name>.test.js`, importing through the `@/`
    alias. Use the helpers in test/helpers/ for anything touching MongoDB, and
    isolated fixtures - never production data.
-4. Run the suite with runTests(kind:"unit"), passing coverageReports:
-   ["coverage/coverage-summary.json"] and the requirement ids in covers.
+4. Run the suite with runTests(kind:"unit") and the requirement ids in covers.
+   Capture a JSON report in the same execution; coverage collection is optional.
 5. When something fails, read the failure and its source context, then fix the
    real cause. If the product is wrong, fix the product. If the test is wrong,
    fix the test.
@@ -164,7 +172,7 @@ def run_stage(*, agent, workspace: Path, run_command, events=None, floor: int = 
         events.emit("notice", level="info",
                     message="Test harness: " + "; ".join(setup["actions"]))
 
-    agent.build(AUTHOR_BRIEF)
+    agent.build(AUTHOR_BRIEF, verification_kinds=("unit",))
     last_signature = ""
 
     for round_index in range(MAX_ROUNDS):
@@ -208,7 +216,7 @@ def run_stage(*, agent, workspace: Path, run_command, events=None, floor: int = 
                             for f in failures[:12])
         agent.build(REPAIR_BRIEF.format(
             summary=f"{counts['failed']} of {counts['total']} cases failing ({rate}% passing).",
-            failures=listing))
+            failures=listing), verification_kinds=("unit",))
 
     result.unresolved = [
         {"file": failure["file"], "case": failure["case"], "message": failure["message"][:400],

@@ -17,6 +17,7 @@ Inspect package/build manifests, lockfiles, scripts, environment examples, servi
 
 - Validate required configuration without printing secrets. Distinguish configuration, dependency, build, application, and test failures.
 - Detect the real operating system and active shell and use its syntax. Do not send POSIX-only commands to Windows `cmd`/PowerShell or Windows-only commands to a POSIX shell.
+- Use the command processor reported in the run context. On Windows this engine runs `executeTerminal` through `COMSPEC` (`cmd.exe`), even when the Studio was started from PowerShell. Prefer one command per call; `;` and `$env:NAME` are PowerShell syntax, not cmd syntax. Use `listDir`/`readFile` for workspace inspection instead of shell-specific existence checks. If a shell command fails to parse, fix the shell syntax before retrying; the application has not failed.
 - Use a task-owned available port and pass it through the app's supported configuration. Do not kill or replace an unrelated process on the default port.
 - Put long-lived servers in AgentX background-process management, wait on an observable readiness condition, capture logs, and guarantee cleanup on success/failure.
 - Serialize finite package-manager, generator, build, and test commands that use the same manifest, lockfile, dependency tree, or generated output. Never start a second dependency mutation while the first is running, even if the first has produced no new output.

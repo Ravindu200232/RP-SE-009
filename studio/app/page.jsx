@@ -113,7 +113,7 @@ export default function Studio() {
   useEffect(() => {
 
     useStore.getState().hydrate()
-    connect()
+    const disconnect = connect()
     refreshProjects()
     api.models().then(r => {
       const c = catalogue(r)
@@ -149,6 +149,7 @@ export default function Studio() {
         } })
       })
     }).catch(() => { })
+    return disconnect
   }, [])
 
   // Preview and the persistent tab bar need the same final suite report as
@@ -333,7 +334,7 @@ export default function Studio() {
         </div>
 
         {screen === 'home' ? (
-          <Home onStarted={() => setScreen('workspace')} />
+          <Home modelOptions={cat.all} onStarted={() => setScreen('workspace')} />
         ) : (
           <div className="flex min-h-0 flex-1 bg-bg/40">
             {/* The conversation sits beside the work rather than on top of

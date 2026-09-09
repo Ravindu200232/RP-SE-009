@@ -15,6 +15,7 @@ Use AgentX `browserRunJourney` as the only E2E harness. It drives an isolated in
 - Use browserSnapshot once to observe actual role/name controls when the flow is uncertain.
 - Accessible-name resolution is tolerant but deterministic: exact -> normalized exact -> one unique containing name. Prefer a short unique accessible name such as the visible entity title; do not copy a whole card's concatenated accessibility text.
 - If more than one control matches, use a more specific accessible name or one stable CSS selector derived from the current UI.
+- An `index` selects within the locator's matched candidates, starting at zero; it is not the control's position among every button or tab on the page. If a short label matches both itself and a longer label, use the exact observed accessible name or a stable selector instead of guessing an index. Counts in accessible names can change after a journey action.
 - Do not query the database merely to discover a UI link/ID after a selector miss when the public UI itself should expose the target.
 
 ## Assertions and state
@@ -23,6 +24,7 @@ Use AgentX `browserRunJourney` as the only E2E harness. It drives an isolated in
 - Keep journey diagnostics across steps so a snapshot cannot erase an earlier page, console, request, or HTTP failure.
 - Cover each sealed E2E requirement only when the journey truly crosses its public browser boundary.
 - Use isolated test/demo data; browser session isolation does not reset persistent database state.
+- Prepare fixtures once before verification, and have each journey create and clean up its own records. Do not repeatedly clear or reseed the whole database between passing checks. Keep stable suite IDs and requirement coverage so the final summary can reuse the evidence. After a passing journey, move to the next missing requirement or completion; rerun only after a relevant repair or when the ledger identifies stale evidence.
 - Prefer one short journey per critical public flow rather than one giant scenario that makes failures ambiguous.
 
 ## Passing on the first run
@@ -119,6 +121,6 @@ possible wrong turn.
 
 On failure, use the bounded failure URL/diagnostics/page text already returned by `browserRunJourney`. Do not take another snapshot unless that evidence says the page changed after the failure. Route the repair by owner: `E2E_SELECTOR_*` = journey/harness locator only; `E2E_UI_TARGET_MISSING` = product UI/route/state; assertion/console/network/HTTP 5xx failures = production behavior/runtime. State one falsifiable hypothesis and patch only that owner.
 
-Do not manually churn browser state, guess multiple selector names, repeatedly logout/login, or rerun the same full journey after every observation. The same suite gets at most two failed executions without a project/runtime verification-state change; the third is blocked by the engine. After a second failure, make a repair that can change the outcome before rerunning that suite.
+Do not manually churn browser state, guess multiple selector names, repeatedly logout/login, or rerun the same full journey after every observation. Correct a locator in the journey definition and retry with the same suite ID; this is a repair even though no product file changed. Do not rename the suite or edit working application code to escape a failed result. A passing retry replaces that suite's failed evidence.
 
 After the repair, rerun only the affected journey once. If it passes, do not rerun unrelated E2E journeys until the final regression checkpoint. Never weaken assertions or fabricate success. Journey actions are intentionally lightweight; avoid manual `browserSnapshot` polling after every click, because the harness settles actions internally and captures bounded evidence only on failure. That is about accessibility-tree reads for debugging — it is not a reason to leave out `screenshot` steps, which are the visual evidence the sealed scope requires and belong inside the journey.

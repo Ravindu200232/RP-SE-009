@@ -99,7 +99,7 @@ class Outcome:
 
 class Loop:
     def __init__(self, *, config, registry, router, memory, sandbox, events,
-                 processes, browser, cancel=None) -> None:
+                 processes, browser, cancel=None, verification_kinds=None) -> None:
         self.config = config
         self.registry = registry
         self.router = router
@@ -135,6 +135,9 @@ class Loop:
             *(("e2e",) if config.e2e_tests else ()),
             "runtime",
         }
+        self.verification_kinds = verification_kinds
+        if verification_kinds is not None:
+            memory.evidence.enabled_kinds = set(verification_kinds)
 
     # -- context frame ---------------------------------------------------
     def _refresh_system(self) -> None:
@@ -142,7 +145,7 @@ class Loop:
             workspace=self.sandbox.root, model=self.router.label,
             stack=self.config.stack, quality=self.config.quality,
             context_tokens=self.budget.limit, review=self.config.review,
-            testing_enabled=self.testing_enabled))
+            testing_enabled=self.testing_enabled, verification_kinds=self.verification_kinds))
 
     def _sync_layout(self, force: bool = False) -> None:
         if not force and not self.layout_dirty:
@@ -435,11 +438,10 @@ class Loop:
         else:
             self._close_lesson(call.tool, summary)
 
-        if tool.mutates and ok:
+        if result.get("mutates", tool.mutates and ok):
             # The project changed: evidence taken before this is outdated, a
             # previously blocked suite may retry, and the layout may have moved.
             self.memory.evidence.changed()
-            self.browser.mark_project_changed()
             self.layout_dirty = True
             self.repair_epoch += 1
             self.failed_actions.clear()

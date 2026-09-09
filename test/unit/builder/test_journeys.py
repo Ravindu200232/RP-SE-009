@@ -15,7 +15,8 @@ from test import _support  # noqa: F401
 from builder_agent import browser
 from builder_agent.browser import CANCELLED_ERRORS, request_outcome
 from builder_agent.errors import ToolError
-from builder_agent.journeys import _assert, diagnostics_report
+from builder_agent.evidence import Evidence
+from builder_agent.journeys import _assert, diagnostics_report, run_journey
 
 
 class FakePage:
@@ -32,6 +33,38 @@ class FakePage:
 
 def note(kind, text="", url=""):
     return {"kind": kind, "text": text, "url": url}
+
+
+class JourneyRepairTests(unittest.TestCase):
+    def test_a_corrected_locator_retries_the_same_suite_without_a_product_edit(self):
+        page = FakePage(text="Your books")
+        clicks = []
+
+        def locate(role, name, selector, index):
+            if selector != '[data-filter="read"]':
+                raise ToolError("E2E_SELECTOR_MISMATCH: repair the journey locator")
+            return "read-tab"
+
+        page.locate = locate
+        page.click = clicks.append
+        page.wait_ready = lambda timeout: None
+        page.reset_diagnostics = lambda: None
+        driver = types.SimpleNamespace(page=lambda tab: page, attempts={},
+                                       fresh_session=lambda: None)
+        evidence = Evidence()
+        revision = evidence.revision
+        for name in ("Read", "Read books"):
+            with self.assertRaisesRegex(ToolError, "E2E_SELECTOR_MISMATCH"):
+                run_journey(driver, None, evidence, suite="filter", covers=[],
+                            steps=[{"action": "click", "role": "tab", "name": name}])
+
+        result = run_journey(driver, None, evidence, suite="filter", covers=[],
+                             steps=[{"action": "click", "selector": '[data-filter="read"]'}])
+        self.assertTrue(result["ok"])
+        self.assertEqual(clicks, ["read-tab"])
+        self.assertEqual(evidence.revision, revision)
+        self.assertEqual(len(evidence.suites), 1)
+        self.assertEqual(evidence.suites[0]["status"], "passed")
 
 
 class DiagnosticsTests(unittest.TestCase):

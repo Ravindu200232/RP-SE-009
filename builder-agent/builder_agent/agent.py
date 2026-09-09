@@ -80,7 +80,7 @@ class BuilderAgent:
     """The builder agent: plans, designs, builds and proves one application."""
 
     def __init__(self, config: Config, *, client=None, events: Events | None = None,
-                 cancel=None) -> None:
+                 cancel=None, memory: Memory | None = None) -> None:
         self.id = uuid.uuid4().hex[:12]
         self.config = config
         self.events = events or Events()
@@ -90,7 +90,8 @@ class BuilderAgent:
         self.approvals = Approvals(self.events, enabled=bool(config.extra.get("gates")),
                                    timeout=float(config.extra.get("gate_timeout", 300)))
         self.sandbox = Sandbox(config.workspace)
-        self.memory = Memory(budget_tokens=config.context_tokens)
+        self.memory = memory if memory is not None else Memory(budget_tokens=config.context_tokens)
+        self.memory.budget_tokens = config.context_tokens
         self.processes = Processes(events=self.events)
         self.browser = Browser(events=self.events)
         self.client = client or OllamaClient(config.host or None)
@@ -176,15 +177,17 @@ class BuilderAgent:
         })
         return written
 
-    def build(self, task: str, *, plan: str = "") -> Outcome:
+    def build(self, task: str, *, plan: str = "", verification_kinds=None) -> Outcome:
         """Implement the plan and prove it works."""
-        self.events.emit("phase", phase="build", title="Building", status="active")
+        phase = verification_kinds[0] if verification_kinds and len(verification_kinds) == 1 else "build"
+        title = {"unit": "Unit tests", "e2e": "End-to-end"}.get(phase, "Building")
+        self.events.emit("phase", phase=phase, title=title, status="active")
         instruction = task
         if self.design:
             instruction = design_contract_message(self.design["selection"]) + "\n\n" + task
-        loop = self._loop(self.registry)
+        loop = self._loop(self.registry, verification_kinds=verification_kinds)
         outcome = loop.run(instruction, plan=plan)
-        self.events.emit("phase", phase="build", title="Building",
+        self.events.emit("phase", phase=phase, title=title,
                          status="done" if outcome.status == "completed" else "error")
         return outcome
 
@@ -213,14 +216,15 @@ class BuilderAgent:
             self._finish()
 
     # -- plumbing --------------------------------------------------------
-    def _loop(self, registry, *, plan_only: bool = False, review: bool = False) -> Loop:
+    def _loop(self, registry, *, plan_only: bool = False, review: bool = False,
+              verification_kinds=None) -> Loop:
         config = self.config
         if plan_only or review:
             from dataclasses import replace
             config = replace(config, plan_only=plan_only, review=review)
         return Loop(config=config, registry=registry, router=self.router, memory=self.memory,
                     sandbox=self.sandbox, events=self.events, processes=self.processes,
-                    browser=self.browser, cancel=self.cancel)
+                    browser=self.browser, cancel=self.cancel, verification_kinds=verification_kinds)
 
     def _finish(self) -> None:
         """Leave services running for the preview; take everything else down."""

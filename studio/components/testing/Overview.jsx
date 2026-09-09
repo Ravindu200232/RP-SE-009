@@ -9,7 +9,7 @@ import { unitTestStatus } from '@/lib/test-counts'
 export default function Overview({ qa, live }) {
   const last = (qa?.history || []).slice(-1)[0]
   const r = qa?.report
-  const v = qa?.vitest
+  const v = qa?.vitest || qa?.savedVitest
   if (!last && !r && !v) {
     return <Empty>Nothing has been recorded for this project yet.</Empty>
   }
@@ -34,37 +34,19 @@ export default function Overview({ qa, live }) {
     <div className="space-y-3">
       {partial && (
         <p className="rounded-panel border border-accent/30 bg-accent/5 px-3 py-2 text-[11px] text-muted">
-          <b className="text-ink">Part way through.</b>{' '}
+          <b className="text-ink">{live?.running ? 'Verification in progress.' : 'Partial saved report.'}</b>{' '}
           {ran.length
             ? `${ran.join(' and ')} ${ran.length === 1 ? 'has' : 'have'} run so far.`
             : 'No stage has finished yet.'}{' '}
-          Everything below is what has been proved up to this point.
+          Only saved evidence is shown below.
         </p>
       )}
 
     <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(290px,1fr))]">
-      <Card title="Round one" hint="what the generated tests did before any repair">
-        {last ? (
-          <>
-            <div className={cn('font-display text-[34px] font-bold leading-none',
-              last.rate < last.floor ? 'text-bad' : 'text-ok')}>
-              {last.rate}%
-            </div>
-            <div className="mt-1.5 text-[11px] text-muted">
-              {last.passed}/{last.cases} passing · floor {last.floor}%
-              {last.rate < last.floor && <b className="text-bad"> — below the floor</b>}
-            </div>
-            {(last.top || []).length > 0 && (
-              <ul className="mt-2.5 space-y-1 text-[11px] text-muted">
-                {last.top.map((t, i) => (
-                  <li key={i}>
-                    <b className="font-mono text-ink">{t.count}</b> × {t.class}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </>
-        ) : <Empty>No round-one record.</Empty>}
+      <Card title="Saved verification" hint="results already recorded for this project">
+        <p className="text-[12px] text-ink">{qa.complete ? 'Verification finished' : live?.running ? 'Verification in progress' : 'Partial saved report'}</p>
+        <p className="mt-2 text-[11px] text-muted">{qa.provenance || 'Results are saved as each check finishes.'}</p>
+        <div className="mt-3 flex flex-wrap gap-4"><Stat n={qa.timeline?.length || qa.history?.length || 0} label="timeline entries" /><Stat n={qa.screenshots?.length || 0} label="screenshots" /></div>
       </Card>
 
       {/* "as it stands", not "the last full run": a feature's stage only runs
@@ -72,6 +54,7 @@ export default function Overview({ qa, live }) {
           report rather than replacing it — so this is the whole suite, with
           the files that were just re-run showing their new result. */}
       <Card title="The suite now" hint="every test file, at its latest result">
+        {qa.unitEvidenceStatus === 'outdated' && <p className="mb-2 text-[11px] text-warn">Saved results precede the latest code changes.</p>}
         {v ? (
           <div className="flex flex-col gap-1.5">
             <div className="mb-2 flex items-center gap-3">
@@ -80,12 +63,12 @@ export default function Overview({ qa, live }) {
                 <div className="grid size-full place-items-center rounded-full bg-panel"><b className={cn('font-display text-[17px]', unitRate === 100 ? 'text-ok' : unitRate >= 80 ? 'text-warn' : 'text-bad')}>{unitRate}%</b></div>
               </div>
               <div className="text-[10.5px] leading-relaxed text-muted">
-                <b className="text-ink">Current whole-suite rate</b>
+                <b className="text-ink">{unit.unit === 'files' ? 'Saved file pass rate' : 'Recorded test pass rate'}</b>
                 {roundAverage != null && <><br />Round-one average: <b className="text-ink">{roundAverage}%</b> across {history.length} run{history.length === 1 ? '' : 's'}</>}
               </div>
             </div>
-            <Stat n={unit.passed} label="passing" tone="text-ok" />
-            <Stat n={unit.failed} label="failing"
+            <Stat n={unit.passed} label={unit.unit === 'files' ? 'files passing' : 'cases passing'} tone="text-ok" />
+            <Stat n={unit.failed} label={unit.unit === 'files' ? 'files failing' : 'cases failing'}
                   tone={unit.failed ? 'text-bad' : undefined} />
             <Stat n={unit.files} label="files" />
             {r?.unit?.deleted ? (
@@ -119,7 +102,7 @@ export default function Overview({ qa, live }) {
               <p className="mt-1 text-[10.5px] text-muted">{e2e.failed} failed · {e2e.notReached} not reached</p>
             </div>
           </div>
-        ) : <Empty>End-to-end stages have not run.</Empty>}
+        ) : <Empty>No saved step trace. {r?.e2e?.recordedOutcomes?.length || 0} historical journey outcome(s) available in Integration (E2E).</Empty>}
       </Card>
 
       <Card title="Left unresolved" hint="cases repair could not make pass">
@@ -138,7 +121,7 @@ export default function Overview({ qa, live }) {
                 </li>
               ))}
             </ul>
-          ) : <p className="text-[11.5px] text-ok">None. Nothing was set aside.</p>
+          ) : <p className="text-[11.5px] text-ok">No unresolved failures recorded.</p>
         ) : <Empty>No report — this project was built before results were kept.</Empty>}
       </Card>
 
@@ -174,7 +157,7 @@ export default function Overview({ qa, live }) {
       </Card>
 
       <Card title="Runtime" hint="what the browser probe saw">
-        {r ? (
+        {ran.includes('runtime') ? (
           (r.runtime || []).length ? (
             <ul className="space-y-1 text-[11px] text-bad">
               {r.runtime.slice(0, 6).map((e, i) => (

@@ -22,6 +22,17 @@ const STATUS_TONE = {
 
 export default function Evidence({ qa }) {
   const evidence = qa?.report?.evidence
+  if (qa?.recovered) return (
+    <div className="space-y-4">
+      <Panel className="p-4"><Badge>Saved artifacts · partial evidence</Badge><p className="mt-3 text-[11.5px] text-muted">{qa.provenance}</p></Panel>
+      <Table><thead><TR><TH>Evidence</TH><TH>Source</TH><TH>What was saved</TH></TR></thead><tbody>
+        {qa.vitest && <TR><TD>Unit testing</TD><TD className="font-mono text-muted">{qa.vitest.source === 'vitest-cache' ? 'node_modules/.vite/vitest/results.json' : qa.vitest.source}</TD><TD>{qa.vitest.fileResults ? `${qa.vitest.fileResults.length} file outcomes; assertion details unavailable` : 'Vitest assertion report'}</TD></TR>}
+        {(qa.report?.e2e?.recordedOutcomes || []).map((r, i) => <TR key={i}><TD>E2E · {r.suite}</TD><TD className="font-mono text-muted">{r.source}</TD><TD>{r.detail} · step trace unavailable</TD></TR>)}
+        {(qa.screenshots || []).map(r => <TR key={r.path}><TD>Screenshot</TD><TD className="break-all font-mono text-muted">{r.path}</TD><TD>{r.width} × {r.height} · {r.status}</TD></TR>)}
+      </tbody></Table>
+      {qa.report?.unit?.coverage && <Panel className="p-4"><p className="text-[11px] text-muted">Saved source coverage · informational, no percentage requirement</p><p className="mt-2 text-[12px] text-ink">{Object.entries(qa.report.unit.coverage).filter(([, v]) => typeof v?.pct === 'number').map(([k, v]) => `${k}: ${v.pct}%`).join(' · ')}</p></Panel>}
+    </div>
+  )
   if (!evidence || !Object.keys(evidence).length) {
     return <Empty>This project has no verification ledger yet.</Empty>
   }
@@ -55,11 +66,11 @@ export default function Evidence({ qa }) {
           {unit ? (
             <>
               <p className={cn('mt-1 font-display text-[22px] font-semibold',
-                unit.status === 'passed' ? 'text-ok' : 'text-bad')}>
+                unit.required === false ? 'text-muted' : unit.status === 'passed' ? 'text-ok' : 'text-bad')}>
                 {unit.status === 'missing' ? 'no report' : unit.status}
               </p>
               <p className="mt-1 text-[11px] text-muted">
-                floor {unit.target}%
+                {unit.required === false ? 'Informational · no percentage requirement' : `floor ${unit.target}%`}
                 {unit.metrics && ' · ' + Object.entries(unit.metrics)
                   .map(([name, m]) => `${name} ${m.pct}%`).join(', ')}
               </p>

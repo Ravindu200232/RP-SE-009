@@ -245,7 +245,10 @@ function DesignDecision({ question, left, sending, onAnswer }) {
             </Field>
           </div>
 
-          <Field label={`Screens (${pick.pages.length})`}>
+          <Field label={`Optional screen additions (${pick.pages.length})`}>
+            <p className="mb-2 text-[11px] leading-relaxed text-muted2">
+              The approved plan already defines your screens. Select only additions you want.
+            </p>
             <div className="flex flex-wrap gap-1">
               {(question.pages || []).map(page => (
                 <button key={page.id} onClick={() => togglePage(page.id)} title={page.label}

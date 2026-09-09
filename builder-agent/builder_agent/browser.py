@@ -582,9 +582,6 @@ class Browser:
         self.pages: dict[str, Page] = {}
         self.active: str | None = None
         self.captures: dict[str, dict] = {}
-        # A suite that has failed this many times without the project changing
-        # is not going to pass on the next identical retry.
-        self.attempts: dict[str, dict] = {}
 
     @property
     def running(self) -> bool:
@@ -678,10 +675,6 @@ class Browser:
                 page.evaluate("try{localStorage.clear();sessionStorage.clear()}catch(e){}")
             except ToolError:
                 pass
-
-    def mark_project_changed(self) -> None:
-        """A repair happened; a previously blocked suite may retry."""
-        self.attempts.clear()
 
     def close(self) -> None:
         # Say so, or the last frame sits over the preview until it goes stale.

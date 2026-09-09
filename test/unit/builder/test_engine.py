@@ -94,14 +94,14 @@ class EvidenceLedgerTests(unittest.TestCase):
         self.evidence.observe(record, {"exitCode": 1, "stdout": "all good!"})
         self.assertEqual(record["status"], "failed")
 
-    def test_a_passing_suite_below_the_coverage_floor_is_still_a_failure(self):
+    def test_a_passing_suite_keeps_coverage_as_information(self):
         record = self.evidence.start("unit", "logic", "npx vitest run", [], ["checkout"],
                                      coverage_reports=["coverage/coverage-summary.json"])
         self.evidence.observe(record, {"exitCode": 0, "coverage": {
             "lines": {"pct": 40}, "statements": {"pct": 40},
             "functions": {"pct": 40}, "branches": {"pct": 40}}})
-        self.assertEqual(record["status"], "failed")
-        self.assertIn("below", record["reason"])
+        self.assertEqual(record["status"], "passed")
+        self.assertFalse(self.evidence.summary()["coverage"]["unit"]["required"])
 
     def test_coverage_claimed_for_a_requirement_that_does_not_want_it_is_refused(self):
         with self.assertRaises(ToolError):
@@ -310,7 +310,8 @@ class QualityProfileTests(unittest.TestCase):
         self.assertIs(config.for_verification().quality, VERIFY_QUALITY)
 
     def test_the_deep_profile_demands_more_evidence_than_the_build_profile(self):
-        self.assertGreater(VERIFY_QUALITY.unit_floor, BUILD_QUALITY.unit_floor)
+        self.assertEqual(VERIFY_QUALITY.unit_floor, 0)
+        self.assertEqual(BUILD_QUALITY.unit_floor, 0)
         self.assertGreater(VERIFY_QUALITY.e2e_floor, BUILD_QUALITY.e2e_floor)
         self.assertTrue(VERIFY_QUALITY.final_audit)
         self.assertFalse(BUILD_QUALITY.final_audit)

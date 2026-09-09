@@ -55,7 +55,7 @@ class Job:
 
 def shell_info() -> dict:
     return {"platform": sys.platform,
-            "shell": "powershell/cmd" if IS_WINDOWS else os.environ.get("SHELL", "sh")}
+            "shell": os.environ.get("COMSPEC", "cmd.exe") if IS_WINDOWS else "/bin/sh"}
 
 
 class Processes:

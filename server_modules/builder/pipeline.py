@@ -7,8 +7,8 @@ what made the previous version brittle. This resolves a project directory,
 hands the agent a brief, and translates what comes back.
 
 Four entry points, one shape: build, resume, feature, repair. Each one prepares
-the workspace, runs the builder agent, brings the app up, and then runs the QA
-agent over the result.
+the workspace, runs the builder through its unit/E2E checks, brings the app up,
+and publishes the evidence it already produced.
 """
 
 import re
@@ -25,6 +25,8 @@ for _root in (_BUILDER_ROOT, _QA_ROOT):
 
 from builder_agent import BuilderAgent, Config, Events, detect_stack  # noqa: E402
 from qa_agent import QAAgent  # noqa: E402
+from qa_agent.agent import QAOutcome  # noqa: E402
+from qa_agent import report as qa_report, security as qa_security  # noqa: E402
 
 from server_modules.services.mongo_common import db_name_for  # noqa: E402
 
@@ -32,7 +34,7 @@ from server_modules.services.mongo_common import db_name_for  # noqa: E402
 # the runtime parts executed before this one, not from an import: these files
 # are one program sharing one namespace.
 
-BUILD_PHASES = ("plan", "design", "build", "unit", "e2e", "security")
+BUILD_PHASES = ("plan", "design", "build", "unit", "e2e")
 EDIT_PHASES = ("build", "unit", "e2e")
 
 # Files worth snapshotting before an edit so a single click can undo it.
@@ -138,7 +140,7 @@ def _cancelled() -> bool:
     try:
         cancel.check()
         return False
-    except Exception:                                                # noqa: BLE001
+    except cancel.BuildCancelled:
         return True
 
 
@@ -249,6 +251,9 @@ def _run_agent(proj_dir: Path, brief: str, model: str, think, *, phases, kind: s
     agent = BuilderAgent(_config(proj_dir, brief, model, think, gates=plan, stack=stack),
                          events=events, cancel=_cancelled)
     register_approvals(agent.approvals)
+    events.any(qa_report.LiveReport(
+        proj_dir, agent.memory.evidence, emit,
+        lambda error: elog("WARN", f"Could not save testing results: {error}")))
     try:
         return agent, (agent.run(brief) if plan else agent.build(brief))
     finally:
@@ -256,14 +261,14 @@ def _run_agent(proj_dir: Path, brief: str, model: str, think, *, phases, kind: s
         agent._finish()
 
 
-def _verify(proj_dir: Path, project: str, model: str, think, qa_model: str):
+def _verify(proj_dir: Path, project: str, model: str, think, qa_model: str, *, memory=None):
     """Run the QA agent over the finished project at the deep profile."""
     events = Events()
     StudioBridge(events, kind="test", phases=list(EDIT_PHASES))
     qa = QAAgent(project=project, project_dir=proj_dir,
                  model=(qa_model or model or default_agent_model()),
                  host=ollama.host, events=events, think=bool(think),
-                 cancel=_cancelled)
+                 cancel=_cancelled, memory=memory)
     try:
         return qa.run()
     finally:
@@ -286,11 +291,35 @@ def _serve(proj_dir: Path) -> str:
     return ""
 
 
-def _finish(project: str, url: str, outcome, qa_outcome=None) -> None:
-    if qa_outcome is not None and not qa_outcome.ok and qa_outcome.reason:
-        elog("WARN", f"   ⚠ open after verification: {qa_outcome.reason}")
+def _record_verification(proj_dir: Path, project: str, agent, outcome):
+    """Keep the builder's real results; E2E does not start another QA cycle."""
+    evidence = agent.memory.evidence.summary()
+    security = {"findings": qa_security.scan(proj_dir), "audit": {}}
+    record = qa_report.from_evidence(
+        project=project, project_dir=proj_dir, evidence=evidence, security=security,
+        complete=outcome.status == "completed")
+    path = qa_report.write(proj_dir, record)
+    emit({"type": "test_report", "project": project,
+          "stages": record["stages"], "complete": record["complete"]})
+    ok = evidence.get("ready", False) and not security["findings"]
+    reason = (f"{len(security['findings'])} security finding(s)" if security["findings"]
+              else "" if ok else "Required verification has not passed.")
+    return QAOutcome(project=project, ok=ok, record=record, path=str(path), reason=reason)
+
+
+def _finish(project: str, url: str, outcome, qa_outcome=None) -> bool:
+    if outcome.status != "completed":
+        eerr(f"Build {outcome.status}: {outcome.result}")
+        return False
+    if qa_outcome is not None and not qa_outcome.ok:
+        eerr(f"Verification incomplete: {qa_outcome.reason}")
+        return False
+    if not url:
+        eerr("The preview did not become ready. Check the runtime logs.")
+        return False
     eprog("Done", 100)
     edone(url, project)
+    return True
 
 
 def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
@@ -298,10 +327,11 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
                        stack: str = "") -> None:
     """Build an application from a request, then prove it works."""
     started = time.time()
-    cancel.clear() if hasattr(cancel, "clear") else None
+    cancel.begin()
     try:
         proj_dir = _prepare_workspace(prompt, project, srs_id)
         name = proj_dir.name
+        cancel.note(project=name, srs_id=srs_id)
         resuming = bool(project)
         elog("INFO", f"🏗️  {'Resuming' if resuming else 'Building'} {name}")
         estep("plan", "active")
@@ -320,12 +350,16 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
 
         fill_missing_images(proj_dir, "the build")
         url = _serve(proj_dir)
-        qa_outcome = _verify(proj_dir, name, model, think, qa_model)
-        _finish(name, url, outcome, qa_outcome)
-        elog("SUCCESS", f"✅ {name} finished in {int(time.time() - started)}s")
+        qa_outcome = _record_verification(proj_dir, name, agent, outcome)
+        if _finish(name, url, outcome, qa_outcome):
+            elog("SUCCESS", f"✅ {name} finished in {int(time.time() - started)}s")
+    except cancel.BuildCancelled:
+        ecancel({"project": project})
     except Exception as error:                                       # noqa: BLE001
         log.exception("agent pipeline")
         eerr(f"{type(error).__name__}: {error}")
+    finally:
+        cancel.finish()
 
 
 def run_feature(project: str, prompt: str, model: str, think=None, qa_model: str = "",
@@ -342,18 +376,21 @@ def run_feature(project: str, prompt: str, model: str, think=None, qa_model: str
 
 def run_chat(project: str, prompt: str, model: str, route: str = "", think=None,
              qa_model: str = "", console: str = "") -> None:
-    """Fix something the user reported."""
+    """Carry out a chat request against the existing application."""
     _edit_run(project, prompt, model, think, qa_model, console,
-              kind="repair",
-              brief=(f"The user reports this problem:\n\n{prompt}\n\n"
+              kind="edit",
+              brief=(f"The user requests this change to the existing application:\n\n{prompt}\n\n"
                      + (f"They were on the route {route}.\n" if route else "")
-                     + "Reproduce it first, from the real running app, and only then repair "
-                       "the cause. Add a regression test that fails before your fix and passes "
-                       "after it."))
+                     + "Read the relevant existing code and follow the user's intent, whether "
+                       "it is a new feature, a design change, or a fix. Keep unrelated behaviour "
+                       "working. For a reported bug, reproduce it and fix its cause. Verify "
+                       "the requested behaviour with appropriate checks and report what changed."))
 
 
 def _edit_run(project: str, prompt: str, model, think, qa_model: str, console: str,
               *, kind: str, brief: str) -> None:
+    cancel.begin()
+    cancel.note(project=project)
     try:
         proj_dir = PROD_DIR / str(project or "")
         if not proj_dir.is_dir():
@@ -374,8 +411,12 @@ def _edit_run(project: str, prompt: str, model, think, qa_model: str, console: s
 
         fill_missing_images(proj_dir, "the edit")
         url = _serve(proj_dir)
-        qa_outcome = _verify(proj_dir, proj_dir.name, model, think, qa_model)
+        qa_outcome = _record_verification(proj_dir, proj_dir.name, agent, outcome)
         _finish(proj_dir.name, url, outcome, qa_outcome)
+    except cancel.BuildCancelled:
+        ecancel({"project": project})
     except Exception as error:                                       # noqa: BLE001
         log.exception(kind)
         eerr(f"{type(error).__name__}: {error}")
+    finally:
+        cancel.finish()

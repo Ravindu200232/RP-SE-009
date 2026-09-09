@@ -12,10 +12,18 @@ from qa_agent import read_results as _read_results
 
 def read_qa_results(proj_name: str) -> dict:
     name = str(proj_name or "").strip()
-    proj_dir = PROD_DIR / name
-    if not name or not proj_dir.is_dir():
+    proj_dir = (PROD_DIR / name).resolve()
+    if not name or proj_dir.parent != PROD_DIR.resolve() or not proj_dir.is_dir():
         return {"error": "no such project", "project": name}
     return _read_results(proj_dir, name)
+
+
+def read_qa_screenshot(project, relative):
+    from qa_agent.artifacts import screenshot_path
+    root = (PROD_DIR / project).resolve()
+    if root.parent != PROD_DIR.resolve() or not project:
+        raise ValueError("No such project")
+    return screenshot_path(root, relative).read_bytes()
 
 
 def build_qa_pdf(qa: dict, out, project: str = ""):

@@ -9,6 +9,12 @@ Vitest is the permanent project unit/integration runner for this builder. Preser
 
 Read this skill at task start when selected and again immediately before entering the unit-test phase, after context compaction, or when a new unit-test failure changes the repair approach. Do not reread it between unchanged retries.
 
+Run the suite through `runTests` from its first execution, with a stable suite ID and `covers` requirement IDs. For per-case reporting, have that same command write Vitest JSON (`--reporter=json --outputFile=.agentforge/qa/vitest.json`) and pass `reportPath: ".agentforge/qa/vitest.json"`; create the output directory through a file write if the installed runner needs it. Do not execute the suite again just to register evidence or produce a report. Once current checks pass, proceed to E2E and finish.
+
+Read the saved coverage JSON or captured command output to inspect totals, files and uncovered lines. Changing a `findstr`/`grep` filter on the same test command is an output-reading task, not a reason to execute the suite again. Capture the report once, then read or filter that artifact until a source, test or configuration change calls for fresh evidence.
+
+Coverage is optional diagnostic information. Do not add tests, rerun a passing suite, or block completion solely to increase a percentage. Add meaningful tests for required behaviour and repaired defects, reuse existing passing cases, and inspect relevant implementation when a case needs repair.
+
 ## Before planning or editing
 
 Inspect the source under test with its imports/types and callers, nearby tests, `package.json` and lockfile, Vitest configuration (and any underlying Vite config only when Vitest actually consumes it), setup files, environment selection, path aliases, and relevant dependency interfaces. In Planner, put any installation or file creation in the blueprint; do not perform it before approval.
@@ -119,7 +125,7 @@ Make time deterministic with fake timers only for code whose contract depends on
 
 Do not delete the lockfile or dependency directory as the first repair. Read the package-manager diagnostic and graph, wait for or stop task-owned processes using the dependency tree, then apply the smallest compatible manifest/lockfile repair. If a clean install is genuinely required, serialize it and confirm no build, server, or test process is holding native modules first.
 
-For AgentX coverage evidence, configure or reuse a machine-readable Istanbul JSON summary, LCOV, or Cobertura report. Current Vitest also supports concise agent-oriented terminal reporting; prefer machine-readable output plus concise summaries instead of dumping every fully covered file into model context. Configure coverage include/reporters from the installed project's needs and current docs, not from remembered defaults. Then and include relevant changed/high-risk first-party source. Confirm the report includes the intended source set instead of tests, generated files, build output, or unrelated framework glue. Meet the verification scope's configured floor; do not exclude difficult files, auto-update thresholds to hide regressions, or manufacture coverage. A transform/parser failure while collecting source coverage is a build/config defect to repair, not a reason to narrow coverage until it disappears.
+For AgentX coverage evidence, configure or reuse a machine-readable Istanbul JSON summary, LCOV, or Cobertura report. Current Vitest also supports concise agent-oriented terminal reporting; prefer machine-readable output plus concise summaries instead of dumping every fully covered file into model context. Configure coverage include/reporters from the installed project's needs and current docs, not from remembered defaults. Then and include relevant changed/high-risk first-party source. Confirm the report includes the intended source set instead of tests, generated files, build output, or unrelated framework glue. Report measured percentages honestly; do not alter tests or thresholds simply to raise coverage. A transform/parser failure while collecting source coverage is a build/config defect to repair, not a reason to narrow coverage until it disappears.
 
 Read current official documentation when configuration or version behavior is uncertain:
 

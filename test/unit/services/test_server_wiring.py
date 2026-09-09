@@ -4,8 +4,96 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import server_runtime as server
+
+
+class PipelineLifecycleTests(unittest.TestCase):
+    def tearDown(self):
+        server.cancel.finish()
+
+    def test_completed_e2e_finishes_without_starting_a_second_qa_agent(self):
+        from builder_agent.memory import Memory
+
+        memory = Memory()
+        memory.evidence.define_scope("web", "nextjs", [
+            {"id": "booking", "description": "Book a room",
+             "evidence": ["unit", "runtime", "e2e"]}
+        ])
+        unit = memory.evidence.start("unit", "all", "vitest run", [], ["booking"])
+        memory.evidence.observe(unit, {"exitCode": 0,
+            "stdout": "Test Files 2 passed (2)\nTests 8 passed (8)"})
+        for kind in ("runtime", "e2e"):
+            memory.evidence.record_external(kind=kind, suite=kind, source="runner",
+                status="passed", covers=["booking"],
+                output="1. navigate -> /\n2. assert textIncludes -> Booked")
+        builder = SimpleNamespace(memory=memory)
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(server, "_prepare_workspace", return_value=Path(directory)), \
+                patch.object(server.MONGO, "ensure_running"), \
+                patch.object(server, "_brief", return_value="hotel"), \
+                patch.object(server, "_run_agent", return_value=(
+                    builder, SimpleNamespace(status="completed"))), \
+                patch.object(server, "fill_missing_images"), \
+                patch.object(server, "_serve", return_value="http://localhost"), \
+                patch.object(server, "QAAgent") as qa, \
+                patch.object(server, "edone") as done, \
+                patch.object(server, "eerr") as error:
+            qa.return_value.run.return_value = SimpleNamespace(ok=True)
+            server.run_agent_pipeline("hotel", "model")
+            saved = server.qa_report.read(Path(directory))
+            self.assertEqual(saved["vitest"]["numPassedTests"], 8)
+            self.assertEqual(saved["report"]["e2e"]["stage_passed"], 2)
+            done.assert_called_once_with("http://localhost", Path(directory).name)
+
+        error.assert_not_called()
+        qa.assert_not_called()
+
+    def test_cancel_adapter_returns_the_requested_state(self):
+        server.cancel.begin()
+        self.assertFalse(server._cancelled())
+        self.assertTrue(server.cancel.request()["ok"])
+        self.assertTrue(server._cancelled())
+
+    def test_build_registers_and_releases_cancellation(self):
+        def stop_run(*args, **kwargs):
+            self.assertEqual(server.cancel.request(),
+                             {"ok": True, "project": "demo", "srs_id": "spec"})
+            return None, SimpleNamespace(status="cancelled")
+
+        with patch.object(server, "_prepare_workspace", return_value=Path("demo")), \
+                patch.object(server.MONGO, "ensure_running"), \
+                patch.object(server, "_brief", return_value="build"), \
+                patch.object(server, "_run_agent", side_effect=stop_run) as run, \
+                patch.object(server, "ecancel") as stopped, \
+                patch.object(server, "eerr") as error:
+            server.run_agent_pipeline("build", "model", srs_id="spec")
+        run.assert_called_once()
+        stopped.assert_called_once_with({"project": "demo"})
+        error.assert_not_called()
+        self.assertFalse(server.cancel.request()["ok"])
+
+    def test_done_requires_completed_build_and_passing_qa(self):
+        for status, qa_ok, url in (("unverified", True, "http://localhost"),
+                                   ("completed", False, "http://localhost"),
+                                   ("completed", True, "")):
+            with self.subTest(status=status, qa_ok=qa_ok, url=url), \
+                    patch.object(server, "edone") as done, \
+                    patch.object(server, "eerr") as error:
+                result = server._finish("demo", url,
+                                        SimpleNamespace(status=status, result="incomplete"),
+                                        SimpleNamespace(ok=qa_ok, reason="checks failed"))
+                self.assertFalse(result)
+                done.assert_not_called()
+                error.assert_called_once()
+
+        with patch.object(server, "edone") as done:
+            self.assertTrue(server._finish("demo", "http://localhost",
+                                           SimpleNamespace(status="completed"),
+                                           SimpleNamespace(ok=True)))
+            done.assert_called_once_with("http://localhost", "demo")
 
 
 class OwnedDirectoryTests(unittest.TestCase):
@@ -39,6 +127,15 @@ class OwnedDirectoryTests(unittest.TestCase):
 
 
 class MessageDispatchTests(unittest.TestCase):
+    def test_chat_can_add_features_without_calling_every_request_a_bug(self):
+        with patch.object(server, "_edit_run") as run:
+            server.run_chat("demo", "Add room search", "model", "/rooms")
+        brief = run.call_args.kwargs["brief"]
+        self.assertIn("Add room search", brief)
+        self.assertNotIn("The user reports this problem", brief)
+        self.assertIn("new feature", brief)
+        self.assertIn("/rooms", brief)
+
     def job(self, kind, **values):
         message = {"type": kind, "model": "model", **values}
         return server._message_job(message)

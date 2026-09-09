@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { ArrowRight, Languages, Layers, Loader2, PencilLine, Sparkles } from 'lucide-react'
-import { useStore } from '@/lib/store'
+import { useStore, KEYS } from '@/lib/store'
 import { send } from '@/lib/ws'
 import { api } from '@/lib/api'
 import { TextArea } from './ui'
@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { useAttachments } from '@/lib/use-attachments'
 import { AttachButtons, AttachList } from './srs/Attachments'
 import LogoPanel from './LogoPanel'
+import BuildSetup from './BuildSetup'
 import Interview from './srs/Interview'
 import PlanReview from './srs/PlanReview'
 import SrsReview from './srs/SrsReview'
@@ -45,11 +46,12 @@ const EXAMPLES = [
         + 'handful of rooms and bookings, and a demo user of each role.' },
 ]
 
-export default function Home({ onStarted }) {
+export default function Home({ onStarted, modelOptions = [] }) {
   const s = useStore()
   const { images, think, models, srsId, srsPhase } = s
   const [prompt, setPrompt] = useState('')
   const [logoFor, setLogoFor] = useState(null)
+  const [setupFor, setSetupFor] = useState(null)
   const [srsError, setSrsError] = useState('')
   const [srsLanguage, setSrsLanguage] = useState('en')
   // "" means the engine reads the brief, which is what it did before there was
@@ -66,29 +68,39 @@ export default function Home({ onStarted }) {
 
   function begin(p, srs = '') {
     if (!p) return
-    // The approved SRS/plan already owns the visual direction.
-    // Continue directly to the optional logo step.
-    if (images) return setLogoFor({ idea: p, srs })
-    startBuild(p, '', srs)
+    setSetupFor({ idea: p, srs })
+  }
+
+  function configureBuild(config) {
+    const request = setupFor
+    setSetupFor(null)
+    setStack(config.stack)
+    useStore.setState({ models: { ...models, agent: config.model, planner: config.model,
+      design: config.model, builder: config.model }, think: config.think })
+    for (const role of ['agent', 'planner', 'design', 'builder']) s.persist(KEYS[role], config.model)
+    s.persist(KEYS.think, config.think ? '1' : '0')
+    if (images) return setLogoFor({ ...request, config })
+    startBuild(request.idea, '', request.srs, null, config)
   }
 
   function submit() {
     begin(prompt.trim())
   }
 
-  function startBuild(p, logo, srs = '', uploads = null) {
+  function startBuild(p, logo, srs = '', uploads = null, config = null) {
     setLogoFor(null)
     s.reset(null)
     s.setBusy(true)
     s.setProgress('Starting…', 0)
     onStarted?.()
-    s.addLog('INFO', `Planner — ${plannerModel} · Design — ${designModel} · Builder — ${builderModel}`)
+    const selected = config?.model || builderModel
+    s.addLog('INFO', `Planner — ${config?.model || plannerModel} · Design — ${config?.model || designModel} · Builder — ${selected}`)
     if (logo) s.addLog('INFO', 'Building around the logo you accepted')
     if (srs) s.addLog('INFO', 'Building from the SRS you approved')
-    send({ type: 'agent_build', prompt: p, model: builderModel,
-           builder_model: builderModel, planner_model: plannerModel,
-           design_model: designModel, stack,
-           think, qa_model: models.qa, logo, srs_id: srs || '',
+    send({ type: 'agent_build', prompt: p, model: selected,
+           builder_model: selected, planner_model: config?.model || plannerModel,
+           design_model: config?.model || designModel, stack: config?.stack || stack,
+           think: config?.think ?? think, qa_model: models.qa, logo, srs_id: srs || '',
            uploads: uploads && Object.keys(uploads).length ? uploads : undefined })
   }
 
@@ -317,12 +329,16 @@ export default function Home({ onStarted }) {
       </div>
 
 
+      {setupFor && (
+        <BuildSetup model={builderModel} stack={stack} think={think} options={modelOptions}
+                    onContinue={configureBuild} onCancel={() => setSetupFor(null)} />
+      )}
       {logoFor && (
         <LogoPanel idea={logoFor.idea} model={designModel}
                    onAccept={(file, uploads) => startBuild(logoFor.idea, file,
-                                                  logoFor.srs, uploads)}
+                                                  logoFor.srs, uploads, logoFor.config)}
                    onSkip={(uploads) => startBuild(logoFor.idea, '', logoFor.srs,
-                                            uploads)} />
+                                            uploads, logoFor.config)} />
       )}
     </div>
   )

@@ -43,16 +43,16 @@ OPERATING PRINCIPLES
 
 PHASES = """PHASE DISCIPLINE
 Keep an explicit internal phase ledger and move on only when the current phase's done condition is evidenced:
-1) discover the requirements and the project; 2) resolve material decisions; 3) architecture, contracts and data flow; 4) implementation in dependency order; 5) build and static checks the project actually has; 6) unit verification; 7) asserted E2E journeys; 8) runtime readiness at the real public boundary; 9) a final risk review.
+1) discover the requirements and the project; 2) resolve material decisions; 3) architecture, contracts and data flow; 4) implementation in dependency order; 5) build and static checks the project actually has; 6) runtime readiness at the real public boundary; 7) unit verification and review; 8) asserted E2E journeys; 9) Done.
 Do not silently skip a phase. If one is genuinely not applicable, record why from the actual project before continuing. A failed or still-running phase blocks advancement. A failure returns to the owning implementation phase with its evidence; it does not restart the plan and it does not repeat the same failed command unchanged."""
 
 
 TESTING = """TEST-DRIVEN COMPLETION
 Call defineVerificationScope before writing tests, and testingStatus to see where you stand. Derive requirements from the request and the project: public boundaries, domain behaviour, critical flows and UI states. This records evidence; it does not choose a stack. Page a large scope with finalize:false, then seal the last page.
 The ledger is the record of what is proved, not your memory of it. A suite that already passed at the current revision is proved: running it again records the same pass and tells you nothing. Only a change to the project moves the revision, so if you have edited nothing since, no rerun of anything can give a new answer. When you are unsure what to do next, call testingStatus and prove the first gap it names - never fill the time by rerunning work that has already answered.
-Work forward through the layers: unit passes, then E2E passes, then runtime passes, then you are done. Report and stop as soon as every required layer has current evidence. Continuing to check what is already proved is not thoroughness; it is a run that has lost its place.
+Work forward through the layers: build passes, then runtime passes, then unit passes, then E2E passes, then you are done. Reuse the ready runtime for browser journeys. Report and stop as soon as every required layer has current evidence. A final review reuses passing evidence from this revision; it does not order every check to run again.
 Put requirement ids in runTests.covers and browserRunJourney.covers. Mark project-changing shell commands with changesProject:true; services and read-only commands are false.
-Unit-test critical business logic, changed behaviour, boundaries, error paths and every bug you repaired. Pass coverageReports so coverage is measured from the runner's own report, and meet the floor without omitting relevant source or weakening assertions.
+Unit-test critical business logic, changed behaviour, boundaries, error paths and every bug you repaired. Coverage percentages are optional diagnostics, never a reason to block completion or add/rerun tests solely to increase a number. This also applies if an older project skill mentions a coverage floor. After the required unit and E2E checks pass, finish; no second QA authoring cycle is needed.
 For E2E, cover every sealed critical journey at its real public boundary with browserRunJourney in the engine's isolated browser. Give each suite a stable startUrl. Accessible names resolve exact, then normalised, then one unique containing match - do not guess long concatenated names. After a failure, read the bounded URL, diagnostics and page text the journey already returned; do not take another snapshot of an unchanged page. Route repair by owner: E2E_SELECTOR_* means fix the journey locator, E2E_UI_TARGET_MISSING means fix the product UI, route or state, and an assertion, console, network or 5xx failure means fix production behaviour. A suite that failed twice with no repair in between will fail a third time; repair the owner instead.
 Runtime evidence must launch or exercise the real final app: assert startup and readiness, exercise a representative path, and fail on crashes, unhandled errors or failed dependencies. A running PID or one HTTP 200 is not enough. Do not suppress a real runtime error; fix it and rerun.
 Use isolated test data, accounts and ports. Never touch production data or real payments. Setup, build and lint alone, screenshots, skipped suites and masked failures are not test passes.
@@ -98,7 +98,7 @@ def _fit(parts: list[str], context_tokens: int) -> list[str]:
 
 def system_prompt(*, workspace, model: str, stack: str, quality: Quality,
                   context_tokens: int, review: bool = False,
-                  testing_enabled: bool = True) -> str:
+                  testing_enabled: bool = True, verification_kinds=None) -> str:
     contract = stack_for(stack)
     parts = [
         CORE,
@@ -131,6 +131,14 @@ def system_prompt(*, workspace, model: str, stack: str, quality: Quality,
         parts.append(TESTING)
         parts.append(STACK_QUALITY)
     parts.append(BACKGROUND)
+    if verification_kinds is not None:
+        parts.append(
+            "ASSIGNED VERIFICATION PASS\n"
+            f"This pass owns only: {', '.join(verification_kinds)}. The calling workflow owns "
+            "the other verification stages. Define scope and produce evidence for this pass, "
+            "then return when it passes. Do not launch another verification layer or record "
+            "limitations for unassigned layers just to satisfy full-application guidance. "
+            "You may repair application or test code whenever the assigned evidence requires it.")
     return "\n\n".join(_fit(parts, context_tokens))
 
 
