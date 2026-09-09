@@ -8,6 +8,7 @@ studio produces looks identical.
 """
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -18,6 +19,7 @@ from builder_agent.knowledge import Knowledge
 from builder_agent.layout import format_layout, inspect_layout
 from builder_agent.skills import (SKILL_ROOT, catalog, install_skill_pack, read_manifest,
                                   read_skill, select)
+from builder_agent.config import stack_of
 from builder_agent.templates import (_package_name, install_template, is_greenfield,
                                      template_notice)
 
@@ -364,6 +366,44 @@ class KnowledgeTests(unittest.TestCase):
     def test_a_fresh_installation_has_nothing_to_publish(self):
         self.assertIsNone(Knowledge(self.root, Path(tempfile.mkdtemp()))
                           .install_skill(Path(tempfile.mkdtemp()), "nextjs-mongo"))
+
+
+class ProjectStackTests(unittest.TestCase):
+    """An existing project knows its own stack better than a sentence does."""
+
+    def project(self, manifest):
+        root = Path(tempfile.mkdtemp())
+        (root / "package.json").write_text(json.dumps(manifest), encoding="utf-8")
+        return root
+
+    def test_a_workspaces_repository_is_the_microservices_stack(self):
+        root = self.project({"name": "shop", "private": True,
+                             "workspaces": ["packages/*", "client"]})
+        self.assertEqual(stack_of(root), "mern-microservices")
+
+    def test_a_next_dependency_is_the_single_application_stack(self):
+        root = self.project({"name": "shop",
+                             "dependencies": {"next": "^15.1.4", "react": "^18.3.1"}})
+        self.assertEqual(stack_of(root), "nextjs-mongo")
+
+    def test_a_project_that_says_neither_is_left_undecided(self):
+        """An empty answer falls back to reading the request, as before."""
+        self.assertEqual(stack_of(self.project({"name": "shop"})), "")
+
+    def test_a_missing_or_broken_manifest_is_not_a_crash(self):
+        self.assertEqual(stack_of(Path("no-such-project")), "")
+        root = Path(tempfile.mkdtemp())
+        (root / "package.json").write_text("{ not json", encoding="utf-8")
+        self.assertEqual(stack_of(root), "")
+
+    def test_the_real_stacks_round_trip_through_their_own_templates(self):
+        """Whatever a template scaffolds must read back as that same stack."""
+        for stack in ("nextjs-mongo", "mern-microservices"):
+            with self.subTest(stack=stack):
+                root = Path(tempfile.mkdtemp())
+                install_template(root, stack)
+                self.assertEqual(stack_of(root), stack)
+
 
 
 if __name__ == "__main__":

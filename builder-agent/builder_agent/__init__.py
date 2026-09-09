@@ -10,7 +10,7 @@ suites - rather than being a picker on the build itself.
 """
 from .agent import BuilderAgent
 from .config import (BUILD_QUALITY, VERIFY_QUALITY, Config, Quality, Stack,
-                     detect_stack, stack_for, STACKS)
+                     detect_stack, stack_for, stack_of, STACKS)
 from .errors import AbortError, AgentError, ConfigError, SecurityError, ToolError
 from .events import Events
 from .evidence import Evidence
@@ -19,7 +19,7 @@ from .llm import OllamaClient, Router, load_settings, save_settings
 __all__ = [
     "BuilderAgent", "Config", "Quality", "Stack", "STACKS", "Events", "Evidence",
     "OllamaClient", "Router", "BUILD_QUALITY", "VERIFY_QUALITY",
-    "detect_stack", "stack_for", "load_settings", "save_settings",
+    "detect_stack", "stack_for", "stack_of", "load_settings", "save_settings",
     "AgentError", "ConfigError", "ToolError", "SecurityError", "AbortError",
 ]
 

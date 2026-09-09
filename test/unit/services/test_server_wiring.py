@@ -346,5 +346,47 @@ class DeclaredPortTests(unittest.TestCase):
 
 
 
+class SessionStatsTests(unittest.TestCase):
+    """Switching to an idle project left the status line blank, then at zero."""
+
+    def setUp(self):
+        server._SESSIONS.clear()
+        self.addCleanup(server._SESSIONS.clear)
+
+    class Memory(list):
+        """Long enough to measure, and it answers len() like the real one."""
+
+        def build(self):
+            return [{"role": "user", "content": "x" * 400} for _ in range(len(self))]
+
+    def seed(self, name, messages=6):
+        agent = types.SimpleNamespace(
+            memory=self.Memory(range(messages)),
+            config=types.SimpleNamespace(context_tokens=32_000, stack="mern-microservices"),
+            router=types.SimpleNamespace(label="ollama/deepseek",
+                                         usage={"requests": 4, "prompt": 900, "completion": 120}))
+        server._SESSIONS[name] = {"agent": agent, "key": server._session_key("m", False, ""),
+                                  "reusable": True}
+
+    def test_a_live_conversation_reports_what_it_is_holding(self):
+        self.seed("shop")
+
+        stats = server.session_stats("shop")
+
+        self.assertEqual(stats["model"], "ollama/deepseek")
+        self.assertEqual(stats["stack"], "mern-microservices")
+        self.assertEqual(stats["requests"], 4)
+        self.assertEqual(stats["sent"], 900)
+        self.assertEqual(stats["received"], 120)
+        self.assertGreater(stats["tokens"], 0)
+        self.assertGreater(stats["limit"], 0)
+
+    def test_a_project_with_no_conversation_reports_nothing_rather_than_zeroes(self):
+        """Blank is honest; zero would claim a context that was measured."""
+        self.assertEqual(server.session_stats("never-opened"), {})
+        self.assertEqual(server.session_stats(""), {})
+
+
+
 if __name__ == "__main__":
     unittest.main()

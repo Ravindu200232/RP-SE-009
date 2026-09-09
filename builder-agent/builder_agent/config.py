@@ -17,6 +17,7 @@ ported from:
 """
 from __future__ import annotations
 
+import json
 import os
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -100,6 +101,34 @@ DEFAULT_STACK = NEXT_MONGO.id
 
 def stack_for(value: str | None) -> Stack:
     return STACKS.get(str(value or "").strip(), STACKS[DEFAULT_STACK])
+
+
+def stack_of(workspace) -> str:
+    """Which stack a project on disk was built as, from its own manifest.
+
+    Reading the request instead is fine when there is no project yet, and
+    wrong the moment there is one: an edit whose words happen not to mention
+    microservices was handed the single-application contract for a repository
+    full of services, and - because the stack is part of what makes a
+    conversation the same conversation - was given a new agent and a context
+    window starting again from nothing.
+
+    Nothing is guessed from a directory listing. A workspaces manifest is a
+    multi-package repository because npm says so; `next` among the root
+    dependencies is a Next application for the same reason.
+    """
+    try:
+        manifest = json.loads(
+            (Path(workspace) / "package.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ""
+    if not isinstance(manifest, dict):
+        return ""
+    if manifest.get("workspaces"):
+        return MERN_MICRO.id
+    dependencies = {**(manifest.get("dependencies") or {}),
+                    **(manifest.get("devDependencies") or {})}
+    return NEXT_MONGO.id if "next" in dependencies else ""
 
 
 def detect_stack(prompt: str) -> str:

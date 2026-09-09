@@ -24,7 +24,7 @@ for _root in (_BUILDER_ROOT, _QA_ROOT):
     if _root not in sys.path:
         sys.path.insert(0, _root)
 
-from builder_agent import BuilderAgent, Config, Events, detect_stack  # noqa: E402
+from builder_agent import BuilderAgent, Config, Events, detect_stack, stack_of  # noqa: E402
 from qa_agent import QAAgent  # noqa: E402
 from qa_agent.agent import QAOutcome  # noqa: E402
 from qa_agent import report as qa_report, security as qa_security  # noqa: E402
@@ -266,6 +266,36 @@ def forget_session(project: str) -> None:
             session["agent"].dispose()
         except Exception as error:                                   # noqa: BLE001
             log.debug(f"disposing the session for {project}: {error}")
+
+
+def session_stats(project: str) -> dict:
+    """The context a project's conversation is already holding.
+
+    The status line is fed by events, and events only arrive while something
+    is running. Switching to a project whose conversation is alive but idle
+    left the line blank, and it came back at zero on the next message as
+    though nothing had been said - which was exactly the reset the session was
+    built to prevent, showing through in the one place a person reads it.
+    """
+    with _SESSIONS_LOCK:
+        session = _SESSIONS.get(str(project or ""))
+    agent = session["agent"] if session else None
+    if agent is None:
+        return {}
+    try:
+        from builder_agent.context import ContextBudget
+
+        budget = ContextBudget(agent.config.context_tokens)
+        measurement = budget.measure(agent.memory.build(), fresh=True).as_event()
+    except Exception as error:                                       # noqa: BLE001
+        log.debug(f"measuring the session for {project}: {error}")
+        measurement = {}
+    usage = dict(getattr(agent.router, "usage", {}) or {})
+    return {"model": agent.router.label, "stack": agent.config.stack,
+            "messages": len(agent.memory),
+            "requests": usage.get("requests", 0),
+            "sent": usage.get("prompt", 0), "received": usage.get("completion", 0),
+            **measurement}
 
 
 def release_other_sessions(keep: str) -> list:
@@ -518,8 +548,11 @@ def _edit_run(project: str, prompt: str, model, think, qa_model: str, console: s
         if console:
             full += ("\n\nThe browser had already logged this before they asked:\n"
                      + console[:6000])
+        # The project is already built, so it knows its own stack far better
+        # than the sentence asking for a change does.
         agent, outcome = _run_agent(proj_dir, _brief(proj_dir, full), model, think,
-                                    phases=EDIT_PHASES, kind=kind, plan=False)
+                                    phases=EDIT_PHASES, kind=kind, plan=False,
+                                    stack=stack_of(proj_dir))
         if outcome.status == "cancelled":
             return ecancel({"project": proj_dir.name})
 

@@ -189,6 +189,17 @@ export default function Studio() {
     // The previous project's console errors are not this one's evidence.
     forgetConsole()
 
+    // The status line is fed by events, and events only arrive while a run is
+    // going. A project whose conversation is alive but idle showed nothing at
+    // all, then came back at zero on the next message — which read as the
+    // context having been thrown away when it had not.
+    api.session(name)
+      .then(({ stats }) => {
+        if (stats && Object.keys(stats).length
+            && useStore.getState().project === name) useStore.getState().setRunStats(stats)
+      })
+      .catch(() => { /* an older backend has no session to report */ })
+
     try {
       await api.open(name)
 
