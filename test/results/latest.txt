@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-09T04:26:05+00:00
+Run at (UTC): 2026-09-09T05:09:47+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 282
+Unit tests: 288
 Integration tests: 24
-Total tests run: 306
+Total tests run: 312
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 14.178s
+Duration: 14.765s
 
 Detailed results
 ----------------
@@ -296,6 +296,14 @@ Their dev services are still holding the ports this one wants. ... ok
 test_the_first_project_of_a_session_has_nothing_to_release (test.unit.services.test_server_wiring.ChatSessionTests.test_the_first_project_of_a_session_has_nothing_to_release) ... ok
 test_the_project_being_started_is_not_let_go_of (test.unit.services.test_server_wiring.ChatSessionTests.test_the_project_being_started_is_not_let_go_of) ... ok
 test_the_same_project_keeps_one_conversation (test.unit.services.test_server_wiring.ChatSessionTests.test_the_same_project_keeps_one_conversation) ... ok
+test_a_connection_string_is_not_mistaken_for_a_port (test.unit.services.test_server_wiring.DeclaredPortTests.test_a_connection_string_is_not_mistaken_for_a_port)
+`mongodb://127.0.0.1:27017/...` is not a port this app binds. ... ok
+test_a_privileged_or_nonsense_value_is_ignored (test.unit.services.test_server_wiring.DeclaredPortTests.test_a_privileged_or_nonsense_value_is_ignored) ... ok
+test_a_project_that_declares_nothing_frees_nothing (test.unit.services.test_server_wiring.DeclaredPortTests.test_a_project_that_declares_nothing_frees_nothing) ... ok
+test_every_port_the_project_declares_is_found (test.unit.services.test_server_wiring.DeclaredPortTests.test_every_port_the_project_declares_is_found) ... ok
+test_the_local_file_and_the_example_are_read_without_duplicates (test.unit.services.test_server_wiring.DeclaredPortTests.test_the_local_file_and_the_example_are_read_without_duplicates) ... ok
+test_the_preview_port_is_left_to_the_dev_server_that_owns_it (test.unit.services.test_server_wiring.DeclaredPortTests.test_the_preview_port_is_left_to_the_dev_server_that_owns_it)
+Freeing it here would kill the server being started moments later. ... ok
 test_a_selection_of_several_elements_travels_whole (test.unit.services.test_server_wiring.MessageDispatchTests.test_a_selection_of_several_elements_travels_whole)
 Clicking three things has to send three things, with their pictures. ... ok
 test_a_stack_chosen_in_the_studio_reaches_the_run (test.unit.services.test_server_wiring.MessageDispatchTests.test_a_stack_chosen_in_the_studio_reaches_the_run)
@@ -353,6 +361,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 306 tests in 14.178s
+Ran 312 tests in 14.765s
 
 OK

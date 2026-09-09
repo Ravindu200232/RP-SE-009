@@ -370,10 +370,29 @@ def _verify(proj_dir: Path, project: str, model: str, think, qa_model: str, *, m
         qa.dispose()
 
 
-def _serve(proj_dir: Path) -> str:
-    """Bring the app up so the preview and the journeys have something to hit."""
+def _serve(proj_dir: Path, agent=None) -> str:
+    """Bring the app up so the preview and the journeys have something to hit.
+
+    The run's own dev servers go first. A finished run leaves them up so the
+    preview has something to show, but the preview is about to start its own
+    copy of the same application, and on a multi-service stack the old ones are
+    still holding the ports the new ones need - the gateway came up on the
+    preview port while every service behind it died with EADDRINUSE.
+
+    A Next app never noticed: it binds one port, and starting the dev server
+    frees that port first. Nothing here needs to know which ports a stack uses,
+    only that the processes holding them belong to the run that just ended.
+    """
     estep("preview", "active")
     try:
+        if agent is not None:
+            agent.processes.stop_all()
+        # Whatever this run owned is gone; anything still on the project's own
+        # ports is an orphan from a run that ended badly, and it will stop the
+        # preview just as effectively.
+        freed = free_declared_ports(proj_dir)
+        if freed:
+            log.info(f"freed ports {', '.join(str(p) for p in freed)} before the preview")
         ensure_node_deps(proj_dir)
         start_dev_server(proj_dir, detect_stack(proj_dir))
         if wait_for_dev(detect_stack(proj_dir)):
@@ -444,7 +463,7 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
             return ecancel({"project": name})
 
         fill_missing_images(proj_dir, "the build")
-        url = _serve(proj_dir)
+        url = _serve(proj_dir, agent)
         qa_outcome = _record_verification(proj_dir, name, agent, outcome)
         if _finish(name, url, outcome, qa_outcome):
             elog("SUCCESS", f"✅ {name} finished in {int(time.time() - started)}s")
@@ -505,7 +524,7 @@ def _edit_run(project: str, prompt: str, model, think, qa_model: str, console: s
             return ecancel({"project": proj_dir.name})
 
         fill_missing_images(proj_dir, "the edit")
-        url = _serve(proj_dir)
+        url = _serve(proj_dir, agent)
         qa_outcome = _record_verification(proj_dir, proj_dir.name, agent, outcome)
         _finish(proj_dir.name, url, outcome, qa_outcome)
     except cancel.BuildCancelled:

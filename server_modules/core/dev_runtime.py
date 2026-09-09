@@ -304,6 +304,42 @@ def _kill_proc_tree(proc):
         pass
 
 
+# `PORT=4000`, `AUTH_PORT=4101`. Values only, so a URL is not mistaken for one.
+_PORT_LINE = re.compile(r"^\s*(?:export\s+)?([A-Z0-9_]*PORT)\s*=\s*(\d{2,5})\s*$", re.M)
+
+
+def declared_ports(proj_dir: Path) -> list[int]:
+    """Every port this project's own configuration says it will bind.
+
+    A multi-service app binds one port per service, and only the project knows
+    how many or which: the gateway takes `PORT`, each service takes its own
+    `<NAME>_PORT`. Reading them here means nothing has to be written down that
+    would go stale the moment a stack adds a service - and the alternative was
+    a run whose gateway came up while every service behind it died on a port
+    an earlier run had never let go of.
+    """
+    ports, seen = [], set()
+    for name in (".env.local", ".env", ".env.example"):
+        try:
+            body = (Path(proj_dir) / name).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for _, value in _PORT_LINE.findall(body):
+            port = int(value)
+            if 1024 <= port <= 65535 and port not in seen:
+                seen.add(port)
+                ports.append(port)
+    return ports
+
+
+def free_declared_ports(proj_dir: Path) -> list[int]:
+    """Take back every port this project is about to bind."""
+    freed = [port for port in declared_ports(proj_dir) if port != DEV_PORT]
+    for port in freed:
+        _kill_port(port)
+    return freed
+
+
 def _kill_port(port: int):
     """Force-kill whatever holds a port, on Windows as well as POSIX."""
     if os.name == "nt":

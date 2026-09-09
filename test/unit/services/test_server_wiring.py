@@ -285,5 +285,66 @@ class ChatSessionTests(unittest.TestCase):
 
 
 
+class DeclaredPortTests(unittest.TestCase):
+    """A multi-service app binds one port per service; only it knows which."""
+
+    def project(self, **files):
+        root = Path(tempfile.mkdtemp())
+        for name, body in files.items():
+            (root / name).write_text(body, encoding="utf-8")
+        return root
+
+    def test_every_port_the_project_declares_is_found(self):
+        root = self.project(**{".env.example": (
+            "# One port for the whole application. The gateway owns it.\n"
+            "PORT=4000\n"
+            "MONGODB_URI=mongodb://127.0.0.1:27017/agentforge_shop\n"
+            "JWT_SECRET=change-me\n"
+            "AUTH_PORT=4101\n"
+            "CATALOG_PORT=4102\n"
+            "ORDERS_PORT=4103\n")})
+
+        self.assertEqual(server.declared_ports(root), [4000, 4101, 4102, 4103])
+
+    def test_a_connection_string_is_not_mistaken_for_a_port(self):
+        """`mongodb://127.0.0.1:27017/...` is not a port this app binds."""
+        root = self.project(**{".env": (
+            "MONGODB_URI=mongodb://127.0.0.1:27017/agentforge_shop\n"
+            "REDIS_URL=redis://127.0.0.1:6379\n"
+            "PORT=4000\n")})
+
+        self.assertEqual(server.declared_ports(root), [4000])
+
+    def test_the_local_file_and_the_example_are_read_without_duplicates(self):
+        root = self.project(**{".env.local": "PORT=4000\nAUTH_PORT=4101\n",
+                               ".env.example": "PORT=4000\nAUTH_PORT=4101\nORDERS_PORT=4103\n"})
+
+        self.assertEqual(server.declared_ports(root), [4000, 4101, 4103])
+
+    def test_a_project_that_declares_nothing_frees_nothing(self):
+        self.assertEqual(server.declared_ports(self.project()), [])
+        self.assertEqual(server.declared_ports(Path("no-such-directory")), [])
+
+    def test_a_privileged_or_nonsense_value_is_ignored(self):
+        root = self.project(**{".env": "PORT=80\nDEBUG_PORT=99999\nAUTH_PORT=4101\n"})
+        self.assertEqual(server.declared_ports(root), [4101])
+
+    def test_the_preview_port_is_left_to_the_dev_server_that_owns_it(self):
+        """Freeing it here would kill the server being started moments later."""
+        root = self.project(**{".env": f"PORT={server.DEV_PORT}\nAUTH_PORT=4101\n"})
+        killed = []
+        original = server._kill_port
+        server._kill_port = killed.append
+        try:
+            freed = server.free_declared_ports(root)
+        finally:
+            server._kill_port = original
+
+        self.assertEqual(freed, [4101])
+        self.assertEqual(killed, [4101])
+        self.assertNotIn(server.DEV_PORT, killed)
+
+
+
 if __name__ == "__main__":
     unittest.main()
