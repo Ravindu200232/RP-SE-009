@@ -246,8 +246,15 @@ _SESSIONS_LOCK = threading.Lock()
 
 
 def _session_key(model: str, think, stack: str) -> tuple:
-    """What a session is; changing any of it is a different conversation."""
-    return (str(model or ""), bool(think), str(stack or ""))
+    """What makes a conversation a different one.
+
+    Only the stack. Switching model or turning thinking on does not make what
+    was already said untrue - the transcript, the evidence and the context
+    belong to the project, and throwing them away because someone picked a
+    different model is exactly the reset this was built to stop. Those two are
+    applied to the conversation that is already running.
+    """
+    return (str(stack or ""),)
 
 
 def forget_session(project: str) -> None:
@@ -271,9 +278,9 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
     the context window all carry over, and the engine's own compaction is what
     keeps that affordable over a long session.
 
-    A build starts a fresh conversation - there is nothing before it - and so
-    does a change of model, stack or thinking, because none of those can be
-    applied to a transcript that was written under the old ones.
+    A build starts a fresh conversation, since there is nothing before it. A
+    change of model or of thinking does not: it is applied to the conversation
+    already running, because what was said stays true whoever answers next.
     """
     name = proj_dir.name
     key = _session_key(model, think, stack)
@@ -283,6 +290,7 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
             session = _SESSIONS.get(name)
         if session and session["key"] == key:
             agent = session["agent"]
+            agent.retarget(model, think)
         elif session:
             forget_session(name)
 

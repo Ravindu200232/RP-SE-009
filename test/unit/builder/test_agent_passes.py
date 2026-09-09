@@ -264,5 +264,55 @@ class PendingQuestionTests(unittest.TestCase):
 
 
 
+class RetargetTests(unittest.TestCase):
+    """Switching model mid-conversation must not cost the conversation."""
+
+    def agent(self, tmp, model="deepseek", think=False):
+        from builder_agent.agent import BuilderAgent
+        from builder_agent.config import Config
+        return BuilderAgent(Config(workspace=tmp, model=model, think=think),
+                            events=Events())
+
+    def test_the_transcript_survives_a_change_of_model(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            agent = self.agent(tmp)
+            agent.memory.add_user("make the heading bigger")
+            before = len(agent.memory)
+
+            self.assertTrue(agent.retarget("qwen2.5-coder:14b"))
+
+            self.assertEqual(agent.config.model, "qwen2.5-coder:14b")
+            self.assertEqual(agent.router.model, "qwen2.5-coder:14b")
+            self.assertEqual(len(agent.memory), before)
+
+    def test_thinking_can_be_turned_on_without_starting_again(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            agent = self.agent(tmp)
+            agent.memory.add_user("and the price too")
+            before = len(agent.memory)
+
+            self.assertTrue(agent.retarget(think=True))
+
+            self.assertTrue(agent.config.think)
+            self.assertEqual(len(agent.memory), before)
+
+    def test_retargeting_to_what_is_already_set_changes_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            agent = self.agent(tmp, model="deepseek", think=False)
+            self.assertFalse(agent.retarget("deepseek", False))
+            self.assertFalse(agent.retarget())
+
+    def test_the_window_is_remeasured_so_a_smaller_model_is_not_overfilled(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            agent = self.agent(tmp)
+            agent.router.context_window = lambda: 8192
+
+            agent.retarget("a-small-one")
+
+            self.assertEqual(agent.config.context_tokens, 8192)
+            self.assertEqual(agent.memory.budget_tokens, 8192)
+
+
+
 if __name__ == "__main__":
     unittest.main()

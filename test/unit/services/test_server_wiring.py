@@ -225,12 +225,12 @@ class ChatSessionTests(unittest.TestCase):
         key = server._session_key("deepseek", False, "nextjs-mongo")
         self.assertEqual(key, server._session_key("deepseek", False, "nextjs-mongo"))
 
-    def test_changing_the_model_is_a_different_conversation(self):
-        """A transcript written under one model cannot be handed to another."""
+    def test_changing_the_model_or_thinking_keeps_the_conversation(self):
+        """Picking another model does not make what was already said untrue."""
         base = server._session_key("deepseek", False, "nextjs-mongo")
-        self.assertNotEqual(base, server._session_key("qwen", False, "nextjs-mongo"))
-        self.assertNotEqual(base, server._session_key("deepseek", True, "nextjs-mongo"))
-        self.assertNotEqual(base, server._session_key("deepseek", False, "mern-microservices"))
+        self.assertEqual(base, server._session_key("qwen", False, "nextjs-mongo"))
+        self.assertEqual(base, server._session_key("deepseek", True, "nextjs-mongo"))
+        self.assertEqual(base, server._session_key("qwen", True, "nextjs-mongo"))
 
     def test_forgetting_a_project_disposes_its_agent(self):
         disposed = []

@@ -105,6 +105,30 @@ class BuilderAgent:
             self.config.context_tokens = detected
             self.memory.budget_tokens = detected
 
+    def retarget(self, model: str = "", think: bool | None = None) -> bool:
+        """Answer the rest of this conversation with a different model.
+
+        Changing the model does not make what was already said untrue, so it
+        must not throw the conversation away: the transcript, the evidence and
+        the context all belong to the project, not to whichever model happened
+        to be answering. Only the window can differ, and that is re-measured
+        here so a smaller model is not handed a transcript it cannot hold.
+        """
+        changed = False
+        if model and model != self.config.model:
+            self.config.model = model
+            self.router.model = model
+            changed = True
+        if think is not None and bool(think) != bool(self.config.think):
+            self.config.think = bool(think)
+            changed = True
+        if changed:
+            detected = self.router.context_window()
+            if detected:
+                self.config.context_tokens = detected
+                self.memory.budget_tokens = detected
+        return changed
+
     # -- passes ----------------------------------------------------------
     def plan(self, task: str) -> Outcome:
         """Investigate the project, then write the plan the build executes.
