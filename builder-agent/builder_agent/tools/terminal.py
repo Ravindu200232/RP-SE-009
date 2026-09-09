@@ -107,8 +107,12 @@ def register(registry):
         summarize=lambda a: str(a.get("command", ""))[:70]))
 
     registry.add(Tool(
-        name="waitForProcess", risk=SAFE, handler=wait_for_process,
-        description="Wait for a process started earlier and read its exit code and output.",
+        # Observing a process is read-only, and a pass that may start commands
+        # must be able to wait for them: told to call this without being given
+        # it, a planner used `echo` as a sleep a thousand times over.
+        name="waitForProcess", risk=SAFE, review_safe=True, handler=wait_for_process,
+        description="Wait for a process started earlier and read its exit code and output. "
+                    "This is how you wait - never spin on a no-op command to pass the time.",
         parameters={"type": "object", "required": ["processId"], "properties": {
             "processId": {"type": "string"},
             "timeoutSeconds": {"type": "number"},
@@ -116,7 +120,7 @@ def register(registry):
         summarize=lambda a: a.get("processId", "")))
 
     registry.add(Tool(
-        name="backgroundProcess", risk=SAFE, handler=background_process,
+        name="backgroundProcess", risk=SAFE, review_safe=True, handler=background_process,
         description="List the processes this run started, with their state.",
         parameters={"type": "object", "properties": {}},
         summarize=lambda a: "processes"))

@@ -322,5 +322,39 @@ class QualityProfileTests(unittest.TestCase):
         self.assertEqual(stack_for(None).id, "nextjs-mongo")
 
 
+class PlannerToolsetTests(unittest.TestCase):
+    """A pass must own every tool its own results tell it to call."""
+
+    def planner_tools(self) -> set:
+        """The subset `BuilderAgent.plan` builds, by the same rule."""
+        registry = build_registry()
+        return {name for name, tool in registry.tools.items()
+                if tool.review_safe or name in ("executeTerminal",)}
+
+    def test_a_pass_that_runs_commands_can_wait_for_them(self):
+        """Told to call waitForProcess without having it, a planner span on
+        `echo` as a sleep - a thousand no-op commands in one run."""
+        tools = self.planner_tools()
+        self.assertIn("executeTerminal", tools)
+        self.assertIn("waitForProcess", tools)
+
+    def test_the_still_running_message_names_a_tool_the_planner_has(self):
+        from builder_agent.tools.terminal import format_result
+
+        message = format_result({"pending": True, "processId": "abc123", "elapsed": 30})
+        named = {word.strip(".,;") for word in message.split()}
+        tools = self.planner_tools()
+        for tool in named & set(build_registry().tools):
+            with self.subTest(tool=tool):
+                self.assertIn(tool, tools)
+
+    def test_the_planner_still_cannot_change_the_project(self):
+        """Waiting is read-only; planning must not start writing files."""
+        tools = self.planner_tools()
+        for forbidden in ("writeFile", "patchFile", "editFile", "browserRunJourney"):
+            self.assertNotIn(forbidden, tools)
+
+
+
 if __name__ == "__main__":
     unittest.main()

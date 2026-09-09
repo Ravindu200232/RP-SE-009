@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-09T04:11:53+00:00
+Run at (UTC): 2026-09-09T04:26:05+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 279
+Unit tests: 282
 Integration tests: 24
-Total tests run: 303
+Total tests run: 306
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 14.106s
+Duration: 14.178s
 
 Detailed results
 ----------------
@@ -56,6 +56,11 @@ test_an_abandoned_tool_call_is_answered_so_the_transcript_stays_valid (test.unit
 test_the_system_prompt_and_the_task_survive_compaction (test.unit.builder.test_engine.MemoryTests.test_the_system_prompt_and_the_task_survive_compaction) ... ok
 test_the_wire_shape_is_the_one_the_provider_accepts (test.unit.builder.test_engine.MemoryTests.test_the_wire_shape_is_the_one_the_provider_accepts)
 Ollama parses tool-call arguments as an object, not a JSON string. ... ok
+test_a_pass_that_runs_commands_can_wait_for_them (test.unit.builder.test_engine.PlannerToolsetTests.test_a_pass_that_runs_commands_can_wait_for_them)
+Told to call waitForProcess without having it, a planner span on ... ok
+test_the_planner_still_cannot_change_the_project (test.unit.builder.test_engine.PlannerToolsetTests.test_the_planner_still_cannot_change_the_project)
+Waiting is read-only; planning must not start writing files. ... ok
+test_the_still_running_message_names_a_tool_the_planner_has (test.unit.builder.test_engine.PlannerToolsetTests.test_the_still_running_message_names_a_tool_the_planner_has) ... ok
 test_building_and_verifying_are_different_profiles (test.unit.builder.test_engine.QualityProfileTests.test_building_and_verifying_are_different_profiles) ... ok
 test_the_deep_profile_demands_more_evidence_than_the_build_profile (test.unit.builder.test_engine.QualityProfileTests.test_the_deep_profile_demands_more_evidence_than_the_build_profile) ... ok
 test_the_stack_is_chosen_by_the_request_and_never_by_a_typo (test.unit.builder.test_engine.QualityProfileTests.test_the_stack_is_chosen_by_the_request_and_never_by_a_typo) ... ok
@@ -348,6 +353,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 303 tests in 14.106s
+Ran 306 tests in 14.178s
 
 OK
