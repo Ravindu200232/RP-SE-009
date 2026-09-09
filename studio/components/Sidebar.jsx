@@ -304,6 +304,9 @@ export default function Sidebar({
           const on = project === name
           const asking = confirming === name
           const busyHere = removing === name
+          // A run keeps going while you look at another project, so the row
+          // says which one is working rather than the header saying "busy".
+          const working = s.busyProject === name
           return (
             <div key={name}
                  className={cn('group grid w-full grid-cols-[26px_1fr_auto]',
@@ -312,10 +315,17 @@ export default function Sidebar({
                    asking ? 'border-l-accent bg-tint'
                           : on ? 'border-l-accent bg-panel2'
                                : 'border-l-transparent hover:bg-panel2')}>
-              <span className={cn('font-mono text-[10.5px] tabular-nums',
-                                  on || asking ? 'text-accent' : 'text-faint')}>
-                {String(i + 1).padStart(2, '0')}
-              </span>
+              {working ? (
+                <span title="This project is working"
+                      className="grid size-[18px] place-items-center">
+                  <span className="block size-[15px] animate-spin rounded-full border-[2px] border-accent/25 border-t-accent" />
+                </span>
+              ) : (
+                <span className={cn('font-mono text-[10.5px] tabular-nums',
+                                    on || asking ? 'text-accent' : 'text-faint')}>
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+              )}
               <button onClick={() => onOpen(name)} disabled={asking || busyHere}
                       className="min-w-0 text-left">
                 <span className={cn('block truncate text-[13.5px] leading-tight',

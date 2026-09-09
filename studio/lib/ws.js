@@ -142,6 +142,8 @@ export function disconnect() {
 export function send(obj) {
   if (obj && obj.type) {
     useStore.getState().setWorkKind(WORK_KIND[obj.type] || 'build')
+    // Whose run this is. The project on screen can change while it works.
+    if (obj.project) useStore.getState().setBusyProject(obj.project)
   }
   if (obj && obj.prompt !== undefined) {
     lastEdit = obj
@@ -173,7 +175,10 @@ function handle(m) {
       // The directory exists now, so the run has a name. Adopting it here is
       // what lets the chat header, the file tree and the preview all say what
       // is being built instead of waiting for the run to finish.
-      if (m.project) useStore.setState({ project: m.project })
+      if (m.project) {
+        useStore.setState({ project: m.project })
+        s.setBusyProject(m.project)     // a new build had no name until now
+      }
       s.bumpProjects()
       break
 
@@ -236,6 +241,7 @@ function handle(m) {
   // Close every stream when the run ends.
     case 'done':
       s.setBusy(false)
+      s.setBusyProject('')
       s.setWorkKind('')
       s.testDone()
       s.setAgentState('')
@@ -255,6 +261,7 @@ function handle(m) {
     // Cancelled is not an error and must not read like one.
     case 'cancelled':
       s.setBusy(false)
+      s.setBusyProject('')
       s.setWorkKind('')
       s.testDone()
       s.setAgentState('')
@@ -273,6 +280,7 @@ function handle(m) {
       break
     case 'error':
       s.setBusy(false)
+      s.setBusyProject('')
       s.setWorkKind('')
       s.testDone()
       s.setAgentState('')

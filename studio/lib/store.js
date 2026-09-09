@@ -213,9 +213,29 @@ export const useStore = create((set, get) => ({
   },
   persist: (key, value) => { try { LS?.setItem(key, value) } catch { } },
 
-      // Clear project state before opening another project.
-  reset: (project) => set({
-    project, logs: [], chat: [], runStats: null, agentState: '', approval: null,
+  /**
+   * Every project's own stream, kept while you are looking at another one.
+   *
+   * Switching projects used to empty the feed: the work carried on, and the
+   * account of it was gone. What one project has said belongs to that project,
+   * so it is set aside on the way out and handed back on the way in.
+   */
+  streams: {},
+
+  // The project a run belongs to, which is not always the one on screen: you
+  // can start a build and go and look at something else while it works.
+  busyProject: '',
+  setBusyProject: (busyProject) => set({ busyProject }),
+
+      // Set this project's stream aside, and take up the next one's.
+  reset: (project) => set(state => ({
+    streams: state.project
+      ? { ...state.streams,
+          [state.project]: { logs: state.logs, chat: state.chat,
+                             runStats: state.runStats } }
+      : state.streams,
+    ...restored(state.streams[project]),
+    project, agentState: '', approval: null,
     browserFrame: null, selection: [],
     steps: {}, phases: [], files: {},
     activeFile: null, liveFile: null, liveBuf: '', follow: true,
@@ -227,7 +247,7 @@ export const useStore = create((set, get) => ({
     previewRoute: '/',
     e2eLive: null,
     e2eParallel: emptyE2eParallel(),
-  }),
+  })),
 
   tests: emptyTests(),
   testStart: () => set({
@@ -320,6 +340,13 @@ export const useStore = create((set, get) => ({
   // A question the run stopped on, waiting for an answer.
   question: null,
 }))
+
+/** A project's saved stream, or a clean one for a project with no history. */
+function restored(stream) {
+  return { logs: stream?.logs || [], chat: stream?.chat || [],
+           runStats: stream?.runStats || null }
+}
+
 
 function emptyTests() {
   return { running: false, attempt: 0, rows: [], fixing: [],
