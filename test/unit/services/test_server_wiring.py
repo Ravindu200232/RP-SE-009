@@ -232,6 +232,32 @@ class ChatSessionTests(unittest.TestCase):
         self.assertEqual(base, server._session_key("deepseek", True, "nextjs-mongo"))
         self.assertEqual(base, server._session_key("qwen", True, "nextjs-mongo"))
 
+    def seed(self, name, disposed):
+        server._SESSIONS[name] = {
+            "agent": types.SimpleNamespace(dispose=lambda n=name: disposed.append(n)),
+            "key": server._session_key("m", False, ""), "reusable": True}
+
+    def test_starting_a_project_lets_go_of_every_other_one(self):
+        """Their dev services are still holding the ports this one wants."""
+        disposed = []
+        for name in ("partsshop", "recipes", "bookshop"):
+            self.seed(name, disposed)
+
+        released = server.release_other_sessions("recipes")
+
+        self.assertEqual(sorted(released), ["bookshop", "partsshop"])
+        self.assertEqual(sorted(disposed), ["bookshop", "partsshop"])
+        self.assertEqual(list(server._SESSIONS), ["recipes"])
+
+    def test_the_project_being_started_is_not_let_go_of(self):
+        disposed = []
+        self.seed("recipes", disposed)
+        self.assertEqual(server.release_other_sessions("recipes"), [])
+        self.assertEqual(disposed, [])
+
+    def test_the_first_project_of_a_session_has_nothing_to_release(self):
+        self.assertEqual(server.release_other_sessions("recipes"), [])
+
     def test_forgetting_a_project_disposes_its_agent(self):
         disposed = []
         server._SESSIONS["demo"] = {

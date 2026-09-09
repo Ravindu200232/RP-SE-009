@@ -268,6 +268,24 @@ def forget_session(project: str) -> None:
             log.debug(f"disposing the session for {project}: {error}")
 
 
+def release_other_sessions(keep: str) -> list:
+    """Let go of every project except this one, and say which were let go.
+
+    A finished run leaves its dev services up so the preview keeps working,
+    and only one project is previewed at a time - so every other project's
+    services are leftovers holding ports this one is about to want. A Next app
+    never noticed, because the single port it uses is freed before it starts.
+    A second microservices app found 4101-4103 still taken, every service it
+    owned died on startup, and the preview served a gateway with nothing
+    behind it.
+    """
+    with _SESSIONS_LOCK:
+        others = [name for name in _SESSIONS if name != str(keep or "")]
+    for name in others:
+        forget_session(name)
+    return others
+
+
 def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
                *, kind: str, phases, plan: bool):
     """The agent already talking about this project, or a new one.
@@ -284,11 +302,13 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
     """
     name = proj_dir.name
     key = _session_key(model, think, stack)
+
+    release_other_sessions(name)
     agent = None
     if not plan:
         with _SESSIONS_LOCK:
             session = _SESSIONS.get(name)
-        if session and session["key"] == key:
+        if session and session["key"] == key and session.get("reusable"):
             agent = session["agent"]
             agent.retarget(model, think)
         elif session:
@@ -309,9 +329,10 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
     agent.events.any(qa_report.LiveReport(
         proj_dir, agent.memory.evidence, emit,
         lambda error: elog("WARN", f"Could not save testing results: {error}")))
-    if not plan:
-        with _SESSIONS_LOCK:
-            _SESSIONS[name] = {"agent": agent, "key": key}
+    # Registered whether or not it can be reused: a build never continues an
+    # earlier conversation, but its services still have to be lettable-go of.
+    with _SESSIONS_LOCK:
+        _SESSIONS[name] = {"agent": agent, "key": key, "reusable": not plan}
     if not fresh:
         elog("INFO", f"   continuing the conversation ({len(agent.memory)} messages so far)")
     return agent

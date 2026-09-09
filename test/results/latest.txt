@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-09T03:24:51+00:00
+Run at (UTC): 2026-09-09T04:05:55+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 270
+Unit tests: 273
 Integration tests: 24
-Total tests run: 294
+Total tests run: 297
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 13.808s
+Duration: 14.955s
 
 Detailed results
 ----------------
@@ -277,6 +277,10 @@ test_forgetting_a_project_disposes_its_agent (test.unit.services.test_server_wir
 test_forgetting_a_project_nobody_was_talking_about_is_fine (test.unit.services.test_server_wiring.ChatSessionTests.test_forgetting_a_project_nobody_was_talking_about_is_fine) ... ok
 test_forgetting_survives_an_agent_that_cannot_be_disposed (test.unit.services.test_server_wiring.ChatSessionTests.test_forgetting_survives_an_agent_that_cannot_be_disposed)
 A session that will not close must still be let go of. ... ok
+test_starting_a_project_lets_go_of_every_other_one (test.unit.services.test_server_wiring.ChatSessionTests.test_starting_a_project_lets_go_of_every_other_one)
+Their dev services are still holding the ports this one wants. ... ok
+test_the_first_project_of_a_session_has_nothing_to_release (test.unit.services.test_server_wiring.ChatSessionTests.test_the_first_project_of_a_session_has_nothing_to_release) ... ok
+test_the_project_being_started_is_not_let_go_of (test.unit.services.test_server_wiring.ChatSessionTests.test_the_project_being_started_is_not_let_go_of) ... ok
 test_the_same_project_keeps_one_conversation (test.unit.services.test_server_wiring.ChatSessionTests.test_the_same_project_keeps_one_conversation) ... ok
 test_a_selection_of_several_elements_travels_whole (test.unit.services.test_server_wiring.MessageDispatchTests.test_a_selection_of_several_elements_travels_whole)
 Clicking three things has to send three things, with their pictures. ... ok
@@ -335,6 +339,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 294 tests in 13.808s
+Ran 297 tests in 14.955s
 
 OK
