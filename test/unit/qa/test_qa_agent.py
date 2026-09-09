@@ -14,7 +14,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from test import _support  # noqa: F401
-from qa_agent import e2e, harness, report, security, unit
+from qa_agent import artifacts, e2e, harness, report, security, unit
 
 
 class ContextHandoffTests(unittest.TestCase):
@@ -460,6 +460,127 @@ class UnitTotalsTests(unittest.TestCase):
 
     def test_a_project_that_never_ran_a_unit_suite_is_not_a_crash(self):
         self.assertEqual(report._widest_unit_run([]), {})
+
+
+
+class TestDiscoveryTests(unittest.TestCase):
+    """The Coder view said a repository with five suites had no test files."""
+
+    def project(self, *paths, ignore="node_modules\ndist\n"):
+        root = Path(tempfile.mkdtemp())
+        (root / ".gitignore").write_text(ignore, encoding="utf-8")
+        for rel in paths:
+            target = root / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("import { it } from 'vitest';\n", encoding="utf-8")
+        return root
+
+    def found(self, root):
+        return [p.relative_to(root).as_posix() for p in harness.test_files(root)]
+
+    def test_a_workspaces_project_keeps_its_tests_beside_each_package(self):
+        root = self.project("packages/auth-service/test/auth.test.js",
+                            "packages/gateway/test/gateway.test.js",
+                            "client/test/App.test.jsx")
+
+        self.assertEqual(self.found(root), [
+            "client/test/App.test.jsx",
+            "packages/auth-service/test/auth.test.js",
+            "packages/gateway/test/gateway.test.js"])
+
+    def test_a_single_package_project_still_keeps_them_at_the_root(self):
+        root = self.project("test/money.test.js", "test/page.test.jsx")
+        self.assertEqual(self.found(root), ["test/money.test.js", "test/page.test.jsx"])
+
+    def test_a_skill_example_and_a_scaffold_skeleton_are_not_this_project_s_tests(self):
+        """Both carry a guard suffix so no runner picks them up. Nor does this."""
+        root = self.project(
+            "test/real.test.js",
+            ".agents/skills/mern-sketch/sketch/packages/x/test/products.test.js.txt",
+            "scaffold/service/test/service.test.js.tpl")
+
+        self.assertEqual(self.found(root), ["test/real.test.js"])
+
+    def test_installed_packages_are_not_searched(self):
+        root = self.project("test/real.test.js",
+                            "node_modules/vitest/dist/some.test.js")
+        self.assertEqual(self.found(root), ["test/real.test.js"])
+
+    def test_a_project_with_no_tests_says_so_rather_than_crashing(self):
+        self.assertEqual(harness.collect_test_sources(self.project()), {})
+
+
+class TestManifestTests(unittest.TestCase):
+    """Which test covers which source, for two different import shapes."""
+
+    def resolve(self, test_file, spec):
+        from qa_agent.agent import QAAgent
+        return QAAgent._resolve_target(test_file, spec)
+
+    def test_a_package_relative_import_resolves_inside_its_package(self):
+        self.assertEqual(
+            self.resolve("packages/auth-service/test/auth.test.js", "../src/app.js"),
+            "packages/auth-service/src/app.js")
+
+    def test_a_client_relative_import_resolves_inside_the_client(self):
+        self.assertEqual(
+            self.resolve("client/test/App.test.jsx", "../src/pages/RestaurantsPage.jsx"),
+            "client/src/pages/RestaurantsPage.jsx")
+
+    def test_the_root_alias_still_resolves(self):
+        self.assertEqual(self.resolve("test/money.test.js", "@/lib/money"), "lib/money")
+
+    def test_an_import_that_leaves_the_project_is_not_a_target(self):
+        self.assertEqual(self.resolve("test/a.test.js", "../../outside.js"), "")
+
+
+class RouteInventoryTests(unittest.TestCase):
+    """A microservices project reported no route record at all."""
+
+    def project(self, **files):
+        root = Path(tempfile.mkdtemp())
+        (root / ".gitignore").write_text("node_modules\n", encoding="utf-8")
+        for rel, body in files.items():
+            target = root / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(body, encoding="utf-8")
+        return root
+
+    def test_express_handlers_are_found_by_what_they_declare(self):
+        """Next says a file is a route; Express says so in its own code."""
+        root = self.project(**{"packages/orders-service/src/routes/orders.routes.js": (
+            "import { Router } from 'express';\n"
+            "export function createOrdersRouter(config) {\n"
+            "  const router = Router();\n"
+            "  router.get('/orders', list);\n"
+            "  router.post('/orders', place);\n"
+            "  router.patch('/orders/:id/status', move);\n"
+            "  return router;\n}\n")})
+
+        rows = artifacts.contracts(root, {}, {})
+
+        self.assertEqual(
+            sorted((row["route"], "/".join(row["methods"])) for row in rows),
+            [("/orders", "GET/POST"), ("/orders/:id/status", "PATCH")])
+        self.assertTrue(all(row["handler"].startswith("packages/") for row in rows))
+
+    def test_the_app_router_convention_still_wins_where_it_applies(self):
+        root = self.project(**{"app/api/books/route.js": "export async function GET() {}\n"})
+
+        rows = artifacts.contracts(root, {}, {})
+
+        self.assertEqual([row["route"] for row in rows], ["/api/books"])
+        self.assertEqual(rows[0]["methods"], ["GET"])
+
+    def test_installed_packages_do_not_contribute_routes(self):
+        root = self.project(**{
+            "node_modules/express/lib/router.js": "router.get('/nope', x);\n",
+            "packages/a/src/routes/a.routes.js": "const router = Router();\nrouter.get('/real', x);\n"})
+
+        self.assertEqual([row["route"] for row in artifacts.contracts(root, {}, {})], ["/real"])
+
+    def test_a_project_with_no_handlers_at_all_reports_none(self):
+        self.assertEqual(artifacts.contracts(self.project(), {}, {}), [])
 
 
 

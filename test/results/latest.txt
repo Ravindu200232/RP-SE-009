@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-09T05:09:47+00:00
+Run at (UTC): 2026-09-09T05:16:47+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 288
+Unit tests: 301
 Integration tests: 24
-Total tests run: 312
+Total tests run: 325
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 14.765s
+Duration: 14.211s
 
 Detailed results
 ----------------
@@ -219,6 +219,11 @@ test_history_keeps_the_first_round_of_each_run_only (test.unit.qa.test_qa_agent.
 test_reading_back_what_was_written_returns_the_same_record (test.unit.qa.test_qa_agent.ReportTests.test_reading_back_what_was_written_returns_the_same_record) ... ok
 test_the_pdf_renders_the_same_evidence (test.unit.qa.test_qa_agent.ReportTests.test_the_pdf_renders_the_same_evidence) ... ok
 test_the_record_is_the_shape_the_studio_reads (test.unit.qa.test_qa_agent.ReportTests.test_the_record_is_the_shape_the_studio_reads) ... ok
+test_a_project_with_no_handlers_at_all_reports_none (test.unit.qa.test_qa_agent.RouteInventoryTests.test_a_project_with_no_handlers_at_all_reports_none) ... ok
+test_express_handlers_are_found_by_what_they_declare (test.unit.qa.test_qa_agent.RouteInventoryTests.test_express_handlers_are_found_by_what_they_declare)
+Next says a file is a route; Express says so in its own code. ... ok
+test_installed_packages_do_not_contribute_routes (test.unit.qa.test_qa_agent.RouteInventoryTests.test_installed_packages_do_not_contribute_routes) ... ok
+test_the_app_router_convention_still_wins_where_it_applies (test.unit.qa.test_qa_agent.RouteInventoryTests.test_the_app_router_convention_still_wins_where_it_applies) ... ok
 test_a_dashboard_name_does_not_imply_private_data_or_accounts (test.unit.qa.test_qa_agent.SecurityScanTests.test_a_dashboard_name_does_not_imply_private_data_or_accounts) ... ok
 test_a_hashed_password_is_not_reported (test.unit.qa.test_qa_agent.SecurityScanTests.test_a_hashed_password_is_not_reported) ... ok
 test_a_password_stored_without_hashing_is_reported (test.unit.qa.test_qa_agent.SecurityScanTests.test_a_password_stored_without_hashing_is_reported) ... ok
@@ -232,6 +237,16 @@ test_an_unavailable_audit_is_empty_rather_than_an_error (test.unit.qa.test_qa_ag
 test_every_finding_names_a_file_and_a_line (test.unit.qa.test_qa_agent.SecurityScanTests.test_every_finding_names_a_file_and_a_line) ... ok
 test_the_project_s_own_tests_and_dependencies_are_not_scanned (test.unit.qa.test_qa_agent.SecurityScanTests.test_the_project_s_own_tests_and_dependencies_are_not_scanned) ... ok
 test_unsafe_html_and_injection_are_reported (test.unit.qa.test_qa_agent.SecurityScanTests.test_unsafe_html_and_injection_are_reported) ... ok
+test_a_project_with_no_tests_says_so_rather_than_crashing (test.unit.qa.test_qa_agent.TestDiscoveryTests.test_a_project_with_no_tests_says_so_rather_than_crashing) ... ok
+test_a_single_package_project_still_keeps_them_at_the_root (test.unit.qa.test_qa_agent.TestDiscoveryTests.test_a_single_package_project_still_keeps_them_at_the_root) ... ok
+test_a_skill_example_and_a_scaffold_skeleton_are_not_this_project_s_tests (test.unit.qa.test_qa_agent.TestDiscoveryTests.test_a_skill_example_and_a_scaffold_skeleton_are_not_this_project_s_tests)
+Both carry a guard suffix so no runner picks them up. Nor does this. ... ok
+test_a_workspaces_project_keeps_its_tests_beside_each_package (test.unit.qa.test_qa_agent.TestDiscoveryTests.test_a_workspaces_project_keeps_its_tests_beside_each_package) ... ok
+test_installed_packages_are_not_searched (test.unit.qa.test_qa_agent.TestDiscoveryTests.test_installed_packages_are_not_searched) ... ok
+test_a_client_relative_import_resolves_inside_the_client (test.unit.qa.test_qa_agent.TestManifestTests.test_a_client_relative_import_resolves_inside_the_client) ... ok
+test_a_package_relative_import_resolves_inside_its_package (test.unit.qa.test_qa_agent.TestManifestTests.test_a_package_relative_import_resolves_inside_its_package) ... ok
+test_an_import_that_leaves_the_project_is_not_a_target (test.unit.qa.test_qa_agent.TestManifestTests.test_an_import_that_leaves_the_project_is_not_a_target) ... ok
+test_the_root_alias_still_resolves (test.unit.qa.test_qa_agent.TestManifestTests.test_the_root_alias_still_resolves) ... ok
 test_a_missing_report_is_zero_rather_than_a_crash (test.unit.qa.test_qa_agent.UnitStageTests.test_a_missing_report_is_zero_rather_than_a_crash) ... ok
 test_a_note_about_a_suspected_bug_is_collected_not_asserted (test.unit.qa.test_qa_agent.UnitStageTests.test_a_note_about_a_suspected_bug_is_collected_not_asserted) ... ok
 test_counts_come_from_the_assertion_rows_not_the_summary (test.unit.qa.test_qa_agent.UnitStageTests.test_counts_come_from_the_assertion_rows_not_the_summary) ... ok
@@ -361,6 +376,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 312 tests in 14.765s
+Ran 325 tests in 14.210s
 
 OK

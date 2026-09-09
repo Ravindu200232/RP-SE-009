@@ -71,22 +71,41 @@ class QAAgent:
                                         yield_after=timeout)
 
     def _manifest(self) -> dict:
-        """Which test file covers which source file, from the imports they make."""
+        """Which test file covers which source file, from the imports they make.
+
+        Two import shapes, because two stacks: one aliases the project root as
+        `@/`, and one - where each service is its own package - reaches its
+        source relatively. Reading only the alias left every microservice test
+        with no target at all.
+        """
+        import posixpath
         import re
+
+        pattern = re.compile(r"""from\s+['"]((?:@/|\.{1,2}/)[^'"]+)['"]""")
         found = {}
-        base = self.project_dir / "test"
-        if not base.is_dir():
-            return found
-        pattern = re.compile(r"""from\s+['"]@/([^'"]+)['"]""")
-        for path in sorted(base.rglob("*.test.*")):
+        for path in harness.test_files(self.project_dir):
             try:
                 body = path.read_text(encoding="utf-8", errors="replace")
             except OSError:
                 continue
-            targets = pattern.findall(body)
-            found[path.relative_to(self.project_dir).as_posix()] = {
-                "target": targets[0] if targets else "", "targets": targets[:8]}
+            relative = path.relative_to(self.project_dir).as_posix()
+            targets = [self._resolve_target(relative, spec)
+                       for spec in pattern.findall(body)]
+            targets = [target for target in targets if target]
+            found[relative] = {"target": targets[0] if targets else "",
+                               "targets": targets[:8]}
         return found
+
+    @staticmethod
+    def _resolve_target(test_file: str, spec: str) -> str:
+        """An import, as a path inside the project."""
+        import posixpath
+
+        if spec.startswith("@/"):
+            return spec[2:]
+        resolved = posixpath.normpath(
+            posixpath.join(posixpath.dirname(test_file), spec))
+        return "" if resolved.startswith("..") else resolved
 
     def _runtime_notes(self) -> list[str]:
         """Runtime problems the engine observed, as plain lines for the report."""

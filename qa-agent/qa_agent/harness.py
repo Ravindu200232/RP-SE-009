@@ -153,20 +153,48 @@ def read_coverage(root: Path) -> dict | None:
     return None
 
 
+# The engine's own machinery inside a project, which ships example tests that
+# the project does not run. Guarded suffixes mark the same thing at file level.
+ENGINE_DIRS = frozenset({".agents", ".agent", ".agentforge", ".git", "node_modules"})
+GUARDED = (".txt", ".tpl")
+
+
+def test_files(root: Path, limit: int = 60) -> list[Path]:
+    """Every test file this project actually runs, wherever it keeps them.
+
+    One project puts them in `test/` at the root; a workspaces project puts
+    them in `packages/<service>/test/` and `client/test/`, and looking only at
+    the root found none of them - the Coder view said a repository with five
+    suites had no test files on disk.
+
+    A skill's example test and a scaffold skeleton are not this project's
+    tests: both carry a guard suffix so no runner picks them up, and neither
+    does this.
+    """
+    from .security import ignored_dirs
+
+    skip = ENGINE_DIRS | ignored_dirs(root)
+    found = []
+    for path in sorted(Path(root).rglob("*.test.*")):
+        if path.name.endswith(GUARDED) or not path.is_file():
+            continue
+        if any(part in skip for part in path.relative_to(root).parts):
+            continue
+        found.append(path)
+        if len(found) >= limit:
+            break
+    return found
+
+
 def collect_test_sources(root: Path, limit: int = 60) -> dict[str, str]:
     """Every test file on disk, for the studio's Coder view."""
     out = {}
-    base = root / "test"
-    if not base.is_dir():
-        return out
-    for path in sorted(base.rglob("*.test.*")):
+    for path in test_files(Path(root), limit):
         try:
             out[path.relative_to(root).as_posix()] = path.read_text(
                 encoding="utf-8", errors="replace")[:40_000]
         except OSError:
             continue
-        if len(out) >= limit:
-            break
     return out
 
 

@@ -76,6 +76,64 @@ def saved_vitest(root):
                     "these are historical results, not a new test run."} if rows else None
 
 
+# `router.get('/:slug', ...)` or `app.post('/orders', ...)`. Route modules are
+# found by the shape of what they declare, not by where a particular framework
+# happens to put them.
+_DECLARED_ROUTE = re.compile(
+    r"\b(?:router|app)\.(get|post|put|patch|delete|head|options)\s*\(\s*['\"]([^'\"]+)['\"]",
+    re.I)
+
+
+def _linked_tests(root, tests, outcomes, path):
+    """The test files that import this handler."""
+    linked = []
+    for name, source in tests.items():
+        for spec in re.findall(r"(?:from\s*|import\s*\(|require\s*\()\s*['\"]([^'\"]+)", source):
+            resolved = root / spec[2:] if spec.startswith("@/") else (root / name).parent / spec
+            try:
+                same = resolved.resolve().with_suffix("") == path.resolve().with_suffix("")
+            except OSError:                       # a path that cannot be resolved is not a match
+                continue
+            if same:
+                linked.append({"file": name, "status": outcomes.get(name, "unverified")})
+                break
+    return linked
+
+
+def _declared_routes(root, tests, outcomes):
+    """Express-style handlers, wherever the project keeps its services.
+
+    The App Router branch below reads a framework convention: a file called
+    `route.js` under `app/api` is a route because Next says so. A service
+    written on Express says so in its own code instead, and looking only for
+    the convention left every microservice project with no route record at all.
+    """
+    from .harness import ENGINE_DIRS, GUARDED
+    from .security import ignored_dirs
+
+    skip = ENGINE_DIRS | ignored_dirs(root)
+    rows = []
+    for path in sorted(root.rglob("*.js")):
+        relative = path.relative_to(root)
+        if path.name.endswith(GUARDED) or any(part in skip for part in relative.parts):
+            continue
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        declared = _DECLARED_ROUTE.findall(text)
+        if not declared:
+            continue
+        linked = _linked_tests(root, tests, outcomes, path)
+        by_route = {}
+        for method, route in declared:
+            by_route.setdefault(route, set()).add(method.upper())
+        for route, methods in by_route.items():
+            rows.append({"route": route, "handler": relative.as_posix(),
+                         "methods": sorted(methods), "tests": linked})
+    return rows
+
+
 def contracts(root, tests, vitest):
     """Source inventory and linked test outcomes; not an HTTP contract verdict."""
     outcomes = {r["file"]: r["status"] for r in (vitest or {}).get("fileResults", [])}
@@ -105,7 +163,7 @@ def contracts(root, tests, vitest):
                          "handler": target,
                          "methods": sorted(set(re.findall(r"\bexport\s+(?:async\s+)?(?:function|const|let)\s+(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b", text))),
                          "tests": linked})
-    return rows
+    return rows or _declared_routes(root, tests, outcomes)
 
 
 def enrich(root, data):
