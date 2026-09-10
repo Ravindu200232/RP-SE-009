@@ -79,6 +79,18 @@ def wants_design(task: str, plan: str = "") -> bool:
     return True
 
 
+def _page_file(route: str) -> str:
+    """`/admin/orders` -> `admin-orders.html`; `/` -> `index.html`."""
+    parts = [part.strip("[]:") for part in str(route or "").strip("/").split("/") if part]
+    stem = "-".join(re.sub(r"[^a-z0-9]+", "-", part.lower()).strip("-") for part in parts)
+    return f"{stem or 'index'}.html"
+
+
+def _title_of(name: str) -> str:
+    stem = str(name or "").rsplit(".", 1)[0].replace("-", " ").replace("_", " ")
+    return (stem[:1].upper() + stem[1:]) if stem else "Page"
+
+
 class BuilderAgent:
     """The builder agent: plans, designs, builds and proves one application."""
 
@@ -102,6 +114,9 @@ class BuilderAgent:
         self.registry = build_registry()
         self.plan_text = ""
         self.design: dict | None = None
+        # The screens the design step agreed, and the drawing made of them.
+        self.screens: list[dict] = []
+        self.prototype_dir: Path | None = None
         # What the user settled before planning: which provider, which mode,
         # which names are configured. Never the values themselves.
         self.setup_notes: list[str] = []
@@ -236,6 +251,9 @@ class BuilderAgent:
             return None
 
         selection = apply_design_answer(form["chosen"], answer.get("selection"))
+        chosen = set(selection.get("pages") or [])
+        self.screens = [page for page in (form.get("pages") or [])
+                        if page.get("id") in chosen]
         written = write_design_skill(
             self.sandbox.root, selection, goal=task[:300], stack=self.config.stack)
         if written.get("blockInstallError"):
@@ -258,12 +276,153 @@ class BuilderAgent:
         })
         return written
 
+
+    # The tools a drawing needs: read the project, read the skill, write files.
+    # Nothing that installs, serves, tests or drives a browser - a prototype is
+    # HTML on disk, and a pass that can run npm will find a reason to.
+    PROTOTYPE_TOOLS = ("readFile", "writeFile", "patchFile", "editFile", "listDir",
+                       "globFiles", "grepSearch", "readSkill", "listSkills",
+                       "inspectProject")
+
+    # How many times the user may send the drawing back before the build starts
+    # anyway. Each round is a re-render, which is cheap; an unbounded loop with
+    # nobody answering is not.
+    MAX_PROTOTYPE_ROUNDS = 8
+
+    def prototype(self, task: str, plan: str = "") -> dict | None:
+        """Draw the application in HTML, and change it until they are happy.
+
+        The cheapest place in the pipeline to be wrong. A layout that is wrong
+        here costs a re-render; the same layout wrong after the build costs the
+        build, its tests and its browser journeys.
+
+        No new agent: this is the builder, with the tools that write files and
+        none of the ones that install or serve anything, pointed at a skill that
+        says what a prototype is. What comes back is plain HTML and one
+        stylesheet, which is what makes "make the buttons blue" a one-property
+        change rather than a re-render of five components.
+        """
+        if not self.design or not self.screens:
+            return None
+
+        root = Path(self.sandbox.root) / ".agentforge" / "prototype"
+        self.prototype_dir = root
+        self.events.emit("phase", phase="prototype", title="Drawing it", status="active")
+
+        registry = self.registry.subset(self.PROTOTYPE_TOOLS)
+        instruction = self._prototype_task(task, plan)
+        feedback = ""
+
+        for round_number in range(self.MAX_PROTOTYPE_ROUNDS):
+            request = instruction if not feedback else "\n".join([
+                "Change the prototype you already wrote in .agentforge/prototype/.",
+                "", "What they asked for:", feedback, "",
+                "Change what they asked for and leave the rest alone. A colour or a "
+                "size that is a token changes in the token block, once, so every "
+                "page follows. Rewrite only the files that actually change.",
+            ])
+            outcome = self._loop(registry, prototype=True).run(request)
+            if outcome.status == "cancelled":
+                return None
+
+            drawn = self._drawn_pages(root)
+            self.events.emit("prototype", pages=drawn, round=round_number + 1,
+                             path=str(root))
+            if not drawn:
+                self.events.emit("notice", level="warn",
+                                 message="The prototype pass wrote no pages; building "
+                                         "from the design contract alone.")
+                break
+
+            answer = self.approvals.ask(
+                "prototype",
+                {"pages": drawn, "goal": task[:300], "round": round_number + 1,
+                 "maxRounds": self.MAX_PROTOTYPE_ROUNDS},
+                default={"decision": "approve"}, cancel=self.cancel)
+            if answer.get("decision") != "revise":
+                break
+            feedback = str(answer.get("feedback") or "").strip()
+            if not feedback:
+                break
+            self.events.emit("notice", level="info",
+                             message=f"Redrawing: {feedback[:160]}")
+
+        self.events.emit("phase", phase="prototype", title="Drawing it", status="done")
+        return {"path": str(root), "pages": self._drawn_pages(root)}
+
+    def _drawn_pages(self, root: Path) -> list[dict]:
+        """The files the drawing pass actually produced, in the plan's order."""
+        if not root.is_dir():
+            return []
+        on_disk = {path.name for path in root.glob("*.html")}
+        pages, seen = [], set()
+        for screen in self.screens:
+            name = _page_file(screen.get("route", ""))
+            if name in on_disk:
+                pages.append({"file": name, "route": screen.get("route", ""),
+                              "label": screen.get("label", name), "what": screen.get("what", "")})
+                seen.add(name)
+        # Anything it drew that the plan did not name is still shown, because a
+        # page nobody can see is a page nobody can ask to remove.
+        for name in sorted(on_disk - seen):
+            pages.append({"file": name, "route": "", "label": _title_of(name), "what": ""})
+        return pages
+
+    def _prototype_task(self, task: str, plan: str = "") -> str:
+        screens = "\n".join(
+            f"- {page.get('label', '')} ({page.get('route', '')}) -> "
+            f"{_page_file(page.get('route', ''))}"
+            + (f" — {page['what']}" if page.get("what") else "")
+            for page in self.screens)
+        contract = (design_contract_message(self.design["selection"])
+                    if self.design and self.design.get("selection") else "")
+        return "\n".join([
+            "Draw this whole application as static HTML, before any of it is built for "
+            "real. This is the finished thing on paper, not a sketch of it.",
+            "",
+            "Read the `html-prototype` skill first and follow it exactly.",
+            "",
+            "GOAL:", task[:2000], "",
+            "SCREENS TO DRAW - a separate file for each, in .agentforge/prototype/. "
+            "This is a multi-page application, not one page with sections and not one "
+            "file with tabs:", screens, "",
+            "COVER EVERYTHING THAT WAS AGREED. Two things were settled before this and "
+            "both are binding:",
+            "",
+            "1. The plan below. Every requirement it enumerates has to be visible "
+            "somewhere in these pages - if the plan says a seller edits their own "
+            "listings, there is a screen where that is on the page. Work through the "
+            "plan's requirements one at a time and place each one. A requirement nobody "
+            "can see was not drawn.",
+            "2. The design contract below. Every dimension it settles - palette, type, "
+            "scale, corners, spacing, borders, depth, width, voice - is expressed in "
+            "styles.css and used on every page. Do not re-decide any of it.",
+            "",
+            "MAKE IT FULL SIZE. Each page is the whole page: the shared header and "
+            "navigation, the real content at real length, and the footer. A list has "
+            "enough rows to look like a list - eight or ten, not two. A table has its "
+            "columns, its statuses and its actions. A dashboard has its figures. A form "
+            "has all of its fields. Where the product has an empty, loading or error "
+            "state, draw it on the page it belongs to. A thin page is the one thing this "
+            "step cannot afford, because a thin page is what gets approved and then built.",
+            "",
+            "Plain HTML and CSS only. No framework, no build step, no backend, no fetch. "
+            "Link the pages to each other so the whole application can be walked. Write "
+            "content that belongs to this product, not placeholder text.",
+            "",
+            "Write the files and stop. Do not install anything, do not start a server, "
+            "and do not write tests.",
+        ] + (["", "THE DESIGN CONTRACT:", contract] if contract else [])
+          + (["", "THE APPROVED PLAN - every requirement in it belongs on a page:",
+              plan[:6000]] if plan else []))
+
     def build(self, task: str, *, plan: str = "", verification_kinds=None) -> Outcome:
         """Implement the plan and prove it works."""
         phase = verification_kinds[0] if verification_kinds and len(verification_kinds) == 1 else "build"
         title = {"unit": "Unit tests", "e2e": "End-to-end"}.get(phase, "Building")
         self.events.emit("phase", phase=phase, title=title, status="active")
         instruction = self._with_settings(task)
+        instruction = self._with_prototype(instruction)
         if self.design:
             instruction = design_contract_message(self.design["selection"]) + "\n\n" + instruction
         loop = self._loop(self.registry, verification_kinds=verification_kinds)
@@ -293,9 +452,37 @@ class BuilderAgent:
                                          "directly.")
                 self.plan_text = ""
             self.apply_design(task, plan=self.plan_text)
+            # Drawn, changed until they are happy with it, and only then built.
+            self.prototype(task, plan=self.plan_text)
             return self.build(task, plan=self.plan_text)
         finally:
             self._finish()
+
+    def _with_prototype(self, instruction: str) -> str:
+        """The build's job is to make the real thing look like what was agreed.
+
+        The user looked at the drawing and said yes to it, so it is not a
+        reference or an inspiration: it is the settled appearance of the
+        product, and it outranks whatever the model would otherwise reach for.
+        """
+        if not self.prototype_dir or not self.prototype_dir.is_dir():
+            return instruction
+        pages = sorted(path.name for path in self.prototype_dir.glob("*.html"))
+        if not pages:
+            return instruction
+        return "\n".join([
+            "THE APPROVED PROTOTYPE - this is what the product looks like.",
+            f"`.agentforge/prototype/` holds the HTML the user approved: "
+            f"{', '.join(pages)} and `styles.css`.",
+            "Read them before writing the first component, and build the real "
+            "application to match: the same layout, the same structure, the same shell "
+            "and navigation, the same words, the same tokens. Where the prototype and "
+            "your own taste disagree the prototype wins - they have already seen it "
+            "and agreed to it.",
+            "It is a drawing, so it has no data layer. Replace its written-in content "
+            "with the real thing from the database and keep everything else it settled.",
+            "", instruction,
+        ])
 
     def _with_settings(self, task: str) -> str:
         """The request, plus what the user settled about it before planning."""
@@ -312,11 +499,16 @@ class BuilderAgent:
 
     # -- plumbing --------------------------------------------------------
     def _loop(self, registry, *, plan_only: bool = False, review: bool = False,
-              verification_kinds=None) -> Loop:
+              prototype: bool = False, verification_kinds=None) -> Loop:
         config = self.config
-        if plan_only or review:
+        if plan_only or review or prototype:
             from dataclasses import replace
-            config = replace(config, plan_only=plan_only, review=review)
+            # A drawing writes files and proves nothing, so the verification
+            # contract is off for it. It is not a review either: it changes the
+            # workspace, and the file tools have to be on the table.
+            config = replace(config, plan_only=plan_only, review=review,
+                             unit_tests=config.unit_tests and not prototype,
+                             e2e_tests=config.e2e_tests and not prototype)
         return Loop(config=config, registry=registry, router=self.router, memory=self.memory,
                     sandbox=self.sandbox, events=self.events, processes=self.processes,
                     browser=self.browser, cancel=self.cancel, approvals=self.approvals,

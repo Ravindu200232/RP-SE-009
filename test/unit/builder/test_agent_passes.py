@@ -348,3 +348,129 @@ class RetargetTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PrototypePassTests(unittest.TestCase):
+    """The application is drawn in HTML before any of it is built.
+
+    The cheapest place in the pipeline to be wrong: a layout that is wrong here
+    costs a re-render, and the same layout wrong after the build costs the
+    build, its tests and its browser journeys.
+    """
+
+    PAGE = "<!doctype html><html><head><link rel=stylesheet href=styles.css></head><body>x</body></html>"
+
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        self.events = Events()
+        self.agent = BuilderAgent(
+            Config(workspace=self.root, model="scripted", unit_tests=False,
+                   e2e_tests=False, state_root=self.root / ".state"),
+            events=self.events, client=object())
+        self.agent.design = {"selection": {
+            "palette": "sunset-ember", "paletteName": "Sunset Ember",
+            "mood": "Warm, energetic, consumer.", "themeMode": "light",
+            "font": "grotesk-sharp", "typeScale": "comfortable", "radius": "soft",
+            "density": "comfortable", "border": "hairline", "elevation": "subtle",
+            "motion": "subtle", "tone": "friendly", "contrast": "aa",
+            "container": "1280", "pages": []}}
+        self.agent.screens = [
+            {"id": "/", "route": "/", "label": "Home", "what": "today's soups"},
+            {"id": "/menu", "route": "/menu", "label": "Menu", "what": "the whole menu"},
+            {"id": "/admin/orders", "route": "/admin/orders", "label": "Admin orders",
+             "what": "every order"},
+        ]
+
+    def draws(self, *names):
+        return Reply(calls=[
+            ToolCall(str(i), "writeFile",
+                     {"filePath": f".agentforge/prototype/{name}", "content": self.PAGE})
+            for i, name in enumerate(names)])
+
+    def test_it_draws_a_file_for_every_agreed_screen(self):
+        router = ScriptedRouter([self.draws("index.html", "menu.html", "admin-orders.html"),
+                                 Reply(content="Drawn.")])
+        self.agent.router = router
+
+        out = self.agent.prototype("a small soup cafe")
+
+        self.assertEqual([page["file"] for page in out["pages"]],
+                         ["index.html", "menu.html", "admin-orders.html"])
+        self.assertEqual([page["label"] for page in out["pages"]],
+                         ["Home", "Menu", "Admin orders"])
+
+    def test_a_drawing_pass_cannot_install_serve_or_test(self):
+        """It writes HTML. A pass that can run npm will find a reason to."""
+        router = ScriptedRouter([self.draws("index.html"), Reply(content="Drawn.")])
+        self.agent.router = router
+
+        self.agent.prototype("a small soup cafe")
+
+        offered = router.offered[0]
+        for name in ("executeTerminal", "runTests", "browserOpen", "backgroundProcess",
+                     "defineVerificationScope"):
+            self.assertNotIn(name, offered)
+        for name in ("writeFile", "readFile", "readSkill"):
+            self.assertIn(name, offered)
+
+    def test_the_instruction_carries_the_plan_and_the_design_contract(self):
+        task = self.agent._prototype_task(
+            "an online bookshop",
+            plan="## Requirements\n1. A reader browses books at /books.\n"
+                 "2. A seller edits only their own listings.")
+
+        # Everything already agreed is binding on the drawing.
+        self.assertIn("1. A reader browses books", task)
+        self.assertIn("Sunset Ember", task)
+        self.assertIn("Every requirement it enumerates", task)
+        # And it is a full page, not a sketch of one.
+        self.assertIn("FULL SIZE", task.upper())
+
+    def test_what_they_ask_for_is_sent_back_to_be_redrawn(self):
+        asked = []
+
+        class Answering(ScriptedRouter):
+            def ask(inner, messages, tools=None, **kwargs):
+                asked.append("\n".join(m.get("content") or "" for m in messages))
+                return super().ask(messages, tools, **kwargs)
+
+        self.agent.router = Answering([
+            self.draws("index.html"), Reply(content="Drawn."),
+            self.draws("index.html"), Reply(content="Redrawn."),
+        ])
+        self.agent.approvals.enabled = True
+
+        answers = iter([{"decision": "revise", "feedback": "make the buttons blue"},
+                        {"decision": "approve"}])
+
+        def answer(kind, payload, default, timeout=None, cancel=None):
+            return {**next(answers, {"decision": "approve"}), "asked": True}
+
+        self.agent.approvals.ask = answer
+        self.agent.prototype("a small soup cafe")
+
+        self.assertTrue(any("make the buttons blue" in text for text in asked))
+
+    def test_the_build_is_told_to_match_what_was_approved(self):
+        drawn = self.root / ".agentforge" / "prototype"
+        drawn.mkdir(parents=True)
+        for name in ("index.html", "menu.html"):
+            (drawn / name).write_text(self.PAGE, encoding="utf-8")
+        self.agent.prototype_dir = drawn
+
+        told = self.agent._with_prototype("BUILD IT")
+
+        self.assertIn("APPROVED PROTOTYPE", told)
+        self.assertIn("index.html", told)
+        self.assertIn("menu.html", told)
+        self.assertIn("the prototype wins", told)
+        self.assertIn("BUILD IT", told)
+
+    def test_a_build_that_drew_nothing_says_nothing_about_a_prototype(self):
+        self.assertEqual(self.agent._with_prototype("BUILD IT"), "BUILD IT")
+        self.agent.prototype_dir = self.root / ".agentforge" / "prototype"
+        self.assertEqual(self.agent._with_prototype("BUILD IT"), "BUILD IT")
+
+    def test_nothing_is_drawn_without_screens_to_draw(self):
+        self.agent.screens = []
+        self.assertIsNone(self.agent.prototype("a cron job"))

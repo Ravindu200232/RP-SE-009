@@ -513,6 +513,18 @@
         "requirements"
       ],
       "requires": []
+    },
+    {
+      "name": "html-prototype",
+      "match": [
+        "prototype",
+        "mockup",
+        "wireframe",
+        "html",
+        "demo",
+        "mock"
+      ],
+      "requires": []
     }
   ]
 }
