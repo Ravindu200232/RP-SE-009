@@ -1,0 +1,7 @@
+{
+  "manifest": "package.json",
+  "dependencies": {
+    "@chakra-ui/react": "^3.37.0",
+    "@emotion/react": "^11.14.0"
+  }
+}

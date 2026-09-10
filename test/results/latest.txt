@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-09T08:28:29+00:00
+Run at (UTC): 2026-09-10T02:47:13+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 347
+Unit tests: 358
 Integration tests: 24
-Total tests run: 371
+Total tests run: 382
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 16.108s
+Duration: 26.322s
 
 Detailed results
 ----------------
@@ -20,6 +20,7 @@ test_a_review_pass_is_offered_nothing_that_can_change_anything (test.unit.builde
 test_a_snapshot_describes_the_run_without_needing_a_model (test.unit.builder.test_agent_passes.AgentPassTests.test_a_snapshot_describes_the_run_without_needing_a_model) ... ok
 test_nobody_answering_lets_the_build_start_anyway (test.unit.builder.test_agent_passes.AgentPassTests.test_nobody_answering_lets_the_build_start_anyway) ... ok
 test_planning_investigates_and_ends_on_a_submitted_plan (test.unit.builder.test_agent_passes.AgentPassTests.test_planning_investigates_and_ends_on_a_submitted_plan) ... ok
+test_planning_prompt_keeps_execution_skills_out_of_the_pass (test.unit.builder.test_agent_passes.AgentPassTests.test_planning_prompt_keeps_execution_skills_out_of_the_pass) ... ok
 test_the_build_pass_receives_the_plan_and_the_design (test.unit.builder.test_agent_passes.AgentPassTests.test_the_build_pass_receives_the_plan_and_the_design) ... ok
 test_the_design_answer_is_applied_and_junk_in_it_is_not (test.unit.builder.test_agent_passes.AgentPassTests.test_the_design_answer_is_applied_and_junk_in_it_is_not) ... ok
 test_the_design_can_be_left_to_the_build (test.unit.builder.test_agent_passes.AgentPassTests.test_the_design_can_be_left_to_the_build) ... ok
@@ -95,6 +96,7 @@ test_a_cancelled_request_does_not_fail_the_journey (test.unit.builder.test_journ
 The one that mattered. ... ok
 test_a_clean_page_passes (test.unit.builder.test_journeys.DiagnosticsTests.test_a_clean_page_passes) ... ok
 test_a_console_error_fails_the_journey (test.unit.builder.test_journeys.DiagnosticsTests.test_a_console_error_fails_the_journey) ... ok
+test_a_failed_journey_keeps_console_evidence_in_the_saved_ledger (test.unit.builder.test_journeys.DiagnosticsTests.test_a_failed_journey_keeps_console_evidence_in_the_saved_ledger) ... ok
 test_a_genuinely_failed_request_fails_the_journey (test.unit.builder.test_journeys.DiagnosticsTests.test_a_genuinely_failed_request_fails_the_journey) ... ok
 test_a_server_error_fails_the_journey (test.unit.builder.test_journeys.DiagnosticsTests.test_a_server_error_fails_the_journey) ... ok
 test_cancellations_are_still_visible_when_a_failure_is_investigated (test.unit.builder.test_journeys.DiagnosticsTests.test_cancellations_are_still_visible_when_a_failure_is_investigated) ... ok
@@ -163,17 +165,22 @@ test_the_contract_is_written_where_the_model_will_read_it (test.unit.builder.tes
 test_the_foreground_on_a_fill_is_measured_not_assumed (test.unit.builder.test_project_setup.DesignContractTests.test_the_foreground_on_a_fill_is_measured_not_assumed) ... ok
 test_the_subject_of_the_product_outvotes_the_shape_of_it (test.unit.builder.test_project_setup.DesignContractTests.test_the_subject_of_the_product_outvotes_the_shape_of_it) ... ok
 test_a_plan_that_files_components_settles_it (test.unit.builder.test_project_setup.DesignReachTests.test_a_plan_that_files_components_settles_it) ... ok
+test_a_provider_without_free_full_blocks_does_not_get_invented_ones (test.unit.builder.test_project_setup.DesignReachTests.test_a_provider_without_free_full_blocks_does_not_get_invented_ones) ... ok
+test_an_explicit_empty_planner_selection_stays_empty (test.unit.builder.test_project_setup.DesignReachTests.test_an_explicit_empty_planner_selection_stays_empty) ... ok
 test_every_chosen_dimension_reaches_the_written_contract (test.unit.builder.test_project_setup.DesignReachTests.test_every_chosen_dimension_reaches_the_written_contract) ... ok
+test_every_gallery_item_is_a_real_provider_source (test.unit.builder.test_project_setup.DesignReachTests.test_every_gallery_item_is_a_real_provider_source) ... ok
+test_every_provider_block_reaches_the_popup_with_planner_suggestions_marked (test.unit.builder.test_project_setup.DesignReachTests.test_every_provider_block_reaches_the_popup_with_planner_suggestions_marked) ... ok
+test_provider_block_selection_has_no_arbitrary_maximum (test.unit.builder.test_project_setup.DesignReachTests.test_provider_block_selection_has_no_arbitrary_maximum) ... ok
+test_routes_are_read_from_where_the_files_sit (test.unit.builder.test_project_setup.DesignReachTests.test_routes_are_read_from_where_the_files_sit) ... ok
 test_screen_inventory_is_left_to_the_approved_plan (test.unit.builder.test_project_setup.DesignReachTests.test_screen_inventory_is_left_to_the_approved_plan) ... ok
 test_the_catalogue_covers_every_dimension_the_contract_states (test.unit.builder.test_project_setup.DesignReachTests.test_the_catalogue_covers_every_dimension_the_contract_states) ... ok
 test_the_requests_people_actually_write_get_a_design (test.unit.builder.test_project_setup.DesignReachTests.test_the_requests_people_actually_write_get_a_design) ... ok
+test_the_signature_changes_only_when_the_project_does (test.unit.builder.test_project_setup.DesignReachTests.test_the_signature_changes_only_when_the_project_does) ... ok
 test_work_with_no_screen_still_gets_none (test.unit.builder.test_project_setup.DesignReachTests.test_work_with_no_screen_still_gets_none) ... ok
 test_a_fresh_installation_has_nothing_to_publish (test.unit.builder.test_project_setup.KnowledgeTests.test_a_fresh_installation_has_nothing_to_publish) ... ok
 test_a_verified_lesson_is_recalled_by_what_it_is_about (test.unit.builder.test_project_setup.KnowledgeTests.test_a_verified_lesson_is_recalled_by_what_it_is_about) ... ok
 test_an_unverified_hunch_is_never_recorded_as_knowledge (test.unit.builder.test_project_setup.KnowledgeTests.test_an_unverified_hunch_is_never_recorded_as_knowledge) ... ok
 test_lessons_become_an_ordinary_skill_in_the_next_project (test.unit.builder.test_project_setup.KnowledgeTests.test_lessons_become_an_ordinary_skill_in_the_next_project) ... ok
-test_routes_are_read_from_where_the_files_sit (test.unit.builder.test_project_setup.ProjectLayoutTests.test_routes_are_read_from_where_the_files_sit) ... ok
-test_the_signature_changes_only_when_the_project_does (test.unit.builder.test_project_setup.ProjectLayoutTests.test_the_signature_changes_only_when_the_project_does) ... ok
 test_a_missing_or_broken_manifest_is_not_a_crash (test.unit.builder.test_project_setup.ProjectStackTests.test_a_missing_or_broken_manifest_is_not_a_crash) ... ok
 test_a_next_dependency_is_the_single_application_stack (test.unit.builder.test_project_setup.ProjectStackTests.test_a_next_dependency_is_the_single_application_stack) ... ok
 test_a_project_that_says_neither_is_left_undecided (test.unit.builder.test_project_setup.ProjectStackTests.test_a_project_that_says_neither_is_left_undecided)
@@ -194,11 +201,14 @@ test_installing_copies_the_selected_skills_into_the_project (test.unit.builder.t
 test_the_catalog_prefers_the_project_copy_of_a_skill (test.unit.builder.test_project_setup.SkillPackTests.test_the_catalog_prefers_the_project_copy_of_a_skill) ... ok
 test_the_sinhala_forms_studio_users_type_are_understood (test.unit.builder.test_project_setup.SkillPackTests.test_the_sinhala_forms_studio_users_type_are_understood) ... ok
 test_the_stack_core_is_always_selected_whatever_the_request_says (test.unit.builder.test_project_setup.SkillPackTests.test_the_stack_core_is_always_selected_whatever_the_request_says) ... ok
+test_ui_framework_skills_route_to_next_and_mern_clients (test.unit.builder.test_project_setup.SkillPackTests.test_ui_framework_skills_route_to_next_and_mern_clients) ... ok
 test_a_file_the_workspace_already_has_survives_scaffolding (test.unit.builder.test_project_setup.StackTemplateTests.test_a_file_the_workspace_already_has_survives_scaffolding) ... ok
 test_a_folder_name_npm_would_reject_is_made_installable (test.unit.builder.test_project_setup.StackTemplateTests.test_a_folder_name_npm_would_reject_is_made_installable)
 npm refuses leading dots, capitals and spaces; the folder may have them. ... ok
 test_a_workspace_that_already_has_a_project_is_never_touched (test.unit.builder.test_project_setup.StackTemplateTests.test_a_workspace_that_already_has_a_project_is_never_touched) ... ok
 test_an_empty_workspace_gets_the_verified_starting_point (test.unit.builder.test_project_setup.StackTemplateTests.test_an_empty_workspace_gets_the_verified_starting_point) ... ok
+test_each_ui_framework_is_an_overlay_on_each_existing_stack_template (test.unit.builder.test_project_setup.StackTemplateTests.test_each_ui_framework_is_an_overlay_on_each_existing_stack_template) ... ok
+test_mern_registry_blocks_install_inside_the_client_application (test.unit.builder.test_project_setup.StackTemplateTests.test_mern_registry_blocks_install_inside_the_client_application) ... ok
 test_the_engines_own_directories_do_not_make_a_workspace_non_empty (test.unit.builder.test_project_setup.StackTemplateTests.test_the_engines_own_directories_do_not_make_a_workspace_non_empty) ... ok
 test_the_microservices_template_keeps_its_scaffold_directory_inert (test.unit.builder.test_project_setup.StackTemplateTests.test_the_microservices_template_keeps_its_scaffold_directory_inert) ... ok
 test_the_notice_says_how_to_replace_what_it_says_to_replace (test.unit.builder.test_project_setup.StackTemplateTests.test_the_notice_says_how_to_replace_what_it_says_to_replace)
@@ -354,6 +364,7 @@ test_a_selection_of_several_elements_travels_whole (test.unit.services.test_serv
 Clicking three things has to send three things, with their pictures. ... ok
 test_a_stack_chosen_in_the_studio_reaches_the_run (test.unit.services.test_server_wiring.MessageDispatchTests.test_a_stack_chosen_in_the_studio_reaches_the_run)
 Reading it out of the wording of the brief is the fallback, not the rule. ... ok
+test_a_ui_framework_chosen_in_the_studio_reaches_the_run (test.unit.services.test_server_wiring.MessageDispatchTests.test_a_ui_framework_chosen_in_the_studio_reaches_the_run) ... ok
 test_build_and_resume_contracts (test.unit.services.test_server_wiring.MessageDispatchTests.test_build_and_resume_contracts) ... ok
 test_chat_can_add_features_without_calling_every_request_a_bug (test.unit.services.test_server_wiring.MessageDispatchTests.test_chat_can_add_features_without_calling_every_request_a_bug) ... ok
 test_edit_action_contracts (test.unit.services.test_server_wiring.MessageDispatchTests.test_edit_action_contracts) ... ok
@@ -430,6 +441,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 371 tests in 16.107s
+Ran 382 tests in 26.322s
 
 OK

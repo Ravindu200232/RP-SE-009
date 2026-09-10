@@ -79,6 +79,8 @@ required = {
         ("../server_modules/services/shots.py", "class _Warm"),
     "test evidence view": ("components/testing/TestingResult.jsx", "label: 'Evidence'"),
     "verification ledger rendered": ("components/testing/Evidence.jsx", "qa?.report?.evidence"),
+    "E2E failures retain browser diagnostics":
+        ("components/testing/EndToEnd.jsx", "Browser console & network evidence"),
     "sequential E2E overlay": ("components/LiveE2EOverlay.jsx", "Live browser test"),
     "parallel QA view": ("components/testing/TestingResult.jsx", "E2ELiveLanes"),
     "SRS file intake": ("components/srs/Attachments.jsx", "PDF / image"),
@@ -91,8 +93,12 @@ required = {
     "the stack is chosen, not guessed": ("components/Home.jsx", "2. Choose the stack"),
     "the build is configured before it starts": ("components/BuildSetup.jsx", "Configure your build"),
     "that dialog offers the model and the stack": ("components/BuildSetup.jsx", "build-setup-stack"),
+    "that dialog offers a UI framework": ("components/BuildSetup.jsx", "UI framework"),
     "the chosen stack travels with the build": ("components/Home.jsx", "config?.stack || stack"),
+    "the chosen UI framework travels with the build": ("components/Home.jsx", "ui_library: config?.uiLibrary"),
     "the engine prefers a chosen stack": ("../server_modules/builder/pipeline.py", "stack or detect_stack"),
+    "design shows requirement-selected provider blocks": ("components/AgentDecision.jsx", "Provider blocks"),
+    "design previews actual provider images": ("components/AgentDecision.jsx", "src={block.preview}"),
     "sidebar collapses": ("components/Sidebar.jsx", "if (collapsed) {"),
 }
 

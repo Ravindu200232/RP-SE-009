@@ -17,6 +17,7 @@ from pathlib import Path
 
 from .config import stack_for
 from .skills import ASSET_ROOT
+from .ui_kits import DEFAULT_UI_KIT, install_ui_kit
 
 TEMPLATE_ROOT = ASSET_ROOT / "templates"
 
@@ -36,6 +37,7 @@ class Scaffold:
     stack: str = ""
     files: list[str] = field(default_factory=list)
     preserved: list[str] = field(default_factory=list)
+    ui_kit: str = ""
     reason: str = ""
 
 
@@ -68,7 +70,8 @@ def _package_name(workspace: Path) -> str:
     return base or "app"
 
 
-def install_template(workspace: Path | str, stack_id: str = "") -> Scaffold:
+def install_template(workspace: Path | str, stack_id: str = "",
+                     ui_kit: str = DEFAULT_UI_KIT) -> Scaffold:
     workspace = Path(workspace)
     stack = stack_for(stack_id)
     result = Scaffold(stack=stack.id)
@@ -97,6 +100,12 @@ def install_template(workspace: Path | str, stack_id: str = "") -> Scaffold:
                 body = re.sub(r'"name": "[^"]*"', f'"name": "{_package_name(workspace)}"', body, count=1)
             destination.write_text(body, encoding="utf-8", newline="")
             result.files.append(target)
+        kit = install_ui_kit(workspace, stack.id, ui_kit)
+        if kit.reason:
+            result.reason = kit.reason
+            return result
+        result.ui_kit = kit.id
+        result.files.extend(name for name in kit.files if name not in result.files)
     except OSError as error:
         result.reason = f"The template could not be written: {error}"
         return result
@@ -116,6 +125,9 @@ def template_notice(result: Scaffold) -> str:
     return "\n".join([
         f"SCAFFOLD: this empty workspace was initialised from the verified {result.stack} "
         "template before you started.",
+        f"The {result.ui_kit or DEFAULT_UI_KIT} UI kit selected in Studio is already present. "
+        "Its dependencies, provider/config and base primitives belong to this scaffold; use "
+        "them instead of installing or mixing another UI system.",
         "Every file below was installed, unit-tested, built and served before it became a "
         "template. Treat it as working code:",
         "\n".join(f"- {name}" for name in result.files),
@@ -131,6 +143,7 @@ def template_notice(result: Scaffold) -> str:
         "error to discover that costs a turn per file.",
         "If a scaffold/ directory is present it holds skeletons to copy, not files to run - read "
         "its README before adding a service or any other repeated part.",
-        "Run the install once, then the tests, before adding features: a scaffold that does not "
-        "go green is worth knowing about immediately.",
+        "The scaffold was verified before it shipped. Implement the complete product first, then "
+        "install dependencies once and follow the build, runtime, unit and E2E order from the "
+        "full-app-builder skill; do not spend an extra pass retesting the untouched placeholder.",
     ])

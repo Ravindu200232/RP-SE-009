@@ -1,0 +1,1472 @@
+{
+  "provider": "shadcnblocks",
+  "source": "https://www.shadcnblocks.com/blocks/free",
+  "refreshed": "2026-09-09",
+  "items": [
+    {
+      "id": "service1",
+      "name": "Service detail page with hero and prose content",
+      "category": "service",
+      "description": "Service detail page with hero and prose content",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/service1-4x3.webp",
+      "registry": "@shadcnblocks/service1",
+      "source": "https://www.shadcnblocks.com/block/service1",
+      "access": "free"
+    },
+    {
+      "id": "address-book1",
+      "name": "Address book list with edit modes and default selection",
+      "category": "address-book",
+      "description": "Address book list with edit modes and default selection",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/address-book1-4x3.webp",
+      "registry": "@shadcnblocks/address-book1",
+      "source": "https://www.shadcnblocks.com/block/address-book1",
+      "access": "free"
+    },
+    {
+      "id": "todo1",
+      "name": "Simple checkbox todo list",
+      "category": "todo-list",
+      "description": "Simple checkbox todo list",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/todo1-4x3.webp",
+      "registry": "@shadcnblocks/todo1",
+      "source": "https://www.shadcnblocks.com/block/todo1",
+      "access": "free"
+    },
+    {
+      "id": "projects5",
+      "name": "Animated project cards with year badges",
+      "category": "projects",
+      "description": "Animated project cards with year badges",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/projects5-4x3.webp",
+      "registry": "@shadcnblocks/projects5",
+      "source": "https://www.shadcnblocks.com/block/projects5",
+      "access": "free"
+    },
+    {
+      "id": "cta10",
+      "name": "Banded call-to-action with dual buttons",
+      "category": "cta",
+      "description": "Banded call-to-action with dual buttons",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/cta10-4x3.webp",
+      "registry": "@shadcnblocks/cta10",
+      "source": "https://www.shadcnblocks.com/block/cta10",
+      "access": "free"
+    },
+    {
+      "id": "ecommerce-footer1",
+      "name": "Ecommerce footer with newsletter, language selector, and contact row",
+      "category": "ecommerce-footer",
+      "description": "Ecommerce footer with newsletter, language selector, and contact row",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/ecommerce-footer1-4x3.webp",
+      "registry": "@shadcnblocks/ecommerce-footer1",
+      "source": "https://www.shadcnblocks.com/block/ecommerce-footer1",
+      "access": "free"
+    },
+    {
+      "id": "shopping-cart1",
+      "name": "Simple page shopping cart",
+      "category": "shopping-cart",
+      "description": "Simple page shopping cart",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/shopping-cart1-4x3.webp",
+      "registry": "@shadcnblocks/shopping-cart1",
+      "source": "https://www.shadcnblocks.com/block/shopping-cart1",
+      "access": "free"
+    },
+    {
+      "id": "feature1",
+      "name": "Two-column feature with square image and button",
+      "category": "feature",
+      "description": "Two-column feature with square image and button",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/feature1-4x3.webp",
+      "registry": "@shadcnblocks/feature1",
+      "source": "https://www.shadcnblocks.com/block/feature1",
+      "access": "free"
+    },
+    {
+      "id": "footer2",
+      "name": "Footer with logo, tagline, link columns, and legal row",
+      "category": "footer",
+      "description": "Footer with logo, tagline, link columns, and legal row",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/footer2-4x3.webp",
+      "registry": "@shadcnblocks/footer2",
+      "source": "https://www.shadcnblocks.com/block/footer2",
+      "access": "free"
+    },
+    {
+      "id": "compliance1",
+      "name": "Two-column compliance narrative with stacked detail cards",
+      "category": "compliance",
+      "description": "Two-column compliance narrative with stacked detail cards",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/compliance1-4x3.webp",
+      "registry": "@shadcnblocks/compliance1",
+      "source": "https://www.shadcnblocks.com/block/compliance1",
+      "access": "free"
+    },
+    {
+      "id": "leaderboard1",
+      "name": "Leaderboard with Progress Bars",
+      "category": "leaderboard",
+      "description": "Leaderboard with Progress Bars",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/leaderboard1-4x3.webp",
+      "registry": "@shadcnblocks/leaderboard1",
+      "source": "https://www.shadcnblocks.com/block/leaderboard1",
+      "access": "free"
+    },
+    {
+      "id": "careers4",
+      "name": "Simple careers heading with category sections",
+      "category": "careers",
+      "description": "Simple careers heading with category sections",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/careers4-4x3.webp",
+      "registry": "@shadcnblocks/careers4",
+      "source": "https://www.shadcnblocks.com/block/careers4",
+      "access": "free"
+    },
+    {
+      "id": "user-profile1",
+      "name": "Basic Profile Card",
+      "category": "user-profile",
+      "description": "Basic Profile Card",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/user-profile1-4x3.webp",
+      "registry": "@shadcnblocks/user-profile1",
+      "source": "https://www.shadcnblocks.com/block/user-profile1",
+      "access": "free"
+    },
+    {
+      "id": "project1",
+      "name": "Project detail with animated scroll reveal",
+      "category": "project",
+      "description": "Project detail with animated scroll reveal",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/project1-4x3.webp",
+      "registry": "@shadcnblocks/project1",
+      "source": "https://www.shadcnblocks.com/block/project1",
+      "access": "free"
+    },
+    {
+      "id": "hero7",
+      "name": "Centered hero with ratings row under single CTA",
+      "category": "hero",
+      "description": "Centered hero with ratings row under single CTA",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/hero7-4x3.webp",
+      "registry": "@shadcnblocks/hero7",
+      "source": "https://www.shadcnblocks.com/block/hero7",
+      "access": "free"
+    },
+    {
+      "id": "chart-card1",
+      "name": "Area Chart Card",
+      "category": "chart-card",
+      "description": "Area Chart Card",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/chart-card1-4x3.webp",
+      "registry": "@shadcnblocks/chart-card1",
+      "source": "https://www.shadcnblocks.com/block/chart-card1",
+      "access": "free"
+    },
+    {
+      "id": "gallery6",
+      "name": "Gallery carousel with demo link",
+      "category": "gallery",
+      "description": "Gallery carousel with demo link",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/gallery6-4x3.webp",
+      "registry": "@shadcnblocks/gallery6",
+      "source": "https://www.shadcnblocks.com/block/gallery6",
+      "access": "free"
+    },
+    {
+      "id": "promo-banner1",
+      "name": "Free shipping progress banner",
+      "category": "promo-banner",
+      "description": "Free shipping progress banner",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/promo-banner1-4x3.webp",
+      "registry": "@shadcnblocks/promo-banner1",
+      "source": "https://www.shadcnblocks.com/block/promo-banner1",
+      "access": "free"
+    },
+    {
+      "id": "stats-card1",
+      "name": "Metric Card with Trend",
+      "category": "stats-card",
+      "description": "Metric Card with Trend",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/stats-card1-4x3.webp",
+      "registry": "@shadcnblocks/stats-card1",
+      "source": "https://www.shadcnblocks.com/block/stats-card1",
+      "access": "free"
+    },
+    {
+      "id": "testimonial10",
+      "name": "Single centered quote",
+      "category": "testimonial",
+      "description": "Single centered quote",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/testimonial10-4x3.webp",
+      "registry": "@shadcnblocks/testimonial10",
+      "source": "https://www.shadcnblocks.com/block/testimonial10",
+      "access": "free"
+    },
+    {
+      "id": "product-gallery1",
+      "name": "Product image carousel and grid",
+      "category": "product-gallery",
+      "description": "Product image carousel and grid",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/product-gallery1-4x3.webp",
+      "registry": "@shadcnblocks/product-gallery1",
+      "source": "https://www.shadcnblocks.com/block/product-gallery1",
+      "access": "free"
+    },
+    {
+      "id": "compare7",
+      "name": "Compact three-column comparison table with tooltips",
+      "category": "compare",
+      "description": "Compact three-column comparison table with tooltips",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/compare7-4x3.webp",
+      "registry": "@shadcnblocks/compare7",
+      "source": "https://www.shadcnblocks.com/block/compare7",
+      "access": "free"
+    },
+    {
+      "id": "hero1",
+      "name": "Split hero with image on the right",
+      "category": "hero",
+      "description": "Split hero with image on the right",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/hero1-4x3.webp",
+      "registry": "@shadcnblocks/hero1",
+      "source": "https://www.shadcnblocks.com/block/hero1",
+      "access": "free"
+    },
+    {
+      "id": "community1",
+      "name": "Centered invite with logo and outline social buttons",
+      "category": "community",
+      "description": "Centered invite with logo and outline social buttons",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/community1-4x3.webp",
+      "registry": "@shadcnblocks/community1",
+      "source": "https://www.shadcnblocks.com/block/community1",
+      "access": "free"
+    },
+    {
+      "id": "feature13",
+      "name": "Two-column feature cards with linked titles and imagery",
+      "category": "feature",
+      "description": "Two-column feature cards with linked titles and imagery",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/feature13-4x3.webp",
+      "registry": "@shadcnblocks/feature13",
+      "source": "https://www.shadcnblocks.com/block/feature13",
+      "access": "free"
+    },
+    {
+      "id": "navbar1",
+      "name": "Navbar with icon dropdown menus",
+      "category": "navbar",
+      "description": "Navbar with icon dropdown menus",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/navbar1-4x3.webp",
+      "registry": "@shadcnblocks/navbar1",
+      "source": "https://www.shadcnblocks.com/block/navbar1",
+      "access": "free"
+    },
+    {
+      "id": "order-summary1",
+      "name": "Order confirmation with itemized totals",
+      "category": "order-summary",
+      "description": "Order confirmation with itemized totals",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/order-summary1-4x3.webp",
+      "registry": "@shadcnblocks/order-summary1",
+      "source": "https://www.shadcnblocks.com/block/order-summary1",
+      "access": "free"
+    },
+    {
+      "id": "wishlist1",
+      "name": "Wishlist grid with price-drop badges",
+      "category": "wishlist",
+      "description": "Wishlist grid with price-drop badges",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/wishlist1-4x3.webp",
+      "registry": "@shadcnblocks/wishlist1",
+      "source": "https://www.shadcnblocks.com/block/wishlist1",
+      "access": "free"
+    },
+    {
+      "id": "pricing4",
+      "name": "Three-plan pricing with tabs and one highlighted column",
+      "category": "pricing",
+      "description": "Three-plan pricing with tabs and one highlighted column",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/pricing4-4x3.webp",
+      "registry": "@shadcnblocks/pricing4",
+      "source": "https://www.shadcnblocks.com/block/pricing4",
+      "access": "free"
+    },
+    {
+      "id": "blogpost1",
+      "name": "Centered article with alert and table",
+      "category": "blog-post",
+      "description": "Centered article with alert and table",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/blogpost1-4x3.webp",
+      "registry": "@shadcnblocks/blogpost1",
+      "source": "https://www.shadcnblocks.com/block/blogpost1",
+      "access": "free"
+    },
+    {
+      "id": "help1",
+      "name": "Category grid help center",
+      "category": "help-center",
+      "description": "Category grid help center",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/help1-4x3.webp",
+      "registry": "@shadcnblocks/help1",
+      "source": "https://www.shadcnblocks.com/block/help1",
+      "access": "free"
+    },
+    {
+      "id": "product-list1",
+      "name": "Product grid with badges",
+      "category": "product-list",
+      "description": "Product grid with badges",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/product-list1-4x3.webp",
+      "registry": "@shadcnblocks/product-list1",
+      "source": "https://www.shadcnblocks.com/block/product-list1",
+      "access": "free"
+    },
+    {
+      "id": "resource1",
+      "name": "Resource detail with sidebar and article",
+      "category": "resource",
+      "description": "Resource detail with sidebar and article",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/resource1-4x3.webp",
+      "registry": "@shadcnblocks/resource1",
+      "source": "https://www.shadcnblocks.com/block/resource1",
+      "access": "free"
+    },
+    {
+      "id": "feature73",
+      "name": "Image card grid with optional header link",
+      "category": "feature",
+      "description": "Image card grid with optional header link",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/feature73-4x3.webp",
+      "registry": "@shadcnblocks/feature73",
+      "source": "https://www.shadcnblocks.com/block/feature73",
+      "access": "free"
+    },
+    {
+      "id": "process1",
+      "name": "Sticky sidebar four-step process",
+      "category": "process",
+      "description": "Sticky sidebar four-step process",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/process1-4x3.webp",
+      "registry": "@shadcnblocks/process1",
+      "source": "https://www.shadcnblocks.com/block/process1",
+      "access": "free"
+    },
+    {
+      "id": "content1",
+      "name": "Long-form story with sticky section outline",
+      "category": "content",
+      "description": "Long-form story with sticky section outline",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/content1-4x3.webp",
+      "registry": "@shadcnblocks/content1",
+      "source": "https://www.shadcnblocks.com/block/content1",
+      "access": "free"
+    },
+    {
+      "id": "product-specs1",
+      "name": "Collapsible product spec tables",
+      "category": "product-specs",
+      "description": "Collapsible product spec tables",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/product-specs1-4x3.webp",
+      "registry": "@shadcnblocks/product-specs1",
+      "source": "https://www.shadcnblocks.com/block/product-specs1",
+      "access": "free"
+    },
+    {
+      "id": "download2",
+      "name": "Minimal three-column downloads",
+      "category": "download",
+      "description": "Minimal three-column downloads",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/download2-4x3.webp",
+      "registry": "@shadcnblocks/download2",
+      "source": "https://www.shadcnblocks.com/block/download2",
+      "access": "free"
+    },
+    {
+      "id": "case-study8",
+      "name": "Case study article with company sidebar",
+      "category": "case-study",
+      "description": "Case study article with company sidebar",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/case-study8-4x3.webp",
+      "registry": "@shadcnblocks/case-study8",
+      "source": "https://www.shadcnblocks.com/block/case-study8",
+      "access": "free"
+    },
+    {
+      "id": "waitlist1",
+      "name": "Centered waitlist with avatar row",
+      "category": "waitlist",
+      "description": "Centered waitlist with avatar row",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/waitlist1-4x3.webp",
+      "registry": "@shadcnblocks/waitlist1",
+      "source": "https://www.shadcnblocks.com/block/waitlist1",
+      "access": "free"
+    },
+    {
+      "id": "book-a-demo1",
+      "name": "Demo booking form with benefits and logos",
+      "category": "book-a-demo",
+      "description": "Demo booking form with benefits and logos",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/book-a-demo1-4x3.webp",
+      "registry": "@shadcnblocks/book-a-demo1",
+      "source": "https://www.shadcnblocks.com/block/book-a-demo1",
+      "access": "free"
+    },
+    {
+      "id": "team1",
+      "name": "Centered team grid with avatars",
+      "category": "team",
+      "description": "Centered team grid with avatars",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/team1-4x3.webp",
+      "registry": "@shadcnblocks/team1",
+      "source": "https://www.shadcnblocks.com/block/team1",
+      "access": "free"
+    },
+    {
+      "id": "chart-card3",
+      "name": "Bar Chart Card",
+      "category": "chart-card",
+      "description": "Bar Chart Card",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/chart-card3-4x3.webp",
+      "registry": "@shadcnblocks/chart-card3",
+      "source": "https://www.shadcnblocks.com/block/chart-card3",
+      "access": "free"
+    },
+    {
+      "id": "incentives1",
+      "name": "Icon row of shopping incentives",
+      "category": "incentives",
+      "description": "Icon row of shopping incentives",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/incentives1-4x3.webp",
+      "registry": "@shadcnblocks/incentives1",
+      "source": "https://www.shadcnblocks.com/block/incentives1",
+      "access": "free"
+    },
+    {
+      "id": "industries1",
+      "name": "Industry cards with hover description",
+      "category": "industries",
+      "description": "Industry cards with hover description",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/industries1-4x3.webp",
+      "registry": "@shadcnblocks/industries1",
+      "source": "https://www.shadcnblocks.com/block/industries1",
+      "access": "free"
+    },
+    {
+      "id": "feature197",
+      "name": "Feature accordion with paired image panel",
+      "category": "feature",
+      "description": "Feature accordion with paired image panel",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/feature197-4x3.webp",
+      "registry": "@shadcnblocks/feature197",
+      "source": "https://www.shadcnblocks.com/block/feature197",
+      "access": "free"
+    },
+    {
+      "id": "feature72",
+      "name": "Narrow header with bordered feature cards",
+      "category": "feature",
+      "description": "Narrow header with bordered feature cards",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/feature72-4x3.webp",
+      "registry": "@shadcnblocks/feature72",
+      "source": "https://www.shadcnblocks.com/block/feature72",
+      "access": "free"
+    },
+    {
+      "id": "hero45",
+      "name": "Hero with wide image and three feature columns",
+      "category": "hero",
+      "description": "Hero with wide image and three feature columns",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/hero45-4x3.webp",
+      "registry": "@shadcnblocks/hero45",
+      "source": "https://www.shadcnblocks.com/block/hero45",
+      "access": "free"
+    },
+    {
+      "id": "faq1",
+      "name": "Centered accordion FAQ block",
+      "category": "faq",
+      "description": "Centered accordion FAQ block",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/faq1-4x3.webp",
+      "registry": "@shadcnblocks/faq1",
+      "source": "https://www.shadcnblocks.com/block/faq1",
+      "access": "free"
+    },
+    {
+      "id": "login1",
+      "name": "Minimal email and password login",
+      "category": "login",
+      "description": "Minimal email and password login",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/login1-4x3.webp",
+      "registry": "@shadcnblocks/login1",
+      "source": "https://www.shadcnblocks.com/block/login1",
+      "access": "free"
+    },
+    {
+      "id": "pricing2",
+      "name": "Classic two-plan pricing with billing switch",
+      "category": "pricing",
+      "description": "Classic two-plan pricing with billing switch",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/pricing2-4x3.webp",
+      "registry": "@shadcnblocks/pricing2",
+      "source": "https://www.shadcnblocks.com/block/pricing2",
+      "access": "free"
+    },
+    {
+      "id": "reviews1",
+      "name": "Customer review list with average rating",
+      "category": "reviews",
+      "description": "Customer review list with average rating",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/reviews1-4x3.webp",
+      "registry": "@shadcnblocks/reviews1",
+      "source": "https://www.shadcnblocks.com/block/reviews1",
+      "access": "free"
+    },
+    {
+      "id": "hero115",
+      "name": "Centered hero with ring backdrop",
+      "category": "hero",
+      "description": "Centered hero with ring backdrop",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/hero115-4x3.webp",
+      "registry": "@shadcnblocks/hero115",
+      "source": "https://www.shadcnblocks.com/block/hero115",
+      "access": "free"
+    },
+    {
+      "id": "banner1",
+      "name": "Full-width dismissible announcement bar",
+      "category": "banner",
+      "description": "Full-width dismissible announcement bar",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/banner1-4x3.webp",
+      "registry": "@shadcnblocks/banner1",
+      "source": "https://www.shadcnblocks.com/block/banner1",
+      "access": "free"
+    },
+    {
+      "id": "checkout1",
+      "name": "Accordion checkout with cart and payment steps",
+      "category": "checkout",
+      "description": "Accordion checkout with cart and payment steps",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/checkout1-4x3.webp",
+      "registry": "@shadcnblocks/checkout1",
+      "source": "https://www.shadcnblocks.com/block/checkout1",
+      "access": "free"
+    },
+    {
+      "id": "live-purchase1",
+      "name": "Rotating purchase toast card",
+      "category": "live-purchase",
+      "description": "Rotating purchase toast card",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/live-purchase1-4x3.webp",
+      "registry": "@shadcnblocks/live-purchase1",
+      "source": "https://www.shadcnblocks.com/block/live-purchase1",
+      "access": "free"
+    },
+    {
+      "id": "trust-strip1",
+      "name": "Icon grid of store guarantees",
+      "category": "trust-strip",
+      "description": "Icon grid of store guarantees",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/trust-strip1-4x3.webp",
+      "registry": "@shadcnblocks/trust-strip1",
+      "source": "https://www.shadcnblocks.com/block/trust-strip1",
+      "access": "free"
+    },
+    {
+      "id": "accept-invite1",
+      "name": "Two-Column Invite with Email Form",
+      "category": "accept-invite",
+      "description": "Two-Column Invite with Email Form",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/accept-invite1-4x3.webp",
+      "registry": "@shadcnblocks/accept-invite1",
+      "source": "https://www.shadcnblocks.com/block/accept-invite1",
+      "access": "free"
+    },
+    {
+      "id": "sidebar1",
+      "name": "Basic Sidebar with Groups",
+      "category": "sidebar",
+      "description": "Basic Sidebar with Groups",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/sidebar1-4x3.webp",
+      "registry": "@shadcnblocks/sidebar1",
+      "source": "https://www.shadcnblocks.com/block/sidebar1",
+      "access": "free"
+    },
+    {
+      "id": "feature51",
+      "name": "Stacked icon tabs with feature imagery",
+      "category": "feature",
+      "description": "Stacked icon tabs with feature imagery",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/feature51-4x3.webp",
+      "registry": "@shadcnblocks/feature51",
+      "source": "https://www.shadcnblocks.com/block/feature51",
+      "access": "free"
+    },
+    {
+      "id": "invite-user1",
+      "name": "User Table with Dialog Invite",
+      "category": "invite-user",
+      "description": "User Table with Dialog Invite",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/invite-user1-4x3.webp",
+      "registry": "@shadcnblocks/invite-user1",
+      "source": "https://www.shadcnblocks.com/block/invite-user1",
+      "access": "free"
+    },
+    {
+      "id": "chart-group1",
+      "name": "Two Charts Side by Side",
+      "category": "chart-group",
+      "description": "Two Charts Side by Side",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/chart-group1-4x3.webp",
+      "registry": "@shadcnblocks/chart-group1",
+      "source": "https://www.shadcnblocks.com/block/chart-group1",
+      "access": "free"
+    },
+    {
+      "id": "product-card1",
+      "name": "Product card with sale badge",
+      "category": "product-card",
+      "description": "Product card with sale badge",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/product-card1-4x3.webp",
+      "registry": "@shadcnblocks/product-card1",
+      "source": "https://www.shadcnblocks.com/block/product-card1",
+      "access": "free"
+    },
+    {
+      "id": "code-example1",
+      "name": "Tabbed database query examples in multiple languages",
+      "category": "code-example",
+      "description": "Tabbed database query examples in multiple languages",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/code-example1-4x3.webp",
+      "registry": "@shadcnblocks/code-example1",
+      "source": "https://www.shadcnblocks.com/block/code-example1",
+      "access": "free"
+    },
+    {
+      "id": "product-categories1",
+      "name": "Split category banner with image",
+      "category": "product-categories",
+      "description": "Split category banner with image",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/product-categories1-4x3.webp",
+      "registry": "@shadcnblocks/product-categories1",
+      "source": "https://www.shadcnblocks.com/block/product-categories1",
+      "access": "free"
+    },
+    {
+      "id": "signup1",
+      "name": "Centered signup form with confirm password",
+      "category": "signup",
+      "description": "Centered signup form with confirm password",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/signup1-4x3.webp",
+      "registry": "@shadcnblocks/signup1",
+      "source": "https://www.shadcnblocks.com/block/signup1",
+      "access": "free"
+    },
+    {
+      "id": "application-shell1",
+      "name": "Sidebar Shell with Breadcrumbs",
+      "category": "application-shell",
+      "description": "Sidebar Shell with Breadcrumbs",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/application-shell1-4x3.webp",
+      "registry": "@shadcnblocks/application-shell1",
+      "source": "https://www.shadcnblocks.com/block/application-shell1",
+      "access": "free"
+    },
+    {
+      "id": "background-pattern1",
+      "name": "Full-screen radial gradient background pattern",
+      "category": "background-pattern",
+      "description": "Full-screen radial gradient background pattern",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/background-pattern1-4x3.webp",
+      "registry": "@shadcnblocks/background-pattern1",
+      "source": "https://www.shadcnblocks.com/block/background-pattern1",
+      "access": "free"
+    },
+    {
+      "id": "timeline9",
+      "name": "Vertical dot timeline",
+      "category": "timeline",
+      "description": "Vertical dot timeline",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/timeline9-4x3.webp",
+      "registry": "@shadcnblocks/timeline9",
+      "source": "https://www.shadcnblocks.com/block/timeline9",
+      "access": "free"
+    },
+    {
+      "id": "product-quick-view4",
+      "name": "Dialog quick view with variants",
+      "category": "product-quick-view",
+      "description": "Dialog quick view with variants",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/product-quick-view4-4x3.webp",
+      "registry": "@shadcnblocks/product-quick-view4",
+      "source": "https://www.shadcnblocks.com/block/product-quick-view4",
+      "access": "free"
+    },
+    {
+      "id": "cta11",
+      "name": "Bordered CTA with icon label and single action",
+      "category": "cta",
+      "description": "Bordered CTA with icon label and single action",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/cta11-4x3.webp",
+      "registry": "@shadcnblocks/cta11",
+      "source": "https://www.shadcnblocks.com/block/cta11",
+      "access": "free"
+    },
+    {
+      "id": "integration3",
+      "name": "Simple integration list",
+      "category": "integration",
+      "description": "Simple integration list",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/integration3-4x3.webp",
+      "registry": "@shadcnblocks/integration3",
+      "source": "https://www.shadcnblocks.com/block/integration3",
+      "access": "free"
+    },
+    {
+      "id": "list2",
+      "name": "Icon list with action buttons",
+      "category": "list",
+      "description": "Icon list with action buttons",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/list2-4x3.webp",
+      "registry": "@shadcnblocks/list2",
+      "source": "https://www.shadcnblocks.com/block/list2",
+      "access": "free"
+    },
+    {
+      "id": "blog7",
+      "name": "Centered blog cards with read-more links",
+      "category": "blog",
+      "description": "Centered blog cards with read-more links",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/blog7-4x3.webp",
+      "registry": "@shadcnblocks/blog7",
+      "source": "https://www.shadcnblocks.com/block/blog7",
+      "access": "free"
+    },
+    {
+      "id": "payment-methods1",
+      "name": "Payment methods list with inline edit",
+      "category": "payment-methods",
+      "description": "Payment methods list with inline edit",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/payment-methods1-4x3.webp",
+      "registry": "@shadcnblocks/payment-methods1",
+      "source": "https://www.shadcnblocks.com/block/payment-methods1",
+      "access": "free"
+    },
+    {
+      "id": "hero47",
+      "name": "Split hero with handset frame and split headline line",
+      "category": "hero",
+      "description": "Split hero with handset frame and split headline line",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/hero47-4x3.webp",
+      "registry": "@shadcnblocks/hero47",
+      "source": "https://www.shadcnblocks.com/block/hero47",
+      "access": "free"
+    },
+    {
+      "id": "settings-profile1",
+      "name": "Basic Profile Form",
+      "category": "settings-profile",
+      "description": "Basic Profile Form",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/settings-profile1-4x3.webp",
+      "registry": "@shadcnblocks/settings-profile1",
+      "source": "https://www.shadcnblocks.com/block/settings-profile1",
+      "access": "free"
+    },
+    {
+      "id": "feature166",
+      "name": "Centered intro over four-panel feature matrix",
+      "category": "feature",
+      "description": "Centered intro over four-panel feature matrix",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/feature166-4x3.webp",
+      "registry": "@shadcnblocks/feature166",
+      "source": "https://www.shadcnblocks.com/block/feature166",
+      "access": "free"
+    },
+    {
+      "id": "compare-products1",
+      "name": "Side-by-side product comparison with specs and cart",
+      "category": "compare-products",
+      "description": "Side-by-side product comparison with specs and cart",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/compare-products1-4x3.webp",
+      "registry": "@shadcnblocks/compare-products1",
+      "source": "https://www.shadcnblocks.com/block/compare-products1",
+      "access": "free"
+    },
+    {
+      "id": "shader3",
+      "name": "Mouse-Interactive Glass Shader",
+      "category": "shader",
+      "description": "Mouse-Interactive Glass Shader",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/shader3-4x3.webp",
+      "registry": "@shadcnblocks/shader3",
+      "source": "https://www.shadcnblocks.com/block/shader3",
+      "access": "free"
+    },
+    {
+      "id": "feature43",
+      "name": "Icon reasons with centered call to action",
+      "category": "feature",
+      "description": "Icon reasons with centered call to action",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/feature43-4x3.webp",
+      "registry": "@shadcnblocks/feature43",
+      "source": "https://www.shadcnblocks.com/block/feature43",
+      "access": "free"
+    },
+    {
+      "id": "pricing6",
+      "name": "Single plan pricing card with grouped features",
+      "category": "pricing",
+      "description": "Single plan pricing card with grouped features",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/pricing6-4x3.webp",
+      "registry": "@shadcnblocks/pricing6",
+      "source": "https://www.shadcnblocks.com/block/pricing6",
+      "access": "free"
+    },
+    {
+      "id": "feature2",
+      "name": "Split feature row with image and dual actions",
+      "category": "feature",
+      "description": "Split feature row with image and dual actions",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/feature2-4x3.webp",
+      "registry": "@shadcnblocks/feature2",
+      "source": "https://www.shadcnblocks.com/block/feature2",
+      "access": "free"
+    },
+    {
+      "id": "case-studies2",
+      "name": "Case studies with quotes and metrics",
+      "category": "case-studies",
+      "description": "Case studies with quotes and metrics",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/case-studies2-4x3.webp",
+      "registry": "@shadcnblocks/case-studies2",
+      "source": "https://www.shadcnblocks.com/block/case-studies2",
+      "access": "free"
+    },
+    {
+      "id": "contact7",
+      "name": "Grid of contact method cards",
+      "category": "contact",
+      "description": "Grid of contact method cards",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/contact7-4x3.webp",
+      "registry": "@shadcnblocks/contact7",
+      "source": "https://www.shadcnblocks.com/block/contact7",
+      "access": "free"
+    },
+    {
+      "id": "testimonial9",
+      "name": "Masonry quotes with source icons",
+      "category": "testimonial",
+      "description": "Masonry quotes with source icons",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/testimonial9-4x3.webp",
+      "registry": "@shadcnblocks/testimonial9",
+      "source": "https://www.shadcnblocks.com/block/testimonial9",
+      "access": "free"
+    },
+    {
+      "id": "offer-modal4",
+      "name": "Membership offer modal with photo",
+      "category": "offer-modal",
+      "description": "Membership offer modal with photo",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/offer-modal4-4x3.webp",
+      "registry": "@shadcnblocks/offer-modal4",
+      "source": "https://www.shadcnblocks.com/block/offer-modal4",
+      "access": "free"
+    },
+    {
+      "id": "hero3",
+      "name": "Split hero with review strip and tall photography",
+      "category": "hero",
+      "description": "Split hero with review strip and tall photography",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/hero3-4x3.webp",
+      "registry": "@shadcnblocks/hero3",
+      "source": "https://www.shadcnblocks.com/block/hero3",
+      "access": "free"
+    },
+    {
+      "id": "services4",
+      "name": "Bordered service cards with icon and bullet list",
+      "category": "services",
+      "description": "Bordered service cards with icon and bullet list",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/services4-4x3.webp",
+      "registry": "@shadcnblocks/services4",
+      "source": "https://www.shadcnblocks.com/block/services4",
+      "access": "free"
+    },
+    {
+      "id": "data-table1",
+      "name": "Basic Data Table",
+      "category": "data-table",
+      "description": "Basic Data Table",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/data-table1-4x3.webp",
+      "registry": "@shadcnblocks/data-table1",
+      "source": "https://www.shadcnblocks.com/block/data-table1",
+      "access": "free"
+    },
+    {
+      "id": "awards1",
+      "name": "Awards table with linked rows",
+      "category": "awards",
+      "description": "Awards table with linked rows",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/awards1-4x3.webp",
+      "registry": "@shadcnblocks/awards1",
+      "source": "https://www.shadcnblocks.com/block/awards1",
+      "access": "free"
+    },
+    {
+      "id": "feature17",
+      "name": "Six-up icon grid with centered intro",
+      "category": "feature",
+      "description": "Six-up icon grid with centered intro",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/feature17-4x3.webp",
+      "registry": "@shadcnblocks/feature17",
+      "source": "https://www.shadcnblocks.com/block/feature17",
+      "access": "free"
+    },
+    {
+      "id": "changelog1",
+      "name": "Changelog with sticky version and date rail",
+      "category": "changelog",
+      "description": "Changelog with sticky version and date rail",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/changelog1-4x3.webp",
+      "registry": "@shadcnblocks/changelog1",
+      "source": "https://www.shadcnblocks.com/block/changelog1",
+      "access": "free"
+    },
+    {
+      "id": "stats8",
+      "name": "Stats grid with heading and link",
+      "category": "stats",
+      "description": "Stats grid with heading and link",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/stats8-4x3.webp",
+      "registry": "@shadcnblocks/stats8",
+      "source": "https://www.shadcnblocks.com/block/stats8",
+      "access": "free"
+    },
+    {
+      "id": "rate-card2",
+      "name": "Two-plan monthly rate cards",
+      "category": "rate-card",
+      "description": "Two-plan monthly rate cards",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/rate-card2-4x3.webp",
+      "registry": "@shadcnblocks/rate-card2",
+      "source": "https://www.shadcnblocks.com/block/rate-card2",
+      "access": "free"
+    },
+    {
+      "id": "product-detail1",
+      "name": "Product detail with specs list",
+      "category": "product-detail",
+      "description": "Product detail with specs list",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/product-detail1-4x3.webp",
+      "registry": "@shadcnblocks/product-detail1",
+      "source": "https://www.shadcnblocks.com/block/product-detail1",
+      "access": "free"
+    },
+    {
+      "id": "logos8",
+      "name": "Centered logo row with heading",
+      "category": "logos",
+      "description": "Centered logo row with heading",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/logos8-4x3.webp",
+      "registry": "@shadcnblocks/logos8",
+      "source": "https://www.shadcnblocks.com/block/logos8",
+      "access": "free"
+    },
+    {
+      "id": "experience1",
+      "name": "Work history rows with CV download",
+      "category": "experience",
+      "description": "Work history rows with CV download",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/experience1-4x3.webp",
+      "registry": "@shadcnblocks/experience1",
+      "source": "https://www.shadcnblocks.com/block/experience1",
+      "access": "free"
+    },
+    {
+      "id": "cta34",
+      "name": "Call to action with top border separator",
+      "category": "cta",
+      "description": "Call to action with top border separator",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/cta34-4x3.webp",
+      "registry": "@shadcnblocks/cta34",
+      "source": "https://www.shadcnblocks.com/block/cta34",
+      "access": "free"
+    },
+    {
+      "id": "cta35",
+      "name": "Call to action with left border stripe",
+      "category": "cta",
+      "description": "Call to action with left border stripe",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/cta35-4x3.webp",
+      "registry": "@shadcnblocks/cta35",
+      "source": "https://www.shadcnblocks.com/block/cta35",
+      "access": "free"
+    },
+    {
+      "id": "cta36",
+      "name": "Inline split call to action",
+      "category": "cta",
+      "description": "Inline split call to action",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/cta36-4x3.webp",
+      "registry": "@shadcnblocks/cta36",
+      "source": "https://www.shadcnblocks.com/block/cta36",
+      "access": "free"
+    },
+    {
+      "id": "cta37",
+      "name": "Bordered grid split call to action",
+      "category": "cta",
+      "description": "Bordered grid split call to action",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/cta37-4x3.webp",
+      "registry": "@shadcnblocks/cta37",
+      "source": "https://www.shadcnblocks.com/block/cta37",
+      "access": "free"
+    },
+    {
+      "id": "cta38",
+      "name": "Inverted card call to action",
+      "category": "cta",
+      "description": "Inverted card call to action",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/cta38-4x3.webp",
+      "registry": "@shadcnblocks/cta38",
+      "source": "https://www.shadcnblocks.com/block/cta38",
+      "access": "free"
+    },
+    {
+      "id": "cta39",
+      "name": "Dashed outline card call to action",
+      "category": "cta",
+      "description": "Dashed outline card call to action",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/cta39-4x3.webp",
+      "registry": "@shadcnblocks/cta39",
+      "source": "https://www.shadcnblocks.com/block/cta39",
+      "access": "free"
+    },
+    {
+      "id": "logos18",
+      "name": "Logo Grid Without Headline",
+      "category": "logos",
+      "description": "Logo Grid Without Headline",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/logos18-4x3.webp",
+      "registry": "@shadcnblocks/logos18",
+      "source": "https://www.shadcnblocks.com/block/logos18",
+      "access": "free"
+    },
+    {
+      "id": "about29",
+      "name": "Mission panel with text columns",
+      "category": "about",
+      "description": "Mission panel with text columns",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/about29-4x3.webp",
+      "registry": "@shadcnblocks/about29",
+      "source": "https://www.shadcnblocks.com/block/about29",
+      "access": "free"
+    },
+    {
+      "id": "about3",
+      "name": "About 3 - Company Profile with Achievements",
+      "category": "about",
+      "description": "A two-column about section with main image, breakout card, logo strip, and achievements stats grid on muted background.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/about3-4x3.webp",
+      "registry": "@shadcnblocks/about3",
+      "source": "https://www.shadcnblocks.com/block/about3",
+      "access": "free"
+    },
+    {
+      "id": "hero195",
+      "name": "Hero 195 - Hero with tabbed dashboard preview",
+      "category": "hero",
+      "description": "Headline, paragraph, buttons and tabs swapping a wide dashboard preview inside an animated bordered frame.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/hero195-4x3.webp",
+      "registry": "@shadcnblocks/hero195",
+      "source": "https://www.shadcnblocks.com/block/hero195",
+      "access": "free"
+    },
+    {
+      "id": "hero34",
+      "name": "Hero 34 - Two-column hero on muted panel with bleed image",
+      "category": "hero",
+      "description": "A two-column hero pairing padded copy and actions with a photograph that fills the adjacent column.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/hero34-4x3.webp",
+      "registry": "@shadcnblocks/hero34",
+      "source": "https://www.shadcnblocks.com/block/hero34",
+      "access": "free"
+    },
+    {
+      "id": "hero12",
+      "name": "Hero 12 - Radial hero with frosted logo chip and tech icon buttons",
+      "category": "hero",
+      "description": "A centered hero with radial grid backdrop, frosted logo tile, highlighted headline, paired CTAs and tech icon buttons.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/hero12-4x3.webp",
+      "registry": "@shadcnblocks/hero12",
+      "source": "https://www.shadcnblocks.com/block/hero12",
+      "access": "free"
+    },
+    {
+      "id": "hero78",
+      "name": "Hero 78 - Fullscreen photo hero with serif headline and grain veil",
+      "category": "hero",
+      "description": "A viewport hero layering background photography beneath readability overlays, serif copy and a pill action.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/hero78-4x3.webp",
+      "registry": "@shadcnblocks/hero78",
+      "source": "https://www.shadcnblocks.com/block/hero78",
+      "access": "free"
+    },
+    {
+      "id": "hero243",
+      "name": "Hero 243 - Hero with flip-word accent and dashed frame",
+      "category": "hero",
+      "description": "A dashed-frame hero with an animated word accent, centered description and CTA, and a three-cell icon summary row.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/hero243-4x3.webp",
+      "registry": "@shadcnblocks/hero243",
+      "source": "https://www.shadcnblocks.com/block/hero243",
+      "access": "free"
+    },
+    {
+      "id": "hero206",
+      "name": "Hero 206 - Centered hero with logo row and browser mockup",
+      "category": "hero",
+      "description": "A centered hero with supporting copy, logo strip and rounded browser frame showing responsive dashboard screenshots.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/hero206-4x3.webp",
+      "registry": "@shadcnblocks/hero206",
+      "source": "https://www.shadcnblocks.com/block/hero206",
+      "access": "free"
+    },
+    {
+      "id": "hero67",
+      "name": "Hero 67 - Calendar-focused hero with avatar proof strip",
+      "category": "hero",
+      "description": "A centered scheduling hero with eyebrow, CTA, calendar screenshot pair and overlapping testimonial avatars.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/hero67-4x3.webp",
+      "registry": "@shadcnblocks/hero67",
+      "source": "https://www.shadcnblocks.com/block/hero67",
+      "access": "free"
+    },
+    {
+      "id": "feature239",
+      "name": "Feature 239 - Split feature with dotted frame and image tile",
+      "category": "feature",
+      "description": "A bordered split layout pairing feature copy and action with a dotted-frame media tile and overlay teaser.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/feature239-4x3.webp",
+      "registry": "@shadcnblocks/feature239",
+      "source": "https://www.shadcnblocks.com/block/feature239",
+      "access": "free"
+    },
+    {
+      "id": "feature42",
+      "name": "Feature 42 - Values heading spanning a three-column grid",
+      "category": "feature",
+      "description": "A large heading occupies a double-height cell while four value statements fill a three-column grid.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/feature42-4x3.webp",
+      "registry": "@shadcnblocks/feature42",
+      "source": "https://www.shadcnblocks.com/block/feature42",
+      "access": "free"
+    },
+    {
+      "id": "feature15",
+      "name": "Feature 15 - Centered intro with paired icon tiles",
+      "category": "feature",
+      "description": "A centered feature intro followed by a two-column grid of accent-backed icon tiles.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/feature15-4x3.webp",
+      "registry": "@shadcnblocks/feature15",
+      "source": "https://www.shadcnblocks.com/block/feature15",
+      "access": "free"
+    },
+    {
+      "id": "feature74",
+      "name": "Feature 74 - Split intro with two large feature panels",
+      "category": "feature",
+      "description": "An introduction and demo link followed by two wide bordered feature rows pairing images and copy.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/feature74-4x3.webp",
+      "registry": "@shadcnblocks/feature74",
+      "source": "https://www.shadcnblocks.com/block/feature74",
+      "access": "free"
+    },
+    {
+      "id": "feature16",
+      "name": "Feature 16 - Three pillar cards with outlined icons",
+      "category": "feature",
+      "description": "Three equal cards with tinted backgrounds, outlined circular icons, pillar labels and supporting copy.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/feature16-4x3.webp",
+      "registry": "@shadcnblocks/feature16",
+      "source": "https://www.shadcnblocks.com/block/feature16",
+      "access": "free"
+    },
+    {
+      "id": "feature3",
+      "name": "Feature 3 - Icon-led feature cards with footer imagery",
+      "category": "feature",
+      "description": "A responsive grid of feature cards with header icon, title, body copy and bottom image slot.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/feature3-4x3.webp",
+      "registry": "@shadcnblocks/feature3",
+      "source": "https://www.shadcnblocks.com/block/feature3",
+      "access": "free"
+    },
+    {
+      "id": "integration9",
+      "name": "Integration 9 - Integration card grid",
+      "category": "integration",
+      "description": "A responsive grid of integration cards with icons, titles and descriptions.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/integration9-4x3.webp",
+      "registry": "@shadcnblocks/integration9",
+      "source": "https://www.shadcnblocks.com/block/integration9",
+      "access": "free"
+    },
+    {
+      "id": "pricing11",
+      "name": "Pricing 11 - Four-plan feature matrix with sticky header",
+      "category": "pricing",
+      "description": "A four-plan comparison matrix with sticky plan headers, billing tabs, tooltips and mobile collapsible rows.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/pricing11-4x3.webp",
+      "registry": "@shadcnblocks/pricing11",
+      "source": "https://www.shadcnblocks.com/block/pricing11",
+      "access": "free"
+    },
+    {
+      "id": "contact2",
+      "name": "Contact 2 - Two-column layout with contact links",
+      "category": "contact",
+      "description": "A split contact section with icon links and a validated message form inside a muted panel.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/contact2-4x3.webp",
+      "registry": "@shadcnblocks/contact2",
+      "source": "https://www.shadcnblocks.com/block/contact2",
+      "access": "free"
+    },
+    {
+      "id": "testimonial4",
+      "name": "Testimonial 4 - Featured quote with supporting cards",
+      "category": "testimonial",
+      "description": "A large photo and featured quote card followed by three testimonial cards with people and roles.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/testimonial4-4x3.webp",
+      "registry": "@shadcnblocks/testimonial4",
+      "source": "https://www.shadcnblocks.com/block/testimonial4",
+      "access": "free"
+    },
+    {
+      "id": "testimonial8",
+      "name": "Testimonial 8 - Masonry testimonial wall with fade",
+      "category": "testimonial",
+      "description": "A masonry wall of quote cards with avatars and a visual fade toward the bottom.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/testimonial8-4x3.webp",
+      "registry": "@shadcnblocks/testimonial8",
+      "source": "https://www.shadcnblocks.com/block/testimonial8",
+      "access": "free"
+    },
+    {
+      "id": "footer7",
+      "name": "Footer 7 - Logo, social links, navigation and legal row",
+      "category": "footer",
+      "description": "A two-row footer with brand summary and social links, three navigation columns and a bordered legal row.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/footer7-4x3.webp",
+      "registry": "@shadcnblocks/footer7",
+      "source": "https://www.shadcnblocks.com/block/footer7",
+      "access": "free"
+    },
+    {
+      "id": "navbar5",
+      "name": "Navbar 5 - Navbar with features dropdown grid",
+      "category": "navbar",
+      "description": "A compact navbar with a feature dropdown, sign-in and CTA actions, and an accordion mobile menu.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/navbar5-4x3.webp",
+      "registry": "@shadcnblocks/navbar5",
+      "source": "https://www.shadcnblocks.com/block/navbar5",
+      "access": "free"
+    },
+    {
+      "id": "gallery4",
+      "name": "Gallery 4 - Case study carousel with dot indicators",
+      "category": "gallery",
+      "description": "A full-bleed image-card carousel with gradient overlays, dot pagination and arrow navigation.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/gallery4-4x3.webp",
+      "registry": "@shadcnblocks/gallery4",
+      "source": "https://www.shadcnblocks.com/block/gallery4",
+      "access": "free"
+    },
+    {
+      "id": "blog8",
+      "name": "Blog 8 - Offset blog rows with tags",
+      "category": "blog",
+      "description": "Wide stacked editorial rows pairing tags and copy with a bordered image and read-more action.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/blog8-4x3.webp",
+      "registry": "@shadcnblocks/blog8",
+      "source": "https://www.shadcnblocks.com/block/blog8",
+      "access": "free"
+    },
+    {
+      "id": "download1",
+      "name": "Download 1 - App store download cards",
+      "category": "download",
+      "description": "A download section with desktop, iOS and Android cards, platform details and store actions.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/download1-4x3.webp",
+      "registry": "@shadcnblocks/download1",
+      "source": "https://www.shadcnblocks.com/block/download1",
+      "access": "free"
+    },
+    {
+      "id": "team2",
+      "name": "Team 2 - Team grid with social profile links",
+      "category": "team",
+      "description": "A team introduction and responsive member grid with avatars, roles and social links.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/team2-4x3.webp",
+      "registry": "@shadcnblocks/team2",
+      "source": "https://www.shadcnblocks.com/block/team2",
+      "access": "free"
+    },
+    {
+      "id": "project2",
+      "name": "Project 2 - Project detail with serif title and metadata",
+      "category": "project",
+      "description": "A project detail page with serif title, metadata columns, full-width image and structured prose.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/project2-4x3.webp",
+      "registry": "@shadcnblocks/project2",
+      "source": "https://www.shadcnblocks.com/block/project2",
+      "access": "free"
+    },
+    {
+      "id": "timeline3",
+      "name": "Timeline 3 - Sticky intro with stacked milestone cards",
+      "category": "timeline",
+      "description": "A two-column history timeline with sticky introduction and stacked image milestone cards.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/timeline3-4x3.webp",
+      "registry": "@shadcnblocks/timeline3",
+      "source": "https://www.shadcnblocks.com/block/timeline3",
+      "access": "free"
+    },
+    {
+      "id": "logos3",
+      "name": "Logos 3 - Logo marquee with heading",
+      "category": "logos",
+      "description": "A continuous horizontal logo marquee beneath a centered heading with edge fades.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/logos3-4x3.webp",
+      "registry": "@shadcnblocks/logos3",
+      "source": "https://www.shadcnblocks.com/block/logos3",
+      "access": "free"
+    },
+    {
+      "id": "logos19",
+      "name": "Logos 19 - Logo marquee without headline",
+      "category": "logos",
+      "description": "An auto-scrolling logo carousel with side fades and no heading.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/logos19-4x3.webp",
+      "registry": "@shadcnblocks/logos19",
+      "source": "https://www.shadcnblocks.com/block/logos19",
+      "access": "free"
+    },
+    {
+      "id": "services12",
+      "name": "Services 12 - Image card grid with intro panel",
+      "category": "services",
+      "description": "Five service image cards in a split layout with introduction, outline action and hover effects.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/services12-4x3.webp",
+      "registry": "@shadcnblocks/services12",
+      "source": "https://www.shadcnblocks.com/block/services12",
+      "access": "free"
+    },
+    {
+      "id": "service2",
+      "name": "Service 2 - Service detail page with photo hero",
+      "category": "service",
+      "description": "A service page with full-width photo hero and structured introduction, prose and service list sections.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/service2-4x3.webp",
+      "registry": "@shadcnblocks/service2",
+      "source": "https://www.shadcnblocks.com/block/service2",
+      "access": "free"
+    },
+    {
+      "id": "signup2",
+      "name": "Signup 2 - Centered signup form with logo",
+      "category": "signup",
+      "description": "A full-screen centered account form with logo, email and password fields, action and login link.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/signup2-4x3.webp",
+      "registry": "@shadcnblocks/signup2",
+      "source": "https://www.shadcnblocks.com/block/signup2",
+      "access": "free"
+    },
+    {
+      "id": "login2",
+      "name": "Login 2 - Labeled input login form",
+      "category": "login",
+      "description": "A centered login card with labeled email and password fields, submit action and signup prompt.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/login2-4x3.webp",
+      "registry": "@shadcnblocks/login2",
+      "source": "https://www.shadcnblocks.com/block/login2",
+      "access": "free"
+    },
+    {
+      "id": "compare8",
+      "name": "Compare 8 - Framework checklist with dual status columns",
+      "category": "compare",
+      "description": "An icon-led comparison checklist with labels, details and two status columns inside a rounded sheet.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/compare8-4x3.webp",
+      "registry": "@shadcnblocks/compare8",
+      "source": "https://www.shadcnblocks.com/block/compare8",
+      "access": "free"
+    },
+    {
+      "id": "cta4",
+      "name": "CTA 4 - Muted card with feature checklist",
+      "category": "cta",
+      "description": "A two-column call to action with copy, link button and a checklist inside a rounded muted panel.",
+      "preview": "https://cdn.shadcnblocks.com/shadcnblocks/screenshots/block/cta4-4x3.webp",
+      "registry": "@shadcnblocks/cta4",
+      "source": "https://www.shadcnblocks.com/block/cta4",
+      "access": "free"
+    },
+    {
+      "id": "dashboard-01",
+      "name": "Shadcn Dashboard",
+      "category": "dashboard",
+      "description": "A dashboard with sidebar, charts and data table.",
+      "preview": "https://ui.shadcn.com/r/styles/new-york/dashboard-01-light.png",
+      "registry": "dashboard-01",
+      "source": "https://ui.shadcn.com/blocks#dashboard-01",
+      "provider": "shadcn/ui",
+      "access": "free"
+    },
+    {
+      "id": "sidebar-07",
+      "name": "Shadcn Collapsible Sidebar",
+      "category": "sidebar",
+      "description": "A sidebar that collapses to icons.",
+      "preview": "https://ui.shadcn.com/r/styles/new-york/sidebar-07-light.png",
+      "registry": "sidebar-07",
+      "source": "https://ui.shadcn.com/blocks#sidebar-07",
+      "provider": "shadcn/ui",
+      "access": "free"
+    },
+    {
+      "id": "sidebar-03",
+      "name": "Shadcn Sidebar with Submenus",
+      "category": "sidebar",
+      "description": "A sidebar with submenus.",
+      "preview": "https://ui.shadcn.com/r/styles/new-york/sidebar-03-light.png",
+      "registry": "sidebar-03",
+      "source": "https://ui.shadcn.com/blocks#sidebar-03",
+      "provider": "shadcn/ui",
+      "access": "free"
+    },
+    {
+      "id": "login-03",
+      "name": "Shadcn Login on Muted Background",
+      "category": "login",
+      "description": "A login page with a muted background color.",
+      "preview": "https://ui.shadcn.com/r/styles/new-york/login-03-light.png",
+      "registry": "login-03",
+      "source": "https://ui.shadcn.com/blocks#login-03",
+      "provider": "shadcn/ui",
+      "access": "free"
+    },
+    {
+      "id": "login-04",
+      "name": "Shadcn Login with Image",
+      "category": "login",
+      "description": "A login page with form and image.",
+      "preview": "https://ui.shadcn.com/r/styles/new-york/login-04-light.png",
+      "registry": "login-04",
+      "source": "https://ui.shadcn.com/blocks#login-04",
+      "provider": "shadcn/ui",
+      "access": "free"
+    }
+  ]
+}

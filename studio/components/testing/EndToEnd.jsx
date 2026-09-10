@@ -15,6 +15,7 @@ export default function EndToEnd({ qa }) {
   const failed = e2e.failed ?? failures.length
   const score = e2eStageSummary(e2e)
   const flows = e2e.flows || []
+  const savedSuites = qa?.report?.evidence?.suites || []
 
   return (
     <div className="space-y-4">
@@ -75,12 +76,30 @@ export default function EndToEnd({ qa }) {
               <li key={i} className="rounded-panel border border-line border-l-2 border-l-bad bg-panel2/40 px-3 py-2 text-[11.5px]">
                 <code className="font-mono text-ink">{f.target || f.file || f.case}</code>
                 <span className="text-muted"> — {f.case || f.message}</span>
+                <DiagnosticEvidence suite={f.case} suites={savedSuites} />
               </li>
             ))}
           </ul>
         </Panel>
       )}
     </div>
+  )
+}
+
+function DiagnosticEvidence({ suite, suites }) {
+  const output = suites.find(row => row.kind === 'e2e' && row.suite === suite)?.output || ''
+  const marker = 'Browser diagnostics during this journey:'
+  const start = output.indexOf(marker)
+  if (start < 0) return null
+  return (
+    <details className="mt-2 rounded-lg border border-line/70 bg-panel px-2.5 py-2">
+      <summary className="cursor-pointer text-[10px] font-semibold uppercase tracking-[.1em] text-muted2">
+        Browser console & network evidence
+      </summary>
+      <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words font-mono text-[10px] leading-relaxed text-muted">
+        {output.slice(start)}
+      </pre>
+    </details>
   )
 }
 

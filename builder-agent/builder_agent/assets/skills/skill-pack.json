@@ -393,6 +393,59 @@
       "requires": [
         "api-contracts"
       ]
+    },
+    {
+      "name": "shadcn",
+      "match": [],
+      "requires": [
+        "frontend-design"
+      ],
+      "uiKits": [
+        "shadcn"
+      ]
+    },
+    {
+      "name": "chakra-ui-builder",
+      "match": [],
+      "requires": [
+        "frontend-design"
+      ],
+      "uiKits": [
+        "chakra"
+      ]
+    },
+    {
+      "name": "material-ui-styling",
+      "match": [],
+      "requires": [
+        "frontend-design"
+      ],
+      "uiKits": [
+        "material"
+      ]
+    },
+    {
+      "name": "material-ui-theming",
+      "match": [],
+      "requires": [
+        "material-ui-styling"
+      ],
+      "uiKits": [
+        "material"
+      ]
+    },
+    {
+      "name": "material-ui-nextjs",
+      "match": [],
+      "requires": [
+        "material-ui-theming"
+      ],
+      "stacks": [
+        "nextjs-mongo"
+      ],
+      "uiKits": [
+        "material"
+      ]
     }
   ]
 }

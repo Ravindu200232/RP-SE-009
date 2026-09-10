@@ -27,6 +27,7 @@ Use AgentX `browserRunJourney` as the only E2E harness. It drives an isolated in
 - Cover each sealed E2E requirement only when the journey truly crosses its public browser boundary.
 - Use isolated test/demo data; browser session isolation does not reset persistent database state.
 - Prepare fixtures once before verification, and have each journey create and clean up its own records. Do not repeatedly clear or reseed the whole database between passing checks. Keep stable suite IDs and requirement coverage so the final summary can reuse the evidence. After a passing journey, move to the next missing requirement or completion; rerun only after a relevant repair or when the ledger identifies stale evidence.
+- Do not let one journey's persisted mutation make another journey's expected data stale. For example, an admin price-change journey must use its own room or restore the price; a later guest journey must either create its own fixture or assert the state it actually established. A changed database is not a reason to rerun an unchanged journey repeatedly.
 - Prefer one short journey per critical public flow rather than one giant scenario that makes failures ambiguous.
 
 ## Passing on the first run
@@ -122,6 +123,8 @@ possible wrong turn.
 ## Failure and anti-loop rule
 
 On failure, use the bounded failure URL/diagnostics/page text already returned by `browserRunJourney`. Do not take another snapshot unless that evidence says the page changed after the failure. Route the repair by owner: `E2E_SELECTOR_*` = journey/harness locator only; `E2E_UI_TARGET_MISSING` = product UI/route/state; assertion/console/network/HTTP 5xx failures = production behavior/runtime. State one falsifiable hypothesis and patch only that owner.
+
+When the page text says `Internal Server Error`, the client shows an application-error shell, or the dev server has restarted, treat it as a runtime incident before changing a locator. Read the captured diagnostics, make one direct request to the affected route, then inspect the server output and the source that serves that route. Apply one source or runtime repair before rerunning the affected journey. A restart alone is not evidence that the defect is fixed.
 
 Do not manually churn browser state, guess multiple selector names, repeatedly logout/login, or rerun the same full journey after every observation. Correct a locator in the journey definition and retry with the same suite ID; this is a repair even though no product file changed. Do not rename the suite or edit working application code to escape a failed result. A passing retry replaces that suite's failed evidence.
 

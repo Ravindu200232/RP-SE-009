@@ -29,6 +29,6 @@ Give the model enough proof to reason without guessing: tool/command, exit statu
 
 Before reading a path you have not observed, call `search` with the filename fragment, symbol, failing owner, or config topic. Use its best observed path exactly. Do not burn retries on extension variants or sibling directories. Use `inspectProject` for source roots, actual manifest script commands, observed test roots/files and config candidates before writing shell commands.
 
-If the diagnosis depends on current package, framework, CLI, migration or API behavior, use `webResearch` to search and READ the most relevant current primary/official page before the repair command. Search snippets alone are not command evidence. If project-local `recallKnowledge` returns a previously verified repair lesson, use it as a hypothesis shortcut, then re-read the current owner and re-verify current external facts before editing.
+If the diagnosis depends on current package, framework, CLI, migration or API behavior, read the installed package's own documentation and CLI help before the repair command. If project-local `recallKnowledge` returns a previously verified repair lesson, use it as a hypothesis shortcut, then re-read the current owner and re-verify current external facts before editing.
 
 A successful repair may be stored automatically as a small project-local verified lesson only after fresh verification closes the failure. Never "teach" the store from an unverified guess; this learning is retrieval memory, not model-weight training.

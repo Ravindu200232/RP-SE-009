@@ -48,7 +48,7 @@ Do not silently skip a phase. If one is genuinely not applicable, record why fro
 
 
 TESTING = """TEST-DRIVEN COMPLETION
-Call defineVerificationScope before writing tests, and testingStatus to see where you stand. Derive requirements from the request and the project: public boundaries, domain behaviour, critical flows and UI states. This records evidence; it does not choose a stack. Page a large scope with finalize:false, then seal the last page.
+Call defineVerificationScope before writing or running tests, and testingStatus to see where you stand. Derive requirements from the request and the project: public boundaries, domain behaviour, critical flows and UI states. This records evidence; it does not choose a stack. Page a large scope with finalize:false, then seal the last page. Use executeTerminal for dependency installation, seeding and the production build; use runTests with requirement ids in covers for unit/integration tests so their first meaningful run is also the recorded evidence. Do not run an npm test command through executeTerminal and then repeat it through runTests.
 The ledger is the record of what is proved, not your memory of it. A suite that already passed at the current revision is proved: running it again records the same pass and tells you nothing. Only a change to the project moves the revision, so if you have edited nothing since, no rerun of anything can give a new answer. When you are unsure what to do next, call testingStatus and prove the first gap it names - never fill the time by rerunning work that has already answered.
 Work forward through the layers: build passes, then runtime passes, then unit passes, then E2E passes, then you are done. Reuse the ready runtime for browser journeys. Report and stop as soon as every required layer has current evidence. A final review reuses passing evidence from this revision; it does not order every check to run again.
 Put requirement ids in runTests.covers and browserRunJourney.covers. Mark project-changing shell commands with changesProject:true; services and read-only commands are false.
@@ -70,6 +70,12 @@ Long commands return a process id while still running. Use waitForProcess to obs
 
 
 REVIEW = """MODE: READ-ONLY REVIEW. Inspect the requested changes and the code around them. Report concrete, actionable defects with severity, file and line references, evidence and impact. Prioritise correctness, security and regressions, and separate what you verified from what you are uncertain about. Do not implement fixes, run mutating commands, install anything or change files. If you find no issues, say so and name what you could not verify."""
+
+
+PLANNING = """MODE: READ-ONLY PRODUCT PLANNING.
+Start with inspectProject once. Its fresh-scaffold summary and project layout are authoritative for planning. Do not inventory the scaffold by opening its gateway, service skeleton, client primitives, tests, configs or manifests. Read a project file only when the request conflicts with the summary or leaves a material requirement, route, data or compatibility question that the summary cannot answer.
+Do not call listSkills and do not enumerate or read implementation, framework, UI-provider, scaffold, runtime, testing, debugging or verification skills. Those skills belong to the execution phase and reading them now wastes the user's time and context. Do not inspect template examples or generated scaffold files merely to restate their structure.
+For a user interface, set the design direction from the product itself: who uses it, what each screen is for, and what the approved design contract already fixes. Then submit one complete plan. Order it as requirements and implementation, production build, runtime readiness, unit/integration evidence, E2E evidence, Done. Keep test commands out of intermediate implementation done conditions so execution does not run the same suites twice. Do not install, generate, seed, start, build, test or implement during planning."""
 
 
 # Given up in this order when the window cannot hold everything.
@@ -98,7 +104,8 @@ def _fit(parts: list[str], context_tokens: int) -> list[str]:
 
 def system_prompt(*, workspace, model: str, stack: str, quality: Quality,
                   context_tokens: int, review: bool = False,
-                  testing_enabled: bool = True, verification_kinds=None) -> str:
+                  testing_enabled: bool = True, verification_kinds=None,
+                  plan_only: bool = False) -> str:
     contract = stack_for(stack)
     parts = [
         CORE,
@@ -125,6 +132,10 @@ def system_prompt(*, workspace, model: str, stack: str, quality: Quality,
         parts.append(REVIEW)
         return "\n\n".join(_fit(parts, context_tokens))
 
+    if plan_only:
+        parts.append(PLANNING)
+        return "\n\n".join(_fit(parts, context_tokens))
+
     parts.append(quality_prompt(quality))
     parts.append(PHASES)
     if testing_enabled:
@@ -144,10 +155,21 @@ def system_prompt(*, workspace, model: str, stack: str, quality: Quality,
 
 def task_message(task: str, *, stack: str, quality: Quality, plan_only: bool = False) -> str:
     contract = stack_for(stack)
-    header = ("PLAN THIS TASK. Investigate the project first, then call submitPlan with a "
-              "complete human-readable plan: the goal and its invariants, what you found, "
-              "ordered phases with their done conditions, the acceptance evidence, and the "
-              "real limitations. Do not implement it yet."
+    header = ("PLAN THIS TASK. Call inspectProject once, then call submitPlan "
+              "with a complete human-readable plan: the goal and its invariants, what you "
+              "found, ordered phases with their done conditions, acceptance evidence, and real "
+              "limitations. Treat the fresh-scaffold summary and layout as sufficient; do not "
+              "inventory boilerplate gateway, service, client, test or config files. Read a targeted "
+              "project file only when the request leaves a material unknown the summary cannot answer. "
+              "Do not list or read implementation, framework, UI-provider, scaffold, runtime, "
+              "testing or verification skills during this pass; execution owns them. Planning is "
+              "read-only: do not install dependencies, run generators, seed data, start services, "
+              "build, or run tests. The scaffold and selected UI provider are already verified. "
+              "For a user interface, set the direction from the product itself: who uses it, "
+              "what each screen is for, and what the design contract already fixes. "
+              "Order execution as implementation, production build, runtime, unit/"
+              "integration, E2E, Done; do not put test runs in intermediate implementation done "
+              "conditions. Do not copy branding or prose. Do not implement the plan yet."
               if plan_only else "TASK")
     return "\n".join([
         header, "", task, "",

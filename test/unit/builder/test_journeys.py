@@ -101,6 +101,21 @@ class JourneyRepairTests(unittest.TestCase):
 
 
 class DiagnosticsTests(unittest.TestCase):
+    def test_a_failed_journey_keeps_console_evidence_in_the_saved_ledger(self):
+        page = FakePage([note("console error", "Cannot read properties of undefined", "/rooms")])
+        page.reset_diagnostics = lambda: None
+        driver = types.SimpleNamespace(page=lambda tab: page, fresh_session=lambda: None)
+        evidence = Evidence()
+
+        with self.assertRaisesRegex(ToolError, "console error"):
+            run_journey(driver, None, evidence, suite="rooms", covers=[],
+                        steps=[{"type": "noDiagnostics"}])
+
+        saved = evidence.suites[0]
+        self.assertEqual(saved["status"], "failed")
+        self.assertIn("Browser diagnostics during this journey", saved["output"])
+        self.assertIn("Cannot read properties of undefined", saved["output"])
+
     def test_a_clean_page_passes(self):
         passed, detail = _assert(FakePage(), {"type": "noDiagnostics"})
         self.assertTrue(passed)

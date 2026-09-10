@@ -3,11 +3,12 @@
 import { useState } from 'react'
 import { ArrowRight } from 'lucide-react'
 import { Button, Input, Modal } from './ui'
-import { STACKS } from '@/lib/stacks'
+import { STACKS, UI_LIBRARIES } from '@/lib/stacks'
 
 export default function BuildSetup({ model, stack, think, options = [], onContinue, onCancel }) {
   const [selectedModel, setModel] = useState(model || '')
   const [selectedStack, setStack] = useState(stack || 'nextjs-mongo')
+  const [uiLibrary, setUiLibrary] = useState('shadcn')
   const [thinking, setThinking] = useState(Boolean(think))
   const choices = [...new Map(options.map(item => [item.id, item])).values()]
 
@@ -33,6 +34,31 @@ export default function BuildSetup({ model, stack, think, options = [], onContin
           {STACKS.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
         </select>
         <p className="mt-1.5 text-[11px] text-muted2">{STACKS.find(item => item.id === selectedStack)?.blurb}</p>
+        <fieldset className="mt-4">
+          <legend className="text-[12px] font-semibold text-ink">UI framework</legend>
+          <p className="mt-1 text-[11px] leading-relaxed text-muted2">
+            Installed into the selected stack scaffold before planning starts.
+          </p>
+          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+            {UI_LIBRARIES.map(item => (
+              <button key={item.id} type="button" onClick={() => setUiLibrary(item.id)}
+                      aria-pressed={uiLibrary === item.id}
+                      className={`min-h-[76px] rounded-xl border p-3 text-left transition-colors ${
+                        uiLibrary === item.id
+                          ? 'border-accent bg-accent/[.08] text-ink'
+                          : 'border-line bg-panel text-muted hover:border-line2 hover:text-ink'
+                      }`}>
+                <span className="flex items-center gap-2">
+                  <span className="grid size-6 place-items-center rounded-md bg-ink text-[11px] font-bold text-panel">
+                    {item.mark}
+                  </span>
+                  <span className="text-[11.5px] font-semibold">{item.name}</span>
+                </span>
+                <span className="mt-2 block text-[10px] leading-snug text-muted2">{item.blurb}</span>
+              </button>
+            ))}
+          </div>
+        </fieldset>
         <label className="mt-4 flex items-center gap-2 text-[12px] text-ink">
           <input type="checkbox" checked={thinking} onChange={event => setThinking(event.target.checked)} />
           Enable model thinking
@@ -40,7 +66,8 @@ export default function BuildSetup({ model, stack, think, options = [], onContin
         <footer className="mt-5 flex justify-end gap-2 border-t border-line pt-4">
           <Button variant="outline" onClick={onCancel}>Back</Button>
           <Button variant="solid" disabled={!selectedModel.trim()}
-                  onClick={() => onContinue({ model: selectedModel.trim(), stack: selectedStack, think: thinking })}>
+                  onClick={() => onContinue({ model: selectedModel.trim(), stack: selectedStack,
+                                              uiLibrary, think: thinking })}>
             Create plan <ArrowRight className="size-3" />
           </Button>
         </footer>

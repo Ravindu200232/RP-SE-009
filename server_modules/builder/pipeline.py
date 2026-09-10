@@ -25,6 +25,7 @@ for _root in (_BUILDER_ROOT, _QA_ROOT):
         sys.path.insert(0, _root)
 
 from builder_agent import BuilderAgent, Config, Events, detect_stack, stack_of  # noqa: E402
+from builder_agent.ui_kits import normalize_ui_kit, ui_kit_of  # noqa: E402
 from qa_agent import QAAgent  # noqa: E402
 from qa_agent.agent import QAOutcome  # noqa: E402
 from qa_agent import report as qa_report, security as qa_security  # noqa: E402
@@ -128,13 +129,15 @@ GATE_TIMEOUT = 600
 
 
 def _config(proj_dir: Path, prompt: str, model: str, think, gates: bool = False,
-            stack: str = "") -> Config:
+            stack: str = "", ui_library: str = "") -> Config:
     # A stack chosen in the studio is a decision; reading it out of the wording
     # of the brief is a guess, and only the fallback.
+    selected_ui = ui_library or ui_kit_of(proj_dir)
     return Config(workspace=proj_dir, model=model or default_agent_model(),
                   host=ollama.host, stack=stack or detect_stack(prompt),
                   think=bool(think),
-                  extra={"gates": gates, "gate_timeout": GATE_TIMEOUT})
+                  extra={"gates": gates, "gate_timeout": GATE_TIMEOUT,
+                         "ui_library": normalize_ui_kit(selected_ui)})
 
 
 def _cancelled() -> bool:
@@ -457,7 +460,7 @@ def release_other_sessions(keep: str) -> list:
     return others
 
 
-def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
+def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str, ui_library: str,
                *, kind: str, phases, plan: bool):
     """The agent already talking about this project, or a new one.
 
@@ -491,7 +494,8 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
     if fresh:
         forget_session(name)
         agent = BuilderAgent(
-            _config(proj_dir, brief, model, think, gates=plan, stack=stack),
+            _config(proj_dir, brief, model, think, gates=plan, stack=stack,
+                    ui_library=ui_library),
             events=Events(), cancel=_cancelled)
         if not plan:
             restored = restore_conversation(proj_dir, agent)
@@ -513,14 +517,14 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
 
 
 def _run_agent(proj_dir: Path, brief: str, model: str, think, *, phases, kind: str,
-               plan: bool = True, stack: str = ""):
+               plan: bool = True, stack: str = "", ui_library: str = ""):
     """One builder-agent run, wired to the studio.
 
     A full build asks about its plan and its design, because the studio can
     answer. An edit does not: there is no plan to review, and the design was
     settled when the project was built.
     """
-    agent = _agent_for(proj_dir, brief, model, think, stack,
+    agent = _agent_for(proj_dir, brief, model, think, stack, ui_library,
                        kind=kind, phases=phases, plan=plan)
     register_approvals(agent.approvals)
     try:
@@ -635,7 +639,7 @@ def _finish(project: str, url: str, outcome, qa_outcome=None) -> bool:
 
 def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
                        project: str = "", logo: str = "", srs_id: str = "",
-                       stack: str = "") -> None:
+                       stack: str = "", ui_library: str = "") -> None:
     """Build an application from a request, then prove it works."""
     started = time.time()
     cancel.begin()
@@ -656,7 +660,8 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
             brief += f"\n\nA logo has already been generated at {logo}; use it in the header."
 
         agent, outcome = _run_agent(proj_dir, brief, model, think,
-                                    phases=BUILD_PHASES, kind="build", stack=stack)
+                                    phases=BUILD_PHASES, kind="build", stack=stack,
+                                    ui_library=ui_library)
         if outcome.status == "cancelled":
             return ecancel({"project": name})
 

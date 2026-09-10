@@ -1,240 +1,81 @@
 ---
 name: frontend-design
-description: Design and build visually excellent React pages and the components they are made of — component inventory, content-heavy layouts, vertical rhythm, typographic hierarchy, restraint, and the craft that separates competent from world class — applied while writing the code, not as a later repaint.
+description: Guidance for distinctive, intentional visual design when building new UI or reshaping an existing one. Helps with aesthetic direction, typography, and making choices that don't read as templated defaults.
+license: Complete terms in LICENSE.txt
 ---
 
-# Frontend design
+# Frontend Design
 
-Use this **while writing pages and components**, not as a repaint afterwards.
-Layout decisions made in the markup are the design; a styling pass bolted on at
-the end can only tidy what the structure already got wrong.
+Approach this as the design lead at a design studio known for giving every client a distinct visual identity that is not mistaken for anyone else's. This client has already rejected proposals that felt cliché or templated, and is paying for a distinctive point of view: make deliberate, opinionated choices about palette, typography, and layout that are specific to this brief, and take aesthetic risk if justified.
 
-It never replaces working architecture, and it never invents colour, type or
-spacing values: those come from the approved token sheet. If there is a
-`design-system` skill in this project, read it first — it wins over every
-preference here.
+## Ground your designs in the subject matter
 
-## A page is a sequence of sections
+If the brief does not identify what the product or subject matter is, identify it yourself before designing, and confirm with the client. You can come up with one concrete subject, the design's audience, and the design's primary job, as a proposal. If there's any information in your memory about the client's preferences or context about what they're building, use that as a hint. The subject's industry, subject matter, materials, and vernacular are where distinctive visual choices come from — a design for a toy for girls aged 8–11 will be very aesthetically different from a dashboard for financial analysts. Build with the brief's real content and subject matter throughout.
 
-A large page is not one canvas. It is 4–8 sections, each with exactly one job,
-in an order that answers the visitor's questions as they arise.
+## Design principles
 
-- Give every section a single purpose you can name in three words. Two purposes
-  means two sections.
-- Vary the shape between neighbours. Full-bleed, then contained. Two columns,
-  then one. A wall of identical cards is the clearest signal that nobody made a
-  decision.
-- Let one thing dominate per screenful. If three elements compete for first
-  read, the reader picks none.
-- End sections at a natural stop, not wherever the content ran out.
+For web designs, the hero is the first thing viewers will see. Open with the most characteristic thing in the subject's world, in the form that is most appropriate: a headline, an image, an animation, a live demo, an interactive moment, or other treatments. Be deliberate with your choice: a big number with a small label, supporting stats, and a gradient accent is the default treatment, so only use it if that's truly the best option.
 
-## Build it as components, not as one long file
+Typography carries the personality of the page. You don't need a different typeface for display or headline text and body content: use one family or two, and if two, make them clearly distinct.
 
-A page written as one file is a page nobody can change. Decide the component
-inventory before writing markup, and derive it from the page rather than from a
-library's list of parts.
+Choose your typefaces deliberately, not the default families you would reach for on any other project, and set a clear type scale following the default guidance of The Elements of Typographic Style with intentional weights, widths, and spacing. When type is used as a headline or visual element, use the type treatment itself as an active part of the design, not a neutral delivery vehicle for the content.
 
-- **Extract when a thing repeats, owns state, or is long enough to hide the page
-  structure.** A section you can read in one screen and that appears once can
-  stay inline; a card rendered in a loop cannot.
-- **A page component composes; it does not style.** Its job is order, data and
-  layout. Anything that draws a thing belongs in its own component, so the page
-  file reads as the outline of the page.
-- **Keep state where it is used.** Filters live with the list they filter; a
-  modal owns whether it is open. State lifted higher than its readers turns
-  every unrelated change into a re-render and every component into a prop relay.
-- **Props describe intent, not appearance.** `variant="danger"` and
-  `size="compact"` survive a redesign; `color="#b3261e"` and `padding={12}` do
-  not, and they leak the token sheet into call sites.
-- **One component, one decision.** A component that takes a boolean to become a
-  different component is two components. Splitting them removes the branch from
-  both.
-- **Name for the domain, not the shape.** `BookingSummary` still makes sense
-  after it stops being a card; `WhiteBox` never did.
-- Build the shared primitives the page actually needs — button, field, card,
-  empty state, skeleton — once, from the tokens, and use them everywhere. Two
-  slightly different buttons is the first crack in a design system.
-- A component that renders a list also renders that list's empty, loading and
-  error states. Leaving them to the caller is how one screen gets them and the
-  others do not.
+Default to line lengths of less than 80 characters. Serif typefaces can have slightly longer line lengths; give serif body text slightly more line-height than a sans-serif.
 
-## Pages that carry a lot of content
+Avoid these default typographic treatments; they are the commonest tells of a generated page:
+- Accenting just a single word or phrase in a headline, like putting one word in italic/bold or a different color.
+- Using all caps for labels.
+- Adding unnecessary typographic labels above content.
 
-A long page is not a short page scrolled further. Past roughly two screenfuls
-the reader stops reading and starts scanning, and the design has to serve
-scanning.
+Visual structure is information. Structural devices like outlines, borders, numbering, eyebrows, dividers, labels, etc., encode useful information about the content rather than decorate it. Many generic designs use numbered markers (01 / 02 / 03), but that's only appropriate if the content actually is a sequence — like a stepped process or a timeline. Before adding numbered markers, check the content really is a sequence.
 
-- **Give a long page its own navigation.** A sticky in-page index, a sidebar of
-  sections, or a breadcrumb with the current section — something that answers
-  "where am I and how much is left". Anchor targets need scroll padding so a
-  sticky header does not cover the heading it jumped to.
-- **Headings are the interface.** At length, the heading hierarchy is what the
-  reader uses instead of reading. Every section gets a real heading that says
-  what is in it; "Overview" and "Details" say nothing.
-- **Chunk to a scannable unit.** Three to six paragraphs, or eight to twelve
-  rows, then a heading, a divider, a table or an image. Unbroken text past a
-  screenful is skipped whole.
-- **Front-load each chunk.** The first sentence of a section and the first
-  column of a row carry the meaning; the reader may never reach the rest.
-- **Progressive disclosure for depth, not for volume.** Collapse the detail a
-  minority needs — specifications, history, raw payloads. Do not collapse the
-  main content to make a page look shorter; a page of closed accordions is a
-  page with no content.
-- **Long lists need a spine.** Sticky table headers, a pinned first column,
-  zebra or hairline row separation, and a visible count. Decide pagination
-  versus infinite scroll from whether the reader needs to reach a known place
-  again — infinite scroll destroys "page 4" and breaks the back button.
-- **Filters state their result.** Show the active filters as removable chips and
-  the resulting count next to them. A filtered empty state says which filter
-  emptied it and offers to clear it.
-- **Render long lists lazily once they are genuinely long.** Thousands of rows
-  need windowing; forty do not, and adding it early only costs correctness.
-- **Density is a decision, not an accident.** A dashboard and an article want
-  different densities. Pick one per surface and hold it; mixed density inside
-  one page reads as unfinished.
-- Keep the primary action reachable while scrolling — a sticky footer bar on
-  narrow screens, a sticky aside on wide ones — so a decision made at the bottom
-  does not require a trip back to the top.
+Use non-user-triggered motion sparingly and deliberately, only to draw attention. A single orchestrated moment — one page-load sequence or one reveal — lands better than scattered effects; fade-and-slide-up entrances on each section and hover transitions on every card are the generic default and read as AI-generated. Motion that answers a person's action (opening, expanding, confirming) is welcome when it shows what changed.
 
-## Vertical rhythm is what makes it look designed
+Consider written content carefully. Often a design brief may not contain real content, and it's up to you to come up with copy and placeholder content. Copy can make a design feel as templated as the design itself. See the below section on writing for more guidance.
 
-The single biggest difference between a generated page and a designed one is
-spacing discipline, not colour.
+## Process: plan, review against the brief, build, critique
 
-- **Section padding is much larger than component padding** — roughly 4–6× on
-  desktop. Cramped sections read as a template; generous ones read as intent.
-- Space belongs *between* groups, not sprinkled evenly. Related things sit
-  close; unrelated things get real distance. Proximity is the cheapest grouping
-  device and the most ignored.
-- Use only the spacing ramp from the tokens. A one-off `margin-top: 37px` is how
-  a page stops lining up.
-- Halve section spacing on narrow screens; keep component spacing roughly
-  constant. Mobile needs less air between blocks, not less air inside them.
+For calibration, AI-generated design right now clusters around some traits:
+1. a warm cream background (near #F4F1EA) with a high-contrast serif display and a terracotta or warm-clay accent (often near #D97757 — Anthropic's own Claude-interaction accent, so on a user's brief it reads as a tell);
+2. a near-black background with a single bright acid-green or vermilion accent;
+3. a broadsheet-style layout with hairline rules, zero border-radius, and dense newspaper-like columns;
+4. the SaaS-card kit: content chopped into identical rounded cards, one border-radius on everything regardless of hierarchy, the same soft grey shadow (rgba(0,0,0,.1)) under each, and gradient washes as decoration;
+5. template chrome that appears whatever the subject: a tracked-out ALL-CAPS eyebrow label above every heading; meta strings joined with middle dots ('A · B · C'); labels built as 'WORD — fragment' with a spaced em dash; tinted near-black (#0B0B0B, #111) standing in for black; a monospace face for small data labels; a '→' appended to link and button text.
 
-## Typography carries the hierarchy
+All traits are legitimate for some briefs, but they are defaults rather than choices, and they appear regardless of subject. Where the brief pins down a visual direction, follow it exactly — the brief's own words always win, including when it asks for one of these looks. Where it leaves an axis free, don't spend that freedom on one of these defaults. As with a hired human designer, there's often a careful balance between doing what you're good at and taking each project as a chance to experiment and learn.
 
-- Three levels of text on a screen is usually right: what this is, what it says,
-  what to do. A fourth is normally a section that should have been split.
-- **Contrast weight and colour before size.** A semibold 16px label against 16px
-  muted body reads as hierarchy without another type size.
-- Long-form measure is 60–80 characters. Full-width paragraphs on a wide screen
-  are unreadable no matter how good the font is.
-- Line height falls as size rises: 1.5–1.65 for body, 1.15–1.25 for headings.
-- Numbers in tables and prices are tabular and right-aligned; ragged decimals
-  look broken even when correct.
-- One accent voice. A heading that is bold *and* coloured *and* larger *and*
-  uppercase is shouting four times.
+Work in two passes. First, brainstorm a short design plan based on the client's design brief: create a compact token system with color, type, layout, and principles.
+- Color: describe the core base palette as 4–6 named hex values.
+- Type: the typefaces and their roles.
+- Layout: a layout concept, using one-sentence prose descriptions and ASCII wireframes to ideate and compare. Include alignment guidance; should the content be left aligned, center aligned, justified?
+- Principles: the high-level guidance for what makes this page unique.
 
-## The hero earns the rest of the page
+Then review that plan against the brief before building: if any part of it reads like the generic default you would produce for any similar page (work through a similar prompt to see if you arrive somewhere similar) rather than a choice made for this specific brief — revise that part, say what you changed and why. Only after you've confirmed the relative uniqueness of your design plan should you start to write the code, following the revised plan.
 
-Choose the pattern from the product, not from habit:
+When writing the code, be careful of structuring your CSS selector specificities. It's easy to generate CSS classes that cancel each other out (especially with a type-based selector like .section and an element-based selector like .cta). This can happen often with padding/margin between sections.
 
-- **Centred** — one clear proposition, one action. Best when the offer is simple
-  and the audience is broad.
-- **Split** — copy against a product shot or live UI. Best when seeing the thing
-  is the argument.
-- **Editorial** — a strong headline with supporting type and generous space.
-  Best for content, brand and considered purchases.
+## Restraint and self-critique
 
-Whichever it is: one headline that says what this actually does, one primary
-action, and at most one secondary. A hero with three equal buttons has no
-primary action.
+Spend your boldness in one place. Let one element be the memorable thing, keep everything around it quiet and disciplined, and cut any decoration that does not serve the brief. Build to a quality floor without announcing it: responsive down to mobile, visible keyboard focus, reduced motion respected, visually accessible, harmonious color palettes. Critique your own work as you build, taking screenshots to review if your environment supports it — a picture is worth 1000 tokens. Consider Chanel's advice: before leaving the house, take a look in the mirror and remove one accessory. Human creatives have memory and always try to do something new, so if you have a space to quickly jot down notes about what you've tried, it can help you in future passes.
 
-## Restraint
+## More on writing in design
 
-Most generated interfaces fail by addition. Before adding an effect, remove
-something instead.
+Words appear in a design for one reason: to make it easier to understand and use. They are design content, not decoration. Bring the same intentionality and minimalism to copywriting that you would bring to spacing and color. Before writing anything, ask what the design needs to say, and how it can best be said to help the person navigate the experience.
 
-- **One primary colour on a screen.** The accent is for emphasis, badges and
-  charts — never a second CTA.
-- Shadows come from the elevation scale, and only where something genuinely
-  floats. Shadowed cards inside a shadowed card inside a shadowed section is
-  noise.
-- Gradients, glass and blur are seasoning. If removing an effect does not make
-  the page worse, it was not doing anything.
-- Borders or shadows, rarely both, for the same separation.
-- Icons support labels; they rarely replace them. An icon-only control needs a
-  name for a screen reader anyway, so write the label.
+Write from the end user's perspective. Name things by what users will understand in simple language, not by how the system is built. A user manages notifications, not webhook config. Describe what something is or does in plain terms rather than selling it. Being specific and legible to new users is always better than being clever.
 
-### The generated-page tells to avoid
+Use active voice as default. A CTA says exactly what happens when it is used: "Save changes," not "Submit." An action keeps the same name through the whole flow, so the button that says "Publish" produces a toast that says "Published." The vocabulary of an interface is the signposting for someone navigating the product. Cohesion and consistency are how people learn their way around.
 
-Three equal feature cards each with a circular icon. A purple-to-blue gradient
-hero. Every surface a rounded card with the same shadow. Emoji as iconography.
-Lorem-flavoured filler like "Seamlessly empower your workflow". Centred text in
-long paragraphs. A dashboard that is six identical stat tiles and nothing else.
+Treat failure and emptiness as moments for direction, not mood. Explain what went wrong and how to fix it, in the interface's voice rather than a person's. Errors don't apologize, and they are never vague about what happened. An empty screen is an invitation to act.
 
-## Build every state, not just the full one
+Keep the tone conversational: plain verbs, sentence case, no filler, with tone matched to the brand and the audience. Let each written element do exactly one job.
 
-An empty state is a designed screen, not a grey sentence. Say what belongs here,
-why it is empty, and give the action that fills it.
+## AgentForge full-product extension
 
-- **Loading** — skeletons matching the real layout, so nothing jumps when data
-  lands. Never a bare centred spinner on a page that will have structure.
-- **Empty** — different copy for "nothing yet" and "nothing matched your
-  filters". The second offers a way to clear them.
-- **Error** — what failed, whether it is retryable, and the retry control.
-- **Partial** — one section failing does not blank the page.
+For AgentForge builds, the approved plan and `.agents/skills/design-system/blocks.json` define the product scope and provider sources. Read that block record before writing the first screen. Use the selected provider blocks as complete structural starting points, then adapt their content and flows to the product. Preserve the useful hierarchy, responsiveness, and interaction patterns instead of shrinking a full block into a generic card.
 
-## Responsive is a reflow, not a shrink
+Build the amount of interface the product actually needs. Public sites should feel complete when scrolled: establish a strong opening, develop the story through distinct content sections, add proof and product detail, and end with a deliberate close. Applications should include the complete planned route set and dense working screens, rather than a landing page plus placeholders. There is no fixed page or section maximum.
 
-- Design the narrow layout as its own composition. Decide what leads on a phone;
-  it is often not what leads on a desktop.
-- Tables become stacked records or a horizontally scrolling region with a pinned
-  first column — never a squeezed grid.
-- Touch targets are at least 44×44, including icon-only controls.
-- Nothing scrolls the page horizontally at 390px. Long words, code and URLs need
-  explicit wrapping.
 
-## Interaction states are part of the component
+Before considering the UI complete, review it twice: first for composition, hierarchy, route completeness, and responsive behavior; then for typography, spacing, states, contrast, and visual details. Fix the product during these passes, before final browser evidence.
 
-Write them as you write the component, not afterwards:
-`:hover`, `:focus-visible`, `:active`, `:disabled`, and the loading state of any
-control that triggers work. A focus ring must be visible on every background it
-can land on. Motion is for orientation and feedback only, and always honours
-`prefers-reduced-motion`.
-
-## What separates good from world class
-
-Everything above gets a page to competent. The distance from competent to
-memorable is a small number of decisions that generated interfaces almost never
-make.
-
-- **A type scale, not a set of sizes.** Pick a ratio and generate the ramp from
-  the body size. Sizes chosen one at a time never sit together, and the gap
-  between a heading and its body is what reads as confidence.
-- **One idea per screen, executed further than feels necessary.** A hero with
-  one sentence set very large beats a hero with three balanced blocks. Most
-  designs fail by being three-quarters committed to two ideas.
-- **Optical alignment beats measured alignment.** Round shapes, punctuation and
-  icons need to overhang slightly to look aligned. If it measures right and
-  looks wrong, the eye is right.
-- **Give the content real air at the edges.** A wide screen wants a container
-  and margin, not edge-to-edge text. The empty space is doing the work.
-- **Treat images as content, not decoration.** Fixed aspect ratios so nothing
-  reflows on load, a considered crop, and `object-fit` rather than a stretched
-  box. One strong photograph beats four stock ones.
-- **Alignment is a grid, and the grid does not bend.** Everything that can share
-  an edge, shares it — across sections, not only inside one. A single column
-  that starts eight pixels off is visible even when nobody can name it.
-- **Write the interface copy.** Button verbs, empty states, error sentences and
-  headings are design surface. "Save changes" and "No bookings yet — your first
-  one will appear here" carry more polish than any shadow.
-- **Motion under 200ms, and only where something moved.** Entrances, state
-  changes and the thing the user just did. Anything longer is felt as lag; a
-  page that animates on scroll for its own sake reads as a template.
-- **Dark mode is a second palette, not an inversion.** Surfaces lighten with
-  elevation instead of casting shadows, and pure black with pure white is
-  harsher than any real product ships.
-- **Details at the end of the flow.** Focus order, the caret in a form, what the
-  page looks like at 1600px, what a two-line product name does to a card row —
-  these are what people notice without knowing why.
-
-## The craft pass, once it works
-
-With real content in place, walk the page and look for: things that nearly line
-up, cards of uneven height in one row, inconsistent radii, text that wraps to a
-single orphan word, spacing that differs between similar sections, a sticky
-header covering an anchor target, and hover states that shift layout.
-
-Then look at it at 390px and 1280px and ask the only question that matters:
-**can a stranger tell what this page is for in three seconds?**

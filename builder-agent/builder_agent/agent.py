@@ -36,6 +36,7 @@ from .processes import Processes
 from .prompts import task_message
 from .sandbox import Sandbox
 from .tools import build_registry, review_registry
+from .ui_kits import UI_KITS, planner_catalogue
 
 # How many times a rejected plan may be sent back before the build proceeds
 # anyway. A plan nobody accepts after this many tries is not going to be
@@ -138,7 +139,8 @@ class BuilderAgent:
         change now and the alternative is a build that never starts.
         """
         self.events.emit("phase", phase="plan", title="Planning", status="active")
-        request = task
+        curation = planner_catalogue(self.config.extra.get("ui_library") or "shadcn")
+        request = f"{task}\n\n{curation}"
 
         for revision in range(MAX_PLAN_REVISIONS + 1):
             loop = self._loop(self.registry.subset(
@@ -165,6 +167,7 @@ class BuilderAgent:
                 feedback or "(nothing specific - reconsider the approach yourself)", "",
                 "Previous plan:", self.plan_text[:6000], "",
                 "Produce a new plan that addresses this. Do not simply restate the old one.",
+                "", curation,
             ])
 
         self.events.emit("phase", phase="plan", title="Planning", status="done")
@@ -176,7 +179,8 @@ class BuilderAgent:
             return None
         # The plan names the screens and the domain far more precisely than the
         # request does, so it is part of what the design is chosen from.
-        form = form_payload(f"{task}\n{plan}"[:8000])
+        form = form_payload(
+            f"{task}\n{plan}", self.config.extra.get("ui_library") or "shadcn")
         answer = self.approvals.ask(
             "design", form, default={"decision": "apply"}, cancel=self.cancel)
         if answer.get("decision") == "skip":
@@ -185,7 +189,13 @@ class BuilderAgent:
             return None
 
         selection = apply_design_answer(form["chosen"], answer.get("selection"))
-        written = write_design_skill(self.sandbox.root, selection, goal=task[:300])
+        written = write_design_skill(
+            self.sandbox.root, selection, goal=task[:300], stack=self.config.stack)
+        if written.get("blockInstallError"):
+            self.events.emit(
+                "notice", level="warn",
+                message=f"Selected UI blocks could not be installed: "
+                        f"{written['blockInstallError'][:300]}")
         self.design = written
         self.events.emit("phase", phase="design", title="Design system", status="done",
                          palette=selection["paletteName"], theme=selection["themeMode"])
@@ -194,10 +204,13 @@ class BuilderAgent:
             "theme": selection["themeMode"], "font": selection["font"],
             "radius": selection["radius"], "density": selection["density"],
             "typeScale": selection["typeScale"], "path": written["path"],
+            "uiLibrary": selection["uiLibrary"], "blocks": selection.get("blocks") or [],
             "tokens": design_tokens(selection["palette"], selection["themeMode"]),
             "summary": (f"{selection['paletteName']} - {selection['mood']} "
                         f"Default theme {selection['themeMode']}; {selection['font']} type, "
-                        f"{selection['radius']} corners, {selection['density']} spacing."),
+                         f"{selection['radius']} corners, {selection['density']} spacing; "
+                         f"{UI_KITS[selection['uiLibrary']]['name']} with "
+                         f"{len(selection.get('blocks') or [])} requirement-selected compositions."),
         })
         return written
 

@@ -211,10 +211,15 @@ def run_journey(browser, sandbox, evidence, *, suite: str, covers, steps,
 
     body = "\n".join(trace)
     if failed:
+        # Preserve the diagnostics with the durable E2E record, rather than
+        # only in the tool error sent to the agent. This lets Testing retain
+        # console, network and page-error evidence after a reload.
+        diagnostics = diagnostics_report(page)
         evidence.record_external(kind="e2e", suite=suite, source="direct-CDP journey",
-                                 covers=covered, status="failed", output=body, reason=failed)
+                                 covers=covered, status="failed",
+                                 output=f"{body}\n\n{diagnostics}", reason=failed)
         raise ToolError(
-            f"{failed}\n\nURL: {page.url}\n{body}\n\n{diagnostics_report(page)}\n"
+            f"{failed}\n\nURL: {page.url}\n{body}\n\n{diagnostics}\n"
             f"Page text: {_clip(page.text(), 800)}\n\n"
             "Recorded as a failed E2E suite. Repair the owner named in the failure, "
             "then rerun only this suite. Do not take another snapshot of an unchanged page.")

@@ -90,11 +90,14 @@ def read_manifest() -> dict[str, dict]:
             "requires": [str(term) for term in item.get("requires") or []],
             "phases": list(phases),
             "stacks": list(item["stacks"]) if isinstance(item.get("stacks"), list) else None,
+            "ui_kits": list(item["uiKits"])
+            if isinstance(item.get("uiKits"), list) else None,
         }
     return entries
 
 
-def select(entries: dict, evidence: str, task: str, stack_id: str) -> list[str]:
+def select(entries: dict, evidence: str, task: str, stack_id: str,
+           ui_kit: str = "") -> list[str]:
     # The task is always part of what a skill is matched against. Keeping it a
     # separate argument that only the negation check reads was a foot-gun: a
     # caller that passed them apart got selection from the project alone.
@@ -106,12 +109,15 @@ def select(entries: dict, evidence: str, task: str, stack_id: str) -> list[str]:
         # A skill declared for another stack is never selectable here. Without
         # this, ordinary project evidence - an express dependency, a stray
         # Dockerfile - pulls another stack's guidance into this build.
-        return bool(item) and (not item["stacks"] or stack.id in item["stacks"])
+        return bool(item) and (not item["stacks"] or stack.id in item["stacks"]) \
+            and (not item["ui_kits"] or ui_kit in item["ui_kits"])
 
     selected = {name for name in stack.skills if available(name)}
     for item in entries.values():
         if not available(item["name"]):
             continue
+        if item["ui_kits"] and ui_kit in item["ui_kits"]:
+            selected.add(item["name"])
         if any(_negated(task, term) for term in item["match"]):
             continue
         if any(_contains(corpus, term) for term in item["match"]):
@@ -137,7 +143,8 @@ def select(entries: dict, evidence: str, task: str, stack_id: str) -> list[str]:
     return sorted(selected)
 
 
-def install_skill_pack(workspace: Path | str, task: str = "", stack_id: str = "") -> SkillPack:
+def install_skill_pack(workspace: Path | str, task: str = "", stack_id: str = "",
+                       ui_kit: str = "shadcn") -> SkillPack:
     """Copy the selected skills into the project, without ever overwriting."""
     pack = SkillPack()
     workspace = Path(workspace)
@@ -150,7 +157,7 @@ def install_skill_pack(workspace: Path | str, task: str = "", stack_id: str = ""
             manifest_text = package.read_text(encoding="utf-8", errors="replace")
         stack = stack_for(stack_id)
         evidence = "\n".join([task, stack.tech, stack.unit_tool, stack.e2e_tool, manifest_text])
-        pack.selected = select(entries, evidence, task, stack_id)
+        pack.selected = select(entries, evidence, task, stack_id, ui_kit)
 
         for name in pack.selected:
             for phase in entries[name]["phases"]:

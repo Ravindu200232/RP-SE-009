@@ -15,10 +15,11 @@ from pathlib import Path
 
 from test import _support  # noqa: F401
 from builder_agent.agent import BuilderAgent, wants_design
-from builder_agent.config import Config
+from builder_agent.config import BUILD_QUALITY, Config
 from builder_agent.events import Events
 from builder_agent.approvals import Approvals
 from builder_agent.llm import Reply, ToolCall
+from builder_agent.prompts import system_prompt, task_message
 
 PLAN = ("Goal: a hotel booking site.\n"
         "Findings: the workspace is empty.\n"
@@ -87,7 +88,24 @@ class AgentPassTests(unittest.TestCase):
         self.assertNotIn("patchFile", router.offered[0])
         self.assertIn("readFile", router.offered[0])
         self.assertIn("submitPlan", router.offered[0])
+        # Design is decided from the product, not copied off other websites.
+        self.assertNotIn("webResearch", router.offered[0])
         self.assertFalse((self.root / "app.js").exists())
+
+    def test_planning_prompt_keeps_execution_skills_out_of_the_pass(self):
+        task = task_message("build a long project-management site", stack="nextjs-mongo",
+                            quality=BUILD_QUALITY, plan_only=True)
+        system = system_prompt(workspace=self.root, model="scripted",
+                               stack="nextjs-mongo", quality=BUILD_QUALITY,
+                               context_tokens=64_000, plan_only=True)
+
+        self.assertIn("Call inspectProject once", task)
+        self.assertIn("Do not list or read implementation", task)
+        self.assertIn("do not inventory boilerplate", task)
+        self.assertIn("Do not call listSkills", system)
+        self.assertIn("Do not inventory the scaffold", system)
+        self.assertNotIn("TEST-DRIVEN COMPLETION", system)
+        self.assertNotIn("PHASE DISCIPLINE", system)
 
     def test_the_design_contract_is_decided_and_written_without_asking(self):
         written = self.agent.apply_design("build a hotel booking site with rooms and payments")
