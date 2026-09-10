@@ -18,6 +18,9 @@ const DEFAULTS = {
   models: { planner: '', design: '', builder: '', agent: '', qa: '',
             srs: '', deploy: '', image: 'fooocus' },
   think: false,
+  // Whether the run in flight is actually reasoning, as reported by the
+  // engine - not the same thing as the `think` switch, which is only a request.
+  reasoning: false,
   images: false,
   hist: [],
 }

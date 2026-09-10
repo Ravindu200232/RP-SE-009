@@ -40,9 +40,15 @@ QUIET_TOOLS = {"testingStatus", "backgroundProcess", "listSkills",
 class StudioBridge:
     """Subscribes to one run and speaks studio."""
 
-    def __init__(self, events, *, kind: str = "build", phases=("build",)):
+    def __init__(self, events, *, kind: str = "build", phases=("build",),
+                 think: bool = False):
         self.events = events
         self.kind = kind
+        # Whether the model was actually asked to think, as opposed to the feed
+        # merely having nothing to say between one tool call and the next. The
+        # studio said "Thinking" for both, so a run with thinking switched off
+        # looked exactly like one with it on.
+        self.think = bool(think)
         self.phases = list(phases)
         self.phase = self.phases[0] if self.phases else "build"
         self.streaming_file = ""
@@ -115,8 +121,10 @@ class StudioBridge:
         self._stats(iterations=step)
         # The model is composing its next move. Between here and the tool call
         # that follows there is nothing to log, and an empty feed reads as a
-        # stall rather than as thinking.
-        emit({"type": "agent_state", "state": "thinking", "iteration": step})
+        # stall. `thinking` says whether it is genuinely reasoning or just
+        # composing, so the studio can stop calling both of them thinking.
+        emit({"type": "agent_state", "state": "thinking", "iteration": step,
+              "thinking": self.think})
         eprog(_phase_label(self.phase), self._band(1 - 0.94 ** step))
 
     def on_tool_start(self, p):

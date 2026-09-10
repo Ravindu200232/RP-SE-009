@@ -85,7 +85,14 @@ required = {
     "the live step is animated": ("components/AgentChat.jsx", "live ? <Loader2"),
     "the last row is the live one": ("components/AgentChat.jsx", "live={busy && i === turns.length - 1}"),
     "thinking is shown as thinking": ("components/AgentChat.jsx", "function Thinking"),
-    "thinking is actually rendered": ("components/AgentChat.jsx", "agentState === 'thinking' && <Thinking />"),
+    "thinking is actually rendered": ("components/AgentChat.jsx", "agentState === 'thinking' && <Thinking"),
+    # And says which of the two it is. The indicator meant "between tool calls"
+    # and was labelled "Thinking", so a run with the switch off was
+    # indistinguishable on screen from one with it on.
+    "the indicator distinguishes reasoning from working":
+        ("components/AgentChat.jsx", "reasoning ? 'Thinking' : 'Working'"),
+    "the engine says whether it is really reasoning":
+        ("../server_modules/builder/bridge.py", '"thinking": self.think'),
     "a frame never blocks the socket it arrives on":
         ("../builder-agent/builder_agent/browser.py", "def post"),
     "the engine reports thinking": ("../server_modules/builder/bridge.py", '"state": "thinking"'),

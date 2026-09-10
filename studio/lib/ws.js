@@ -387,7 +387,14 @@ function handle(m) {
                    kind: m.kind, design: m.design })
       break
     case 'memory':       s.setRunStats(m); break
-    case 'agent_state':  s.setAgentState(m.state || ''); break
+    // `thinking` says whether the model was actually asked to reason, as
+    // opposed to the feed having nothing to say between two tool calls.
+    // Both used to arrive as 'thinking', so a run with the switch off
+    // looked exactly like one with it on.
+    case 'agent_state':
+      s.setAgentState(m.state || '')
+      if (m.state === 'thinking') useStore.setState({ reasoning: Boolean(m.thinking) })
+      break
     case 'approval':  route(m); break
     // Names only — the values went straight to the project's .env.local.
     case 'setup':

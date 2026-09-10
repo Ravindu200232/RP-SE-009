@@ -508,7 +508,8 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
     # was constructed by an earlier run under the older rule.
     agent.approvals.enabled = True
 
-    StudioBridge(agent.events, kind=kind, phases=list(phases))
+    StudioBridge(agent.events, kind=kind, phases=list(phases),
+                 think=bool(getattr(agent.config, "think", False)))
     agent.events.any(qa_report.LiveReport(
         proj_dir, agent.memory.evidence, emit,
         lambda error: elog("WARN", f"Could not save testing results: {error}")))
@@ -546,7 +547,7 @@ def _run_agent(proj_dir: Path, brief: str, model: str, think, *, phases, kind: s
 def _verify(proj_dir: Path, project: str, model: str, think, qa_model: str, *, memory=None):
     """Run the QA agent over the finished project at the deep profile."""
     events = Events()
-    StudioBridge(events, kind="test", phases=list(EDIT_PHASES))
+    StudioBridge(events, kind="test", phases=list(EDIT_PHASES), think=bool(think))
     qa = QAAgent(project=project, project_dir=proj_dir,
                  model=(qa_model or model or default_agent_model()),
                  host=ollama.host, events=events, think=bool(think),

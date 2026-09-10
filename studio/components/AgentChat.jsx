@@ -51,6 +51,7 @@ export default function AgentChat() {
   const drawing = useStore(s => s.drawing)
   const stats = useStore(s => s.runStats)
   const agentState = useStore(s => s.agentState)
+  const reasoning = useStore(s => s.reasoning)
   const pushChat = useStore(s => s.pushChat)
   const selection = useStore(s => s.selection)
   const removeSelection = useStore(s => s.removeSelection)
@@ -223,7 +224,7 @@ export default function AgentChat() {
             <Turn key={turn.id || `${turn.at}-${i}`} turn={turn}
                   live={busy && i === turns.length - 1} />
           ))}
-          {busy && agentState === 'thinking' && <Thinking />}
+          {busy && agentState === 'thinking' && <Thinking reasoning={reasoning} />}
           {queued.map(item => (
             <Queued key={item.id} item={item}
                     onDrop={() => useStore.getState().dropQueued(item.id)} />
@@ -464,13 +465,23 @@ const Row = ({ label, value }) => (
  * the animation are the whole message: the reasoning text itself is the
  * model's working, not the user's.
  */
-function Thinking() {
+/**
+ * The agent is between one tool call and the next.
+ *
+ * Which is not the same as the model reasoning, and this said "Thinking" for
+ * both — so a run with the thinking switch off looked exactly like one with it
+ * on, and there was no way to tell from the screen which you had. The engine
+ * now says which it is and the label follows it.
+ */
+function Thinking({ reasoning = false }) {
   return (
     <div className="flex items-center gap-2.5 py-0.5">
       <span className="grid size-6 shrink-0 place-items-center rounded-full bg-tint text-accent">
         <Sparkles className="size-3 animate-pulse" />
       </span>
-      <span className="text-[12px] font-medium text-muted">Thinking</span>
+      <span className="text-[12px] font-medium text-muted">
+        {reasoning ? 'Thinking' : 'Working'}
+      </span>
       <span className="flex gap-1" aria-hidden="true">
         {[0, 1, 2].map(i => (
           <span key={i}
