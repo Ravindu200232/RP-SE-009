@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-10T09:00:53+00:00
+Run at (UTC): 2026-09-10T09:18:11+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 419
+Unit tests: 427
 Integration tests: 24
-Total tests run: 443
+Total tests run: 451
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 25.857s
+Duration: 26.771s
 
 Detailed results
 ----------------
@@ -187,6 +187,13 @@ An empty answer falls back to reading the request, as before. ... ok
 test_a_workspaces_repository_is_the_microservices_stack (test.unit.builder.test_project_setup.ProjectStackTests.test_a_workspaces_repository_is_the_microservices_stack) ... ok
 test_the_real_stacks_round_trip_through_their_own_templates (test.unit.builder.test_project_setup.ProjectStackTests.test_the_real_stacks_round_trip_through_their_own_templates)
 Whatever a template scaffolds must read back as that same stack. ... ok
+test_a_file_path_is_not_a_second_screen (test.unit.builder.test_project_setup.RealPlanScreenTests.test_a_file_path_is_not_a_second_screen)
+`app/api/webhook/route.js` builds a route; it is not one. ... ok
+test_a_line_that_lists_routes_describes_none_of_them (test.unit.builder.test_project_setup.RealPlanScreenTests.test_a_line_that_lists_routes_describes_none_of_them)
+"compiles cleanly with all routes (…)" is not a description. ... ok
+test_a_plan_that_quotes_nothing_still_finds_its_routes (test.unit.builder.test_project_setup.RealPlanScreenTests.test_a_plan_that_quotes_nothing_still_finds_its_routes) ... ok
+test_only_the_routes_the_plan_wrote_as_routes_are_offered (test.unit.builder.test_project_setup.RealPlanScreenTests.test_only_the_routes_the_plan_wrote_as_routes_are_offered) ... ok
+test_prose_with_a_slash_in_it_is_not_a_screen (test.unit.builder.test_project_setup.RealPlanScreenTests.test_prose_with_a_slash_in_it_is_not_a_screen) ... ok
 test_a_missing_resource_lists_what_the_skill_does_have (test.unit.builder.test_project_setup.SkillPackTests.test_a_missing_resource_lists_what_the_skill_does_have) ... ok
 test_a_project_that_overrides_a_skill_keeps_its_own_version (test.unit.builder.test_project_setup.SkillPackTests.test_a_project_that_overrides_a_skill_keeps_its_own_version) ... ok
 test_a_request_that_rules_a_term_out_does_not_get_its_skill (test.unit.builder.test_project_setup.SkillPackTests.test_a_request_that_rules_a_term_out_does_not_get_its_skill) ... ok
@@ -231,6 +238,10 @@ test_what_was_supplied_is_written_and_the_rest_is_left_alone (test.unit.builder.
 test_a_question_nobody_answers_returns_the_assumption (test.unit.builder.test_setup_questions.AskingToolTests.test_a_question_nobody_answers_returns_the_assumption) ... ok
 test_neither_tool_can_be_called_without_saying_what_it_is_for (test.unit.builder.test_setup_questions.AskingToolTests.test_neither_tool_can_be_called_without_saying_what_it_is_for) ... ok
 test_settings_nobody_supplies_still_leave_the_names_behind (test.unit.builder.test_setup_questions.AskingToolTests.test_settings_nobody_supplies_still_leave_the_names_behind) ... ok
+test_a_question_nobody_answered_records_every_name_it_could_have_used (test.unit.builder.test_setup_questions.ChosenOptionTests.test_a_question_nobody_answered_records_every_name_it_could_have_used)
+No choice at all is the one case where the whole list is the answer. ... ok
+test_an_option_that_needs_nothing_writes_nothing (test.unit.builder.test_setup_questions.ChosenOptionTests.test_an_option_that_needs_nothing_writes_nothing) ... ok
+test_an_option_that_needs_something_writes_only_its_own (test.unit.builder.test_setup_questions.ChosenOptionTests.test_an_option_that_needs_something_writes_only_its_own) ... ok
 test_a_broken_declaration_stops_its_question_not_the_build (test.unit.builder.test_setup_questions.DeclaredQuestionTests.test_a_broken_declaration_stops_its_question_not_the_build) ... ok
 test_a_request_is_only_asked_about_what_it_mentions (test.unit.builder.test_setup_questions.DeclaredQuestionTests.test_a_request_is_only_asked_about_what_it_mentions) ... ok
 test_a_request_that_rules_it_out_is_not_asked (test.unit.builder.test_setup_questions.DeclaredQuestionTests.test_a_request_that_rules_it_out_is_not_asked) ... ok
@@ -516,6 +527,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 443 tests in 25.857s
+Ran 451 tests in 26.771s
 
 OK

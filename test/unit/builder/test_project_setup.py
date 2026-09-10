@@ -485,3 +485,63 @@ class PlannedScreenTests(unittest.TestCase):
         self.assertEqual(picked["pages"], ["/"])
 if __name__ == "__main__":
     unittest.main()
+
+
+class RealPlanScreenTests(unittest.TestCase):
+    """A plan is prose with slashes in it, not a list of routes.
+
+    Measured on a real plan for a five-screen cafe, reading every slash-word
+    found thirty-eight "screens": /127 out of an IP address, /db out of
+    "test/db", /vitest out of "jest-dom/vitest", /menu/page out of a file path.
+    The design dialog offered all of them.
+    """
+
+    PLAN = """# Small Soup Cafe
+
+A Next.js (App Router) + React + MongoDB/Mongoose app where a customer browses
+soups on `/menu` and pays at `/checkout`. MongoDB runs at 127.0.0.1:27017 and
+the database is `agentforge_smallsoupcafe`.
+
+## Phases
+- Phase 2 — Menu: `/menu` renders the six seeded soups with prices.
+- Phase 3 — Checkout: `/checkout` builds a Stripe session; the webhook lives at
+  `/api/webhook`, whose handler is `app/api/webhook/route.js`.
+- Phase 4 — Admin: `/admin/login` signs the demo admin in; `/admin/orders`
+  lists every order.
+- Build: `npm run build` compiles cleanly with all routes (`/menu`,
+  `/checkout`, `/admin/login`, `/admin/orders`).
+- Tests: unit/integration under `test/` with jest-dom/vitest.
+"""
+
+    def screens(self):
+        return design.pages_from_plan(self.PLAN)
+
+    def test_only_the_routes_the_plan_wrote_as_routes_are_offered(self):
+        self.assertEqual([page["route"] for page in self.screens()],
+                         ["/", "/admin/login", "/admin/orders", "/checkout", "/menu"][1:])
+
+    def test_prose_with_a_slash_in_it_is_not_a_screen(self):
+        routes = [page["route"] for page in self.screens()]
+        for wrong in ("/Mongoose", "/mongoose", "/integration", "/vitest", "/127", "/0"):
+            self.assertNotIn(wrong, routes)
+
+    def test_a_file_path_is_not_a_second_screen(self):
+        """`app/api/webhook/route.js` builds a route; it is not one."""
+        routes = [page["route"] for page in self.screens()]
+        self.assertNotIn("/api/webhook/route", routes)
+        self.assertNotIn("/menu/page", routes)
+
+    def test_a_line_that_lists_routes_describes_none_of_them(self):
+        """"compiles cleanly with all routes (…)" is not a description."""
+        described = {page["route"]: page["what"] for page in self.screens()}
+        self.assertIn("six seeded soups", described["/menu"])
+        for what in described.values():
+            self.assertNotIn("compiles cleanly", what)
+
+    def test_a_plan_that_quotes_nothing_still_finds_its_routes(self):
+        pages = design.pages_from_plan(
+            "- /menu shows the soups\n"
+            "- /admin/orders lists every order\n"
+            "- built with MongoDB/Mongoose against 127.0.0.1:27017\n"
+            "- the page lives at app/menu/page.jsx\n")
+        self.assertEqual([page["route"] for page in pages], ["/admin/orders", "/menu"])

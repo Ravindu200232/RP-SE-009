@@ -194,13 +194,38 @@ CONTAINERS = {
     "full": "Edge to edge, with page gutters.",
 }
 
-# Optional additions. The approved plan owns the actual route inventory.
-# A route in prose: `/books`, `/recipes/[slug]`, `/admin/orders`. Trailing
-# punctuation and the backticks the planner writes them in are not part of it.
-ROUTE = re.compile(r"[`\"']?(/(?:[a-z0-9][a-z0-9\-/\[\]:_]*)?)[`\"']?")
+# A route the plan wrote as code or in quotes: `/menu`, "/admin/orders".
+# This is how a plan names a route, and it is what separates one from the
+# prose around it - measured on a real plan, reading every slash-word instead
+# found thirty-eight "screens" in a five-screen application, among them /127
+# out of an IP address, /db out of "test/db", and /vitest out of
+# "jest-dom/vitest".
+QUOTED_ROUTE = re.compile(r"[`\"'](/(?:[a-z0-9][a-z0-9\-/\[\]:_]*)?)[`\"']")
+
+# The fallback, for a plan that quotes nothing. It has to stand on its own:
+# preceded by a space or a bracket, never by a letter, a digit or a dot, so
+# the tail of `MongoDB/Mongoose` and of `127.0.0.1` cannot become a page.
+BARE_ROUTE = re.compile(
+    r"(?:^|(?<=[\s(\[]))(/(?:[a-z0-9][a-z0-9\-/\[\]:_]*)?)(?=[\s,.;:)\]]|$)")
 
 # Routes that are not screens. An API handler has no design.
 NOT_A_SCREEN = ("/api/", "/_next", "/static/", "/assets/", "/public/")
+
+# The last segment of a file path, not of a route: `app/menu/page.jsx` is how
+# the screen at /menu is built, and is not a second screen called /menu/page.
+NOT_A_SEGMENT = ("page", "route", "layout", "index", "middleware")
+
+
+def _is_screen(route: str) -> bool:
+    if any(skip in route for skip in NOT_A_SCREEN):
+        return False
+    if route.count("/") > 4 or "." in route:
+        return False
+    parts = [part for part in route.strip("/").split("/") if part]
+    if parts and parts[-1] in NOT_A_SEGMENT:
+        return False
+    # A number is a port, a status code or an octet - never a page.
+    return not any(part.isdigit() for part in parts)
 
 
 def _screen_label(route: str) -> str:
@@ -224,27 +249,45 @@ def pages_from_plan(text: str) -> list[dict]:
     others is asking the user to design a different application.
     """
     body = str(text or "")
+    # A plan that writes one route as code writes all of them that way, so the
+    # quoted ones are the whole inventory and the loose scan is only for a plan
+    # that quotes nothing at all.
+    pattern = QUOTED_ROUTE if QUOTED_ROUTE.search(body) else BARE_ROUTE
+
     found: dict[str, dict] = {}
     for line in body.splitlines():
-        for match in ROUTE.finditer(line):
+        # A line naming one route is describing it. A line naming four is
+        # listing them - "compiles cleanly with all routes (/menu, /checkout,
+        # /admin/login)" - and describes none of them.
+        listed = len(pattern.findall(line)) > 1
+        for match in pattern.finditer(line):
             route = match.group(1).rstrip(".,;:)")
-            if any(skip in route for skip in NOT_A_SCREEN):
-                continue
-            if route.count("/") > 4 or "." in route:
+            if not _is_screen(route):
                 continue
             key = route.rstrip("/") or "/"
-            if key in found:
-                continue
-            # The line the route sits on is what the plan says it is for.
             # What the plan says about it, without repeating the route back.
             said = re.sub(r"^[\s\-*#>|0-9.)]+", "", line).strip()
             said = said.replace(f"`{route}`", "").replace(route, "", 1)
             said = re.sub(r"^[\s`\-–—:.,]+", "", said)
             said = re.sub(r"\s+", " ", said).strip()
+
+            # A plan mentions a route several times and describes it once. The
+            # line that describes it names it early - "- `/menu` — today's
+            # soups" - where a passing mention buries it in a sentence about
+            # something else. Taking the first occurrence gave the home page a
+            # description about confirmation emails.
+            rank = (listed, match.start(), len(line))
+            if key in found and found[key]["rank"] <= rank:
+                continue
             found[key] = {
                 "id": key, "route": key, "label": _screen_label(key),
-                "what": said[:160],
+                # A line that only listed this route alongside others says
+                # nothing about it, and an empty description is better than a
+                # confident sentence about something else.
+                "what": "" if listed else said[:160], "rank": rank,
             }
+    for page in found.values():
+        page.pop("rank", None)
     return sorted(found.values(), key=lambda page: (page["route"] != "/", page["route"]))
 
 

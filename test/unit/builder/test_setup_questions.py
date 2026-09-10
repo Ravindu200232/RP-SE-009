@@ -229,3 +229,37 @@ class SkillFileTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ChosenOptionTests(unittest.TestCase):
+    """What an option needs is what gets written, and nothing else.
+
+    Caught by running a real build: choosing "send nothing" wrote Resend's and
+    Twilio's keys into the example file of a project whose author had just said
+    they did not want to send anything.
+    """
+
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        self.question = setup.questions_for(["notifications"])[0]
+
+    def test_an_option_that_needs_nothing_writes_nothing(self):
+        setup.apply_answer(self.root, self.question,
+                           {"decision": "save", "choice": "log-only"})
+        self.assertFalse((self.root / ".env.example").exists()
+                         and (self.root / ".env.example").read_text(encoding="utf-8").strip())
+
+    def test_an_option_that_needs_something_writes_only_its_own(self):
+        setup.apply_answer(self.root, self.question,
+                           {"decision": "save", "choice": "resend-sandbox",
+                            "values": {"RESEND_API_KEY": "re_fake"}})
+        body = (self.root / ".env.example").read_text(encoding="utf-8")
+        self.assertIn("RESEND_API_KEY", body)
+        self.assertNotIn("TWILIO", body)
+
+    def test_a_question_nobody_answered_records_every_name_it_could_have_used(self):
+        """No choice at all is the one case where the whole list is the answer."""
+        setup.apply_answer(self.root, self.question, {"decision": "later"})
+        body = (self.root / ".env.example").read_text(encoding="utf-8")
+        self.assertIn("RESEND_API_KEY", body)
+        self.assertIn("TWILIO_ACCOUNT_SID", body)

@@ -182,7 +182,11 @@ def apply_answer(root: Path, question: dict, answer: dict) -> dict:
     root = Path(root)
     answer = answer or {}
     choice = str(answer.get("choice") or "").strip()[:40]
-    chosen = fields_of(question, choice) or all_fields(question)
+    # An option that needs nothing needs nothing. Falling back to every option's
+    # fields when the chosen one had none put Resend's and Twilio's keys into
+    # the example file of a project whose author had just said "send nothing".
+    # The fallback is for a question nobody answered at all.
+    chosen = fields_of(question, choice) if choice else all_fields(question)
 
     merge_env(root / ".env.example",
               {field["key"]: field["example"] for field in chosen})

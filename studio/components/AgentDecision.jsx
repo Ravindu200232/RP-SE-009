@@ -17,7 +17,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   Check, Eye, EyeOff, KeyRound, Loader2, MessageCircleQuestion, Palette, RotateCcw,
-  SkipForward,
+  Search, SkipForward,
 } from 'lucide-react'
 
 import { api } from '@/lib/api'
@@ -108,8 +108,14 @@ function SetupDecision({ question, left, sending, onAnswer }) {
   const [shown, setShown] = useState({})
 
   const set = (key, value) => setValues(v => ({ ...v, [key]: value }))
-  const filled = fields.filter(f => String(values[f.key] || '').trim()).length
-  const needed = fields.filter(f => f.required !== false).length
+  const typed = (field) => Boolean(String(values[field.key] || '').trim())
+  // Progress is over the settings that are actually needed. Counting every
+  // filled box against only the required ones reported "3/2 filled in" the
+  // moment somebody filled in an optional one.
+  const required = fields.filter(f => f.required !== false)
+  const filled = required.filter(typed).length
+  const needed = required.length
+  const anything = fields.some(typed)
 
   return (
     <Modal onClose={() => { }} className="max-w-[620px]">
@@ -188,7 +194,7 @@ function SetupDecision({ question, left, sending, onAnswer }) {
 
       <footer className="mt-5 flex items-center gap-2 border-t border-line/70 pt-4">
         <span className="flex-1 text-[10.5px] text-muted2">
-          {filled}/{needed} filled in
+          {needed ? `${filled}/${needed} filled in` : 'Nothing to fill in'}
         </span>
         <Button variant="outline" disabled={Boolean(sending)}
                 title="The build carries on and writes the names into .env.example for you to fill in"
@@ -197,7 +203,7 @@ function SetupDecision({ question, left, sending, onAnswer }) {
                                : <SkipForward className="size-3" />}
           Not now
         </Button>
-        <Button variant="solid" disabled={Boolean(sending) || (Boolean(fields.length) && !filled)}
+        <Button variant="solid" disabled={Boolean(sending) || (Boolean(fields.length) && !anything)}
                 onClick={() => onAnswer({ decision: 'save', choice, values })}>
           {sending === 'save' ? <Loader2 className="size-3 animate-spin" />
                               : <Check className="size-3" />}
