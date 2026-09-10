@@ -151,6 +151,18 @@ def _shrink(png: bytes) -> str:
     return encoded
 
 
+def port_for(route: str, *, app_port: int, studio_port: int) -> int:
+    """Which server holds the page at `route`.
+
+    Two things can be in the preview: the running application, on the dev
+    server, and the HTML drawing of it, which this backend serves at
+    /prototype/<project>/<file>. The camera is pointed by URL, so aiming it at
+    the wrong one photographs whatever that port happens to be serving instead
+    of the thing the user clicked on.
+    """
+    return studio_port if str(route or "").startswith("/prototype/") else app_port
+
+
 def capture_element(route: str, *, viewport: dict, scroll: dict, rect: dict,
                     port: int = 5173) -> str:
     """Base64 JPEG of one element on the running preview, or "" if it failed."""

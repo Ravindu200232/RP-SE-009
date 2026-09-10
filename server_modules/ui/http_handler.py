@@ -2,7 +2,7 @@
 
 # Everything else here comes from the runtime parts executed before this one;
 # only real modules are imported.
-from server_modules.services.shots import capture_drawing, capture_element
+from server_modules.services.shots import capture_drawing, capture_element, port_for
 
 
 class UIHandler(SimpleHTTPRequestHandler):
@@ -478,11 +478,7 @@ class UIHandler(SimpleHTTPRequestHandler):
             body = self._body()
             strokes = body.get("strokes") or []
             route = str(body.get("route") or "/")
-            # The route says which server holds the page. A drawing is served
-            # from here, at /prototype/<project>/<file>; everything else is the
-            # running app on the dev server. Pointing the camera at the wrong
-            # one gives a 404 page rather than the thing they clicked on.
-            port = UI_PORT if route.startswith("/prototype/") else DEV_PORT
+            port = port_for(route, app_port=DEV_PORT, studio_port=UI_PORT)
             if strokes:
                 image = capture_drawing(route, viewport=body.get("viewport") or {},
                                         strokes=strokes, port=port)

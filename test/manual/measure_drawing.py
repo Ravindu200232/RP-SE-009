@@ -40,8 +40,8 @@ COMMENT = re.compile(r"<!--.*?-->", re.S)
 
 SECTION = re.compile(r"<(?:section|article)\b", re.I)
 LANDMARK = re.compile(r"<(?:header|footer|main|nav|aside)\b", re.I)
-IMAGE = re.compile(r"<img\b|<picture\b|background-image\s*:\s*url\(", re.I)
-LINK = re.compile(r"<a\b[^>]*\bhref=", re.I)
+IMAGE = re.compile(r"<img\b|<Image\b|<picture\b|background-image\s*:\s*url\(", re.I)
+LINK = re.compile(r"<a\b[^>]*\bhref=|<Link\b[^>]*\bhref=", re.I)
 ROW = re.compile(r"<tr\b", re.I)
 FIELD = re.compile(r"<(?:input|select|textarea)\b", re.I)
 HEADING = re.compile(r"<h[1-6]\b", re.I)
@@ -125,7 +125,7 @@ KINDS = (
     ("form", ("login", "signin", "sign-in", "signup", "register", "contact",
               "checkout", "book", "new", "edit", "settings", "profile")),
     ("admin", ("admin", "dashboard", "console", "manage", "orders", "reports")),
-    ("detail", ("-id", "detail", "item", "product", "room", "post")),
+    ("detail", ("-id", "[id]", "detail", "item", "product", "room", "post")),
     ("landing", ("index", "home", "landing", "about", "pricing")),
 )
 
@@ -219,6 +219,70 @@ def _storage_key(demo: str) -> str:
     declared = re.search(
         r"\b(?:const|let|var)\s+" + re.escape(name) + r"\s*=\s*[\"']([^\"']+)[\"']", demo)
     return declared.group(1) if declared else f"{name} (a constant)"
+
+
+def report_app(root: Path) -> dict:
+    """The same measurement, on a built Next.js application.
+
+    The question is the same one - is this screen a page or a paragraph - and
+    the answer has been the same in both places. What differs is where the
+    shell lives: a drawing repeats the header and footer into every file, while
+    a built app has them once, in the layout and its components, and every page
+    inherits them. So the shell is measured once and shown against every page.
+    """
+    pages = sorted(p for p in root.glob("app/**/page.*")
+                   if "node_modules" not in p.parts)
+    if not pages:
+        print(f"No app/**/page.* under {root}")
+        return {}
+
+    shell_files = [p for p in list(root.glob("app/layout.*")) +
+                   list(root.glob("components/**/*.jsx")) +
+                   list(root.glob("components/**/*.js"))
+                   if "node_modules" not in p.parts
+                   and re.search(r"layout|header|footer|nav|shell|sidebar", p.name, re.I)]
+    shell = sum(len(LINK.findall(p.read_text(encoding="utf-8", errors="replace")))
+                for p in shell_files)
+
+    print(f"\n{root}")
+    print(f"{'page':<34}{'kind':<9}{'bytes':>7}{'sect':>6}{'img':>5}"
+          f"{'link':>6}{'word':>6}{'row':>5}{'fld':>5}")
+    print("-" * 84)
+
+    results, met = {}, 0
+    for page in pages:
+        rel = str(page.parent.relative_to(root / "app")).replace("\\", "/")
+        route = "/" if rel == "." else "/" + rel
+        got = measure(page.read_text(encoding="utf-8", errors="replace"))
+        # A drawing repeats the shell into every file, so its links land in the
+        # page's own count. A built app has the shell once, in the layout, so
+        # the page file legitimately carries only its own links - judging it on
+        # the drawing's total would count the same nav twice and fail a page
+        # that is fine.
+        got["shell"] = shell
+        got["links"] += shell
+        kind, short = judge("index" if route == "/" else route, got)
+        got["links"] -= shell
+        got.pop("hollow_ids", None)
+        results[route] = {**got, "kind": kind, "short": short}
+        met += not short
+        print(f"{route[:33]:<34}{kind:<9}{got['bytes']:>7}{got['sections']:>6}"
+              f"{got['images']:>5}{got['links']:>6}{got['words']:>6}"
+              f"{got['rows']:>5}{got['fields']:>5}"
+              f"{'' if not short else '  <- ' + ', '.join(short)}")
+
+    total = sum(r["bytes"] for r in results.values())
+    print("-" * 84)
+    print(f"{len(pages)} pages, {total:,} bytes total, "
+          f"{total // len(pages):,} average. {met}/{len(pages)} meet their target.")
+    print(f"  shell: {shell} links across "
+          f"{', '.join(p.name for p in shell_files) or 'nothing that looks like a shell'}")
+    for route, row in results.items():
+        if row["disclaimers"]:
+            print(f"  {route} tells the reader it is not real: {', '.join(row['disclaimers'])}")
+        if row["filler"]:
+            print(f"  {route} has filler text: {', '.join(row['filler'])}")
+    return results
 
 
 def _filled_by(demo: str, element_id: str) -> bool:
@@ -349,12 +413,19 @@ def main() -> None:
     parser.add_argument("--model", default="", help="defaults to the saved agent model")
     parser.add_argument("--only", default="", metavar="DIR",
                         help="measure a directory of HTML and do not call a model")
+    parser.add_argument("--app", default="", metavar="DIR",
+                        help="measure a built Next.js application's pages instead")
     parser.add_argument("--json", default="", metavar="FILE",
                         help="also write the measurements as JSON")
     parser.add_argument("--keep", action="store_true", default=True)
     args = parser.parse_args()
 
-    if args.only:
+    if args.app:
+        root = Path(args.app)
+        if not root.is_dir():
+            raise SystemExit(f"Not a directory: {root}")
+        results = report_app(root)
+    elif args.only:
         directory = Path(args.only)
         if not directory.is_dir():
             raise SystemExit(f"Not a directory: {directory}")
