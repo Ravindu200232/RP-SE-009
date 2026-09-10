@@ -15,7 +15,12 @@ occupies a band and the studio's own model creeps within it.
 PHASE_BAND = {
     "plan": (4, 20),
     "design": (20, 24),
-    "build": (24, 74),
+    # Drawing the application had no band, no place in the phase list and no
+    # step of its own, so it fell through every default and the studio showed a
+    # build - while the pass the user is meant to watch and approve was the one
+    # running. It is a phase like the others now.
+    "prototype": (24, 40),
+    "build": (40, 74),
     "unit": (74, 86),
     "e2e": (86, 95),
     "security": (95, 97),
@@ -232,5 +237,5 @@ def _phase_label(phase: str) -> str:
 
 def _step_for(phase: str) -> str:
     # The studio's step rail has four lanes; the engine has more phases.
-    return {"plan": "plan", "design": "plan", "build": "build",
+    return {"plan": "plan", "design": "plan", "prototype": "plan", "build": "build",
             "unit": "test", "e2e": "test", "security": "verify"}.get(phase, "build")

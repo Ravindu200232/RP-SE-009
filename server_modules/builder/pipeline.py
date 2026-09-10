@@ -35,7 +35,7 @@ from server_modules.services.mongo_common import db_name_for  # noqa: E402
 # the runtime parts executed before this one, not from an import: these files
 # are one program sharing one namespace.
 
-BUILD_PHASES = ("plan", "design", "build", "unit", "e2e")
+BUILD_PHASES = ("plan", "design", "prototype", "build", "unit", "e2e")
 EDIT_PHASES = ("build", "unit", "e2e")
 
 # Files worth snapshotting before an edit so a single click can undo it.
