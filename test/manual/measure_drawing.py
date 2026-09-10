@@ -84,6 +84,10 @@ def measure(html: str) -> dict:
     return {
         "bytes": len(html.encode("utf-8")),
         "sections": len(SECTION.findall(body)) + len(LANDMARK.findall(body)),
+        # The page's own sections, without the shell landmarks. A drawing wears
+        # its header and footer in every file; a built app has them once. Only
+        # this count is comparable between the two.
+        "own_sections": len(SECTION.findall(body)),
         "images": len(IMAGE.findall(body)),
         "links": len(LINK.findall(body)),
         "shell": shell,
@@ -546,6 +550,18 @@ def _against_the_drawing(root: Path, results: dict) -> None:
     not have to assume what a screen of some kind ought to contain: the drawing
     is this product's own specification, so a product with no admin screen has
     no admin drawing and is asked for nothing.
+
+    Counted in sections, not characters. A built page is *meant* to be shorter
+    than its drawing - the drawing writes nine room cards out by hand where the
+    built page writes one and maps over the data - so comparing length calls a
+    correct page thin and would push it towards hand-writing rows to match. It
+    said /rooms had lost three quarters of its drawing when /rooms was fine.
+    Sections survive the transformation; length does not.
+
+    Landmarks are left out of both counts, because the drawing repeats its
+    header and footer into every file and the built app has them once in the
+    layout - that difference is right, and counting it made every page in the
+    application look three sections short.
     """
     drawn_dir = root / ".agentforge" / "prototype"
     if not drawn_dir.is_dir():
@@ -555,19 +571,19 @@ def _against_the_drawing(root: Path, results: dict) -> None:
     for route, got in results.items():
         drawn = drawn_dir / page_file(route)
         if drawn.is_file():
-            rows.append((route, len(drawn.read_bytes()), got["bytes"]))
+            was = len(SECTION.findall(drawn.read_text(encoding="utf-8", errors="replace")))
+            rows.append((route, was, got["own_sections"], got["bytes"]))
     if not rows:
         return
 
-    print("\n  built against what was drawn (100% = the drawing's size)")
-    for route, was, now in sorted(rows, key=lambda r: r[2] / max(r[1], 1)):
-        share = now / max(was, 1)
-        flag = "  <- thin" if share < 0.7 else ""
-        print(f"    {route[:26]:<28}{was:>7} drawn  {now:>7} built  {share:>5.0%}{flag}")
-    drawn_total = sum(r[1] for r in rows)
-    built_total = sum(r[2] for r in rows)
-    print(f"    {'all ' + str(len(rows)) + ' screens':<28}{drawn_total:>7} drawn  "
-          f"{built_total:>7} built  {built_total / max(drawn_total, 1):>5.0%}")
+    print("\n  built against what was drawn, in sections (the shell is not counted)")
+    for route, was, now, size in sorted(rows, key=lambda r: r[2] - r[1]):
+        short = "  <- " + str(was - now) + " missing" if now < was else ""
+        print(f"    {route[:26]:<28}{was:>3} drawn {now:>4} built"
+              f"{size:>9} bytes{short}")
+    missing = sum(max(was - now, 0) for _, was, now, _ in rows)
+    print(f"    {len(rows)} screens, "
+          f"{'every drawn section is built' if not missing else str(missing) + ' drawn sections missing'}")
 
 
 if __name__ == "__main__":

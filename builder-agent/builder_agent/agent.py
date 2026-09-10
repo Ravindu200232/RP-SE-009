@@ -518,6 +518,30 @@ class BuilderAgent:
             "and navigation, the same words, the same tokens. Where the prototype and "
             "your own taste disagree the prototype wins - they have already seen it "
             "and agreed to it.",
+            "ONE DRAWN PAGE IS ONE SCREEN'S CHECKLIST. Open the drawn page for the "
+            "screen you are about to write, at the moment you write it, and work down "
+            "it section by section: every section it has below the header, the built "
+            "screen has. None dropped, none merged into another, none reduced to a "
+            "heading. Count them against each other before you call the screen done - "
+            "the section that goes missing is the one below the fold, the summary "
+            "under the table, the empty state, the panel explaining what the screen "
+            "is for. This is the whole measure of whether a screen is finished; there "
+            "is no separate list of what a screen of this kind ought to contain, "
+            "because the drawing already is that list, for this product.",
+            "The shell is the exception, and only the shell: the drawing repeats its "
+            "header, navigation and footer into every file because it has no layout to "
+            "put them in. You do, so they are written once there and every page "
+            "inherits them - with everything in them, the whole navigation and the "
+            "whole footer, not a reduced version.",
+            "The built screen will be smaller than the drawn one in characters, and "
+            "that is right: the drawing writes nine room cards out by hand where you "
+            "write one and map over the data. Judge it by sections and by what is in "
+            "them, never by length - hand-writing rows to match a drawing's size would "
+            "be a worse application, not a fuller one.",
+            "Where a screen is split into a page and its components, the two together "
+            "are the drawn page. Writing the table into a component does not finish "
+            "the screen the table sits on; the rest of that drawn page still has to "
+            "be somewhere.",
             "It is a drawing, so it has no data layer. Replace its written-in content "
             "with the real thing from the database and keep everything else it settled.",
             "", instruction,

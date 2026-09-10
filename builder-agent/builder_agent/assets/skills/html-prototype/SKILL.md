@@ -186,6 +186,22 @@ items, how it works, the proof, the numbers, who it is for, the questions
 people ask, the call to action. Write the ones this product actually has, and
 stop when you run out of true things to say rather than when you reach a count.
 
+**This applies to every screen the product has, not only the ones that sell
+it.** A screen somebody works in — a table of orders, a queue of arrivals, a
+form, a settings page — is the one this gets wrong: it comes back as a heading
+and the thing itself, three sections against the home page's nine, and it is
+the screen the people who use the product every day spend their day in.
+
+Give a working screen its own six: the heading and what this screen is for,
+the filters or the date it is showing, the thing itself with its columns and
+its row actions, the counts or totals that go with it, what to do when there
+is nothing to show, and the next thing the person will need — the related
+queue, the recent activity, the way back. It has no hero photograph and should
+not have one; density is what it is for.
+
+Only for the screens the plan actually names. A product with no admin area has
+no admin page, and inventing one is worse than drawing a thin one.
+
 So each file is the whole page:
 
 - **Lists look like lists.** Eight or ten rows, not two. Enough that the
