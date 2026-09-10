@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-10T19:05:48+00:00
+Run at (UTC): 2026-09-10T20:36:11+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 464
+Unit tests: 475
 Integration tests: 24
-Total tests run: 488
+Total tests run: 499
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 31.662s
+Duration: 25.834s
 
 Detailed results
 ----------------
@@ -295,6 +295,17 @@ test_the_same_setting_cannot_be_asked_for_twice (test.unit.builder.test_setup_qu
 test_a_declared_option_matches_a_file_the_skill_points_at (test.unit.builder.test_setup_questions.SkillFileTests.test_a_declared_option_matches_a_file_the_skill_points_at)
 The question and the guidance cannot drift apart silently. ... ok
 test_every_provider_named_by_a_skill_has_a_file_to_read (test.unit.builder.test_setup_questions.SkillFileTests.test_every_provider_named_by_a_skill_has_a_file_to_read) ... ok
+test_a_page_nothing_links_to_is_named (test.unit.builder.test_sitemap.FromTheDrawingTests.test_a_page_nothing_links_to_is_named) ... ok
+test_a_page_the_drawing_added_joins_the_map (test.unit.builder.test_sitemap.FromTheDrawingTests.test_a_page_the_drawing_added_joins_the_map) ... ok
+test_a_planned_screen_that_is_not_drawn_yet_survives_and_is_marked (test.unit.builder.test_sitemap.FromTheDrawingTests.test_a_planned_screen_that_is_not_drawn_yet_survives_and_is_marked) ... ok
+test_a_title_becomes_the_label_when_the_plan_gave_none (test.unit.builder.test_sitemap.FromTheDrawingTests.test_a_title_becomes_the_label_when_the_plan_gave_none) ... ok
+test_it_records_where_each_page_can_take_somebody (test.unit.builder.test_sitemap.FromTheDrawingTests.test_it_records_where_each_page_can_take_somebody) ... ok
+test_the_way_in_is_never_called_unreachable (test.unit.builder.test_sitemap.FromTheDrawingTests.test_the_way_in_is_never_called_unreachable) ... ok
+test_a_route_becomes_the_file_the_drawing_will_write (test.unit.builder.test_sitemap.FromThePlanTests.test_a_route_becomes_the_file_the_drawing_will_write) ... ok
+test_nothing_planned_is_an_empty_map_not_a_crash (test.unit.builder.test_sitemap.FromThePlanTests.test_nothing_planned_is_an_empty_map_not_a_crash) ... ok
+test_the_same_screen_twice_is_one_entry (test.unit.builder.test_sitemap.FromThePlanTests.test_the_same_screen_twice_is_one_entry) ... ok
+test_it_survives_a_round_trip_through_the_project (test.unit.builder.test_sitemap.PersistenceTests.test_it_survives_a_round_trip_through_the_project) ... ok
+test_no_file_is_an_empty_map (test.unit.builder.test_sitemap.PersistenceTests.test_no_file_is_an_empty_map) ... ok
 test_environment_style_secret_line_keeps_the_key_but_hides_the_value (test.unit.deployment.test_security.DeploymentSecurityTests.test_environment_style_secret_line_keeps_the_key_but_hides_the_value) ... ok
 test_hash_helpers_produce_the_same_artifact_digest (test.unit.deployment.test_security.DeploymentSecurityTests.test_hash_helpers_produce_the_same_artifact_digest) ... ok
 test_missing_artifact_has_no_false_digest (test.unit.deployment.test_security.DeploymentSecurityTests.test_missing_artifact_has_no_false_digest) ... ok
@@ -571,6 +582,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 488 tests in 31.662s
+Ran 499 tests in 25.834s
 
 OK

@@ -35,6 +35,7 @@ from .memory import Memory
 from .processes import Processes
 from .prompts import task_message
 from .setup import ASK_TIMEOUT, apply_answer, questions_for
+from . import sitemap as sitemap_of
 from .skills import read_manifest
 from .skills import select as select_skills
 from .sandbox import Sandbox
@@ -117,6 +118,10 @@ class BuilderAgent:
         # The screens the design step agreed, and the drawing made of them.
         self.screens: list[dict] = []
         self.prototype_dir: Path | None = None
+        # Which screens exist and what reaches what. Built from the plan, folded
+        # onto what the drawing actually wrote, handed to both passes. Never
+        # shown to the user - they approved a plan and will look at a drawing.
+        self.sitemap: list[dict] = []
         # What the user settled before planning: which provider, which mode,
         # which names are configured. Never the values themselves.
         self.setup_notes: list[str] = []
@@ -254,6 +259,8 @@ class BuilderAgent:
         chosen = set(selection.get("pages") or [])
         self.screens = [page for page in (form.get("pages") or [])
                         if page.get("id") in chosen]
+        self.sitemap = sitemap_of.from_screens(self.screens)
+        sitemap_of.save(self.sandbox.root, self.sitemap)
         written = write_design_skill(
             self.sandbox.root, selection, goal=task[:300], stack=self.config.stack)
         if written.get("blockInstallError"):
@@ -326,6 +333,11 @@ class BuilderAgent:
                 return None
 
             drawn = self._drawn_pages(root)
+            # A redraw adds pages, removes them and re-points the navigation, so
+            # the map is folded again after every round rather than once at the
+            # end. The build reads it, and reads it after the last change.
+            self.sitemap = sitemap_of.from_drawing(root, self.sitemap)
+            sitemap_of.save(self.sandbox.root, self.sitemap)
             self.events.emit("prototype", pages=drawn, round=round_number + 1,
                              path=str(root))
             if not drawn:
@@ -396,6 +408,10 @@ class BuilderAgent:
             "SCREENS TO DRAW - a separate file for each, in .agentforge/prototype/. "
             "This is a multi-page application, not one page with sections and not one "
             "file with tabs:", screens, "",
+            (sitemap_of.render(self.sitemap)
+             + "\nEvery one of those is a file you write, and every one of them\n"
+               "is reachable from the navigation on every other one.\n"
+             if self.sitemap else ""),
             "COVER EVERYTHING THAT WAS AGREED. Two things were settled before this and "
             "both are binding:",
             "",
@@ -567,6 +583,11 @@ class BuilderAgent:
             "be somewhere.",
             "It is a drawing, so it has no data layer. Replace its written-in content "
             "with the real thing from the database and keep everything else it settled.",
+            (sitemap_of.render(self.sitemap, drawn=True)
+             + "\nThat is the whole product. Every screen on it is a route in the"
+               " built application, and every link on it still works when the"
+               " build is done."
+             if self.sitemap else ""),
             "", instruction,
         ])
 
