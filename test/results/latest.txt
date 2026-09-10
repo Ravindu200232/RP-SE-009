@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-10T04:35:07+00:00
+Run at (UTC): 2026-09-10T05:18:39+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 351
+Unit tests: 370
 Integration tests: 24
-Total tests run: 375
+Total tests run: 394
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 20.152s
+Duration: 20.301s
 
 Detailed results
 ----------------
@@ -80,7 +80,8 @@ test_editing_json_by_path_keeps_it_valid_json (test.unit.builder.test_engine.Too
 test_writing_over_an_existing_file_needs_saying_so (test.unit.builder.test_engine.ToolRegistryTests.test_writing_over_an_existing_file_needs_saying_so) ... ok
 test_green_checks_finish_without_chasing_a_coverage_percentage (test.unit.builder.test_flow_regressions.CoverageCompletionTests.test_green_checks_finish_without_chasing_a_coverage_percentage) ... ok
 test_real_test_failures_still_need_repair (test.unit.builder.test_flow_regressions.CoverageCompletionTests.test_real_test_failures_still_need_repair) ... ok
-test_design_does_not_invent_screens_from_request_or_plan_words (test.unit.builder.test_flow_regressions.DesignScopeTests.test_design_does_not_invent_screens_from_request_or_plan_words) ... ok
+test_design_does_not_invent_screens_from_request_or_plan_words (test.unit.builder.test_flow_regressions.DesignScopeTests.test_design_does_not_invent_screens_from_request_or_plan_words)
+A screen is a route the plan writes down, never a word it mentions. ... ok
 test_explicit_screen_selection_still_reaches_the_contract (test.unit.builder.test_flow_regressions.DesignScopeTests.test_explicit_screen_selection_still_reaches_the_contract) ... ok
 test_windows_metadata_names_the_command_processor_that_executes_commands (test.unit.builder.test_flow_regressions.ShellContextTests.test_windows_metadata_names_the_command_processor_that_executes_commands) ... ok
 test_an_empty_expectation_is_refused_rather_than_always_passing (test.unit.builder.test_journeys.AssertionShapeTests.test_an_empty_expectation_is_refused_rather_than_always_passing) ... ok
@@ -169,6 +170,14 @@ test_a_fresh_installation_has_nothing_to_publish (test.unit.builder.test_project
 test_a_verified_lesson_is_recalled_by_what_it_is_about (test.unit.builder.test_project_setup.KnowledgeTests.test_a_verified_lesson_is_recalled_by_what_it_is_about) ... ok
 test_an_unverified_hunch_is_never_recorded_as_knowledge (test.unit.builder.test_project_setup.KnowledgeTests.test_an_unverified_hunch_is_never_recorded_as_knowledge) ... ok
 test_lessons_become_an_ordinary_skill_in_the_next_project (test.unit.builder.test_project_setup.KnowledgeTests.test_lessons_become_an_ordinary_skill_in_the_next_project) ... ok
+test_a_plan_naming_no_screens_falls_back_to_the_general_list (test.unit.builder.test_project_setup.PlannedScreenTests.test_a_plan_naming_no_screens_falls_back_to_the_general_list) ... ok
+test_a_route_that_is_not_a_screen_is_never_offered_as_one (test.unit.builder.test_project_setup.PlannedScreenTests.test_a_route_that_is_not_a_screen_is_never_offered_as_one)
+An API handler has no design, so it is not a design question. ... ok
+test_a_screen_says_what_the_plan_says_it_is_for (test.unit.builder.test_project_setup.PlannedScreenTests.test_a_screen_says_what_the_plan_says_it_is_for) ... ok
+test_a_screen_the_plan_never_named_cannot_be_added_by_the_answer (test.unit.builder.test_project_setup.PlannedScreenTests.test_a_screen_the_plan_never_named_cannot_be_added_by_the_answer) ... ok
+test_every_planned_screen_starts_selected (test.unit.builder.test_project_setup.PlannedScreenTests.test_every_planned_screen_starts_selected) ... ok
+test_the_offered_screens_are_the_ones_the_plan_names (test.unit.builder.test_project_setup.PlannedScreenTests.test_the_offered_screens_are_the_ones_the_plan_names) ... ok
+test_turning_a_planned_screen_off_removes_only_that_one (test.unit.builder.test_project_setup.PlannedScreenTests.test_turning_a_planned_screen_off_removes_only_that_one) ... ok
 test_a_missing_or_broken_manifest_is_not_a_crash (test.unit.builder.test_project_setup.ProjectStackTests.test_a_missing_or_broken_manifest_is_not_a_crash) ... ok
 test_a_next_dependency_is_the_single_application_stack (test.unit.builder.test_project_setup.ProjectStackTests.test_a_next_dependency_is_the_single_application_stack) ... ok
 test_a_project_that_says_neither_is_left_undecided (test.unit.builder.test_project_setup.ProjectStackTests.test_a_project_that_says_neither_is_left_undecided)
@@ -299,6 +308,19 @@ test_live_result_saved_before_done_with_full_e2e_trace_and_retry_history (test.u
 test_recovers_file_outcomes_sources_routes_and_screenshots (test.unit.qa.test_reporting_artifacts.ReportingArtifactsTests.test_recovers_file_outcomes_sources_routes_and_screenshots) ... ok
 test_retry_does_not_reuse_previous_assertion_report (test.unit.qa.test_reporting_artifacts.ReportingArtifactsTests.test_retry_does_not_reuse_previous_assertion_report) ... ok
 test_screenshot_access_stays_in_project_image_folders (test.unit.qa.test_reporting_artifacts.ReportingArtifactsTests.test_screenshot_access_stays_in_project_image_folders) ... ok
+test_a_manifest_means_a_build_happened (test.unit.services.test_build_attachments.SpecificationOnlyProjectTests.test_a_manifest_means_a_build_happened) ... ok
+test_a_project_that_never_had_a_specification_is_not_one (test.unit.services.test_build_attachments.SpecificationOnlyProjectTests.test_a_project_that_never_had_a_specification_is_not_one) ... ok
+test_a_single_source_file_means_a_build_happened (test.unit.services.test_build_attachments.SpecificationOnlyProjectTests.test_a_single_source_file_means_a_build_happened) ... ok
+test_a_specification_with_nothing_built_is_one (test.unit.services.test_build_attachments.SpecificationOnlyProjectTests.test_a_specification_with_nothing_built_is_one) ... ok
+test_the_listing_says_which_projects_are_specifications (test.unit.services.test_build_attachments.SpecificationOnlyProjectTests.test_the_listing_says_which_projects_are_specifications) ... ok
+test_a_build_with_nothing_staged_gets_nothing_and_does_not_fail (test.unit.services.test_build_attachments.StagedAttachmentTests.test_a_build_with_nothing_staged_gets_nothing_and_does_not_fail) ... ok
+test_a_staged_file_is_read_into_the_brief (test.unit.services.test_build_attachments.StagedAttachmentTests.test_a_staged_file_is_read_into_the_brief) ... ok
+test_an_empty_or_unreadable_upload_is_refused_rather_than_stored (test.unit.services.test_build_attachments.StagedAttachmentTests.test_an_empty_or_unreadable_upload_is_refused_rather_than_stored) ... ok
+test_neither_the_token_nor_the_filename_can_leave_the_staging_root (test.unit.services.test_build_attachments.StagedAttachmentTests.test_neither_the_token_nor_the_filename_can_leave_the_staging_root) ... ok
+test_the_build_message_carries_the_token_and_never_the_bytes (test.unit.services.test_build_attachments.StagedAttachmentTests.test_the_build_message_carries_the_token_and_never_the_bytes)
+A frame this size is refused by the socket, so it must not go there. ... ok
+test_the_stage_is_emptied_once_the_build_has_read_it (test.unit.services.test_build_attachments.StagedAttachmentTests.test_the_stage_is_emptied_once_the_build_has_read_it) ... ok
+test_what_the_user_said_it_is_for_travels_with_it (test.unit.services.test_build_attachments.StagedAttachmentTests.test_what_the_user_said_it_is_for_travels_with_it) ... ok
 test_backend_restart_restores_the_actual_transcript (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_backend_restart_restores_the_actual_transcript) ... ok
 test_completed_reply_reaches_the_project_chat (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_completed_reply_reaches_the_project_chat) ... ok
 test_explicit_new_build_starts_its_own_conversation (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_explicit_new_build_starts_its_own_conversation) ... ok
@@ -436,6 +458,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 375 tests in 20.152s
+Ran 394 tests in 20.301s
 
 OK
