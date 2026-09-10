@@ -19,6 +19,7 @@ import { Check, Loader2, Palette, RotateCcw, SkipForward } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useStore } from '@/lib/store'
 import PlanReading from './PlanReading'
+import DesignPreview from './DesignPreview'
 import { Button, Modal } from './ui'
 import { cn } from '@/lib/utils'
 
@@ -163,7 +164,7 @@ function DesignDecision({ question, left, sending, onAnswer }) {
   const tokens = (palette || {})[pick.themeMode === 'dark' ? 'dark' : 'light'] || {}
 
   return (
-    <Modal onClose={() => { }} className="max-w-[1120px]">
+    <Modal onClose={() => { }} className="max-w-[1180px]">
       <header className="flex items-center gap-2.5">
         <span className="grid size-8 place-items-center rounded-xl bg-accent/10 text-accent">
           <Palette className="size-4" />
@@ -180,7 +181,7 @@ function DesignDecision({ question, left, sending, onAnswer }) {
       </header>
 
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_260px]">
+      <div className="mt-4 grid gap-5 lg:grid-cols-[1fr_400px]">
         <div className="space-y-4">
           <Field label="Palette">
             <div className="grid gap-1.5 [grid-template-columns:repeat(auto-fill,minmax(150px,1fr))]">
@@ -248,25 +249,57 @@ function DesignDecision({ question, left, sending, onAnswer }) {
             </Field>
           </div>
 
-          <Field label={`Optional screen additions (${pick.pages.length})`}>
+          <Field label={question.planned
+            ? `Screens in the plan (${pick.pages.length} of ${(question.pages || []).length})`
+            : `Optional screen additions (${pick.pages.length})`}>
             <p className="mb-2 text-[11px] leading-relaxed text-muted2">
-              The approved plan already defines your screens. Select only additions you want.
+              {question.planned
+                ? 'These are the screens the approved plan describes. Every one is included; turn off any you do not want built.'
+                : 'The approved plan already defines your screens. Select only additions you want.'}
             </p>
-            <div className="flex flex-wrap gap-1">
-              {(question.pages || []).map(page => (
-                <button key={page.id} onClick={() => togglePage(page.id)} title={page.label}
-                        className={cn('rounded-lg border px-2 py-1 text-[10.5px] transition-colors',
-                          pick.pages.includes(page.id)
-                            ? 'border-accent bg-accent/[.07] text-accent'
-                            : 'border-line text-muted hover:text-ink')}>
-                  {page.label}
-                </button>
-              ))}
+            <div className="space-y-1">
+              {(question.pages || []).map(page => {
+                const on = pick.pages.includes(page.id)
+                return (
+                  <button key={page.id} onClick={() => togglePage(page.id)}
+                          aria-pressed={on}
+                          className={cn('flex w-full items-start gap-2.5 rounded-lg border px-2.5 py-2 text-left transition-colors',
+                            on ? 'border-accent/50 bg-accent/[.05]'
+                               : 'border-line bg-panel opacity-60 hover:opacity-100')}>
+                    <span className={cn('mt-[3px] grid size-3.5 shrink-0 place-items-center rounded-[4px] border',
+                      on ? 'border-accent bg-accent text-white' : 'border-line2')}>
+                      {on && <Check className="size-2.5" />}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-baseline gap-1.5">
+                        <span className="text-[11.5px] font-medium text-ink">{page.label}</span>
+                        {page.route && (
+                          <code className="font-mono text-[9.5px] text-muted2">{page.route}</code>
+                        )}
+                      </span>
+                      {page.what && (
+                        <span className="mt-0.5 block text-[10.5px] leading-relaxed text-muted2">
+                          {page.what}
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
           </Field>
         </div>
 
-        <Preview tokens={tokens} radius={pick.radius} question={question} pick={pick} />
+        <div className="space-y-2">
+          <p className="text-[10px] font-semibold uppercase tracking-[.14em] text-muted2">
+            Your application
+          </p>
+          <DesignPreview tokens={tokens} question={question} pick={pick}
+                         screens={(question.pages || []).filter(p => pick.pages.includes(p.id))} />
+          <p className="text-[10px] leading-relaxed text-muted2">
+            Every choice on the left shows here. This is the product, not a swatch.
+          </p>
+        </div>
       </div>
 
       <footer className="mt-4 flex items-center gap-2 border-t border-line/70 pt-4">
@@ -283,48 +316,6 @@ function DesignDecision({ question, left, sending, onAnswer }) {
         </Button>
       </footer>
     </Modal>
-  )
-}
-
-/** The chosen tokens on something shaped like a page, not a swatch grid. */
-function Preview({ tokens, radius, question, pick }) {
-  const corner = (question.radii || []).find(r => r.id === radius)?.value || '8px'
-  const font = (question.fonts || []).find(f => f.id === pick.font)
-  return (
-    <div className="overflow-hidden rounded-xl border border-line"
-         style={{ background: tokens.background }}>
-      <div className="p-3.5" style={{ fontFamily: font?.body }}>
-        <p className="text-[13px] font-semibold" style={{ color: tokens.text, fontFamily: font?.heading }}>
-          Your application
-        </p>
-        <p className="mt-1 text-[10.5px]" style={{ color: tokens.textMuted }}>
-          This is how its surfaces and type will read.
-        </p>
-        <div className="mt-3 p-2.5"
-             style={{ background: tokens.surface, borderRadius: corner,
-                      border: `1px solid ${tokens.border}` }}>
-          <p className="text-[11px]" style={{ color: tokens.text }}>A card on the page</p>
-          <div className="mt-2 flex gap-1.5">
-            <span className="px-2.5 py-1 text-[10.5px] font-semibold"
-                  style={{ background: tokens.primary, color: tokens.onPrimary,
-                           borderRadius: corner }}>
-              Primary
-            </span>
-            <span className="px-2.5 py-1 text-[10.5px]"
-                  style={{ background: tokens.surfaceAlt, color: tokens.text,
-                           borderRadius: corner }}>
-              Secondary
-            </span>
-          </div>
-        </div>
-        <div className="mt-2 flex gap-1.5">
-          {['success', 'warning', 'danger'].map(role => (
-            <span key={role} className="h-1.5 flex-1 rounded-full"
-                  style={{ background: tokens[role] }} />
-          ))}
-        </div>
-      </div>
-    </div>
   )
 }
 

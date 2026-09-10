@@ -176,7 +176,9 @@ class BuilderAgent:
             return None
         # The plan names the screens and the domain far more precisely than the
         # request does, so it is part of what the design is chosen from.
-        form = form_payload(f"{task}\n{plan}"[:8000])
+        # The task sets the mood; the plan names the screens. They are read
+        # separately because only one of them has been approved.
+        form = form_payload(f"{task}\n{plan}"[:8000], plan=plan)
         answer = self.approvals.ask(
             "design", form, default={"decision": "apply"}, cancel=self.cancel)
         if answer.get("decision") == "skip":

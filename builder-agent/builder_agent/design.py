@@ -195,6 +195,59 @@ CONTAINERS = {
 }
 
 # Optional additions. The approved plan owns the actual route inventory.
+# A route in prose: `/books`, `/recipes/[slug]`, `/admin/orders`. Trailing
+# punctuation and the backticks the planner writes them in are not part of it.
+ROUTE = re.compile(r"[`\"']?(/(?:[a-z0-9][a-z0-9\-/\[\]:_]*)?)[`\"']?")
+
+# Routes that are not screens. An API handler has no design.
+NOT_A_SCREEN = ("/api/", "/_next", "/static/", "/assets/", "/public/")
+
+
+def _screen_label(route: str) -> str:
+    """`/recipes/[slug]` -> `Recipe detail`; `/` -> `Home`."""
+    parts = [part for part in route.strip("/").split("/") if part]
+    if not parts:
+        return "Home"
+    dynamic = [part for part in parts if part.startswith(("[", ":"))]
+    words = [part for part in parts if not part.startswith(("[", ":"))]
+    name = " ".join(word.replace("-", " ").replace("_", " ") for word in words) or "Item"
+    label = name[:1].upper() + name[1:]
+    return f"{label.rstrip('s')} detail" if dynamic else label
+
+
+def pages_from_plan(text: str) -> list[dict]:
+    """The screens this plan actually names, with what each one is for.
+
+    The alternative is a list of screens in general - landing, login, profile,
+    settings - offered to every product whether or not it has them. A plan
+    that has been approved already says which screens exist; asking about any
+    others is asking the user to design a different application.
+    """
+    body = str(text or "")
+    found: dict[str, dict] = {}
+    for line in body.splitlines():
+        for match in ROUTE.finditer(line):
+            route = match.group(1).rstrip(".,;:)")
+            if any(skip in route for skip in NOT_A_SCREEN):
+                continue
+            if route.count("/") > 4 or "." in route:
+                continue
+            key = route.rstrip("/") or "/"
+            if key in found:
+                continue
+            # The line the route sits on is what the plan says it is for.
+            # What the plan says about it, without repeating the route back.
+            said = re.sub(r"^[\s\-*#>|0-9.)]+", "", line).strip()
+            said = said.replace(f"`{route}`", "").replace(route, "", 1)
+            said = re.sub(r"^[\s`\-–—:.,]+", "", said)
+            said = re.sub(r"\s+", " ", said).strip()
+            found[key] = {
+                "id": key, "route": key, "label": _screen_label(key),
+                "what": said[:160],
+            }
+    return sorted(found.values(), key=lambda page: (page["route"] != "/", page["route"]))
+
+
 PAGES = [
     ("landing", "Landing / home", False), ("login", "Login", False),
     ("register", "Register", False), ("dashboard", "Dashboard", False),
@@ -303,15 +356,20 @@ def choose(task: str) -> dict:
     }
 
 
-def form_payload(task: str) -> dict:
+def form_payload(task: str, plan: str = "") -> dict:
     """Everything a design form needs to render, plus what was chosen for it.
 
     Pure data, so the studio, the CLI and a test all render the same catalogue
     and there is no second list to keep in step.
     """
     chosen = choose(task)
+    # Every screen the plan names starts selected: the user removes what they
+    # do not want rather than assembling the list themselves.
+    screens = pages_from_plan(plan or task)
+    chosen["pages"] = [page["id"] for page in screens]
     return {
         "chosen": chosen,
+        "planned": bool(screens),
         "palettes": [{
             "id": p["id"], "name": p["name"], "mood": p["mood"],
             "light": tokens(p["id"], "light"), "dark": tokens(p["id"], "dark"),
@@ -331,7 +389,8 @@ def form_payload(task: str) -> dict:
         "tones": [{"id": name, "hint": hint} for name, hint in TONES.items()],
         "contrasts": [{"id": name, "hint": hint} for name, hint in CONTRAST.items()],
         "containers": [{"id": name, "hint": hint} for name, hint in CONTAINERS.items()],
-        "pages": [{"id": page, "label": label, "core": core} for page, label, core in PAGES],
+        "pages": screens or [{"id": page, "label": label, "route": "", "what": "",
+                              "core": core} for page, label, core in PAGES],
     }
 
 
@@ -364,7 +423,11 @@ def apply_answer(chosen: dict, answer: dict | None) -> dict:
         if isinstance(value, str) and value in valid:
             picked[field] = value
     wanted_pages = answer.get("pages")
-    if isinstance(wanted_pages, list):
+    if isinstance(wanted_pages, list) and picked.get("pages"):
+        # The offered screens came from the plan, so they are the known set.
+        known = set(picked["pages"])
+        picked["pages"] = [page for page in wanted_pages if page in known]
+    elif isinstance(wanted_pages, list):
         known = {page for page, _, _ in PAGES}
         picked["pages"] = sorted({p for p in wanted_pages if p in known})
     if picked["palette"] != chosen["palette"]:

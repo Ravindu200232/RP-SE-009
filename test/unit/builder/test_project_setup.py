@@ -419,6 +419,69 @@ class ProjectStackTests(unittest.TestCase):
                 self.assertEqual(stack_of(root), stack)
 
 
+class PlannedScreenTests(unittest.TestCase):
+    """The screens on offer are the screens the approved plan named.
 
+    Offering landing / login / profile / settings to every product asks the
+    user to design an application nobody planned. The plan has already been
+    approved by this point and it says which screens exist, so it is the only
+    honest source for the list.
+    """
+
+    PLAN = """## Pages
+- `/` - the home page, listing the newest recipes
+- `/recipes` - browse every recipe with filters
+- `/recipes/[slug]` - one recipe, its ingredients and steps
+- `/admin/login` - the kitchen team signs in here
+
+## API
+- `/api/recipes` - returns the recipe list as JSON
+"""
+
+    def form(self, plan=None):
+        return design.form_payload("a recipe site", plan=self.PLAN if plan is None else plan)
+
+    def test_the_offered_screens_are_the_ones_the_plan_names(self):
+        form = self.form()
+        self.assertEqual([page["route"] for page in form["pages"]],
+                         ["/", "/admin/login", "/recipes", "/recipes/[slug]"])
+        self.assertTrue(form["planned"])
+
+    def test_a_route_that_is_not_a_screen_is_never_offered_as_one(self):
+        """An API handler has no design, so it is not a design question."""
+        routes = [page["route"] for page in design.pages_from_plan(self.PLAN)]
+        self.assertNotIn("/api/recipes", routes)
+
+    def test_every_planned_screen_starts_selected(self):
+        form = self.form()
+        self.assertEqual(form["chosen"]["pages"], [page["id"] for page in form["pages"]])
+
+    def test_a_screen_says_what_the_plan_says_it_is_for(self):
+        pages = {page["route"]: page for page in design.pages_from_plan(self.PLAN)}
+        self.assertEqual(pages["/"]["label"], "Home")
+        self.assertEqual(pages["/recipes/[slug]"]["label"], "Recipe detail")
+        self.assertEqual(pages["/admin/login"]["label"], "Admin login")
+        self.assertIn("ingredients", pages["/recipes/[slug]"]["what"])
+        # The description explains the screen instead of repeating its route.
+        self.assertNotIn("/recipes", pages["/recipes/[slug]"]["what"])
+
+    def test_a_plan_naming_no_screens_falls_back_to_the_general_list(self):
+        form = self.form(plan="Write a nightly job that emails the summary.")
+        self.assertFalse(form["planned"])
+        self.assertEqual([page["id"] for page in form["pages"]],
+                         [page for page, _, _ in design.PAGES])
+        self.assertEqual(form["chosen"]["pages"], [])
+
+    def test_turning_a_planned_screen_off_removes_only_that_one(self):
+        form = self.form()
+        keep = [page for page in form["chosen"]["pages"] if page != "/admin/login"]
+        picked = design.apply_answer(form["chosen"], {"pages": keep})
+        self.assertEqual(picked["pages"], keep)
+        self.assertNotIn("/admin/login", picked["pages"])
+
+    def test_a_screen_the_plan_never_named_cannot_be_added_by_the_answer(self):
+        form = self.form()
+        picked = design.apply_answer(form["chosen"], {"pages": ["/", "/wp-admin"]})
+        self.assertEqual(picked["pages"], ["/"])
 if __name__ == "__main__":
     unittest.main()

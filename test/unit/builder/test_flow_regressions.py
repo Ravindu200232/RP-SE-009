@@ -37,13 +37,19 @@ class CoverageCompletionTests(unittest.TestCase):
 
 class DesignScopeTests(unittest.TestCase):
     def test_design_does_not_invent_screens_from_request_or_plan_words(self):
-        for request in (
-            "Reading Desk: one page to add a book and filter read books. No login or payments.",
-            "A shop where an admin signs in to see orders",
-            "Plan: / renders the reading list; no detail, login, or checkout routes.",
+        """A screen is a route the plan writes down, never a word it mentions.
+
+        "no login or payments" names two screens the product does not have, and
+        prose about an admin signing in is not an admin route. Only text that
+        actually writes a path has decided a screen exists.
+        """
+        for request, expected in (
+            ("Reading Desk: one page to add a book and filter read books. No login or payments.", []),
+            ("A shop where an admin signs in to see orders", []),
+            ("Plan: / renders the reading list; no detail, login, or checkout routes.", ["/"]),
         ):
             with self.subTest(request=request):
-                self.assertEqual(design.form_payload(request)["chosen"]["pages"], [])
+                self.assertEqual(design.form_payload(request)["chosen"]["pages"], expected)
 
     def test_explicit_screen_selection_still_reaches_the_contract(self):
         selection = design.apply_answer(design.choose("one page"), {"pages": ["login", "dashboard"]})
