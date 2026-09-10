@@ -95,6 +95,11 @@ retry, which is how one payment becomes three emails.
 `4242 4242 4242 4242`, any future expiry, any CVC — succeeds.
 `4000 0000 0000 9995` — declined, which is the case that gets left untested.
 
+`vi.mock('stripe', …)` in every unit test and assert what was asked for —
+`amount` as an integer in cents, the currency, `client_reference_id`. A test
+that constructs a real `Stripe` client and calls it answers "Invalid API key
+provided" and proves nothing.
+
 There is no browser flow for the webhook, so deliver the event yourself in the
 test: build the payload your handler expects, sign it with the test secret using
 `stripe.webhooks.generateTestHeaderString`, and post it. Assert the order is

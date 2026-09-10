@@ -132,6 +132,31 @@ A screen is not done until it holds up when things go wrong:
 - **Error** — say what failed and what to do next.
 - **Success** — confirm what happened, and where it went.
 
+## The pages share a shell
+
+An application with more than one screen has one shell, written once in the
+root layout and worn by every page: the product's name, the navigation for
+whoever is signed in, and a footer.
+
+Without it each page is an island. A build that composed a good menu page, a
+good checkout and a good admin table, and gave none of them a header, produced
+an application where the only way from checkout back to the menu was the
+browser's back button, and the only way to reach the admin screen was typing
+its URL. Every page was defensible on its own and the product was not usable.
+
+- The shell is in `app/layout.jsx` (or the equivalent), not repeated per page.
+  A page that draws its own header is a page that will drift from the others.
+- Navigation shows what this visitor can actually reach. A customer does not
+  see the admin link; an admin does. Hiding a link is not access control — the
+  server still checks — but showing one that 403s is a broken door.
+- The current page is marked in the navigation, so someone always knows where
+  they are.
+- The product's name is a link home from every page.
+- Sign in and sign out live in the shell, and the shell says who is signed in.
+
+A single-page tool is the exception, and only when there is genuinely one
+screen.
+
 ## Responsive
 
 Design the narrow layout as a real layout, not a squeezed one: one column,
@@ -146,4 +171,5 @@ one width wider than the content's maximum.
 - Do the loading, empty and error states exist for every screen?
 - Is every number, logo and quotation either real or clearly a demo?
 - Does it hold together at 360px?
+- Can you reach every other screen you are allowed to reach, from here?
 - Did you avoid every tell in the list above?

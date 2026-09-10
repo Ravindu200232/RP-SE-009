@@ -83,6 +83,9 @@ Reply 200 with no body. PayHere retries anything else.
 Sandbox test cards are on PayHere's support site; `4916217501611292` with any
 future expiry and any CVV is the usual Visa one.
 
+Everything here is your own code — the hash, the form, the handler — so none
+of it needs PayHere to be running, and no unit test should reach it.
+
 The notification cannot reach a local machine, so the test posts it: build the
 form fields, compute a valid `md5sig` with the sandbox secret, and post them to
 your own handler. Then assert the order is paid, post the same fields again and

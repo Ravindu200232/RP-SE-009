@@ -81,6 +81,12 @@ a tampered amount is rejected, a bad signature is rejected, a replayed
 notification changes nothing the second time, and a currency mismatch is
 refused.
 
+**The gateway is stubbed in every unit test.** `vi.mock` the SDK and assert
+what your code asked it for — the amount in minor units, the currency, the
+order id in the metadata. A unit test that reaches the real API answers
+"Invalid API key provided", which is a fact about a key and tells you nothing
+about the code. The only thing that talks to a provider is the sandbox journey.
+
 Never weaken a check to make a test pass. If live credentials were chosen, do
 not run a journey that moves real money — build it, and say plainly that it was
 verified in sandbox only.

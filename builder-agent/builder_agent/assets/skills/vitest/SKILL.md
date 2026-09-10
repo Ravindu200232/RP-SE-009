@@ -99,6 +99,8 @@ For DOM/component behavior, query the rendered interface the way a user or assis
 
 If an application talks to HTTP/GraphQL services, mock at the network boundary only when real local integration would be slow, unsafe, or nondeterministic. A request interceptor such as MSW is optional, not a default dependency. When used, let production request code execute unchanged, fail tests on unexpected first-party requests, reset handlers between tests, and still keep separate real integration/E2E evidence for critical contracts.
 
+That preference for real collaborators is about your own code. **A third party's API is never called from a unit test** — not Stripe, not a mail or SMS provider, not an image host, not a map or model API. Stub the client with `vi.mock` and assert what your code asked it for. A unit suite that reaches the internet is slow, fails on a plane, fails in CI, and either spends someone's quota or fails on a placeholder key — and "Invalid API key" tells you nothing about the code under test. The thing worth asserting is that the right call was made with the right arguments, and a stub asserts exactly that. Real provider traffic belongs in a sandbox E2E journey, if anywhere.
+
 ## Execute and verify
 
 Use the existing package script/package manager. Direct commands must be finite (`vitest run` or `vitest --no-watch`), never the default watch loop. Run affected tests after edits, then the full discovered unit regression once the implementation is stable.
