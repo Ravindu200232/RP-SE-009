@@ -27,6 +27,13 @@ SECRET_NAMES = re.compile(
 PASSWORD_ASSIGN = re.compile(r"password\s*[:=]\s*(?:body|req|data|input|form)\b", re.I)
 HASH_HINTS = re.compile(r"bcrypt|argon2|scrypt|pbkdf2|createHash|hashSync|hash\(", re.I)
 UNSAFE_HTML = re.compile(r"dangerouslySetInnerHTML")
+
+# A file that runs in the browser. It has no datastore to put a password in, so
+# reading one out of a form there is the sign-in form doing its job - and
+# `const password = form.elements.password.value` matched PASSWORD_ASSIGN and
+# failed a whole build for it. Storage happens on the server, where this check
+# still applies.
+CLIENT_COMPONENT = re.compile(r"""^\s*['"]use client['"]""", re.M)
 INJECTION = re.compile(r"\$where|\bnew\s+Function\b|eval\s*\(", re.I)
 
 SKIP_DIRS = {"node_modules", ".next", ".git", "coverage", "test", "__pycache__",
@@ -91,6 +98,7 @@ def scan(root: Path | str) -> list[dict]:
         except OSError:
             continue
         lines = body.splitlines()
+        stores_data = not CLIENT_COMPONENT.search(body)
 
         for number, line in enumerate(lines, 1):
             if SECRET_NAMES.search(line):
@@ -99,7 +107,7 @@ def scan(root: Path | str) -> list[dict]:
                 findings.append(_finding(root, path, number, "UNSAFE_HTML", line.strip()))
             if INJECTION.search(line):
                 findings.append(_finding(root, path, number, "QUERY_INJECTION", line.strip()))
-            if PASSWORD_ASSIGN.search(line) and not HASH_HINTS.search(body):
+            if stores_data and PASSWORD_ASSIGN.search(line) and not HASH_HINTS.search(body):
                 findings.append(_finding(root, path, number, "FAKE_HASH",
                                          "password stored without a hashing call in this file"))
         if len(findings) > 200:

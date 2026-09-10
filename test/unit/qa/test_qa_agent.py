@@ -586,3 +586,59 @@ class RouteInventoryTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PasswordHashingCheckTests(unittest.TestCase):
+    """A sign-in form is not a password store.
+
+    `const password = form.elements.password.value` in a client component
+    matched the "password assigned from a request" pattern, and with no bcrypt
+    in that file the scan reported a password stored without hashing. It failed
+    a whole build over a browser reading its own form - the app kept no
+    passwords at all - and a security finding is what stops a run being called
+    complete.
+    """
+
+    def _scan(self, files: dict) -> list[dict]:
+        root = Path(tempfile.mkdtemp())
+        for name, body in files.items():
+            path = root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(body, encoding="utf-8")
+        return security.scan(root)
+
+    def test_a_browser_form_reading_its_own_field_is_not_a_finding(self):
+        found = self._scan({"app/login/page.js":
+            "'use client';\nimport { useState } from 'react';\n"
+            "export default function LoginPage() {\n"
+            "  const onSubmit = (e) => {\n"
+            "    const password = form.elements.password.value;\n"
+            "    fetch('/api/login', { body: JSON.stringify({ password }) });\n"
+            "  };\n}\n"})
+        self.assertEqual([f["code"] for f in found], [])
+
+    def test_a_server_route_storing_one_unhashed_still_is(self):
+        found = self._scan({"app/api/register/route.js":
+            "export async function POST(req) {\n"
+            "  const body = await req.json();\n"
+            "  await User.create({ email: body.email, password: body.password });\n"
+            "}\n"})
+        self.assertIn("FAKE_HASH", [f["code"] for f in found])
+
+    def test_a_server_route_that_hashes_is_not_flagged(self):
+        found = self._scan({"app/api/register/route.js":
+            "import bcrypt from 'bcrypt';\n"
+            "export async function POST(req) {\n"
+            "  const body = await req.json();\n"
+            "  const password = body.password;\n"
+            "  await User.create({ password: await bcrypt.hash(password, 10) });\n"
+            "}\n"})
+        self.assertNotIn("FAKE_HASH", [f["code"] for f in found])
+
+    def test_the_other_checks_are_untouched_by_the_client_guard(self):
+        found = self._scan({"app/page.jsx":
+            "'use client';\n"
+            "export default function P({ html }) {\n"
+            "  return <div dangerouslySetInnerHTML={{ __html: html }} />;\n"
+            "}\n"})
+        self.assertIn("UNSAFE_HTML", [f["code"] for f in found])

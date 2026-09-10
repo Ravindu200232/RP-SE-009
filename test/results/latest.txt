@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-10T20:39:09+00:00
+Run at (UTC): 2026-09-10T23:07:54+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 475
+Unit tests: 479
 Integration tests: 24
-Total tests run: 499
+Total tests run: 503
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 25.164s
+Duration: 24.663s
 
 Detailed results
 ----------------
@@ -327,6 +327,10 @@ test_a_project_with_no_manifest_is_not_something_to_test (test.unit.qa.test_qa_a
 test_a_project_without_a_runner_is_made_runnable_before_anything_else (test.unit.qa.test_qa_agent.HarnessTests.test_a_project_without_a_runner_is_made_runnable_before_anything_else) ... ok
 test_the_package_manager_is_taken_from_the_lockfile_that_is_there (test.unit.qa.test_qa_agent.HarnessTests.test_the_package_manager_is_taken_from_the_lockfile_that_is_there) ... ok
 test_the_run_command_asks_for_both_reports_the_stage_reads (test.unit.qa.test_qa_agent.HarnessTests.test_the_run_command_asks_for_both_reports_the_stage_reads) ... ok
+test_a_browser_form_reading_its_own_field_is_not_a_finding (test.unit.qa.test_qa_agent.PasswordHashingCheckTests.test_a_browser_form_reading_its_own_field_is_not_a_finding) ... ok
+test_a_server_route_storing_one_unhashed_still_is (test.unit.qa.test_qa_agent.PasswordHashingCheckTests.test_a_server_route_storing_one_unhashed_still_is) ... ok
+test_a_server_route_that_hashes_is_not_flagged (test.unit.qa.test_qa_agent.PasswordHashingCheckTests.test_a_server_route_that_hashes_is_not_flagged) ... ok
+test_the_other_checks_are_untouched_by_the_client_guard (test.unit.qa.test_qa_agent.PasswordHashingCheckTests.test_the_other_checks_are_untouched_by_the_client_guard) ... ok
 test_a_project_with_no_record_says_so_rather_than_looking_empty (test.unit.qa.test_qa_agent.ReportTests.test_a_project_with_no_record_says_so_rather_than_looking_empty) ... ok
 test_history_keeps_the_first_round_of_each_run_only (test.unit.qa.test_qa_agent.ReportTests.test_history_keeps_the_first_round_of_each_run_only) ... ok
 test_reading_back_what_was_written_returns_the_same_record (test.unit.qa.test_qa_agent.ReportTests.test_reading_back_what_was_written_returns_the_same_record) ... ok
@@ -582,6 +586,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 499 tests in 25.164s
+Ran 503 tests in 24.663s
 
 OK
