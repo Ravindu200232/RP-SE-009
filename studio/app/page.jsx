@@ -90,6 +90,7 @@ export default function Studio() {
   const setView = useStore(s => s.setView)
   const project = useStore(s => s.project)
   const busy = useStore(s => s.busy)
+  const busyProject = useStore(s => s.busyProject)
   const testsRunning = useStore(s => s.tests.running)
   const qa = useStore(s => s.qaReport)
   const setQa = useStore(s => s.setQaReport)
@@ -177,7 +178,12 @@ export default function Studio() {
 
   // A specification kept without building it has no preview, no code, no tests
   // and nothing to deploy. Showing those tabs offers four empty rooms.
+  //
+  // Except while it is being built: the listing only catches up when the run
+  // ends, and hiding the work for the whole of a build to describe a state it
+  // left in the first second is worse than showing an empty pane for one.
   const specOnly = Boolean(projects.find(p => p.name === project)?.spec_only)
+                   && busyProject !== project
   const tabs = specOnly ? TABS.filter(tab => tab.id === 'srs') : TABS
 
   // A run brings the workspace up.
@@ -396,7 +402,10 @@ export default function Studio() {
               <PreviewPane key={`preview-${project}`} hidden={view !== 'preview'} />
               <CodePane hidden={view !== 'code'} />
               {view === 'testing' && <TestingResult key={`testing-${project}`} />}
-              {view === 'srs' && <SrsResult key={`srs-${project}`} />}
+              {view === 'srs' && (
+                <SrsResult key={`srs-${project}`} specOnly={specOnly}
+                           onBuild={resumeBuild} />
+              )}
               {view === 'deploy' && (
                 <DeployPanel key={`deploy-${project}`}
                              onSettings={() => setSettingsOpen(true)} />

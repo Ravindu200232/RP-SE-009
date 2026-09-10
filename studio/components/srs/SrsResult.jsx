@@ -1,15 +1,16 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FileDown, RefreshCw } from 'lucide-react'
+import { FileDown, Hammer, RefreshCw } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useStore } from '@/lib/store'
 import { Badge, Button, Empty, SubTab, SubTabs } from '../ui'
 import { VIEWS, badgeFor } from './views'
 
 
-export default function SrsResult() {
+export default function SrsResult({ specOnly = false, onBuild }) {
   const project = useStore(s => s.project)
+  const busy = useStore(s => s.busy)
   const [srs, setSrs] = useState(null)
   const [sub, setSub] = useState('document')
   const [state, setState] = useState('idle')
@@ -67,6 +68,14 @@ export default function SrsResult() {
           <Button variant="outline" onClick={load}>
             <RefreshCw className="size-3" /> Refresh
           </Button>
+          {/* Said no to building it at the time. This is where "whenever you
+              like" has to actually be somewhere. */}
+          {specOnly && (
+            <Button variant="solid" disabled={busy} onClick={onBuild}
+                    title="Build the application this specification describes">
+              <Hammer className="size-3" /> Build this app
+            </Button>
+          )}
         </span>
       </SubTabs>
 

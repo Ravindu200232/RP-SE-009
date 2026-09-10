@@ -644,14 +644,20 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
         name = proj_dir.name
         working_on(name)
         cancel.note(project=name, srs_id=srs_id)
-        resuming = bool(project)
+        # A specification that was kept has a project directory and no code in
+        # it. Told to "continue", the agent would look for work in progress
+        # that was never started; this is a first build, and says so.
+        first = not prompt and _spec_only(proj_dir)
+        resuming = bool(project) and not first
         elog("INFO", f"🏗️  {'Resuming' if resuming else 'Building'} {name}")
         estep("plan", "active")
 
         MONGO.ensure_running()
-        brief = _brief(proj_dir, prompt or
-                       "Continue this project: finish whatever is incomplete and "
-                       "make every verification pass.")
+        brief = _brief(proj_dir, prompt or (
+            "Build this application from the approved specification below. "
+            "Nothing has been written yet." if first else
+            "Continue this project: finish whatever is incomplete and "
+            "make every verification pass."))
         if logo:
             brief += f"\n\nA logo has already been generated at {logo}; use it in the header."
         if attachments:
