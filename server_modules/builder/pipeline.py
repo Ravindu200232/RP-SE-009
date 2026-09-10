@@ -607,6 +607,13 @@ def _serve(proj_dir: Path, agent=None) -> str:
         put_back = restore_styling(proj_dir, stack)
         if put_back:
             elog("WARN", f"   ⚠ restored the styling the build dropped: {', '.join(put_back)}")
+            # The compiled output was made without a CSS toolchain, and Next
+            # will happily serve that cache back rather than notice a postcss
+            # config appeared. Restoring the packages and leaving the cache is
+            # the same unstyled page with more dependencies installed.
+            cache = proj_dir / ".next"
+            if cache.is_dir():
+                shutil.rmtree(cache, ignore_errors=True)
         ensure_node_deps(proj_dir)
         if start_dev_server(proj_dir, stack) is False:
             return ""
