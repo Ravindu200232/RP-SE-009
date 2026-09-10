@@ -100,9 +100,15 @@ export default function Studio() {
   const [screen, setScreen] = useState('home')
   const [settingsOpen, setSettingsOpen] = useState(false)
 
+  // Returns the list as well as storing it: a project that has only just been
+  // created has to be found before the state holding it has re-rendered.
   const refreshProjects = () => api.projects()
-    .then(r => setProjects(Array.isArray(r) ? r : (r.projects || [])))
-    .catch(() => { })
+    .then(r => {
+      const list = Array.isArray(r) ? r : (r.projects || [])
+      setProjects(list)
+      return list
+    })
+    .catch(() => [])
 
   // The socket cannot call refreshProjects.
   const projectsStamp = useStore(s => s.projectsStamp)
@@ -169,16 +175,32 @@ export default function Studio() {
 
   const unitStatus = projectUnitTestStatus(qa, project)
 
+  // A specification kept without building it has no preview, no code, no tests
+  // and nothing to deploy. Showing those tabs offers four empty rooms.
+  const specOnly = Boolean(projects.find(p => p.name === project)?.spec_only)
+  const tabs = specOnly ? TABS.filter(tab => tab.id === 'srs') : TABS
+
   // A run brings the workspace up.
   useEffect(() => {
     if (liveFile) setScreen('workspace')
   }, [liveFile])
 
-  async function openProject(name) {
+  // The view is remembered across projects, so opening a specification while
+  // Preview was last selected would leave a tab bar with nothing under it.
+  useEffect(() => {
+    if (specOnly && view !== 'srs') setView('srs')
+  }, [specOnly, view, setView])
+
+  async function openProject(name, row = null) {
     const st = useStore.getState()
     st.reset(name)
     useStore.setState({ project: name })
     setScreen('workspace')
+
+    // A specification that was kept rather than built has one thing to show,
+    // and it is not an empty preview.
+    const spec = row?.spec_only ?? projects.find(p => p.name === name)?.spec_only
+    if (spec) setView('srs')
 
     // Busy from the click, not from the first file.
     st.setBusy(true)
@@ -318,7 +340,7 @@ export default function Studio() {
               New project
             </span>
           )}
-          {screen === 'workspace' && TABS.map(({ id, label, Icon }) => (
+          {screen === 'workspace' && tabs.map(({ id, label, Icon }) => (
             <button key={id} onClick={() => setView(id)}
                     className={cn('inline-flex h-9 items-center gap-[7px] rounded-full px-3.5',
                       'font-display text-[11px] font-semibold transition-all',
@@ -356,7 +378,11 @@ export default function Studio() {
         </div>
 
         {screen === 'home' ? (
-          <Home modelOptions={cat.all} onStarted={() => setScreen('workspace')} />
+          <Home modelOptions={cat.all} onStarted={() => setScreen('workspace')}
+                onKept={async (name) => {
+                  const list = await refreshProjects()
+                  openProject(name, list.find(p => p.name === name))
+                }} />
         ) : (
           <div className="flex min-h-0 flex-1 bg-bg/40">
             {/* The conversation sits beside the work rather than on top of

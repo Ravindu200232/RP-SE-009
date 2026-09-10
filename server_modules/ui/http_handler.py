@@ -322,6 +322,10 @@ class UIHandler(SimpleHTTPRequestHandler):
             sid = str(self._body().get("srs_id", "")).strip()
             out = discard_srs(sid)
             return self._json(out, 400 if out.get("error") else 200)
+        if path == "/keep-srs":
+            sid = str(self._body().get("srs_id", "")).strip()
+            out = keep_srs(sid)
+            return self._json(out, 400 if out.get("error") else 200)
         if path == "/decision":
             body = self._body()
             out = resolve_decision(str(body.get("id", "")), body)
@@ -489,6 +493,14 @@ class UIHandler(SimpleHTTPRequestHandler):
                 text += "\n… (the rest was left out to keep the prompt workable)"
             got["text"] = text
             self._json({"ok": True, **got})
+        elif path == "/build-attach":
+
+            body = self._body()
+            out = stage_attachment(str(body.get("token", "")),
+                                   str(body.get("filename", "")),
+                                   body.get("data_base64", ""),
+                                   str(body.get("purpose", "")))
+            self._json(out, 400 if out.get("error") else 200)
         elif path == "/undo":
             body = self._body()
             self._json(restore_snapshot(body.get("project", ""),

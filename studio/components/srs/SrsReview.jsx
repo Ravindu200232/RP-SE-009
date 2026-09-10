@@ -2,17 +2,17 @@
 
 import { useEffect, useRef, useState } from 'react'
 import {
-  ArrowLeft, ArrowUp, Check, FileDown, History, ListTree, Loader2, RotateCcw,
-  Square,
+  ArrowLeft, ArrowRight, ArrowUp, Check, FileDown, History, ListTree, Loader2,
+  RotateCcw, Square,
 } from 'lucide-react'
 import { api, API } from '@/lib/api'
 import { useStore } from '@/lib/store'
 import { loadSrsView, srsViewFromVersion } from '@/lib/srs-view'
-import { Badge, Button, Empty, SubTab, SubTabs, Tag, TextArea } from '../ui'
+import { Badge, Button, Empty, Modal, SubTab, SubTabs, Tag, TextArea } from '../ui'
 import { VIEWS, badgeFor } from './views'
 import { cn } from '@/lib/utils'
 
-export default function SrsReview({ projectId, onApproved, onBack }) {
+export default function SrsReview({ projectId, onApproved, onKept, onBack }) {
   const addLog = useStore(s => s.addLog)
   const [srs, setSrs] = useState(null)
   const [state, setState] = useState('loading')
@@ -23,6 +23,8 @@ export default function SrsReview({ projectId, onApproved, onBack }) {
 
   const [prompt, setPrompt] = useState('')
   const [thread, setThread] = useState([])
+  // The approved handoff, held while we ask whether to build it now.
+  const [approvedPrompt, setApprovedPrompt] = useState('')
   const [busy, setBusy] = useState('')
   const [waited, setWaited] = useState(0)
   const [viewing, setViewing] = useState(null)
@@ -87,6 +89,7 @@ export default function SrsReview({ projectId, onApproved, onBack }) {
     }
   }
 
+  /** Approve the specification, then ask what to do with it. */
   async function approve() {
     setBusy('approving')
     setError('')
@@ -96,7 +99,24 @@ export default function SrsReview({ projectId, onApproved, onBack }) {
       const text = (handoff?.prompt || '').trim()
       if (!text) throw new Error('the SRS produced no builder prompt')
       addLog('INFO', `SRS approved — ${(handoff.requirements || []).length} requirements`)
-      onApproved?.(text, projectId)
+      setBusy('')
+      setApprovedPrompt(text)
+    } catch (e) {
+      setError(e.message)
+      setBusy('')
+    }
+  }
+
+  /** Keep the specification as a project, and build nothing. */
+  async function keepOnly() {
+    setBusy('keeping')
+    setError('')
+    try {
+      const r = await api.keepSrs(projectId)
+      if (r?.error) throw new Error(r.error)
+      addLog('SUCCESS', `Kept as ${r.project} — nothing was built`)
+      setApprovedPrompt('')
+      onKept?.(r.project)
     } catch (e) {
       setError(e.message)
       setBusy('')
@@ -121,6 +141,36 @@ export default function SrsReview({ projectId, onApproved, onBack }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-[radial-gradient(circle_at_top_right,rgba(93,106,251,.07),transparent_30%)]">
+      {/* Approving a specification used to start a build in the same breath.
+          Wanting the document and wanting the app are two different wants, and
+          only one of them takes twenty minutes. */}
+      {approvedPrompt && (
+        <Modal onClose={() => { }}>
+          <section role="dialog" aria-modal="true" aria-labelledby="build-now-title">
+            <h2 id="build-now-title" className="text-[17px] font-semibold text-ink">
+              Build {srs?.document?.project_name || 'this app'} now?
+            </h2>
+            <p className="mt-2 text-[12px] leading-relaxed text-muted">
+              The specification is approved either way. Building starts the
+              agent on it now — planning, writing, testing and serving the app.
+              Keeping it saves the specification as a project on its own, and
+              you can build it whenever you like.
+            </p>
+            <footer className="mt-5 flex justify-end gap-2 border-t border-line pt-4">
+              <Button variant="outline" disabled={Boolean(busy)} onClick={keepOnly}>
+                {busy === 'keeping'
+                  ? <><Loader2 className="size-3 animate-spin" /> Keeping…</>
+                  : 'No — keep the specification'}
+              </Button>
+              <Button variant="solid" disabled={Boolean(busy)}
+                      onClick={() => onApproved?.(approvedPrompt, projectId)}>
+                Yes — build it <ArrowRight className="size-3" />
+              </Button>
+            </footer>
+          </section>
+        </Modal>
+      )}
+
       <div className="flex shrink-0 items-center gap-3 px-6 py-4">
         <button onClick={onBack}
                 className="flex items-center gap-1 text-[11px] text-muted2 hover:text-ink">
@@ -154,11 +204,11 @@ export default function SrsReview({ projectId, onApproved, onBack }) {
         <Button variant="solid" className="h-9 rounded-full px-4"
                 disabled={Boolean(busy) || Boolean(viewing)}
                 title={viewing ? 'Go back to the latest revision to approve it.'
-                               : 'Nothing is written until you press this.'}
+                               : 'You will be asked whether to build it.'}
                 onClick={approve}>
           {busy === 'approving'
-            ? <><Loader2 className="size-3.5 animate-spin" /> Starting…</>
-            : <><Check className="size-3.5" /> Approve and build</>}
+            ? <><Loader2 className="size-3.5 animate-spin" /> Approving…</>
+            : <><Check className="size-3.5" /> Approve</>}
         </Button>
 
         {asking ? (

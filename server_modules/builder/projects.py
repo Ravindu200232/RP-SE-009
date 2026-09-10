@@ -66,6 +66,60 @@ def discard_srs(srs_id: str) -> dict:
     return {"ok": True, "srs_id": sid}
 
 
+def keep_srs(srs_id: str) -> dict:
+    """Keep a specification as a project of its own, without building it.
+
+    Approving a specification used to be the same act as starting a build, so
+    there was no way to say "the spec is what I wanted, not yet the app": the
+    interview stayed staged under a hidden folder with nothing listing it and
+    no way back. This gives it a project directory, which is the only thing
+    the studio lists.
+
+    Nothing is scaffolded and no environment is written. The directory holds
+    the specification and nothing else - and that absence is what identifies
+    it later, so a build over the top of it needs no marker cleared.
+    """
+    sid, staging, error = _owned_dir(
+        PROD_DIR / ".srs", srs_id, "specification id", "specification")
+    if error:
+        if "outside" in error:
+            error = f"{sid} is outside the specification store"
+        return {"error": error}
+
+    name = project_name_for(_srs_app_name(sid) or sid)
+    proj_dir = PROD_DIR / name
+    try:
+        proj_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as e:
+        return {"error": f"could not keep {sid}: {e}"}
+
+    if not adopt_srs(sid, proj_dir):
+        # An empty directory is worse than no directory: it lists as a project
+        # that cannot open.
+        shutil.rmtree(proj_dir, ignore_errors=True)
+        return {"error": f"the specification {sid} could not be attached"}
+
+    eproject(name)
+    elog("INFO", f"   📄 kept the specification as {name} — nothing was built")
+    return {"ok": True, "project": name, "srs_id": sid}
+
+
+def _spec_only(proj_dir: Path) -> bool:
+    """Is this a specification that was kept rather than an app that was built?
+
+    Read off the directory rather than a flag written into it. A marker has to
+    be cleared by whoever builds the project later, and the build that forgets
+    leaves a project the studio will only ever show a specification for. A
+    manifest or a single source file is proof a build happened, and both appear
+    long before it finishes.
+    """
+    if not (proj_dir / ".agentforge" / "srs").is_dir():
+        return False
+    if (proj_dir / "package.json").is_file():
+        return False
+    return not any(_iter_source(proj_dir))
+
+
 def delete_project(proj_name: str) -> dict:
     """Remove a fenced project, then its generated database, in background."""
     name, resolved, error = _owned_dir(
@@ -142,6 +196,8 @@ def list_projects() -> list:
             "stack": detect_stack(d),
 
             "unfinished": _unfinished_count(d),
+
+            "spec_only": _spec_only(d),
 
             "deployed": _deploy_marker(d),
         })
@@ -305,7 +361,10 @@ def _message_job(msg: dict):
             prompt, model, think, qa_model, "",
             str(msg.get("logo") or "").strip(),
             str(msg.get("srs_id") or "").strip(),
-            str(msg.get("stack") or "").strip())
+            str(msg.get("stack") or "").strip(),
+            # Only the token: the files themselves came over HTTP, because this
+            # message travels on a socket that refuses a frame their size.
+            str(msg.get("attachments") or "").strip())
     if kind == "agent_resume" and project:
         return run_agent_pipeline, (
             "", model, think, qa_model, project)
@@ -351,6 +410,14 @@ def _open_project(proj_name: str):
         proj_dir = PROD_DIR / proj_name
         if not proj_dir.is_dir():
             return eerr(f"there is no project called {proj_name}")
+        if _spec_only(proj_dir):
+            # Nothing has been built here yet, so there is nothing to install
+            # and nothing to serve. Saying so beats "the dependencies could not
+            # be installed", which is what a directory with no manifest used to
+            # report for a specification that was never wrong about anything.
+            working_on(proj_dir.name)
+            elog("INFO", f"📄 {proj_name} is a specification — nothing is built yet")
+            return edone("", proj_dir.name)
         with _PREVIEW_LOCK:
             active_vite["request"] = request
             working_on(proj_dir.name)

@@ -246,6 +246,105 @@ def _strip_data_url(raw: str) -> str:
     return raw
 
 
+# Where a chosen file waits between being picked on the home screen and there
+# being a project to read it into. Hidden, so nothing lists it as a project.
+STAGE_ROOT = ".attachments"
+
+
+def _stage_dir(token: str) -> Path | None:
+    stem = _safe_stem(token, "")
+    return (PROD_DIR / STAGE_ROOT / stem) if stem else None
+
+
+def stage_attachment(token: str, filename: str, data_b64: str,
+                     purpose: str = "") -> dict:
+    """Hold one file for the build that is about to start.
+
+    The home screen accepts a PDF or a picture before any project exists, and
+    until now only the specification agent could read one: pressing Build threw
+    them away, so a request that said "the menu is in this PDF" was built from a
+    sentence with no menu in it.
+
+    The bytes come here over HTTP rather than travelling in the build message,
+    which goes over the WebSocket and is refused above a megabyte - a limit an
+    ordinary scanned PDF passes without trying.
+    """
+    stage = _stage_dir(token)
+    if stage is None:
+        return {"error": "an attachment needs a build to belong to"}
+    name = str(filename or "upload")
+    try:
+        blob = base64.b64decode(_strip_data_url(data_b64), validate=False)
+    except Exception as e:                                      # noqa: BLE001
+        return {"error": f"that is not valid base64 ({e})"}
+    if not blob:
+        return {"error": f"{name} was empty"}
+
+    safe = re.sub(r"[^A-Za-z0-9._-]+", "-", Path(name.replace("\\", "/")).name).strip("-.")
+    safe = safe[:80] or "upload"
+    try:
+        stage.mkdir(parents=True, exist_ok=True)
+        (stage / safe).write_bytes(blob)
+        purpose = " ".join(str(purpose or "").split())[:300]
+        if purpose:
+            (stage / f"{safe}.purpose").write_text(purpose, encoding="utf-8")
+    except OSError as e:
+        return {"error": f"{name} could not be held ({e})"}
+    return {"ok": True, "name": safe, "bytes": len(blob)}
+
+
+def read_staged_attachments(token: str, proj_dir: Path) -> str:
+    """Read everything staged for this build, as prose for its brief.
+
+    Read here rather than in the browser because this is the first moment there
+    is a project: a picture the build is told to use has to exist at the path it
+    is given, and only now is that path known.
+
+    The stage is emptied afterwards. It held a copy; the project has its own.
+    """
+    stage = _stage_dir(token)
+    if stage is None or not stage.is_dir():
+        return ""
+
+    parts = []
+    for fp in sorted(stage.iterdir()):
+        if not fp.is_file() or fp.suffix == ".purpose":
+            continue
+        got = read_attachment(fp.name, base64.b64encode(fp.read_bytes()).decode("ascii"),
+                              proj_dir)
+        text = (got.get("text") or "").strip()[:ATTACH_TEXT_CAP]
+        note = str(got.get("note") or "").strip()
+        purpose = ""
+        wanted = fp.with_suffix(fp.suffix + ".purpose")
+        if wanted.is_file():
+            purpose = wanted.read_text(encoding="utf-8").strip()
+
+        if got.get("kind") == "image" and got.get("url"):
+            said = (f"### {fp.name} - a picture, already saved at {got['url']}\n"
+                    f"It is on disk at that exact path. Use it in an `<img>` where "
+                    f"the request calls for it; do not invent another path and do "
+                    f"not leave a placeholder.")
+        else:
+            what = {"pdf": "a document", "audio": "a recording, transcribed",
+                    "text": "a file"}.get(got.get("kind"), "a file")
+            said = f"### {fp.name} - {what}"
+        if purpose:
+            said += f"\nWhat they said it is for: {purpose}"
+        if text:
+            said += f"\n{text}"
+        if note:
+            said += f"\n({note})"
+        parts.append(said)
+        elog("INFO", f"   📎 read {fp.name}"
+                     + (f" — {len(text)} characters" if text else " — nothing could be read"))
+
+    shutil.rmtree(stage, ignore_errors=True)
+    if not parts:
+        return ""
+    return ("\n\n## What they attached to the request\n\n"
+            + "\n\n".join(parts))
+
+
 INLINE_BUDGET = 6_000_000
 PREVIEW_SIDE = 900
 

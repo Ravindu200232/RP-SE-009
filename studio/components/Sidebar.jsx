@@ -278,7 +278,7 @@ export default function Sidebar({
                   {String(i + 1).padStart(2, '0')}
                 </span>
               )}
-              <button onClick={() => onOpen(name)} disabled={asking || busyHere}
+              <button onClick={() => onOpen(name, p)} disabled={asking || busyHere}
                       className="min-w-0 text-left">
                 <span className={cn('block truncate text-[13.5px] leading-tight',
                                     'tracking-[-.012em] text-ink',
@@ -288,6 +288,7 @@ export default function Sidebar({
                 <span className={cn('mt-[3px] block truncate text-[11px] leading-tight',
                                     asking ? 'text-deep' : 'text-muted2')}>
                   {asking ? 'delete this and its database?'
+                          : p.spec_only ? 'specification only'
                           : (p.file_count ? `${p.file_count} files` : 'project')}
                 </span>
               </button>

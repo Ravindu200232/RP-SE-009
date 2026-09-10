@@ -46,12 +46,19 @@ const EXAMPLES = [
         + 'handful of rooms and bookings, and a demo user of each role.' },
 ]
 
-export default function Home({ onStarted, modelOptions = [] }) {
+/** A name for one build's staged attachments, before it has a project. */
+function attachToken() {
+  const raw = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`
+  return raw.replace(/[^a-z0-9]/gi, '').slice(0, 24)
+}
+
+export default function Home({ onStarted, onKept, modelOptions = [] }) {
   const s = useStore()
   const { images, think, models, srsId, srsPhase } = s
   const [prompt, setPrompt] = useState('')
   const [logoFor, setLogoFor] = useState(null)
   const [setupFor, setSetupFor] = useState(null)
+  const [srsSetup, setSrsSetup] = useState(false)
   const [srsError, setSrsError] = useState('')
   const [srsLanguage, setSrsLanguage] = useState('en')
   // "" means the engine reads the brief, which is what it did before there was
@@ -87,7 +94,7 @@ export default function Home({ onStarted, modelOptions = [] }) {
     begin(prompt.trim())
   }
 
-  function startBuild(p, logo, srs = '', uploads = null, config = null) {
+  async function startBuild(p, logo, srs = '', uploads = null, config = null) {
     setLogoFor(null)
     s.reset(null)
     s.setBusy(true)
@@ -97,14 +104,45 @@ export default function Home({ onStarted, modelOptions = [] }) {
     s.addLog('INFO', `Planner — ${config?.model || plannerModel} · Design — ${config?.model || designModel} · Builder — ${selected}`)
     if (logo) s.addLog('INFO', 'Building around the logo you accepted')
     if (srs) s.addLog('INFO', 'Building from the SRS you approved')
+
+    // A build used to drop whatever was attached: only the specification agent
+    // could read a PDF. The files go over HTTP now and the build is told where
+    // to find them, because the message below travels on a socket that refuses
+    // a frame their size.
+    let token = ''
+    if (attach.items.length) {
+      const wanted = attachToken()
+      s.setProgress(attach.items.length === 1
+        ? 'Sending your attachment…' : `Sending your ${attach.items.length} attachments…`, 0)
+      const { staged, failed } = await attach.stage(wanted)
+      if (failed) {
+        s.addLog('WARN', `${failed} attachment(s) could not be sent — `
+                       + 'building with what did arrive.')
+      }
+      if (staged) {
+        token = wanted
+        s.addLog('INFO', `${staged} attachment(s) go into the build`)
+      }
+    }
+
     send({ type: 'agent_build', prompt: p, model: selected,
            builder_model: selected, planner_model: config?.model || plannerModel,
            design_model: config?.model || designModel, stack: config?.stack || stack,
            think: config?.think ?? think, qa_model: models.qa, logo, srs_id: srs || '',
+           attachments: token || undefined,
            uploads: uploads && Object.keys(uploads).length ? uploads : undefined })
   }
 
-  async function planFirst() {
+  /** Ask which model writes the specification, then write it. */
+  function configureSrs(config) {
+    setSrsSetup(false)
+    useStore.setState({ models: { ...models, srs: config.model }, think: config.think })
+    s.persist(KEYS.srs, config.model)
+    s.persist(KEYS.think, config.think ? '1' : '0')
+    planFirst(config.model)
+  }
+
+  async function planFirst(model = '') {
     const idea = prompt.trim()
     const files = attach.items.length
     if (!idea && !files) return box.current?.focus()
@@ -112,7 +150,7 @@ export default function Home({ onStarted, modelOptions = [] }) {
     s.setSrs({ srsPhase: 'planning', srsBusy: 'Reading your idea…' })
     try {
 
-      await api.saveSettings({ srs_model: models.srs || plannerModel || '' })
+      await api.saveSettings({ srs_model: model || models.srs || plannerModel || '' })
         .catch(() => { })
   // Attachments need a project and a written idea.
       const created = await api.srs('/projects', {
@@ -156,6 +194,7 @@ export default function Home({ onStarted, modelOptions = [] }) {
     return (
       <SrsReview projectId={srsId}
                  onApproved={acceptSrs}
+                 onKept={(project) => { s.resetSrs(); setPrompt(''); onKept?.(project) }}
                  onBack={() => s.setSrs({ srsPhase: 'plan' })} />
     )
   }
@@ -279,7 +318,10 @@ export default function Home({ onStarted, modelOptions = [] }) {
           <div className="flex items-stretch border-t border-line/70 bg-white/28 dark:bg-white/[.018]">
             <AttachButtons attach={attach} cell />
             <span className="flex-1" />
-            <button onClick={planFirst}
+            <button onClick={() => {
+                      if (!prompt.trim() && !attach.items.length) return box.current?.focus()
+                      setSrsSetup(true)
+                    }}
                     title="Answer a few questions first, and get a written spec before anything is built"
                     className="m-2 inline-flex items-center gap-2 rounded-xl border border-line bg-white/70 px-4 font-display text-[12px] font-semibold text-ink shadow-sm transition-all hover:bg-white dark:bg-white/5">
               <Sparkles className="size-[13px]" /> Plan it first
@@ -293,9 +335,9 @@ export default function Home({ onStarted, modelOptions = [] }) {
 
         {attach.items.length > 0 && (
           <p className="mt-2 text-[11.5px] text-muted">
-            Attachments are read into the specification — press{' '}
-            <b className="font-semibold text-ink">Plan it first</b>. Building
-            straight from the box uses only what you typed.
+            Both buttons read what you attached. A PDF or a document becomes
+            part of the brief; a picture is saved into the project so the app
+            can show it.
           </p>
         )}
 
@@ -332,6 +374,16 @@ export default function Home({ onStarted, modelOptions = [] }) {
       {setupFor && (
         <BuildSetup model={builderModel} stack={stack} think={think} options={modelOptions}
                     onContinue={configureBuild} onCancel={() => setSetupFor(null)} />
+      )}
+      {srsSetup && (
+        <BuildSetup model={models.srs || plannerModel} think={think} options={modelOptions}
+                    stackChoice={false}
+                    title="Write the specification"
+                    blurb="This model runs the interview and writes the specification. You
+                           choose the stack later, if you decide to build it."
+                    modelHint="Used for the interview, the plan and the specification."
+                    action="Start the interview"
+                    onContinue={configureSrs} onCancel={() => setSrsSetup(false)} />
       )}
       {logoFor && (
         <LogoPanel idea={logoFor.idea} model={designModel}

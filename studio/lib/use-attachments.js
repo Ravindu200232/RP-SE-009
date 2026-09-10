@@ -102,6 +102,42 @@ export function useAttachments() {
     }
   }, [patch])
 
+  /** Hold everything for a build, which has no project to send it to yet.
+   *
+   * The specification agent needs a project id before it will take a file; a
+   * build has no project until it starts one. So the same picked files reach a
+   * build through the builder's own staging, and are read into the project the
+   * moment it exists.
+   */
+  const stage = useCallback(async token => {
+    if (!token || uploading.current) return { staged: 0, failed: 0 }
+    uploading.current = true
+    try {
+      let queue = []
+      setItems(list => {
+        queue = list.slice()
+        return list.map(it => ({ ...it, state: 'reading', note: '' }))
+      })
+      await Promise.resolve()
+
+      let staged = 0
+      let failed = 0
+      for (const it of queue) {
+        try {
+          await api.buildAttach(token, it.file, { purpose: it.purpose || '' })
+          staged++
+          patch(it.key, { state: 'done', note: '' })
+        } catch (e) {
+          failed++
+          patch(it.key, { state: 'failed', note: e.message || 'could not be sent' })
+        }
+      }
+      return { staged, failed }
+    } finally {
+      uploading.current = false
+    }
+  }, [patch])
+
   return {
     items,
     add,
@@ -109,6 +145,7 @@ export function useAttachments() {
     remove,
     reset,
     upload,
+    stage,
     busy: items.some(it => it.state === 'reading'),
     waiting: items.filter(it => it.state === 'waiting').length,
   }

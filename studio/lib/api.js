@@ -47,6 +47,9 @@ export const api = {
 
   // Throw away a specification that has not been approved.
   discardSrs: (srs_id) => post('/discard-srs', { srs_id }),
+
+  // Keep an approved specification as a project, without building it.
+  keepSrs: (srs_id) => post('/keep-srs', { srs_id }),
   undo: (project, id) => post('/undo', { project, id }),
 
   logoPrompt: (prompt, model, opts) => localJob('/logo-prompt', { prompt, model }, opts),
@@ -67,6 +70,15 @@ export const api = {
     if (big) throw big
     return fileToBase64(file).then(data_base64 =>
       post('/attach', { ...body, filename: file.name, data_base64 }))
+  }),
+
+  // Hold one file for a build that has no project yet. Over HTTP on purpose:
+  // the build message itself goes over the socket, which refuses this size.
+  buildAttach: (token, file, opts = {}) => Promise.resolve(tooBig(file)).then(big => {
+    if (big) throw big
+    return fileToBase64(file).then(data_base64 =>
+      post('/build-attach', { token, filename: file.name || 'upload',
+                              purpose: opts.purpose || '', data_base64 }))
   }),
 
   uploadProject: (body) => post('/upload-project', body),

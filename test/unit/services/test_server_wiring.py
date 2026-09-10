@@ -145,20 +145,23 @@ class MessageDispatchTests(unittest.TestCase):
     def test_build_and_resume_contracts(self):
         target, args = self.job(
             "agent_build", prompt=" build ", qa_model="qa",
-            think=False, logo=" logo.png ", srs_id=" spec ")
+            think=False, logo=" logo.png ", srs_id=" spec ",
+            attachments=" tok ")
         self.assertIs(target, server.run_agent_pipeline)
         self.assertEqual(
             args,
-            ("build", "model", False, "qa", "", "logo.png", "spec", ""))
+            ("build", "model", False, "qa", "", "logo.png", "spec", "", "tok"))
 
     def test_a_stack_chosen_in_the_studio_reaches_the_run(self):
         """Reading it out of the wording of the brief is the fallback, not the rule."""
+        stack = -2      # the attachment token is last
+
         _, args = self.job("agent_build", prompt="a shop",
                            stack=" mern-microservices ")
-        self.assertEqual(args[-1], "mern-microservices")
+        self.assertEqual(args[stack], "mern-microservices")
 
         _, args = self.job("agent_build", prompt="a shop")
-        self.assertEqual(args[-1], "")
+        self.assertEqual(args[stack], "")
 
         target, args = self.job(
             "agent_resume", project=" demo ", qa_model="qa", think=True)

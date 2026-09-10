@@ -635,7 +635,7 @@ def _finish(project: str, url: str, outcome, qa_outcome=None) -> bool:
 
 def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
                        project: str = "", logo: str = "", srs_id: str = "",
-                       stack: str = "") -> None:
+                       stack: str = "", attachments: str = "") -> None:
     """Build an application from a request, then prove it works."""
     started = time.time()
     cancel.begin()
@@ -654,6 +654,8 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
                        "make every verification pass.")
         if logo:
             brief += f"\n\nA logo has already been generated at {logo}; use it in the header."
+        if attachments:
+            brief += read_staged_attachments(attachments, proj_dir)
 
         agent, outcome = _run_agent(proj_dir, brief, model, think,
                                     phases=BUILD_PHASES, kind="build", stack=stack)
