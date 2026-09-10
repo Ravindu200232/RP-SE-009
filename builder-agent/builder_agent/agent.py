@@ -399,7 +399,7 @@ class BuilderAgent:
             "styles.css and used on every page. Do not re-decide any of it.",
             "",
             "MAKE IT FULL SIZE. Each page is the whole page: the shared header and "
-            "navigation, four or five distinct sections that each do something the one "
+            "navigation, six to ten distinct sections that each do something the one "
             "above it does not, and the footer. A list has enough rows to look like a "
             "list - eight or ten, not two. A table has its columns, its statuses and its "
             "actions. A dashboard has its figures. A form has all of its fields. Where "
@@ -408,13 +408,26 @@ class BuilderAgent:
             "this step cannot afford, because a thin page is what gets approved and then "
             "built.",
             "",
+            "THE SHELL IS MOST OF THE LINKS. The header and the footer are identical on "
+            "every page and together carry thirty to forty links: a header listing every "
+            "section of the product with its sub-items, and a footer that is a sitemap of "
+            "three or four columns plus the small print. A header of five links and a "
+            "footer of one copyright line is the clearest sign a drawing is a sketch, and "
+            "it is what has come back every time so far.",
+            "",
+            "NEVER SAY IT IS A DRAWING. No page says prototype, mockup, demo, coming soon "
+            "or not implemented, and none explains what is missing. No lorem ipsum. The "
+            "only thing this cannot do is store data on a server, and that is invisible.",
+            "",
             "MAKE IT WORK. Write a small `demo.js`, linked from every page, so the "
             "product's main flow actually runs in the browser: adding something updates "
             "the count and shows up on the next page, a filter filters, a form shows its "
-            "error and then its success, signing in changes the navigation. Keep the "
-            "state in localStorage under one key so it survives walking between pages. "
-            "A demo nobody can click through cannot answer the question they are looking "
-            "at it to answer.",
+            "error and then its success, signing in changes the navigation. The state "
+            "lives in localStorage under one key - one load(), one save(), called on "
+            "every change - so it survives walking between pages and a reload. A demo.js "
+            "with no localStorage in it has not done this, whatever it looks like on one "
+            "page. A demo nobody can click through cannot answer the question they are "
+            "looking at it to answer.",
             "",
             "THE SCRIPT NEVER SUPPLIES THE CONTENT. Every card, row, link and word is "
             "written in the HTML; the script only changes what is already on the page. "
@@ -422,6 +435,14 @@ class BuilderAgent:
             "nothing in it and nothing linking anywhere. Every link is a real anchor in "
             "the markup, including the ones into a detail page. With demo.js deleted, "
             "every page must still be the whole page and every link must still work.",
+            "",
+            "USE REAL PICTURES. Wherever the product shows a photograph - a hero, a "
+            "gallery, a card grid, an avatar - use one: "
+            "`https://picsum.photos/seed/<subject>/800/600`, seeded with the name of the "
+            "subject so it keeps the same picture across a redraw, with width, height and "
+            "real alt text. Never a grey box standing in for a photograph. A product with "
+            "rooms or dishes or people is mostly photographs, and a drawing of it with "
+            "none is a wireframe.",
             "",
             "Plain HTML, CSS and that one small script. No framework, no build step, no "
             "backend, no fetch, no server. Link the pages to each other so the whole "

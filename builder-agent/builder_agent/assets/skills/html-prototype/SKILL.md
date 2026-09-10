@@ -90,6 +90,24 @@ Every page carries the same header, navigation and footer, written into each
 file. The product's name links to `index.html`, the navigation lists the
 screens this visitor can reach, and the current page is marked.
 
+**The shell is most of the links on the page.** In a real site the header and
+footer together carry thirty to forty links, and they are identical on every
+page. That is what makes a set of files feel like one product rather than ten
+documents. Specifically:
+
+- **The header** lists every section of the product, not a shortlist of four.
+  Where a section has parts — rooms by type, a menu by service, reports by
+  period — they hang off it as a dropdown whose items are real anchors too.
+  Twelve to twenty links.
+- **The footer** is a sitemap: three or four columns of links, each with a
+  heading, plus the small print row and the social links. It repeats the main
+  navigation and adds what does not belong at the top — contact, terms,
+  careers, help. Twelve to eighteen links.
+
+A page whose header is one row of five links and whose footer is a copyright
+line is the single clearest sign the drawing is a sketch. Count them: if the
+header and footer together are under thirty links, the shell is not finished.
+
 **Every link is a real `<a href="…">` in the markup**, including the ones into
 a detail page: a list of rooms is a list of `<a href="rooms-id.html">`, written
 out, one per room. A page you can only reach because the script built its link
@@ -119,12 +137,17 @@ flow actually run in the browser:
   is posted anywhere.
 - **Controls do their job.** A filter filters the rows on the page, a search box
   narrows them, a tab switches the panel, a sort reorders.
-- **State survives the walk.** Keep it in `localStorage` under one key, so
-  adding something on the menu page is still there on the basket page. That is
-  what makes it feel like an application rather than a slideshow.
-- **Sign-in is a demo sign-in.** Any password works; it sets a name and a role
-  in that same state and the navigation changes to match. Never a real check,
-  never a real credential.
+- **State survives the walk.** This is not optional and it is the thing most
+  often skipped. Read and write one `localStorage` key — `const KEY = "…"`, one
+  `load()`, one `save()`, called on every change — so adding something on the
+  menu page is still there on the basket page, and still there after a reload.
+  State held in a plain variable is gone at the first link click, which makes
+  the demo a slideshow. If `demo.js` contains no `localStorage`, the flow does
+  not work, whatever it looks like on one page.
+- **Signing in works without checking anything.** Any password is accepted; it
+  sets a name and a role in that same state and the navigation changes to
+  match. Never a real check, never a real credential — and the page never says
+  so. It reads as the product's own sign-in page.
 
 ### The script never supplies the content
 
@@ -154,8 +177,14 @@ point at.
 
 **A page is several sections, not one block.** A home page is a hero, then the
 thing the product does, then the proof or the detail, then a call to action,
-then the footer — four or five distinct sections that each do something the one
-above it does not. One long column of cards is not a page.
+then the footer — **six to ten distinct sections** that each do something the
+one above it does not. One long column of cards is not a page.
+
+Six is the floor, not the aim. A landing page for a product with anything to
+say runs to ten or twelve: the hero, what it is, the categories, the featured
+items, how it works, the proof, the numbers, who it is for, the questions
+people ask, the call to action. Write the ones this product actually has, and
+stop when you run out of true things to say rather than when you reach a count.
 
 So each file is the whole page:
 
@@ -189,6 +218,39 @@ placeholder boxes tell them nothing.
 Numbers should look like real numbers: prices with the right currency and
 decimals, dates in a real format, statuses from the real set.
 
+## Pictures
+
+A product with rooms, dishes, courses or people is mostly photographs, and a
+drawing of it with none is not a drawing of it. A hotel mock with a gallery
+page and not one `<img>` tells the user nothing about their product.
+
+So wherever the real application shows a picture, show a real photograph:
+
+```html
+<img src="https://picsum.photos/seed/room-willow/800/600"
+     width="800" height="600" alt="The Willow room, looking onto the garden">
+```
+
+- **A public source that needs no account and no key.**
+  `https://picsum.photos/seed/<seed>/<w>/<h>` is the dependable one: any seed
+  works, and the same seed always returns the same photograph, so a card keeps
+  its picture across a redraw. Any other public source is fine on the same
+  terms.
+- **A seed per subject**, named after the thing — `room-willow`, `chef-marta`,
+  `course-python`. Not an index, or every redraw reshuffles the pictures.
+- **Always `width` and `height`**, matching the ratio you asked for, so the
+  layout does not jump as the pictures land.
+- **Real `alt` text** describing that specific subject, not "image" or the
+  product's name.
+- A hero, a gallery, a card grid, an avatar, a logo strip: all of them get
+  real pictures.
+- Never a grey box, never a coloured rectangle standing in for a photograph,
+  never an `<img>` with no `src`.
+
+If the product genuinely has no pictures — a dashboard of numbers, an admin
+table — do not invent them. Everywhere else, the absence is what makes a mock
+look like a wireframe.
+
 ## Every state that matters
 
 A screen that only shows the happy path hides the decisions. Where the product
@@ -213,7 +275,46 @@ and re-render only the files that changed.
 If they point at one element and ask for a change to that alone, change that
 one — a class used once, or a modifier on it, never a new inline style.
 
+## Never say it is a drawing
+
+Nothing on any page tells the reader that this is not the real product. No
+"prototype", no "mockup", no "demo only", no "coming soon", no "not
+implemented", no "this is a demo", no note explaining what is missing or what
+would happen in the real app. No `lorem ipsum` either — every word is this
+product's own.
+
+Two places invite this note, and both have produced one:
+
+- **The sign-in page.** Any password works, but the page does not say so.
+  It reads exactly as the real sign-in: the fields, the "forgot your
+  password", the link to register. Not "this is a demo — any email works".
+- **The payment step.** No card is taken, but the page does not say so. It
+  shows the card fields, the order summary and the total, like the real one.
+  Not "no payment is taken and no card is stored".
+
+Write the page the real product would have. The one thing this cannot do is
+store data on a server, and that is invisible — the demo keeps its state in the
+browser and behaves exactly as the real thing would within one visit. There is
+nothing to apologise for, so do not.
+
 ## Before you show it
+
+Count these before you stop. They are the difference between a page and a
+sketch of a page, and each one has been the fault at least once:
+
+| | Every page |
+| --- | --- |
+| header + footer links | **30 or more**, and identical on every page |
+| sections | **6 or more** |
+| bytes | **9,000 or more**; a landing page **15,000 or more** |
+| words of real content | **150 or more**; a landing page **400 or more** |
+| pictures, where the product shows them | **6 or more** on a page that shows things |
+| rows in a list or table | **8 or more** |
+| `localStorage` in `demo.js` | **present** |
+| text that says "demo", "prototype" or "coming soon" | **none** |
+
+A page under those is not finished — go back to it and add what is actually
+missing, rather than padding what is already there.
 
 - Does every screen the plan named exist as a file, and is each one a full
   page rather than a stub?
@@ -228,5 +329,6 @@ one — a class used once, or a modifier on it, never a new inline style.
 - Is the content this product's content, with no placeholder text left?
 - Does any page look thin — a list of two, a table with no statuses, a form
   missing half its fields?
+- Does every place the real product shows a picture show a real photograph?
 - Does it hold together at 360px?
 - Would the person who wrote the request recognise their product?
