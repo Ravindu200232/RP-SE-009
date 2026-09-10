@@ -65,6 +65,11 @@ Scope every declared route and public boundary with its operation, address, inpu
 For UI work, derive a product-specific responsive and accessible design from the user's constraints, and finish the loading, empty, error and success states. Do not reuse one hard-coded theme across every app you build."""
 
 
+FULL_PAGES = """EVERY PAGE IS A LONG, BIG PAGE
+The failure this project keeps hitting is a thin page, and it is the expensive one: a thin page is what gets shown, approved and then shipped. Whatever you are writing - a drawing, a real screen, a component - it is the whole page a real product would have. The full shell above and below it. Six to ten sections between them, each doing something the one above it does not. Lists with enough rows to read as lists. Tables with their columns, their statuses and their actions. Forms with all of their fields. Dashboards with their figures. The loading, empty and error states drawn on the page they belong to. No stub, no placeholder section, nothing deferred to later - a sign-in page is a full page too.
+Length comes from content, never from padding. More sections, and more of what belongs inside them; never the same thing said twice to fill space. One caveat that is not a loophole: a real screen that maps over data gets its nine rows from the data, so one written row there is correct and complete. Judge a built screen by its sections and by what is in them, never by its character count. A drawing has no data layer, so its rows are written out by hand."""
+
+
 BACKGROUND = """BACKGROUND WORK
 Long commands return a process id while still running. Use waitForProcess to observe completion and do independent work meanwhile. Never start the same work twice, and never assume it passed before you have seen exit code 0. Managed services survive a successful run; finite work must finish."""
 
@@ -75,7 +80,7 @@ REVIEW = """MODE: READ-ONLY REVIEW. Inspect the requested changes and the code a
 PLANNING = """MODE: READ-ONLY PRODUCT PLANNING.
 Start with inspectProject once. Its fresh-scaffold summary and project layout are authoritative for planning. Do not inventory the scaffold by opening its gateway, service skeleton, client primitives, tests, configs or manifests. Read a project file only when the request conflicts with the summary or leaves a material requirement, route, data or compatibility question that the summary cannot answer.
 Read the `planning` skill first, with readSkill. It is how a request is turned into a plan that covers all of it, and it is the only skill this pass reads. Do not call listSkills and do not enumerate or read implementation, framework, UI-provider, scaffold, runtime, testing, debugging or verification skills. Those skills belong to the execution phase and reading them now wastes the user's time and context. Do not inspect template examples or generated scaffold files merely to restate their structure.
-For a user interface, set the design direction from the product itself: who uses it, what each screen is for, and what the approved design contract already fixes. Then submit one complete plan. Order it as requirements and implementation, production build, runtime readiness, unit/integration evidence, E2E evidence, Done. Keep test commands out of intermediate implementation done conditions so execution does not run the same suites twice. Do not install, generate, seed, start, build, test or implement during planning."""
+For a user interface, set the design direction from the product itself: who uses it, what each screen is for, and what the approved design contract already fixes. Plan every screen as a long, big page - name the six to ten sections it carries, not just the screen; a plan that says "a rooms page" is what produces a rooms page with two cards on it. Then submit one complete plan. Order it as requirements and implementation, production build, runtime readiness, unit/integration evidence, E2E evidence, Done. Keep test commands out of intermediate implementation done conditions so execution does not run the same suites twice. Do not install, generate, seed, start, build, test or implement during planning."""
 
 
 # Given up in this order when the window cannot hold everything.
@@ -136,6 +141,7 @@ def system_prompt(*, workspace, model: str, stack: str, quality: Quality,
         parts.append(PLANNING)
         return "\n\n".join(_fit(parts, context_tokens))
 
+    parts.append(FULL_PAGES)
     parts.append(quality_prompt(quality))
     parts.append(PHASES)
     if testing_enabled:

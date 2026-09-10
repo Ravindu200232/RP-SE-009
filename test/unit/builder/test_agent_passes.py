@@ -483,3 +483,67 @@ class PrototypePassTests(unittest.TestCase):
     def test_nothing_is_drawn_without_screens_to_draw(self):
         self.agent.screens = []
         self.assertIsNone(self.agent.prototype("a cron job"))
+
+
+class LongPageInstructionTests(unittest.TestCase):
+    """The page being long is said everywhere a page gets written.
+
+    It used to be said once, in the middle of the drawing prompt, and a thin
+    page came back anyway - so it now leads that prompt, rides in the system
+    prompt of every generating pass, and comes back on each page written.
+    """
+
+    HEADING = "EVERY PAGE IS A LONG, BIG PAGE"
+
+    def _system(self, **extra):
+        kwargs = dict(workspace=Path("."), model="m", stack="next",
+                      quality=BUILD_QUALITY, context_tokens=128000)
+        kwargs.update(extra)
+        return system_prompt(**kwargs)
+
+    def test_every_generating_pass_carries_it(self):
+        self.assertIn(self.HEADING, self._system())
+        self.assertIn(self.HEADING, self._system(testing_enabled=False))
+        self.assertIn(self.HEADING, self._system(verification_kinds=["unit"]))
+
+    def test_a_small_window_does_not_drop_it(self):
+        # _fit gives up the OPTIONAL blocks first; this one is never optional,
+        # because the pass that most needs it is the one with least room.
+        self.assertIn(self.HEADING, self._system(context_tokens=6000))
+
+    def test_a_read_only_pass_does_not_carry_it(self):
+        self.assertNotIn(self.HEADING, self._system(review=True))
+
+    def test_planning_is_told_to_plan_the_sections(self):
+        self.assertIn("long, big page", self._system(plan_only=True))
+
+    def test_it_leads_the_drawing_prompt(self):
+        root = Path(tempfile.mkdtemp())
+        agent = BuilderAgent(
+            Config(workspace=root, model="scripted", unit_tests=False,
+                   e2e_tests=False, state_root=root / ".state"),
+            events=Events(), client=object())
+        agent.screens = [{"route": "/", "label": "Home", "what": "the front page"}]
+        prompt = agent._prototype_task("a hotel booking site")
+        self.assertTrue(prompt.lstrip().startswith(self.HEADING),
+                        "the long-page directive has to come first, not fifth")
+
+    def test_writing_a_page_says_it_again(self):
+        from builder_agent.tools.files import _page_note
+        for page in (".agentforge/prototype/rooms.html", "app/rooms/page.tsx",
+                     "pages/checkout.jsx", "src/pages/basket.tsx"):
+            self.assertTrue(_page_note(page, "x"), f"{page} should carry the reminder")
+
+    def test_writing_something_that_is_not_a_page_stays_quiet(self):
+        from builder_agent.tools.files import _page_note
+        for other in ("app/components/Button.tsx", "app/api/rooms/route.ts",
+                      "styles.css", "demo.js", "package.json", "app/layout.tsx"):
+            self.assertFalse(_page_note(other, "x"), f"{other} should not carry it")
+
+    def test_a_drawn_page_is_told_its_own_size(self):
+        from builder_agent.tools.files import _page_note
+        note = _page_note("rooms.html", "<html>" + "x" * 400)
+        self.assertIn("9,000", note)
+        self.assertIn("406 bytes", note)
+        # A built page maps over data, so a byte count there would be wrong.
+        self.assertNotIn("9,000", _page_note("app/rooms/page.tsx", "x" * 400))

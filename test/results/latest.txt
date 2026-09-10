@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-10T16:30:58+00:00
+Run at (UTC): 2026-09-10T17:04:46+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 454
+Unit tests: 462
 Integration tests: 24
-Total tests run: 478
+Total tests run: 486
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 25.218s
+Duration: 25.211s
 
 Detailed results
 ----------------
@@ -29,6 +29,14 @@ test_the_plan_is_told_to_enumerate_what_was_asked_for (test.unit.builder.test_ag
 A request read once produces a plan about most of it. ... ok
 test_the_planning_pass_investigates_but_does_not_implement (test.unit.builder.test_agent_passes.AgentPassTests.test_the_planning_pass_investigates_but_does_not_implement) ... ok
 test_work_with_no_interface_gets_no_design_contract (test.unit.builder.test_agent_passes.AgentPassTests.test_work_with_no_interface_gets_no_design_contract) ... ok
+test_a_drawn_page_is_told_its_own_size (test.unit.builder.test_agent_passes.LongPageInstructionTests.test_a_drawn_page_is_told_its_own_size) ... ok
+test_a_read_only_pass_does_not_carry_it (test.unit.builder.test_agent_passes.LongPageInstructionTests.test_a_read_only_pass_does_not_carry_it) ... ok
+test_a_small_window_does_not_drop_it (test.unit.builder.test_agent_passes.LongPageInstructionTests.test_a_small_window_does_not_drop_it) ... ok
+test_every_generating_pass_carries_it (test.unit.builder.test_agent_passes.LongPageInstructionTests.test_every_generating_pass_carries_it) ... ok
+test_it_leads_the_drawing_prompt (test.unit.builder.test_agent_passes.LongPageInstructionTests.test_it_leads_the_drawing_prompt) ... ok
+test_planning_is_told_to_plan_the_sections (test.unit.builder.test_agent_passes.LongPageInstructionTests.test_planning_is_told_to_plan_the_sections) ... ok
+test_writing_a_page_says_it_again (test.unit.builder.test_agent_passes.LongPageInstructionTests.test_writing_a_page_says_it_again) ... ok
+test_writing_something_that_is_not_a_page_stays_quiet (test.unit.builder.test_agent_passes.LongPageInstructionTests.test_writing_something_that_is_not_a_page_stays_quiet) ... ok
 test_a_question_nobody_can_answer_is_not_published (test.unit.builder.test_agent_passes.PendingQuestionTests.test_a_question_nobody_can_answer_is_not_published) ... ok
 test_a_waiting_question_can_be_read_back_in_full (test.unit.builder.test_agent_passes.PendingQuestionTests.test_a_waiting_question_can_be_read_back_in_full)
 The studio reloads, and the run is still waiting on it. ... ok
@@ -561,6 +569,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 478 tests in 25.218s
+Ran 486 tests in 25.211s
 
 OK

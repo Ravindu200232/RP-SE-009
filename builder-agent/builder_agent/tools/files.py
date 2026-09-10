@@ -70,6 +70,36 @@ def read_file(args, ctx):
                         f"{len(lines)} lines)\n{body}{tail}")}
 
 
+# A page somebody will look at, as opposed to a config, a helper or a test.
+# The reminder below rides back on these writes and nothing else.
+_PAGE_FILE = re.compile(
+    r"\.html$|(?:^|/)page\.(?:jsx|tsx|js|ts)$|(?:^|/)pages/[^/]+\.(?:jsx|tsx|js|ts)$",
+    re.I)
+
+
+def _page_note(rel: str, content: str) -> str:
+    """Say it again, on the page that was just written.
+
+    Said once at the start of a build it is true and forgotten by the fourth
+    file. A thin page is the failure this project keeps hitting, so the
+    instruction rides back on every page write, while the next page is still
+    the next thing to be written.
+    """
+    if not _PAGE_FILE.search(str(rel).replace("\\", "/")):
+        return ""
+    note = (" This is a page: it and the next one are long, big pages - the full shell above "
+            "and below, six to ten sections between them that each do something the one above "
+            "does not, lists with enough rows to read as lists, forms with all their fields, "
+            "and the loading, empty and error states on the page they belong to. Count this "
+            "page's sections before you start the next one.")
+    if str(rel).lower().endswith(".html"):
+        size = len(content.encode("utf-8", "ignore"))
+        note += (f" This one is {size:,} bytes; a drawn page is 9,000 at the very least and a "
+                 "landing page 15,000. Under that, go back and add what is missing rather than "
+                 "padding what is there.")
+    return note
+
+
 def write_file(args, ctx):
     path = ctx.sandbox.resolve(args["filePath"])
     existed = path.exists()
@@ -79,9 +109,11 @@ def write_file(args, ctx):
                             "part of it, or pass overwrite:true to replace it entirely.")}
     content = args.get("content") or ""
     _write(ctx, path, content, "written")
+    rel = ctx.sandbox.relative(path)
     return {"ok": True, "mutated": True,
-            "content": (f"{'Replaced' if existed else 'Created'} {ctx.sandbox.relative(path)} "
-                        f"({len(content.splitlines())} lines, revision {revision_of(content)}).")}
+            "content": (f"{'Replaced' if existed else 'Created'} {rel} "
+                        f"({len(content.splitlines())} lines, revision {revision_of(content)})."
+                        + _page_note(str(rel), content))}
 
 
 def patch_file(args, ctx):
