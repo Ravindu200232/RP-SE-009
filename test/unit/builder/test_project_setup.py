@@ -24,9 +24,6 @@ from builder_agent.skills import (SKILL_ROOT, catalog, install_skill_pack, read_
 from builder_agent.config import stack_of
 from builder_agent.templates import (_package_name, install_template, is_greenfield,
                                      template_notice)
-from builder_agent.ui_kits import (UI_KITS, catalogue as ui_block_catalogue,
-                                   install_blocks, planner_catalogue, relevant_blocks,
-                                   ui_kit_of)
 
 
 class SkillPackTests(unittest.TestCase):
@@ -77,22 +74,6 @@ class SkillPackTests(unittest.TestCase):
         self.assertIn("full-app-builder", pack.installed)
         self.assertTrue((self.root / ".agents/skills/full-app-builder/SKILL.md").is_file())
         self.assertIn("unit", pack.phase_skills)
-
-    def test_ui_framework_skills_route_to_next_and_mern_clients(self):
-        next_material = select(
-            self.entries, "", "build an app", "nextjs-mongo", "material")
-        mern_material = select(
-            self.entries, "", "build an app", "mern-microservices", "material")
-        mern_chakra = select(
-            self.entries, "", "build an app", "mern-microservices", "chakra")
-        mern_shadcn = select(
-            self.entries, "", "build an app", "mern-microservices", "shadcn")
-
-        self.assertIn("material-ui-nextjs", next_material)
-        self.assertNotIn("material-ui-nextjs", mern_material)
-        self.assertTrue({"material-ui-styling", "material-ui-theming"} <= set(mern_material))
-        self.assertIn("chakra-ui-builder", mern_chakra)
-        self.assertIn("shadcn", mern_shadcn)
 
     def test_a_project_that_overrides_a_skill_keeps_its_own_version(self):
         target = self.root / ".agents/skills/runtime"
@@ -204,48 +185,6 @@ class StackTemplateTests(unittest.TestCase):
         self.assertTrue((self.root / "scaffold/service/package.json.tpl").is_file())
         self.assertFalse((self.root / "scaffold/service/package.json").is_file())
 
-    def test_each_ui_framework_is_an_overlay_on_each_existing_stack_template(self):
-        dependency = {
-            "shadcn": "@radix-ui/react-slot",
-            "chakra": "@chakra-ui/react",
-            "material": "@mui/material",
-        }
-        for stack in ("nextjs-mongo", "mern-microservices"):
-            for kit in UI_KITS:
-                with self.subTest(stack=stack, kit=kit):
-                    root = Path(tempfile.mkdtemp())
-                    result = install_template(root, stack, kit)
-                    manifest = root / ("client/package.json" if stack == "mern-microservices"
-                                       else "package.json")
-                    package = json.loads(manifest.read_text(encoding="utf-8"))
-                    self.assertTrue(result.scaffolded, result.reason)
-                    self.assertEqual(result.ui_kit, kit)
-                    self.assertEqual(ui_kit_of(root), kit)
-                    self.assertIn(dependency[kit], package["dependencies"])
-
-    def test_mern_registry_blocks_install_inside_the_client_application(self):
-        root = Path(tempfile.mkdtemp())
-        install_template(root, "mern-microservices", "shadcn")
-        client = root / "client"
-        calls = []
-
-        def fake_run(command, **kwargs):
-            calls.append((command, kwargs))
-            generated = client / "src/components/provider-block.tsx"
-            generated.parent.mkdir(parents=True, exist_ok=True)
-            generated.write_text("export const ProviderBlock = () => null\n", encoding="utf-8")
-            return SimpleNamespace(returncode=0, stdout="", stderr="")
-
-        with patch("builder_agent.ui_kits.subprocess.run", side_effect=fake_run):
-            result = install_blocks(root, "mern-microservices", "shadcn", ["hero1"])
-
-        self.assertEqual(Path(calls[0][1]["cwd"]), client)
-        self.assertEqual(Path(calls[0][0][calls[0][0].index("--cwd") + 1]), client)
-        self.assertIn("client/src/components/provider-block.tsx", result.files)
-        self.assertFalse(result.reason)
-
-
-class DesignContractTests(unittest.TestCase):
     def test_different_products_get_different_designs(self):
         chosen = {task: design.choose(task)["palette"] for task in (
             "a hospital patient records system",
@@ -355,42 +294,6 @@ class DesignReachTests(unittest.TestCase):
         self.assertIn("springs", body)          # expressive motion
         self.assertIn("Strong outlines", body)  # bold borders
         self.assertIn('[data-theme="dark"]', body)
-
-    def test_every_gallery_item_is_a_real_provider_source(self):
-        for kit in UI_KITS:
-            for block in ui_block_catalogue(kit):
-                with self.subTest(kit=kit, block=block["id"]):
-                    self.assertTrue(block["source"].startswith("https://"))
-                    self.assertTrue(block["preview"].startswith("https://"))
-                    self.assertTrue(block.get("registry") or block.get("sourcePath"))
-
-    def test_every_provider_block_reaches_the_popup_with_planner_suggestions_marked(self):
-        form = design.form_payload(
-            "Build a content site.\nUI BLOCKS :: blog", "material")
-        by_id = {block["id"]: block for block in form["blocks"]}
-        self.assertEqual(set(by_id), {block["id"] for block in ui_block_catalogue("material")})
-        self.assertEqual(form["chosen"]["blocks"], ["blog"])
-        self.assertTrue(by_id["blog"]["recommended"])
-        self.assertFalse(by_id["dashboard"]["recommended"])
-        self.assertEqual(form["blocks"][0]["id"], "blog")
-
-    def test_an_explicit_empty_planner_selection_stays_empty(self):
-        blocks = relevant_blocks(
-            "The word dashboard appears in the plan.\nUI BLOCKS :: none", "material")
-        self.assertEqual(blocks, [])
-
-    def test_provider_block_selection_has_no_arbitrary_maximum(self):
-        available = ui_block_catalogue("shadcn")
-        ids = [block["id"] for block in available]
-        selected = relevant_blocks("UI BLOCKS :: " + ", ".join(ids), "shadcn")
-        self.assertGreater(len(ids), 20)
-        self.assertEqual(len(selected), len(ids))
-
-    def test_a_provider_without_free_full_blocks_does_not_get_invented_ones(self):
-        prompt = planner_catalogue("chakra")
-        self.assertEqual(ui_block_catalogue("chakra"), [])
-        self.assertIn("UI BLOCKS :: none", prompt)
-        self.assertIn("Do not invent", prompt)
 
     def test_routes_are_read_from_where_the_files_sit(self):
         root = Path(tempfile.mkdtemp())

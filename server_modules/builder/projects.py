@@ -305,8 +305,7 @@ def _message_job(msg: dict):
             prompt, model, think, qa_model, "",
             str(msg.get("logo") or "").strip(),
             str(msg.get("srs_id") or "").strip(),
-            str(msg.get("stack") or "").strip(),
-            str(msg.get("ui_library") or "").strip())
+            str(msg.get("stack") or "").strip())
     if kind == "agent_resume" and project:
         return run_agent_pipeline, (
             "", model, think, qa_model, project)

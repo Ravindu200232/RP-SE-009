@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-10T02:47:13+00:00
+Run at (UTC): 2026-09-10T03:33:09+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 358
+Unit tests: 349
 Integration tests: 24
-Total tests run: 382
+Total tests run: 373
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 26.322s
+Duration: 19.348s
 
 Detailed results
 ----------------
@@ -157,20 +157,8 @@ test_the_same_failing_action_is_stopped_rather_than_repeated_forever (test.unit.
 test_tool_calls_in_one_turn_run_in_order_and_all_report_back (test.unit.builder.test_loop.LoopTests.test_tool_calls_in_one_turn_run_in_order_and_all_report_back) ... ok
 test_tool_schemas_are_trimmed_rather_than_letting_the_request_fail (test.unit.builder.test_loop.LoopTests.test_tool_schemas_are_trimmed_rather_than_letting_the_request_fail) ... ok
 test_unit_stage_can_finish_without_launching_unassigned_browser_and_runtime_work (test.unit.builder.test_loop.LoopTests.test_unit_stage_can_finish_without_launching_unassigned_browser_and_runtime_work) ... ok
-test_an_unrecognised_product_still_gets_a_complete_contract (test.unit.builder.test_project_setup.DesignContractTests.test_an_unrecognised_product_still_gets_a_complete_contract) ... ok
-test_different_products_get_different_designs (test.unit.builder.test_project_setup.DesignContractTests.test_different_products_get_different_designs) ... ok
-test_every_palette_reads_at_the_contrast_it_promises (test.unit.builder.test_project_setup.DesignContractTests.test_every_palette_reads_at_the_contrast_it_promises) ... ok
-test_the_choice_is_deterministic (test.unit.builder.test_project_setup.DesignContractTests.test_the_choice_is_deterministic) ... ok
-test_the_contract_is_written_where_the_model_will_read_it (test.unit.builder.test_project_setup.DesignContractTests.test_the_contract_is_written_where_the_model_will_read_it) ... ok
-test_the_foreground_on_a_fill_is_measured_not_assumed (test.unit.builder.test_project_setup.DesignContractTests.test_the_foreground_on_a_fill_is_measured_not_assumed) ... ok
-test_the_subject_of_the_product_outvotes_the_shape_of_it (test.unit.builder.test_project_setup.DesignContractTests.test_the_subject_of_the_product_outvotes_the_shape_of_it) ... ok
 test_a_plan_that_files_components_settles_it (test.unit.builder.test_project_setup.DesignReachTests.test_a_plan_that_files_components_settles_it) ... ok
-test_a_provider_without_free_full_blocks_does_not_get_invented_ones (test.unit.builder.test_project_setup.DesignReachTests.test_a_provider_without_free_full_blocks_does_not_get_invented_ones) ... ok
-test_an_explicit_empty_planner_selection_stays_empty (test.unit.builder.test_project_setup.DesignReachTests.test_an_explicit_empty_planner_selection_stays_empty) ... ok
 test_every_chosen_dimension_reaches_the_written_contract (test.unit.builder.test_project_setup.DesignReachTests.test_every_chosen_dimension_reaches_the_written_contract) ... ok
-test_every_gallery_item_is_a_real_provider_source (test.unit.builder.test_project_setup.DesignReachTests.test_every_gallery_item_is_a_real_provider_source) ... ok
-test_every_provider_block_reaches_the_popup_with_planner_suggestions_marked (test.unit.builder.test_project_setup.DesignReachTests.test_every_provider_block_reaches_the_popup_with_planner_suggestions_marked) ... ok
-test_provider_block_selection_has_no_arbitrary_maximum (test.unit.builder.test_project_setup.DesignReachTests.test_provider_block_selection_has_no_arbitrary_maximum) ... ok
 test_routes_are_read_from_where_the_files_sit (test.unit.builder.test_project_setup.DesignReachTests.test_routes_are_read_from_where_the_files_sit) ... ok
 test_screen_inventory_is_left_to_the_approved_plan (test.unit.builder.test_project_setup.DesignReachTests.test_screen_inventory_is_left_to_the_approved_plan) ... ok
 test_the_catalogue_covers_every_dimension_the_contract_states (test.unit.builder.test_project_setup.DesignReachTests.test_the_catalogue_covers_every_dimension_the_contract_states) ... ok
@@ -201,19 +189,23 @@ test_installing_copies_the_selected_skills_into_the_project (test.unit.builder.t
 test_the_catalog_prefers_the_project_copy_of_a_skill (test.unit.builder.test_project_setup.SkillPackTests.test_the_catalog_prefers_the_project_copy_of_a_skill) ... ok
 test_the_sinhala_forms_studio_users_type_are_understood (test.unit.builder.test_project_setup.SkillPackTests.test_the_sinhala_forms_studio_users_type_are_understood) ... ok
 test_the_stack_core_is_always_selected_whatever_the_request_says (test.unit.builder.test_project_setup.SkillPackTests.test_the_stack_core_is_always_selected_whatever_the_request_says) ... ok
-test_ui_framework_skills_route_to_next_and_mern_clients (test.unit.builder.test_project_setup.SkillPackTests.test_ui_framework_skills_route_to_next_and_mern_clients) ... ok
 test_a_file_the_workspace_already_has_survives_scaffolding (test.unit.builder.test_project_setup.StackTemplateTests.test_a_file_the_workspace_already_has_survives_scaffolding) ... ok
 test_a_folder_name_npm_would_reject_is_made_installable (test.unit.builder.test_project_setup.StackTemplateTests.test_a_folder_name_npm_would_reject_is_made_installable)
 npm refuses leading dots, capitals and spaces; the folder may have them. ... ok
 test_a_workspace_that_already_has_a_project_is_never_touched (test.unit.builder.test_project_setup.StackTemplateTests.test_a_workspace_that_already_has_a_project_is_never_touched) ... ok
 test_an_empty_workspace_gets_the_verified_starting_point (test.unit.builder.test_project_setup.StackTemplateTests.test_an_empty_workspace_gets_the_verified_starting_point) ... ok
-test_each_ui_framework_is_an_overlay_on_each_existing_stack_template (test.unit.builder.test_project_setup.StackTemplateTests.test_each_ui_framework_is_an_overlay_on_each_existing_stack_template) ... ok
-test_mern_registry_blocks_install_inside_the_client_application (test.unit.builder.test_project_setup.StackTemplateTests.test_mern_registry_blocks_install_inside_the_client_application) ... ok
+test_an_unrecognised_product_still_gets_a_complete_contract (test.unit.builder.test_project_setup.StackTemplateTests.test_an_unrecognised_product_still_gets_a_complete_contract) ... ok
+test_different_products_get_different_designs (test.unit.builder.test_project_setup.StackTemplateTests.test_different_products_get_different_designs) ... ok
+test_every_palette_reads_at_the_contrast_it_promises (test.unit.builder.test_project_setup.StackTemplateTests.test_every_palette_reads_at_the_contrast_it_promises) ... ok
+test_the_choice_is_deterministic (test.unit.builder.test_project_setup.StackTemplateTests.test_the_choice_is_deterministic) ... ok
+test_the_contract_is_written_where_the_model_will_read_it (test.unit.builder.test_project_setup.StackTemplateTests.test_the_contract_is_written_where_the_model_will_read_it) ... ok
 test_the_engines_own_directories_do_not_make_a_workspace_non_empty (test.unit.builder.test_project_setup.StackTemplateTests.test_the_engines_own_directories_do_not_make_a_workspace_non_empty) ... ok
+test_the_foreground_on_a_fill_is_measured_not_assumed (test.unit.builder.test_project_setup.StackTemplateTests.test_the_foreground_on_a_fill_is_measured_not_assumed) ... ok
 test_the_microservices_template_keeps_its_scaffold_directory_inert (test.unit.builder.test_project_setup.StackTemplateTests.test_the_microservices_template_keeps_its_scaffold_directory_inert) ... ok
 test_the_notice_says_how_to_replace_what_it_says_to_replace (test.unit.builder.test_project_setup.StackTemplateTests.test_the_notice_says_how_to_replace_what_it_says_to_replace)
 It asks for the placeholder page to be replaced; writeFile refuses that. ... ok
 test_the_root_manifest_takes_the_folder_name_so_npm_can_install_it (test.unit.builder.test_project_setup.StackTemplateTests.test_the_root_manifest_takes_the_folder_name_so_npm_can_install_it) ... ok
+test_the_subject_of_the_product_outvotes_the_shape_of_it (test.unit.builder.test_project_setup.StackTemplateTests.test_the_subject_of_the_product_outvotes_the_shape_of_it) ... ok
 test_environment_style_secret_line_keeps_the_key_but_hides_the_value (test.unit.deployment.test_security.DeploymentSecurityTests.test_environment_style_secret_line_keeps_the_key_but_hides_the_value) ... ok
 test_hash_helpers_produce_the_same_artifact_digest (test.unit.deployment.test_security.DeploymentSecurityTests.test_hash_helpers_produce_the_same_artifact_digest) ... ok
 test_missing_artifact_has_no_false_digest (test.unit.deployment.test_security.DeploymentSecurityTests.test_missing_artifact_has_no_false_digest) ... ok
@@ -364,7 +356,6 @@ test_a_selection_of_several_elements_travels_whole (test.unit.services.test_serv
 Clicking three things has to send three things, with their pictures. ... ok
 test_a_stack_chosen_in_the_studio_reaches_the_run (test.unit.services.test_server_wiring.MessageDispatchTests.test_a_stack_chosen_in_the_studio_reaches_the_run)
 Reading it out of the wording of the brief is the fallback, not the rule. ... ok
-test_a_ui_framework_chosen_in_the_studio_reaches_the_run (test.unit.services.test_server_wiring.MessageDispatchTests.test_a_ui_framework_chosen_in_the_studio_reaches_the_run) ... ok
 test_build_and_resume_contracts (test.unit.services.test_server_wiring.MessageDispatchTests.test_build_and_resume_contracts) ... ok
 test_chat_can_add_features_without_calling_every_request_a_bug (test.unit.services.test_server_wiring.MessageDispatchTests.test_chat_can_add_features_without_calling_every_request_a_bug) ... ok
 test_edit_action_contracts (test.unit.services.test_server_wiring.MessageDispatchTests.test_edit_action_contracts) ... ok
@@ -441,6 +432,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 382 tests in 26.322s
+Ran 373 tests in 19.348s
 
 OK

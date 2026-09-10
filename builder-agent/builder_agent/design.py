@@ -19,8 +19,6 @@ import json
 import re
 from pathlib import Path
 
-from .ui_kits import (UI_KITS, catalogue as ui_block_catalogue, install_blocks,
-                      normalize_ui_kit, relevant_blocks)
 
 SKILL_NAME = "design-system"
 
@@ -305,26 +303,15 @@ def choose(task: str) -> dict:
     }
 
 
-def form_payload(task: str, ui_library: str = "shadcn") -> dict:
+def form_payload(task: str) -> dict:
     """Everything a design form needs to render, plus what was chosen for it.
 
     Pure data, so the studio, the CLI and a test all render the same catalogue
     and there is no second list to keep in step.
     """
-    ui_library = normalize_ui_kit(ui_library)
-    recommended = relevant_blocks(task, ui_library)
-    recommended_ids = {block["id"] for block in recommended}
-    blocks = [dict(block, recommended=block["id"] in recommended_ids)
-              for block in ui_block_catalogue(ui_library)]
-    blocks.sort(key=lambda block: (
-        not block["recommended"], block.get("category", ""), block.get("name", "")))
     chosen = choose(task)
-    chosen["uiLibrary"] = ui_library
-    chosen["blocks"] = [block["id"] for block in recommended]
     return {
         "chosen": chosen,
-        "uiKit": {"id": ui_library, **UI_KITS[ui_library]},
-        "blocks": blocks,
         "palettes": [{
             "id": p["id"], "name": p["name"], "mood": p["mood"],
             "light": tokens(p["id"], "light"), "dark": tokens(p["id"], "dark"),
@@ -380,12 +367,6 @@ def apply_answer(chosen: dict, answer: dict | None) -> dict:
     if isinstance(wanted_pages, list):
         known = {page for page, _, _ in PAGES}
         picked["pages"] = sorted({p for p in wanted_pages if p in known})
-    wanted_blocks = answer.get("blocks")
-    if isinstance(wanted_blocks, list):
-        known_blocks = {block["id"] for block in ui_block_catalogue(
-            picked.get("uiLibrary"))}
-        picked["blocks"] = list(dict.fromkeys(
-            block_id for block_id in wanted_blocks if block_id in known_blocks))
     if picked["palette"] != chosen["palette"]:
         palette = next(p for p in PALETTES if p["id"] == picked["palette"])
         picked["paletteName"], picked["mood"] = palette["name"], palette["mood"]
@@ -420,15 +401,10 @@ def _kebab(name: str) -> str:
     return re.sub(r"(?<!^)(?=[A-Z])", "-", name).lower()
 
 
-def render_skill(selection: dict, goal: str = "", installed_blocks=None) -> str:
+def render_skill(selection: dict, goal: str = "") -> str:
     light, dark = tokens(selection["palette"], "light"), tokens(selection["palette"], "dark")
     ratio = contrast_ratio(light["text"], light["background"])
     font = next(f for f in FONTS if f["id"] == selection["font"])
-    ui_library = normalize_ui_kit(selection.get("uiLibrary"))
-    selected = set(selection.get("blocks") or [])
-    chosen_blocks = [block for block in ui_block_catalogue(ui_library)
-                     if block["id"] in selected]
-    installed_blocks = list(installed_blocks or [])
     return "\n".join([
         "---", f"name: {SKILL_NAME}",
         "description: The design contract for this application. Colours, type, shape and "
@@ -468,20 +444,11 @@ def render_skill(selection: dict, goal: str = "", installed_blocks=None) -> str:
         f"- {selection.get('tone', 'professional').title()}: "
         f"{TONES[selection.get('tone', 'professional')]}",
         f"- Contrast: {CONTRAST[selection.get('contrast', 'aa')]}", "",
-        "## UI framework", "",
-        f"Use **{UI_KITS[ui_library]['name']}**. {UI_KITS[ui_library]['usage']}",
-        "The scaffold already contains its dependencies and provider/config. Keep this one "
-        "framework throughout the application instead of installing a competing UI system.", "",
-        "## Selected page compositions", "",
-        "These are the real provider block sources selected from the approved requirements. "
-        "Read and adapt their complete structure to the plan. Do not replace them with a "
-        "smaller hand-made lookalike. They do not add routes or replace required screens.", "",
-        *[f"- **{block['id']} — {block['name']}**: {block['description']} "
-          f"Install source: `{block.get('registry', block.get('source', 'provider source'))}`."
-          for block in chosen_blocks],
-        *(["", "Installed source:", *[f"- `{path}`" for path in installed_blocks]]
-          if installed_blocks else []),
-        "",
+        "## Styling", "",
+        "Tailwind is installed and configured in the scaffold, and its theme reads the tokens "
+        "above. Compose the interface from Tailwind utilities and your own components; do not "
+        "install a component library on top of it, and do not hand-write a second colour or "
+        "spacing scale beside the tokens.", "",
         "## Screens this product needs", "",
         "Implement the screens and routes in the approved plan. Apply this design to those "
         "screens without adding routes based on domain words or generic UI examples. "
@@ -509,45 +476,22 @@ def write_design_skill(workspace: Path | str, selection: dict, goal: str = "",
     """Write the contract into the project as a skill and return where it went."""
     target = Path(workspace) / ".agents" / "skills" / SKILL_NAME
     target.mkdir(parents=True, exist_ok=True)
-    block_install = install_blocks(
-        workspace, stack, selection.get("uiLibrary"), selection.get("blocks") or [])
-    installed_blocks = block_install.files
-    (target / "SKILL.md").write_text(
-        render_skill(selection, goal, installed_blocks), encoding="utf-8")
+    (target / "SKILL.md").write_text(render_skill(selection, goal), encoding="utf-8")
     css = target / "tokens.css"
     css.write_text(render_tokens_css(selection), encoding="utf-8")
-    blocks = target / "blocks.json"
-    blocks.write_text(json.dumps({
-        "uiLibrary": normalize_ui_kit(selection.get("uiLibrary")),
-        "selected": [
-            {key: value for key, value in block.items() if key != "signals"}
-            for block in ui_block_catalogue(selection.get("uiLibrary"))
-            if block["id"] in (selection.get("blocks") or [])
-        ],
-        "installed": installed_blocks,
-        "installError": block_install.reason,
-    }, indent=2) + "\n", encoding="utf-8")
     return {"skill": SKILL_NAME,
             "path": f".agents/skills/{SKILL_NAME}/SKILL.md",
             "tokens": f".agents/skills/{SKILL_NAME}/tokens.css",
-            "blocks": f".agents/skills/{SKILL_NAME}/blocks.json",
-            "installedBlocks": installed_blocks,
-            "blockInstallError": block_install.reason,
             "selection": selection}
 
 
 def design_contract_message(selection: dict) -> str:
-    ui_library = normalize_ui_kit(selection.get("uiLibrary"))
-    block_names = [block["name"] for block in ui_block_catalogue(ui_library)
-                   if block["id"] in (selection.get("blocks") or [])]
     return "\n".join([
         "DESIGN CONTRACT (already decided; do not re-open it):",
         f"- Palette: {selection['paletteName']} - {selection['mood']}",
         f"- Default theme: {selection['themeMode']}; both modes must work.",
         f"- Type: {selection['font']}, {selection['typeScale']} scale.",
         f"- Shape: {selection['radius']} radius, {selection['density']} density.",
-        f"- UI framework: {UI_KITS[ui_library]['name']}; its scaffold is already installed.",
-        f"- Page compositions: {', '.join(block_names) if block_names else 'use the approved plan'}.",
         f"Read `.agents/skills/{SKILL_NAME}/SKILL.md` in full before writing any UI, and copy "
         "its token block into the application's global stylesheet. Do not invent a second "
         "palette, and do not hard-code hex values in components.",

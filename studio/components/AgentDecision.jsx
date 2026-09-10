@@ -14,7 +14,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
-import { Check, Loader2, Palette, RotateCcw, Search, SkipForward } from 'lucide-react'
+import { Check, Loader2, Palette, RotateCcw, SkipForward } from 'lucide-react'
 
 import { api } from '@/lib/api'
 import { useStore } from '@/lib/store'
@@ -143,13 +143,12 @@ function PlanDecision({ question, left, sending, onAnswer }) {
 
 function DesignDecision({ question, left, sending, onAnswer }) {
   const chosen = question.chosen || {}
-  const [blockSearch, setBlockSearch] = useState('')
-  const [blockCategory, setBlockCategory] = useState('all')
   const [pick, setPick] = useState({
     palette: chosen.palette, font: chosen.font, radius: chosen.radius,
     density: chosen.density, typeScale: chosen.typeScale, themeMode: chosen.themeMode,
     border: chosen.border, elevation: chosen.elevation, motion: chosen.motion,
     tone: chosen.tone, contrast: chosen.contrast, container: chosen.container,
+    // Compositions are the planner's to choose; they ride along unchanged.
     pages: chosen.pages || [], blocks: chosen.blocks || [],
   })
   const set = (field, value) => setPick(p => ({ ...p, [field]: value }))
@@ -157,22 +156,6 @@ function DesignDecision({ question, left, sending, onAnswer }) {
     ...p,
     pages: p.pages.includes(id) ? p.pages.filter(x => x !== id) : [...p.pages, id],
   }))
-  const toggleBlock = id => setPick(p => ({
-    ...p,
-    blocks: p.blocks.includes(id) ? p.blocks.filter(x => x !== id) : [...p.blocks, id],
-  }))
-  const visibleBlocks = useMemo(() => {
-    const query = blockSearch.trim().toLowerCase()
-    return (question.blocks || []).filter(block => {
-      if (blockCategory !== 'all' && block.category !== blockCategory) return false
-      return !query || `${block.name} ${block.category} ${block.description}`
-        .toLowerCase().includes(query)
-    })
-  }, [question.blocks, blockSearch, blockCategory])
-  const blockCategories = useMemo(() => [
-    'all', ...Array.from(new Set((question.blocks || []).map(block => block.category))).sort(),
-  ], [question.blocks])
-
   const palette = useMemo(
     () => (question.palettes || []).find(p => p.id === pick.palette) || question.palettes?.[0],
     [question.palettes, pick.palette])
@@ -187,90 +170,14 @@ function DesignDecision({ question, left, sending, onAnswer }) {
         <div>
           <h2 className="text-[15px] font-semibold text-ink">How should it look?</h2>
           <p className="mt-0.5 text-[11px] text-muted">
-            {question.uiKit?.name || 'The selected UI framework'} is already in the scaffold. Planner suggestions are selected and marked; every available provider block remains open to you.
+            {question.uiKit?.name || 'The UI framework'} and its page compositions are already
+            chosen for this product. Change anything below and the build follows it exactly.
           </p>
         </div>
         <span className="flex-1" />
         <Countdown left={left} />
       </header>
 
-      <section className="mt-4 rounded-2xl border border-line bg-canvas/40 p-3.5">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-[220px] flex-1">
-            <label htmlFor="design-block-search" className="text-[11.5px] font-semibold text-ink">
-              Provider blocks ({pick.blocks.length} selected · {(question.blocks || []).length} available)
-            </label>
-            <div className="relative mt-1.5">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted2" />
-              <input id="design-block-search" value={blockSearch}
-                     onChange={event => setBlockSearch(event.target.value)}
-                     placeholder="Search all provider blocks"
-                     className="h-9 w-full rounded-xl border border-line bg-panel pl-9 pr-3 text-[11.5px] text-ink outline-none focus:border-accent" />
-            </div>
-          </div>
-          {blockCategories.length > 2 && (
-            <div>
-              <label htmlFor="design-block-category" className="text-[10px] font-semibold uppercase tracking-[.12em] text-muted2">
-                Category
-              </label>
-              <select id="design-block-category" value={blockCategory}
-                      onChange={event => setBlockCategory(event.target.value)}
-                      className="mt-1.5 h-9 rounded-xl border border-line bg-panel px-3 text-[11px] text-ink outline-none focus:border-accent">
-                {blockCategories.map(category => (
-                  <option key={category} value={category}>
-                    {category === 'all' ? 'All blocks' : category}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-          <div className="rounded-xl border border-line bg-panel px-3 py-2 text-right">
-            <span className="block text-[9.5px] text-muted2">UI framework</span>
-            <span className="text-[11.5px] font-semibold text-ink">{question.uiKit?.name || 'Selected kit'}</span>
-          </div>
-        </div>
-        <p className="mt-2 text-[10.5px] leading-relaxed text-muted2">
-          Only real provider sources appear here. Suggested blocks match the request and approved plan; select as many additional blocks as the product needs.
-        </p>
-        {question.uiKit?.blockNote && (
-          <p className="mt-2 rounded-lg border border-line bg-panel px-3 py-2 text-[10.5px] leading-relaxed text-muted2">
-            {question.uiKit.blockNote}
-          </p>
-        )}
-        <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {visibleBlocks.map(block => {
-            const selected = pick.blocks.includes(block.id)
-            return (
-              <button key={block.id} type="button" onClick={() => toggleBlock(block.id)}
-                      aria-pressed={selected}
-                      className={cn('overflow-hidden rounded-xl border bg-panel text-left transition-colors',
-                        selected ? 'border-accent ring-2 ring-accent/15' : 'border-line hover:border-line2')}>
-                <span className="block aspect-[4/3] overflow-hidden border-b border-line bg-canvas">
-                  <img src={block.preview} alt={`Preview of ${block.name}`}
-                       loading="lazy" className="size-full object-cover" />
-                </span>
-                <span className="block p-3">
-                  <span className="flex items-center gap-2">
-                    <span className="min-w-0 flex-1 truncate text-[11.5px] font-semibold text-ink">{block.name}</span>
-                    {block.recommended && (
-                      <span className="rounded-md bg-accent/10 px-1.5 py-0.5 text-[9px] font-semibold text-accent">
-                        Suggested
-                      </span>
-                    )}
-                    <span className="rounded-md bg-tint px-1.5 py-0.5 text-[9px] font-medium text-deep">{block.category}</span>
-                  </span>
-                  <span className="mt-1.5 block text-[10px] leading-relaxed text-muted2">{block.description}</span>
-                </span>
-              </button>
-            )
-          })}
-        </div>
-        {!visibleBlocks.length && (
-          <p className="py-8 text-center text-[11px] text-muted2">
-            No provider block matches this search or filter.
-          </p>
-        )}
-      </section>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_260px]">
         <div className="space-y-4">

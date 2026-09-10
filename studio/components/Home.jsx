@@ -100,7 +100,6 @@ export default function Home({ onStarted, modelOptions = [] }) {
     send({ type: 'agent_build', prompt: p, model: selected,
            builder_model: selected, planner_model: config?.model || plannerModel,
            design_model: config?.model || designModel, stack: config?.stack || stack,
-           ui_library: config?.uiLibrary || 'shadcn',
            think: config?.think ?? think, qa_model: models.qa, logo, srs_id: srs || '',
            uploads: uploads && Object.keys(uploads).length ? uploads : undefined })
   }

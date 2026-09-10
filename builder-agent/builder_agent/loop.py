@@ -35,7 +35,6 @@ from .prompts import (blueprint_task, completion_block, format_reminder,
                       system_prompt, task_message)
 from .skills import catalog, install_skill_pack
 from .templates import install_template, template_notice
-from .ui_kits import DEFAULT_UI_KIT
 from .tools import ToolContext
 
 # Dropped in this order when a model's window cannot hold every tool schema.
@@ -165,8 +164,7 @@ class Loop:
 
     def _prepare_workspace(self, task: str) -> None:
         scaffold = install_template(
-            self.sandbox.root, self.config.stack,
-            self.config.extra.get("ui_library") or DEFAULT_UI_KIT)
+            self.sandbox.root, self.config.stack)
         if scaffold.scaffolded:
             self.events.emit("notice", level="info",
                              message=f"Scaffolded {len(scaffold.files)} files from the verified "
@@ -177,8 +175,7 @@ class Loop:
                              message=f"Stack template not applied: {scaffold.reason}")
 
         pack = install_skill_pack(
-            self.sandbox.root, task, self.config.stack,
-            self.config.extra.get("ui_library") or DEFAULT_UI_KIT)
+            self.sandbox.root, task, self.config.stack)
         learned = self.knowledge.install_skill(self.sandbox.root, self.config.stack)
         if learned:
             pack.selected = sorted(set(pack.selected) | {learned})

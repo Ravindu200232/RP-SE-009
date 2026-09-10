@@ -1,6 +1,10 @@
-/* Replace this file. It is the application's stylesheet and it belongs to the
-   design, not to the template — this is only enough for the build to be green
-   and the first screen to be readable. */
+/* Replace what is below the directives. The design contract owns this file:
+   `.agents/skills/design-system/tokens.css` holds the tokens Tailwind reads,
+   and this is only enough for the build to be green and the first screen to
+   be readable. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 *, *::before, *::after { box-sizing: border-box; }
 

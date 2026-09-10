@@ -92,17 +92,17 @@ required = {
     "sidebar model picker": ("components/Sidebar.jsx", 'label="Model"'),
     "the stack is chosen, not guessed": ("components/Home.jsx", "2. Choose the stack"),
     "the build is configured before it starts": ("components/BuildSetup.jsx", "Configure your build"),
-    "that dialog offers the model and the stack": ("components/BuildSetup.jsx", "build-setup-stack"),
-    "that dialog offers a UI framework": ("components/BuildSetup.jsx", "UI framework"),
+    "and it asks for the stack": ("components/BuildSetup.jsx", "build-setup-stack"),
+    "the design can still be customised": ("components/AgentDecision.jsx", "How should it look?"),
     "the chosen stack travels with the build": ("components/Home.jsx", "config?.stack || stack"),
-    "the chosen UI framework travels with the build": ("components/Home.jsx", "ui_library: config?.uiLibrary"),
     "the engine prefers a chosen stack": ("../server_modules/builder/pipeline.py", "stack or detect_stack"),
-    "design shows requirement-selected provider blocks": ("components/AgentDecision.jsx", "Provider blocks"),
-    "design previews actual provider images": ("components/AgentDecision.jsx", "src={block.preview}"),
     "sidebar collapses": ("components/Sidebar.jsx", "if (collapsed) {"),
 }
 
 forbidden = {
+    # One styling story: Tailwind in the scaffold, tokens from the contract.
+    "a UI framework picker": ("components/BuildSetup.jsx", "UI_LIBRARIES"),
+    "a provider block picker": ("components/AgentDecision.jsx", "Provider blocks"),
     # The terminal pane was replaced by the chat stream: raw backend lines
     # scrolled past faster than anyone could read them.
     "terminal drawer": ("components/PreviewPane.jsx", "PreviewConsoleDrawer"),

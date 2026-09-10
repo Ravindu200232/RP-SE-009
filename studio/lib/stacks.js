@@ -21,24 +21,3 @@ export const STACKS = [
 
 export const stackName = (id) =>
   STACKS.find(stack => stack.id === id)?.name || 'read from the brief'
-
-export const UI_LIBRARIES = [
-  {
-    id: 'chakra',
-    name: 'Chakra UI',
-    mark: 'C',
-    blurb: 'Accessible primitives and token-driven recipes.',
-  },
-  {
-    id: 'material',
-    name: 'Material UI',
-    mark: 'M',
-    blurb: 'A broad component system for dense product workflows.',
-  },
-  {
-    id: 'shadcn',
-    name: 'Shadcn',
-    mark: '/',
-    blurb: 'Source-owned Tailwind and Radix primitives, easy to reshape.',
-  },
-]
