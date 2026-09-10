@@ -358,3 +358,40 @@ class PlannerToolsetTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DrawingIsSearchableTests(unittest.TestCase):
+    """The agent has to be able to find the pages it just drew.
+
+    `.agentforge` was in IGNORED_DIRS and, being a dot-directory, excluded a
+    second time by the walk itself. So `search` could not see a file the same
+    agent had written a moment earlier: every query returned "No match ...
+    search for a shorter fragment", which is what that message advises, and a
+    run looking for a class it had written went `href="gallery"` -> `href=` ->
+    `href` -> `nav` -> `the`, each shorter and each empty, until the phase was
+    spent on it.
+    """
+
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        drawing = self.root / ".agentforge" / "prototype"
+        drawing.mkdir(parents=True)
+        (drawing / "index.html").write_text(
+            '<section class="eyebrow">Gallery</section>', encoding="utf-8")
+        (drawing / "styles.css").write_text(":root{--primary:#000}", encoding="utf-8")
+        (self.root / "package.json").write_text("{}", encoding="utf-8")
+        # Still ignored, and for the same good reasons as before.
+        for ignored in ("node_modules", ".next", ".git"):
+            (self.root / ignored).mkdir()
+            (self.root / ignored / "junk.html").write_text("x", encoding="utf-8")
+
+    def test_the_drawn_pages_are_reachable_from_the_project_root(self):
+        found = {p.name for p in Sandbox(self.root).walk()}
+        self.assertIn("index.html", found)
+        self.assertIn("styles.css", found)
+
+    def test_the_directories_that_should_stay_ignored_still_are(self):
+        found = [str(p) for p in Sandbox(self.root).walk()]
+        for ignored in ("node_modules", ".next", ".git"):
+            self.assertFalse([p for p in found if ignored in p],
+                             f"{ignored} should not be walked")

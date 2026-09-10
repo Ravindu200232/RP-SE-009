@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-10T18:29:06+00:00
+Run at (UTC): 2026-09-10T19:05:48+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 462
+Unit tests: 464
 Integration tests: 24
-Total tests run: 486
+Total tests run: 488
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 25.045s
+Duration: 31.662s
 
 Detailed results
 ----------------
@@ -59,6 +59,8 @@ test_an_interpreter_running_a_script_is_not_read_only (test.unit.builder.test_en
 test_read_only_commands_are_safe (test.unit.builder.test_engine.CommandPolicyTests.test_read_only_commands_are_safe) ... ok
 test_the_denylist_holds_whatever_the_configuration_says (test.unit.builder.test_engine.CommandPolicyTests.test_the_denylist_holds_whatever_the_configuration_says) ... ok
 test_writing_to_a_file_is_a_mutation_even_from_a_read_command (test.unit.builder.test_engine.CommandPolicyTests.test_writing_to_a_file_is_a_mutation_even_from_a_read_command) ... ok
+test_the_directories_that_should_stay_ignored_still_are (test.unit.builder.test_engine.DrawingIsSearchableTests.test_the_directories_that_should_stay_ignored_still_are) ... ok
+test_the_drawn_pages_are_reachable_from_the_project_root (test.unit.builder.test_engine.DrawingIsSearchableTests.test_the_drawn_pages_are_reachable_from_the_project_root) ... ok
 test_a_decorated_requirement_id_resolves_to_its_base (test.unit.builder.test_engine.EvidenceLedgerTests.test_a_decorated_requirement_id_resolves_to_its_base) ... ok
 test_a_limitation_is_recorded_as_unverified_never_as_a_pass (test.unit.builder.test_engine.EvidenceLedgerTests.test_a_limitation_is_recorded_as_unverified_never_as_a_pass) ... ok
 test_a_pass_taken_before_the_last_edit_is_outdated_not_missing (test.unit.builder.test_engine.EvidenceLedgerTests.test_a_pass_taken_before_the_last_edit_is_outdated_not_missing) ... ok
@@ -569,6 +571,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 486 tests in 25.045s
+Ran 488 tests in 31.662s
 
 OK

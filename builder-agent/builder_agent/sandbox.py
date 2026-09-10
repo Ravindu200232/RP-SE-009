@@ -23,8 +23,20 @@ IGNORED_DIRS = frozenset({
     "node_modules", ".git", ".svn", ".hg", "dist", "build", "out", "target",
     "coverage", ".next", ".nuxt", ".cache", ".turbo", ".venv", "venv",
     "__pycache__", ".pytest_cache", ".mypy_cache", ".gradle", ".idea",
-    ".vscode", "vendor", ".agent", ".agentforge", ".terraform",
+    ".vscode", "vendor", ".agent", ".terraform",
 })
+
+# Dot-directories that are the agent's own work and must stay findable.
+#
+# `.agentforge` holds the drawing - the pages the drawing pass writes and then
+# has to search and revise. It was ignored here and, being a dot-directory,
+# ignored twice over, so `search` could not see a file the same agent had just
+# written. Every query came back "No match ... search for a shorter fragment",
+# which is what the message advises, so a run hunting a class it had written
+# went `href="gallery"` -> `href=` -> `href` -> `nav` -> `the`, each shorter
+# and each empty, until the phase was spent. The pages were there the whole
+# time; nothing could look at them.
+VISIBLE_DOT_DIRS = frozenset({".agentforge"})
 
 BINARY_SUFFIXES = frozenset({
     ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico", ".webp", ".avif", ".tiff",
@@ -127,7 +139,8 @@ class Sandbox:
         """Yield source-ish files, skipping the directories nobody wants read."""
         seen = 0
         for base, dirs, names in os.walk(start or self.root):
-            dirs[:] = [d for d in dirs if d not in IGNORED_DIRS and not d.startswith(".")]
+            dirs[:] = [d for d in dirs if d not in IGNORED_DIRS
+                       and (not d.startswith(".") or d in VISIBLE_DOT_DIRS)]
             for name in names:
                 path = Path(base) / name
                 if path.suffix.lower() in BINARY_SUFFIXES:
