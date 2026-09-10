@@ -338,7 +338,7 @@ export default function Studio() {
 
   return (
     <div className="flex h-full bg-[radial-gradient(circle_at_20%_0%,#f8faff_0%,#edf1f7_42%,#e7ebf3_100%)] p-2.5 dark:bg-[radial-gradient(circle_at_20%_0%,#1a2030_0%,#111722_42%,#0c1119_100%)]">
-      <Sidebar models={cat} projects={projects} onOpen={openProject}
+      <Sidebar projects={projects} onOpen={openProject}
                onImport={importFolder} onSettings={() => setSettingsOpen(true)}
                onZip={downloadZip} onResume={resumeBuild}
                onDeleted={(name) => {

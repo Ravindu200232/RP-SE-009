@@ -132,20 +132,52 @@ function classify(row) {
   return { kind: badge || 'note', title: line.slice(0, 220), detail: '' }
 }
 
+/**
+ * What one log row became, remembered against the row itself.
+ *
+ * The feed is rebuilt on every arriving line, and the history it is rebuilt
+ * from holds eight hundred rows - so during a build every line reclassified
+ * the entire run through a dozen regular expressions, several times a second,
+ * to add one row at the end. A log row is never edited after it is appended,
+ * so its answer cannot change; and returning the same object each time is what
+ * lets the rows already on screen skip rendering again.
+ */
+const remembered = new WeakMap()
+
+// A name a row keeps for as long as it exists. The feed shows the last 160
+// turns, so once a run is longer than that every arriving line shifts every
+// position - and a key built from a position would change for every row on
+// screen, which is a remount of the whole history to append one line.
+let counted = 0
+
+function turnFor(row) {
+  if (remembered.has(row)) return remembered.get(row)
+  const event = classify(row)
+  const turn = event && { role: 'activity', kind: event.kind, at: row.at,
+                          id: `a${++counted}`, title: event.title, detail: event.detail }
+  remembered.set(row, turn)
+  return turn
+}
+
 export function chatTurns(logs = [], chat = []) {
   const turns = []
   let previous = ''
   for (const row of logs) {
-    const event = classify(row)
-    if (!event) continue
+    const turn = row && typeof row === 'object' ? turnFor(row) : null
+    if (!turn) continue
     // The engine echoes a command as both "Ran x" and "$ x"; one row, not two.
-    if (event.title === previous) continue
-    previous = event.title
-    turns.push({ role: 'activity', kind: event.kind, at: row.at,
-                 title: event.title, detail: event.detail })
+    if (turn.title === previous) continue
+    previous = turn.title
+    turns.push(turn)
   }
 
-  for (const entry of chat) turns.push({ ...entry, role: entry.role || 'assistant' })
+  for (const entry of chat) {
+    if (!remembered.has(entry)) {
+      remembered.set(entry, { ...entry, id: `c${++counted}`,
+                              role: entry.role || 'assistant' })
+    }
+    turns.push(remembered.get(entry))
+  }
   turns.sort((a, b) => (a.at || 0) - (b.at || 0))
   return turns.slice(-MAX_TURNS)
 }

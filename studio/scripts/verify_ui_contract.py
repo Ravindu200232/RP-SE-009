@@ -68,7 +68,7 @@ required = {
     "a run is refused the projects store": ("../server_modules/builder/pipeline.py", "def _workspace"),
     "a stream is handed back on the way in": ("lib/store.js", "function restored"),
     "the run knows which project it belongs to": ("lib/ws.js", "setBusyProject"),
-    "a working project says so in the list": ("components/Sidebar.jsx", "s.busyProject === name"),
+    "a working project says so in the list": ("components/Sidebar.jsx", "busyProject === name"),
     "chat is a column beside the work": ("app/page.jsx", "<AgentChat />"),
     "chat is not a drawer": ("components/AgentChat.jsx", "<aside className=\"flex w-["),
     "select tool": ("components/PreviewPane.jsx", "attachPicker"),

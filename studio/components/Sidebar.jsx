@@ -7,23 +7,30 @@ import {
 } from 'lucide-react'
 import { useStore, KEYS } from '@/lib/store'
 import { api } from '@/lib/api'
-import { cloudModel, hasVision, connection } from '@/lib/models'
-import ModelPicker from './ModelPicker'
-import { Badge, Button, Input, SectionLabel, Seg, SegOpt, Tag, Tip } from './ui'
+import { Badge, Button, Input, SectionLabel, Tag, Tip } from './ui'
 import { cn } from '@/lib/utils'
 
 
 export default function Sidebar({
-  models: cat, projects, onOpen, onImport, onSettings, onZip, onResume, onDeleted,
+  projects, onOpen, onImport, onSettings, onZip, onResume, onDeleted,
 }) {
-  const s = useStore()
+  // One field at a time on purpose. Reading the whole store here subscribed
+  // the sidebar to every change in it, and during a build a log line arrives
+  // several times a second - so the project list, all thirty rows of it, was
+  // re-rendering on the arrival of text it does not show.
+  const project = useStore(z => z.project)
+  const status = useStore(z => z.status)
+  const statusText = useStore(z => z.statusText)
+  const theme = useStore(z => z.theme)
+  const busyProject = useStore(z => z.busyProject)
+  const persist = useStore(z => z.persist)
+  const addLog = useStore(z => z.addLog)
+  const setTheme = useStore(z => z.setTheme)
   // Collapsed, the sidebar keeps only what you would reopen it for: which
   // project is live, and whether anything is running.
   const [collapsed, setCollapsed] = useState(false)
-  const { models, think, images, project, status, statusText, theme } = s
   const folderRef = useRef(null)
   const [q, setQ] = useState('')
-  const [fooocus, setFooocus] = useState(null)
   const [confirming, setConfirming] = useState('')
   const [removing, setRemoving] = useState('')
 
@@ -31,10 +38,10 @@ export default function Sidebar({
     setRemoving(name)
     try {
       await api.deleteProject(name)
-      s.addLog('SUCCESS', `Deleted ${name}`)
+      addLog('SUCCESS', `Deleted ${name}`)
     } catch (e) {
       // Reported, not trusted.
-      s.addLog('WARN', `Delete of ${name} did not report back — ${e.message}. `
+      addLog('WARN', `Delete of ${name} did not report back — ${e.message}. `
                      + 'Checking whether it went.')
     }
       // Release a project folder that may no longer exist.
@@ -44,103 +51,19 @@ export default function Sidebar({
     setConfirming('')
   }
 
-  function pickModel(id) {
-    const next = {
-      ...models,
-      agent: id,
-      planner: id,
-      design: id,
-      builder: id,
-    }
-    useStore.setState({ models: next })
-    s.persist(KEYS.agent, id)
-    s.persist(KEYS.planner, id)
-    s.persist(KEYS.design, id)
-    s.persist(KEYS.builder, id)
-    api.saveSettings({ agent_model: id }).catch(() =>
-      s.addLog('WARN', 'Could not save the model setting — it will not stick.'))
-    if (cloudModel(cat, id) && !cat.cloudEnabled) {
-      s.addLog('WARN', 'Cloud model selected but Ollama is not signed in — run `ollama signin`.')
-    }
-  }
-
-  function toggle(key, storeKey) {
-    const next = !s[key]
-    useStore.setState({ [key]: next })
-    s.persist(storeKey, next ? '1' : '0')
-  }
-
-    // The backend also tracks the Images switch.
-  async function checkFooocus() {
-    setFooocus(f => ({ ...(f || {}), checking: true }))
-    try {
-      const r = await api.imageCheck()
-      setFooocus({ ...r, checking: false })
-      return r
-    } catch (e) {
-      setFooocus({ error: e.message, checking: false })
-      return null
-    }
-  }
-
+  // Whether pictures are drawn is the server's setting, and the only thing
+  // in the studio that reads it is the logo panel the home screen offers. It
+  // is followed here rather than switched here: the switch went when the
+  // sidebar stopped being a settings page.
   useEffect(() => {
     api.settings()
       .then(cfg => {
-        // Follow the server's image setting.
         if (!cfg || !('image_enabled' in cfg)) return
         useStore.setState({ images: !!cfg.image_enabled })
-        s.persist(KEYS.images, cfg.image_enabled ? '1' : '0')
-        if (cfg.image_enabled) checkFooocus()
+        persist(KEYS.images, cfg.image_enabled ? '1' : '0')
       })
       .catch(() => { })
-  }, [])
-
-  async function toggleImages() {
-    const next = !images
-    useStore.setState({ images: next })
-    s.persist(KEYS.images, next ? '1' : '0')
-    try {
-      await api.saveSettings({ image_enabled: next })
-    } catch {
-      s.addLog('WARN', 'Could not save the images setting — it will not stick.')
-    }
-    if (!next) return setFooocus(null)
-
-    const r = await checkFooocus()
-    if (r?.available) {
-      s.addLog('INFO', `Fooocus is answering at ${r.host} — pictures will be drawn.`)
-    } else if (r?.can_start) {
-      s.addLog('WARN', 'No Fooocus is answering. Press “start it” in the '
-                     + 'sidebar, or run it yourself.')
-    } else {
-      s.addLog('WARN', 'No Fooocus is answering and none was found on this '
-                     + 'machine — start it, or set its address in Settings.')
-    }
-  }
-
-  async function startFooocus() {
-    setFooocus(f => ({ ...(f || {}), checking: true }))
-    try {
-      const r = await api.imageStart()
-      s.addLog('INFO', `Starting Fooocus — ${r.launcher}. It takes a `
-                     + 'minute or two to load its model.')
-    } catch (e) {
-      s.addLog('WARN', `Could not start Fooocus — ${e.message}`)
-      return setFooocus(f => ({ ...(f || {}), checking: false }))
-    }
-        // Keep the chip aligned with the backend result.
-    for (let i = 0; i < 60; i++) {
-      await new Promise(r => setTimeout(r, 5000))
-      const r = await api.imageCheck().catch(() => null)
-      if (r?.available) {
-        setFooocus({ ...r, checking: false })
-        return s.addLog('INFO', `Fooocus is up at ${r.host}.`)
-      }
-    }
-    setFooocus(f => ({ ...(f || {}), checking: false }))
-    s.addLog('WARN', 'Fooocus did not come up within five minutes — check '
-                   + 'its window for what it is waiting on.')
-  }
+  }, [persist])
 
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase()
@@ -150,8 +73,6 @@ export default function Sidebar({
       String(p.name || '').toLowerCase().includes(needle))
   }, [projects, q])
 
-  const activeModel = models.builder || models.agent || models.planner || models.design || ''
-  const conn = connection(cat, activeModel)
   const dot = { live: 'bg-ok', busy: 'bg-warn', connecting: 'bg-muted2' }[status]
     || 'bg-bad'
 
@@ -210,7 +131,7 @@ export default function Sidebar({
         <span className="flex items-center gap-1">
           <Tip text="Toggle theme">
             <Button variant="outline" size="icon" className="size-[28px]"
-                    onClick={() => s.setTheme(theme === 'dark' ? 'light' : 'dark')}>
+                    onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
               <Moon className="hidden size-3.5 dark:block" />
               <Sun className="size-3.5 dark:hidden" />
             </Button>
@@ -258,7 +179,7 @@ export default function Sidebar({
           const busyHere = removing === name
           // A run keeps going while you look at another project, so the row
           // says which one is working rather than the header saying "busy".
-          const working = s.busyProject === name
+          const working = busyProject === name
           return (
             <div key={name}
                  className={cn('group grid w-full grid-cols-[26px_1fr_auto]',
@@ -366,14 +287,6 @@ function DeployTag({ deployed }) {
       <Tag tone={gone ? 'mute' : 'solid'}>{gone ? 'gone' : (where || 'deployed')}</Tag>
     </Tip>
   )
-}
-
-function fooocusTip(state, on) {
-  if (!on) return 'Generate pictures, and offer a logo before the build'
-  if (!state || state.checking) return 'Looking for Fooocus…'
-  if (state.available) return `Fooocus is answering at ${state.host}`
-  if (state.error) return `Could not ask the server — ${state.error}`
-  return 'No Fooocus is answering — pictures will be skipped'
 }
 
 const Foot = ({ icon: Icon, tip, ...rest }) => (

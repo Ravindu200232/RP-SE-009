@@ -14,7 +14,7 @@
  * the whole right-hand side.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ChevronDown, CircleAlert, CircleCheck, Clock, FileCode2, FlaskConical, Loader2,
   MessageSquare, MousePointerClick, Palette, Pencil, Search, Send, Sparkles,
@@ -211,7 +211,7 @@ export default function AgentChat() {
           {/* The last row is the one happening now, so it is the one that
               spins; the rows behind it have already happened. */}
           {turns.map((turn, i) => (
-            <Turn key={`${turn.at}-${i}`} turn={turn}
+            <Turn key={turn.id || `${turn.at}-${i}`} turn={turn}
                   live={busy && i === turns.length - 1} />
           ))}
           {busy && agentState === 'thinking' && <Thinking />}
@@ -489,7 +489,16 @@ function Queued({ item, onDrop }) {
   )
 }
 
-function Turn({ turn, live }) {
+/**
+ * One row of the feed.
+ *
+ * Memoised because the feed is rebuilt whenever a line arrives and the rows
+ * behind the newest one have not changed: a build writes several lines a
+ * second, and each of them was re-rendering the whole visible history to add
+ * one row to the end of it. The turns themselves are stable objects, so this
+ * compares by identity and almost always skips.
+ */
+const Turn = memo(function Turn({ turn, live }) {
   if (turn.role === 'user') {
     return (
       <div className="flex flex-col items-end gap-1.5">
@@ -547,7 +556,7 @@ function Turn({ turn, live }) {
       </div>
     </div>
   )
-}
+})
 
 function lastLine(turn) {
   if (!turn) return ''
