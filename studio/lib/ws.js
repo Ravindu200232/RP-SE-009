@@ -84,12 +84,26 @@ function wsUrl() {
  * connected a second late, never hears it — and the run then waits out its
  * whole timeout on a question nobody was shown.
  */
+/**
+ * Put a decision where it is answered.
+ *
+ * A drawing goes to the preview, where it can be walked and marked up;
+ * everything else is a dialog. Both the announcement and the recovery below go
+ * through here, because when they disagreed a drawing recovered after a reload
+ * went to the dialog that no longer renders one, and disappeared.
+ */
+function route(question) {
+  const store = useStore.getState()
+  if (question?.kind === 'prototype') store.setDrawing(question)
+  else store.setApproval(question)
+}
+
 async function recoverPendingDecision() {
   try {
     const { pending } = await api.decisions()
     const question = (pending || [])[0]
     const store = useStore.getState()
-    if (question && !store.approval) store.setApproval(question)
+    if (question && !store.approval && !store.drawing) route(question)
   } catch {
     // An older backend has no such endpoint; the announcement is all there is.
   }
@@ -374,12 +388,7 @@ function handle(m) {
       break
     case 'memory':       s.setRunStats(m); break
     case 'agent_state':  s.setAgentState(m.state || ''); break
-    case 'approval':
-      // A drawing goes to the preview, where it can be looked at properly.
-      // Everything else is a dialog.
-      if (m.kind === 'prototype') s.setDrawing(m)
-      else s.setApproval(m)
-      break
+    case 'approval':  route(m); break
     // Names only — the values went straight to the project's .env.local.
     case 'setup':
       s.addLog('INFO', m.saved?.length
