@@ -52,25 +52,84 @@ const MUTED = [
   /fast refresh|webpack|destination stream closed/i,
 ]
 
-function classify(row) {
-  const line = String(row.text || '').replace(/\s+/g, ' ').trim()
-  if (!line) return null
-  if (MUTED.some(pattern => pattern.test(line))) return null
+// Every line a dev server prints is forwarded as a log row, so starting one
+// filled the conversation with a dozen turns about its own banner, its port,
+// its environment file and each recompile — none of which anybody asked for.
+// It is a log; it belongs in the log. What survives is the line that says the
+// preview is up, and anything the server itself called a problem.
+const SERVER_LINE = /^\[[^\]]{1,24}\]\s*/
+const SERVER_READY = /\bready in\b|- local:|listening on/i
 
-  if (row.level === 'ERROR') {
-    return { kind: 'warn', title: line.replace(/^[⚠✗\s]+/, ''), detail: '' }
+/**
+ * The badge a backend line wears, turned into the row's own icon.
+ *
+ * The engine writes its log with a symbol in front of every line - a hammer
+ * for a build, a bin for a delete, a warning triangle. In a terminal that is a
+ * column you read down. In the conversation it was a second icon sitting in
+ * the text beside the row's real one, in a font that renders it at a different
+ * size, so a tidy feed read as a pile of symbols.
+ *
+ * The symbol was never decoration though: it says what kind of thing happened,
+ * which is exactly what decides the icon. So it is read, then removed.
+ */
+const BADGES = [
+  [/[🏗🧱]/u, 'setup'], [/[📂📁]/u, 'setup'], [/[📄📎]/u, 'read'],
+  [/[✏🖊🖉]/u, 'write'], [/[🗑🚮]/u, 'write'], [/[🖼🎨]/u, 'design'],
+  [/[🧪🔬]/u, 'test'], [/[⏹⏸🛑]/u, 'note'], [/[⚠❗]/u, 'warn'],
+  [/[✅✔]/u, 'done'], [/[❌✗✖]/u, 'warn'],
+]
+
+// Anything at the start of a line that is not a letter, a digit or an opening
+// bracket: emoji, arrows, bullets, variation selectors and the spaces between
+// them. Deliberately not a list of known symbols - the next release of the
+// engine will use one nobody listed here.
+//
+// A dot is only decoration when nothing follows it, or the warning about
+// `.env.local` loses its first character and becomes a sentence about a file
+// that does not exist.
+const LEADING_SYMBOLS = /^(?:[^\p{L}\p{N}([{"'#/$.]|\.(?![\p{L}\p{N}]))+/u
+
+function badgeOf(line) {
+  const head = line.slice(0, 6)
+  for (const [pattern, kind] of BADGES) {
+    if (pattern.test(head)) return kind
   }
-  if (row.level === 'WARN') {
-    return { kind: 'warn', title: line.replace(/^[⚠\s]+/, '').slice(0, 200), detail: '' }
+  return ''
+}
+
+/** The sentence, without whatever was drawn in front of it. */
+export function plainly(text) {
+  return String(text || '')
+    .replace(/\s+/g, ' ')
+    .replace(LEADING_SYMBOLS, '')
+    .trim()
+}
+
+function classify(row) {
+  const raw = String(row.text || '').replace(/\s+/g, ' ').trim()
+  if (!raw) return null
+  if (MUTED.some(pattern => pattern.test(raw))) return null
+
+  const badge = badgeOf(raw)
+  const line = plainly(raw)
+  if (!line) return null
+
+  if (row.level === 'ERROR' || row.level === 'WARN') {
+    return { kind: 'warn', title: line.slice(0, 200), detail: '' }
+  }
+  if (SERVER_LINE.test(line)) {
+    if (!SERVER_READY.test(line)) return null
+    return { kind: 'run', title: plainly(line.replace(SERVER_LINE, '')), detail: '' }
   }
   for (const [pattern, kind, title] of KINDS) {
     const match = pattern.exec(line)
     if (match) return { kind, title: title(match), detail: '' }
   }
-  if (row.level === 'SUCCESS') return { kind: 'done', title: line.replace(/^[✅\s]+/, ''), detail: '' }
+  if (row.level === 'SUCCESS') return { kind: 'done', title: line, detail: '' }
   // Not recognised. Show it rather than drop it — the line nobody wrote a rule
-  // for is usually the one worth reading.
-  return { kind: 'note', title: line.slice(0, 220), detail: '' }
+  // for is usually the one worth reading — under whatever the engine drew in
+  // front of it, which is the best hint available about what it was.
+  return { kind: badge || 'note', title: line.slice(0, 220), detail: '' }
 }
 
 export function chatTurns(logs = [], chat = []) {

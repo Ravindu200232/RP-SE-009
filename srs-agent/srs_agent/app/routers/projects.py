@@ -9,7 +9,8 @@ from typing import Optional
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from starlette.concurrency import run_in_threadpool
 
-from ..extraction import read_image, read_pdf, transcribe_audio
+from ..extraction import (DOCUMENT_EXT, read_archive, read_document, read_image, read_pdf,
+                          read_text, transcribe_audio)
 from ..models import repositories as repo
 from ..schemas.project import CreateProjectRequest, UploadRequest
 from ..services import orchestrator, storage
@@ -81,8 +82,14 @@ async def _ingest(project_id: str, mode: str, data: bytes, fname: str, ctype: st
         res = await read_image(data, fname); resolved = "image"
     elif mode == "voice" or ctype.startswith("audio/") or lower.endswith((".webm", ".wav", ".mp3", ".m4a", ".ogg", ".flac")):
         res = await run_in_threadpool(transcribe_audio, data, fname); resolved = "voice"
+    elif lower.endswith(DOCUMENT_EXT):
+        # The format most requirements actually arrive in. Decoded as text it
+        # was a wall of zip bytes that read as if it said something.
+        res = await run_in_threadpool(read_document, data, fname); resolved = "document"
+    elif lower.endswith(".zip") or "zip" in ctype:
+        res = await run_in_threadpool(read_archive, data, fname); resolved = "archive"
     else:
-        res = {"text": data.decode("utf-8", "ignore"), "engine": "raw"}; resolved = "text"
+        res = await run_in_threadpool(read_text, data, fname); resolved = "text"
 
     meta = {k: v for k, v in res.items() if k != "text"}
     if public_url:

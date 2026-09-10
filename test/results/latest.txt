@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-10T05:18:39+00:00
+Run at (UTC): 2026-09-10T05:48:34+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 370
+Unit tests: 394
 Integration tests: 24
-Total tests run: 394
+Total tests run: 418
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 20.301s
+Duration: 20.549s
 
 Detailed results
 ----------------
@@ -308,6 +308,19 @@ test_live_result_saved_before_done_with_full_e2e_trace_and_retry_history (test.u
 test_recovers_file_outcomes_sources_routes_and_screenshots (test.unit.qa.test_reporting_artifacts.ReportingArtifactsTests.test_recovers_file_outcomes_sources_routes_and_screenshots) ... ok
 test_retry_does_not_reuse_previous_assertion_report (test.unit.qa.test_reporting_artifacts.ReportingArtifactsTests.test_retry_does_not_reuse_previous_assertion_report) ... ok
 test_screenshot_access_stays_in_project_image_folders (test.unit.qa.test_reporting_artifacts.ReportingArtifactsTests.test_screenshot_access_stays_in_project_image_folders) ... ok
+test_a_journey_nobody_reran_is_still_known (test.unit.qa.test_result_carry.CarryJourneyTests.test_a_journey_nobody_reran_is_still_known) ... ok
+test_a_journey_that_ran_again_is_not_listed_twice (test.unit.qa.test_result_carry.CarryJourneyTests.test_a_journey_that_ran_again_is_not_listed_twice) ... ok
+test_a_deleted_test_file_stops_counting (test.unit.qa.test_result_carry.CarryUnitTests.test_a_deleted_test_file_stops_counting) ... ok
+test_a_project_with_nothing_saved_reports_only_this_run (test.unit.qa.test_result_carry.CarryUnitTests.test_a_project_with_nothing_saved_reports_only_this_run) ... ok
+test_a_run_that_tested_one_file_keeps_the_rest_of_the_suite (test.unit.qa.test_result_carry.CarryUnitTests.test_a_run_that_tested_one_file_keeps_the_rest_of_the_suite) ... ok
+test_a_run_with_no_unit_tests_leaves_the_suite_as_it_was (test.unit.qa.test_result_carry.CarryUnitTests.test_a_run_with_no_unit_tests_leaves_the_suite_as_it_was) ... ok
+test_the_new_result_for_a_file_replaces_the_old_one (test.unit.qa.test_result_carry.CarryUnitTests.test_the_new_result_for_a_file_replaces_the_old_one)
+A test that has started failing is never answered with its last pass. ... ok
+test_totals_only_printed_never_erase_a_detailed_suite (test.unit.qa.test_result_carry.CarryUnitTests.test_totals_only_printed_never_erase_a_detailed_suite)
+"Tests 3 passed" says less than per-case rows, so it does not win. ... ok
+test_a_fresh_project_carries_nothing_it_never_had (test.unit.qa.test_result_carry.ReportCarryTests.test_a_fresh_project_carries_nothing_it_never_had) ... ok
+test_an_edit_adds_to_the_suite_rather_than_replacing_it (test.unit.qa.test_result_carry.ReportCarryTests.test_an_edit_adds_to_the_suite_rather_than_replacing_it) ... ok
+test_the_stages_and_the_scan_a_project_already_had_survive (test.unit.qa.test_result_carry.ReportCarryTests.test_the_stages_and_the_scan_a_project_already_had_survive) ... ok
 test_a_manifest_means_a_build_happened (test.unit.services.test_build_attachments.SpecificationOnlyProjectTests.test_a_manifest_means_a_build_happened) ... ok
 test_a_project_that_never_had_a_specification_is_not_one (test.unit.services.test_build_attachments.SpecificationOnlyProjectTests.test_a_project_that_never_had_a_specification_is_not_one) ... ok
 test_a_single_source_file_means_a_build_happened (test.unit.services.test_build_attachments.SpecificationOnlyProjectTests.test_a_single_source_file_means_a_build_happened) ... ok
@@ -423,6 +436,19 @@ test_reference_field_preserves_object_id_semantics (test.unit.srs.test_builder_h
 test_requirement_language_maps_to_the_expected_capability_kind (test.unit.srs.test_builder_handoff.BuilderHandoffTests.test_requirement_language_maps_to_the_expected_capability_kind) ... ok
 test_route_parameters_are_converted_to_next_dynamic_segments (test.unit.srs.test_builder_handoff.BuilderHandoffTests.test_route_parameters_are_converted_to_next_dynamic_segments) ... ok
 test_srs_types_are_normalized_for_builder_storage (test.unit.srs.test_builder_handoff.BuilderHandoffTests.test_srs_types_are_normalized_for_builder_storage) ... ok
+test_a_broken_archive_is_an_error_not_a_crash (test.unit.srs.test_document_extraction.ArchiveTests.test_a_broken_archive_is_an_error_not_a_crash) ... ok
+test_a_picture_is_only_promised_when_something_kept_it (test.unit.srs.test_document_extraction.ArchiveTests.test_a_picture_is_only_promised_when_something_kept_it) ... ok
+test_every_entry_is_named (test.unit.srs.test_document_extraction.ArchiveTests.test_every_entry_is_named) ... ok
+test_the_text_inside_is_quoted (test.unit.srs.test_document_extraction.ArchiveTests.test_the_text_inside_is_quoted) ... ok
+test_a_file_that_is_not_really_a_document_is_an_error_not_a_crash (test.unit.srs.test_document_extraction.DocumentTests.test_a_file_that_is_not_really_a_document_is_an_error_not_a_crash) ... ok
+test_a_spreadsheet_gives_up_its_labels (test.unit.srs.test_document_extraction.DocumentTests.test_a_spreadsheet_gives_up_its_labels) ... ok
+test_a_word_file_reads_as_its_words (test.unit.srs.test_document_extraction.DocumentTests.test_a_word_file_reads_as_its_words) ... ok
+test_escaped_characters_come_back_as_themselves (test.unit.srs.test_document_extraction.DocumentTests.test_escaped_characters_come_back_as_themselves) ... ok
+test_slides_are_read_in_the_order_they_are_shown (test.unit.srs.test_document_extraction.DocumentTests.test_slides_are_read_in_the_order_they_are_shown) ... ok
+test_the_old_binary_word_format_says_what_to_do_instead (test.unit.srs.test_document_extraction.DocumentTests.test_the_old_binary_word_format_says_what_to_do_instead) ... ok
+test_a_binary_says_so_instead_of_arriving_as_noise (test.unit.srs.test_document_extraction.PlainTextTests.test_a_binary_says_so_instead_of_arriving_as_noise) ... ok
+test_almost_utf8_is_kept_and_the_loss_is_admitted (test.unit.srs.test_document_extraction.PlainTextTests.test_almost_utf8_is_kept_and_the_loss_is_admitted) ... ok
+test_text_is_read_as_text (test.unit.srs.test_document_extraction.PlainTextTests.test_text_is_read_as_text) ... ok
 test_braces_inside_strings_do_not_break_balanced_object_detection (test.unit.srs.test_json_recovery.SRSJsonRecoveryTests.test_braces_inside_strings_do_not_break_balanced_object_detection) ... ok
 test_empty_or_non_object_responses_are_rejected (test.unit.srs.test_json_recovery.SRSJsonRecoveryTests.test_empty_or_non_object_responses_are_rejected) ... ok
 test_json_fence_is_removed_before_validation (test.unit.srs.test_json_recovery.SRSJsonRecoveryTests.test_json_fence_is_removed_before_validation) ... ok
@@ -458,6 +484,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 394 tests in 20.301s
+Ran 418 tests in 20.549s
 
 OK

@@ -13,6 +13,12 @@ required = {
     "what you type is what is sent": ("components/AgentChat.jsx", "Say it, and it goes"),
     "chat turns from the run": ("lib/chat.js", "export function chatTurns"),
     "chat answers a paused question": ("components/AgentChat.jsx", "answerQuestion(typed)"),
+    "the box stays open while the agent works": ("components/AgentChat.jsx", "queueUp(payload"),
+    "what was typed during a run waits in the store": ("lib/store.js", "takeQueued:"),
+    "and goes when the run ends": ("components/AgentChat.jsx", "takeQueued(project)"),
+    "waiting messages are visible and droppable": ("components/AgentChat.jsx", "function Queued"),
+    "a log line is read without its badge": ("lib/chat.js", "export function plainly"),
+    "dev-server chatter is not conversation": ("lib/chat.js", "SERVER_READY"),
     "agent turns in the store": ("lib/store.js", "pushChat:"),
     "run context in the store": ("lib/store.js", "setRunStats:"),
     "status line at the foot of the chat": ("components/AgentChat.jsx", "function StatusLine"),
@@ -82,6 +88,16 @@ required = {
         ("../server_modules/services/shots.py", "class _Warm"),
     "test evidence view": ("components/testing/TestingResult.jsx", "label: 'Evidence'"),
     "verification ledger rendered": ("components/testing/Evidence.jsx", "qa?.report?.evidence"),
+    "a run adds to the suite instead of replacing it":
+        ("../qa-agent/qa_agent/report.py", "def carry_unit"),
+    "journeys nobody reran are still known":
+        ("../qa-agent/qa_agent/report.py", "def carry_journeys"),
+    "and the pane says how much was carried":
+        ("components/testing/UnitTests.jsx", "v.carriedForward"),
+    "documents and archives reach the model":
+        ("../srs-agent/srs_agent/app/extraction/documents.py", "def read_document"),
+    "the builder reads them too": ("../server_modules/builder/media.py", "DOCUMENT_EXT"),
+    "and they can be chosen in the first place": ("lib/api.js", ".docx"),
     "E2E failures retain browser diagnostics":
         ("components/testing/EndToEnd.jsx", "Browser console & network evidence"),
     "sequential E2E overlay": ("components/LiveE2EOverlay.jsx", "Live browser test"),

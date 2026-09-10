@@ -63,6 +63,15 @@ export function useEditAttachments() {
            busy: items.some(i => i.state === 'reading') }
 }
 
+/** What each kind of attachment is, said once, in the prompt. */
+const KIND_SAID = {
+  audio: 'a recording, transcribed',
+  pdf: 'a document',
+  document: 'a document',
+  archive: 'an archive, listed and read',
+  text: 'a file',
+}
+
 /** The text appended to the instruction. */
 function blockFor(items) {
   const usable = (items || []).filter(i => i.read || i.url)
@@ -75,8 +84,7 @@ function blockFor(items) {
         + `an <img>; it exists on disk, so do not invent another and do not `
         + `leave a placeholder. What it shows:\n${i.read || '(could not be read)'}`
     }
-    const what = i.kind === 'audio' ? 'a recording, transcribed'
-      : i.kind === 'pdf' ? 'a document' : 'a file'
+    const what = KIND_SAID[i.kind] || 'a file'
     return `### ${i.name} — ${what}\n${i.read}`
   })
 

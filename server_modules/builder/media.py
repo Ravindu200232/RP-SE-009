@@ -192,6 +192,30 @@ IMAGE_EXT = (".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp")
 AUDIO_EXT = (".wav", ".mp3", ".m4a", ".ogg", ".webm", ".flac")
 ATTACH_TEXT_CAP = 6000
 
+# Documents and archives are read by the same package that reads PDFs, so
+# there is one implementation of each format and the specification agent gets
+# it too.
+DOCUMENT_EXT = (".docx", ".pptx", ".xlsx", ".rtf", ".doc")
+
+
+def _keep_picture(proj_dir: Path | None):
+    """Hand an archive somewhere to put the pictures it is carrying.
+
+    A picture the build is told about has to exist at the path it is given, so
+    this only exists once there is a project to put one in.
+    """
+    if proj_dir is None:
+        return None
+
+    def keep(name: str, blob: bytes) -> str:
+        stem = _safe_stem(name, "picture")
+        out = proj_dir / "public" / "generated" / f"{stem}.png"
+        if save_uploaded_image(base64.b64encode(blob).decode("ascii"), out):
+            return ""
+        return f"/generated/{stem}.png"
+
+    return keep
+
 
 def read_attachment(filename: str, data_b64: str, proj_dir: Path = None) -> dict:
     """Convert one image, PDF, audio, or text attachment into prompt context."""
@@ -227,9 +251,18 @@ def read_attachment(filename: str, data_b64: str, proj_dir: Path = None) -> dict
             out["kind"] = "audio"
             from srs_agent.app.extraction import transcribe_audio
             res = transcribe_audio(raw, name)
+        elif lower.endswith(DOCUMENT_EXT):
+            out["kind"] = "document"
+            from srs_agent.app.extraction import read_document
+            res = read_document(raw, name)
+        elif lower.endswith(".zip"):
+            out["kind"] = "archive"
+            from srs_agent.app.extraction import read_archive
+            res = read_archive(raw, name, save_image=_keep_picture(proj_dir))
         else:
             out["kind"] = "text"
-            res = {"text": raw.decode("utf-8", "ignore")}
+            from srs_agent.app.extraction import read_text
+            res = read_text(raw, name)
 
         out["text"] = (res.get("text") or "").strip()
         out["note"] = res.get("warning") or res.get("error") or ""
@@ -325,7 +358,9 @@ def read_staged_attachments(token: str, proj_dir: Path) -> str:
                     f"the request calls for it; do not invent another path and do "
                     f"not leave a placeholder.")
         else:
-            what = {"pdf": "a document", "audio": "a recording, transcribed",
+            what = {"pdf": "a document", "document": "a document",
+                    "audio": "a recording, transcribed",
+                    "archive": "an archive, listed and read",
                     "text": "a file"}.get(got.get("kind"), "a file")
             said = f"### {fp.name} - {what}"
         if purpose:

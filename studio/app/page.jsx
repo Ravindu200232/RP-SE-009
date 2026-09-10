@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Eye, Code2, FileText, FlaskConical, Plus, Rocket } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { answerQuestion, connect, send } from '@/lib/ws'
@@ -100,6 +100,9 @@ export default function Studio() {
   const [cat, setCat] = useState(() => catalogue(null))
   const [screen, setScreen] = useState('home')
   const [settingsOpen, setSettingsOpen] = useState(false)
+  // The project the newest click asked for. An answer that arrives for any
+  // other one is about a project nobody is looking at.
+  const opening = useRef('')
 
   // Returns the list as well as storing it: a project that has only just been
   // created has to be found before the state holding it has re-rendered.
@@ -199,8 +202,13 @@ export default function Studio() {
 
   async function openProject(name, row = null) {
     const st = useStore.getState()
+    // Clicking a project twice, or clicking the one already opening, used to
+    // start a second open: each stops the dev server the last one started, so
+    // two clicks took longer than one and could end with nothing serving.
+    if (!name || (st.opening && st.project === name)) return
+    opening.current = name
+
     st.reset(name)
-    useStore.setState({ project: name })
     setScreen('workspace')
 
     // A specification that was kept rather than built has one thing to show,
@@ -208,11 +216,13 @@ export default function Studio() {
     const spec = row?.spec_only ?? projects.find(p => p.name === name)?.spec_only
     if (spec) setView('srs')
 
-    // Busy from the click, not from the first file.
+    // Busy from the click, not from the first file. The engine logs its own
+    // "Opening x (nextjs-mongo)" a moment later and says more than this would,
+    // so the progress line carries the gap rather than a second row saying the
+    // same thing with less in it.
     st.setBusy(true)
     st.setOpening(true)
     st.setProgress(`Opening ${name}…`, 0)
-    st.addLog('INFO', `Opening ${name}`)
 
     // The previous project's console errors are not this one's evidence.
     forgetConsole()
@@ -244,12 +254,18 @@ export default function Studio() {
 
       const raw = await retry(() => api.files(name), 4, 700)
 
+      // Opening a second project while the first was still reading dropped
+      // one project's files into the other's tree, because nothing here
+      // checked that the answer still belonged to the project on screen.
+      if (opening.current !== name || useStore.getState().project !== name) return
+
       const out = {}
       for (const [path, v] of Object.entries(raw || {})) {
         out[path] = typeof v === 'string' ? v : (v?.content ?? '')
       }
       useStore.getState().setFiles(out)
     } catch (e) {
+      if (opening.current !== name) return
       useStore.getState().addLog('WARN', `could not open ${name}: ${e.message}`)
       useStore.getState().setBusy(false)
     }

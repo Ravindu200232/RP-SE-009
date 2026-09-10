@@ -92,16 +92,120 @@ def _runner_counts(output: str) -> dict | None:
             "numTotalTestSuites": files}
 
 
-def _report_size(row: dict) -> tuple:
-    """How much of the project one unit run actually covered.
+def _size(report: dict | None) -> tuple:
+    """How much of the project one unit report actually covers.
 
     A run that wrote a machine-readable report beats one that only printed
     totals, because only the first carries the individual cases; after that,
     more tests is a wider run.
     """
-    report = row.get("report") or _runner_counts(row.get("output", "")) or {}
-    detailed = bool(report.get("testResults"))
-    return (detailed, int(report.get("numTotalTests") or 0))
+    report = report or {}
+    return (bool(report.get("testResults")), int(report.get("numTotalTests") or 0))
+
+
+def _report_size(row: dict) -> tuple:
+    return _size(row.get("report") or _runner_counts(row.get("output", "")))
+
+
+def _unit_file(row: dict) -> str:
+    """One test file, however whoever wrote the row spelled its path."""
+    return str(row.get("name") or row.get("testFilePath") or "").replace("\\", "/").lower()
+
+
+def _unit_totals(rows: list) -> dict:
+    """Vitest's summary fields, recomputed from the rows they describe."""
+    from .unit import counts_of
+    counts = counts_of({"testResults": rows})
+    failed_files = sum(1 for row in rows if row.get("status") == "failed")
+    return {
+        "numTotalTests": counts["total"], "numPassedTests": counts["passed"],
+        "numFailedTests": counts["failed"], "numPendingTests": counts["skipped"],
+        "numTodoTests": 0,
+        "numTotalTestSuites": len(rows), "numFailedTestSuites": failed_files,
+        "numPassedTestSuites": len(rows) - failed_files,
+        "success": counts["failed"] == 0 and failed_files == 0,
+    }
+
+
+def _still_on_disk(project_dir: Path | str, name: str) -> bool:
+    """Is the file this result describes still part of the project?
+
+    A test that was deleted stops being evidence of anything. Where the path
+    cannot be resolved at all the row is kept: an unreadable name is not proof
+    the file is gone.
+    """
+    if not name:
+        return False
+    path = Path(name)
+    try:
+        if not path.is_absolute():
+            path = Path(project_dir) / name
+        return path.exists()
+    except OSError:
+        return True
+
+
+def carry_unit(saved: dict | None, current: dict | None,
+               project_dir: Path | str | None = None) -> dict | None:
+    """A suite is everything proved so far, not whatever this run re-ran.
+
+    Adding one page runs that page's tests, and the report written afterwards
+    became the project's whole test status: a hundred passing tests turned into
+    three, and every earlier result read as work undone.
+
+    A file this run did not touch keeps the result it last had. A file it did
+    run is replaced by what just happened, because that is now what is true
+    about it - a test that has started failing must never be answered with the
+    last time it passed.
+    """
+    old = (saved or {}).get("testResults")
+    new = (current or {}).get("testResults")
+    if not isinstance(old, list) or not old:
+        return current or saved or None
+    if not isinstance(new, list) or not new:
+        # Nothing at file granularity to merge into; keep whichever says more.
+        return max(current or {}, saved, key=_size) or None
+
+    ran = {_unit_file(row) for row in new if _unit_file(row)}
+    rows = [row for row in old
+            if _unit_file(row) and _unit_file(row) not in ran
+            and (project_dir is None
+                 or _still_on_disk(project_dir, row.get("name") or row.get("testFilePath")))]
+    kept = len(rows)
+    rows += new
+
+    merged = {key: value for key, value in current.items() if key != "testResults"}
+    merged["testResults"] = rows
+    merged.update(_unit_totals(rows))
+    if kept:
+        merged["carriedForward"] = kept
+    return merged
+
+
+def carry_journeys(saved: dict | None, current: list) -> list:
+    """A journey nobody reran is still the last thing known about it."""
+    from .e2e import Journey
+    flows = (((saved or {}).get("report") or {}).get("e2e") or {}).get("flows") or []
+    ran = {str(journey.title).strip().lower() for journey in current}
+    kept = []
+    for flow in flows:
+        title = str(flow.get("title") or "").strip()
+        if not title or title.lower() in ran:
+            continue
+        kept.append(Journey(title=title, role=flow.get("role") or "user",
+                            flow=flow.get("flow") or "",
+                            stages=list(flow.get("stages") or []),
+                            blocked_upstream=bool(flow.get("blocked_upstream"))))
+    return kept + list(current)
+
+
+def _saved(project_dir: Path | str) -> dict:
+    """The report this project already had, exactly as it was written."""
+    try:
+        data = json.loads(qa_path(project_dir).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
 def _widest_unit_run(rows: list) -> dict:
@@ -128,9 +232,15 @@ def from_evidence(*, project: str, project_dir: Path, evidence: dict,
     unit_rows = sorted((row for row in suites if row.get("kind") == "unit"),
                        key=lambda row: row.get("sequence", 0))
     latest = _widest_unit_run(unit_rows)
-    unit_report = latest.get("report") or _runner_counts(latest.get("output", ""))
-    unit = UnitResult(ran=bool(unit_rows), report=unit_report,
-                      coverage=latest.get("coverage"))
+    # What this run proved, over what the project had already proved. One run
+    # is not the project's test status; every run so far is.
+    saved = _saved(project_dir)
+    unit_report = carry_unit(saved.get("vitest"),
+                             latest.get("report") or _runner_counts(latest.get("output", "")),
+                             project_dir)
+    unit = UnitResult(ran=bool(unit_rows) or bool(unit_report), report=unit_report,
+                      coverage=latest.get("coverage")
+                              or ((saved.get("report") or {}).get("unit") or {}).get("coverage"))
     unit.unresolved = [{"case": row.get("suite", "unit"),
                         "message": row.get("reason") or row.get("output", ""),
                         "diagnosis": row.get("status", "unknown")}
@@ -139,14 +249,24 @@ def from_evidence(*, project: str, project_dir: Path, evidence: dict,
                          "message": row.get("findings", "Visual review failed")}
                         for row in evidence.get("visuals", []) if row.get("status") == "failed"]
     unit.unresolved += failures_of(unit_report)
-    e2e = E2EResult(journeys=journeys_from_evidence({"suites": [row for row in suites if row.get("status") != "running"]}))
+    e2e = E2EResult(journeys=carry_journeys(
+        saved, journeys_from_evidence({"suites": [row for row in suites if row.get("status") != "running"]})))
     e2e.failures = [{"case": row.get("suite"), "message": row.get("reason") or row.get("output", "")}
                     for row in suites if row.get("kind") == "e2e" and row.get("status") == "failed"]
     e2e.ran = bool(e2e.journeys)
     runtime = [row.get("reason") or row.get("output", "") for row in suites
                if row.get("kind") == "runtime" and row.get("status") == "failed"]
-    stages = tuple(kind for kind in ("unit", "e2e", "runtime")
-                   if any(row.get("kind") == kind and row.get("status") in ("passed", "failed") for row in suites))
+    if security is None:
+        # A scan the project has already had is not undone by a run that did
+        # not repeat it.
+        security = ((saved.get("report") or {}).get("security")) or None
+    # What this run proved, plus what earlier runs already had. A stage the
+    # project has been through is real evidence even when today's edit did not
+    # repeat it.
+    proved = {row.get("kind") for row in suites
+              if row.get("status") in ("passed", "failed")}
+    proved |= set(saved.get("stages") or [])
+    stages = tuple(kind for kind in ("unit", "e2e", "runtime") if kind in proved)
     if security is not None:
         stages += ("security",)
     data = assemble(project=project, project_dir=project_dir, unit=unit, e2e=e2e,

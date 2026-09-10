@@ -16,7 +16,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  ChevronDown, CircleAlert, CircleCheck, FileCode2, FlaskConical, Loader2,
+  ChevronDown, CircleAlert, CircleCheck, Clock, FileCode2, FlaskConical, Loader2,
   MessageSquare, MousePointerClick, Palette, Pencil, Search, Send, Sparkles,
   Square, Terminal, Wrench, X,
 } from 'lucide-react'
@@ -64,6 +64,9 @@ export default function AgentChat() {
   const box = useRef(null)
 
   const turns = useMemo(() => chatTurns(logs, chat), [logs, chat])
+  const waiting = useStore(s => s.queue)
+  const queued = useMemo(() => waiting.filter(item => item.project === project),
+                         [waiting, project])
 
   useEffect(() => {
     if (busy) setOpen(true)     // a run is the thing you watch
@@ -81,9 +84,17 @@ export default function AgentChat() {
     if (open) end.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
   }, [open, turns.length])
 
+  // The moment a run ends, the next thing they typed goes. Firing sets the
+  // agent working again, which brings this back for the one after it.
+  useEffect(() => {
+    if (busy || !project) return
+    const next = useStore.getState().takeQueued(project)
+    if (next) fire(next.payload, next.body, next.shown, next.shots)
+  }, [busy, project])
+
   async function submit() {
     const typed = text.trim()
-    if (!typed || !project || busy) return
+    if (!typed || !project || reading) return
 
     // A paused scope question is answered by the next thing they type.
     if (question && answerQuestion(typed)) {
@@ -117,8 +128,21 @@ export default function AgentChat() {
         .map(s => ({ kind: s.kind, image: s.shot, label: s.label }))
     }
 
-    fire(payload, full, typed, selection.filter(s => s.shot).map(s => s.shot))
+    const shots = selection.filter(s => s.shot).map(s => s.shot)
+    if (busy) queueUp(payload, full, typed, shots)
+    else fire(payload, full, typed, shots)
     setReading(false)
+  }
+
+  /** Hold it until the run in front of it is done. */
+  function queueUp(payload, body, shown, shots) {
+    useStore.getState().enqueue({ project, payload, body, shown, shots })
+    // The console evidence in the payload has been taken; what arrives after
+    // this belongs to whatever is said next.
+    forgetConsole()
+    attach.reset()
+    clearSelection()
+    setText('')
   }
 
   /**
@@ -191,7 +215,11 @@ export default function AgentChat() {
                   live={busy && i === turns.length - 1} />
           ))}
           {busy && agentState === 'thinking' && <Thinking />}
-          {!turns.length && (
+          {queued.map(item => (
+            <Queued key={item.id} item={item}
+                    onDrop={() => useStore.getState().dropQueued(item.id)} />
+          ))}
+          {!turns.length && !queued.length && (
             <p className="py-10 text-center text-[11.5px] text-muted">
               {project ? 'Continue this project with your next request.'
                        : 'Open a project to talk to the agent.'}
@@ -208,10 +236,10 @@ export default function AgentChat() {
                   ref={box}
                   aria-label="Continue this project"
                   value={text} rows={1}
-                  disabled={!project || busy || reading}
+                  disabled={!project || reading}
                   placeholder={question
                     ? 'Answer the question above…'
-                    : busy ? 'The agent is working — this opens again when it finishes'
+                    : busy ? 'Say what is next — it goes when this finishes'
                     : selection.length
                       ? 'Say what should change about it…'
                     : project ? 'What would you like to do next?'
@@ -222,14 +250,14 @@ export default function AgentChat() {
                   }}
                   className="max-h-[110px] min-h-[38px] flex-1 resize-y rounded-xl border border-line bg-white/70 px-3 py-2 text-[12.5px] leading-relaxed outline-none transition-colors focus:border-accent disabled:opacity-45 dark:bg-white/5" />
                 <button onClick={submit}
-                        disabled={!project || busy || reading || !text.trim()}
-                        title="Send (Enter)"
+                        disabled={!project || reading || !text.trim()}
+                        title={busy ? 'Queue this (Enter)' : 'Send (Enter)'}
                         className="grid size-[38px] shrink-0 place-items-center rounded-xl bg-accent text-white shadow-sm transition-opacity disabled:opacity-35">
                   {reading ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
                 </button>
               </div>
               {project && (
-                <EditAttach attach={attach} disabled={busy || reading} className="mt-1.5" />
+                <EditAttach attach={attach} disabled={reading} className="mt-1.5" />
               )}
       </footer>
 
@@ -439,6 +467,23 @@ function Thinking() {
                 className="size-1 animate-bounce rounded-full bg-accent/60"
                 style={{ animationDelay: `${i * 140}ms`, animationDuration: '900ms' }} />
         ))}
+      </span>
+    </div>
+  )
+}
+
+/** Something said while the agent was busy, waiting its turn. */
+function Queued({ item, onDrop }) {
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <div className="max-w-[88%] rounded-2xl rounded-br-md border border-dashed border-accent/45 bg-accent/[.05] px-3 py-2 text-[12.5px] leading-relaxed text-ink">
+        {item.shown}
+      </div>
+      <span className="flex items-center gap-2 pr-1 text-[10px] text-muted2">
+        <Clock className="size-2.5" /> waiting for the current run
+        <button onClick={onDrop} className="text-muted2 underline-offset-2 hover:text-ink hover:underline">
+          don’t send
+        </button>
       </span>
     </div>
   )

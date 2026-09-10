@@ -8,7 +8,9 @@ AgentForge Server  —  HTTP :7824  |  WebSocket :7825
 """
 import atexit
 import base64
+import html
 import signal
+import zipfile
 import sys, json, asyncio, logging, threading, time, re, socket, subprocess, os, textwrap, urllib3, uuid, io
 urllib3.disable_warnings()
 

@@ -7,7 +7,8 @@ import { api, uploadMode } from './api'
 
 let seq = 0
 
-const KIND = { pdf: 'document', image: 'picture', voice: 'recording', text: 'file' }
+const KIND = { pdf: 'document', image: 'picture', voice: 'recording', text: 'file',
+               document: 'document', archive: 'archive' }
 
 function describeFile(file) {
   return KIND[uploadMode(file)] || 'file'

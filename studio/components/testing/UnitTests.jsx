@@ -48,6 +48,15 @@ export default function UnitTests({ qa }) {
   return (
     <div>
       {qa.unitEvidenceStatus === 'outdated' && <p className="mb-3 text-[11px] text-warn">These saved unit results precede the latest code changes.</p>}
+      {/* The last run tested what the last request changed. The suite is
+          everything proved so far, and this says how much of it is not from
+          the run that just finished. */}
+      {v.carriedForward > 0 && (
+        <p className="mb-3 text-[11px] text-muted">
+          {v.carriedForward} of these {unit.files} files last ran in an earlier
+          verification — the newest run covered the rest.
+        </p>
+      )}
       <Summary>
         <Stat n={unit.passed} label="passing" tone="text-ok" />
         <Stat n={unit.failed} label="failing"

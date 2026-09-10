@@ -177,8 +177,13 @@ function fileToBase64(file) {
   })
 }
 
+// Everything the engine can actually read. A document or an archive used to be
+// unpickable here and unreadable there, so the one format most requirements
+// arrive in — a Word file — could not be attached at all.
 export const ACCEPT_UPLOAD =
-  '.pdf,.png,.jpg,.jpeg,.webp,.gif,.bmp,.wav,.mp3,.m4a,.ogg,.webm,.flac,image/*,audio/*,application/pdf'
+  '.pdf,.png,.jpg,.jpeg,.webp,.gif,.bmp,.wav,.mp3,.m4a,.ogg,.webm,.flac,'
+  + '.doc,.docx,.pptx,.xlsx,.rtf,.zip,.txt,.md,.csv,.tsv,.json,.yaml,.yml,.html,.xml,'
+  + 'image/*,audio/*,application/pdf,application/zip'
 
 export function uploadMode(file) {
   const type = (file.type || '').toLowerCase()
@@ -186,6 +191,8 @@ export function uploadMode(file) {
   if (type.includes('pdf') || name.endsWith('.pdf')) return 'pdf'
   if (type.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp)$/.test(name)) return 'image'
   if (type.startsWith('audio/') || /\.(wav|mp3|m4a|ogg|webm|flac)$/.test(name)) return 'voice'
+  if (/\.(docx?|pptx|xlsx|rtf)$/.test(name)) return 'document'
+  if (/\.zip$/.test(name) || type.includes('zip')) return 'archive'
   return 'text'
 }
 

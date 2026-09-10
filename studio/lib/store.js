@@ -143,6 +143,24 @@ export const useStore = create((set, get) => ({
     chat: [...s.chat.slice(-200), { at: Date.now(), ...entry }],
   })),
 
+  // What was said while the agent was still working.
+  //
+  // The box used to lock itself for the length of a run and tell you to come
+  // back later, which is the one moment you most want to say something - the
+  // next thing to do usually occurs to you while you are watching the last
+  // thing happen. Only one run may touch a project at a time, so what is typed
+  // waits here and goes the moment the run ends, in the order it was typed.
+  queue: [],
+  enqueue: (entry) => set(s => ({
+    queue: [...s.queue, { id: `q-${Date.now()}-${s.queue.length}`, at: Date.now(), ...entry }],
+  })),
+  dropQueued: (id) => set(s => ({ queue: s.queue.filter(item => item.id !== id) })),
+  takeQueued: (project) => {
+    const next = get().queue.find(item => item.project === project)
+    if (next) set(s => ({ queue: s.queue.filter(item => item.id !== next.id) }))
+    return next || null
+  },
+
   steps: {},
   setStep: (id, status) => set(s => ({ steps: { ...s.steps, [id]: status } })),
   progress: emptyProgress(),
