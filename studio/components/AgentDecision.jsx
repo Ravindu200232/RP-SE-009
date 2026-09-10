@@ -18,6 +18,7 @@ import { Check, Loader2, Palette, RotateCcw, SkipForward } from 'lucide-react'
 
 import { api } from '@/lib/api'
 import { useStore } from '@/lib/store'
+import PlanReading from './PlanReading'
 import { Button, Modal } from './ui'
 import { cn } from '@/lib/utils'
 
@@ -104,9 +105,9 @@ function PlanDecision({ question, left, sending, onAnswer }) {
         <Countdown left={left} />
       </header>
 
-      <pre className="mt-4 max-h-[46vh] overflow-auto whitespace-pre-wrap rounded-xl border border-line bg-panel2/60 p-3.5 font-mono text-[11.5px] leading-relaxed text-ink">
-        {question.plan}
-      </pre>
+      <div className="mt-4 max-h-[52vh] overflow-auto rounded-xl border border-line bg-panel2/40 px-4 py-3.5">
+        <PlanReading plan={question.plan} />
+      </div>
 
       {revising && (
         <textarea value={feedback} autoFocus rows={3}

@@ -233,54 +233,6 @@ export default function Sidebar({
         <span className="label-2xs shrink-0 text-muted2">{status}</span>
       </div>
 
-      <SectionLabel className="border-b border-line2 px-[14px] py-[9px]">
-        Model
-      </SectionLabel>
-      <ModelPicker label="Model" value={activeModel} options={cat.all}
-                   onChange={pickModel} conn={conn}
-                   hint={hasVision(cat.all, activeModel)
-                     ? 'Used by planning, design and building. This model can also inspect images.'
-                     : 'Used by planning, design and building.'} />
-
-      <SectionLabel className="border-b border-line2 px-[14px] py-[9px]">
-        Build controls
-      </SectionLabel>
-
-      <Seg block className="mb-1">
-        <Tip className="flex-1"
-             text="Enable the reasoning pass for Builder and QA work">
-          <SegOpt block on={think} onClick={() => toggle('think', KEYS.think)}>
-            Think
-          </SegOpt>
-        </Tip>
-        <Tip className="flex-1" text={fooocusTip(fooocus, images)}>
-          <SegOpt block on={images} onClick={toggleImages}>
-            Images
-            {images && (
-              <span className={cn('inline-block size-[5px] align-middle',
-                fooocus?.checking ? 'animate-pulse bg-bg/70'
-                  : fooocus?.available ? 'bg-bg'
-                  : 'bg-bg/30')} />
-            )}
-          </SegOpt>
-        </Tip>
-      </Seg>
-
-      {images && fooocus && !fooocus.checking && !fooocus.available && (
-        <p className="border-b border-line2 px-[14px] py-1.5 text-[10.5px]
-                      leading-snug text-muted">
-          No Fooocus is answering
-          {fooocus.can_start ? (<>
-            {' — '}
-            <button onClick={startFooocus}
-                    className="font-semibold text-accent underline
-                               underline-offset-2 hover:text-ink">
-              start it
-            </button>
-          </>) : ' — start it, or set its address in Settings'}
-        </p>
-      )}
-
       <SectionLabel className="border-b border-line2 px-[14px] py-[9px]"
                     right={<span className="font-mono text-[10px] font-normal
                                             tracking-normal text-muted2">

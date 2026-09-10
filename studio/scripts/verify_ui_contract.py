@@ -22,6 +22,9 @@ required = {
     "the plan is shown": ("components/AgentChat.jsx", "turn.kind === 'plan'"),
     "the design is shown": ("components/AgentChat.jsx", "function DesignCard"),
     "the plan can be accepted or revised": ("components/AgentDecision.jsx", "function PlanDecision"),
+    "the plan is read, not dumped": ("components/AgentDecision.jsx", "<PlanReading"),
+    "a plan is laid out as prose": ("components/PlanReading.jsx", "readPlan"),
+    "the model is chosen where the build is configured": ("components/BuildSetup.jsx", "build-model"),
     "the design can be customised": ("components/AgentDecision.jsx", "function DesignDecision"),
     "the whole catalogue is offered": ("components/AgentDecision.jsx", 'label="Voice"'),
     "the screens are chosen too": ("components/AgentDecision.jsx", "togglePage"),
@@ -89,7 +92,6 @@ required = {
     "deployment workspace": ("components/deploy/DeployPanel.jsx", "Deploy"),
     "AWS Console browser login": ("components/deploy/DeployAccounts.jsx", "tool: 'aws-console-login'"),
     "isolated AWS Console profile": ("components/deploy/DeployAccounts.jsx", "const AWS_CONSOLE_PROFILE = 'agentforge-console'"),
-    "sidebar model picker": ("components/Sidebar.jsx", 'label="Model"'),
     "the stack is chosen, not guessed": ("components/Home.jsx", "2. Choose the stack"),
     "the build is configured before it starts": ("components/BuildSetup.jsx", "Configure your build"),
     "and it asks for the stack": ("components/BuildSetup.jsx", "build-setup-stack"),
@@ -100,6 +102,10 @@ required = {
 }
 
 forbidden = {
+    # Asked once, in the dialog that starts the build — not left in a sidebar
+    # where it looks like a setting that applies to something already running.
+    "a second model picker": ("components/Sidebar.jsx", 'label="Model"'),
+    "build switches in the sidebar": ("components/Sidebar.jsx", "Build controls"),
     # One styling story: Tailwind in the scaffold, tokens from the contract.
     "a UI framework picker": ("components/BuildSetup.jsx", "UI_LIBRARIES"),
     "a provider block picker": ("components/AgentDecision.jsx", "Provider blocks"),
