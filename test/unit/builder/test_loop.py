@@ -300,3 +300,75 @@ class LoopTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RepeatedReadTests(unittest.TestCase):
+    """A read that keeps returning the same answer is not progress.
+
+    Watched a drawing pass read one skill sixteen times in ninety seconds and
+    write nothing. Every call succeeded, so the repeat-failure guard never saw
+    it, and nothing else was in a position to notice.
+    """
+
+    def loop(self):
+        from builder_agent.config import Config
+        from builder_agent.events import Events
+        from builder_agent.memory import Memory
+        from builder_agent.sandbox import Sandbox
+        from builder_agent.tools import build_registry
+        from builder_agent.llm import Reply
+
+        root = Path(tempfile.mkdtemp())
+        (root / "notes.md").write_text("the same answer every time", encoding="utf-8")
+
+        class Router:
+            label = "scripted/model"
+            model = "scripted"
+            usage = {"prompt": 0, "completion": 0, "requests": 0}
+
+            def ask(self, messages, tools=None, **kwargs):
+                return Reply(content="done")
+
+            @staticmethod
+            def context_window():
+                return 0
+
+        return Loop(config=Config(workspace=root, model="scripted", unit_tests=False,
+                                  e2e_tests=False, state_root=root / ".state"),
+                    registry=build_registry(), router=Router(),
+                    memory=Memory(budget_tokens=64_000), sandbox=Sandbox(root),
+                    events=Events(), processes=None, browser=None)
+
+    def read(self, loop, name="notes.md"):
+        from builder_agent.llm import ToolCall
+        loop._run_one(ToolCall("c", "readFile", {"filePath": name}))
+        return loop.memory.messages[-1].get("content") or ""
+
+    def test_the_same_answer_three_times_is_called_out(self):
+        loop = self.loop()
+        first = self.read(loop)
+        second = self.read(loop)
+        third = self.read(loop)
+
+        self.assertNotIn("time readFile has returned", first)
+        self.assertNotIn("time readFile has returned", second)
+        self.assertIn("3th time readFile has returned exactly this answer", third)
+        # The answer itself is still there — this is an observation, not a
+        # refusal, and the model may well still need what it read.
+        self.assertIn("the same answer every time", third)
+
+    def test_a_different_file_starts_its_own_count(self):
+        loop = self.loop()
+        (Path(loop.sandbox.root) / "other.md").write_text("different", encoding="utf-8")
+        for _ in range(3):
+            self.read(loop)
+        other = self.read(loop, "other.md")
+        self.assertNotIn("time readFile has returned", other)
+
+    def test_changing_the_project_clears_the_count(self):
+        """After an edit the same read is a new question, not a repeat."""
+        loop = self.loop()
+        for _ in range(3):
+            self.read(loop)
+        loop.repeated_reads.clear()          # what a mutating tool does
+        self.assertNotIn("time readFile has returned", self.read(loop))

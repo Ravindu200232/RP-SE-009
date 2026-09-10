@@ -51,6 +51,12 @@ OPTIONAL_TOOL_FAMILIES = (
 MAX_PARSE_FAILURES = 4
 MAX_CUTOFF_RETRIES = 2
 MAX_SAME_FAILURE = 3
+
+# How many times the same read may return the same answer before the loop says
+# so. A failing call that repeats is already caught; a *succeeding* one was not,
+# and a model that cannot find what it expects will happily read the same file
+# sixteen times in ninety seconds and write nothing.
+MAX_SAME_READ = 3
 # How many times a run may claim completion with the evidence still missing.
 # The gate exists to send it back to work, not to trap it: a model that cannot
 # produce the evidence will not produce it on the twentieth attempt either, and
@@ -124,6 +130,8 @@ class Loop:
         self.files_touched: set[str] = set()
         self.unavailable: dict[str, str] = {}
         self.failed_actions: dict[str, int] = {}
+        # signature -> (digest of the last answer, how many times running)
+        self.repeated_reads: dict[str, tuple] = {}
         self.repair_epoch = 0
         self.phase_skills: dict[str, list[str]] = {}
         self.layout_signature = ""
@@ -444,6 +452,22 @@ class Loop:
 
         ok = result.get("ok", True)
         body = str(result.get("content") or "")
+
+        # The same read, returning the same answer, over and over. It is not a
+        # failure - which is exactly why nothing caught it - but it is not
+        # progress either, and the loop is the only thing in a position to
+        # notice. Say so plainly and let the model move; do not refuse the call.
+        if ok and not tool.mutates:
+            digest = hashlib.sha256(body.encode("utf-8", "replace")).hexdigest()
+            seen, times = self.repeated_reads.get(signature, ("", 0))
+            times = times + 1 if seen == digest else 1
+            self.repeated_reads[signature] = (digest, times)
+            if times >= MAX_SAME_READ:
+                body = (f"This is the {times}th time {call.tool} has returned exactly this "
+                        f"answer, with nothing changed in between. Reading it again will "
+                        f"return it again. What you are looking for is not here: act on "
+                        f"what you already have, or look somewhere else.\n\n{body}")
+
         if not ok:
             self.failed_actions[guard_key] = self.failed_actions.get(guard_key, 0) + 1
             packet = failure_packet(self.sandbox, body)
@@ -460,6 +484,7 @@ class Loop:
             self.layout_dirty = True
             self.repair_epoch += 1
             self.failed_actions.clear()
+            self.repeated_reads.clear()
             if args.get("filePath"):
                 self.files_touched.add(str(args["filePath"]))
 

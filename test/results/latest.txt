@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-10T11:43:46+00:00
+Run at (UTC): 2026-09-10T11:55:26+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 446
+Unit tests: 449
 Integration tests: 24
-Total tests run: 470
+Total tests run: 473
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 24.826s
+Duration: 23.399s
 
 Detailed results
 ----------------
@@ -168,6 +168,10 @@ test_the_same_failing_action_is_stopped_rather_than_repeated_forever (test.unit.
 test_tool_calls_in_one_turn_run_in_order_and_all_report_back (test.unit.builder.test_loop.LoopTests.test_tool_calls_in_one_turn_run_in_order_and_all_report_back) ... ok
 test_tool_schemas_are_trimmed_rather_than_letting_the_request_fail (test.unit.builder.test_loop.LoopTests.test_tool_schemas_are_trimmed_rather_than_letting_the_request_fail) ... ok
 test_unit_stage_can_finish_without_launching_unassigned_browser_and_runtime_work (test.unit.builder.test_loop.LoopTests.test_unit_stage_can_finish_without_launching_unassigned_browser_and_runtime_work) ... ok
+test_a_different_file_starts_its_own_count (test.unit.builder.test_loop.RepeatedReadTests.test_a_different_file_starts_its_own_count) ... ok
+test_changing_the_project_clears_the_count (test.unit.builder.test_loop.RepeatedReadTests.test_changing_the_project_clears_the_count)
+After an edit the same read is a new question, not a repeat. ... ok
+test_the_same_answer_three_times_is_called_out (test.unit.builder.test_loop.RepeatedReadTests.test_the_same_answer_three_times_is_called_out) ... ok
 test_a_plan_that_files_components_settles_it (test.unit.builder.test_project_setup.DesignReachTests.test_a_plan_that_files_components_settles_it) ... ok
 test_every_chosen_dimension_reaches_the_written_contract (test.unit.builder.test_project_setup.DesignReachTests.test_every_chosen_dimension_reaches_the_written_contract) ... ok
 test_routes_are_read_from_where_the_files_sit (test.unit.builder.test_project_setup.DesignReachTests.test_routes_are_read_from_where_the_files_sit) ... ok
@@ -550,6 +554,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 470 tests in 24.826s
+Ran 473 tests in 23.399s
 
 OK

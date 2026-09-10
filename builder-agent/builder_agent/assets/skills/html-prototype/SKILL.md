@@ -39,15 +39,25 @@ build.
 - Not a component library, a style guide page or a token dump.
 - Not a place for lorem ipsum. See below.
 
-## The files
+## The files you write
+
+`.agentforge/prototype/` is a folder in the project. You **create** it with
+`writeFile`. It is not part of this skill and there is nothing in it to read —
+this skill is one file, `SKILL.md`, and you have it in front of you. Do not
+call `readSkill` for anything under `.agentforge/`.
+
+Write these, with `writeFile`, using the paths exactly as shown:
 
 ```
-.agentforge/prototype/
-  index.html        the first screen the plan named
-  <screen>.html     one per remaining screen, named after its route
-  styles.css        every token and every rule, shared by all of them
-  demo.js           the small amount of script that makes the flow work
+.agentforge/prototype/index.html    the first screen the plan named
+.agentforge/prototype/<screen>.html one per remaining screen, named after its route
+.agentforge/prototype/styles.css    every token and every rule, shared by all of them
+.agentforge/prototype/demo.js       the small amount of script that makes the flow work
 ```
+
+Start writing. There is nothing to look up first: the screens are listed in the
+request, and the tokens are in `design-system.md`, which is the one other file
+worth reading.
 
 One stylesheet, linked from every page. A page with its own `<style>` block is
 a page that will drift from the others, and a colour change the user asks for
