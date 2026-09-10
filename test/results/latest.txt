@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-10T13:38:06+00:00
+Run at (UTC): 2026-09-10T13:41:38+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 453
+Unit tests: 454
 Integration tests: 24
-Total tests run: 477
+Total tests run: 478
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 24.065s
+Duration: 29.981s
 
 Detailed results
 ----------------
@@ -416,10 +416,12 @@ test_saved_conversation_cannot_cross_project_boundaries (test.unit.services.test
 test_switching_projects_restores_the_right_history (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_switching_projects_restores_the_right_history) ... ok
 test_hoisted_workspace_dependencies_are_ready (test.unit.services.test_dependency_readiness.DependencyReadinessTests.test_hoisted_workspace_dependencies_are_ready) ... ok
 test_nested_workspace_install_is_resolved_before_root (test.unit.services.test_dependency_readiness.DependencyReadinessTests.test_nested_workspace_install_is_resolved_before_root) ... ok
-test_a_drawing_is_photographed_from_the_studio (test.unit.services.test_drawing_preview.ShotPortTests.test_a_drawing_is_photographed_from_the_studio) ... ok
+test_a_drawing_is_photographed_from_the_studio (test.unit.services.test_drawing_preview.ShotPortTests.test_a_drawing_is_photographed_from_the_studio)
+The iframe's own URL, which is what the studio sends back. ... ok
 test_a_missing_route_falls_back_to_the_application (test.unit.services.test_drawing_preview.ShotPortTests.test_a_missing_route_falls_back_to_the_application) ... ok
 test_a_route_that_merely_mentions_a_prototype_is_still_the_app (test.unit.services.test_drawing_preview.ShotPortTests.test_a_route_that_merely_mentions_a_prototype_is_still_the_app)
 The application is allowed to have its own page about prototypes. ... ok
+test_an_unprefixed_drawing_route_still_reaches_the_studio (test.unit.services.test_drawing_preview.ShotPortTests.test_an_unprefixed_drawing_route_still_reaches_the_studio) ... ok
 test_the_running_application_is_photographed_from_the_dev_server (test.unit.services.test_drawing_preview.ShotPortTests.test_the_running_application_is_photographed_from_the_dev_server) ... ok
 test_a_failed_internal_service_cannot_be_hidden_by_the_gateway (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_a_failed_internal_service_cannot_be_hidden_by_the_gateway) ... ok
 test_a_missing_client_bundle_cannot_be_reported_ready (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_a_missing_client_bundle_cannot_be_reported_ready) ... ok
@@ -559,6 +561,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 477 tests in 24.065s
+Ran 478 tests in 29.980s
 
 OK

@@ -40,8 +40,12 @@ required = {
         ("../builder-agent/builder_agent/agent.py", "PROTOTYPE_TOOLS"),
     "the drawing is served to the studio":
         ("../server_modules/builder/projects.py", "def read_prototype"),
-    "and reviewed in the whole pane": ("components/PrototypeReview.jsx", "Approve and build"),
-    "what they ask for is redrawn": ("components/PrototypeReview.jsx", "decision: 'revise'"),
+    "and shown in the preview rather than over it":
+        ("components/PreviewPane.jsx", "/prototype/"),
+    "where it is accepted": ("components/PreviewPane.jsx", "Build this"),
+    "and what they ask for is redrawn": ("lib/ws.js", "decision: 'revise'"),
+    "the camera follows it to the studio's own port":
+        ("../server_modules/services/shots.py", "def port_for"),
     "the build copies what was approved":
         ("../builder-agent/builder_agent/agent.py", "the prototype wins"),
     "settings are asked for before the plan is written":

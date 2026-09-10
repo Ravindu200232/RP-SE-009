@@ -320,8 +320,9 @@ export default function PreviewPane({ hidden }) {
       f.src = `${API}/prototype/${encodeURIComponent(project)}/${first}`
       addLog('INFO', 'The drawing is in the preview — click through it, mark it '
                    + 'up, or say what to change.')
-    } else if (lastPathRef.current.startsWith('/prototype/')) {
-      // Approved or sent back: the preview belongs to the app again.
+    } else if (lastPathRef.current.includes(`${API}/prototype/`)) {
+      // Approved or sent back: the preview belongs to the app again. The path
+      // compared here is the iframe's own, so it carries the studio's prefix.
       f.src = '/'
     }
   }, [drawing, project, addLog])

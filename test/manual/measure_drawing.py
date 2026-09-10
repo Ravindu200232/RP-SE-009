@@ -121,16 +121,25 @@ TARGETS = {
 
 # The name is the only thing available before the page is read, and it is
 # enough: a file called login.html is a form whatever it contains.
+#
+# What it must not do is confuse a list with the detail page under it. A route
+# is a detail page because it has a dynamic segment - /rooms/[slug] - not
+# because the word "room" appears in it, which is equally true of /rooms.
 KINDS = (
     ("form", ("login", "signin", "sign-in", "signup", "register", "contact",
               "checkout", "book", "new", "edit", "settings", "profile")),
     ("admin", ("admin", "dashboard", "console", "manage", "orders", "reports")),
-    ("detail", ("-id", "[id]", "detail", "item", "product", "room", "post")),
+    ("detail", ("-id", "-slug", "detail")),
     ("landing", ("index", "home", "landing", "about", "pricing")),
 )
 
+# A dynamic segment, however the stack spells it: [id], [slug], :id, <id>.
+DYNAMIC = re.compile(r"\[[^\]]+\]|/:\w|<[^>]+>")
+
 
 def kind_of(name: str) -> str:
+    if DYNAMIC.search(name):
+        return "detail"
     stem = Path(name).stem.lower()
     for kind, terms in KINDS:
         if any(term in stem for term in terms):

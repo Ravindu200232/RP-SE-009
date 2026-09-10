@@ -478,7 +478,8 @@ class UIHandler(SimpleHTTPRequestHandler):
             body = self._body()
             strokes = body.get("strokes") or []
             route = str(body.get("route") or "/")
-            port = port_for(route, app_port=DEV_PORT, studio_port=UI_PORT)
+            port = port_for(route, app_port=DEV_PORT, studio_port=UI_PORT,
+                            prefix=AGENTFORGE_PREFIX)
             if strokes:
                 image = capture_drawing(route, viewport=body.get("viewport") or {},
                                         strokes=strokes, port=port)

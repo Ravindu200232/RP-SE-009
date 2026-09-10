@@ -151,16 +151,25 @@ def _shrink(png: bytes) -> str:
     return encoded
 
 
-def port_for(route: str, *, app_port: int, studio_port: int) -> int:
+def port_for(route: str, *, app_port: int, studio_port: int, prefix: str = "") -> int:
     """Which server holds the page at `route`.
 
     Two things can be in the preview: the running application, on the dev
-    server, and the HTML drawing of it, which this backend serves at
-    /prototype/<project>/<file>. The camera is pointed by URL, so aiming it at
-    the wrong one photographs whatever that port happens to be serving instead
-    of the thing the user clicked on.
+    server, and the HTML drawing of it, which this backend serves under its own
+    prefix at <prefix>/api/prototype/<project>/<file>. The camera is pointed by
+    URL, so aiming it at the wrong one photographs whatever that port happens to
+    be serving instead of the thing the user clicked on.
+
+    The route arrives as the studio's iframe sees it, prefix and all, and the
+    prefix has to come off before the test - a drawing's path starts with the
+    studio's own mount point, not with /prototype.
     """
-    return studio_port if str(route or "").startswith("/prototype/") else app_port
+    path = str(route or "")
+    for lead in (f"{prefix}/api", prefix) if prefix else ():
+        if path.startswith(lead):
+            path = path[len(lead):] or "/"
+            break
+    return studio_port if path.startswith("/prototype/") else app_port
 
 
 def capture_element(route: str, *, viewport: dict, scroll: dict, rect: dict,

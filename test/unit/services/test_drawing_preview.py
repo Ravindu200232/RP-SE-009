@@ -18,14 +18,21 @@ class ShotPortTests(unittest.TestCase):
     gets a picture of an error attached to their message about a button.
     """
 
-    APP, STUDIO = 5173, 7824
+    APP, STUDIO, PREFIX = 5173, 7824, "/__agentforge"
 
     def port(self, route: str) -> int:
-        return port_for(route, app_port=self.APP, studio_port=self.STUDIO)
+        return port_for(route, app_port=self.APP, studio_port=self.STUDIO,
+                        prefix=self.PREFIX)
 
     def test_a_drawing_is_photographed_from_the_studio(self):
+        """The iframe's own URL, which is what the studio sends back."""
+        self.assertEqual(
+            self.port("/__agentforge/api/prototype/hotel/index.html"), self.STUDIO)
+        self.assertEqual(
+            self.port("/__agentforge/api/prototype/hotel/rooms-id.html"), self.STUDIO)
+
+    def test_an_unprefixed_drawing_route_still_reaches_the_studio(self):
         self.assertEqual(self.port("/prototype/hotel/index.html"), self.STUDIO)
-        self.assertEqual(self.port("/prototype/hotel/rooms-id.html"), self.STUDIO)
 
     def test_the_running_application_is_photographed_from_the_dev_server(self):
         for route in ("/", "/rooms", "/admin/orders", "/rooms/12?from=list"):
@@ -33,7 +40,8 @@ class ShotPortTests(unittest.TestCase):
 
     def test_a_route_that_merely_mentions_a_prototype_is_still_the_app(self):
         """The application is allowed to have its own page about prototypes."""
-        for route in ("/prototypes", "/about/prototype", "/blog/prototype-notes"):
+        for route in ("/prototypes", "/about/prototype", "/blog/prototype-notes",
+                      "/__agentforge/api/prototypes"):
             self.assertEqual(self.port(route), self.APP, route)
 
     def test_a_missing_route_falls_back_to_the_application(self):
