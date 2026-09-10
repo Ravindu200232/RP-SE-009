@@ -115,6 +115,15 @@ export const useStore = create((set, get) => ({
   approval: null,
   setApproval: (approval) => set({ approval }),
 
+  // The drawing waiting to be approved.
+  //
+  // Kept apart from `approval` because it is not answered in a dialog: it is
+  // shown in the preview, where the select and pencil tools already work, and
+  // walked by clicking its own navigation. A popup over the top of it would
+  // hide the thing being judged.
+  drawing: null,
+  setDrawing: (drawing) => set({ drawing }),
+
   // The engine's own browser, as it is right now. Headless, so this is the
   // only way to see what it is doing.
   browserFrame: null,
@@ -272,7 +281,7 @@ export const useStore = create((set, get) => ({
                              runStats: state.runStats } }
       : state.streams,
     ...restored(state.streams[project]),
-    project, agentState: '', approval: null,
+    project, agentState: '', approval: null, drawing: null,
     browserFrame: null, selection: [],
     steps: {}, phases: [], files: {},
     activeFile: null, liveFile: null, liveBuf: '', follow: true,

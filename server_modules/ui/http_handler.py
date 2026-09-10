@@ -478,15 +478,20 @@ class UIHandler(SimpleHTTPRequestHandler):
             body = self._body()
             strokes = body.get("strokes") or []
             route = str(body.get("route") or "/")
+            # The route says which server holds the page. A drawing is served
+            # from here, at /prototype/<project>/<file>; everything else is the
+            # running app on the dev server. Pointing the camera at the wrong
+            # one gives a 404 page rather than the thing they clicked on.
+            port = UI_PORT if route.startswith("/prototype/") else DEV_PORT
             if strokes:
                 image = capture_drawing(route, viewport=body.get("viewport") or {},
-                                        strokes=strokes, port=DEV_PORT)
+                                        strokes=strokes, port=port)
             else:
                 image = capture_element(route,
                                         viewport=body.get("viewport") or {},
                                         scroll=body.get("scroll") or {},
                                         rect=body.get("rect") or {},
-                                        port=DEV_PORT)
+                                        port=port)
             self._json({"ok": bool(image),
                         "image": f"data:image/jpeg;base64,{image}" if image else "",
                         "b64": image})

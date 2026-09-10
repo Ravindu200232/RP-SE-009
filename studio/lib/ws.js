@@ -54,6 +54,24 @@ export function answerQuestion(prompt) {
   return true
 }
 
+/**
+ * Send the drawing back for another round with what they just typed.
+ *
+ * There is no dialog to type into, on purpose: the drawing fills the preview
+ * so it can be walked and marked up, and the chat box is where changes to it
+ * are asked for — the same box that asks for changes to everything else.
+ * Returns false when no drawing is waiting, so the message goes where it
+ * normally would.
+ */
+export function reviseDrawing(feedback) {
+  const drawing = useStore.getState().drawing
+  if (!drawing) return false
+  useStore.getState().setDrawing(null)
+  api.decide({ id: drawing.id, decision: 'revise', feedback })
+     .catch(e => useStore.getState().addLog('WARN', `Could not send that back — ${e.message}`))
+  return true
+}
+
 function wsUrl() {
   const host = (typeof location !== 'undefined' && location.hostname) || 'localhost'
   return `ws://${host}:7825`
@@ -356,7 +374,12 @@ function handle(m) {
       break
     case 'memory':       s.setRunStats(m); break
     case 'agent_state':  s.setAgentState(m.state || ''); break
-    case 'approval':     s.setApproval(m); break
+    case 'approval':
+      // A drawing goes to the preview, where it can be looked at properly.
+      // Everything else is a dialog.
+      if (m.kind === 'prototype') s.setDrawing(m)
+      else s.setApproval(m)
+      break
     // Names only — the values went straight to the project's .env.local.
     case 'setup':
       s.addLog('INFO', m.saved?.length
@@ -370,7 +393,11 @@ function handle(m) {
     case 'approval_resolved':
       // The next question can already be on screen by the time this lands.
       if (!m.id || useStore.getState().approval?.id === m.id) s.setApproval(null)
-      s.pushChat({ role: 'assistant', title: m.kind === 'plan' ? 'The plan' : 'Design system',
+      if (!m.id || useStore.getState().drawing?.id === m.id) s.setDrawing(null)
+      s.pushChat({ role: 'assistant',
+                   title: m.kind === 'plan' ? 'The plan'
+                        : m.kind === 'prototype' ? 'The drawing'
+                        : 'Design system',
                    text: m.decision === 'revise' ? 'Sent back for another round.'
                        : m.decision === 'skip' ? 'Left for the build to decide.'
                        : 'Accepted.' })

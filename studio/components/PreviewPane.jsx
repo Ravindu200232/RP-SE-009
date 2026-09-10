@@ -19,7 +19,7 @@ import {
   ChevronLeft, ChevronRight, Globe, Eraser,
 } from 'lucide-react'
 import { useStore } from '@/lib/store'
-import { api } from '@/lib/api'
+import { api, API } from '@/lib/api'
 import { attachPicker, pickedFrom, pickLabel } from '@/lib/picker'
 import { watchFrame } from '@/lib/console-log'
 import { Tip } from './ui'
@@ -64,6 +64,8 @@ export default function PreviewPane({ hidden }) {
   const setUndo = useStore(s => s.setUndo)
   const tests = useStore(s => s.tests)
   const e2eLive = useStore(s => s.e2eLive)
+  const drawing = useStore(s => s.drawing)
+  const setDrawing = useStore(s => s.setDrawing)
   const selection = useStore(s => s.selection)
   const addSelection = useStore(s => s.addSelection)
   const patchSelection = useStore(s => s.patchSelection)
@@ -302,6 +304,39 @@ export default function PreviewPane({ hidden }) {
     f.src = fromRoot === true ? '/' : currentPath(f)
   }
 
+  /**
+   * Show the drawing here rather than in a dialog.
+   *
+   * It is a set of real HTML pages served from /prototype/<project>/, so the
+   * preview can show it exactly as it shows the built app: its own navigation
+   * walks between the pages, and the select and pencil tools attach from it
+   * the same way. A popup over the top would hide the thing being judged.
+   */
+  useEffect(() => {
+    const f = frameRef.current
+    if (!f) return
+    if (drawing) {
+      const first = drawing.pages?.[0]?.file || 'index.html'
+      f.src = `${API}/prototype/${encodeURIComponent(project)}/${first}`
+      addLog('INFO', 'The drawing is in the preview — click through it, mark it '
+                   + 'up, or say what to change.')
+    } else if (lastPathRef.current.startsWith('/prototype/')) {
+      // Approved or sent back: the preview belongs to the app again.
+      f.src = '/'
+    }
+  }, [drawing, project, addLog])
+
+  async function approveDrawing() {
+    const id = drawing?.id
+    if (!id) return
+    setDrawing(null)
+    try {
+      await api.decide({ id, decision: 'approve' })
+    } catch (e) {
+      addLog('WARN', `Could not accept the drawing — ${e.message}`)
+    }
+  }
+
   const wasBusy = useRef(false)
   const hasReadyPreview = useRef(!busy)
   useEffect(() => {
@@ -336,8 +371,20 @@ export default function PreviewPane({ hidden }) {
 
         <div className="flex min-w-0 flex-1 items-center gap-2 rounded-[14px] bg-black/[.035] px-4 py-2 text-[12px] text-muted ring-1 ring-black/[.045] dark:bg-white/[.045] dark:ring-white/[.06]">
           <Globe className="size-3.5 shrink-0 text-accent" />
-          <span className="truncate font-medium text-ink">localhost:5173{shownPath === '/' ? '' : shownPath}</span>
+          <span className="truncate font-medium text-ink">
+            {drawing ? `the drawing — ${shownPath.split('/').pop() || 'index.html'}`
+                     : `localhost:5173${shownPath === '/' ? '' : shownPath}`}
+          </span>
         </div>
+
+        {/* The drawing is judged here, in the preview, so this is where it is
+            accepted. Sending it back is typed in the chat like anything else. */}
+        {drawing && (
+          <button onClick={approveDrawing}
+                  className="shrink-0 rounded-full bg-accent px-4 py-2 text-[12px] font-semibold text-white shadow-sm transition-opacity hover:opacity-90">
+            Build this
+          </button>
+        )}
 
         <div className="hidden items-center gap-1 rounded-full border border-line/80 bg-panel/80 p-1 shadow-sm md:flex">
           {VIEWPORTS.map(({ id, label, Icon }) => (

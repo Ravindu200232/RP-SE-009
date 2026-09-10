@@ -26,7 +26,7 @@ import { chatTurns } from '@/lib/chat'
 import { consoleReport, forgetConsole } from '@/lib/console-log'
 import { useStore } from '@/lib/store'
 import { useEditAttachments } from '@/lib/use-edit-attachments'
-import { answerQuestion, send } from '@/lib/ws'
+import { answerQuestion, reviseDrawing, send } from '@/lib/ws'
 import { cn } from '@/lib/utils'
 import EditAttach from './EditAttach'
 
@@ -48,6 +48,7 @@ export default function AgentChat() {
   const busy = useStore(s => s.busy)
   const project = useStore(s => s.project)
   const question = useStore(s => s.question)
+  const drawing = useStore(s => s.drawing)
   const stats = useStore(s => s.runStats)
   const agentState = useStore(s => s.agentState)
   const pushChat = useStore(s => s.pushChat)
@@ -98,6 +99,14 @@ export default function AgentChat() {
 
     // A paused scope question is answered by the next thing they type.
     if (question && answerQuestion(typed)) {
+      pushChat({ role: 'user', text: typed, at: Date.now() })
+      setText('')
+      return
+    }
+
+    // So is a drawing waiting in the preview: there is no dialog to type into,
+    // so what they say here is what changes about it.
+    if (drawing && reviseDrawing(typed)) {
       pushChat({ role: 'user', text: typed, at: Date.now() })
       setText('')
       return
@@ -239,6 +248,7 @@ export default function AgentChat() {
                   disabled={!project || reading}
                   placeholder={question
                     ? 'Answer the question above…'
+                    : drawing ? 'Say what to change about the drawing…'
                     : busy ? 'Say what is next — it goes when this finishes'
                     : selection.length
                       ? 'Say what should change about it…'
