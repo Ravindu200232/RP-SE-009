@@ -357,6 +357,13 @@ function handle(m) {
     case 'memory':       s.setRunStats(m); break
     case 'agent_state':  s.setAgentState(m.state || ''); break
     case 'approval':     s.setApproval(m); break
+    // Names only — the values went straight to the project's .env.local.
+    case 'setup':
+      s.addLog('INFO', m.saved?.length
+        ? `Saved ${m.saved.join(', ')} for ${m.purpose}`
+        : `${m.purpose}: nothing was supplied — ${(m.missing || []).join(', ')} `
+          + 'are listed in .env.example')
+      break
     case 'browser_frame':
       s.setBrowserFrame(m.frame ? m : null)
       break

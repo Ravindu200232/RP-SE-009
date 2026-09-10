@@ -99,7 +99,8 @@ class Outcome:
 
 class Loop:
     def __init__(self, *, config, registry, router, memory, sandbox, events,
-                 processes, browser, cancel=None, verification_kinds=None) -> None:
+                 processes, browser, cancel=None, verification_kinds=None,
+                 approvals=None) -> None:
         self.config = config
         self.registry = registry
         self.router = router
@@ -109,6 +110,7 @@ class Loop:
         self.processes = processes
         self.browser = browser
         self.cancel = cancel or (lambda: False)
+        self.approvals = approvals
 
         self.budget = ContextBudget(config.context_tokens)
         self.compactor = Compactor(memory, self.budget, router, events)
@@ -429,7 +431,8 @@ class Loop:
 
         context = ToolContext(sandbox=self.sandbox, config=self.config, events=self.events,
                               memory=self.memory, processes=self.processes,
-                              browser=self.browser, state=self.state)
+                              browser=self.browser, approvals=self.approvals,
+                              cancel=self.cancel, state=self.state)
         try:
             result = tool.handler(args, context) or {}
         except ToolError as error:

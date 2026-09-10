@@ -99,13 +99,27 @@ class AgentPassTests(unittest.TestCase):
                                stack="nextjs-mongo", quality=BUILD_QUALITY,
                                context_tokens=64_000, plan_only=True)
 
-        self.assertIn("Call inspectProject once", task)
-        self.assertIn("Do not list or read implementation", task)
+        self.assertIn("inspectProject once", task)
         self.assertIn("do not inventory boilerplate", task)
         self.assertIn("Do not call listSkills", system)
         self.assertIn("Do not inventory the scaffold", system)
         self.assertNotIn("TEST-DRIVEN COMPLETION", system)
         self.assertNotIn("PHASE DISCIPLINE", system)
+
+        # One skill is read during planning, because it is about how to read a
+        # request rather than about how to build anything. Every other skill
+        # still belongs to execution.
+        self.assertIn("readSkill('planning')", task)
+        self.assertIn("Read no skill but `planning`", task)
+        self.assertIn("Read the `planning` skill first", system)
+
+    def test_the_plan_is_told_to_enumerate_what_was_asked_for(self):
+        """A request read once produces a plan about most of it."""
+        task = task_message("a darkroom with three roles", stack="nextjs-mongo",
+                            quality=BUILD_QUALITY, plan_only=True)
+        self.assertIn("requirements enumerated from the request itself", task)
+        self.assertIn("numbered requirement", task)
+        self.assertIn("exactly one phase", task)
 
     def test_the_design_contract_is_decided_and_written_without_asking(self):
         written = self.agent.apply_design("build a hotel booking site with rooms and payments")

@@ -34,6 +34,9 @@ from .loop import Loop, Outcome
 from .memory import Memory
 from .processes import Processes
 from .prompts import task_message
+from .setup import ASK_TIMEOUT, apply_answer, questions_for
+from .skills import read_manifest
+from .skills import select as select_skills
 from .sandbox import Sandbox
 from .tools import build_registry, review_registry
 
@@ -99,6 +102,9 @@ class BuilderAgent:
         self.registry = build_registry()
         self.plan_text = ""
         self.design: dict | None = None
+        # What the user settled before planning: which provider, which mode,
+        # which names are configured. Never the values themselves.
+        self.setup_notes: list[str] = []
 
         detected = self.router.context_window()
         if detected:
@@ -130,6 +136,49 @@ class BuilderAgent:
         return changed
 
     # -- passes ----------------------------------------------------------
+    def settings(self, task: str) -> list[str]:
+        """Ask for the account settings this request needs, before planning it.
+
+        A Stripe secret or a Cloudinary cloud name cannot be read out of a
+        repository, and asking for one half way through the build is too late:
+        by then the plan has been written, and it was written without knowing
+        which provider it was for. So the question comes first and its answer
+        goes into the plan, which is what everything after it works from.
+
+        Nothing here is enumerated in code. The skills selected from the
+        request are what decide the questions, and a skill declares its own -
+        so a request that never mentions money is never asked about Stripe, and
+        a new integration is a new skill directory rather than a branch here.
+        """
+        try:
+            selected = select_skills(read_manifest(), "", task, self.config.stack)
+            questions = questions_for(selected)
+        except Exception as error:                                   # noqa: BLE001
+            self.events.emit("notice", level="warn",
+                             message=f"Setup questions could not be prepared: {error}")
+            return []
+
+        notes = []
+        for question in questions:
+            if question.get("error"):
+                self.events.emit("notice", level="warn",
+                                 message=f"The {question['skill']} skill's setup declaration "
+                                         f"is unusable: {question['error']}")
+                continue
+            answer = self.approvals.ask(
+                "setup",
+                {key: question[key] for key in ("purpose", "question", "choices", "fields")},
+                default={"decision": "later"}, timeout=ASK_TIMEOUT, cancel=self.cancel)
+            applied = apply_answer(self.sandbox.root, question, answer)
+            # Names only. A value that reaches an event reaches the log, the
+            # saved stream and the transcript, which is every place a secret
+            # must not be.
+            self.events.emit("setup", purpose=question["purpose"], choice=applied["label"],
+                             saved=applied["saved"], missing=applied["missing"])
+            notes.append(applied["note"])
+        self.setup_notes = notes
+        return notes
+
     def plan(self, task: str) -> Outcome:
         """Investigate the project, then write the plan the build executes.
 
@@ -138,7 +187,7 @@ class BuilderAgent:
         change now and the alternative is a build that never starts.
         """
         self.events.emit("phase", phase="plan", title="Planning", status="active")
-        request = task
+        request = self._with_settings(task)
 
         for revision in range(MAX_PLAN_REVISIONS + 1):
             loop = self._loop(self.registry.subset(
@@ -214,9 +263,9 @@ class BuilderAgent:
         phase = verification_kinds[0] if verification_kinds and len(verification_kinds) == 1 else "build"
         title = {"unit": "Unit tests", "e2e": "End-to-end"}.get(phase, "Building")
         self.events.emit("phase", phase=phase, title=title, status="active")
-        instruction = task
+        instruction = self._with_settings(task)
         if self.design:
-            instruction = design_contract_message(self.design["selection"]) + "\n\n" + task
+            instruction = design_contract_message(self.design["selection"]) + "\n\n" + instruction
         loop = self._loop(self.registry, verification_kinds=verification_kinds)
         outcome = loop.run(instruction, plan=plan)
         self.events.emit("phase", phase=phase, title=title,
@@ -229,10 +278,11 @@ class BuilderAgent:
         return loop.run(focus)
 
     def run(self, task: str) -> Outcome:
-        """The whole build: plan, design, implement, verify."""
+        """The whole build: settle, plan, design, implement, verify."""
         if not str(task or "").strip():
             raise ConfigError("A task description is required.")
         try:
+            self.settings(task)
             plan_outcome = self.plan(task)
             if plan_outcome.status not in ("completed",):
                 # A planning pass that could not finish is not fatal: the build
@@ -247,6 +297,19 @@ class BuilderAgent:
         finally:
             self._finish()
 
+    def _with_settings(self, task: str) -> str:
+        """The request, plus what the user settled about it before planning."""
+        if not self.setup_notes:
+            return task
+        return "\n".join([
+            task, "",
+            "ALREADY SETTLED WITH THE USER (build for these, do not ask again):",
+            *(f"- {note}" for note in self.setup_notes), "",
+            "Every value above is already in this project's .env.local. Read each one from "
+            "process.env at run time. Never write one into source, a test, a fixture or a "
+            "message, and never invent a value for a name that was not supplied.",
+        ])
+
     # -- plumbing --------------------------------------------------------
     def _loop(self, registry, *, plan_only: bool = False, review: bool = False,
               verification_kinds=None) -> Loop:
@@ -256,7 +319,8 @@ class BuilderAgent:
             config = replace(config, plan_only=plan_only, review=review)
         return Loop(config=config, registry=registry, router=self.router, memory=self.memory,
                     sandbox=self.sandbox, events=self.events, processes=self.processes,
-                    browser=self.browser, cancel=self.cancel, verification_kinds=verification_kinds)
+                    browser=self.browser, cancel=self.cancel, approvals=self.approvals,
+                    verification_kinds=verification_kinds)
 
     def _finish(self) -> None:
         """Leave services running for the preview; take everything else down."""

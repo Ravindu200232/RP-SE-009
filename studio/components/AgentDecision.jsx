@@ -1,20 +1,24 @@
 'use client'
 
 /**
- * The two decisions a build stops for.
+ * The three things a build stops to ask about.
  *
- * Everything else the agent does is unattended by design. These two are worth
- * asking about because both are cheap to change now and expensive to change
- * once the app is written: what it is going to build, and what it will look
- * like.
+ * Everything else the agent does is unattended by design. What it is going to
+ * build and what it will look like are worth asking because both are cheap to
+ * change now and expensive to change once the app is written. The third is a
+ * different kind of thing: an account setting nobody but the user has, which
+ * no amount of reading the project will ever produce.
  *
- * Neither blocks. The question carries its own deadline, and if nobody answers
- * the run proceeds with what it had chosen anyway — so closing this window
- * costs a choice, never a build.
+ * None of them blocks. Each question carries its own deadline, and if nobody
+ * answers the run proceeds with what it had chosen anyway — so closing this
+ * window costs a choice, never a build.
  */
 
 import { useEffect, useMemo, useState } from 'react'
-import { Check, Loader2, Palette, RotateCcw, SkipForward } from 'lucide-react'
+import {
+  Check, Eye, EyeOff, KeyRound, Loader2, MessageCircleQuestion, Palette, RotateCcw,
+  SkipForward,
+} from 'lucide-react'
 
 import { api } from '@/lib/api'
 import { useStore } from '@/lib/store'
@@ -67,9 +71,141 @@ export default function AgentDecision() {
     dismiss(answered)
   }
 
-  return question.kind === 'plan'
-    ? <PlanDecision question={question} left={left} sending={sending} onAnswer={answer} />
-    : <DesignDecision question={question} left={left} sending={sending} onAnswer={answer} />
+  if (question.kind === 'plan') {
+    return <PlanDecision question={question} left={left} sending={sending} onAnswer={answer} />
+  }
+  if (question.kind === 'setup') {
+    return <SetupDecision question={question} left={left} sending={sending} onAnswer={answer} />
+  }
+  if (question.kind === 'question') {
+    return <AskDecision question={question} left={left} sending={sending} onAnswer={answer} />
+  }
+  return <DesignDecision question={question} left={left} sending={sending} onAnswer={answer} />
+}
+
+/**
+ * The settings only the account holder has.
+ *
+ * A Stripe secret or a Cloudinary cloud name cannot be worked out from the
+ * project, so a build that needs one either invents a placeholder and ships an
+ * app that fails on first use, or stops. It asks instead, here, while the
+ * person is already watching it work.
+ *
+ * Every field shows a real example. Told only "API key", people paste an
+ * account id, a publishable key where a secret belongs, or the whole line they
+ * copied out of a dashboard; shown `sk_test_51H8...`, they paste the right
+ * thing. The values go straight to the run and into the project's .env.local —
+ * they are not sent to the model, and nothing here puts one on screen twice.
+ */
+function SetupDecision({ question, left, sending, onAnswer }) {
+  const choices = question.choices || []
+  const [choice, setChoice] = useState(choices[0]?.id || '')
+  // Choosing Stripe should not ask for PayHere's merchant id, so the fields
+  // belong to the option and the question shows only the chosen one's.
+  const fields = [...(question.fields || []),
+                  ...(choices.find(option => option.id === choice)?.fields || [])]
+  const [values, setValues] = useState({})
+  const [shown, setShown] = useState({})
+
+  const set = (key, value) => setValues(v => ({ ...v, [key]: value }))
+  const filled = fields.filter(f => String(values[f.key] || '').trim()).length
+  const needed = fields.filter(f => f.required !== false).length
+
+  return (
+    <Modal onClose={() => { }} className="max-w-[620px]">
+      <header className="flex items-center gap-2.5">
+        <span className="grid size-8 place-items-center rounded-xl bg-accent/10 text-accent">
+          <KeyRound className="size-4" />
+        </span>
+        <div className="min-w-0">
+          <h2 className="text-[15px] font-semibold text-ink">{question.purpose}</h2>
+          <p className="mt-0.5 text-[11px] text-muted">
+            These stay on this machine, in the project’s .env.local. They are not
+            sent to the model.
+          </p>
+        </div>
+        <span className="flex-1" />
+        <Countdown left={left} />
+      </header>
+
+      {choices.length > 0 && (
+        <div className="mt-4">
+          {question.question && (
+            <p className="mb-2 text-[12px] text-ink">{question.question}</p>
+          )}
+          <div className="grid gap-1.5 sm:grid-cols-2">
+            {choices.map(option => (
+              <button key={option.id} onClick={() => setChoice(option.id)}
+                      aria-pressed={choice === option.id}
+                      className={cn('rounded-xl border px-3 py-2 text-left transition-colors',
+                        choice === option.id ? 'border-accent bg-accent/[.06]'
+                                             : 'border-line hover:border-line2')}>
+                <span className="block text-[12px] font-medium text-ink">{option.label}</span>
+                {option.hint && (
+                  <span className="mt-0.5 block text-[10.5px] leading-relaxed text-muted2">
+                    {option.hint}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="mt-4 space-y-3">
+        {fields.map(field => (
+          <div key={field.key}>
+            <label htmlFor={`setup-${field.key}`}
+                   className="flex items-baseline gap-2 text-[12px] font-medium text-ink">
+              {field.label}
+              <code className="font-mono text-[9.5px] text-muted2">{field.key}</code>
+              {field.required === false && (
+                <span className="text-[10px] text-muted2">optional</span>
+              )}
+            </label>
+            {field.hint && (
+              <p className="mt-0.5 text-[10.5px] leading-relaxed text-muted2">{field.hint}</p>
+            )}
+            <div className="mt-1.5 flex items-center gap-1.5">
+              <input id={`setup-${field.key}`}
+                     type={field.secret && !shown[field.key] ? 'password' : 'text'}
+                     value={values[field.key] || ''} spellCheck={false}
+                     autoComplete="off" placeholder={field.example}
+                     onChange={e => set(field.key, e.target.value)}
+                     className="h-9 flex-1 rounded-xl border border-line bg-white/70 px-3 font-mono text-[11.5px] text-ink outline-none transition-colors focus:border-accent dark:bg-white/5" />
+              {field.secret && (
+                <button onClick={() => setShown(s => ({ ...s, [field.key]: !s[field.key] }))}
+                        title={shown[field.key] ? 'Hide it' : 'Show what you typed'}
+                        className="grid size-9 shrink-0 place-items-center rounded-xl border border-line text-muted transition-colors hover:text-ink">
+                  {shown[field.key] ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                </button>
+              )}
+            </div>
+            <p className="mt-1 font-mono text-[10px] text-muted2">e.g. {field.example}</p>
+          </div>
+        ))}
+      </div>
+
+      <footer className="mt-5 flex items-center gap-2 border-t border-line/70 pt-4">
+        <span className="flex-1 text-[10.5px] text-muted2">
+          {filled}/{needed} filled in
+        </span>
+        <Button variant="outline" disabled={Boolean(sending)}
+                title="The build carries on and writes the names into .env.example for you to fill in"
+                onClick={() => onAnswer({ decision: 'later' })}>
+          {sending === 'later' ? <Loader2 className="size-3 animate-spin" />
+                               : <SkipForward className="size-3" />}
+          Not now
+        </Button>
+        <Button variant="solid" disabled={Boolean(sending) || (Boolean(fields.length) && !filled)}
+                onClick={() => onAnswer({ decision: 'save', choice, values })}>
+          {sending === 'save' ? <Loader2 className="size-3 animate-spin" />
+                              : <Check className="size-3" />}
+          Save and continue
+        </Button>
+      </footer>
+    </Modal>
+  )
 }
 
 /** How long the build will wait before carrying on by itself. */
@@ -81,6 +217,91 @@ function Countdown({ left }) {
     <span className="text-[10.5px] text-muted2">
       building anyway in {minutes}:{seconds}
     </span>
+  )
+}
+
+/**
+ * A question the agent stopped to ask.
+ *
+ * Not a credential and not an approval: a decision that was always the user's
+ * and that the request never settled — whether a booking can be cancelled an
+ * hour before it starts, whether the manager sees other people's pay. Deciding
+ * those quietly is how a build ends up not being the application somebody
+ * asked for.
+ *
+ * It says what it will do if nobody replies, and then does that, because a
+ * question that stops a build is worse than a decision that was explained.
+ */
+function AskDecision({ question, left, sending, onAnswer }) {
+  const options = question.options || []
+  const [reply, setReply] = useState('')
+
+  return (
+    <Modal onClose={() => { }} className="max-w-[560px]">
+      <header className="flex items-start gap-2.5">
+        <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent">
+          <MessageCircleQuestion className="size-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-[14px] font-semibold leading-snug text-ink">
+            {question.question}
+          </h2>
+          {question.why && (
+            <p className="mt-1 text-[11.5px] leading-relaxed text-muted">{question.why}</p>
+          )}
+        </div>
+        <Countdown left={left} />
+      </header>
+
+      {options.length > 0 && (
+        <div className="mt-4 space-y-1.5">
+          {options.map(option => (
+            <button key={option.id} disabled={Boolean(sending)}
+                    onClick={() => onAnswer({ decision: 'answer', reply: option.label })}
+                    className="w-full rounded-xl border border-line px-3 py-2.5 text-left transition-colors hover:border-accent hover:bg-accent/[.05] disabled:opacity-50">
+              <span className="block text-[12.5px] font-medium text-ink">{option.label}</span>
+              {option.hint && (
+                <span className="mt-0.5 block text-[10.5px] leading-relaxed text-muted2">
+                  {option.hint}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <textarea value={reply} rows={2} autoFocus={!options.length}
+                placeholder={options.length ? 'Or say it in your own words…'
+                                            : 'Your answer…'}
+                onChange={e => setReply(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey && reply.trim()) {
+                    e.preventDefault()
+                    onAnswer({ decision: 'answer', reply: reply.trim() })
+                  }
+                }}
+                className="mt-3 w-full resize-y rounded-xl border border-line bg-white/70 px-3 py-2.5 text-[12.5px] leading-relaxed outline-none focus:border-accent dark:bg-white/5" />
+
+      <footer className="mt-4 flex items-center gap-2 border-t border-line/70 pt-4">
+        <span className="flex-1 text-[10.5px] leading-relaxed text-muted2">
+          {question.assumption
+            ? `No answer: it will ${question.assumption}`
+            : 'No answer: it will decide and say what it assumed.'}
+        </span>
+        <Button variant="outline" disabled={Boolean(sending)}
+                onClick={() => onAnswer({ decision: 'default' })}>
+          {sending === 'default' ? <Loader2 className="size-3 animate-spin" />
+                                 : <SkipForward className="size-3" />}
+          You decide
+        </Button>
+        <Button variant="solid" disabled={Boolean(sending) || !reply.trim()}
+                onClick={() => onAnswer({ decision: 'answer', reply: reply.trim() })}>
+          {sending === 'answer' ? <Loader2 className="size-3 animate-spin" />
+                                : <Check className="size-3" />}
+          Send
+        </Button>
+      </footer>
+    </Modal>
   )
 }
 

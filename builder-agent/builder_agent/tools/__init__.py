@@ -7,14 +7,14 @@ or reach the network has no business in a pass nobody approved changes for.
 from __future__ import annotations
 
 from .base import Registry, Tool, ToolContext
-from . import browser, files, knowledge, plan, search, terminal, verify
+from . import browser, files, knowledge, plan, search, setup, terminal, verify
 
 __all__ = ["Registry", "Tool", "ToolContext", "build_registry", "review_registry"]
 
 
 def build_registry() -> Registry:
     registry = Registry()
-    for module in (files, search, terminal, verify, browser, knowledge, plan):
+    for module in (files, search, terminal, verify, browser, knowledge, plan, setup):
         module.register(registry)
     return registry
 

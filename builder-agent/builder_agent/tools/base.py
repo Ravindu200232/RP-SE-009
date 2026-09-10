@@ -203,4 +203,8 @@ class ToolContext:
     memory: object
     processes: object
     browser: object = None
+    # Asking the person watching, and knowing when the run has been called off
+    # while a question is still on screen.
+    approvals: object = None
+    cancel: object = None
     state: dict = field(default_factory=dict)

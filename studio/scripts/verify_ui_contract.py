@@ -32,6 +32,20 @@ required = {
     "a plan is laid out as prose": ("components/PlanReading.jsx", "readPlan"),
     "the model is chosen where the build is configured": ("components/BuildSetup.jsx", "build-model"),
     "the design can be customised": ("components/AgentDecision.jsx", "function DesignDecision"),
+    "settings are asked for before the plan is written":
+        ("../builder-agent/builder_agent/agent.py", "def settings"),
+    "and the questions belong to the skills, not to the engine":
+        ("../builder-agent/builder_agent/setup.py", "def questions_for"),
+    "each provider asks only for its own": ("components/AgentDecision.jsx", "option.id === choice"),
+    "a key is never shown back or sent to the model":
+        ("components/AgentDecision.jsx", "sent to the model"),
+    "the answers reach the plan": ("../builder-agent/builder_agent/agent.py", "ALREADY SETTLED"),
+    "the agent can ask rather than decide alone":
+        ("../builder-agent/builder_agent/tools/setup.py", "def ask_user"),
+    "and the studio puts the question to them":
+        ("components/AgentDecision.jsx", "function AskDecision"),
+    "an unanswered question still has an answer":
+        ("../builder-agent/builder_agent/tools/setup.py", "Nobody answered in time"),
     "the whole catalogue is offered": ("components/AgentDecision.jsx", 'label="Voice"'),
     "the screens are chosen too": ("components/AgentDecision.jsx", "togglePage"),
     "a design is the default, not the exception":

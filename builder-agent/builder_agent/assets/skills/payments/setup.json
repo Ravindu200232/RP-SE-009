@@ -1,0 +1,71 @@
+{
+  "purpose": "Payments",
+  "question": "How should this app take money?",
+  "choices": [
+    {
+      "id": "stripe-test",
+      "label": "Stripe — test mode",
+      "hint": "No real money. Card 4242 4242 4242 4242 always succeeds.",
+      "fields": [
+        {"key": "STRIPE_SECRET_KEY", "label": "Stripe secret key",
+         "example": "sk_test_51H8xkLm9QpR2sT4uV6wX8yZ",
+         "hint": "Dashboard → Developers → API keys. The one that starts sk_test_.",
+         "secret": true},
+        {"key": "STRIPE_PUBLISHABLE_KEY", "label": "Stripe publishable key",
+         "example": "pk_test_51H8xkLm9QpR2sT4uV6wX8yZ",
+         "hint": "The same page. This one is safe in the browser.",
+         "secret": false},
+        {"key": "STRIPE_WEBHOOK_SECRET", "label": "Webhook signing secret",
+         "example": "whsec_A1b2C3d4E5f6G7h8J9k0",
+         "hint": "Developers → Webhooks → your endpoint. Without it a payment cannot be confirmed.",
+         "secret": true, "required": false}
+      ]
+    },
+    {
+      "id": "stripe-live",
+      "label": "Stripe — real payments",
+      "hint": "Real cards, real money. Use your live keys.",
+      "fields": [
+        {"key": "STRIPE_SECRET_KEY", "label": "Stripe secret key",
+         "example": "sk_live_51H8xkLm9QpR2sT4uV6wX8yZ",
+         "hint": "Dashboard → Developers → API keys, with the test toggle off.",
+         "secret": true},
+        {"key": "STRIPE_PUBLISHABLE_KEY", "label": "Stripe publishable key",
+         "example": "pk_live_51H8xkLm9QpR2sT4uV6wX8yZ", "secret": false},
+        {"key": "STRIPE_WEBHOOK_SECRET", "label": "Webhook signing secret",
+         "example": "whsec_A1b2C3d4E5f6G7h8J9k0", "secret": true}
+      ]
+    },
+    {
+      "id": "payhere-sandbox",
+      "label": "PayHere — sandbox",
+      "hint": "Sri Lanka: LKR, local cards, eZ Cash and mCash. No real money.",
+      "fields": [
+        {"key": "PAYHERE_MERCHANT_ID", "label": "Merchant ID",
+         "example": "1221149",
+         "hint": "sandbox.payhere.lk → Settings → Domains & Credentials.",
+         "secret": false},
+        {"key": "PAYHERE_MERCHANT_SECRET", "label": "Merchant secret",
+         "example": "MzIxNDU2Nzg5MDEyMzQ1Njc4OTA=",
+         "hint": "The same page. Used to sign and to verify the notification.",
+         "secret": true},
+        {"key": "PAYHERE_SANDBOX", "label": "Sandbox mode",
+         "example": "true", "secret": false}
+      ]
+    },
+    {
+      "id": "payhere-live",
+      "label": "PayHere — real payments",
+      "hint": "Real LKR payments from your live PayHere account.",
+      "fields": [
+        {"key": "PAYHERE_MERCHANT_ID", "label": "Merchant ID",
+         "example": "1221149",
+         "hint": "payhere.lk → Settings → Domains & Credentials.", "secret": false},
+        {"key": "PAYHERE_MERCHANT_SECRET", "label": "Merchant secret",
+         "example": "MzIxNDU2Nzg5MDEyMzQ1Njc4OTA=", "secret": true},
+        {"key": "PAYHERE_SANDBOX", "label": "Sandbox mode",
+         "example": "false", "secret": false}
+      ]
+    }
+  ]
+}

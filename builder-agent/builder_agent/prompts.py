@@ -74,7 +74,7 @@ REVIEW = """MODE: READ-ONLY REVIEW. Inspect the requested changes and the code a
 
 PLANNING = """MODE: READ-ONLY PRODUCT PLANNING.
 Start with inspectProject once. Its fresh-scaffold summary and project layout are authoritative for planning. Do not inventory the scaffold by opening its gateway, service skeleton, client primitives, tests, configs or manifests. Read a project file only when the request conflicts with the summary or leaves a material requirement, route, data or compatibility question that the summary cannot answer.
-Do not call listSkills and do not enumerate or read implementation, framework, UI-provider, scaffold, runtime, testing, debugging or verification skills. Those skills belong to the execution phase and reading them now wastes the user's time and context. Do not inspect template examples or generated scaffold files merely to restate their structure.
+Read the `planning` skill first, with readSkill. It is how a request is turned into a plan that covers all of it, and it is the only skill this pass reads. Do not call listSkills and do not enumerate or read implementation, framework, UI-provider, scaffold, runtime, testing, debugging or verification skills. Those skills belong to the execution phase and reading them now wastes the user's time and context. Do not inspect template examples or generated scaffold files merely to restate their structure.
 For a user interface, set the design direction from the product itself: who uses it, what each screen is for, and what the approved design contract already fixes. Then submit one complete plan. Order it as requirements and implementation, production build, runtime readiness, unit/integration evidence, E2E evidence, Done. Keep test commands out of intermediate implementation done conditions so execution does not run the same suites twice. Do not install, generate, seed, start, build, test or implement during planning."""
 
 
@@ -155,14 +155,17 @@ def system_prompt(*, workspace, model: str, stack: str, quality: Quality,
 
 def task_message(task: str, *, stack: str, quality: Quality, plan_only: bool = False) -> str:
     contract = stack_for(stack)
-    header = ("PLAN THIS TASK. Call inspectProject once, then call submitPlan "
-              "with a complete human-readable plan: the goal and its invariants, what you "
+    header = ("PLAN THIS TASK. Call readSkill('planning') and inspectProject once each, then "
+              "call submitPlan with a complete human-readable plan: the goal and its "
+              "invariants, the requirements enumerated from the request itself, what you "
               "found, ordered phases with their done conditions, acceptance evidence, and real "
-              "limitations. Treat the fresh-scaffold summary and layout as sufficient; do not "
+              "limitations. Every distinct thing the request asks for is a numbered "
+              "requirement and belongs to exactly one phase; a request read once produces a "
+              "plan about most of it, which is how the thing somebody actually wanted goes "
+              "missing. Treat the fresh-scaffold summary and layout as sufficient; do not "
               "inventory boilerplate gateway, service, client, test or config files. Read a targeted "
               "project file only when the request leaves a material unknown the summary cannot answer. "
-              "Do not list or read implementation, framework, UI-provider, scaffold, runtime, "
-              "testing or verification skills during this pass; execution owns them. Planning is "
+              "Read no skill but `planning` during this pass; execution owns the rest. Planning is "
               "read-only: do not install dependencies, run generators, seed data, start services, "
               "build, or run tests. The scaffold and selected UI provider are already verified. "
               "For a user interface, set the direction from the product itself: who uses it, "

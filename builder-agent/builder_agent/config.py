@@ -67,7 +67,7 @@ NEXT_MONGO = Stack(
         "Detect the installed versions, router shape, package manager and code style from the project itself.",
         "Never migrate the generated application to another framework, database or distributed architecture.",
     ),
-    skills=("full-app-builder", "nextjs", "react", "node", "mongoose",
+    skills=("full-app-builder", "planning", "nextjs", "react", "node", "mongoose",
             "runtime", "vitest", "browser-e2e"),
 )
 
@@ -88,8 +88,8 @@ MERN_MICRO = Stack(
         "Generate a Dockerfile (and a compose file when there is more than one service) as build output, but never verify through it.",
         "Never collapse the services back into one server, and never migrate off this architecture.",
     ),
-    skills=("full-app-builder", "mern-microservices", "react", "node", "mongoose",
-            "runtime", "vitest", "browser-e2e", "express", "api-gateway",
+    skills=("full-app-builder", "planning", "mern-microservices", "react", "node",
+            "mongoose", "runtime", "vitest", "browser-e2e", "express", "api-gateway",
             "api-contracts", "local-multiservice-runtime"),
     extras=("docker",),
     parallel_units=True,

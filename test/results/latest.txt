@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-10T07:34:55+00:00
+Run at (UTC): 2026-09-10T08:45:00+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 394
+Unit tests: 417
 Integration tests: 24
-Total tests run: 418
+Total tests run: 441
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 21.210s
+Duration: 22.378s
 
 Detailed results
 ----------------
@@ -25,6 +25,8 @@ test_the_build_pass_receives_the_plan_and_the_design (test.unit.builder.test_age
 test_the_design_answer_is_applied_and_junk_in_it_is_not (test.unit.builder.test_agent_passes.AgentPassTests.test_the_design_answer_is_applied_and_junk_in_it_is_not) ... ok
 test_the_design_can_be_left_to_the_build (test.unit.builder.test_agent_passes.AgentPassTests.test_the_design_can_be_left_to_the_build) ... ok
 test_the_design_contract_is_decided_and_written_without_asking (test.unit.builder.test_agent_passes.AgentPassTests.test_the_design_contract_is_decided_and_written_without_asking) ... ok
+test_the_plan_is_told_to_enumerate_what_was_asked_for (test.unit.builder.test_agent_passes.AgentPassTests.test_the_plan_is_told_to_enumerate_what_was_asked_for)
+A request read once produces a plan about most of it. ... ok
 test_the_planning_pass_investigates_but_does_not_implement (test.unit.builder.test_agent_passes.AgentPassTests.test_the_planning_pass_investigates_but_does_not_implement) ... ok
 test_work_with_no_interface_gets_no_design_contract (test.unit.builder.test_agent_passes.AgentPassTests.test_work_with_no_interface_gets_no_design_contract) ... ok
 test_a_question_nobody_can_answer_is_not_published (test.unit.builder.test_agent_passes.PendingQuestionTests.test_a_question_nobody_can_answer_is_not_published) ... ok
@@ -219,6 +221,32 @@ test_the_notice_says_how_to_replace_what_it_says_to_replace (test.unit.builder.t
 It asks for the placeholder page to be replaced; writeFile refuses that. ... ok
 test_the_root_manifest_takes_the_folder_name_so_npm_can_install_it (test.unit.builder.test_project_setup.StackTemplateTests.test_the_root_manifest_takes_the_folder_name_so_npm_can_install_it) ... ok
 test_the_subject_of_the_product_outvotes_the_shape_of_it (test.unit.builder.test_project_setup.StackTemplateTests.test_the_subject_of_the_product_outvotes_the_shape_of_it) ... ok
+test_a_value_cannot_smuggle_a_second_setting_in_on_a_new_line (test.unit.builder.test_setup_questions.AppliedAnswerTests.test_a_value_cannot_smuggle_a_second_setting_in_on_a_new_line)
+A newline inside a value would otherwise become a setting of its own. ... ok
+test_answering_twice_updates_rather_than_appends (test.unit.builder.test_setup_questions.AppliedAnswerTests.test_answering_twice_updates_rather_than_appends) ... ok
+test_no_value_reaches_the_note_the_plan_carries (test.unit.builder.test_setup_questions.AppliedAnswerTests.test_no_value_reaches_the_note_the_plan_carries) ... ok
+test_the_example_file_is_written_whether_or_not_anyone_answered (test.unit.builder.test_setup_questions.AppliedAnswerTests.test_the_example_file_is_written_whether_or_not_anyone_answered) ... ok
+test_the_other_option_is_never_written (test.unit.builder.test_setup_questions.AppliedAnswerTests.test_the_other_option_is_never_written) ... ok
+test_what_was_supplied_is_written_and_the_rest_is_left_alone (test.unit.builder.test_setup_questions.AppliedAnswerTests.test_what_was_supplied_is_written_and_the_rest_is_left_alone) ... ok
+test_a_question_nobody_answers_returns_the_assumption (test.unit.builder.test_setup_questions.AskingToolTests.test_a_question_nobody_answers_returns_the_assumption) ... ok
+test_neither_tool_can_be_called_without_saying_what_it_is_for (test.unit.builder.test_setup_questions.AskingToolTests.test_neither_tool_can_be_called_without_saying_what_it_is_for) ... ok
+test_settings_nobody_supplies_still_leave_the_names_behind (test.unit.builder.test_setup_questions.AskingToolTests.test_settings_nobody_supplies_still_leave_the_names_behind) ... ok
+test_a_broken_declaration_stops_its_question_not_the_build (test.unit.builder.test_setup_questions.DeclaredQuestionTests.test_a_broken_declaration_stops_its_question_not_the_build) ... ok
+test_a_request_is_only_asked_about_what_it_mentions (test.unit.builder.test_setup_questions.DeclaredQuestionTests.test_a_request_is_only_asked_about_what_it_mentions) ... ok
+test_a_request_that_rules_it_out_is_not_asked (test.unit.builder.test_setup_questions.DeclaredQuestionTests.test_a_request_that_rules_it_out_is_not_asked) ... ok
+test_a_skill_with_nothing_to_ask_asks_nothing (test.unit.builder.test_setup_questions.DeclaredQuestionTests.test_a_skill_with_nothing_to_ask_asks_nothing) ... ok
+test_each_option_asks_only_for_its_own_settings (test.unit.builder.test_setup_questions.DeclaredQuestionTests.test_each_option_asks_only_for_its_own_settings) ... ok
+test_every_declaration_that_ships_is_usable (test.unit.builder.test_setup_questions.DeclaredQuestionTests.test_every_declaration_that_ships_is_usable) ... ok
+test_every_field_that_ships_carries_an_example (test.unit.builder.test_setup_questions.DeclaredQuestionTests.test_every_field_that_ships_carries_an_example)
+Told only "API key", people paste an account id. ... ok
+test_a_field_without_an_example_is_refused (test.unit.builder.test_setup_questions.FieldValidationTests.test_a_field_without_an_example_is_refused) ... ok
+test_a_key_that_is_not_an_environment_variable_is_refused (test.unit.builder.test_setup_questions.FieldValidationTests.test_a_key_that_is_not_an_environment_variable_is_refused) ... ok
+test_a_name_written_in_lower_case_is_corrected_rather_than_refused (test.unit.builder.test_setup_questions.FieldValidationTests.test_a_name_written_in_lower_case_is_corrected_rather_than_refused)
+The name is what it becomes in the file, not a spelling test. ... ok
+test_the_same_setting_cannot_be_asked_for_twice (test.unit.builder.test_setup_questions.FieldValidationTests.test_the_same_setting_cannot_be_asked_for_twice) ... ok
+test_a_declared_option_matches_a_file_the_skill_points_at (test.unit.builder.test_setup_questions.SkillFileTests.test_a_declared_option_matches_a_file_the_skill_points_at)
+The question and the guidance cannot drift apart silently. ... ok
+test_every_provider_named_by_a_skill_has_a_file_to_read (test.unit.builder.test_setup_questions.SkillFileTests.test_every_provider_named_by_a_skill_has_a_file_to_read) ... ok
 test_environment_style_secret_line_keeps_the_key_but_hides_the_value (test.unit.deployment.test_security.DeploymentSecurityTests.test_environment_style_secret_line_keeps_the_key_but_hides_the_value) ... ok
 test_hash_helpers_produce_the_same_artifact_digest (test.unit.deployment.test_security.DeploymentSecurityTests.test_hash_helpers_produce_the_same_artifact_digest) ... ok
 test_missing_artifact_has_no_false_digest (test.unit.deployment.test_security.DeploymentSecurityTests.test_missing_artifact_has_no_false_digest) ... ok
@@ -484,6 +512,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 418 tests in 21.210s
+Ran 441 tests in 22.378s
 
 OK
