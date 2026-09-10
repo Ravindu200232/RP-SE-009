@@ -1,6 +1,6 @@
 ---
 name: html-prototype
-description: Draw the whole application as static HTML before any of it is built — every planned screen, the chosen design tokens, realistic content, no framework and no backend — so the look can be agreed before the expensive part starts.
+description: Draw the whole application as static HTML before any of it is built — every planned screen, the chosen design tokens, realistic content, styled with Tailwind from a CDN, no build step and no backend — so the look can be agreed before the expensive part starts.
 ---
 
 # The HTML prototype
@@ -17,8 +17,9 @@ build.
 
 ## What it is
 
-- **Plain HTML, CSS and a little JavaScript.** No React, no build step, no
-  bundler, no npm install. A file opens in a browser and works.
+- **Plain HTML, Tailwind and a little JavaScript.** No React, no bundler, no
+  npm install, no build step — Tailwind arrives as one `<script>` and compiles
+  in the browser. A file opens in a browser and works.
 - **It works.** This is a demo somebody clicks through, not a picture of one.
   See "Make the flow work" below.
 - **No backend.** No fetch, no API, no database, no server. Every piece of
@@ -51,7 +52,7 @@ Write these, with `writeFile`, using the paths exactly as shown:
 ```
 .agentforge/prototype/index.html    the first screen the plan named
 .agentforge/prototype/<screen>.html one per remaining screen, named after its route
-.agentforge/prototype/styles.css    every token and every rule, shared by all of them
+.agentforge/prototype/styles.css    the design tokens, linked by all of them
 .agentforge/prototype/demo.js       the small amount of script that makes the flow work
 ```
 
@@ -59,9 +60,14 @@ Start writing. There is nothing to look up first: the screens are listed in the
 request, and the tokens are in `design-system.md`, which is the one other file
 worth reading.
 
-One stylesheet, linked from every page. A page with its own `<style>` block is
-a page that will drift from the others, and a colour change the user asks for
-then has to be made five times instead of once.
+One `styles.css`, linked from every page, holding the tokens. Nothing else
+belongs in a page's own CSS: a rule written into one file is a rule that will
+drift from the other eleven, and a colour change the user asks for then has to
+be made five times instead of once.
+
+The one exception is the Tailwind theme block below, which the browser build
+can only read inline. It is identical on every page, the same way the header
+and footer are.
 
 ## The design contract owns the look
 
@@ -70,19 +76,78 @@ width were chosen and written to `design-system.md` and its token block. Put
 those tokens at the top of `styles.css` as custom properties and reference them
 everywhere:
 
+`styles.css` is that token block and little else:
+
 ```css
-:root { --primary: #EA580C; --surface: #FFFFFF; /* … from the contract */ }
-.button-primary { background: var(--primary); border-radius: var(--radius); }
+:root {
+  --primary: #EA580C;
+  --surface: #FFFFFF;
+  --radius:  12px;      /* … the rest, from the contract */
+}
 ```
 
-**Never write a hex value anywhere but the token block.** When the user asks
-for a different colour, one property changes and the whole prototype follows.
-That is the point of the exercise, and a hard-coded `#EA580C` in a button rule
-breaks it.
+**Never write a hex value anywhere but that block.** When the user asks for a
+different colour, one property changes and the whole prototype follows. That is
+the point of the exercise, and a hard-coded `#EA580C` in a button rule breaks
+it — as does a Tailwind `bg-orange-600`, which is the same mistake spelled
+differently. Tailwind's own colour names are not this product's palette.
 
-Every interactive thing gets a class, not an inline style: `.button-primary`,
-`.button-secondary`, `.card`, `.field`, `.nav-link`. A request to change "the
-buttons" has to have something to change.
+## Setting Tailwind up
+
+Tailwind compiles in the browser, so there is nothing to install and nothing to
+build. Every page starts with the same head, and it is the same in all twelve
+files:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rooms & Suites | Royal Azure</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    @theme {
+      --color-primary: var(--primary);
+      --color-surface: var(--surface);
+      --radius-card:   var(--radius);
+    }
+    @layer components {
+      .button-primary { @apply bg-primary text-white px-6 py-3 rounded-card font-semibold hover:opacity-90; }
+      .card           { @apply bg-surface rounded-card shadow p-6; }
+      .field          { @apply w-full rounded-card border border-gray-300 px-4 py-3; }
+      .nav-link       { @apply text-sm font-medium hover:text-primary; }
+    }
+  </style>
+</head>
+```
+
+Three things are load-bearing there:
+
+- **`@theme` is what connects the contract to Tailwind.** `--color-primary:
+  var(--primary)` is what makes `bg-primary`, `text-primary` and
+  `border-primary` paint the agreed colour, and `--radius-card` is what makes
+  `rounded-card` the agreed radius. Map every token the contract settled, and
+  then never reach for a stock Tailwind colour.
+- **That block has to be inline.** `<link href="theme.css"
+  type="text/tailwindcss">` looks tidier and does nothing at all — the browser
+  never even fetches it, and the page renders with no styling and no error to
+  explain why. Write it into the head of each page.
+- **The script tag comes before the block**, and both come before the markup.
+
+## Utilities in the markup, classes for what repeats
+
+Tailwind utilities are for layout and one-offs — `grid grid-cols-3 gap-6`,
+`flex items-center justify-between`, `mt-12`, `max-w-6xl mx-auto`. Use them
+freely; that is what they are good at.
+
+Anything that appears more than twice gets a component class in
+`@layer components` instead: `.button-primary`, `.button-secondary`, `.card`,
+`.field`, `.nav-link`. Forty buttons each carrying `bg-primary text-white px-6
+py-3 rounded-card` is forty places to edit when the user says "make the buttons
+bigger", and the fortieth will be missed. A request to change "the buttons" has
+to have one thing to change.
 
 ## The shell
 
@@ -303,8 +368,10 @@ wide — the user will.
 
 The user will ask for changes, in their own words: "make the buttons blue",
 "this heading is too big", "put the price above the description". Apply the
-change everywhere it belongs, in the stylesheet where it is a token or a class,
-and re-render only the files that changed.
+change everywhere it belongs — a token in `styles.css` where it is a colour or
+a radius, a component class in `@layer components` where it is the look of one
+kind of thing — and re-render only the files that changed. A change made by
+editing utilities across nine files is a change that will be half-applied.
 
 If they point at one element and ask for a change to that alone, change that
 one — a class used once, or a modifier on it, never a new inline style.
@@ -359,7 +426,10 @@ missing, rather than padding what is already there.
 - Can you point at where each of the plan's requirements is on a page?
 - Is every dimension the design contract settled actually expressed?
 - Can you reach every screen from every screen?
-- Is every colour a token reference, with no hex outside the token block?
+- Is every colour a token reference — no hex outside `styles.css`, and no
+  stock Tailwind colour like `bg-orange-600` standing in for the palette?
+- Does each page carry the Tailwind script and the `@theme` block inline, with
+  every token the contract settled mapped in it?
 - Is the content this product's content, with no placeholder text left?
 - Does any page look thin — a list of two, a table with no statuses, a form
   missing half its fields?

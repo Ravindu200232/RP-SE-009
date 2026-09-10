@@ -377,6 +377,16 @@ class BuilderAgent:
         contract = (design_contract_message(self.design["selection"])
                     if self.design and self.design.get("selection") else "")
         return "\n".join([
+            "EVERY PAGE IS A LONG, BIG PAGE. This is the thing that goes wrong most "
+            "often, so it is said first and said again below: not a short page, not a "
+            "summary, not a sketch - a long page of the kind a real product ships. Six "
+            "to ten full sections between the header and the footer, lists of eight or "
+            "ten rows, the whole footer sitemap, 9,000 bytes at the very least and "
+            "15,000 for a landing page. Before you write each file, decide what its six "
+            "to ten sections are; after you write it, count them. A short page is the "
+            "one failure this step cannot afford, because a short page is what gets "
+            "approved and then built.",
+            "",
             "Draw this whole application as static HTML, before any of it is built for "
             "real. This is the finished thing on paper, not a sketch of it.",
             "",
@@ -446,10 +456,21 @@ class BuilderAgent:
             "Unsplash photo id cannot be known from here, so it gets invented, and an "
             "invented one is a grey rectangle where the hero should be.",
             "",
-            "Plain HTML, CSS and that one small script. No framework, no build step, no "
-            "backend, no fetch, no server. Link the pages to each other so the whole "
-            "application can be walked. Write content that belongs to this product, not "
-            "placeholder text.",
+            "STYLE IT WITH TAILWIND, wired to the contract. Every page head carries "
+            "`<script src=\"https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4\"></script>` "
+            "and then, inline, `<style type=\"text/tailwindcss\">` holding an `@theme` "
+            "block that maps the contract's tokens onto Tailwind - `--color-primary: "
+            "var(--primary)`, `--radius-card: var(--radius)` - and an `@layer components` "
+            "block defining .button-primary, .card, .field and .nav-link with `@apply`. "
+            "The tokens themselves stay in styles.css as custom properties, the only "
+            "place a hex appears; a stock `bg-orange-600` is the same mistake as a "
+            "hard-coded hex. That style block cannot be an external file - a link with "
+            "that type is never fetched and the page renders unstyled - so write it into "
+            "every page. Utilities for layout, component classes for anything repeated.",
+            "",
+            "No build step, no bundler, no npm install, no backend, no fetch, no server. "
+            "Link the pages to each other so the whole application can be walked. Write "
+            "content that belongs to this product, not placeholder text.",
             "",
             "Write the files and stop. Do not install anything, do not start a server, "
             "and do not write tests.",
