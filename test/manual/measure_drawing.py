@@ -43,6 +43,14 @@ LANDMARK = re.compile(r"<(?:header|footer|main|nav|aside)\b", re.I)
 IMAGE = re.compile(r"<img\b|<Image\b|<picture\b|background-image\s*:\s*url\(", re.I)
 LINK = re.compile(r"<a\b[^>]*\bhref=|<Link\b[^>]*\bhref=", re.I)
 ROW = re.compile(r"<tr\b", re.I)
+# Bytes a page gets for free, which is why they are not counted. Tailwind moved
+# the styling into the markup: a `<style type="text/tailwindcss">` theme block is
+# ~1,000 bytes on every page before a word is written, and utility classes ran to
+# 15-19% of a hand-written drawing and go far higher on a Tailwind one. Counted,
+# a three-section page clears a nine-kilobyte floor while staying a three-section
+# page - which is the one thing this file exists to catch.
+CLASS_ATTR = re.compile(r'''\s(?:class|className)\s*=\s*(?:"[^"]*"|'[^']*')''', re.I)
+
 FIELD = re.compile(r"<(?:input|select|textarea)\b", re.I)
 HEADING = re.compile(r"<h[1-6]\b", re.I)
 
@@ -92,7 +100,11 @@ def measure(html: str) -> dict:
     shell = sum(len(LINK.findall(m.group(0))) for m in (header, footer) if m)
 
     return {
-        "bytes": len(html.encode("utf-8")),
+        # What is left once the styling is taken away: the page's own content.
+        # This is the number judged, so a page cannot pass by wearing more
+        # classes. raw_bytes stays reported - it is what a browser downloads.
+        "bytes": len(CLASS_ATTR.sub("", visible).encode("utf-8")),
+        "raw_bytes": len(html.encode("utf-8")),
         "sections": len(SECTION.findall(body)) + len(LANDMARK.findall(body)),
         # The page's own sections, without the shell landmarks. A drawing wears
         # its header and footer in every file; a built app has them once. Only
@@ -126,11 +138,16 @@ def measure(html: str) -> dict:
 # What varies by page is the content: images, words and rows belong to what the
 # page is for, so they are judged per kind and the floors are the reference's
 # own minimums.
-EVERY_PAGE = {"bytes": 9000, "sections": 6, "links": 35, "shell": 30}
+# The byte floors are content bytes, not what a browser downloads. They were
+# set as raw bytes - 9,000 / 12,000 / 15,000 - and are carried across at the
+# 0.80 that styling accounted for on the hand-written drawings they were
+# measured against (raw 7,147 -> content 5,706, and raw 3,836 -> 3,212). Same
+# page, same verdict; a page cannot now reach the floor by wearing classes.
+EVERY_PAGE = {"bytes": 7200, "sections": 6, "links": 35, "shell": 30}
 
 TARGETS = {
-    "landing": {**EVERY_PAGE, "bytes": 15000, "images": 8, "words": 400},
-    "detail":  {**EVERY_PAGE, "bytes": 12000, "images": 4, "words": 300},
+    "landing": {**EVERY_PAGE, "bytes": 12000, "images": 8, "words": 400},
+    "detail":  {**EVERY_PAGE, "bytes": 9600, "images": 4, "words": 300},
     "list":    {**EVERY_PAGE, "images": 6, "words": 200},
     "admin":   {**EVERY_PAGE, "words": 180, "rows": 8},
     "form":    {**EVERY_PAGE, "words": 150, "fields": 3},
