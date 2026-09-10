@@ -150,8 +150,8 @@ function DesignDecision({ question, left, sending, onAnswer }) {
     density: chosen.density, typeScale: chosen.typeScale, themeMode: chosen.themeMode,
     border: chosen.border, elevation: chosen.elevation, motion: chosen.motion,
     tone: chosen.tone, contrast: chosen.contrast, container: chosen.container,
-    // Compositions are the planner's to choose; they ride along unchanged.
-    pages: chosen.pages || [], blocks: chosen.blocks || [],
+    // The screens the plan named, all of them on until one is turned off.
+    pages: chosen.pages || [],
   })
   const set = (field, value) => setPick(p => ({ ...p, [field]: value }))
   const togglePage = id => setPick(p => ({
@@ -172,8 +172,8 @@ function DesignDecision({ question, left, sending, onAnswer }) {
         <div>
           <h2 className="text-[15px] font-semibold text-ink">How should it look?</h2>
           <p className="mt-0.5 text-[11px] text-muted">
-            {question.uiKit?.name || 'The UI framework'} and its page compositions are already
-            chosen for this product. Change anything below and the build follows it exactly.
+            Every choice here shows on the page beside it, and the build follows
+            it exactly. Nothing is decided for you that you cannot change.
           </p>
         </div>
         <span className="flex-1" />
@@ -207,8 +207,15 @@ function DesignDecision({ question, left, sending, onAnswer }) {
 
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Type">
-              <Choices options={(question.fonts || []).map(f => ({ id: f.id, label: f.name }))}
+              <Choices options={(question.fonts || []).map(f => ({
+                         id: f.id, label: f.name, hint: `${f.heading} headings, ${f.body} body` }))}
                        value={pick.font} onChange={v => set('font', v)} />
+            </Field>
+            <Field label="Type scale">
+              <Choices options={(question.typeScales || []).map(s => ({
+                         id: s.id, label: s.id,
+                         hint: `${s.base}px body, each step ${s.ratio}x the last` }))}
+                       value={pick.typeScale} onChange={v => set('typeScale', v)} />
             </Field>
             <Field label="Theme">
               <Choices options={ids(question.themeModes)} value={pick.themeMode}
@@ -328,13 +335,18 @@ const Field = ({ label, children }) => (
   </div>
 )
 
-/** A catalogue row renders as its own id: they are already the human word. */
-const ids = (rows) => (rows || []).map(row => ({ id: row.id, label: row.id }))
+/** A catalogue row renders as its own id: they are already the human word.
+ *
+ * The catalogue also writes a sentence about each option - "200-320ms springs,
+ * slide-ins, staggered lists" - and nothing ever showed them, so every choice
+ * was a word you either knew or guessed at.
+ */
+const ids = (rows) => (rows || []).map(row => ({ id: row.id, label: row.id, hint: row.hint }))
 
 const Choices = ({ options, value, onChange }) => (
   <div className="flex flex-wrap gap-1">
     {options.map(option => (
-      <button key={option.id} onClick={() => onChange(option.id)}
+      <button key={option.id} onClick={() => onChange(option.id)} title={option.hint || ''}
               className={cn('rounded-lg border px-2 py-1 text-[10.5px] capitalize transition-colors',
                 value === option.id ? 'border-accent bg-accent/[.07] text-accent'
                                     : 'border-line text-muted hover:text-ink')}>

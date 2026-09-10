@@ -25,6 +25,24 @@ const BORDERS = { hairline: '1px', defined: '1.5px', bold: '2.5px' }
 const UNITS = { compact: 6, cozy: 8, comfortable: 11 }
 const SCALES = { compact: 0.94, balanced: 1, comfortable: 1.06, dramatic: 1.14 }
 
+// The content column, as a share of the page. The catalogue's widths are for a
+// real viewport; shown at this size, what reads is the proportion.
+const WIDTHS = { 1120: '78%', 1280: '87%', 1440: '95%', full: '100%' }
+
+// How long anything here takes to react, from the motion choice. Hovering the
+// preview is then the setting itself, not a description of it.
+const SPEEDS = { none: '0ms', subtle: '150ms', expressive: '260ms' }
+
+/** How the product speaks, in the two places a page always speaks. */
+const VOICE = {
+  professional: { cta: 'Get started', second: 'Learn more', form: 'Your details' },
+  friendly: { cta: 'Jump in', second: 'Have a look', form: 'Tell us about you' },
+  playful: { cta: 'Let’s go', second: 'Nose around', form: 'The fun part' },
+  bold: { cta: 'Start now', second: 'See how', form: 'Your details' },
+  minimal: { cta: 'Start', second: 'More', form: 'Details' },
+  luxury: { cta: 'Begin', second: 'Discover', form: 'Your particulars' },
+}
+
 /** What the product is called, from the brief, so the preview is about it. */
 function productName(goal) {
   const words = String(goal || '').replace(/[^\w\s]/g, ' ').split(/\s+/).filter(Boolean)
@@ -44,16 +62,26 @@ export default function DesignPreview({ tokens, question, pick, screens = [] }) 
   const line = `${BORDERS[pick.border] || '1px'} solid ${tokens.border}`
   const name = productName(question.goal)
   const nav = screens.slice(0, 4)
+  const say = VOICE[pick.tone] || VOICE.professional
+  const speed = SPEEDS[pick.motion] || SPEEDS.subtle
+  // AAA constrains muted greys, so under it the quiet text stops being quiet.
+  const quiet = pick.contrast === 'aaa' ? tokens.text : tokens.textMuted
 
   const size = (base) => `${Math.round(base * scale * 10) / 10}px`
   const card = {
     background: tokens.surface, borderRadius: corner, border: line,
-    boxShadow: shadow, padding: unit * 1.5,
+    boxShadow: shadow, padding: unit * 1.5, transition: `all ${speed} ease`,
+  }
+  const column = {
+    width: WIDTHS[pick.container] || '100%',
+    marginInline: 'auto',
+    transition: `width ${speed} ease`,
   }
 
   return (
     <div className="overflow-hidden" style={{ borderRadius: corner, border: line }}>
-      <div style={{ background: tokens.background, fontFamily: font?.body }}>
+      <div style={{ background: tokens.background, fontFamily: font?.body,
+                    transition: `background ${speed} ease` }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: unit,
@@ -76,11 +104,12 @@ export default function DesignPreview({ tokens, question, pick, screens = [] }) 
 
         {/* Hero */}
         <div style={{ padding: unit * 2 }}>
+         <div style={column}>
           <p style={{ fontFamily: font?.heading, color: tokens.text,
                       fontSize: size(20), fontWeight: 700, lineHeight: 1.15, margin: 0 }}>
             {nav[0]?.label || 'Everything in one place'}
           </p>
-          <p style={{ color: tokens.textMuted, fontSize: size(9.5), lineHeight: 1.6,
+          <p style={{ color: quiet, fontSize: size(9.5), lineHeight: 1.6,
                       margin: `${unit}px 0 0`, maxWidth: '46ch' }}>
             {screens[0]?.what
               || 'This is how the product’s type, spacing and surfaces will read.'}
@@ -88,20 +117,22 @@ export default function DesignPreview({ tokens, question, pick, screens = [] }) 
           <div style={{ display: 'flex', gap: unit * 0.75, marginTop: unit * 1.5 }}>
             <span style={{ background: tokens.primary, color: tokens.onPrimary,
                            borderRadius: corner, padding: `${unit * 0.55}px ${unit * 1.4}px`,
-                           fontSize: size(9), fontWeight: 600, boxShadow: shadow }}>
-              Get started
+                           fontSize: size(9), fontWeight: 600, boxShadow: shadow,
+                           transition: `all ${speed} ease` }}>
+              {say.cta}
             </span>
             <span style={{ background: 'transparent', color: tokens.text, border: line,
                            borderRadius: corner, padding: `${unit * 0.55}px ${unit * 1.4}px`,
-                           fontSize: size(9) }}>
-              Learn more
+                           fontSize: size(9), transition: `all ${speed} ease` }}>
+              {say.second}
             </span>
           </div>
+         </div>
         </div>
 
         {/* Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: unit,
-                      padding: `0 ${unit * 2}px ${unit * 1.5}px` }}>
+        <div style={{ padding: `0 ${unit * 2}px ${unit * 1.5}px` }}>
+         <div style={{ ...column, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: unit }}>
           {(screens.length ? screens.slice(0, 2) : [null, null]).map((screen, i) => (
             <div key={i} style={card}>
               <div style={{ height: unit * 3, borderRadius: corner,
@@ -110,25 +141,27 @@ export default function DesignPreview({ tokens, question, pick, screens = [] }) 
                           fontSize: size(10), fontWeight: 600 }}>
                 {screen?.label || (i ? 'Second item' : 'First item')}
               </p>
-              <p style={{ color: tokens.textMuted, fontSize: size(8.5), margin: `${unit * 0.4}px 0 0`,
+              <p style={{ color: quiet, fontSize: size(8.5), margin: `${unit * 0.4}px 0 0`,
                           lineHeight: 1.5 }}>
                 {(screen?.what || 'A short line of supporting detail.').slice(0, 64)}
               </p>
             </div>
           ))}
+         </div>
         </div>
 
         {/* A form, because most products have one */}
         <div style={{ padding: `0 ${unit * 2}px ${unit * 1.5}px` }}>
+         <div style={column}>
           <div style={card}>
-            <p style={{ color: tokens.textMuted, fontSize: size(8), margin: 0,
+            <p style={{ color: quiet, fontSize: size(8), margin: 0,
                         textTransform: 'uppercase', letterSpacing: '.08em' }}>
-              Your details
+              {say.form}
             </p>
             <div style={{ display: 'flex', gap: unit * 0.75, marginTop: unit * 0.75 }}>
               <span style={{ flex: 1, border: line, borderRadius: corner,
                              padding: `${unit * 0.5}px ${unit * 0.8}px`, fontSize: size(8.5),
-                             color: tokens.textMuted, background: tokens.background }}>
+                             color: quiet, background: tokens.background }}>
                 name@example.com
               </span>
               <span style={{ background: tokens.accent || tokens.primary, color: tokens.onPrimary,
@@ -144,12 +177,13 @@ export default function DesignPreview({ tokens, question, pick, screens = [] }) 
               ))}
             </div>
           </div>
+         </div>
         </div>
 
         {/* Footer */}
         <div style={{ borderTop: line, background: tokens.surfaceAlt,
                       padding: `${unit}px ${unit * 2}px` }}>
-          <span style={{ color: tokens.textMuted, fontSize: size(8) }}>
+          <span style={{ color: quiet, fontSize: size(8) }}>
             {name} — {screens.length ? `${screens.length} screens` : 'every screen in the plan'}
           </span>
         </div>
