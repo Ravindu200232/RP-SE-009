@@ -258,11 +258,18 @@ So wherever the real application shows a picture, show a real photograph:
      width="800" height="600" alt="The Willow room, looking onto the garden">
 ```
 
-- **A public source that needs no account and no key.**
-  `https://picsum.photos/seed/<seed>/<w>/<h>` is the dependable one: any seed
-  works, and the same seed always returns the same photograph, so a card keeps
-  its picture across a redraw. Any other public source is fine on the same
-  terms.
+- **A public source that needs no account and no key, where any address you
+  write resolves.** `https://picsum.photos/seed/<seed>/<w>/<h>` is the
+  dependable one: any seed works, and the same seed always returns the same
+  photograph, so a card keeps its picture across a redraw.
+
+  **Not a source whose addresses have to be looked up.** A photograph on
+  Unsplash lives at `photo-1566665797739-1674de7a4279`, and there is no way to
+  know from here which of those identifiers exist — so they get invented, and
+  an invented one is a grey rectangle where the hero should be. This is not
+  hypothetical: a drawing shipped with three of those, one of which 404s, and
+  it is the first thing on the home page. If a source needs a real identifier
+  you cannot verify, it is the wrong source for a drawing.
 - **A seed per subject**, named after the thing — `room-willow`, `chef-marta`,
   `course-python`. Not an index, or every redraw reshuffles the pictures.
 - **Always `width` and `height`**, matching the ratio you asked for, so the

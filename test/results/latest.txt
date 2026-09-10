@@ -1,7 +1,7 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-10T15:41:19+00:00
+Run at (UTC): 2026-09-10T16:30:58+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
 Unit tests: 454
@@ -10,7 +10,7 @@ Total tests run: 478
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 25.283s
+Duration: 25.218s
 
 Detailed results
 ----------------
@@ -561,6 +561,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 478 tests in 25.283s
+Ran 478 tests in 25.218s
 
 OK

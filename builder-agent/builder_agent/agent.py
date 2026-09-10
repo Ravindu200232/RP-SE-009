@@ -442,7 +442,9 @@ class BuilderAgent:
             "subject so it keeps the same picture across a redraw, with width, height and "
             "real alt text. Never a grey box standing in for a photograph. A product with "
             "rooms or dishes or people is mostly photographs, and a drawing of it with "
-            "none is a wireframe.",
+            "none is a wireframe. Not a source whose addresses have to be looked up: an "
+            "Unsplash photo id cannot be known from here, so it gets invented, and an "
+            "invented one is a grey rectangle where the hero should be.",
             "",
             "Plain HTML, CSS and that one small script. No framework, no build step, no "
             "backend, no fetch, no server. Link the pages to each other so the whole "
