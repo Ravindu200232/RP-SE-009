@@ -69,6 +69,16 @@ DISCLAIMER = re.compile(
 # product is fake, it just says nothing. Reported separately.
 FILLER = re.compile(r"\b(?:lorem ipsum|dolor sit amet|placeholder text|your text here)\b", re.I)
 
+# The three things a working screen keeps leaving out. A table with no figures
+# above it, nothing to narrow it by, and no empty state is the thin admin page,
+# and all three were absent from a drawn dashboard that passed every other line
+# of the checklist.
+# The trailing \b matters: without it "stat" matches every `class="status-paid"`
+# badge in a table and a screen with no figures at all reports seventeen.
+FIGURES = re.compile(r'class="[^"]*\b(?:stat|kpi|metric|figure|summary|total)s?\b', re.I)
+CONTROLS = re.compile(r'<select\b|type="(?:date|search)"|class="[^"]*\b(?:filter|search|tabs?)\b', re.I)
+EMPTY = re.compile(r'class="[^"]*\bempty\b|>\s*(?:No |Nothing |None )', re.I)
+
 
 def measure(html: str) -> dict:
     """Count what is actually on the page, ignoring the script and the styles."""
@@ -98,6 +108,9 @@ def measure(html: str) -> dict:
         "hollow_ids": [m.group(2) for m in HOLLOW.finditer(body)],
         "disclaimers": sorted({m.group(0).lower() for m in DISCLAIMER.finditer(text)}),
         "filler": sorted({m.group(0).lower() for m in FILLER.finditer(text)}),
+        "figures": len(FIGURES.findall(body)),
+        "controls": len(CONTROLS.findall(body)),
+        "empty": len(EMPTY.findall(body)),
     }
 
 
@@ -183,6 +196,26 @@ def judge(name: str, got: dict) -> tuple[str, list[str]]:
 # ---------------------------------------------------------------------------
 # Reporting
 # ---------------------------------------------------------------------------
+def working_gaps(row: dict) -> str:
+    """What a screen somebody works in is missing, named.
+
+    Only the three that keep going missing, and only on the screens they apply
+    to: a marketing page needs no filters and a landing page has no empty
+    state. A dashboard drawn as a table with two paragraphs around it passed
+    every other line of the checklist.
+    """
+    # Only a screen that shows a collection. A sign-in page has no figures to
+    # put above nothing and no filters to narrow two fields by, and flagging it
+    # for them is a false alarm that teaches you to ignore the real ones.
+    if row.get("kind") != "admin":
+        return ""
+    missing = [name for name, key in
+               (("figures", "figures"), ("filters or a date", "controls"),
+                ("an empty state", "empty"))
+               if not row.get(key)]
+    return ", ".join(missing)
+
+
 def report(directory: Path, label: str = "") -> dict:
     pages = sorted(directory.glob("*.html"))
     if not pages:
@@ -227,6 +260,9 @@ def report(directory: Path, label: str = "") -> dict:
                   f"{', '.join(row['disclaimers'])}")
         if row["filler"]:
             print(f"  {name} has filler text: {', '.join(row['filler'])}")
+        gaps = working_gaps(row)
+        if gaps:
+            print(f"  {name} is a screen somebody works in, with no {gaps}")
 
     if demo:
         print(f"  demo.js {len(demo.encode('utf-8')):,} bytes; state "
@@ -371,6 +407,9 @@ def report_app(root: Path) -> dict:
             print(f"  {route} tells the reader it is not real: {', '.join(row['disclaimers'])}")
         if row["filler"]:
             print(f"  {route} has filler text: {', '.join(row['filler'])}")
+        gaps = working_gaps(row)
+        if gaps:
+            print(f"  {route} is a screen somebody works in, with no {gaps}")
     return results
 
 

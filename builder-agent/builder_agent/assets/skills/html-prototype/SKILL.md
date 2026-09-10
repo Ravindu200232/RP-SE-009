@@ -187,17 +187,28 @@ people ask, the call to action. Write the ones this product actually has, and
 stop when you run out of true things to say rather than when you reach a count.
 
 **This applies to every screen the product has, not only the ones that sell
-it.** A screen somebody works in — a table of orders, a queue of arrivals, a
-form, a settings page — is the one this gets wrong: it comes back as a heading
-and the thing itself, three sections against the home page's nine, and it is
-the screen the people who use the product every day spend their day in.
+it.** A screen somebody works in — a dashboard, a console, a table of orders,
+a queue of arrivals, a form, a settings page — is the one this gets wrong: it
+comes back as a heading and the thing itself, three sections against the home
+page's nine, and it is the screen the people who use the product every day
+spend their day in.
 
-Give a working screen its own six: the heading and what this screen is for,
-the filters or the date it is showing, the thing itself with its columns and
-its row actions, the counts or totals that go with it, what to do when there
-is nothing to show, and the next thing the person will need — the related
-queue, the recent activity, the way back. It has no hero photograph and should
-not have one; density is what it is for.
+Give a working screen its own six, and check each one is actually on the page:
+
+1. What this screen is, and what the person is looking at right now.
+2. **The numbers across the top** — the counts, totals or figures that say how
+   today is going. A table with no figures above it is the commonest miss.
+3. **The controls** — the date it is showing, the filters, the search, the
+   tabs. A table nobody can narrow is a report, not a screen.
+4. The thing itself, with its columns, its statuses and its row actions.
+5. **What it looks like with nothing in it** — drawn on the page, not
+   described. The first day of use is the empty state.
+6. The next thing the person needs: the related queue, the recent activity,
+   what to do when a row is wrong.
+
+Numbers, controls and the empty state are the three that keep going missing,
+and a screen without them is the thin one. It has no hero photograph and
+should not have one; density is what it is for.
 
 Only for the screens the plan actually names. A product with no admin area has
 no admin page, and inventing one is worse than drawing a thin one.
@@ -321,7 +332,7 @@ sketch of a page, and each one has been the fault at least once:
 | | Every page |
 | --- | --- |
 | header + footer links | **30 or more**, and identical on every page |
-| sections | **6 or more** |
+| sections *between* the header and the footer | **6 or more** — the header, the nav and the footer are not three of the six, and counting them is how a page with three real sections passes this line |
 | bytes | **9,000 or more**; a landing page **15,000 or more** |
 | words of real content | **150 or more**; a landing page **400 or more** |
 | pictures, where the product shows them | **6 or more** on a page that shows things |
