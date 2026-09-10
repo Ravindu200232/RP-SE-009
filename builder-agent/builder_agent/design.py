@@ -613,11 +613,7 @@ def design_contract_message(selection: dict) -> str:
         f"- Default theme: {selection['themeMode']}; both modes must work.",
         f"- Type: {selection['font']}, {selection['typeScale']} scale.",
         f"- Shape: {selection['radius']} radius, {selection['density']} density.",
-        f"Read `.agents/skills/{SKILL_NAME}/SKILL.md` for this project's chosen tokens. "
-        "Before the first UI batch, read `.agents/skills/ui-design/SKILL.md` once and follow "
-        "its Build-mode load contract. Before each later page/component batch, reread only "
-        "`ui-design/design-guidelines.md` and the short applicable guideline files it indexes. "
-        "Read `ui-animation/SKILL.md` once before motion work, then only the relevant technique "
-        "reference. Copy the chosen token block into the global stylesheet; do not invent a "
-        "second palette or hard-code hex values in components.",
+        f"Read `.agents/skills/{SKILL_NAME}/SKILL.md` in full before writing any UI, and copy "
+        "its token block into the application's global stylesheet. Do not invent a second "
+        "palette, and do not hard-code hex values in components.",
     ])

@@ -1,7 +1,7 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-10T10:07:00+00:00
+Run at (UTC): 2026-09-10T11:15:59+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
 Unit tests: 432
@@ -10,7 +10,7 @@ Total tests run: 456
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 29.845s
+Duration: 22.108s
 
 Detailed results
 ----------------
@@ -201,14 +201,16 @@ test_a_resource_path_cannot_escape_the_skill_it_belongs_to (test.unit.builder.te
 test_a_skill_belonging_to_another_stack_is_never_selectable (test.unit.builder.test_project_setup.SkillPackTests.test_a_skill_belonging_to_another_stack_is_never_selectable) ... ok
 test_an_example_file_is_read_by_the_name_it_would_really_have (test.unit.builder.test_project_setup.SkillPackTests.test_an_example_file_is_read_by_the_name_it_would_really_have)
 Sketch files carry a guard suffix; the model asks for the real name. ... ok
+test_composition_defers_to_the_contract_instead_of_re_deciding_it (test.unit.builder.test_project_setup.SkillPackTests.test_composition_defers_to_the_contract_instead_of_re_deciding_it)
+Two skills that both choose a palette would fight over every build. ... ok
 test_every_dependency_a_skill_declares_actually_exists (test.unit.builder.test_project_setup.SkillPackTests.test_every_dependency_a_skill_declares_actually_exists) ... ok
 test_every_manifest_entry_ships_a_skill_directory (test.unit.builder.test_project_setup.SkillPackTests.test_every_manifest_entry_ships_a_skill_directory) ... ok
 test_installing_copies_the_selected_skills_into_the_project (test.unit.builder.test_project_setup.SkillPackTests.test_installing_copies_the_selected_skills_into_the_project) ... ok
+test_page_composition_reaches_both_stacks_with_the_design_skill (test.unit.builder.test_project_setup.SkillPackTests.test_page_composition_reaches_both_stacks_with_the_design_skill)
+Composition is UI work, so it travels wherever the design does. ... ok
 test_the_catalog_prefers_the_project_copy_of_a_skill (test.unit.builder.test_project_setup.SkillPackTests.test_the_catalog_prefers_the_project_copy_of_a_skill) ... ok
 test_the_sinhala_forms_studio_users_type_are_understood (test.unit.builder.test_project_setup.SkillPackTests.test_the_sinhala_forms_studio_users_type_are_understood) ... ok
 test_the_stack_core_is_always_selected_whatever_the_request_says (test.unit.builder.test_project_setup.SkillPackTests.test_the_stack_core_is_always_selected_whatever_the_request_says) ... ok
-test_upstream_ui_design_and_animation_reach_both_frontend_stacks (test.unit.builder.test_project_setup.SkillPackTests.test_upstream_ui_design_and_animation_reach_both_frontend_stacks) ... ok
-test_upstream_ui_skill_uses_one_large_then_targeted_small_reads (test.unit.builder.test_project_setup.SkillPackTests.test_upstream_ui_skill_uses_one_large_then_targeted_small_reads) ... ok
 test_a_file_the_workspace_already_has_survives_scaffolding (test.unit.builder.test_project_setup.StackTemplateTests.test_a_file_the_workspace_already_has_survives_scaffolding) ... ok
 test_a_folder_name_npm_would_reject_is_made_installable (test.unit.builder.test_project_setup.StackTemplateTests.test_a_folder_name_npm_would_reject_is_made_installable)
 npm refuses leading dots, capitals and spaces; the folder may have them. ... ok
@@ -531,6 +533,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 456 tests in 29.845s
+Ran 456 tests in 22.108s
 
 OK

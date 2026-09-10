@@ -75,26 +75,20 @@ class SkillPackTests(unittest.TestCase):
         self.assertTrue((self.root / ".agents/skills/full-app-builder/SKILL.md").is_file())
         self.assertIn("unit", pack.phase_skills)
 
-    def test_upstream_ui_design_and_animation_reach_both_frontend_stacks(self):
+    def test_page_composition_reaches_both_stacks_with_the_design_skill(self):
+        """Composition is UI work, so it travels wherever the design does."""
         for stack in ("nextjs-mongo", "mern-microservices"):
             with self.subTest(stack=stack):
                 picked = select(self.entries, "", "build a site with pages", stack)
-                self.assertIn("ui-design", picked)
-                self.assertIn("ui-animation", picked)
-                self.assertNotIn("frontend-design", picked)
-                self.assertNotIn("page-composition", picked)
+                self.assertIn("page-composition", picked)
+                self.assertIn("frontend-design", picked)
 
-    def test_upstream_ui_skill_uses_one_large_then_targeted_small_reads(self):
-        design = (SKILL_ROOT / "ui-design" / "SKILL.md").read_text(encoding="utf-8")
-        animation = (SKILL_ROOT / "ui-animation" / "SKILL.md").read_text(encoding="utf-8")
-
-        self.assertIn("Build mode", design)
-        self.assertIn("design-guidelines.md", design)
-        self.assertIn("load only", design.lower())
-        self.assertIn("Motion design principles", animation)
-        self.assertTrue((SKILL_ROOT / "ui-design/guidelines/landing-pages.md").is_file())
-        self.assertTrue((SKILL_ROOT / "ui-design/guidelines/dashboards.md").is_file())
-        self.assertTrue((SKILL_ROOT / "ui-animation/references/scroll-animations.md").is_file())
+    def test_composition_defers_to_the_contract_instead_of_re_deciding_it(self):
+        """Two skills that both choose a palette would fight over every build."""
+        body = (SKILL_ROOT / "page-composition" / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("Do not re-open either here", body)
+        for owned in ("palette", "corners", "spacing", "motion", "contrast"):
+            self.assertIn(owned, body.split("## Make it this product")[0])
 
 
     def test_a_project_that_overrides_a_skill_keeps_its_own_version(self):
