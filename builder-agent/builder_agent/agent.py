@@ -399,16 +399,27 @@ class BuilderAgent:
             "styles.css and used on every page. Do not re-decide any of it.",
             "",
             "MAKE IT FULL SIZE. Each page is the whole page: the shared header and "
-            "navigation, the real content at real length, and the footer. A list has "
-            "enough rows to look like a list - eight or ten, not two. A table has its "
-            "columns, its statuses and its actions. A dashboard has its figures. A form "
-            "has all of its fields. Where the product has an empty, loading or error "
-            "state, draw it on the page it belongs to. A thin page is the one thing this "
-            "step cannot afford, because a thin page is what gets approved and then built.",
+            "navigation, four or five distinct sections that each do something the one "
+            "above it does not, and the footer. A list has enough rows to look like a "
+            "list - eight or ten, not two. A table has its columns, its statuses and its "
+            "actions. A dashboard has its figures. A form has all of its fields. Where "
+            "the product has an empty or error state, draw it on the page it belongs to. "
+            "No stubs: a sign-in page is a full page too. A thin page is the one thing "
+            "this step cannot afford, because a thin page is what gets approved and then "
+            "built.",
             "",
-            "Plain HTML and CSS only. No framework, no build step, no backend, no fetch. "
-            "Link the pages to each other so the whole application can be walked. Write "
-            "content that belongs to this product, not placeholder text.",
+            "MAKE IT WORK. Write a small `demo.js`, linked from every page, so the "
+            "product's main flow actually runs in the browser: adding something updates "
+            "the count and shows up on the next page, a filter filters, a form shows its "
+            "error and then its success, signing in changes the navigation. Keep the "
+            "state in localStorage under one key so it survives walking between pages. "
+            "A demo nobody can click through cannot answer the question they are looking "
+            "at it to answer.",
+            "",
+            "Plain HTML, CSS and that one small script. No framework, no build step, no "
+            "backend, no fetch, no server. Link the pages to each other so the whole "
+            "application can be walked. Write content that belongs to this product, not "
+            "placeholder text.",
             "",
             "Write the files and stop. Do not install anything, do not start a server, "
             "and do not write tests.",

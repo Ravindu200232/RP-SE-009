@@ -67,11 +67,34 @@ the list has to appear in some phase. A requirement that survived the listing
 and then fell out of the phases is no better off than one that was never
 listed.
 
+## Name the screens, with their routes
+
+Give the plan a **Screens** section that lists every screen the product has,
+one per line, each with its route and one line saying what it is for:
+
+```
+## Screens
+- `/` — Home: today's soups and what is left.
+- `/menu` — Menu: the whole menu with prices and allergens.
+- `/admin/orders` — Admin orders: every order, and marking one collected.
+```
+
+This section is read directly: it is what the design step offers the user to
+confirm, and what the drawing of the application is made from. A plan that
+describes its screens only inside prose — "a rooms page with filters", "a
+dashboard of KPIs" — leaves both of those steps guessing, and a six-screen
+product has been shown to the user as a single page because of it.
+
+Every screen, including the ones that are obvious: the home page, the sign-in
+page, the empty state someone lands on first. If a screen has no route yet
+because the stack decides it, say so rather than leaving it out.
+
 ## What the plan must contain
 
 - The goal in one sentence, and what must stay true whatever else changes.
 - **The requirements, enumerated and numbered**, so they can be counted and
   pointed at. This is the part that gets skipped; it is the part that matters.
+- **The screens**, as above, each with its route.
 - What is deliberately out of scope, and why — usually because the request
   ruled it out.
 - What the project already has, from `inspectProject`, and what that changes.

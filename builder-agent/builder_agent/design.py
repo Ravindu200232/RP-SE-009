@@ -241,6 +241,81 @@ def _screen_label(route: str) -> str:
     return f"{label.rstrip('s')} detail" if dynamic else label
 
 
+# A heading that introduces the screens, and a list item under it. Reading the
+# section the plan wrote is still reading the plan; it is not a list of screens
+# in general.
+SCREEN_HEADING = re.compile(r"^\s{0,3}#{1,6}\s*(?:[0-9.]+\s*)?(?:the\s+)?"
+                            r"(screens?|pages?|routes?|views?)\b", re.I)
+ANY_HEADING = re.compile(r"^\s{0,3}#{1,6}\s")
+LIST_ITEM = re.compile(r"^\s{0,6}(?:[-*+]|\d+[.)])\s+(.*)$")
+
+# "A rooms page", "the settings screen", "an orders view" - a plan that names
+# its screens in prose rather than by path.
+NAMES_A_SCREEN = re.compile(
+    r"\b(?:an?|the)\s+([a-z][a-z0-9]*(?:[ '\-][a-z0-9]+){0,3})\s+(?:page|screen|view)\b",
+    re.I)
+
+# Words that describe a screen rather than name one.
+NOT_A_NAME = {"new", "the", "this", "that", "each", "every", "one", "same",
+              "single", "first", "last", "next", "other", "another", "only",
+              "whole", "full", "real", "own", "second"}
+
+
+def _slug(name: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", str(name or "").lower()).strip("-")
+
+
+def _named_screens(body: str) -> list[dict]:
+    """Screens the plan names without giving them a path.
+
+    A plan is prose, and a planner that writes "a rooms page: the inventory
+    grid with filters" has named a screen just as surely as one that writes
+    `/rooms`. Reading only the paths showed a six-screen product as one screen,
+    and the design step then offered the user a single page to think about.
+
+    No route is invented for these. The plan did not state one, so the studio
+    shows the name and leaves the path blank rather than claiming a path that
+    may turn out to be wrong.
+    """
+    found: dict[str, dict] = {}
+
+    def keep(name: str, said: str) -> None:
+        name = " ".join(str(name or "").split())[:40]
+        slug = _slug(name)
+        if not slug or name.lower() in NOT_A_NAME or slug in found:
+            return
+        found[slug] = {"id": slug, "route": "", "label": name[:1].upper() + name[1:],
+                       "what": said[:160]}
+
+    # The section the plan wrote for them, when it wrote one.
+    inside = False
+    for line in body.splitlines():
+        if ANY_HEADING.match(line):
+            inside = bool(SCREEN_HEADING.match(line))
+            continue
+        if not inside:
+            continue
+        item = LIST_ITEM.match(line)
+        if not item:
+            continue
+        said = item.group(1).strip()
+        # "Dashboard — KPIs and recent bookings" / "Rooms: the inventory grid".
+        # The name is what comes before the dash; what follows is what it does.
+        parts = re.split(r"\s*[-–—:|]\s+", said, maxsplit=1)
+        name = re.sub(r"[`*]", "", parts[0])
+        keep(name, parts[1].strip() if len(parts) > 1 else said)
+
+    if found:
+        return list(found.values())
+
+    # Otherwise, anywhere the plan calls something a page, a screen or a view.
+    for line in body.splitlines():
+        for match in NAMES_A_SCREEN.finditer(line):
+            said = re.sub(r"^[\s\-*#>|0-9.)]+", "", line).strip()
+            keep(match.group(1), said)
+    return list(found.values())
+
+
 def pages_from_plan(text: str) -> list[dict]:
     """The screens this plan actually names, with what each one is for.
 
@@ -289,6 +364,17 @@ def pages_from_plan(text: str) -> list[dict]:
             }
     for page in found.values():
         page.pop("rank", None)
+    if len(found) > 1:
+        return sorted(found.values(), key=lambda page: (page["route"] != "/", page["route"]))
+
+    # One route, or none, in a plan that plainly describes an application: the
+    # planner named its screens in prose instead of by path. Read those, and
+    # keep whichever route it did write.
+    named = _named_screens(body)
+    if len(named) > len(found):
+        by_id = {page["id"]: page for page in named}
+        by_id.update({page["id"]: page for page in found.values()})
+        return sorted(by_id.values(), key=lambda page: (page["route"] != "/", page["label"]))
     return sorted(found.values(), key=lambda page: (page["route"] != "/", page["route"]))
 
 

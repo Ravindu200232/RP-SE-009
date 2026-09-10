@@ -586,3 +586,74 @@ class UnmatchedPaletteTests(unittest.TestCase):
         known = {p["id"] for p in design.PALETTES}
         for n in range(200):
             self.assertIn(design.choose(f"a thing numbered {n}")["palette"], known)
+
+
+class NamedScreenTests(unittest.TestCase):
+    """A plan names its screens in prose as often as it writes their paths.
+
+    Found on screen: a six-screen booking product reached the design step as
+    "SCREENS IN THE PLAN (1 OF 1)" — one page called Home — because the plan
+    described its screens without writing a single route.
+    """
+
+    PROSE = """# Atlas — Build Plan
+
+## Requirements (enumerated from the request)
+1. A rooms page: the room inventory grid with filters.
+2. A bookings page: the live booking ledger with status.
+3. A payments page: transactions, refunds, settlements.
+4. A settings page: workspace, billing, integrations.
+"""
+
+    SECTIONED = """# Atlas
+
+## Screens
+- Dashboard — KPIs and a recent-bookings overview.
+- Rooms — room inventory grid with filters.
+- Bookings — live booking ledger with status.
+- Payments — transactions, refunds, settlements.
+
+## Phases
+Phase 1 — the shell.
+"""
+
+    WITH_ROUTES = """## Screens
+- `/` — Home: today's soups.
+- `/menu` — Menu: the whole menu.
+- `/admin/orders` — Admin orders: every order.
+"""
+
+    def labels(self, plan):
+        return [page["label"] for page in design.pages_from_plan(plan)]
+
+    def test_a_screens_section_is_read_as_the_screens(self):
+        self.assertEqual(self.labels(self.SECTIONED),
+                         ["Bookings", "Dashboard", "Payments", "Rooms"])
+
+    def test_each_one_keeps_what_the_plan_said_it_is_for(self):
+        described = {page["label"]: page["what"] for page in design.pages_from_plan(self.SECTIONED)}
+        self.assertIn("recent-bookings", described["Dashboard"])
+        self.assertIn("filters", described["Rooms"])
+
+    def test_screens_named_in_prose_are_found_without_a_section(self):
+        self.assertEqual(self.labels(self.PROSE),
+                         ["Bookings", "Payments", "Rooms", "Settings"])
+
+    def test_a_screen_with_no_stated_route_does_not_get_an_invented_one(self):
+        """The plan did not say the path, so the studio does not claim one."""
+        for page in design.pages_from_plan(self.SECTIONED):
+            self.assertEqual(page["route"], "")
+            self.assertTrue(page["id"])
+
+    def test_written_routes_still_win_outright(self):
+        pages = design.pages_from_plan(self.WITH_ROUTES)
+        self.assertEqual([page["route"] for page in pages], ["/", "/admin/orders", "/menu"])
+
+    def test_a_plan_with_one_route_and_named_screens_shows_them_all(self):
+        """The case from the screenshot: one stray route, six real screens."""
+        pages = design.pages_from_plan("Serve it at `/`.\n\n" + self.SECTIONED)
+        self.assertGreater(len(pages), 1)
+        self.assertIn("Dashboard", [page["label"] for page in pages])
+
+    def test_a_plan_with_no_screens_at_all_still_offers_none(self):
+        self.assertEqual(design.pages_from_plan("Write a nightly job that emails a summary."), [])

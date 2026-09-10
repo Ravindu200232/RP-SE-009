@@ -17,11 +17,14 @@ build.
 
 ## What it is
 
-- **Plain HTML and CSS.** No React, no build step, no bundler, no npm install.
-  A file opens in a browser and looks right.
-- **No backend.** No fetch, no API, no database. The content is written into
-  the markup.
-- **Every screen the plan named**, one file each, plus the shared stylesheet.
+- **Plain HTML, CSS and a little JavaScript.** No React, no build step, no
+  bundler, no npm install. A file opens in a browser and works.
+- **It works.** This is a demo somebody clicks through, not a picture of one.
+  See "Make the flow work" below.
+- **No backend.** No fetch, no API, no database, no server. Every piece of
+  state lives in the page.
+- **Every screen the plan named**, one file each, plus the shared stylesheet
+  and one small `demo.js`.
 - **A real navigation between them**: the files link to each other with plain
   `<a href="menu.html">`, so the user can walk the whole application.
 
@@ -43,6 +46,7 @@ build.
   index.html        the first screen the plan named
   <screen>.html     one per remaining screen, named after its route
   styles.css        every token and every rule, shared by all of them
+  demo.js           the small amount of script that makes the flow work
 ```
 
 One stylesheet, linked from every page. A page with its own `<style>` block is
@@ -78,11 +82,47 @@ screens this visitor can reach, and the current page is marked. A prototype
 where one screen cannot be reached from another has not shown the user their
 application.
 
+## Make the flow work
+
+A demo that cannot be clicked through tells the user almost nothing. They ask
+"what happens when I add one?" and a picture cannot answer.
+
+So write a small `demo.js`, linked from every page, and make the product's main
+flow actually run in the browser:
+
+- **The thing the product is for works end to end.** Add to a basket and the
+  basket count goes up and the item appears on the basket page. Book a slot and
+  it shows as booked. Mark an order collected and the row changes state.
+- **Forms respond.** Submitting with a field empty shows that field's error;
+  submitting a good one shows the success state the real app will show. Nothing
+  is posted anywhere.
+- **Controls do their job.** A filter filters the rows on the page, a search box
+  narrows them, a tab switches the panel, a sort reorders.
+- **State survives the walk.** Keep it in `localStorage` under one key, so
+  adding something on the menu page is still there on the basket page. That is
+  what makes it feel like an application rather than a slideshow.
+- **Sign-in is a demo sign-in.** Any password works; it sets a name and a role
+  in that same state and the navigation changes to match. Never a real check,
+  never a real credential.
+
+Keep it small and readable — one file, plain functions, no framework, no
+`fetch`. It is there to make the flow real, not to be the application.
+
 ## Full size, not a sketch
 
 The most expensive mistake here is a thin page. A thin page gets approved,
 because there is nothing in it to disagree with, and then the real build is
 made to match it.
+
+**Every screen is a full page.** No stubs. A sign-in page still has the
+product's header, its own layout, the form with its fields and its error state,
+and the footer — a 3KB page in a set of 12KB pages is the one the user will
+point at.
+
+**A page is several sections, not one block.** A home page is a hero, then the
+thing the product does, then the proof or the detail, then a call to action,
+then the footer — four or five distinct sections that each do something the one
+above it does not. One long column of cards is not a page.
 
 So each file is the whole page:
 
@@ -142,7 +182,10 @@ one — a class used once, or a modifier on it, never a new inline style.
 
 ## Before you show it
 
-- Does every screen the plan named exist as a file?
+- Does every screen the plan named exist as a file, and is each one a full
+  page rather than a stub?
+- Can you click the product's main flow from beginning to end and see it
+  respond?
 - Can you point at where each of the plan's requirements is on a page?
 - Is every dimension the design contract settled actually expressed?
 - Can you reach every screen from every screen?

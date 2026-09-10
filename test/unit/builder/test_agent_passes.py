@@ -425,6 +425,11 @@ class PrototypePassTests(unittest.TestCase):
         self.assertIn("Every requirement it enumerates", task)
         # And it is a full page, not a sketch of one.
         self.assertIn("FULL SIZE", task.upper())
+        self.assertIn("No stubs", task)
+        # And something they can click through, not a picture of one.
+        self.assertIn("demo.js", task)
+        self.assertIn("localStorage", task)
+        self.assertIn("no fetch", task)
 
     def test_what_they_ask_for_is_sent_back_to_be_redrawn(self):
         asked = []

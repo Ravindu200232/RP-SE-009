@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-10T11:26:44+00:00
+Run at (UTC): 2026-09-10T11:43:46+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 439
+Unit tests: 446
 Integration tests: 24
-Total tests run: 463
+Total tests run: 470
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 22.822s
+Duration: 24.826s
 
 Detailed results
 ----------------
@@ -180,6 +180,15 @@ test_a_fresh_installation_has_nothing_to_publish (test.unit.builder.test_project
 test_a_verified_lesson_is_recalled_by_what_it_is_about (test.unit.builder.test_project_setup.KnowledgeTests.test_a_verified_lesson_is_recalled_by_what_it_is_about) ... ok
 test_an_unverified_hunch_is_never_recorded_as_knowledge (test.unit.builder.test_project_setup.KnowledgeTests.test_an_unverified_hunch_is_never_recorded_as_knowledge) ... ok
 test_lessons_become_an_ordinary_skill_in_the_next_project (test.unit.builder.test_project_setup.KnowledgeTests.test_lessons_become_an_ordinary_skill_in_the_next_project) ... ok
+test_a_plan_with_no_screens_at_all_still_offers_none (test.unit.builder.test_project_setup.NamedScreenTests.test_a_plan_with_no_screens_at_all_still_offers_none) ... ok
+test_a_plan_with_one_route_and_named_screens_shows_them_all (test.unit.builder.test_project_setup.NamedScreenTests.test_a_plan_with_one_route_and_named_screens_shows_them_all)
+The case from the screenshot: one stray route, six real screens. ... ok
+test_a_screen_with_no_stated_route_does_not_get_an_invented_one (test.unit.builder.test_project_setup.NamedScreenTests.test_a_screen_with_no_stated_route_does_not_get_an_invented_one)
+The plan did not say the path, so the studio does not claim one. ... ok
+test_a_screens_section_is_read_as_the_screens (test.unit.builder.test_project_setup.NamedScreenTests.test_a_screens_section_is_read_as_the_screens) ... ok
+test_each_one_keeps_what_the_plan_said_it_is_for (test.unit.builder.test_project_setup.NamedScreenTests.test_each_one_keeps_what_the_plan_said_it_is_for) ... ok
+test_screens_named_in_prose_are_found_without_a_section (test.unit.builder.test_project_setup.NamedScreenTests.test_screens_named_in_prose_are_found_without_a_section) ... ok
+test_written_routes_still_win_outright (test.unit.builder.test_project_setup.NamedScreenTests.test_written_routes_still_win_outright) ... ok
 test_a_plan_naming_no_screens_falls_back_to_the_general_list (test.unit.builder.test_project_setup.PlannedScreenTests.test_a_plan_naming_no_screens_falls_back_to_the_general_list) ... ok
 test_a_route_that_is_not_a_screen_is_never_offered_as_one (test.unit.builder.test_project_setup.PlannedScreenTests.test_a_route_that_is_not_a_screen_is_never_offered_as_one)
 An API handler has no design, so it is not a design question. ... ok
@@ -541,6 +550,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 463 tests in 22.822s
+Ran 470 tests in 24.826s
 
 OK
