@@ -28,6 +28,7 @@ from builder_agent import BuilderAgent, Config, Events, detect_stack, stack_of  
 from qa_agent import QAAgent  # noqa: E402
 from qa_agent.agent import QAOutcome  # noqa: E402
 from qa_agent import report as qa_report, security as qa_security  # noqa: E402
+from builder_agent.templates import restore_styling  # noqa: E402
 
 from server_modules.services.mongo_common import db_name_for  # noqa: E402
 
@@ -597,8 +598,16 @@ def _serve(proj_dir: Path, agent=None) -> str:
         freed = free_declared_ports(proj_dir)
         if freed:
             log.info(f"freed ports {', '.join(str(p) for p in freed)} before the preview")
-        ensure_node_deps(proj_dir)
         stack = stack_of(proj_dir)
+        # A build may rewrite package.json, and one did: the new manifest was
+        # the scaffold's minus tailwindcss, postcss and autoprefixer, with the
+        # two configs gone too. Nothing failed - it built, served and passed
+        # every suite - and the page rendered as unstyled HTML, because the
+        # only symptom of a missing CSS toolchain is that no CSS comes out.
+        put_back = restore_styling(proj_dir, stack)
+        if put_back:
+            elog("WARN", f"   ⚠ restored the styling the build dropped: {', '.join(put_back)}")
+        ensure_node_deps(proj_dir)
         if start_dev_server(proj_dir, stack) is False:
             return ""
         if wait_for_dev(stack):

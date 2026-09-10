@@ -23,7 +23,7 @@ from builder_agent.skills import (SKILL_ROOT, catalog, install_skill_pack, read_
                                   read_skill, select)
 from builder_agent.config import stack_of
 from builder_agent.templates import (_package_name, install_template, is_greenfield,
-                                     template_notice)
+                                     template_notice, restore_styling)
 
 
 class SkillPackTests(unittest.TestCase):
@@ -657,3 +657,54 @@ Phase 1 — the shell.
 
     def test_a_plan_with_no_screens_at_all_still_offers_none(self):
         self.assertEqual(design.pages_from_plan("Write a nightly job that emails a summary."), [])
+
+
+class StylingSurvivesTheBuildTests(unittest.TestCase):
+    """The scaffold's CSS toolchain is not the build's to drop.
+
+    A build rewrote package.json and the result was the template's manifest
+    byte for byte, minus tailwindcss, postcss and autoprefixer; the two config
+    files went with them. Nothing failed - it compiled, served, and passed unit,
+    e2e and runtime - and the app rendered as unstyled HTML, because a missing
+    CSS toolchain has no symptom other than the absence of CSS.
+    """
+
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        (self.root / "app").mkdir()
+        (self.root / "app" / "globals.css").write_text(
+            "@tailwind base;\n@tailwind utilities;\n", encoding="utf-8")
+
+    def _manifest(self, dev: dict):
+        (self.root / "package.json").write_text(json.dumps(
+            {"name": "x", "dependencies": {"next": "^15.1.4"}, "devDependencies": dev}),
+            encoding="utf-8")
+
+    def _dev(self):
+        return json.loads((self.root / "package.json").read_text(encoding="utf-8")
+                          ).get("devDependencies", {})
+
+    def test_a_dropped_toolchain_is_put_back(self):
+        self._manifest({"vitest": "^2.1.8"})
+        restored = restore_styling(self.root, "nextjs-mongo")
+        self.assertIn("tailwindcss", restored)
+        self.assertIn("tailwindcss", self._dev())
+        self.assertTrue((self.root / "postcss.config.mjs").is_file())
+
+    def test_a_toolchain_that_is_still_there_is_left_alone(self):
+        self._manifest({"tailwindcss": "^9.9.9", "postcss": "^8", "autoprefixer": "^10"})
+        (self.root / "tailwind.config.mjs").write_text("export default {}", encoding="utf-8")
+        (self.root / "postcss.config.mjs").write_text("export default {}", encoding="utf-8")
+        self.assertEqual(restore_styling(self.root, "nextjs-mongo"), [])
+        # And the project's own version is not overwritten with the template's.
+        self.assertEqual(self._dev()["tailwindcss"], "^9.9.9")
+
+    def test_a_project_that_does_not_use_tailwind_is_not_given_it(self):
+        (self.root / "app" / "globals.css").write_text("body { margin: 0 }", encoding="utf-8")
+        self._manifest({"vitest": "^2.1.8"})
+        self.assertEqual(restore_styling(self.root, "nextjs-mongo"), [])
+        self.assertNotIn("tailwindcss", self._dev())
+
+    def test_an_unknown_stack_changes_nothing(self):
+        self._manifest({})
+        self.assertEqual(restore_styling(self.root, "no-such-stack"), [])

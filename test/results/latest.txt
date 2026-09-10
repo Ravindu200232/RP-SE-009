@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-10T23:07:54+00:00
+Run at (UTC): 2026-09-10T23:14:10+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 479
+Unit tests: 483
 Integration tests: 24
-Total tests run: 503
+Total tests run: 507
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 24.663s
+Duration: 24.035s
 
 Detailed results
 ----------------
@@ -259,6 +259,10 @@ test_the_notice_says_how_to_replace_what_it_says_to_replace (test.unit.builder.t
 It asks for the placeholder page to be replaced; writeFile refuses that. ... ok
 test_the_root_manifest_takes_the_folder_name_so_npm_can_install_it (test.unit.builder.test_project_setup.StackTemplateTests.test_the_root_manifest_takes_the_folder_name_so_npm_can_install_it) ... ok
 test_the_subject_of_the_product_outvotes_the_shape_of_it (test.unit.builder.test_project_setup.StackTemplateTests.test_the_subject_of_the_product_outvotes_the_shape_of_it) ... ok
+test_a_dropped_toolchain_is_put_back (test.unit.builder.test_project_setup.StylingSurvivesTheBuildTests.test_a_dropped_toolchain_is_put_back) ... ok
+test_a_project_that_does_not_use_tailwind_is_not_given_it (test.unit.builder.test_project_setup.StylingSurvivesTheBuildTests.test_a_project_that_does_not_use_tailwind_is_not_given_it) ... ok
+test_a_toolchain_that_is_still_there_is_left_alone (test.unit.builder.test_project_setup.StylingSurvivesTheBuildTests.test_a_toolchain_that_is_still_there_is_left_alone) ... ok
+test_an_unknown_stack_changes_nothing (test.unit.builder.test_project_setup.StylingSurvivesTheBuildTests.test_an_unknown_stack_changes_nothing) ... ok
 test_a_recognised_domain_still_wins_over_the_digest (test.unit.builder.test_project_setup.UnmatchedPaletteTests.test_a_recognised_domain_still_wins_over_the_digest) ... ok
 test_every_palette_the_digest_can_land_on_is_a_real_one (test.unit.builder.test_project_setup.UnmatchedPaletteTests.test_every_palette_the_digest_can_land_on_is_a_real_one) ... ok
 test_none_of_these_match_a_domain (test.unit.builder.test_project_setup.UnmatchedPaletteTests.test_none_of_these_match_a_domain)
@@ -586,6 +590,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 503 tests in 24.663s
+Ran 507 tests in 24.035s
 
 OK

@@ -11,6 +11,7 @@ Never touches a workspace that already contains a project.
 """
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -136,3 +137,73 @@ def template_notice(result: Scaffold) -> str:
         "install dependencies once and follow the build, runtime, unit and E2E order from the "
         "full-app-builder skill; do not spend an extra pass retesting the untouched placeholder.",
     ])
+
+
+# The packages that turn the markup into a styled page. Losing one of these is
+# the only kind of missing dependency that raises nothing at all: the build
+# passes, the app serves, every test goes green, and the page renders as
+# unstyled HTML because `@tailwind utilities` was a directive nobody compiled.
+STYLING_TOOLCHAIN = ("tailwindcss", "postcss", "autoprefixer")
+
+# The config files those packages read. Written by the scaffold; without them
+# the toolchain is installed and still does nothing.
+STYLING_CONFIGS = ("tailwind.config.mjs", "tailwind.config.js",
+                   "postcss.config.mjs", "postcss.config.js")
+
+
+def restore_styling(workspace: Path | str, stack_id: str = "") -> list[str]:
+    """Put back the styling toolchain the scaffold shipped, if it went missing.
+
+    A build rewrote package.json and the new one was the template's, byte for
+    byte, minus three lines: tailwindcss, postcss and autoprefixer. The configs
+    went with them. Everything still built and served, every suite passed, and
+    the bakery it had just drawn so carefully came out as black text on white
+    with the images stacked down the left.
+
+    Nothing here overrules a project's own choices - only what the scaffold put
+    there and the build dropped without replacing it. A project that genuinely
+    has no stylesheet keeps none: the check is skipped unless the CSS still
+    asks for Tailwind.
+    """
+    root = Path(workspace)
+    template = TEMPLATE_ROOT / (stack_id or "")
+    if not template.is_dir():
+        return []
+
+    manifest = root / "package.json"
+    source = template / "package.json.tpl"
+    if not manifest.is_file() or not source.is_file():
+        return []
+
+    # Only if the application still expects Tailwind to compile something.
+    css = list(root.glob("app/globals.css")) + list(root.glob("**/globals.css"))
+    wants = any("@tailwind" in p.read_text(encoding="utf-8", errors="replace")
+                or "tailwindcss" in p.read_text(encoding="utf-8", errors="replace")
+                for p in css[:5] if p.is_file())
+    if not wants:
+        return []
+
+    try:
+        have = json.loads(manifest.read_text(encoding="utf-8"))
+        shipped = json.loads(source.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+
+    restored = []
+    dev = have.setdefault("devDependencies", {})
+    shipped_dev = {**shipped.get("dependencies", {}), **shipped.get("devDependencies", {})}
+    for name in STYLING_TOOLCHAIN:
+        if name in shipped_dev and name not in dev and name not in have.get("dependencies", {}):
+            dev[name] = shipped_dev[name]
+            restored.append(name)
+    if restored:
+        have["devDependencies"] = dict(sorted(dev.items()))
+        manifest.write_text(json.dumps(have, indent=2) + "\n", encoding="utf-8")
+
+    for name in STYLING_CONFIGS:
+        origin = template / name
+        if origin.is_file() and not (root / name).is_file():
+            (root / name).write_text(origin.read_text(encoding="utf-8"), encoding="utf-8")
+            restored.append(name)
+
+    return restored
