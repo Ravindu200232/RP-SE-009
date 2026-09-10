@@ -32,6 +32,18 @@ required = {
     "a plan is laid out as prose": ("components/PlanReading.jsx", "readPlan"),
     "the model is chosen where the build is configured": ("components/BuildSetup.jsx", "build-model"),
     "the design can be customised": ("components/AgentDecision.jsx", "function DesignDecision"),
+    "the application is drawn before it is built":
+        ("../builder-agent/builder_agent/agent.py", "def prototype"),
+    "the drawing is guided by a skill of its own":
+        ("../builder-agent/builder_agent/assets/skills/html-prototype/SKILL.md", "Not one page"),
+    "a drawing pass cannot install or serve anything":
+        ("../builder-agent/builder_agent/agent.py", "PROTOTYPE_TOOLS"),
+    "the drawing is served to the studio":
+        ("../server_modules/builder/projects.py", "def read_prototype"),
+    "and reviewed in the whole pane": ("components/PrototypeReview.jsx", "Approve and build"),
+    "what they ask for is redrawn": ("components/PrototypeReview.jsx", "decision: 'revise'"),
+    "the build copies what was approved":
+        ("../builder-agent/builder_agent/agent.py", "the prototype wins"),
     "settings are asked for before the plan is written":
         ("../builder-agent/builder_agent/agent.py", "def settings"),
     "and the questions belong to the skills, not to the engine":

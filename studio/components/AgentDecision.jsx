@@ -1,13 +1,15 @@
 'use client'
 
 /**
- * The three things a build stops to ask about.
+ * The four things a build stops for.
  *
  * Everything else the agent does is unattended by design. What it is going to
  * build and what it will look like are worth asking because both are cheap to
  * change now and expensive to change once the app is written. The third is a
  * different kind of thing: an account setting nobody but the user has, which
- * no amount of reading the project will ever produce.
+ * no amount of reading the project will ever produce. The fourth is the
+ * drawing of the application, which is worked on rather than answered and so
+ * takes the whole pane instead of a dialog.
  *
  * None of them blocks. Each question carries its own deadline, and if nobody
  * answers the run proceeds with what it had chosen anyway — so closing this
@@ -23,6 +25,7 @@ import {
 import { api } from '@/lib/api'
 import { useStore } from '@/lib/store'
 import PlanReading from './PlanReading'
+import PrototypeReview from './PrototypeReview'
 import DesignPreview from './DesignPreview'
 import { Button, Modal } from './ui'
 import { cn } from '@/lib/utils'
@@ -79,6 +82,10 @@ export default function AgentDecision() {
   }
   if (question.kind === 'question') {
     return <AskDecision question={question} left={left} sending={sending} onAnswer={answer} />
+  }
+  // A drawing is worked on rather than answered, so it takes the whole pane.
+  if (question.kind === 'prototype') {
+    return <PrototypeReview question={question} left={left} sending={sending} onAnswer={answer} />
   }
   return <DesignDecision question={question} left={left} sending={sending} onAnswer={answer} />
 }

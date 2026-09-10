@@ -201,6 +201,15 @@ class UIHandler(SimpleHTTPRequestHandler):
                 self._plain(200, data, "image/png", extra=(("Cache-Control", "no-cache"),))
             except (OSError, ValueError):
                 self._json({"error": "Screenshot not found"}, 404)
+        elif path.startswith("/prototype/"):
+            proj, _, rel = path[11:].strip("/").partition("/")
+            try:
+                body, kind = read_prototype(proj, rel)
+                self._plain(200, body, kind, extra=(("Cache-Control", "no-cache"),))
+            except ValueError as error:
+                self._json({"error": str(error)}, 400)
+            except (FileNotFoundError, OSError) as error:
+                self._json({"error": str(error)}, 404)
         elif path.startswith("/qa/"):
             self._json(read_qa_results(path[4:].strip("/")))
         elif path.startswith("/srs-results/"):

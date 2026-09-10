@@ -172,6 +172,41 @@ def delete_project(proj_name: str) -> dict:
     return {"ok": True, "project": name}
 
 
+# What a drawing is allowed to be made of. It is opened in an iframe, so
+# anything else it asks for is refused rather than guessed at.
+PROTOTYPE_TYPES = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
+                   ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg",
+                   ".jpeg": "image/jpeg", ".webp": "image/webp", ".gif": "image/gif",
+                   ".ico": "image/x-icon"}
+
+
+def read_prototype(proj_name: str, rel: str) -> tuple:
+    """One file of a project's HTML drawing, for the review pane to show.
+
+    Returns (bytes, content type). Raises FileNotFoundError when there is no
+    such file, and ValueError when the path is not one this may serve - the
+    name comes from a URL, so it is never trusted to stay inside the folder.
+    """
+    name, proj_dir, error = _owned_dir(PROD_DIR, proj_name, "project name", "project")
+    if error:
+        raise FileNotFoundError(error)
+
+    root = (proj_dir / ".agentforge" / "prototype").resolve()
+    rel = str(rel or "index.html").replace("\\", "/").strip("/") or "index.html"
+    target = (root / rel).resolve()
+    try:
+        target.relative_to(root)
+    except ValueError:
+        raise ValueError(f"{rel} is outside the drawing") from None
+
+    kind = PROTOTYPE_TYPES.get(target.suffix.lower())
+    if kind is None:
+        raise ValueError(f"a drawing does not serve {target.suffix or 'that'} files")
+    if not target.is_file():
+        raise FileNotFoundError(f"no {rel} in this drawing")
+    return target.read_bytes(), kind
+
+
 def list_projects() -> list:
     """Return all projects in production-ready/ with metadata."""
     projects = []
