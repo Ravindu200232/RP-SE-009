@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-10T09:18:11+00:00
+Run at (UTC): 2026-09-10T10:07:00+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 427
+Unit tests: 432
 Integration tests: 24
-Total tests run: 451
+Total tests run: 456
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 26.771s
+Duration: 29.845s
 
 Detailed results
 ----------------
@@ -201,16 +201,14 @@ test_a_resource_path_cannot_escape_the_skill_it_belongs_to (test.unit.builder.te
 test_a_skill_belonging_to_another_stack_is_never_selectable (test.unit.builder.test_project_setup.SkillPackTests.test_a_skill_belonging_to_another_stack_is_never_selectable) ... ok
 test_an_example_file_is_read_by_the_name_it_would_really_have (test.unit.builder.test_project_setup.SkillPackTests.test_an_example_file_is_read_by_the_name_it_would_really_have)
 Sketch files carry a guard suffix; the model asks for the real name. ... ok
-test_composition_defers_to_the_contract_instead_of_re_deciding_it (test.unit.builder.test_project_setup.SkillPackTests.test_composition_defers_to_the_contract_instead_of_re_deciding_it)
-Two skills that both choose a palette would fight over every build. ... ok
 test_every_dependency_a_skill_declares_actually_exists (test.unit.builder.test_project_setup.SkillPackTests.test_every_dependency_a_skill_declares_actually_exists) ... ok
 test_every_manifest_entry_ships_a_skill_directory (test.unit.builder.test_project_setup.SkillPackTests.test_every_manifest_entry_ships_a_skill_directory) ... ok
 test_installing_copies_the_selected_skills_into_the_project (test.unit.builder.test_project_setup.SkillPackTests.test_installing_copies_the_selected_skills_into_the_project) ... ok
-test_page_composition_reaches_both_stacks_with_the_design_skill (test.unit.builder.test_project_setup.SkillPackTests.test_page_composition_reaches_both_stacks_with_the_design_skill)
-Composition is UI work, so it travels wherever the design does. ... ok
 test_the_catalog_prefers_the_project_copy_of_a_skill (test.unit.builder.test_project_setup.SkillPackTests.test_the_catalog_prefers_the_project_copy_of_a_skill) ... ok
 test_the_sinhala_forms_studio_users_type_are_understood (test.unit.builder.test_project_setup.SkillPackTests.test_the_sinhala_forms_studio_users_type_are_understood) ... ok
 test_the_stack_core_is_always_selected_whatever_the_request_says (test.unit.builder.test_project_setup.SkillPackTests.test_the_stack_core_is_always_selected_whatever_the_request_says) ... ok
+test_upstream_ui_design_and_animation_reach_both_frontend_stacks (test.unit.builder.test_project_setup.SkillPackTests.test_upstream_ui_design_and_animation_reach_both_frontend_stacks) ... ok
+test_upstream_ui_skill_uses_one_large_then_targeted_small_reads (test.unit.builder.test_project_setup.SkillPackTests.test_upstream_ui_skill_uses_one_large_then_targeted_small_reads) ... ok
 test_a_file_the_workspace_already_has_survives_scaffolding (test.unit.builder.test_project_setup.StackTemplateTests.test_a_file_the_workspace_already_has_survives_scaffolding) ... ok
 test_a_folder_name_npm_would_reject_is_made_installable (test.unit.builder.test_project_setup.StackTemplateTests.test_a_folder_name_npm_would_reject_is_made_installable)
 npm refuses leading dots, capitals and spaces; the folder may have them. ... ok
@@ -228,6 +226,12 @@ test_the_notice_says_how_to_replace_what_it_says_to_replace (test.unit.builder.t
 It asks for the placeholder page to be replaced; writeFile refuses that. ... ok
 test_the_root_manifest_takes_the_folder_name_so_npm_can_install_it (test.unit.builder.test_project_setup.StackTemplateTests.test_the_root_manifest_takes_the_folder_name_so_npm_can_install_it) ... ok
 test_the_subject_of_the_product_outvotes_the_shape_of_it (test.unit.builder.test_project_setup.StackTemplateTests.test_the_subject_of_the_product_outvotes_the_shape_of_it) ... ok
+test_a_recognised_domain_still_wins_over_the_digest (test.unit.builder.test_project_setup.UnmatchedPaletteTests.test_a_recognised_domain_still_wins_over_the_digest) ... ok
+test_every_palette_the_digest_can_land_on_is_a_real_one (test.unit.builder.test_project_setup.UnmatchedPaletteTests.test_every_palette_the_digest_can_land_on_is_a_real_one) ... ok
+test_none_of_these_match_a_domain (test.unit.builder.test_project_setup.UnmatchedPaletteTests.test_none_of_these_match_a_domain)
+If one starts matching, this test is measuring the wrong thing. ... ok
+test_the_same_request_always_gets_the_same_look (test.unit.builder.test_project_setup.UnmatchedPaletteTests.test_the_same_request_always_gets_the_same_look) ... ok
+test_unmatched_products_do_not_all_look_the_same (test.unit.builder.test_project_setup.UnmatchedPaletteTests.test_unmatched_products_do_not_all_look_the_same) ... ok
 test_a_value_cannot_smuggle_a_second_setting_in_on_a_new_line (test.unit.builder.test_setup_questions.AppliedAnswerTests.test_a_value_cannot_smuggle_a_second_setting_in_on_a_new_line)
 A newline inside a value would otherwise become a setting of its own. ... ok
 test_answering_twice_updates_rather_than_appends (test.unit.builder.test_setup_questions.AppliedAnswerTests.test_answering_twice_updates_rather_than_appends) ... ok
@@ -527,6 +531,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 451 tests in 26.771s
+Ran 456 tests in 29.845s
 
 OK

@@ -98,17 +98,14 @@ export default function Home({ onStarted, onKept, modelOptions = [] }) {
     setLogoFor(null)
     s.reset(null)
     s.setBusy(true)
-    s.setProgress('Starting…', 0)
-    onStarted?.()
-    const selected = config?.model || builderModel
-    s.addLog('INFO', `Planner — ${config?.model || plannerModel} · Design — ${config?.model || designModel} · Builder — ${selected}`)
-    if (logo) s.addLog('INFO', 'Building around the logo you accepted')
-    if (srs) s.addLog('INFO', 'Building from the SRS you approved')
 
     // A build used to drop whatever was attached: only the specification agent
     // could read a PDF. The files go over HTTP now and the build is told where
     // to find them, because the message below travels on a socket that refuses
     // a frame their size.
+    //
+    // Sent before the screen changes. `onStarted` unmounts this component, and
+    // an upload begun after that is an upload nobody is left to run.
     let token = ''
     if (attach.items.length) {
       const wanted = attachToken()
@@ -124,6 +121,13 @@ export default function Home({ onStarted, onKept, modelOptions = [] }) {
         s.addLog('INFO', `${staged} attachment(s) go into the build`)
       }
     }
+
+    s.setProgress('Starting…', 0)
+    onStarted?.()
+    const selected = config?.model || builderModel
+    s.addLog('INFO', `Planner — ${config?.model || plannerModel} · Design — ${config?.model || designModel} · Builder — ${selected}`)
+    if (logo) s.addLog('INFO', 'Building around the logo you accepted')
+    if (srs) s.addLog('INFO', 'Building from the SRS you approved')
 
     send({ type: 'agent_build', prompt: p, model: selected,
            builder_model: selected, planner_model: config?.model || plannerModel,

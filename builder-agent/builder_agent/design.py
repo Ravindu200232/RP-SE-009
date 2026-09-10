@@ -15,6 +15,7 @@ the engine has to keep, not just tell the model to keep.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -380,6 +381,20 @@ def choose(task: str) -> dict:
         if score > best_score:
             best, best_score = palette, score
 
+    if best_score == 0:
+        # Nothing in the request named a domain this knows, and most real
+        # requests name none: "Wayfarer Books, an online bookshop" matches no
+        # keyword in any list. Falling through to the first palette made every
+        # one of those products the same colour - the exact thing the top of
+        # this file says the engine has to prevent, and not something a longer
+        # keyword list would ever finish fixing.
+        #
+        # So the request picks it anyway, by its own digest. Two different
+        # products differ, and the same request still gives the same answer
+        # every time.
+        digest = hashlib.sha256(" ".join(words).encode("utf-8")).digest()
+        best = PALETTES[digest[0] % len(PALETTES)]
+
     scale, radius, density = SHAPE_FOR_PALETTE[best["id"]]
     dark_first = any(word in corpus for word in
                      (" dark ", " night ", " terminal ", " console ", " developer "))
@@ -598,7 +613,11 @@ def design_contract_message(selection: dict) -> str:
         f"- Default theme: {selection['themeMode']}; both modes must work.",
         f"- Type: {selection['font']}, {selection['typeScale']} scale.",
         f"- Shape: {selection['radius']} radius, {selection['density']} density.",
-        f"Read `.agents/skills/{SKILL_NAME}/SKILL.md` in full before writing any UI, and copy "
-        "its token block into the application's global stylesheet. Do not invent a second "
-        "palette, and do not hard-code hex values in components.",
+        f"Read `.agents/skills/{SKILL_NAME}/SKILL.md` for this project's chosen tokens. "
+        "Before the first UI batch, read `.agents/skills/ui-design/SKILL.md` once and follow "
+        "its Build-mode load contract. Before each later page/component batch, reread only "
+        "`ui-design/design-guidelines.md` and the short applicable guideline files it indexes. "
+        "Read `ui-animation/SKILL.md` once before motion work, then only the relevant technique "
+        "reference. Copy the chosen token block into the global stylesheet; do not invent a "
+        "second palette or hard-code hex values in components.",
     ])

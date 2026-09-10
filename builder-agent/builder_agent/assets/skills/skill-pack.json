@@ -336,7 +336,7 @@
       ]
     },
     {
-      "name": "frontend-design",
+      "name": "ui-design",
       "match": [
         "article",
         "beautiful",
@@ -372,41 +372,14 @@
       ],
       "requires": [
         "react",
-        "accessibility"
+        "accessibility",
+        "ui-animation"
       ]
     },
     {
-      "name": "page-composition",
-      "match": [
-        "page",
-        "pages",
-        "screen",
-        "screens",
-        "landing page",
-        "home page",
-        "site",
-        "website",
-        "dashboard",
-        "catalog",
-        "catalogue",
-        "listing",
-        "list",
-        "detail",
-        "layout",
-        "section",
-        "sections",
-        "hero",
-        "ui",
-        "ux",
-        "design",
-        "responsive",
-        "content",
-        "app",
-        "application"
-      ],
-      "requires": [
-        "frontend-design"
-      ]
+      "name": "ui-animation",
+      "match": [],
+      "requires": []
     },
     {
       "name": "security-review",

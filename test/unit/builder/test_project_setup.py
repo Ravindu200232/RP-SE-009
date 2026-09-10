@@ -75,20 +75,26 @@ class SkillPackTests(unittest.TestCase):
         self.assertTrue((self.root / ".agents/skills/full-app-builder/SKILL.md").is_file())
         self.assertIn("unit", pack.phase_skills)
 
-    def test_page_composition_reaches_both_stacks_with_the_design_skill(self):
-        """Composition is UI work, so it travels wherever the design does."""
+    def test_upstream_ui_design_and_animation_reach_both_frontend_stacks(self):
         for stack in ("nextjs-mongo", "mern-microservices"):
             with self.subTest(stack=stack):
                 picked = select(self.entries, "", "build a site with pages", stack)
-                self.assertIn("page-composition", picked)
-                self.assertIn("frontend-design", picked)
+                self.assertIn("ui-design", picked)
+                self.assertIn("ui-animation", picked)
+                self.assertNotIn("frontend-design", picked)
+                self.assertNotIn("page-composition", picked)
 
-    def test_composition_defers_to_the_contract_instead_of_re_deciding_it(self):
-        """Two skills that both choose a palette would fight over every build."""
-        body = (SKILL_ROOT / "page-composition" / "SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("Do not re-open either here", body)
-        for owned in ("palette", "corners", "spacing", "motion", "contrast"):
-            self.assertIn(owned, body.split("## Make it this product")[0])
+    def test_upstream_ui_skill_uses_one_large_then_targeted_small_reads(self):
+        design = (SKILL_ROOT / "ui-design" / "SKILL.md").read_text(encoding="utf-8")
+        animation = (SKILL_ROOT / "ui-animation" / "SKILL.md").read_text(encoding="utf-8")
+
+        self.assertIn("Build mode", design)
+        self.assertIn("design-guidelines.md", design)
+        self.assertIn("load only", design.lower())
+        self.assertIn("Motion design principles", animation)
+        self.assertTrue((SKILL_ROOT / "ui-design/guidelines/landing-pages.md").is_file())
+        self.assertTrue((SKILL_ROOT / "ui-design/guidelines/dashboards.md").is_file())
+        self.assertTrue((SKILL_ROOT / "ui-animation/references/scroll-animations.md").is_file())
 
 
     def test_a_project_that_overrides_a_skill_keeps_its_own_version(self):
@@ -545,3 +551,44 @@ the database is `agentforge_smallsoupcafe`.
             "- built with MongoDB/Mongoose against 127.0.0.1:27017\n"
             "- the page lives at app/menu/page.jsx\n")
         self.assertEqual([page["route"] for page in pages], ["/admin/orders", "/menu"])
+
+
+class UnmatchedPaletteTests(unittest.TestCase):
+    """A request that names no known domain still gets a look of its own.
+
+    Found by building a bookshop: "Wayfarer Books, an online bookshop" matches
+    no keyword in any palette's domain list — and most real requests match
+    none — so every one of them fell through to the same first palette. That is
+    the one thing this module exists to prevent.
+    """
+
+    UNMATCHED = ("Wayfarer Books, an online bookshop",
+                 "a tool for tracking beehives",
+                 "somewhere to keep my grandmother's letters",
+                 "a rota for the village hall")
+
+    def test_none_of_these_match_a_domain(self):
+        """If one starts matching, this test is measuring the wrong thing."""
+        for goal in self.UNMATCHED:
+            with self.subTest(goal=goal):
+                self.assertFalse(design.choose(goal)["matched"])
+
+    def test_unmatched_products_do_not_all_look_the_same(self):
+        palettes = {design.choose(goal)["palette"] for goal in self.UNMATCHED}
+        self.assertGreater(len(palettes), 1)
+
+    def test_the_same_request_always_gets_the_same_look(self):
+        for goal in self.UNMATCHED:
+            with self.subTest(goal=goal):
+                self.assertEqual(design.choose(goal)["palette"],
+                                 design.choose(goal)["palette"])
+
+    def test_a_recognised_domain_still_wins_over_the_digest(self):
+        self.assertEqual(design.choose("a small soup cafe")["palette"], "sunset-ember")
+        self.assertEqual(design.choose("a hospital appointment system")["palette"],
+                         "ocean-slate")
+
+    def test_every_palette_the_digest_can_land_on_is_a_real_one(self):
+        known = {p["id"] for p in design.PALETTES}
+        for n in range(200):
+            self.assertIn(design.choose(f"a thing numbered {n}")["palette"], known)

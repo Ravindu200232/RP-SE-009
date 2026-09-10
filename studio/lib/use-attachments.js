@@ -16,6 +16,16 @@ function describeFile(file) {
 
 export function useAttachments() {
   const [items, setItems] = useState([])
+  // What was picked, readable without going through React.
+  //
+  // Both senders below used to learn their queue inside a `setItems` updater,
+  // which is a side effect in a place React only promises to call while the
+  // component is mounted. Starting a build unmounts the home screen before the
+  // upload runs, so the updater never ran, the queue stayed empty, and the
+  // files were silently dropped — the build then searched its own workspace
+  // for a PDF that had never left the browser.
+  const current = useRef([])
+  current.current = items
 
   const patch = useCallback((key, fields) => {
     setItems(list => list.map(it => (it.key === key ? { ...it, ...fields } : it)))
@@ -61,18 +71,12 @@ export function useAttachments() {
     uploading.current = true
 
     try {
-      let queue = []
-      const already = []
-      setItems(list => {
-        // Assignment, not append.
-        queue = list.filter(it => it.sentTo !== projectId)
-        already.length = 0
-        already.push(...list.filter(it => it.sentTo === projectId && it.sourceId)
-                         .map(it => it.sourceId))
-        return list.map(it => (it.sentTo === projectId
-          ? it : { ...it, state: 'reading', note: '' }))
-      })
-      await Promise.resolve()   // let the "reading" paint land before the first await
+      const held = current.current
+      const queue = held.filter(it => it.sentTo !== projectId)
+      const already = held.filter(it => it.sentTo === projectId && it.sourceId)
+                          .map(it => it.sourceId)
+      setItems(list => list.map(it => (it.sentTo === projectId
+        ? it : { ...it, state: 'reading', note: '' })))
 
       const ids = [...already]
       let failed = 0
@@ -114,12 +118,8 @@ export function useAttachments() {
     if (!token || uploading.current) return { staged: 0, failed: 0 }
     uploading.current = true
     try {
-      let queue = []
-      setItems(list => {
-        queue = list.slice()
-        return list.map(it => ({ ...it, state: 'reading', note: '' }))
-      })
-      await Promise.resolve()
+      const queue = current.current.slice()
+      setItems(list => list.map(it => ({ ...it, state: 'reading', note: '' })))
 
       let staged = 0
       let failed = 0
