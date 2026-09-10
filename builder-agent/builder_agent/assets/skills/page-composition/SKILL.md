@@ -146,6 +146,13 @@ its URL. Every page was defensible on its own and the product was not usable.
 
 - The shell is in `app/layout.jsx` (or the equivalent), not repeated per page.
   A page that draws its own header is a page that will drift from the others.
+- **The shell is thirty-odd links, not three.** The header lists every section
+  of the product, with sub-items where a section has parts; the footer is a
+  sitemap of three or four columns with headings, plus the small print row.
+  This is the most-skipped item on the page: builds that composed decent
+  screens have shipped a layout with a product name and one link in it, and
+  that is a set of documents rather than an application. Count the links in
+  the header and footer components — under thirty and the shell is a stub.
 - Navigation shows what this visitor can actually reach. A customer does not
   see the admin link; an admin does. Hiding a link is not access control — the
   server still checks — but showing one that 403s is a broken door.
@@ -165,6 +172,25 @@ that become cards or scroll deliberately. Check ~360px, ~768px, ~1280px and
 one width wider than the content's maximum.
 
 ## Before you call a page done
+
+Count these first. They are the section table above, restated where the page is
+actually being written, because a count read thirty files ago is not a count:
+
+| | Every screen |
+| --- | --- |
+| sections | the table above — **6 or more** on a marketing or landing page |
+| the shared shell | a header listing every section of the product, and a footer of **three or four columns of links** — thirty-odd links, identical on every page |
+| rows in a list or table | **8 or more**, with the empty state written too |
+| fields in a form | every field the product needs, with labels and help text |
+| words of real content | **400 or more** on a landing page; enough elsewhere to say what the screen is for |
+
+A home page that is a heading, a paragraph and a button is the single most
+common failure here, and it passes every qualitative check below. It is not a
+page. Neither is a sign-in screen that is two inputs on an empty background:
+it carries the shell, the product's name, the reason to sign in, the way to
+recover an account and the way to make one.
+
+Then:
 
 - Would this page be recognisable as *this* product with the words removed?
 - Does every section do something the one above it does not?
