@@ -23,7 +23,8 @@ from __future__ import annotations
 
 from ..errors import ToolError
 from ..policy import MODERATE, SAFE
-from ..setup import ASK_TIMEOUT, apply_answer, read_choices, read_fields
+from ..setup import (ASK_TIMEOUT, QUESTION_TIMEOUT, apply_answer, read_choices,
+                     read_fields)
 from .base import Tool
 
 
@@ -96,7 +97,7 @@ def ask_user(args, ctx):
             "question",
             {"question": question[:400], "why": str(args.get("why") or "").strip()[:300],
              "options": _options(args.get("options")), "assumption": assumption[:200]},
-            default={"decision": "default"}, timeout=ASK_TIMEOUT,
+            default={"decision": "default"}, timeout=QUESTION_TIMEOUT,
             cancel=getattr(ctx, "cancel", None))
 
     reply = str(answer.get("reply") or "").strip()

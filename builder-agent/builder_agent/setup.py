@@ -36,6 +36,11 @@ MAX_FIELDS = 12
 # hold a build open for the afternoon.
 ASK_TIMEOUT = 900.0
 
+# A question about the product is not that. It is answered in seconds by
+# somebody watching, or it is not going to be answered at all, so waiting a
+# quarter of an hour on one only stalls a run nobody is in front of.
+QUESTION_TIMEOUT = 240.0
+
 
 def read_fields(raw, *, source: str = "") -> list[dict]:
     """Read requested fields, refusing anything that cannot honestly be asked."""

@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-10T08:45:00+00:00
+Run at (UTC): 2026-09-10T09:00:53+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 417
+Unit tests: 419
 Integration tests: 24
-Total tests run: 441
+Total tests run: 443
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 22.378s
+Duration: 25.857s
 
 Detailed results
 ----------------
@@ -362,6 +362,10 @@ test_the_build_message_carries_the_token_and_never_the_bytes (test.unit.services
 A frame this size is refused by the socket, so it must not go there. ... ok
 test_the_stage_is_emptied_once_the_build_has_read_it (test.unit.services.test_build_attachments.StagedAttachmentTests.test_the_stage_is_emptied_once_the_build_has_read_it) ... ok
 test_what_the_user_said_it_is_for_travels_with_it (test.unit.services.test_build_attachments.StagedAttachmentTests.test_what_the_user_said_it_is_for_travels_with_it) ... ok
+test_a_session_that_predates_the_gate_still_gets_it (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_a_session_that_predates_the_gate_still_gets_it)
+A reused agent was constructed by an earlier run, under older rules. ... ok
+test_an_edit_may_ask_the_user_something (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_an_edit_may_ask_the_user_something)
+The studio is in front of an edit as much as it is in front of a build. ... ok
 test_backend_restart_restores_the_actual_transcript (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_backend_restart_restores_the_actual_transcript) ... ok
 test_completed_reply_reaches_the_project_chat (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_completed_reply_reaches_the_project_chat) ... ok
 test_explicit_new_build_starts_its_own_conversation (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_explicit_new_build_starts_its_own_conversation) ... ok
@@ -512,6 +516,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 441 tests in 22.378s
+Ran 443 tests in 25.857s
 
 OK

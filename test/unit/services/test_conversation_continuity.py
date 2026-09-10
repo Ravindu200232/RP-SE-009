@@ -137,3 +137,20 @@ class ConversationContinuityTests(unittest.TestCase):
         server._SESSIONS.clear()
         self.run_request("Add a signup link to that page")
         self.assertNotIn("Build a shop with customer accounts", str(self.inputs[-1]))
+
+    def test_an_edit_may_ask_the_user_something(self):
+        """The studio is in front of an edit as much as it is in front of a build.
+
+        Whether a run could ask anything used to be tied to whether it had a
+        planning pass, so a question raised while editing was answered by its
+        own default and the person who could have answered it never saw it.
+        """
+        agent = self.run_request("Add a signup link to that page")
+        self.assertTrue(agent.approvals.enabled)
+
+    def test_a_session_that_predates_the_gate_still_gets_it(self):
+        """A reused agent was constructed by an earlier run, under older rules."""
+        first = self.run_request("Build a shop with customer accounts", plan=True)
+        first.approvals.enabled = False
+        again = self.run_request("Add a signup link to that page")
+        self.assertTrue(again.approvals.enabled)

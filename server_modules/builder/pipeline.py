@@ -491,7 +491,7 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
     if fresh:
         forget_session(name)
         agent = BuilderAgent(
-            _config(proj_dir, brief, model, think, gates=plan, stack=stack),
+            _config(proj_dir, brief, model, think, gates=True, stack=stack),
             events=Events(), cancel=_cancelled)
         if not plan:
             restored = restore_conversation(proj_dir, agent)
@@ -499,6 +499,14 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
         # The bus is the agent's, but the listeners belong to one run: each has
         # its own phase list and its own report writer.
         agent.events.clear()
+
+    # The studio is the surface, and it is in front of an edit exactly as much
+    # as in front of a build. Whether a run may ask anything used to be tied to
+    # whether it had a planning pass, so a question during an edit fell
+    # straight through to its own default and the user was never shown it.
+    # Set on the agent rather than only in its config, because a reused session
+    # was constructed by an earlier run under the older rule.
+    agent.approvals.enabled = True
 
     StudioBridge(agent.events, kind=kind, phases=list(phases))
     agent.events.any(qa_report.LiveReport(
