@@ -137,18 +137,40 @@ KINDS = (
 DYNAMIC = re.compile(r"\[[^\]]+\]|/:\w|<[^>]+>")
 
 
-def kind_of(name: str) -> str:
+def kind_of(name: str, got: dict | None = None) -> str:
+    """What kind of page this is, by what is on it before what it is called.
+
+    The name is a good guess and a bad ruling. /admin was a staff *sign-in*
+    page - a hero, a sign-in card and a short explainer - and being judged as a
+    dashboard it was marked down for having no table rows, which a sign-in page
+    correctly does not have.
+    """
+    named = _by_name(name)
+    # An admin route with a form on it and no table is a staff sign-in, not a
+    # dashboard. That is the one call the name reliably gets wrong; everywhere
+    # else the name wins, because a content page with an enquiry form on it is
+    # still a content page and a detail page with a booking panel is still a
+    # detail page.
+    if got and named == "admin" and got.get("rows", 0) == 0 and got.get("fields", 0) >= 1:
+        return "form"
+    return named
+
+
+def _by_name(name: str) -> str:
     if DYNAMIC.search(name):
         return "detail"
-    stem = Path(name).stem.lower()
+    # The whole route, not just its last segment: Path("/admin/arrivals").stem
+    # is "arrivals", which loses the one word that says what the screen is.
+    stem = Path(name).with_suffix("").as_posix().lower()
     for kind, terms in KINDS:
         if any(term in stem for term in terms):
             return kind
     return "list"
 
 
+
 def judge(name: str, got: dict) -> tuple[str, list[str]]:
-    kind = kind_of(name)
+    kind = kind_of(name, got)
     short = [f"{key} {got.get(key, 0)}/{want}"
              for key, want in TARGETS[kind].items() if got.get(key, 0) < want]
     return kind, short
@@ -230,6 +252,56 @@ def _storage_key(demo: str) -> str:
     return declared.group(1) if declared else f"{name} (a constant)"
 
 
+LOCAL_IMPORT = re.compile(
+    r"""import\s+[^'"]*?from\s*['"](@/|\.{1,2}/)([^'"]+)['"]""", re.S)
+
+
+def screen_files(page: Path, root: Path, seen: set | None = None) -> list[Path]:
+    """The page and the components it pulls in, which together are the screen.
+
+    A page that hands its table to `<ArrivalsTable/>` has not written less of a
+    screen, it has written it somewhere else - and measuring the page file alone
+    called a 6.7KB screen a 2.7KB one. Only the project's own files count;
+    anything from node_modules is somebody else's code.
+    """
+    seen = set() if seen is None else seen
+    if page in seen or len(seen) > 40:
+        return []
+    seen.add(page)
+
+    files = [page]
+    text = page.read_text(encoding="utf-8", errors="replace")
+    for lead, target in LOCAL_IMPORT.findall(text):
+        base = root if lead == "@/" else page.parent
+        candidate = (base / target).resolve()
+        for guess in ([candidate] if candidate.suffix else
+                      [candidate.with_suffix(e) for e in (".jsx", ".js", ".tsx", ".ts")]):
+            if guess.is_file() and "node_modules" not in guess.parts and renders_ui(guess):
+                files += screen_files(guess, root, seen)
+                break
+    return files
+
+
+# A page imports its data layer as well as its components. `lib/db.js` and
+# `models/Booking.js` are not part of the screen, and counting them would credit
+# a thin page with the weight of its database code.
+def renders_ui(path: Path) -> bool:
+    text = path.read_text(encoding="utf-8", errors="replace")
+    return bool(re.search(r"<[A-Za-z][\w.-]*[\s/>]", text))
+
+
+def merge(parts: list[dict]) -> dict:
+    """One screen's numbers, from its page and its components."""
+    total = dict(parts[0])
+    for part in parts[1:]:
+        for key, value in part.items():
+            if isinstance(value, int):
+                total[key] = total.get(key, 0) + value
+            elif isinstance(value, list):
+                total[key] = sorted(set(total.get(key, [])) | set(value))
+    return total
+
+
 def report_app(root: Path) -> dict:
     """The same measurement, on a built Next.js application.
 
@@ -262,7 +334,9 @@ def report_app(root: Path) -> dict:
     for page in pages:
         rel = str(page.parent.relative_to(root / "app")).replace("\\", "/")
         route = "/" if rel == "." else "/" + rel
-        got = measure(page.read_text(encoding="utf-8", errors="replace"))
+        parts = screen_files(page, root)
+        got = merge([measure(f.read_text(encoding="utf-8", errors="replace"))
+                     for f in parts])
         # A drawing repeats the shell into every file, so its links land in the
         # page's own count. A built app has the shell once, in the layout, so
         # the page file legitimately carries only its own links - judging it on
@@ -272,6 +346,7 @@ def report_app(root: Path) -> dict:
         got["links"] += shell
         kind, short = judge("index" if route == "/" else route, got)
         got["links"] -= shell
+        got["files"] = len(parts)
         got.pop("hollow_ids", None)
         results[route] = {**got, "kind": kind, "short": short}
         met += not short
@@ -286,6 +361,7 @@ def report_app(root: Path) -> dict:
           f"{total // len(pages):,} average. {met}/{len(pages)} meet their target.")
     print(f"  shell: {shell} links across "
           f"{', '.join(p.name for p in shell_files) or 'nothing that looks like a shell'}")
+    _against_the_drawing(root, results)
     for route, row in results.items():
         if row["disclaimers"]:
             print(f"  {route} tells the reader it is not real: {', '.join(row['disclaimers'])}")
@@ -450,6 +526,48 @@ def main() -> None:
     if args.json and results:
         Path(args.json).write_text(json.dumps(results, indent=2), encoding="utf-8")
         print(f"\nwrote {args.json}")
+
+
+def page_file(route: str) -> str:
+    """`/admin/orders` -> `admin-orders.html`; `/` -> `index.html`.
+
+    The same mapping the engine uses (`_page_file` in agent.py), so a built
+    screen can be put beside the drawing it was built from.
+    """
+    parts = [part.strip("[]:") for part in str(route or "").strip("/").split("/") if part]
+    stem = "-".join(re.sub(r"[^a-z0-9]+", "-", part.lower()).strip("-") for part in parts)
+    return f"{stem or 'index'}.html"
+
+
+def _against_the_drawing(root: Path, results: dict) -> None:
+    """Each built screen beside the drawn page the user approved.
+
+    This is the honest measure of a built screen, and the only one that does
+    not have to assume what a screen of some kind ought to contain: the drawing
+    is this product's own specification, so a product with no admin screen has
+    no admin drawing and is asked for nothing.
+    """
+    drawn_dir = root / ".agentforge" / "prototype"
+    if not drawn_dir.is_dir():
+        return
+
+    rows = []
+    for route, got in results.items():
+        drawn = drawn_dir / page_file(route)
+        if drawn.is_file():
+            rows.append((route, len(drawn.read_bytes()), got["bytes"]))
+    if not rows:
+        return
+
+    print("\n  built against what was drawn (100% = the drawing's size)")
+    for route, was, now in sorted(rows, key=lambda r: r[2] / max(r[1], 1)):
+        share = now / max(was, 1)
+        flag = "  <- thin" if share < 0.7 else ""
+        print(f"    {route[:26]:<28}{was:>7} drawn  {now:>7} built  {share:>5.0%}{flag}")
+    drawn_total = sum(r[1] for r in rows)
+    built_total = sum(r[2] for r in rows)
+    print(f"    {'all ' + str(len(rows)) + ' screens':<28}{drawn_total:>7} drawn  "
+          f"{built_total:>7} built  {built_total / max(drawn_total, 1):>5.0%}")
 
 
 if __name__ == "__main__":
