@@ -88,9 +88,20 @@ buttons" has to have something to change.
 
 Every page carries the same header, navigation and footer, written into each
 file. The product's name links to `index.html`, the navigation lists the
-screens this visitor can reach, and the current page is marked. A prototype
-where one screen cannot be reached from another has not shown the user their
-application.
+screens this visitor can reach, and the current page is marked.
+
+**Every link is a real `<a href="…">` in the markup**, including the ones into
+a detail page: a list of rooms is a list of `<a href="rooms-id.html">`, written
+out, one per room. A page you can only reach because the script built its link
+is a page nobody can reach by reading the file, and the drawing is read as
+often as it is clicked.
+
+Nothing is hidden behind a role at first sight either. If an admin screen
+exists, its link is in the markup — let the script hide it when the demo is
+signed in as a guest, not the other way round.
+
+A prototype where one screen cannot be reached from another has not shown the
+user their application.
 
 ## Make the flow work
 
@@ -114,6 +125,18 @@ flow actually run in the browser:
 - **Sign-in is a demo sign-in.** Any password works; it sets a name and a role
   in that same state and the navigation changes to match. Never a real check,
   never a real credential.
+
+### The script never supplies the content
+
+This is the trap. Told to make it work, it is tempting to write
+`<div id="roomGrid"></div>` and have the script fill it — and then the page is
+four empty sections, nothing links anywhere, and the drawing shows nothing at
+all with scripting off.
+
+**Every card, row, link and word is written in the HTML.** The script *changes*
+what is already on the page: it filters the rows that are there, marks one
+booked, updates a count, shows an error, switches a panel. If you delete
+`demo.js` the drawing must still be the whole application, just inert.
 
 Keep it small and readable — one file, plain functions, no framework, no
 `fetch`. It is there to make the flow real, not to be the application.
@@ -196,6 +219,8 @@ one — a class used once, or a modifier on it, never a new inline style.
   page rather than a stub?
 - Can you click the product's main flow from beginning to end and see it
   respond?
+- With `demo.js` deleted, is every page still the whole page, with every link
+  still working?
 - Can you point at where each of the plan's requirements is on a page?
 - Is every dimension the design contract settled actually expressed?
 - Can you reach every screen from every screen?

@@ -430,6 +430,10 @@ class PrototypePassTests(unittest.TestCase):
         self.assertIn("demo.js", task)
         self.assertIn("localStorage", task)
         self.assertIn("no fetch", task)
+        # Told to make it work, it moved the content into the script: empty
+        # divs, four hollow sections, and nothing linking anywhere.
+        self.assertIn("SCRIPT NEVER SUPPLIES THE CONTENT", task)
+        self.assertIn("real anchor", task)
 
     def test_what_they_ask_for_is_sent_back_to_be_redrawn(self):
         asked = []

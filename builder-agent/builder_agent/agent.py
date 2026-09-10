@@ -416,6 +416,13 @@ class BuilderAgent:
             "A demo nobody can click through cannot answer the question they are looking "
             "at it to answer.",
             "",
+            "THE SCRIPT NEVER SUPPLIES THE CONTENT. Every card, row, link and word is "
+            "written in the HTML; the script only changes what is already on the page. "
+            "An empty `<div id=\"grid\"></div>` that the script fills is a page with "
+            "nothing in it and nothing linking anywhere. Every link is a real anchor in "
+            "the markup, including the ones into a detail page. With demo.js deleted, "
+            "every page must still be the whole page and every link must still work.",
+            "",
             "Plain HTML, CSS and that one small script. No framework, no build step, no "
             "backend, no fetch, no server. Link the pages to each other so the whole "
             "application can be walked. Write content that belongs to this product, not "
