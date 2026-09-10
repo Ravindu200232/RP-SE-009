@@ -75,6 +75,22 @@ class SkillPackTests(unittest.TestCase):
         self.assertTrue((self.root / ".agents/skills/full-app-builder/SKILL.md").is_file())
         self.assertIn("unit", pack.phase_skills)
 
+    def test_page_composition_reaches_both_stacks_with_the_design_skill(self):
+        """Composition is UI work, so it travels wherever the design does."""
+        for stack in ("nextjs-mongo", "mern-microservices"):
+            with self.subTest(stack=stack):
+                picked = select(self.entries, "", "build a site with pages", stack)
+                self.assertIn("page-composition", picked)
+                self.assertIn("frontend-design", picked)
+
+    def test_composition_defers_to_the_contract_instead_of_re_deciding_it(self):
+        """Two skills that both choose a palette would fight over every build."""
+        body = (SKILL_ROOT / "page-composition" / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("Do not re-open either here", body)
+        for owned in ("palette", "corners", "spacing", "motion", "contrast"):
+            self.assertIn(owned, body.split("## Make it this product")[0])
+
+
     def test_a_project_that_overrides_a_skill_keeps_its_own_version(self):
         target = self.root / ".agents/skills/runtime"
         target.mkdir(parents=True)

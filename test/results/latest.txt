@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-10T03:33:09+00:00
+Run at (UTC): 2026-09-10T03:40:35+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 349
+Unit tests: 351
 Integration tests: 24
-Total tests run: 373
+Total tests run: 375
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 19.348s
+Duration: 19.933s
 
 Detailed results
 ----------------
@@ -183,9 +183,13 @@ test_a_resource_path_cannot_escape_the_skill_it_belongs_to (test.unit.builder.te
 test_a_skill_belonging_to_another_stack_is_never_selectable (test.unit.builder.test_project_setup.SkillPackTests.test_a_skill_belonging_to_another_stack_is_never_selectable) ... ok
 test_an_example_file_is_read_by_the_name_it_would_really_have (test.unit.builder.test_project_setup.SkillPackTests.test_an_example_file_is_read_by_the_name_it_would_really_have)
 Sketch files carry a guard suffix; the model asks for the real name. ... ok
+test_composition_defers_to_the_contract_instead_of_re_deciding_it (test.unit.builder.test_project_setup.SkillPackTests.test_composition_defers_to_the_contract_instead_of_re_deciding_it)
+Two skills that both choose a palette would fight over every build. ... ok
 test_every_dependency_a_skill_declares_actually_exists (test.unit.builder.test_project_setup.SkillPackTests.test_every_dependency_a_skill_declares_actually_exists) ... ok
 test_every_manifest_entry_ships_a_skill_directory (test.unit.builder.test_project_setup.SkillPackTests.test_every_manifest_entry_ships_a_skill_directory) ... ok
 test_installing_copies_the_selected_skills_into_the_project (test.unit.builder.test_project_setup.SkillPackTests.test_installing_copies_the_selected_skills_into_the_project) ... ok
+test_page_composition_reaches_both_stacks_with_the_design_skill (test.unit.builder.test_project_setup.SkillPackTests.test_page_composition_reaches_both_stacks_with_the_design_skill)
+Composition is UI work, so it travels wherever the design does. ... ok
 test_the_catalog_prefers_the_project_copy_of_a_skill (test.unit.builder.test_project_setup.SkillPackTests.test_the_catalog_prefers_the_project_copy_of_a_skill) ... ok
 test_the_sinhala_forms_studio_users_type_are_understood (test.unit.builder.test_project_setup.SkillPackTests.test_the_sinhala_forms_studio_users_type_are_understood) ... ok
 test_the_stack_core_is_always_selected_whatever_the_request_says (test.unit.builder.test_project_setup.SkillPackTests.test_the_stack_core_is_always_selected_whatever_the_request_says) ... ok
@@ -432,6 +436,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 373 tests in 19.348s
+Ran 375 tests in 19.933s
 
 OK

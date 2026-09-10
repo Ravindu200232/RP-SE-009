@@ -376,6 +376,39 @@
       ]
     },
     {
+      "name": "page-composition",
+      "match": [
+        "page",
+        "pages",
+        "screen",
+        "screens",
+        "landing page",
+        "home page",
+        "site",
+        "website",
+        "dashboard",
+        "catalog",
+        "catalogue",
+        "listing",
+        "list",
+        "detail",
+        "layout",
+        "section",
+        "sections",
+        "hero",
+        "ui",
+        "ux",
+        "design",
+        "responsive",
+        "content",
+        "app",
+        "application"
+      ],
+      "requires": [
+        "frontend-design"
+      ]
+    },
+    {
       "name": "security-review",
       "match": [
         "security",
