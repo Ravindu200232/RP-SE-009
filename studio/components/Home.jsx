@@ -316,7 +316,7 @@ export default function Home({
         {srsPhase === 'idle' && (
           <>
             {/* Main Central Prompt Box */}
-            <div className="mt-8 overflow-hidden rounded-[26px] border border-white/15 bg-[#121622]/90 shadow-2xl backdrop-blur-2xl transition-all focus-within:border-blue-500/60 focus-within:shadow-[0_20px_60px_rgba(37,99,235,.2)]">
+            <div className="mt-8 relative rounded-[26px] border border-white/15 bg-[#121622]/90 shadow-2xl backdrop-blur-2xl transition-all focus-within:border-blue-500/60 focus-within:shadow-[0_20px_60px_rgba(37,99,235,.2)]">
               <TextArea
                 value={prompt}
                 autoFocus
@@ -347,11 +347,11 @@ export default function Home({
                     else submit()
                   }
                 }}
-                className="min-h-[130px] w-full resize-none bg-transparent p-5 text-[15px] leading-[1.6] text-white caret-blue-400 outline-none placeholder:text-white/40"
+                className="min-h-[130px] w-full resize-none rounded-t-[26px] bg-transparent p-5 text-[15px] leading-[1.6] text-white caret-blue-400 outline-none placeholder:text-white/40"
               />
 
               {/* Build Setup Configurations */}
-              <div className="border-t border-white/10 px-5 pt-3 pb-2">
+              <div className="relative z-30 border-t border-white/10 px-5 pt-3 pb-2">
                 <BuildSetup
                   model={builderModel}
                   stack={stack}
@@ -366,7 +366,7 @@ export default function Home({
               <AttachList attach={attach} className="mx-5 mb-2" />
 
               {/* Bottom Action Row with Attachments, Prettified Language Selector & Submit */}
-              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 bg-white/[.02] p-2.5">
+              <div className="relative z-20 flex flex-wrap items-center justify-between gap-2 rounded-b-[26px] border-t border-white/10 bg-white/[.02] p-2.5">
                 <div className="flex flex-wrap items-center gap-2">
                   <AttachButtons attach={attach} cell />
 
