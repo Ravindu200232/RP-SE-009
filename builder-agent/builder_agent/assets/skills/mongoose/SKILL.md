@@ -14,7 +14,19 @@ Use this skill only when Mongoose is selected or detected. Inspect the installed
 - Use transactions only when the deployment supports them and the business invariant spans multiple writes. Pass the session through every participating operation and test rollback/failure behavior.
 - Avoid query-per-item patterns, unbounded list queries, accidental sensitive-field projection, and indexes added without query evidence.
 
-Test validation, duplicate/race behavior, not-found/invalid identifiers, authorization-scoped queries, serialization, and relevant transaction failures against an isolated test database. Never point automated tests at production data.
+Test validation, duplicate/race behavior, not-found/invalid identifiers, authorization-scoped queries, serialization, and relevant transaction failures against an isolated test database.
+
+**Isolated means a different database name, not a different variable name.** A
+suite that opens `const TEST_URI = process.env.MONGODB_URI ?? '…/agentforge_shop'`
+is reading the running application's own database: the constant says test and
+the connection does not. Then `deleteMany` between cases empties the catalogue
+the app is serving, the seeded rows are gone, and the shop comes up with one
+product in it called whatever the last fixture was — which is exactly what
+happened to a bakery whose nine breads became a single row named "One".
+
+Derive the test database from the app's by name, so the two can never be the
+same string, and let the suite create and clear as freely as it likes inside
+it. Nothing a test writes should ever be visible to the running app.
 
 ## Mistakes that fail the first run
 
