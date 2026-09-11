@@ -1,7 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ArrowRight, Languages, Layers, Loader2, PencilLine, Sparkles } from 'lucide-react'
+import {
+  ArrowRight, Languages, PencilLine, Sparkles, FileText, Layers,
+  Globe, Presentation, Monitor, FlaskConical, Github, Figma, Code,
+} from 'lucide-react'
 import { useStore, KEYS } from '@/lib/store'
 import { send } from '@/lib/ws'
 import { api } from '@/lib/api'
@@ -16,11 +19,11 @@ import PlanReview from './srs/PlanReview'
 import SrsReview from './srs/SrsReview'
 import SrsActivity from './srs/SrsActivity'
 import { displaySrsLanguages, SRS_LANGUAGES } from '@/lib/languages'
-import { STACKS } from '@/lib/stacks'
-
+import { TIERS, tierDisplayName } from '@/lib/models'
 
 const EXAMPLES = [
-  { label: 'Darkroom co-op',
+  {
+    label: 'Darkroom co-op',
     blurb: 'Three roles — member, technician, manager. Benches, chemicals, money.',
     text: 'A community darkroom with three roles. MEMBER: browses sessions with '
         + 'photos, filters by film type, books a bench for a session on a date, '
@@ -29,24 +32,28 @@ const EXAMPLES = [
         + 'with a form, and records the chemicals used. MANAGER: the only role '
         + 'that sees money and stock. Each screen is its own page under its '
         + 'role\u2019s section. Seed enough data that every screen has something on '
-        + 'it, and one demo user of each role.' },
-  { label: 'Bike workshop',
+        + 'it, and one demo user of each role.',
+  },
+  {
+    label: 'Bike workshop',
     blurb: 'Rider bookings, a mechanic’s day, dues and the parts bin.',
     text: 'A neighbourhood bicycle workshop. RIDER: browses repair slots, books '
         + 'one, and sees their bookings. MECHANIC: today\u2019s repairs in time '
         + 'order, marks a repair done, records the parts used, and has a page '
         + 'for warranty claims. TREASURER: dues paid and unpaid this month, and '
         + 'the parts bin with reorder levels. Seed real data and a demo user for '
-        + 'each role.' },
-  { label: 'Small hotel',
+        + 'each role.',
+  },
+  {
+    label: 'Small hotel',
     blurb: 'Rooms with photos, availability by date, an admin who sees every booking.',
     text: 'A boutique hotel site. A guest browses rooms with photos, checks '
         + 'availability for a date range and books one. An admin sees every '
         + 'booking, can change a room\u2019s price and mark a booking paid. Seed a '
-        + 'handful of rooms and bookings, and a demo user of each role.' },
+        + 'handful of rooms and bookings, and a demo user of each role.',
+  },
 ]
 
-/** A name for one build's staged attachments, before it has a project. */
 function attachToken() {
   const raw = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`
   return raw.replace(/[^a-z0-9]/gi, '').slice(0, 24)
@@ -57,55 +64,55 @@ export default function Home({ onStarted, onKept, modelOptions = [] }) {
   const { images, think, models, srsId, srsPhase } = s
   const [prompt, setPrompt] = useState('')
   const [logoFor, setLogoFor] = useState(null)
-  const [setupFor, setSetupFor] = useState(null)
-  const [srsSetup, setSrsSetup] = useState(false)
   const [srsError, setSrsError] = useState('')
   const [srsLanguage, setSrsLanguage] = useState('en')
-  // "" means the engine reads the brief, which is what it did before there was
-  // anywhere to say otherwise.
   const [stack, setStack] = useState('')
   const [languageOptions, setLanguageOptions] = useState(SRS_LANGUAGES)
   const box = useRef(null)
   const attach = useAttachments()
-  const builderModel = models.builder || models.agent
+  const builderModel = models.builder || models.agent || TIERS.medium.model
   const plannerModel = models.planner || models.agent || builderModel
   const designModel = models.design || models.agent || builderModel
 
   useEffect(() => { setLanguageOptions(displaySrsLanguages()) }, [])
 
-  function begin(p, srs = '') {
-    if (!p) return
-    setSetupFor({ idea: p, srs })
+  function begin(p, srs = '', prototypeOnly = false) {
+    if (!p || !builderModel.trim()) return
+    const config = { model: builderModel.trim(), stack, think }
+    chooseModel(config.model)
+    if (images && !prototypeOnly) return setLogoFor({ idea: p, srs, config })
+    startBuild(p, '', srs, null, config, prototypeOnly)
   }
 
-  function configureBuild(config) {
-    const request = setupFor
-    setSetupFor(null)
-    setStack(config.stack)
-    useStore.setState({ models: { ...models, agent: config.model, planner: config.model,
-      design: config.model, builder: config.model }, think: config.think })
-    for (const role of ['agent', 'planner', 'design', 'builder']) s.persist(KEYS[role], config.model)
-    s.persist(KEYS.think, config.think ? '1' : '0')
-    if (images) return setLogoFor({ ...request, config })
-    startBuild(request.idea, '', request.srs, null, config)
+  function chooseModel(model) {
+    const roles = ['agent', 'planner', 'design', 'builder']
+    useStore.setState(state => ({
+      models: {
+        ...state.models,
+        ...Object.fromEntries(roles.map(role => [role, model])),
+      },
+    }))
+    for (const role of roles) s.persist(KEYS[role], model)
+  }
+
+  function chooseThinking(value) {
+    useStore.setState({ think: value })
+    s.persist(KEYS.think, value ? '1' : '0')
   }
 
   function submit() {
-    begin(prompt.trim())
+    begin(prompt.trim(), '', false)
   }
 
-  async function startBuild(p, logo, srs = '', uploads = null, config = null) {
+  function submitPrototype() {
+    begin(prompt.trim(), '', true)
+  }
+
+  async function startBuild(p, logo, srs = '', uploads = null, config = null, prototypeOnly = false) {
     setLogoFor(null)
     s.reset(null)
     s.setBusy(true)
 
-    // A build used to drop whatever was attached: only the specification agent
-    // could read a PDF. The files go over HTTP now and the build is told where
-    // to find them, because the message below travels on a socket that refuses
-    // a frame their size.
-    //
-    // Sent before the screen changes. `onStarted` unmounts this component, and
-    // an upload begun after that is an upload nobody is left to run.
     let token = ''
     if (attach.items.length) {
       const wanted = attachToken()
@@ -113,8 +120,7 @@ export default function Home({ onStarted, onKept, modelOptions = [] }) {
         ? 'Sending your attachment…' : `Sending your ${attach.items.length} attachments…`, 0)
       const { staged, failed } = await attach.stage(wanted)
       if (failed) {
-        s.addLog('WARN', `${failed} attachment(s) could not be sent — `
-                       + 'building with what did arrive.')
+        s.addLog('WARN', `${failed} attachment(s) could not be sent — building with what did arrive.`)
       }
       if (staged) {
         token = wanted
@@ -125,38 +131,36 @@ export default function Home({ onStarted, onKept, modelOptions = [] }) {
     s.setProgress('Starting…', 0)
     onStarted?.()
     const selected = config?.model || builderModel
-    s.addLog('INFO', `Planner — ${config?.model || plannerModel} · Design — ${config?.model || designModel} · Builder — ${selected}`)
+    s.addLog('INFO', `Build mode — ${tierDisplayName(selected)} · Thinking — ${(config?.think ?? think) ? 'on' : 'off'}`)
+    if (prototypeOnly) s.addLog('INFO', '🎨 Prototype Build mode — generating interactive HTML prototype first')
     if (logo) s.addLog('INFO', 'Building around the logo you accepted')
     if (srs) s.addLog('INFO', 'Building from the SRS you approved')
 
-    send({ type: 'agent_build', prompt: p, model: selected,
-           builder_model: selected, planner_model: config?.model || plannerModel,
-           design_model: config?.model || designModel, stack: config?.stack || stack,
-           think: config?.think ?? think, qa_model: models.qa, logo, srs_id: srs || '',
-           attachments: token || undefined,
-           uploads: uploads && Object.keys(uploads).length ? uploads : undefined })
+    send({
+      type: 'agent_build',
+      prompt: p,
+      model: selected,
+      builder_model: selected,
+      planner_model: config?.model || plannerModel,
+      design_model: config?.model || designModel,
+      stack: config?.stack || stack,
+      think: config?.think ?? think,
+      qa_model: models.qa,
+      logo,
+      srs_id: srs || '',
+      attachments: token || undefined,
+      uploads: uploads && Object.keys(uploads).length ? uploads : undefined,
+      prototype_only: Boolean(prototypeOnly),
+    })
   }
 
-  /** Ask which model writes the specification, then write it. */
-  function configureSrs(config) {
-    setSrsSetup(false)
-    useStore.setState({ models: { ...models, srs: config.model }, think: config.think })
-    s.persist(KEYS.srs, config.model)
-    s.persist(KEYS.think, config.think ? '1' : '0')
-    planFirst(config.model)
-  }
-
-  async function planFirst(model = '') {
+  async function planFirst() {
     const idea = prompt.trim()
     const files = attach.items.length
     if (!idea && !files) return box.current?.focus()
     setSrsError('')
     s.setSrs({ srsPhase: 'planning', srsBusy: 'Reading your idea…' })
     try {
-
-      await api.saveSettings({ srs_model: model || models.srs || plannerModel || '' })
-        .catch(() => { })
-  // Attachments need a project and a written idea.
       const created = await api.srs('/projects', {
         idea: idea || 'See the attached files.',
         language: languageOptions.find(item => item.code === srsLanguage)?.name || srsLanguage,
@@ -164,7 +168,6 @@ export default function Home({ onStarted, onKept, modelOptions = [] }) {
       const id = created.project.id
 
       if (files) {
-        // Before `analyze`, not after.
         s.setSrs({ srsId: id, srsBusy: `Reading your ${files === 1 ? 'attachment' : `${files} attachments`}…` })
         const { ids, failed } = await attach.upload(id)
 
@@ -174,8 +177,7 @@ export default function Home({ onStarted, onKept, modelOptions = [] }) {
             : 'none of those files could be read, and there is nothing typed to go on')
         }
         if (failed) {
-          s.addLog('WARN', `${failed} of ${files} attachments could not be read — `
-                         + 'carrying on with the rest.')
+          s.addLog('WARN', `${failed} of ${files} attachments could not be read — carrying on with the rest.`)
         }
       }
 
@@ -191,7 +193,7 @@ export default function Home({ onStarted, onKept, modelOptions = [] }) {
   function acceptSrs(handoffPrompt, id) {
     s.setSrs({ srsPhase: 'idle', srsBusy: '' })
     setPrompt(handoffPrompt)
-    setTimeout(() => begin(handoffPrompt, id), 900)
+    setTimeout(() => begin(handoffPrompt, id, false), 900)
   }
 
   if (srsPhase === 'review' && srsId) {
@@ -203,7 +205,6 @@ export default function Home({ onStarted, onKept, modelOptions = [] }) {
     )
   }
 
-  // The interview gets the whole pane, the way the review already does.
   if (srsPhase === 'interview' && srsId) {
     return (
       <Interview projectId={srsId}
@@ -213,188 +214,199 @@ export default function Home({ onStarted, onKept, modelOptions = [] }) {
   }
 
   return (
-    // Flush left and unadorned.
-    <div className="relative flex min-h-0 flex-1 flex-col overflow-auto bg-[radial-gradient(circle_at_30%_10%,rgba(93,106,251,.12),transparent_34%),radial-gradient(circle_at_85%_80%,rgba(80,180,255,.10),transparent_32%)] px-6">
-      <div className="relative mx-auto my-auto w-full max-w-[980px] py-8">
-        <div className="glass-panel grid grid-cols-[auto_1fr] items-center gap-5 rounded-[28px] p-6">
-          <img src="/__agentforge/agentforge-mark.png"
-               alt="AgentForge Studio — AI-powered full stack app builder"
-               className="size-[84px] shrink-0 select-none rounded-[22px] border border-white/60 object-cover shadow-lg" />
-          <div className="min-w-0">
-            <div className="flex items-center gap-2.5">
-              <span className="h-[3px] w-[26px] bg-accent" />
-              <span className="text-[10px] font-semibold uppercase
-                               tracking-[.24em] text-accent">
-                Describe · Generate · Deploy
-              </span>
-            </div>
-            <h2 className="mt-2 font-display text-[46px] font-semibold leading-[.94] tracking-[-.04em] text-ink">
-              AGENTFORGE<br />STUDIO
-            </h2>
-          </div>
-        </div>
-
-        <div className="soft-card mt-5 p-4">
-          <p className="m-0 text-[14px] leading-[1.55] text-ink">
-            Describe an app. It gets planned, written, tested, repaired and
-            served — and you watch each useful step.
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-[radial-gradient(circle_at_50%_15%,#152e68_0%,#0c152a_38%,#080c16_100%)] px-6 py-10 text-white">
+      <div className="relative mx-auto my-auto w-full max-w-[940px]">
+        {/* Bolt.new Style Hero */}
+        <div className="text-center">
+          <h1 className="font-display text-[46px] font-bold tracking-tight text-white md:text-[56px] leading-[1.08]">
+            What will you build today?
+          </h1>
+          <p className="mt-3 text-[16px] text-white/65">
+            Create stunning apps & websites by chatting with AI.
           </p>
         </div>
 
         {srsPhase === 'plan' && srsId && (
-          <PlanReview projectId={srsId}
-                      onGenerated={() => s.setSrs({ srsPhase: 'review' })}
-                      onCancel={() => s.setSrs({ srsPhase: 'interview' })} />
+          <div className="mt-6">
+            <PlanReview projectId={srsId}
+                        onGenerated={() => s.setSrs({ srsPhase: 'review' })}
+                        onCancel={() => s.setSrs({ srsPhase: 'interview' })} />
+          </div>
         )}
         {srsPhase === 'planning' && (
-          <SrsActivity phase="planning" message={s.srsBusy || 'Reading your idea…'} />
+          <div className="mt-6">
+            <SrsActivity phase="planning" message={s.srsBusy || 'Reading your idea…'} />
+          </div>
         )}
 
-        {srsPhase === 'idle' && (<>
-        {/* Main product brief. */}
-        <div className="glass-panel mt-6 overflow-hidden rounded-[26px] transition-all focus-within:border-accent/50 focus-within:shadow-[0_18px_50px_rgba(93,106,251,.12)]">
-          <div className="flex items-center gap-2.5 border-b border-line/70 bg-white/35 px-4 py-3 dark:bg-white/[.02]">
-            <PencilLine className="size-[13px] shrink-0 text-accent" />
-            <span className="label-xs text-ink">The brief</span>
-            <span className="flex-1" />
-            <span className="font-mono text-[10px] text-muted2">
-              {prompt.length} / ∞
-            </span>
-          </div>
+        {srsPhase === 'idle' && (
+          <>
+            {/* Main Central Prompt Box */}
+            <div className="mt-8 overflow-hidden rounded-[26px] border border-white/15 bg-[#121622]/90 shadow-2xl backdrop-blur-2xl transition-all focus-within:border-blue-500/60 focus-within:shadow-[0_20px_60px_rgba(37,99,235,.2)]">
+              <TextArea
+                value={prompt}
+                autoFocus
+                rows={4}
+                ref={box}
+                aria-label="Describe your app"
+                placeholder="How can AgentForge help you today? Describe an app, prototype, or SRS..."
+                onChange={e => setPrompt(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit()
+                }}
+                className="min-h-[130px] w-full resize-none bg-transparent p-5 text-[15px] leading-[1.6] text-white caret-blue-400 outline-none placeholder:text-white/40"
+              />
 
-          <TextArea value={prompt} autoFocus rows={5} ref={box}
-                    placeholder="A community darkroom with three roles: members book sessions, technicians run the bench, a manager sees the money…"
-                    onChange={e => setPrompt(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit()
-                    }}
-                    className="min-h-[148px] w-full resize-none bg-transparent p-5 text-[15px] leading-[1.6] text-ink caret-accent outline-none placeholder:text-muted2" />
+              {/* Build Setup Configurations */}
+              <div className="border-t border-white/10 px-5 pt-3 pb-2">
+                <BuildSetup
+                  model={builderModel}
+                  stack={stack}
+                  think={think}
+                  options={modelOptions}
+                  onModelChange={chooseModel}
+                  onStackChange={setStack}
+                  onThinkChange={chooseThinking}
+                />
+              </div>
 
-          <div className="mx-4 mb-3 flex flex-wrap items-center gap-3 rounded-2xl border border-line/70 bg-white/45 px-3.5 py-3 dark:bg-white/[.025]">
-            <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent">
-              <Languages className="size-4" />
-            </span>
-            <label htmlFor="srs-language" className="min-w-[210px] flex-1">
-              <span className="block font-display text-[11.5px] font-semibold text-ink">
-                1. Choose the interview language
-              </span>
-              <span className="block text-[10.5px] leading-relaxed text-muted2">
-                Interview and plan use this language. SRS, Builder handoff, PDF and diagrams stay in English.
-              </span>
-            </label>
-            <select id="srs-language" value={srsLanguage}
-                    onChange={event => setSrsLanguage(event.target.value)}
-                    className="ml-11 h-9 w-full max-w-none rounded-xl border border-line bg-white px-3 text-[11.5px] font-medium text-ink outline-none transition focus:border-accent dark:bg-white/[.06] sm:ml-0 sm:w-auto sm:max-w-[230px]">
-              {languageOptions.map(language => (
-                <option key={language.code} value={language.code}>{language.name}</option>
-              ))}
-            </select>
-          </div>
+              <AttachList attach={attach} className="mx-5 mb-2" />
 
-          {/* The stack used to be read out of the wording of the brief, which
-              worked until someone wanted microservices without writing the
-              word. It is a decision, so it is asked as one — and "read the
-              brief" stays the default, because most people do not care. */}
-          <div className="mx-4 mb-3 flex flex-wrap items-center gap-3 rounded-2xl border border-line/70 bg-white/45 px-3.5 py-3 dark:bg-white/[.025]">
-            <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent">
-              <Layers className="size-4" />
-            </span>
-            <label htmlFor="build-stack" className="min-w-[210px] flex-1">
-              <span className="block font-display text-[11.5px] font-semibold text-ink">
-                2. Choose the stack
-              </span>
-              <span className="block text-[10.5px] leading-relaxed text-muted2">
-                {STACKS.find(option => option.id === stack)?.blurb
-                  || 'Read from what you wrote — microservices if you ask for them, one Next.js app otherwise.'}
-              </span>
-            </label>
-            <select id="build-stack" value={stack}
-                    onChange={event => setStack(event.target.value)}
-                    className="ml-11 h-9 w-full max-w-none rounded-xl border border-line bg-white px-3 text-[11.5px] font-medium text-ink outline-none transition focus:border-accent dark:bg-white/[.06] sm:ml-0 sm:w-auto sm:max-w-[230px]">
-              <option value="">Read it from the brief</option>
-              {STACKS.map(option => (
-                <option key={option.id} value={option.id}>{option.name}</option>
-              ))}
-            </select>
-          </div>
-          <AttachList attach={attach} className="mx-4 mb-2" />
+              {/* Bottom Action Row with 3 Target Options */}
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 bg-white/[.02] p-2.5">
+                <div className="flex items-center gap-2">
+                  <AttachButtons attach={attach} cell />
+                  <label
+                    className="inline-flex min-w-0 items-center gap-1.5 px-2 text-[11px] text-white/50"
+                    title="Interview language. SRS and builder handoff stay in English."
+                  >
+                    <Languages className="size-3.5 shrink-0" aria-hidden="true" />
+                    <span className="sr-only">Interview language</span>
+                    <select
+                      id="srs-language"
+                      value={srsLanguage}
+                      onChange={event => setSrsLanguage(event.target.value)}
+                      className="h-8 max-w-[130px] bg-transparent text-white/80 focus:outline-none"
+                    >
+                      {languageOptions.map(language => (
+                        <option key={language.code} value={language.code} className="bg-[#121622] text-white">
+                          {language.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
 
-          <div className="flex items-stretch border-t border-line/70 bg-white/28 dark:bg-white/[.018]">
-            <AttachButtons attach={attach} cell />
-            <span className="flex-1" />
-            <button onClick={() => {
+                {/* 3 User Creation Options: SRS Generate | Prototype Build | App Build */}
+                <div className="flex items-center gap-2">
+                  {/* Option 1: SRS Generate */}
+                  <button
+                    onClick={() => {
                       if (!prompt.trim() && !attach.items.length) return box.current?.focus()
-                      setSrsSetup(true)
+                      chooseModel(builderModel)
+                      planFirst()
                     }}
-                    title="Answer a few questions first, and get a written spec before anything is built"
-                    className="m-2 inline-flex items-center gap-2 rounded-xl border border-line bg-white/70 px-4 font-display text-[12px] font-semibold text-ink shadow-sm transition-all hover:bg-white dark:bg-white/5">
-              <Sparkles className="size-[13px]" /> Plan it first
-            </button>
-            <button disabled={!prompt.trim()} onClick={submit}
-                    className="m-2 ml-0 inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-3 font-display text-[12px] font-semibold text-white shadow-[0_8px_20px_rgba(93,106,251,.25)] transition-all hover:bg-press disabled:pointer-events-none disabled:opacity-45">
-              Build it <ArrowRight className="size-3.5" />
-            </button>
-          </div>
-        </div>
+                    disabled={!builderModel.trim()}
+                    title="SRS Generate: answer interview questions and get a complete software specification"
+                    className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/[.06] px-3.5 py-2.5 font-display text-[12px] font-semibold text-white/90 shadow-sm transition-all hover:bg-white/[.12] hover:text-white"
+                  >
+                    <FileText className="size-3.5 text-amber-400" />
+                    <span>SRS Generate</span>
+                  </button>
 
-        {attach.items.length > 0 && (
-          <p className="mt-2 text-[11.5px] text-muted">
-            Both buttons read what you attached. A PDF or a document becomes
-            part of the brief; a picture is saved into the project so the app
-            can show it.
-          </p>
-        )}
+                  {/* Option 2: Prototype Build */}
+                  <button
+                    onClick={submitPrototype}
+                    disabled={!prompt.trim() || !builderModel.trim()}
+                    title="Prototype Build: generate an interactive HTML prototype first and decide whether to build full app"
+                    className="inline-flex items-center gap-2 rounded-xl border border-purple-500/40 bg-purple-500/15 px-3.5 py-2.5 font-display text-[12px] font-semibold text-purple-200 shadow-sm transition-all hover:bg-purple-500/25 hover:text-white disabled:pointer-events-none disabled:opacity-40"
+                  >
+                    <Layers className="size-3.5 text-purple-400" />
+                    <span>Prototype Build</span>
+                  </button>
 
-        {srsError && srsPhase === 'idle' && (
-          <p className="mt-2 border-l-[3px] border-accent bg-tint px-2.5 py-1.5
-                        text-[11.5px] text-deep">
-            The SRS could not start — {srsError}
-          </p>
-        )}
-
-        {/* Starter briefs. */}
-        <div className="mt-6">
-          <div className="label-xs py-2.5 text-label">Or start from one of these</div>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            {EXAMPLES.map((e, i) => (
-              <button key={e.label} onClick={() => setPrompt(e.text)}
-                      className={cn('py-3.5 text-left transition-colors',
-                        'rounded-[18px] border border-line bg-white/50 p-4 shadow-sm hover:bg-white dark:bg-white/[.025] dark:hover:bg-white/[.05]',
-                        i === 0 ? 'pr-4' : i === EXAMPLES.length - 1 ? 'pl-4' : 'px-4')}>
-                <div className="font-display text-[14px] font-extrabold text-ink">
-                  {e.label}
+                  {/* Option 3: App Build */}
+                  <button
+                    disabled={!prompt.trim() || !builderModel.trim()}
+                    onClick={submit}
+                    title="App Build: generate full stack application with planner, design, builder, and testing"
+                    className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 font-display text-[12px] font-semibold text-white shadow-lg shadow-blue-500/30 transition-all hover:bg-blue-500 disabled:pointer-events-none disabled:opacity-40"
+                  >
+                    <span>App Build</span>
+                    <ArrowRight className="size-3.5" />
+                  </button>
                 </div>
-                <div className="mt-[3px] text-[11.5px] leading-[1.45] text-label">
-                  {e.blurb}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-        </>)}
+              </div>
+            </div>
+
+            {srsError && srsPhase === 'idle' && (
+              <p className="mt-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-[12px] text-red-300">
+                The SRS could not start — {srsError}
+              </p>
+            )}
+
+            {/* Quick-Start Category Cards (Matching Bolt.new Image) */}
+            <div className="mt-7 flex items-center justify-center gap-4">
+              {[
+                { id: 'website', label: 'Website', Icon: Globe },
+                { id: 'slides', label: 'Slides', Icon: Presentation, badge: 'New' },
+                { id: 'app', label: 'App', Icon: Monitor },
+                { id: 'prototype', label: 'Prototype', Icon: FlaskConical },
+              ].map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => {
+                    if (cat.id === 'prototype') submitPrototype()
+                    else submit()
+                  }}
+                  className="group relative flex flex-col items-center justify-center rounded-2xl border border-white/10 bg-[#121622]/60 p-4 transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-[#121622] hover:shadow-lg w-[84px] h-[84px]"
+                >
+                  {cat.badge && (
+                    <span className="absolute -top-1.5 -right-1 rounded-full bg-blue-500 px-1.5 py-0.2 text-[9px] font-bold text-white uppercase tracking-wider shadow">
+                      {cat.badge}
+                    </span>
+                  )}
+                  <cat.Icon className="size-6 text-white/70 transition-colors group-hover:text-blue-400" />
+                  <span className="mt-2 text-[11px] font-medium text-white/60 group-hover:text-white">
+                    {cat.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Starter Briefs / Inspirations */}
+            <div className="mt-8">
+              <div className="text-center text-[12px] font-semibold text-white/50 mb-3">
+                or start from one of these
+              </div>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                {EXAMPLES.map(e => (
+                  <button
+                    key={e.label}
+                    onClick={() => setPrompt(e.text)}
+                    className="rounded-2xl border border-white/10 bg-[#121622]/50 p-4 text-left shadow-sm transition-all hover:border-white/20 hover:bg-[#121622]/90 hover:shadow-md"
+                  >
+                    <div className="font-display text-[13.5px] font-bold text-white">
+                      {e.label}
+                    </div>
+                    <div className="mt-1 text-[11px] leading-[1.5] text-white/50">
+                      {e.blurb}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
-
-      {setupFor && (
-        <BuildSetup model={builderModel} stack={stack} think={think} options={modelOptions}
-                    onContinue={configureBuild} onCancel={() => setSetupFor(null)} />
-      )}
-      {srsSetup && (
-        <BuildSetup model={models.srs || plannerModel} think={think} options={modelOptions}
-                    stackChoice={false}
-                    title="Write the specification"
-                    blurb="This model runs the interview and writes the specification. You
-                           choose the stack later, if you decide to build it."
-                    modelHint="Used for the interview, the plan and the specification."
-                    action="Start the interview"
-                    onContinue={configureSrs} onCancel={() => setSrsSetup(false)} />
-      )}
       {logoFor && (
-        <LogoPanel idea={logoFor.idea} model={designModel}
-                   onAccept={(file, uploads) => startBuild(logoFor.idea, file,
-                                                  logoFor.srs, uploads, logoFor.config)}
-                   onSkip={(uploads) => startBuild(logoFor.idea, '', logoFor.srs,
-                                            uploads, logoFor.config)} />
+        <LogoPanel
+          idea={logoFor.idea}
+          model={designModel}
+          onAccept={(file, uploads) => startBuild(logoFor.idea, file, logoFor.srs, uploads, logoFor.config, false)}
+          onSkip={(uploads) => startBuild(logoFor.idea, '', logoFor.srs, uploads, logoFor.config, false)}
+        />
       )}
     </div>
   )

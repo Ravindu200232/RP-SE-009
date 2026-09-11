@@ -229,6 +229,7 @@ class Config:
     e2e_tests: bool = True
     review: bool = False               # read-only inspection pass
     plan_only: bool = False
+    prototype_only: bool = False
     state_root: Path | None = None     # cross-project learned lessons
     extra: dict = field(default_factory=dict)
 

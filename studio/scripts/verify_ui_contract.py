@@ -145,9 +145,9 @@ required = {
     "deployment workspace": ("components/deploy/DeployPanel.jsx", "Deploy"),
     "AWS Console browser login": ("components/deploy/DeployAccounts.jsx", "tool: 'aws-console-login'"),
     "isolated AWS Console profile": ("components/deploy/DeployAccounts.jsx", "const AWS_CONSOLE_PROFILE = 'agentforge-console'"),
-    "the stack is chosen, not guessed": ("components/Home.jsx", "2. Choose the stack"),
-    "the build is configured before it starts": ("components/BuildSetup.jsx", "Configure your build"),
-    "and it asks for the stack": ("components/BuildSetup.jsx", "build-setup-stack"),
+    "the stack is chosen beside the brief": ("components/BuildSetup.jsx", 'id="build-stack"'),
+    "the build is configured before it starts": ("components/Home.jsx", "const config = { model: builderModel.trim(), stack, think }"),
+    "build options stay in the composer": ("components/BuildSetup.jsx", 'aria-label="Build options"'),
     "the design can still be customised": ("components/AgentDecision.jsx", "How should it look?"),
     "the chosen stack travels with the build": ("components/Home.jsx", "config?.stack || stack"),
     "the engine prefers a chosen stack": ("../server_modules/builder/pipeline.py", "stack or detect_stack"),
@@ -161,6 +161,7 @@ forbidden = {
     "build switches in the sidebar": ("components/Sidebar.jsx", "Build controls"),
     # One styling story: Tailwind in the scaffold, tokens from the contract.
     "a UI framework picker": ("components/BuildSetup.jsx", "UI_LIBRARIES"),
+    "a build setup modal": ("components/BuildSetup.jsx", "<Modal"),
     "a provider block picker": ("components/AgentDecision.jsx", "Provider blocks"),
     # The terminal pane was replaced by the chat stream: raw backend lines
     # scrolled past faster than anyone could read them.

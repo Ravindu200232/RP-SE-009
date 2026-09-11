@@ -271,8 +271,10 @@ function handle(m) {
     case 'progress':     s.setProgress(m.step, m.pct); break
     case 'phase':
       s.upsertPhase(m)
-
       s.setStage(m.status === 'active' ? (m.title || '') : '')
+      if (m.phase === 'prototype' && m.status === 'active') {
+        s.setView('prototype')
+      }
       break
     case 'file':         s.putFile(m.name, m.content || ''); break
     case 'stream_start':

@@ -49,7 +49,7 @@ function currentPath(frame) {
   }
 }
 
-export default function PreviewPane({ hidden }) {
+export default function PreviewPane({ hidden, onBuild }) {
   const frameRef = useRef(null)
   const canvasRef = useRef(null)
   const detachRef = useRef(null)
@@ -58,6 +58,10 @@ export default function PreviewPane({ hidden }) {
   const lastPathRef = useRef('/')
 
   const project = useStore(s => s.project)
+  const files = useStore(s => s.files)
+  const hasBuiltApp = Object.keys(files || {}).some(f =>
+    f.startsWith('app/') || f.startsWith('src/') || f.startsWith('pages/') || f === 'package.json'
+  )
   const busy = useStore(s => s.busy && (!s.busyProject || s.busyProject === s.project))
   const runtime = useStore(s => s.runtimes[s.project])
   const addLog = useStore(s => s.addLog)
@@ -387,28 +391,17 @@ export default function PreviewPane({ hidden }) {
   }
 
   /**
-   * Show the drawing here rather than in a dialog.
-   *
-   * It is a set of real HTML pages served from /prototype/<project>/, so the
-   * preview can show it exactly as it shows the built app: its own navigation
-   * walks between the pages, and the select and pencil tools attach from it
-   * the same way. A popup over the top would hide the thing being judged.
+   * Prototype drawings are rendered in their own dedicated Prototype tab.
+   * PreviewPane renders the actual running full-stack application.
+   * Contract note: prototypes are served under /prototype/ and accepted with Build this.
    */
   useEffect(() => {
     const f = frameRef.current
     if (!f) return
-    if (drawing) {
-      f.dataset.remote = 'false'
-      const first = drawing.pages?.[0]?.file || 'index.html'
-      f.src = `${API}/prototype/${encodeURIComponent(project)}/${first}`
-      addLog('INFO', 'The drawing is in the preview — click through it, mark it '
-                   + 'up, or say what to change.')
-    } else if (lastPathRef.current.includes(`${API}/prototype/`)) {
-      // Approved or sent back: the preview belongs to the app again. The path
-      // compared here is the iframe's own, so it carries the studio's prefix.
-      if (runtime?.status === 'running') navigate('/')
+    if (!drawing && runtime?.status === 'running') {
+      navigate('/')
     }
-  }, [drawing, project, addLog])
+  }, [drawing, project, runtime?.status, navigate])
 
   async function approveDrawing() {
     const id = drawing?.id
@@ -525,7 +518,35 @@ export default function PreviewPane({ hidden }) {
                style={{ width: width ? width + 'px' : '100%' }}>
             <iframe ref={frameRef} id="frame" title="preview" src="about:blank"
                     className="absolute inset-0 block h-full w-full border-0 bg-white" />
-            {!drawing && runtime?.status !== 'running' && (
+            {!hasBuiltApp && !runtime?.working && runtime?.status !== 'starting' ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-panel p-8 text-center" role="status">
+                <div className="grid size-14 place-items-center rounded-2xl bg-accent/10 text-accent">
+                  <Rocket className="size-7" />
+                </div>
+                <div className="max-w-md">
+                  <h3 className="text-base font-bold text-ink">This app has not been built yet</h3>
+                  <p className="mt-1 text-sm text-muted leading-relaxed">
+                    Only the specification or HTML prototype exists so far. Build the full application to preview and interact with it live here.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 mt-2">
+                  <button
+                    onClick={() => useStore.getState().setView('prototype')}
+                    className="inline-flex items-center gap-2 rounded-full border border-line bg-panel2 px-4 py-2 text-xs font-semibold text-ink shadow-sm transition hover:bg-ink/[.05]"
+                  >
+                    <Layers className="size-3.5 text-purple-500" /> View Prototype
+                  </button>
+                  {onBuild && (
+                    <button
+                      onClick={onBuild}
+                      className="inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2 text-xs font-semibold text-white shadow-md transition hover:bg-press"
+                    >
+                      <Rocket className="size-3.5" /> Build App Now
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : runtime?.status !== 'running' ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-panel p-8 text-center" role="status">
                 <p className="font-semibold text-ink">{runtime?.working ? 'Build in progress' : runtime?.status === 'starting'
                   ? 'Starting app…' : runtime?.status === 'failed' ? 'App could not start' : 'App stopped'}</p>
@@ -539,7 +560,7 @@ export default function PreviewPane({ hidden }) {
                   </button>
                 )}
               </div>
-            )}
+            ) : null}
             {/* While the agent is driving its own browser, that is the more
                 interesting of the two — it is the one being tested. */}
             <AgentBrowser />

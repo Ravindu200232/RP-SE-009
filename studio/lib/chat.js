@@ -121,6 +121,13 @@ function classify(row) {
     if (!SERVER_READY.test(line)) return null
     return { kind: 'run', title: plainly(line.replace(SERVER_LINE, '')), detail: '' }
   }
+  // Completed file events already carry a path. Keep that information for
+  // the clickable file cards instead of inferring success from row order.
+  const changed = /^(written|created|patched|edited|updated)\s+(.+?)(?:\s+\(\d+ lines\))?$/i.exec(line)
+  if (changed) {
+    const path = changed[2].replace(/^[`'"]|[`'"]$/g, '').replace(/\\/g, '/')
+    return { kind: 'write', title: line, detail: '', file: path, action: changed[1].toLowerCase() }
+  }
   for (const [pattern, kind, title] of KINDS) {
     const match = pattern.exec(line)
     if (match) return { kind, title: title(match), detail: '' }
@@ -153,8 +160,7 @@ let counted = 0
 function turnFor(row) {
   if (remembered.has(row)) return remembered.get(row)
   const event = classify(row)
-  const turn = event && { role: 'activity', kind: event.kind, at: row.at,
-                          id: `a${++counted}`, title: event.title, detail: event.detail }
+  const turn = event && { role: 'activity', ...event, at: row.at, id: `a${++counted}` }
   remembered.set(row, turn)
   return turn
 }

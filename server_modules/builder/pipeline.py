@@ -129,12 +129,12 @@ GATE_TIMEOUT = 600
 
 
 def _config(proj_dir: Path, prompt: str, model: str, think, gates: bool = False,
-            stack: str = "") -> Config:
+            stack: str = "", prototype_only: bool = False) -> Config:
     # A stack chosen in the studio is a decision; reading it out of the wording
     # of the brief is a guess, and only the fallback.
     return Config(workspace=proj_dir, model=model or default_agent_model(),
                   host=ollama.host, stack=stack or detect_stack(prompt),
-                  think=bool(think),
+                  think=bool(think), prototype_only=bool(prototype_only),
                   extra={"gates": gates, "gate_timeout": GATE_TIMEOUT})
 
 
@@ -459,7 +459,7 @@ def release_other_sessions(keep: str) -> list:
 
 
 def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
-               *, kind: str, phases, plan: bool):
+               *, kind: str, phases, plan: bool, prototype_only: bool = False):
     """The agent already talking about this project, or a new one.
 
     A chat message is the next line of a conversation, not the first line of a
@@ -491,7 +491,7 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
     if fresh:
         forget_session(name)
         agent = BuilderAgent(
-            _config(proj_dir, brief, model, think, gates=True, stack=stack),
+            _config(proj_dir, brief, model, think, gates=True, stack=stack, prototype_only=prototype_only),
             events=Events(), cancel=_cancelled)
         if not plan:
             restored = restore_conversation(proj_dir, agent)
@@ -527,7 +527,7 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
 
 
 def _run_agent(proj_dir: Path, brief: str, model: str, think, *, phases, kind: str,
-               plan: bool = True, stack: str = ""):
+               plan: bool = True, stack: str = "", prototype_only: bool = False):
     """One builder-agent run, wired to the studio.
 
     A full build asks about its plan and its design, because the studio can
@@ -536,6 +536,8 @@ def _run_agent(proj_dir: Path, brief: str, model: str, think, *, phases, kind: s
     """
     agent = _agent_for(proj_dir, brief, model, think, stack,
                        kind=kind, phases=phases, plan=plan)
+    if prototype_only:
+        agent.config.prototype_only = True
     register_approvals(agent.approvals)
     try:
         outcome = agent.run(brief) if plan else agent.build(brief)
@@ -633,7 +635,8 @@ def _finish(project: str, url: str, outcome, qa_outcome=None) -> bool:
 
 def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
                        project: str = "", logo: str = "", srs_id: str = "",
-                       stack: str = "", attachments: str = "") -> None:
+                       stack: str = "", attachments: str = "",
+                       prototype_only: bool = False) -> None:
     """Build an application from a request, then prove it works."""
     started = time.time()
     runtime = None
@@ -645,17 +648,17 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
         runtime = RUNTIMES.get(proj_dir, stack)
         RUNTIMES.begin_work(runtime)
         cancel.note(project=name, srs_id=srs_id)
-        # A specification that was kept has a project directory and no code in
+        # A specification or prototype that was kept has a project directory and no code in
         # it. Told to "continue", the agent would look for work in progress
         # that was never started; this is a first build, and says so.
-        first = not prompt and _spec_only(proj_dir)
+        first = not prompt and (_spec_only(proj_dir) or _prototype_only(proj_dir))
         resuming = bool(project) and not first
         elog("INFO", f"🏗️  {'Resuming' if resuming else 'Building'} {name}")
         estep("plan", "active")
 
         MONGO.ensure_running()
         brief = _brief(proj_dir, prompt or (
-            "Build this application from the approved specification below. "
+            "Build this application from the approved prototype and specification below. "
             "Nothing has been written yet." if first else
             "Continue this project: finish whatever is incomplete and "
             "make every verification pass."))
@@ -665,9 +668,15 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
             brief += read_staged_attachments(attachments, proj_dir)
 
         agent, outcome = _run_agent(proj_dir, brief, model, think,
-                                    phases=BUILD_PHASES, kind="build", stack=stack)
+                                    phases=BUILD_PHASES, kind="build", stack=stack,
+                                    prototype_only=prototype_only)
         if outcome.status == "cancelled":
             return ecancel({"project": name})
+
+        if _prototype_only(proj_dir) or getattr(agent, "_stop_at_prototype", False):
+            edone(f"/api/prototype/{name}/index.html", name)
+            elog("SUCCESS", f"✅ {name} HTML prototype finished in {int(time.time() - started)}s")
+            return
 
         fill_missing_images(proj_dir, "the build")
         url = _serve(proj_dir, agent)

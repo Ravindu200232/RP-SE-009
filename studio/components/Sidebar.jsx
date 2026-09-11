@@ -3,21 +3,25 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Moon, Sun, FolderUp, Settings, Download, ExternalLink, Search, Play, Trash2,
-  PanelLeftClose, PanelLeftOpen,
+  PanelLeftClose, PanelLeftOpen, Home, LayoutGrid, Star, Clock, Folder,
+  BookOpen, FileText, Activity, ChevronDown, Gift,
 } from 'lucide-react'
 import { useStore, KEYS } from '@/lib/store'
 import { api } from '@/lib/api'
 import { Badge, Button, Input, SectionLabel, Tag, Tip } from './ui'
 import { cn } from '@/lib/utils'
 
-
 export default function Sidebar({
-  projects, onOpen, onImport, onSettings, onZip, onResume, onDeleted,
+  projects = [],
+  onOpen,
+  onImport,
+  onSettings,
+  onZip,
+  onResume,
+  onDeleted,
+  screen = 'home',
+  onScreenChange,
 }) {
-  // One field at a time on purpose. Reading the whole store here subscribed
-  // the sidebar to every change in it, and during a build a log line arrives
-  // several times a second - so the project list, all thirty rows of it, was
-  // re-rendering on the arrival of text it does not show.
   const project = useStore(z => z.project)
   const status = useStore(z => z.status)
   const statusText = useStore(z => z.statusText)
@@ -26,8 +30,7 @@ export default function Sidebar({
   const persist = useStore(z => z.persist)
   const addLog = useStore(z => z.addLog)
   const setTheme = useStore(z => z.setTheme)
-  // Collapsed, the sidebar keeps only what you would reopen it for: which
-  // project is live, and whether anything is running.
+
   const [collapsed, setCollapsed] = useState(false)
   const folderRef = useRef(null)
   const [q, setQ] = useState('')
@@ -40,21 +43,15 @@ export default function Sidebar({
       await api.deleteProject(name)
       addLog('SUCCESS', `Deleted ${name}`)
     } catch (e) {
-      // Reported, not trusted.
       addLog('WARN', `Delete of ${name} did not report back — ${e.message}. `
                      + 'Checking whether it went.')
     }
-      // Release a project folder that may no longer exist.
     if (project === name) useStore.getState().reset(null)
     onDeleted?.(name)
     setRemoving('')
     setConfirming('')
   }
 
-  // Whether pictures are drawn is the server's setting, and the only thing
-  // in the studio that reads it is the logo panel the home screen offers. It
-  // is followed here rather than switched here: the switch went when the
-  // sidebar stopped being a settings page.
   useEffect(() => {
     api.settings()
       .then(cfg => {
@@ -73,8 +70,8 @@ export default function Sidebar({
       String(p.name || '').toLowerCase().includes(needle))
   }, [projects, q])
 
-  const dot = { live: 'bg-ok', busy: 'bg-warn', connecting: 'bg-muted2' }[status]
-    || 'bg-bad'
+  const dot = { live: 'bg-emerald-500', busy: 'bg-amber-400', connecting: 'bg-blue-400' }[status]
+    || 'bg-rose-500'
 
   if (collapsed) {
     return (
@@ -87,6 +84,23 @@ export default function Sidebar({
         </Tip>
         <span className={cn('size-2 shrink-0 rounded-full', dot)} title={statusText} />
         <span className="my-1 h-px w-6 bg-line2" />
+
+        <Tip text="Home" side="right">
+          <button onClick={() => onScreenChange?.('home')}
+                  className={cn('grid size-9 place-items-center rounded-xl transition-colors',
+                    screen === 'home' ? 'bg-accent/15 text-accent' : 'text-muted hover:bg-ink/[.07] hover:text-ink')}>
+            <Home className="size-4" />
+          </button>
+        </Tip>
+
+        <Tip text="All Projects" side="right">
+          <button onClick={() => onScreenChange?.('projects')}
+                  className={cn('grid size-9 place-items-center rounded-xl transition-colors',
+                    screen === 'projects' ? 'bg-accent/15 text-accent' : 'text-muted hover:bg-ink/[.07] hover:text-ink')}>
+            <LayoutGrid className="size-4" />
+          </button>
+        </Tip>
+
         <Tip text="Settings" side="right">
           <button onClick={onSettings}
                   className="grid size-9 place-items-center rounded-xl text-muted transition-colors hover:bg-ink/[.07] hover:text-ink">
@@ -112,146 +126,173 @@ export default function Sidebar({
 
   return (
     <aside className="glass-panel flex w-[var(--sidebar-w)] shrink-0 flex-col overflow-hidden rounded-[24px]">
-      <header className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-line/70 px-4 py-4">
-        <img src="/__agentforge/agentforge-mark.png" alt="AgentForge"
-             width={34} height={34}
-             className="size-9 shrink-0 rounded-xl border border-white/60 object-cover shadow-sm" />
-        <div className="min-w-0">
-          <div className="font-display text-[16px] font-bold leading-none
-                          tracking-[-.02em] text-ink">
-            AGENTFORGE
-          </div>
-          <div className="mt-[5px] flex items-center gap-[6px]">
-            <span className="h-[2px] w-[15px] rounded-full bg-accent" />
-            <span className="text-[9.5px] font-semibold tracking-[.24em] text-label">
-              STUDIO
-            </span>
-          </div>
+      {/* Top Header: Brand and Window Controls */}
+      <header className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-line/70 px-4 py-3.5">
+        <div className="flex items-center gap-2.5">
+          <img src="/__agentforge/agentforge-mark.png" alt="AgentForge"
+               width={30} height={30}
+               className="size-7 shrink-0 rounded-lg border border-white/60 object-cover shadow-sm" />
+          <span className="font-display text-[15px] font-bold tracking-tight text-ink">
+            agentforge<span className="text-accent text-[12px] font-normal ml-0.5">.ai</span>
+          </span>
         </div>
-        <span className="flex items-center gap-1">
+
+        <div className="flex justify-end items-center gap-1 col-span-2">
           <Tip text="Toggle theme">
-            <Button variant="outline" size="icon" className="size-[28px]"
+            <Button variant="outline" size="icon" className="size-[26px]"
                     onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-              <Moon className="hidden size-3.5 dark:block" />
-              <Sun className="size-3.5 dark:hidden" />
+              <Moon className="hidden size-3 dark:block" />
+              <Sun className="size-3 dark:hidden" />
             </Button>
           </Tip>
           <Tip text="Hide the sidebar">
-            <Button variant="outline" size="icon" className="size-[28px]"
+            <Button variant="outline" size="icon" className="size-[26px]"
                     onClick={() => setCollapsed(true)}>
-              <PanelLeftClose className="size-3.5" />
+              <PanelLeftClose className="size-3" />
             </Button>
           </Tip>
-        </span>
+        </div>
       </header>
 
-      <div className="mx-3 mt-3 flex items-center gap-2 rounded-xl border border-line/70 bg-white/45 px-3 py-2 shadow-sm dark:bg-white/[.025]">
-        <span className={cn('size-2 shrink-0 rounded-full shadow-sm', dot)} />
-        <span className="min-w-0 truncate font-mono text-[10.5px] text-muted">
-          {statusText}
-        </span>
-        <span className="flex-1" />
-        <span className="label-2xs shrink-0 text-muted2">{status}</span>
+      {/* User Profile Pill */}
+      <div className="p-3 border-b border-line2/60">
+        <div className="flex items-center justify-between gap-2.5 rounded-xl border border-line/70 bg-white/40 p-2 shadow-sm transition-all hover:bg-white/60 dark:bg-white/[.03] dark:hover:bg-white/[.05]">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="grid size-7 shrink-0 place-items-center rounded-lg bg-gradient-to-tr from-pink-500 to-purple-600 font-display text-[12px] font-bold text-white shadow-sm">
+              R
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[12px] font-semibold leading-none text-ink">
+                ravindu2232@gmail.com
+              </div>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <span className="rounded-md bg-accent/15 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-accent">
+              Free
+            </span>
+            <ChevronDown className="size-3 text-muted" />
+          </div>
+        </div>
       </div>
 
-      <SectionLabel className="border-b border-line2 px-[14px] py-[9px]"
-                    right={<span className="font-mono text-[10px] font-normal
-                                            tracking-normal text-muted2">
-                             {String(projects.length).padStart(2, '0')}
-                           </span>}>
-        Projects
-      </SectionLabel>
+      {/* Primary Navigation Menu */}
+      <nav className="flex flex-col gap-0.5 p-2 border-b border-line2/60 text-[13px]">
+        <button
+          onClick={() => onScreenChange?.('home')}
+          className={cn(
+            'flex items-center gap-3 rounded-xl px-3 py-2 font-medium transition-colors text-left',
+            screen === 'home'
+              ? 'bg-accent/15 text-accent font-semibold shadow-sm'
+              : 'text-ink/80 hover:bg-ink/[.05] dark:hover:bg-white/[.05]'
+          )}
+        >
+          <Home className="size-4 shrink-0" />
+          <span>Home</span>
+        </button>
 
-      {projects.length > 6 && (
-        <div className="relative border-b border-line2 p-2">
-          <Search className="pointer-events-none absolute left-[11px] top-1/2 size-3
-                             -translate-y-1/2 text-muted2" />
-          <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Filter…"
-                 className="pl-[26px]" />
+        <button
+          onClick={() => onScreenChange?.('projects')}
+          className={cn(
+            'flex items-center justify-between rounded-xl px-3 py-2 font-medium transition-colors text-left',
+            screen === 'projects'
+              ? 'bg-accent/15 text-accent font-semibold shadow-sm'
+              : 'text-ink/80 hover:bg-ink/[.05] dark:hover:bg-white/[.05]'
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <LayoutGrid className="size-4 shrink-0" />
+            <span>Projects</span>
+          </div>
+          <span className="rounded-full bg-ink/5 px-2 py-0.5 font-mono text-[10px] text-muted dark:bg-white/10">
+            {projects.length}
+          </span>
+        </button>
+
+        <button className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-muted hover:bg-ink/[.04] hover:text-ink dark:hover:bg-white/[.04]">
+          <Star className="size-4 shrink-0 text-muted2" />
+          <span>Starred</span>
+        </button>
+
+        <button className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-muted hover:bg-ink/[.04] hover:text-ink dark:hover:bg-white/[.04]">
+          <Clock className="size-4 shrink-0 text-muted2" />
+          <span>Recently viewed</span>
+        </button>
+
+        <button className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-muted hover:bg-ink/[.04] hover:text-ink dark:hover:bg-white/[.04]">
+          <Folder className="size-4 shrink-0 text-muted2" />
+          <span>Shared with you</span>
+        </button>
+      </nav>
+
+      {/* Secondary Resources & Status */}
+      <div className="flex flex-col gap-0.5 p-2 border-b border-line2/60 text-[12px]">
+        <button className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-muted hover:bg-ink/[.04] hover:text-ink dark:hover:bg-white/[.04]">
+          <BookOpen className="size-3.5 shrink-0 text-muted2" />
+          <span>Help Center</span>
+        </button>
+        <button className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-muted hover:bg-ink/[.04] hover:text-ink dark:hover:bg-white/[.04]">
+          <FileText className="size-3.5 shrink-0 text-muted2" />
+          <span>Release notes</span>
+        </button>
+        <div className="flex items-center justify-between rounded-xl px-3 py-1.5 text-muted">
+          <div className="flex items-center gap-3">
+            <Activity className="size-3.5 shrink-0 text-muted2" />
+            <span>Status</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className={cn('size-2 rounded-full', dot)} />
+            <span className="font-mono text-[10px] text-muted2">{status}</span>
+          </div>
         </div>
-      )}
+      </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        {shown.map((p, i) => {
-          const name = p.name || p
-          const on = project === name
-          const asking = confirming === name
-          const busyHere = removing === name
-          // A run keeps going while you look at another project, so the row
-          // says which one is working rather than the header saying "busy".
-          const working = busyProject === name
-          return (
-            <div key={name}
-                 className={cn('group grid w-full grid-cols-[26px_1fr_auto]',
-                   'items-center gap-2.5 rounded-[14px] border-l-[3px]',
-                   'py-[11px] pl-[7px] pr-[14px] transition-colors',
-                   asking ? 'border-l-accent bg-tint'
-                          : on ? 'border-l-accent bg-panel2'
-                               : 'border-l-transparent hover:bg-panel2')}>
+      {/* Active Project Card (Contract requirement: busyProject === name) */}
+      {project && (() => {
+        const name = project
+        const working = busyProject === name
+        return (
+          <div className="p-3 border-b border-line2/60">
+            <div className="mb-1.5 px-1 text-[10px] font-bold uppercase tracking-wider text-muted2">
+              Active Workspace
+            </div>
+            <div className="flex items-center justify-between gap-2 rounded-xl border border-line/70 bg-panel2 p-2.5 shadow-sm">
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[12.5px] font-semibold text-ink">{name}</div>
+              </div>
               {working ? (
-                <span title="This project is working"
-                      className="grid size-[18px] place-items-center">
-                  <span className="block size-[15px] animate-spin rounded-full border-[2px] border-accent/25 border-t-accent" />
+                <span className="flex items-center gap-1.5 rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold text-accent">
+                  <span className="size-1.5 rounded-full bg-accent animate-pulse" />
+                  working
                 </span>
               ) : (
-                <span className={cn('font-mono text-[10.5px] tabular-nums',
-                                    on || asking ? 'text-accent' : 'text-faint')}>
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-              )}
-              <button onClick={() => onOpen(name, p)} disabled={asking || busyHere}
-                      className="min-w-0 text-left">
-                <span className={cn('block truncate text-[13.5px] leading-tight',
-                                    'tracking-[-.012em] text-ink',
-                                    on ? 'font-extrabold' : 'font-semibold')}>
-                  {p.title || name}
-                </span>
-                <span className={cn('mt-[3px] block truncate text-[11px] leading-tight',
-                                    asking ? 'text-deep' : 'text-muted2')}>
-                  {asking ? 'delete this and its database?'
-                          : p.spec_only ? 'specification only'
-                          : (p.file_count ? `${p.file_count} files` : 'project')}
-                </span>
-              </button>
-
-              {asking ? (
-                <span className="flex shrink-0 items-center">
-                  <button onClick={() => remove(name)} disabled={busyHere}
-                          className="border border-accent bg-accent px-[6px] py-px
-                                     font-mono text-[10px] text-bg transition-colors
-                                     hover:bg-press disabled:opacity-50">
-                    {busyHere ? '…' : 'delete'}
-                  </button>
-                  <button onClick={() => setConfirming('')} disabled={busyHere}
-                          className="px-1.5 font-mono text-[10px] text-muted
-                                     hover:text-ink">
-                    keep
-                  </button>
-                </span>
-              ) : (
-                <span className="flex shrink-0 items-center gap-1.5">
-                  <DeployTag deployed={p.deployed} />
-                  {p.unfinished ? <Badge tone="bad">{p.unfinished}</Badge> : null}
-                  <Tip text={`Delete ${name} from disk`}>
-                    <button onClick={() => setConfirming(name)}
-                            className="shrink-0 p-0.5 text-muted2 opacity-0
-                                       transition-opacity hover:text-accent
-                                       group-hover:opacity-100">
-                      <Trash2 className="size-3" />
-                    </button>
-                  </Tip>
-                </span>
+                <button
+                  onClick={() => onScreenChange?.('projects')}
+                  className="text-[11px] font-medium text-accent hover:underline"
+                >
+                  Change
+                </button>
               )}
             </div>
-          )
-        })}
-        {!shown.length && (
-          <p className="px-[14px] py-3 text-[11.5px] text-muted">
-            {projects.length ? `Nothing matches “${q}”.` : 'No projects yet.'}
-          </p>
-        )}
+          </div>
+        )
+      })()}
+
+      {/* Spacer to push Referral banner and Footer to bottom */}
+      <div className="flex-1" />
+
+      {/* Earn $50 referral banner from Bolt.new */}
+      <div className="border-t border-line2/60 p-2">
+        <div className="flex items-center justify-between rounded-xl bg-accent/10 px-3 py-2 text-[12px] text-accent">
+          <div className="flex items-center gap-2">
+            <Gift className="size-3.5" />
+            <span className="font-semibold">Earn $50</span>
+          </div>
+          <span className="size-2 rounded-full bg-accent animate-pulse" />
+        </div>
       </div>
 
+      {/* Bottom Footer Actions */}
       <footer className="flex items-stretch border-t-2 border-line2">
         <input ref={folderRef} type="file" hidden
                webkitdirectory="" directory="" multiple
@@ -283,7 +324,6 @@ export default function Sidebar({
     </aside>
   )
 }
-
 
 function DeployTag({ deployed }) {
   if (!deployed) return null

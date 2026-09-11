@@ -1,16 +1,18 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Eye, Code2, FileText, FlaskConical, Plus, Rocket } from 'lucide-react'
+import { Eye, Code2, FileText, FlaskConical, Plus, Rocket, Layers } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { answerQuestion, connect, send } from '@/lib/ws'
 import { forgetConsole } from '@/lib/console-log'
 import { api } from '@/lib/api'
-import { catalogue } from '@/lib/models'
+import { catalogue, TIERS } from '@/lib/models'
 import { readFolder } from '@/lib/importer'
 import Sidebar from '@/components/Sidebar'
 import Home from '@/components/Home'
+import ProjectsView from '@/components/ProjectsView'
 import PreviewPane from '@/components/PreviewPane'
+import PrototypePane from '@/components/PrototypePane'
 import CodePane from '@/components/CodePane'
 import SettingsModal from '@/components/SettingsModal'
 import TestingResult from '@/components/testing/TestingResult'
@@ -22,17 +24,14 @@ import { Badge, Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { projectUnitTestStatus } from '@/lib/test-counts'
 
-
 const TABS = [
-
   { id: 'srs', label: 'SRS', Icon: FileText },
+  { id: 'prototype', label: 'Prototype', Icon: Layers },
   { id: 'preview', label: 'Preview', Icon: Eye },
   { id: 'code', label: 'Code', Icon: Code2 },
   { id: 'testing', label: 'Testing', Icon: FlaskConical },
-
   { id: 'deploy', label: 'Deploy', Icon: Rocket },
 ]
-
 
 async function retry(fn, times, waitMs) {
   let last
@@ -84,7 +83,6 @@ function ScopeQuestion() {
   )
 }
 
-
 export default function Studio() {
   const view = useStore(s => s.view)
   const setView = useStore(s => s.setView)
@@ -100,12 +98,8 @@ export default function Studio() {
   const [cat, setCat] = useState(() => catalogue(null))
   const [screen, setScreen] = useState('home')
   const [settingsOpen, setSettingsOpen] = useState(false)
-  // The project the newest click asked for. An answer that arrives for any
-  // other one is about a project nobody is looking at.
   const opening = useRef(0)
 
-  // Returns the list as well as storing it: a project that has only just been
-  // created has to be found before the state holding it has re-rendered.
   const refreshProjects = () => api.projects()
     .then(r => {
       const list = Array.isArray(r) ? r : (r.projects || [])
@@ -114,14 +108,12 @@ export default function Studio() {
     })
     .catch(() => [])
 
-  // The socket cannot call refreshProjects.
   const projectsStamp = useStore(s => s.projectsStamp)
   useEffect(() => {
     if (projectsStamp) refreshProjects()
   }, [projectsStamp])
 
   useEffect(() => {
-
     useStore.getState().hydrate()
     const disconnect = connect()
     refreshProjects()
@@ -131,11 +123,9 @@ export default function Studio() {
 
       const cur = useStore.getState().models
       if (cur.planner && cur.design && cur.builder) return
-      // Fill only roles this browser has not chosen. Server-side role settings
-      // fall back to the former single Agent setting during migration.
       const known = new Set([...c.cloud, ...(c.local || [])].map(m => m.id))
       api.settings().then(s => {
-        const fallback = c.cloud[0]?.id || ''
+        const fallback = TIERS.medium.model
         const legacy = String(s?.agent_model || '').trim()
         const pick = value => {
           const saved = String(value || legacy).trim()
@@ -150,21 +140,17 @@ export default function Studio() {
         } })
       }).catch(() => {
         const now = useStore.getState().models
-        if (!c.cloud[0]) return
         useStore.setState({ models: {
           ...now,
-          planner: now.planner || c.cloud[0].id,
-          design: now.design || c.cloud[0].id,
-          builder: now.builder || c.cloud[0].id,
+          planner: now.planner || TIERS.medium.model,
+          design: now.design || TIERS.medium.model,
+          builder: now.builder || TIERS.medium.model,
         } })
       })
     }).catch(() => { })
     return disconnect
   }, [])
 
-  // Preview and the persistent tab bar need the same final suite report as
-  // Testing/Deploy. Streamed test_result events include repair retries and E2E
-  // stages, so their accumulated failure count is not a unit-test count.
   useEffect(() => {
     if (!project || testsRunning || qa?.project === project) return
     let active = true
@@ -179,32 +165,34 @@ export default function Studio() {
 
   const unitStatus = projectUnitTestStatus(qa, project)
 
-  // A specification kept without building it has no preview, no code, no tests
-  // and nothing to deploy. Showing those tabs offers four empty rooms.
-  //
-  // Except while it is being built: the listing only catches up when the run
-  // ends, and hiding the work for the whole of a build to describe a state it
-  // left in the first second is worse than showing an empty pane for one.
-  const specOnly = Boolean(projects.find(p => p.name === project)?.spec_only)
-                   && busyProject !== project
-  const tabs = specOnly ? TABS.filter(tab => tab.id === 'srs') : TABS
+  const currentProjectObj = projects.find(p => p.name === project)
+  const specOnly = Boolean(currentProjectObj?.spec_only) && busyProject !== project
+  const prototypeOnly = Boolean(currentProjectObj?.prototype_only) && busyProject !== project
 
-  // A run brings the workspace up.
+  let tabs = TABS
+  if (specOnly) {
+    tabs = TABS.filter(tab => tab.id === 'srs')
+  } else if (prototypeOnly) {
+    tabs = TABS.filter(tab => tab.id === 'prototype')
+  }
+
   useEffect(() => {
     if (liveFile) setScreen('workspace')
   }, [liveFile])
 
-  // The view is remembered across projects, so opening a specification while
-  // Preview was last selected would leave a tab bar with nothing under it.
+  const drawing = useStore(s => s.drawing)
+
+  useEffect(() => {
+    if (drawing && view !== 'prototype') setView('prototype')
+  }, [drawing, view, setView])
+
   useEffect(() => {
     if (specOnly && view !== 'srs') setView('srs')
-  }, [specOnly, view, setView])
+    else if (prototypeOnly && view !== 'prototype') setView('prototype')
+  }, [specOnly, prototypeOnly, view, setView])
 
   async function openProject(name, row = null) {
     const st = useStore.getState()
-    // Clicking a project twice, or clicking the one already opening, used to
-    // start a second open: each stops the dev server the last one started, so
-    // two clicks took longer than one and could end with nothing serving.
     if (!name || (st.opening && st.project === name)) return
     const request = ++opening.current
     if (st.project === name && st.runtimes[name]?.status === 'running') {
@@ -220,39 +208,28 @@ export default function Studio() {
     st.reset(name)
     setScreen('workspace')
 
-    // A specification that was kept rather than built has one thing to show,
-    // and it is not an empty preview.
-    const spec = row?.spec_only ?? projects.find(p => p.name === name)?.spec_only
-    if (spec) setView('srs')
+    const rowObj = row || projects.find(p => p.name === name)
+    if (rowObj?.spec_only) setView('srs')
+    else if (rowObj?.prototype_only) setView('prototype')
 
-    // Show preview startup without changing the state of an agent build.
     st.setOpening(true)
     st.setProgress(`Opening ${name}…`, 0)
-
-    // The previous project's console errors are not this one's evidence.
     forgetConsole()
 
-    // The status line is fed by events, and events only arrive while a run is
-    // going. A project whose conversation is alive but idle showed nothing at
-    // all, then came back at zero on the next message — which read as the
-    // context having been thrown away when it had not.
     api.session(name)
       .then(({ stats }) => {
         if (stats && Object.keys(stats).length
             && useStore.getState().project === name) useStore.getState().setRunStats(stats)
       })
-      .catch(() => { /* an older backend has no session to report */ })
+      .catch(() => { })
 
-    // Everything this project has already said. A browser tab is not a
-    // record: without this, reloading the studio or opening the project
-    // tomorrow showed an empty feed for work that had really happened.
     api.stream(name)
       .then(({ stream }) => {
         const store = useStore.getState()
         if (store.project !== name) return
         if (stream?.logs?.length || stream?.chat?.length) store.adoptStream(stream)
       })
-      .catch(() => { /* an older backend keeps no stream */ })
+      .catch(() => { })
 
     let opened = false
     try {
@@ -261,10 +238,6 @@ export default function Studio() {
       opened = true
 
       const raw = await retry(() => api.files(name), 4, 700)
-
-      // Opening a second project while the first was still reading dropped
-      // one project's files into the other's tree, because nothing here
-      // checked that the answer still belonged to the project on screen.
       if (opening.current !== request || useStore.getState().project !== name) return
 
       const out = {}
@@ -348,30 +321,43 @@ export default function Studio() {
 
   return (
     <div className="flex h-full bg-[radial-gradient(circle_at_20%_0%,#f8faff_0%,#edf1f7_42%,#e7ebf3_100%)] p-2.5 dark:bg-[radial-gradient(circle_at_20%_0%,#1a2030_0%,#111722_42%,#0c1119_100%)]">
-      <Sidebar projects={projects} onOpen={openProject}
-               onImport={importFolder} onSettings={() => setSettingsOpen(true)}
-               onZip={downloadZip} onResume={resumeBuild}
-               onDeleted={(name) => {
-                 refreshProjects()
-                 if (project === name) setScreen('home')
-               }} />
+      <Sidebar
+        projects={projects}
+        onOpen={openProject}
+        onImport={importFolder}
+        onSettings={() => setSettingsOpen(true)}
+        onZip={downloadZip}
+        onResume={resumeBuild}
+        screen={screen}
+        onScreenChange={setScreen}
+        onDeleted={(name) => {
+          refreshProjects()
+          if (project === name) setScreen('home')
+        }}
+      />
 
       <AgentDecision />
 
       {settingsOpen && (
         <SettingsModal onClose={() => setSettingsOpen(false)}
                        onSaved={() => api.models().then(r => setCat(catalogue(r)))
-                                        .catch(() => { })} />
+                                         .catch(() => { })} />
       )}
 
       <div className="ml-2.5 flex min-w-0 flex-1 flex-col overflow-hidden rounded-[30px] bg-panel/92 shadow-[0_28px_75px_rgba(30,41,59,.13)] ring-1 ring-white/75 backdrop-blur-2xl dark:shadow-[0_28px_75px_rgba(0,0,0,.42)] dark:ring-white/[.055]">
-        {/* macOS-style workspace tabs. */}
+        {/* Workspace Top Navbar */}
         <div className="flex h-[60px] shrink-0 items-center gap-1.5 border-b border-line/55 bg-white/48 px-4 backdrop-blur-2xl dark:bg-white/[.02]">
           {screen === 'home' && (
             <span className="flex items-center rounded-full bg-panel2 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[.16em] text-label">
               New project
             </span>
           )}
+          {screen === 'projects' && (
+            <span className="flex items-center rounded-full bg-panel2 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[.16em] text-label">
+              Projects
+            </span>
+          )}
+
           {screen === 'workspace' && tabs.map(({ id, label, Icon }) => (
             <button key={id} onClick={() => setView(id)}
                     className={cn('inline-flex h-9 items-center gap-[7px] rounded-full px-3.5',
@@ -386,21 +372,46 @@ export default function Studio() {
               )}
             </button>
           ))}
+
           <span className="flex-1" />
+
+          {/* Action to Build full app from SRS-only project */}
+          {screen === 'workspace' && specOnly && !busy && (
+            <button
+              onClick={resumeBuild}
+              title="Build this application from the approved SRS"
+              className="inline-flex h-9 items-center gap-2 rounded-full bg-accent px-4 text-[11.5px] font-semibold text-white shadow-md transition-all hover:bg-press mr-2"
+            >
+              <Rocket className="size-[13px]" /> Build Now
+            </button>
+          )}
+
+          {/* Action to Build full app from Prototype-only project */}
+          {screen === 'workspace' && prototypeOnly && !busy && (
+            <button
+              onClick={resumeBuild}
+              title="Build full application from this prototype"
+              className="inline-flex h-9 items-center gap-2 rounded-full bg-blue-600 px-4 text-[11.5px] font-semibold text-white shadow-md transition-all hover:bg-blue-500 mr-2"
+            >
+              <Rocket className="size-[13px]" /> Build App Now
+            </button>
+          )}
+
           {screen === 'home' && !busy && (
             <span className="flex items-center px-5 font-mono text-[10.5px] text-muted2">
               ⌘↵ to build
             </span>
           )}
+
           {busy && (
             <span className="flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-[11px] font-medium text-accent">
               <span className="size-1.5 animate-pulse bg-accent" />
               working
             </span>
           )}
+
           {screen === 'workspace' && (
             <button onClick={() => {
-
                       useStore.getState().resetSrs()
                       setScreen('home')
                     }}
@@ -416,17 +427,31 @@ export default function Studio() {
                   const list = await refreshProjects()
                   openProject(name, list.find(p => p.name === name))
                 }} />
+        ) : screen === 'projects' ? (
+          <ProjectsView
+            projects={projects}
+            activeProject={project}
+            busyProject={busyProject}
+            onOpen={(name, p) => openProject(name, p)}
+            onCreateNew={() => setScreen('home')}
+            onDelete={(name) => {
+              refreshProjects()
+              if (project === name) setScreen('home')
+            }}
+            onBuildProject={(name, p) => {
+              openProject(name, p)
+              setTimeout(resumeBuild, 400)
+            }}
+          />
         ) : (
           <div className="flex min-h-0 flex-1 bg-bg/40">
-            {/* The conversation sits beside the work rather than on top of
-                it. As a drawer it covered the thing it was describing, and
-                collapsing it to get the preview back hid the agent. */}
             <AgentChat />
 
             <div className="relative flex min-w-0 flex-1 flex-col">
               <ScopeQuestion />
 
-              <PreviewPane key={`preview-${project}`} hidden={view !== 'preview'} />
+              <PreviewPane key={`preview-${project}`} hidden={view !== 'preview'} onBuild={resumeBuild} />
+              <PrototypePane key={`proto-${project}`} project={project} hidden={view !== 'prototype'} onBuild={resumeBuild} />
               <CodePane hidden={view !== 'code'} />
               {view === 'testing' && <TestingResult key={`testing-${project}`} />}
               {view === 'srs' && (

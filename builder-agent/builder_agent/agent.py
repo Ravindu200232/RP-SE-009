@@ -337,6 +337,14 @@ class BuilderAgent:
             return None
 
         root = Path(self.sandbox.root) / ".agentforge" / "prototype"
+        root.mkdir(parents=True, exist_ok=True)
+        static_tailwind = Path(__file__).resolve().parent / "assets" / "static" / "tailwind.js"
+        if static_tailwind.is_file() and not (root / "tailwind.js").is_file():
+            try:
+                import shutil
+                shutil.copyfile(static_tailwind, root / "tailwind.js")
+            except Exception:
+                pass
         self.prototype_dir = root
         self.events.emit("phase", phase="prototype", title="Drawing it", status="active")
 
@@ -391,6 +399,9 @@ class BuilderAgent:
                 {"pages": drawn, "goal": task[:300], "round": round_number + 1,
                  "maxRounds": self.MAX_PROTOTYPE_ROUNDS},
                 default={"decision": "approve"}, cancel=self.cancel)
+            if answer.get("decision") in ("stop", "prototype_only", "keep"):
+                self._stop_at_prototype = True
+                break
             if answer.get("decision") != "revise":
                 break
             feedback = str(answer.get("feedback") or "").strip()
@@ -529,16 +540,11 @@ class BuilderAgent:
             "of it with none is a wireframe.",
             "",
             "STYLE IT WITH TAILWIND, wired to the contract. Every page head carries "
-            "`<script src=\"https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4\"></script>` "
-            "and then, inline, `<style type=\"text/tailwindcss\">` holding an `@theme` "
-            "block that maps the contract's tokens onto Tailwind - `--color-primary: "
-            "var(--primary)`, `--radius-card: var(--radius)` - and an `@layer components` "
-            "block defining .button-primary, .card, .field and .nav-link with `@apply`. "
+            "`<script src=\"tailwind.js\"></script><script>if(!window.tailwind){document.write('<script src=\"https://cdn.tailwindcss.com\"><\\/script>');}</script>` "
+            "and an inline `<script>` setting `tailwind.config = { darkMode: 'class', theme: { extend: { colors: { primary: 'var(--primary)', 'primary-hover': 'var(--primary-hover, #6D28D9)', accent: 'var(--accent)', surface: 'var(--surface)', 'surface-alt': 'var(--surface-alt, #F4F4F5)', background: 'var(--background, #FAFAFA)', border: 'var(--border, #E4E4E7)', text: 'var(--text, #09090B)', muted: 'var(--text-muted, #71717A)', success: 'var(--success, #059669)', warning: 'var(--warning, #D97706)', danger: 'var(--danger, #E11D48)', info: 'var(--info, #0284C7)' }, borderRadius: { card: 'var(--radius, 14px)' }, boxShadow: { raised: '0 1px 3px rgba(0,0,0,0.08)' } } } }` "
+            "and then `<style type=\"text/tailwindcss\">` defining component classes (.button-primary, .button-secondary, .card, .field, .nav-link, .badge) with `@apply`. "
             "The tokens themselves stay in styles.css as custom properties, the only "
-            "place a hex appears; a stock `bg-orange-600` is the same mistake as a "
-            "hard-coded hex. That style block cannot be an external file - a link with "
-            "that type is never fetched and the page renders unstyled - so write it into "
-            "every page. Utilities for layout, component classes for anything repeated.",
+            "place a hex appears. In addition, styles.css also defines pure CSS fallback rules for .button-primary, .button-secondary, .card, .field, .nav-link so the pages are styled even before scripts run. Utilities for layout, component classes for anything repeated.",
             "",
             "No build step, no bundler, no npm install, no backend, no fetch, no server. "
             "Link the pages to each other so the whole application can be walked. Write "
@@ -588,6 +594,10 @@ class BuilderAgent:
             self.apply_design(task, plan=self.plan_text)
             # Drawn, changed until they are happy with it, and only then built.
             self.prototype(task, plan=self.plan_text)
+            if getattr(self, "_stop_at_prototype", False) or getattr(self.config, "prototype_only", False):
+                self.events.emit("notice", level="success",
+                                 message="HTML Prototype finished and saved.")
+                return Outcome(status="completed", result="Prototype finished.")
             return self.build(task, plan=self.plan_text)
         finally:
             self._finish()

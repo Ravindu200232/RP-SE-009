@@ -95,7 +95,8 @@ differently. Tailwind's own colour names are not this product's palette.
 ## Setting Tailwind up
 
 Tailwind compiles in the browser, so there is nothing to install and nothing to
-build. Every page starts with the same head, and it is the same in all twelve
+build. Every page starts with the same head, loading local `tailwind.js` with CDN
+fallback and the design contract's token config, and it is the same in all twelve
 files:
 
 ```html
@@ -106,18 +107,55 @@ files:
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Rooms & Suites | Royal Azure</title>
   <link rel="stylesheet" href="styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  <style type="text/tailwindcss">
-    @theme {
-      --color-primary: var(--primary);
-      --color-surface: var(--surface);
-      --radius-card:   var(--radius);
+  <script src="tailwind.js"></script>
+  <script>
+    if (!window.tailwind) {
+      document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
     }
+  </script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: 'var(--primary)',
+            'primary-hover': 'var(--primary-hover, #6D28D9)',
+            accent: 'var(--accent)',
+            surface: 'var(--surface)',
+            'surface-alt': 'var(--surface-alt, #F4F4F5)',
+            background: 'var(--background, #FAFAFA)',
+            border: 'var(--border, #E4E4E7)',
+            text: 'var(--text, #09090B)',
+            muted: 'var(--text-muted, #71717A)',
+            success: 'var(--success, #059669)',
+            warning: 'var(--warning, #D97706)',
+            danger: 'var(--danger, #E11D48)',
+            info: 'var(--info, #0284C7)',
+          },
+          borderRadius: {
+            card: 'var(--radius, 14px)',
+          },
+          boxShadow: {
+            raised: '0 1px 3px rgba(0, 0, 0, 0.08)',
+          },
+          fontFamily: {
+            heading: 'var(--font-heading)',
+            body: 'var(--font-body)',
+            display: 'var(--font-heading)',
+          }
+        }
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
     @layer components {
-      .button-primary { @apply bg-primary text-white px-6 py-3 rounded-card font-semibold hover:opacity-90; }
-      .card           { @apply bg-surface rounded-card shadow p-6; }
-      .field          { @apply w-full rounded-card border border-gray-300 px-4 py-3; }
-      .nav-link       { @apply text-sm font-medium hover:text-primary; }
+      .button-primary { @apply inline-flex items-center justify-center gap-2 bg-primary text-white px-6 py-3 rounded-card font-semibold hover:opacity-90 transition-colors; }
+      .button-secondary { @apply inline-flex items-center justify-center gap-2 bg-surface text-text border border-border px-6 py-3 rounded-card font-semibold hover:border-primary transition-colors; }
+      .card           { @apply bg-surface rounded-card shadow-raised p-6; }
+      .field          { @apply w-full rounded-card border border-border bg-surface px-4 py-3 text-text placeholder:text-muted; }
+      .nav-link       { @apply text-sm font-medium text-text hover:text-primary transition-colors; }
+      .badge          { @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold; }
     }
   </style>
 </head>
@@ -125,16 +163,15 @@ files:
 
 Three things are load-bearing there:
 
-- **`@theme` is what connects the contract to Tailwind.** `--color-primary:
-  var(--primary)` is what makes `bg-primary`, `text-primary` and
-  `border-primary` paint the agreed colour, and `--radius-card` is what makes
-  `rounded-card` the agreed radius. Map every token the contract settled, and
-  then never reach for a stock Tailwind colour.
-- **That block has to be inline.** `<link href="theme.css"
-  type="text/tailwindcss">` looks tidier and does nothing at all — the browser
-  never even fetches it, and the page renders with no styling and no error to
-  explain why. Write it into the head of each page.
-- **The script tag comes before the block**, and both come before the markup.
+- **`tailwind.config` connects the design contract tokens directly to Tailwind.**
+  `primary: 'var(--primary)'`, `card: 'var(--radius)'`, etc. allow `bg-primary`,
+  `text-primary`, `bg-surface`, `bg-background`, `border-border`, `rounded-card`
+  and all standard utilities to paint with the agreed design tokens.
+- **Local `tailwind.js` loads instantly without internet**, with `https://cdn.tailwindcss.com`
+  as transparent fallback.
+- **`styles.css` also defines pure CSS component fallbacks** for `.button-primary`,
+  `.button-secondary`, `.card`, `.field`, `.nav-link` so the application is
+  styled even before client scripts execute.
 
 ## Utilities in the markup, classes for what repeats
 

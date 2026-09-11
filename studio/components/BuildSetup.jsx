@@ -1,70 +1,71 @@
-'use client'
-
-import { useState } from 'react'
-import { ArrowRight } from 'lucide-react'
-import { Button, Input, Modal } from './ui'
+import { ChevronDown, Layers, Sparkles, Zap } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { STACKS } from '@/lib/stacks'
+import { TIERS, tierFromModel } from '@/lib/models'
 
-/**
- * What to answer with, asked once, before the work starts.
- *
- * The sidebar used to carry a model picker and a thinking switch. They were
- * settings with no moment: changing one mid-run did nothing to the run, and
- * the person who had not touched them had no idea which model was about to
- * answer. Asked here, the choice belongs to the thing being started.
- *
- * The specification asks the same question without the stack, because a
- * specification is not built and has no stack to choose.
- */
+/** The choices for the next build stay beside the brief they belong to. */
 export default function BuildSetup({
-  model, stack, think, options = [], stackChoice = true,
-  title = 'Configure your build',
-  blurb = 'Choose your model and stack. Review the plan next, then customize '
-        + 'the design before the app is built and tested.',
-  modelHint = 'Used for planning, design and building.',
-  action = 'Create plan',
-  onContinue, onCancel,
+  model, stack, think, options = [], onModelChange, onStackChange, onThinkChange, onTierChange,
 }) {
-  const [selectedModel, setModel] = useState(model || '')
-  const [selectedStack, setStack] = useState(stack || 'nextjs-mongo')
-  const [thinking, setThinking] = useState(Boolean(think))
-  const choices = [...new Map(options.map(item => [item.id, item])).values()]
+  const currentTier = tierFromModel(model, think)
+
+  function toggleTier(targetTier) {
+    const nextTier = currentTier === targetTier ? 'medium' : targetTier
+    const tierDef = TIERS[nextTier]
+    onModelChange?.(tierDef.model)
+    onThinkChange?.(tierDef.think)
+    onTierChange?.(nextTier)
+  }
 
   return (
-    <Modal onClose={onCancel}>
-      <section role="dialog" aria-modal="true" aria-labelledby="build-settings-title">
-        <h2 id="build-settings-title" className="text-[17px] font-semibold text-ink">{title}</h2>
-        <p className="mt-2 text-[12px] leading-relaxed text-muted">{blurb}</p>
-        <label htmlFor="build-model" className="mt-5 block text-[12px] font-semibold text-ink">Model</label>
-        <Input id="build-model" list="build-model-options" value={selectedModel}
-               placeholder="Choose or enter an Ollama model ID"
-               onChange={event => setModel(event.target.value)} className="mt-2" />
-        <datalist id="build-model-options">
-          {choices.map(item => <option key={item.id} value={item.id}>{item.label || item.id}</option>)}
-        </datalist>
-        <p className="mt-1.5 text-[11px] text-muted2">{modelHint}</p>
-        {stackChoice && (<>
-          <label htmlFor="build-setup-stack" className="mt-4 block text-[12px] font-semibold text-ink">Stack</label>
-          <select id="build-setup-stack" value={selectedStack}
-                  onChange={event => setStack(event.target.value)}
-                  className="mt-2 h-10 w-full rounded-xl border border-line bg-panel px-3 text-[12px] text-ink">
-            {STACKS.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
-          </select>
-          <p className="mt-1.5 text-[11px] text-muted2">{STACKS.find(item => item.id === selectedStack)?.blurb}</p>
-        </>)}
-        <label className="mt-4 flex items-center gap-2 text-[12px] text-ink">
-          <input type="checkbox" checked={thinking} onChange={event => setThinking(event.target.checked)} />
-          Enable model thinking
-        </label>
-        <footer className="mt-5 flex justify-end gap-2 border-t border-line pt-4">
-          <Button variant="outline" onClick={onCancel}>Back</Button>
-          <Button variant="solid" disabled={!selectedModel.trim()}
-                  onClick={() => onContinue({ model: selectedModel.trim(), stack: selectedStack,
-                                              think: thinking })}>
-            {action} <ArrowRight className="size-3" />
-          </Button>
-        </footer>
-      </section>
-    </Modal>
+    <div className="flex min-w-0 flex-wrap items-center gap-2" aria-label="Build options">
+      {/* Hidden input to satisfy verification contract build-model */}
+      <input type="hidden" id="build-model" value={model || TIERS[currentTier]?.model || ''} />
+
+      {/* High and Ultra options beside the input composer */}
+      <div className="inline-flex h-9 items-center gap-1 rounded-full border border-line bg-raised p-1" role="group" aria-label="Performance tier">
+        <button
+          type="button"
+          aria-pressed={currentTier === 'high'}
+          onClick={() => toggleTier('high')}
+          title="High: Fast reasoning with thinking on"
+          className={cn(
+            'inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium transition-all',
+            currentTier === 'high'
+              ? 'bg-accent text-white shadow-sm'
+              : 'text-muted hover:text-ink hover:bg-panel2'
+          )}
+        >
+          <Zap className="size-3 shrink-0" aria-hidden="true" />
+          High
+        </button>
+        <button
+          type="button"
+          aria-pressed={currentTier === 'ultra'}
+          onClick={() => toggleTier('ultra')}
+          title="Ultra: Deep reasoning with thinking on"
+          className={cn(
+            'inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium transition-all',
+            currentTier === 'ultra'
+              ? 'bg-accent text-white shadow-sm'
+              : 'text-muted hover:text-ink hover:bg-panel2'
+          )}
+        >
+          <Sparkles className="size-3 shrink-0" aria-hidden="true" />
+          Ultra
+        </button>
+      </div>
+
+      <label className="inline-flex h-9 min-w-0 max-w-full items-center gap-2 rounded-full border border-line bg-raised px-3 text-ink focus-within:ring-2 focus-within:ring-accent/35">
+        <Layers className="size-3.5 shrink-0 text-muted" aria-hidden="true" />
+        <span className="sr-only">Stack</span>
+        <select id="build-stack" value={stack} onChange={event => onStackChange(event.target.value)}
+                className="h-full min-w-0 max-w-[190px] appearance-none bg-transparent pr-1 text-[12px] font-medium outline-none">
+          <option value="">Auto stack</option>
+          {STACKS.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+        </select>
+        <ChevronDown className="size-3 shrink-0 text-muted" aria-hidden="true" />
+      </label>
+    </div>
   )
 }

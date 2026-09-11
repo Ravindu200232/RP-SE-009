@@ -30,6 +30,31 @@ const CLOUD_UI_LABELS = {
   'gemma4:31b-cloud': 'Gemma 4 31B',
   'bjoernb/gemma4-31b-fast:latest': 'Gemma 4 31B Fast',
   'bjoernb/gemma4-31b-fast': 'Gemma 4 31B Fast',
+  'deepseek-v4-flash:cloud': 'DeepSeek V4 Flash',
+  'deepseek-v4-pro:cloud': 'DeepSeek V4 Pro',
+}
+
+export const TIERS = {
+  medium: { id: 'medium', label: 'Medium', model: 'deepseek-v4', think: false },
+  high: { id: 'high', label: 'High', model: 'deepseek-v4-flash:cloud', think: true },
+  ultra: { id: 'ultra', label: 'Ultra', model: 'deepseek-v4-pro:cloud', think: true },
+}
+
+export function tierFromModel(model, think) {
+  const m = String(model || '').toLowerCase()
+  if (m.includes('pro')) return 'ultra'
+  if (m.includes('flash')) return 'high'
+  if (think) return 'high'
+  return 'medium'
+}
+
+export function tierDisplayName(model) {
+  if (!model) return ''
+  const m = String(model).toLowerCase()
+  if (m.includes('pro')) return 'Ultra'
+  if (m.includes('flash')) return 'High'
+  if (m.includes('deepseek')) return 'Medium'
+  return 'Standard'
 }
 
 export const modelLabel = (model) =>

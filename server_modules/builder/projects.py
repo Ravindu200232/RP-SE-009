@@ -120,6 +120,15 @@ def _spec_only(proj_dir: Path) -> bool:
     return not any(_iter_source(proj_dir))
 
 
+def _prototype_only(proj_dir: Path) -> bool:
+    """Is this an HTML prototype rather than an app that was built?"""
+    if not (proj_dir / ".agentforge" / "prototype").is_dir():
+        return False
+    if (proj_dir / "package.json").is_file():
+        return False
+    return not any(_iter_source(proj_dir))
+
+
 def delete_project(proj_name: str) -> dict:
     """Remove a fenced project, then its generated database, in background."""
     name, resolved, error = _owned_dir(
@@ -207,6 +216,11 @@ def read_prototype(proj_name: str, rel: str) -> tuple:
     if kind is None:
         raise ValueError(f"a drawing does not serve {target.suffix or 'that'} files")
     if not target.is_file():
+        if rel == "tailwind.js":
+            base = globals().get("BASE_DIR")
+            fallback = (Path(base) if base else Path(__file__).resolve().parent.parent.parent) / "builder-agent" / "builder_agent" / "assets" / "static" / "tailwind.js"
+            if fallback.is_file():
+                return fallback.read_bytes(), kind
         raise FileNotFoundError(f"no {rel} in this drawing")
     return target.read_bytes(), kind
 
@@ -237,6 +251,7 @@ def list_projects() -> list:
             "unfinished": _unfinished_count(d),
 
             "spec_only": _spec_only(d),
+            "prototype_only": _prototype_only(d),
 
             "deployed": _deploy_marker(d),
         })
@@ -395,15 +410,19 @@ def _message_job(msg: dict):
     route = str(msg.get("route") or "").strip()
     think = _think_flag(msg)
 
-    if kind == "agent_build" and prompt:
-        return run_agent_pipeline, (
-            prompt, model, think, qa_model, "",
+    if kind == "agent_build" and (prompt or project):
+        args = (
+            prompt, model, think, qa_model, project,
             str(msg.get("logo") or "").strip(),
             str(msg.get("srs_id") or "").strip(),
             str(msg.get("stack") or "").strip(),
             # Only the token: the files themselves came over HTTP, because this
             # message travels on a socket that refuses a frame their size.
-            str(msg.get("attachments") or "").strip())
+            str(msg.get("attachments") or "").strip(),
+        )
+        if bool(msg.get("prototype_only")):
+            args += (True,)
+        return run_agent_pipeline, args
     if kind == "agent_resume" and project:
         return run_agent_pipeline, (
             "", model, think, qa_model, project)
