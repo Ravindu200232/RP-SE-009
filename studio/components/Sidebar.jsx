@@ -249,27 +249,7 @@ export default function Sidebar({
         </div>
       </header>
 
-      {/* User Profile Pill */}
-      <div className="p-3 border-b border-line">
-        <div className="flex items-center justify-between gap-2.5 rounded-xl border border-white/10 bg-white/[.03] p-2 shadow-sm transition-all hover:bg-white/[.06]">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <div className="grid size-7 shrink-0 place-items-center rounded-lg bg-gradient-to-tr from-pink-500 to-purple-600 font-display text-[12px] font-bold text-white shadow-sm">
-              R
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-[12px] font-semibold leading-none text-white/90">
-                ravindu2232@gmail.com
-              </div>
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-1.5">
-            <span className="rounded-md bg-accent/20 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-accent">
-              Free
-            </span>
-            <ChevronDown className="size-3 text-white/40" />
-          </div>
-        </div>
-      </div>
+
 
       {/* Primary Navigation Menu */}
       <nav className="flex flex-col gap-0.5 p-2 border-b border-line text-[13px]">
