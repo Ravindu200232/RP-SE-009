@@ -59,7 +59,15 @@ function attachToken() {
   return raw.replace(/[^a-z0-9]/gi, '').slice(0, 24)
 }
 
-export default function Home({ onStarted, onKept, modelOptions = [] }) {
+export default function Home({
+  onStarted,
+  onKept,
+  modelOptions = [],
+  user = null,
+  onRequireAuth = null,
+  onSignIn = null,
+  onSignUp = null,
+}) {
   const s = useStore()
   const { images, think, models, srsId, srsPhase } = s
   const [prompt, setPrompt] = useState('')
@@ -216,7 +224,45 @@ export default function Home({ onStarted, onKept, modelOptions = [] }) {
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-[radial-gradient(circle_at_50%_15%,#152e68_0%,#0c152a_38%,#080c16_100%)] px-6 py-10 text-white">
-      <div className="relative mx-auto my-auto w-full max-w-[940px]">
+      {/* Bolt.new Public Top Navigation (When signed out, matching media_1789153650649.png) */}
+      {!user && (
+        <header className="absolute top-0 inset-x-0 z-30 flex items-center justify-between px-6 py-4 md:px-10 border-b border-white/[.07] bg-[#0c0f17]/60 backdrop-blur-md">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-blue-500/20 ring-1 ring-blue-500/30">
+              <img src="/__agentforge/agentforge-mark.png" alt="AgentForge" className="size-5 object-contain" />
+            </div>
+            <span className="font-display text-[17px] font-bold italic tracking-tight text-white">
+              agentforge<span className="text-blue-500 font-normal">.ai</span>
+            </span>
+          </div>
+
+          <nav className="hidden md:flex items-center gap-7 text-[13px] font-medium text-white/70">
+            <button type="button" onClick={onSignIn} className="hover:text-white transition-colors">Solutions</button>
+            <button type="button" onClick={onSignIn} className="hover:text-white transition-colors">Resources</button>
+            <button type="button" onClick={onSignIn} className="hover:text-white transition-colors">Careers</button>
+            <button type="button" onClick={onSignIn} className="hover:text-white transition-colors">Pricing</button>
+          </nav>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onSignIn}
+              className="px-3.5 py-1.5 text-[13px] font-medium text-white/80 hover:text-white transition-colors"
+            >
+              Sign in
+            </button>
+            <button
+              type="button"
+              onClick={onSignUp}
+              className="rounded-xl bg-blue-600 px-4 py-2 font-display text-[13px] font-semibold text-white shadow-md shadow-blue-500/25 hover:bg-blue-500 transition-all active:scale-95"
+            >
+              Get Started
+            </button>
+          </div>
+        </header>
+      )}
+
+      <div className={cn("relative mx-auto my-auto w-full max-w-[940px]", !user && "pt-12")}>
         {/* Bolt.new Style Hero */}
         <div className="text-center">
           <h1 className="font-display text-[46px] font-bold tracking-tight text-white md:text-[56px] leading-[1.08]">
@@ -257,8 +303,17 @@ export default function Home({ onStarted, onKept, modelOptions = [] }) {
                     ? 'Describe the prototype you want to generate (interactive HTML preview)...'
                     : 'How can AgentForge help you today? Describe an app, prototype, or SRS...'
                 }
-                onChange={e => setPrompt(e.target.value)}
+                onChange={e => {
+                  setPrompt(e.target.value)
+                  if (!user && onRequireAuth && e.target.value.length > 0) {
+                    onRequireAuth()
+                  }
+                }}
                 onKeyDown={e => {
+                  if (!user && onRequireAuth) {
+                    onRequireAuth()
+                    return
+                  }
                   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                     if (activeMode === 'srs') planFirst()
                     else if (activeMode === 'prototype') submitPrototype()
@@ -315,6 +370,10 @@ export default function Home({ onStarted, onKept, modelOptions = [] }) {
                 <button
                   disabled={!prompt.trim() || !builderModel.trim()}
                   onClick={() => {
+                    if (!user && onRequireAuth) {
+                      onRequireAuth()
+                      return
+                    }
                     if (activeMode === 'srs') planFirst()
                     else if (activeMode === 'prototype') submitPrototype()
                     else submit()
@@ -356,6 +415,10 @@ export default function Home({ onStarted, onKept, modelOptions = [] }) {
                   activeBorder: 'border-amber-500/50 bg-[#141a26] shadow-amber-500/10 ring-1 ring-amber-500/30',
                   onClick: () => {
                     setActiveMode('srs')
+                    if (!user && onRequireAuth) {
+                      onRequireAuth()
+                      return
+                    }
                     if (!prompt.trim() && !attach.items.length) {
                       box.current?.focus()
                       return
@@ -375,6 +438,10 @@ export default function Home({ onStarted, onKept, modelOptions = [] }) {
                   activeBorder: 'border-purple-500/50 bg-[#141a26] shadow-purple-500/10 ring-1 ring-purple-500/30',
                   onClick: () => {
                     setActiveMode('prototype')
+                    if (!user && onRequireAuth) {
+                      onRequireAuth()
+                      return
+                    }
                     if (!prompt.trim()) {
                       box.current?.focus()
                       return
@@ -393,6 +460,10 @@ export default function Home({ onStarted, onKept, modelOptions = [] }) {
                   activeBorder: 'border-blue-500/50 bg-[#141a26] shadow-blue-500/10 ring-1 ring-blue-500/30',
                   onClick: () => {
                     setActiveMode('app')
+                    if (!user && onRequireAuth) {
+                      onRequireAuth()
+                      return
+                    }
                     if (!prompt.trim()) {
                       box.current?.focus()
                       return

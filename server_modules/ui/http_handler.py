@@ -29,6 +29,8 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
         self.send_header("Content-Length", "0")
         self.end_headers()
 
@@ -38,6 +40,7 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
         self.end_headers()
         self.wfile.write(data)
 
@@ -151,8 +154,39 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
             return self._json(deploy_status())
         if path.startswith("/deploy-results/"):
             return self._json(read_deploy_results(path[16:].strip("/")))
+        if path == "/auth/me":
+            auth_header = self.headers.get("Authorization", "")
+            token = auth_header.replace("Bearer ", "").strip() if auth_header.startswith("Bearer ") else ""
+            if not token:
+                return self._json({"error": "Unauthorized"}, 401)
+            try:
+                from server_modules.services.auth_db import get_user_by_token
+                user = get_user_by_token(token)
+                if not user:
+                    return self._json({"error": "Invalid or expired token"}, 401)
+                return self._json({"ok": True, "user": user})
+            except Exception as e:
+                return self._json({"error": str(e)}, 500)
         if path == "/projects":
-            self._json(list_projects())
+            auth_header = self.headers.get("Authorization", "")
+            token = auth_header.replace("Bearer ", "").strip() if auth_header.startswith("Bearer ") else ""
+            all_projs = list_projects()
+            if not token:
+                return self._json([])
+            try:
+                from server_modules.services.auth_db import get_user_by_token, get_user_project_names, assign_project_to_user
+                user = get_user_by_token(token)
+                if not user:
+                    return self._json([])
+                user_projs = set(get_user_project_names(user["id"]))
+                if not user_projs and all_projs:
+                    for p in all_projs:
+                        assign_project_to_user(user["id"], p["name"])
+                    user_projs = set(get_user_project_names(user["id"]))
+                filtered = [p for p in all_projs if p["name"] in user_projs]
+                return self._json(filtered)
+            except Exception:
+                return self._json(all_projs)
         elif path == "/image-check":
 
             agent = image_agent()
@@ -575,6 +609,43 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
                 self._json({"ok": True, **_open_project(unquote(path[6:].strip("/")))})
             except ValueError as error:
                 self._json({"error": str(error)}, 404)
+        elif path == "/auth/signup":
+            body = self._body()
+            from server_modules.services.auth_db import signup_user
+            res = signup_user(
+                username=body.get("username", ""),
+                email=body.get("email", ""),
+                password=body.get("password", ""),
+                name=body.get("name", ""),
+            )
+            return self._json(res, 400 if "error" in res else 200)
+        elif path == "/auth/login":
+            body = self._body()
+            from server_modules.services.auth_db import login_user
+            res = login_user(
+                login=body.get("login") or body.get("email") or body.get("username", ""),
+                password=body.get("password", ""),
+            )
+            return self._json(res, 400 if "error" in res else 200)
+        elif path == "/auth/logout":
+            auth_header = self.headers.get("Authorization", "")
+            token = auth_header.replace("Bearer ", "").strip() if auth_header.startswith("Bearer ") else ""
+            if token:
+                from server_modules.services.auth_db import logout_user
+                logout_user(token)
+            return self._json({"ok": True})
+        elif path == "/projects/assign":
+            body = self._body()
+            auth_header = self.headers.get("Authorization", "")
+            token = auth_header.replace("Bearer ", "").strip() if auth_header.startswith("Bearer ") else ""
+            proj_name = str(body.get("project") or "").strip()
+            if token and proj_name:
+                from server_modules.services.auth_db import get_user_by_token, assign_project_to_user
+                user = get_user_by_token(token)
+                if user:
+                    assign_project_to_user(user["id"], proj_name)
+                    return self._json({"ok": True})
+            return self._json({"ok": False, "error": "Unauthorized or missing project"}, 400)
         elif path == "/mongo/prefetch":
             threading.Thread(target=MONGO.prefetch, daemon=True).start()
             self._json({"ok": True})

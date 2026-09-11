@@ -1,8 +1,31 @@
 
 export const API = '/__agentforge/api'
 
-async function req(path, opts) {
-  const r = await fetch(API + path, opts)
+let authToken = ''
+
+export function setAuthToken(token) {
+  authToken = token || ''
+  if (typeof window !== 'undefined') {
+    if (token) localStorage.setItem('agentforge_token', token)
+    else localStorage.removeItem('agentforge_token')
+  }
+}
+
+export function getAuthToken() {
+  if (authToken) return authToken
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('agentforge_token') || ''
+  }
+  return ''
+}
+
+async function req(path, opts = {}) {
+  const token = getAuthToken()
+  const headers = { ...(opts.headers || {}) }
+  if (token && !headers['Authorization']) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+  const r = await fetch(API + path, { ...opts, headers })
   const text = await r.text()
   let data = null
   try { data = text ? JSON.parse(text) : null } catch { data = { raw: text } }
@@ -17,6 +40,13 @@ const post = (path, body) => req(path, {
 })
 
 export const api = {
+  auth: {
+    signup: (data) => post('/auth/signup', data),
+    login: (data) => post('/auth/login', data),
+    me: () => req('/auth/me'),
+    logout: () => post('/auth/logout', {}),
+  },
+  assignProject: (project) => post('/projects/assign', { project }),
   projects: () => req('/projects'),
   models: () => req('/models'),
   mongo: () => req('/mongo'),

@@ -20,6 +20,8 @@ import SrsResult from '@/components/srs/SrsResult'
 import DeployPanel from '@/components/deploy/DeployPanel'
 import AgentChat from '@/components/AgentChat'
 import AgentDecision from '@/components/AgentDecision'
+import { useAuthStore } from '@/lib/auth'
+import AuthModal from '@/components/AuthModal'
 import { Badge, Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { projectUnitTestStatus } from '@/lib/test-counts'
@@ -100,6 +102,10 @@ export default function Studio() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const opening = useRef(0)
 
+  const { user, init: initAuth, logout } = useAuthStore()
+  const [authModalOpen, setAuthModalOpen] = useState(false)
+  const [authInitialScreen, setAuthInitialScreen] = useState('methods')
+
   const refreshProjects = () => api.projects()
     .then(r => {
       const list = Array.isArray(r) ? r : (r.projects || [])
@@ -112,6 +118,14 @@ export default function Studio() {
   useEffect(() => {
     if (projectsStamp) refreshProjects()
   }, [projectsStamp])
+
+  useEffect(() => {
+    initAuth()
+  }, [])
+
+  useEffect(() => {
+    refreshProjects()
+  }, [user])
 
   useEffect(() => {
     useStore.getState().hydrate()
@@ -335,20 +349,24 @@ export default function Studio() {
 
   return (
     <div className="flex h-full w-full overflow-hidden bg-bg text-ink">
-      <Sidebar
-        projects={projects}
-        onOpen={openProject}
-        onImport={importFolder}
-        onSettings={() => setSettingsOpen(true)}
-        onZip={downloadZip}
-        onResume={resumeBuild}
-        screen={screen}
-        onScreenChange={setScreen}
-        onDeleted={(name) => {
-          refreshProjects()
-          if (project === name) setScreen('home')
-        }}
-      />
+      {user && (
+        <Sidebar
+          projects={projects}
+          onOpen={openProject}
+          onImport={importFolder}
+          onSettings={() => setSettingsOpen(true)}
+          onZip={downloadZip}
+          onResume={resumeBuild}
+          screen={screen}
+          onScreenChange={setScreen}
+          user={user}
+          onLogout={logout}
+          onDeleted={(name) => {
+            refreshProjects()
+            if (project === name) setScreen('home')
+          }}
+        />
+      )}
 
       <AgentDecision />
 
@@ -357,6 +375,16 @@ export default function Studio() {
                        onSaved={() => api.models().then(r => setCat(catalogue(r)))
                                          .catch(() => { })} />
       )}
+
+      <AuthModal
+        isOpen={authModalOpen}
+        initialScreen={authInitialScreen}
+        onClose={() => setAuthModalOpen(false)}
+        onSuccess={() => {
+          setAuthModalOpen(false)
+          refreshProjects()
+        }}
+      />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-panel">
         {/* Workspace Top Navbar */}
@@ -421,11 +449,27 @@ export default function Studio() {
         )}
 
         {screen === 'home' ? (
-          <Home modelOptions={cat.all} onStarted={() => setScreen('workspace')}
-                onKept={async (name) => {
-                  const list = await refreshProjects()
-                  openProject(name, list.find(p => p.name === name))
-                }} />
+          <Home
+            modelOptions={cat.all}
+            user={user}
+            onRequireAuth={() => {
+              setAuthInitialScreen('methods')
+              setAuthModalOpen(true)
+            }}
+            onSignIn={() => {
+              setAuthInitialScreen('email')
+              setAuthModalOpen(true)
+            }}
+            onSignUp={() => {
+              setAuthInitialScreen('email')
+              setAuthModalOpen(true)
+            }}
+            onStarted={() => setScreen('workspace')}
+            onKept={async (name) => {
+              const list = await refreshProjects()
+              openProject(name, list.find(p => p.name === name))
+            }}
+          />
         ) : screen === 'projects' ? (
           <ProjectsView
             projects={projects}

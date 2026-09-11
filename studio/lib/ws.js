@@ -263,6 +263,7 @@ function handle(m) {
       if (m.project) {
         useStore.setState({ project: m.project })
         s.setBusyProject(m.project)     // a new build had no name until now
+        api.assignProject(m.project).catch(() => {})
       }
       s.bumpProjects()
       break

@@ -21,6 +21,8 @@ export default function Sidebar({
   onDeleted,
   screen = 'home',
   onScreenChange,
+  user = null,
+  onLogout = null,
 }) {
   const project = useStore(z => z.project)
   const status = useStore(z => z.status)
@@ -37,6 +39,10 @@ export default function Sidebar({
 
   const [accountOpen, setAccountOpen] = useState(false)
   const accountMenuRef = useRef(null)
+
+  const initial = (user?.name || user?.username || 'R')[0]?.toUpperCase() || 'R'
+  const displayName = user?.name || user?.username || 'Ravindu'
+  const displaySubtitle = user?.email || 'Developer Workspace'
 
   useEffect(() => {
     if (!accountOpen) return
@@ -190,14 +196,26 @@ export default function Sidebar({
                 <ExternalLink className="size-4 text-white/80" />
                 <span>Open in new tab</span>
               </button>
+              {onLogout && (
+                <>
+                  <div className="my-1 border-t border-white/10" />
+                  <button
+                    onClick={() => { setAccountOpen(false); onLogout?.() }}
+                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors"
+                  >
+                    <LogOut className="size-4" />
+                    <span>Sign out</span>
+                  </button>
+                </>
+              )}
             </div>
           )}
           <button
             onClick={() => setAccountOpen(v => !v)}
-            title="Account"
+            title={`Account: ${displayName}`}
             className="flex size-8 items-center justify-center rounded-lg bg-[#ec4899] font-bold text-[13px] text-white shadow-sm transition-transform hover:scale-105 active:scale-95"
           >
-            R
+            {initial}
           </button>
         </div>
       </aside>
@@ -423,6 +441,18 @@ export default function Sidebar({
               <ExternalLink className="size-4 text-white/80" />
               <span>Open in new tab</span>
             </button>
+            {onLogout && (
+              <>
+                <div className="my-1 border-t border-white/10" />
+                <button
+                  onClick={() => { setAccountOpen(false); onLogout?.() }}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors"
+                >
+                  <LogOut className="size-4" />
+                  <span>Sign out</span>
+                </button>
+              </>
+            )}
           </div>
         )}
 
@@ -432,11 +462,11 @@ export default function Sidebar({
         >
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#ec4899] font-bold text-[13px] text-white shadow-sm transition-transform group-hover:scale-105">
-              R
+              {initial}
             </div>
             <div className="min-w-0 text-left">
-              <div className="truncate text-[12.5px] font-semibold text-white/90">Ravindu</div>
-              <div className="truncate text-[10.5px] text-white/40">Developer Workspace</div>
+              <div className="truncate text-[12.5px] font-semibold text-white/90">{displayName}</div>
+              <div className="truncate text-[10.5px] text-white/40">{displaySubtitle}</div>
             </div>
           </div>
           <ChevronDown className={cn("size-3.5 text-white/40 transition-transform", accountOpen && "rotate-180")} />
