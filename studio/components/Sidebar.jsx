@@ -4,12 +4,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   FolderUp, Settings, Download, ExternalLink, Search, Play, Trash2,
   PanelLeftClose, PanelLeftOpen, Home, LayoutGrid, Star, Clock, Folder,
-  BookOpen, FileText, Activity, ChevronDown, Gift,
+  BookOpen, FileText, Activity, ChevronDown, Gift, CreditCard, LogOut,
 } from 'lucide-react'
 import { useStore, KEYS } from '@/lib/store'
 import { api } from '@/lib/api'
 import { Badge, Button, Input, SectionLabel, Tag, Tip } from './ui'
 import { cn } from '@/lib/utils'
+import SubscriptionModal from './SubscriptionModal'
 
 export default function Sidebar({
   projects = [],
@@ -34,6 +35,25 @@ export default function Sidebar({
   const [q, setQ] = useState('')
   const [confirming, setConfirming] = useState('')
   const [removing, setRemoving] = useState('')
+
+  const [accountOpen, setAccountOpen] = useState(false)
+  const [subscriptionOpen, setSubscriptionOpen] = useState(false)
+  const accountMenuRef = useRef(null)
+
+  useEffect(() => {
+    if (!accountOpen) return
+    const handleClickAway = (e) => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target)) {
+        setAccountOpen(false)
+      }
+    }
+    window.addEventListener('mousedown', handleClickAway)
+    return () => window.removeEventListener('mousedown', handleClickAway)
+  }, [accountOpen])
+
+  function handleSignOut() {
+    addLog('SUCCESS', 'Signed out of developer session (working in local offline mode)')
+  }
 
   async function remove(name) {
     setRemoving(name)
@@ -73,7 +93,8 @@ export default function Sidebar({
 
   if (collapsed) {
     return (
-      <aside className="flex w-[52px] shrink-0 flex-col items-center gap-2 overflow-hidden h-full border-r border-line bg-[#0c0f17] py-3">
+      <>
+        <aside className="flex w-[52px] shrink-0 flex-col items-center gap-2 overflow-hidden h-full border-r border-line bg-[#0c0f17] py-3">
         <Tip text="Show the sidebar" side="right">
           <button onClick={() => setCollapsed(false)}
                   className="grid size-9 place-items-center rounded-xl text-white/70 transition-colors hover:bg-white/[.08] hover:text-white">
@@ -118,12 +139,54 @@ export default function Sidebar({
             {project}
           </span>
         )}
+
+        {/* Collapsed Account Avatar Button with Popover */}
+        <div className="relative mt-auto">
+          {accountOpen && (
+            <div
+              ref={accountMenuRef}
+              className="absolute bottom-0 left-full ml-3 w-48 rounded-2xl border border-white/15 bg-[#0c101a]/95 p-1.5 shadow-2xl backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95"
+            >
+              <button
+                onClick={() => { setAccountOpen(false); onSettings?.() }}
+                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors"
+              >
+                <Settings className="size-4 text-white/80" />
+                <span>Settings</span>
+              </button>
+              <button
+                onClick={() => { setAccountOpen(false); setSubscriptionOpen(true) }}
+                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors"
+              >
+                <CreditCard className="size-4 text-white/80" />
+                <span>Subscription</span>
+              </button>
+              <button
+                onClick={() => { setAccountOpen(false); handleSignOut() }}
+                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors"
+              >
+                <LogOut className="size-4 text-white/80" />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          )}
+          <button
+            onClick={() => setAccountOpen(v => !v)}
+            title="Account"
+            className="flex size-8 items-center justify-center rounded-lg bg-[#ec4899] font-bold text-[13px] text-white shadow-sm transition-transform hover:scale-105 active:scale-95"
+          >
+            R
+          </button>
+        </div>
       </aside>
+      {subscriptionOpen && <SubscriptionModal onClose={() => setSubscriptionOpen(false)} />}
+      </>
     )
   }
 
   return (
-    <aside className="flex w-[var(--sidebar-w)] shrink-0 flex-col overflow-hidden h-full border-r border-line bg-[#0c0f17]">
+    <>
+      <aside className="flex w-[var(--sidebar-w)] shrink-0 flex-col overflow-hidden h-full border-r border-line bg-[#0c0f17]">
       {/* Top Header: Brand and Controls */}
       <header className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-line px-4 py-3">
         <div className="flex items-center gap-2.5">
@@ -287,6 +350,54 @@ export default function Sidebar({
         </div>
       </div>
 
+      {/* User Account Row with Avatar & Popover Menu (Matching Bolt.new) */}
+      <div className="relative border-t border-line px-3 py-2" ref={accountMenuRef}>
+        {/* Account Menu Popover */}
+        {accountOpen && (
+          <div
+            className="absolute bottom-full left-3 mb-2 w-48 rounded-2xl border border-white/15 bg-[#0c101a]/95 p-1.5 shadow-2xl backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95"
+          >
+            <button
+              onClick={() => { setAccountOpen(false); onSettings?.() }}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors"
+            >
+              <Settings className="size-4 text-white/80" />
+              <span>Settings</span>
+            </button>
+            <button
+              onClick={() => { setAccountOpen(false); setSubscriptionOpen(true) }}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors"
+            >
+              <CreditCard className="size-4 text-white/80" />
+              <span>Subscription</span>
+            </button>
+            <button
+              onClick={() => { setAccountOpen(false); handleSignOut() }}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors"
+            >
+              <LogOut className="size-4 text-white/80" />
+              <span>Sign Out</span>
+            </button>
+          </div>
+        )}
+
+        <button
+          onClick={() => setAccountOpen(v => !v)}
+          className="flex w-full items-center justify-between gap-2.5 rounded-xl p-1.5 hover:bg-white/[.06] transition-colors group"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#ec4899] font-bold text-[13px] text-white shadow-sm transition-transform group-hover:scale-105">
+              R
+            </div>
+            <div className="min-w-0 text-left">
+              <div className="truncate text-[12.5px] font-semibold text-white/90">Ravindu</div>
+              <div className="truncate text-[10.5px] text-white/40">Free Developer Plan</div>
+            </div>
+          </div>
+          <ChevronDown className={cn("size-3.5 text-white/40 transition-transform", accountOpen && "rotate-180")} />
+        </button>
+      </div>
+
       {/* Bottom Footer Actions */}
       <footer className="flex items-stretch border-t border-line bg-black/20">
         <input ref={folderRef} type="file" hidden
@@ -317,6 +428,8 @@ export default function Sidebar({
               }} />
       </footer>
     </aside>
+    {subscriptionOpen && <SubscriptionModal onClose={() => setSubscriptionOpen(false)} />}
+    </>
   )
 }
 
