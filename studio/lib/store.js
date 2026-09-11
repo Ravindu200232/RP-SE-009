@@ -17,7 +17,8 @@ const DEFAULTS = {
 
   models: { planner: '', design: '', builder: '', agent: '', qa: '',
             srs: '', deploy: '', image: 'fooocus' },
-  think: false,
+  // Both tiers, High and Ultra, think; there is no switch for it any more.
+  think: true,
   // Whether the run in flight is actually reasoning, as reported by the
   // engine - not the same thing as the `think` switch, which is only a request.
   reasoning: false,
@@ -228,9 +229,9 @@ export const useStore = create((set, get) => ({
         deploy: read(KEYS.deploy, DEFAULTS.models.deploy),
         image: read(KEYS.image, DEFAULTS.models.image),
       },
-      // Fresh installs start with thinking off. A user must opt in with the
-      // shared Builder + QA Think button before either role receives it.
-      think: read(KEYS.think, DEFAULTS.think ? '1' : '0') === '1',
+      // Both tiers think. What an older browser saved came from the switch
+      // the tiers replaced, and would have sent High without its thinking.
+      think: DEFAULTS.think,
       images: read(KEYS.images, '0') === '1',
       hist: readJSON(KEYS.hist, []),
     })
