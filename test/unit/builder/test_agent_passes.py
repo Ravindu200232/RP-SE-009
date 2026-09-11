@@ -651,3 +651,47 @@ class PicturesAreOfTheSubjectTests(unittest.TestCase):
         self.assertIn("loremflickr.com", skill)
         self.assertIn("?lock=", skill)
         self.assertNotIn("picsum", skill)
+
+
+class MotionIsAskedForEverywhereTests(unittest.TestCase):
+    """A correct, completely still page reads as a wireframe with photographs.
+
+    The drawing skill mentioned motion, animation, transition and
+    prefers-reduced-motion exactly zero times, so that is what came back. The
+    mechanics live in `frontend-design` because the drawing, the Next build and
+    the MERN build all need the same ones - Tailwind, IntersectionObserver and
+    requestAnimationFrame, with no animation library to survive the move.
+    """
+
+    SKILLS = Path("builder-agent/builder_agent/assets/skills")
+
+    def _skill(self, name):
+        return (self.SKILLS / name / "SKILL.md").read_text(encoding="utf-8")
+
+    def test_the_mechanics_are_stack_agnostic_and_library_free(self):
+        text = self._skill("frontend-design")
+        self.assertIn("IntersectionObserver", text)
+        self.assertIn("requestAnimationFrame", text)
+        self.assertIn("No animation library", text)
+        # Named for all three, so nobody reads it as React-only.
+        for stack in ("HTML", "Next", "MERN"):
+            self.assertIn(stack, text)
+
+    def test_reduced_motion_is_required_not_suggested(self):
+        for name in ("frontend-design", "html-prototype"):
+            with self.subTest(name):
+                self.assertIn("prefers-reduced-motion", self._skill(name))
+
+    def test_the_drawing_asks_for_one_moment_of_its_own(self):
+        self.assertIn("signature moment", self._skill("html-prototype"))
+
+    def test_the_drawing_prompt_asks_for_it_too(self):
+        root = Path(tempfile.mkdtemp())
+        agent = BuilderAgent(
+            Config(workspace=root, model="scripted", unit_tests=False,
+                   e2e_tests=False, state_root=root / ".state"),
+            events=Events(), client=object())
+        agent.screens = [{"route": "/", "label": "Home", "what": "front"}]
+        prompt = agent._prototype_task("a bakery")
+        self.assertIn("GIVE IT MOVEMENT", prompt)
+        self.assertIn("prefers-reduced-motion", prompt)

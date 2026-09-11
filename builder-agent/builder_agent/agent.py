@@ -462,6 +462,19 @@ class BuilderAgent:
             "the markup, including the ones into a detail page. With demo.js deleted, "
             "every page must still be the whole page and every link must still work.",
             "",
+            "GIVE IT MOVEMENT, AND ONE MOMENT THAT IS ITS OWN. Everything clickable "
+            "answers, sections arrive as they are reached, the hero drifts - and then one "
+            "signature moment invented for this product, not a carousel: type the reader "
+            "scrolls into, a total that counts as the options change, a route that draws "
+            "itself. The reader drives it, from scroll or hover or a value they changed, "
+            "never a timer. Compute it from measured geometry rather than magic pixels. "
+            "Stop it when it scrolls off. Animate transform and opacity only, with no "
+            "library. And it must degrade honestly: the page is complete with the "
+            "animation off, with the script deleted, and before the fonts land - all of "
+            "it inside `@media (prefers-reduced-motion: reduce)` and switched off there. "
+            "A correct, completely still page reads as a wireframe with photographs in "
+            "it; everything moving at once reads as a demo of animations.",
+            "",
             "USE REAL PICTURES OF THE REAL THING. Wherever the product shows a "
             "photograph - a hero, a gallery, a card grid, an avatar - use "
             "`https://loremflickr.com/800/600/<tags>?lock=<n>`, where the tags name the "

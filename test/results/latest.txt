@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-11T03:04:52+00:00
+Run at (UTC): 2026-09-11T03:11:22+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 495
+Unit tests: 499
 Integration tests: 24
-Total tests run: 519
+Total tests run: 523
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 27.112s
+Duration: 28.068s
 
 Detailed results
 ----------------
@@ -37,6 +37,10 @@ test_it_leads_the_drawing_prompt (test.unit.builder.test_agent_passes.LongPageIn
 test_planning_is_told_to_plan_the_sections (test.unit.builder.test_agent_passes.LongPageInstructionTests.test_planning_is_told_to_plan_the_sections) ... ok
 test_writing_a_page_says_it_again (test.unit.builder.test_agent_passes.LongPageInstructionTests.test_writing_a_page_says_it_again) ... ok
 test_writing_something_that_is_not_a_page_stays_quiet (test.unit.builder.test_agent_passes.LongPageInstructionTests.test_writing_something_that_is_not_a_page_stays_quiet) ... ok
+test_reduced_motion_is_required_not_suggested (test.unit.builder.test_agent_passes.MotionIsAskedForEverywhereTests.test_reduced_motion_is_required_not_suggested) ... ok
+test_the_drawing_asks_for_one_moment_of_its_own (test.unit.builder.test_agent_passes.MotionIsAskedForEverywhereTests.test_the_drawing_asks_for_one_moment_of_its_own) ... ok
+test_the_drawing_prompt_asks_for_it_too (test.unit.builder.test_agent_passes.MotionIsAskedForEverywhereTests.test_the_drawing_prompt_asks_for_it_too) ... ok
+test_the_mechanics_are_stack_agnostic_and_library_free (test.unit.builder.test_agent_passes.MotionIsAskedForEverywhereTests.test_the_mechanics_are_stack_agnostic_and_library_free) ... ok
 test_a_question_nobody_can_answer_is_not_published (test.unit.builder.test_agent_passes.PendingQuestionTests.test_a_question_nobody_can_answer_is_not_published) ... ok
 test_a_waiting_question_can_be_read_back_in_full (test.unit.builder.test_agent_passes.PendingQuestionTests.test_a_waiting_question_can_be_read_back_in_full)
 The studio reloads, and the run is still waiting on it. ... ok
@@ -602,6 +606,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 519 tests in 27.112s
+Ran 523 tests in 28.068s
 
 OK
