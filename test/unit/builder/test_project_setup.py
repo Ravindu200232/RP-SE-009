@@ -708,3 +708,44 @@ class StylingSurvivesTheBuildTests(unittest.TestCase):
     def test_an_unknown_stack_changes_nothing(self):
         self._manifest({})
         self.assertEqual(restore_styling(self.root, "no-such-stack"), [])
+
+
+class TheChosenThemeIsTheDefaultTests(unittest.TestCase):
+    """Choosing one dark theme has to produce a dark page.
+
+    render_tokens_css wrote the light values into `:root` whatever had been
+    chosen and put the dark ones under `[data-theme="dark"]`. Nothing sets that
+    attribute, so a Ferrari platform chosen dark drew twenty pages of
+    `<html lang="en">` on #FAFAFA with a dark block sitting unused underneath.
+    """
+
+    def _css(self, mode):
+        from builder_agent.design import render_tokens_css, choose, apply_answer
+        selection = apply_answer(choose("a supercar platform"),
+                                 {"palette": "mono-contrast", "themeMode": mode})
+        return render_tokens_css(selection)
+
+    def _root_background(self, css):
+        root = css.split("}")[0]
+        return [l.split(":")[1].strip(" ;") for l in root.splitlines()
+                if l.strip().startswith("--background")][0]
+
+    def test_dark_puts_the_dark_values_where_nothing_has_to_be_toggled(self):
+        css = self._css("dark")
+        self.assertEqual(self._root_background(css).upper(), "#09090B")
+        self.assertIn('[data-theme="light"]', css)
+
+    def test_light_is_unchanged(self):
+        css = self._css("light")
+        self.assertEqual(self._root_background(css).upper(), "#FAFAFA")
+        self.assertIn('[data-theme="dark"]', css)
+
+    def test_both_keeps_light_as_the_default_and_dark_behind_the_toggle(self):
+        css = self._css("both")
+        self.assertEqual(self._root_background(css).upper(), "#FAFAFA")
+        self.assertIn('[data-theme="dark"]', css)
+
+    def test_the_contract_says_how_the_theme_is_switched_on(self):
+        from builder_agent.design import render_skill, choose, apply_answer
+        dark = apply_answer(choose("x"), {"themeMode": "dark"})
+        self.assertIn("dark by default", render_skill(dark, ""))

@@ -581,12 +581,38 @@ def apply_answer(chosen: dict, answer: dict | None) -> dict:
     return picked
 
 
+
+def _theme_note(mode: str) -> str:
+    """How the chosen theme is actually switched on.
+
+    "One dark theme" used to be followed by "the dark tokens go under
+    [data-theme=dark]" and nothing else, which says where to put them and never
+    says to turn them on. Twenty drawn pages opened `<html lang="en">`, the dark
+    block sat there unused, and a site chosen dark came out white.
+    """
+    if mode == "dark":
+        return (" The page is dark by default: the dark values are the ones in `:root`, "
+                "so nothing has to be toggled for it to look right.")
+    if mode == "both":
+        return (' Light is `:root` and dark goes under `[data-theme="dark"]`, set on '
+                "`<html>` by the toggle and remembered.")
+    return ""
+
+
 def render_tokens_css(selection: dict) -> str:
     """The contract as CSS custom properties, both modes."""
     scale, base = TYPE_SCALES[selection["typeScale"]]
     unit, control = DENSITIES[selection["density"]]
+    # Which set the page wears when nothing has been toggled. This used to be
+    # the light one whatever had been chosen, so picking "one dark theme" wrote
+    # the dark values under `[data-theme="dark"]`, left `:root` light, and shipped
+    # twenty pages of `<html lang="en">` with nothing to turn it on. The dark
+    # tokens were there and dead, and the site was white.
+    default = selection.get("themeMode") if selection.get("themeMode") in ("light", "dark") else "light"
+    other = "dark" if default == "light" else "light"
+
     lines = [":root {"]
-    for role, value in tokens(selection["palette"], "light").items():
+    for role, value in tokens(selection["palette"], default).items():
         lines.append(f"  --{_kebab(role)}: {value};")
     font = next(f for f in FONTS if f["id"] == selection["font"])
     lines += [f"  --font-heading: {font['heading']};",
@@ -597,8 +623,8 @@ def render_tokens_css(selection: dict) -> str:
               f"  --radius: {RADII[selection['radius']]};",
               f"  --space-unit: {unit}px;",
               f"  --control-height: {control}px;",
-              "}", "", '[data-theme="dark"] {']
-    for role, value in tokens(selection["palette"], "dark").items():
+              "}", "", f'[data-theme="{other}"] {{']
+    for role, value in tokens(selection["palette"], other).items():
         lines.append(f"  --{_kebab(role)}: {value};")
     lines.append("}")
     return "\n".join(lines)
@@ -645,8 +671,7 @@ def render_skill(selection: dict, goal: str = "") -> str:
         + ("px" if str(selection.get("container", "1280")).isdigit() else "") + ". "
         + CONTAINERS[selection.get("container", "1280")],
         f"- Theme: {THEME_MODES[selection.get('themeMode', 'light')]}"
-        + (' The dark tokens go under `[data-theme="dark"]`.'
-           if selection.get("themeMode") != "light" else ""), "",
+        + _theme_note(selection.get("themeMode", "light")), "",
         "## Voice", "",
         f"- {selection.get('tone', 'professional').title()}: "
         f"{TONES[selection.get('tone', 'professional')]}",

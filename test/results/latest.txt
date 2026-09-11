@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-11T02:44:53+00:00
+Run at (UTC): 2026-09-11T03:04:52+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 491
+Unit tests: 495
 Integration tests: 24
-Total tests run: 515
+Total tests run: 519
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 26.597s
+Duration: 27.112s
 
 Detailed results
 ----------------
@@ -271,6 +271,10 @@ test_a_dropped_toolchain_is_put_back (test.unit.builder.test_project_setup.Styli
 test_a_project_that_does_not_use_tailwind_is_not_given_it (test.unit.builder.test_project_setup.StylingSurvivesTheBuildTests.test_a_project_that_does_not_use_tailwind_is_not_given_it) ... ok
 test_a_toolchain_that_is_still_there_is_left_alone (test.unit.builder.test_project_setup.StylingSurvivesTheBuildTests.test_a_toolchain_that_is_still_there_is_left_alone) ... ok
 test_an_unknown_stack_changes_nothing (test.unit.builder.test_project_setup.StylingSurvivesTheBuildTests.test_an_unknown_stack_changes_nothing) ... ok
+test_both_keeps_light_as_the_default_and_dark_behind_the_toggle (test.unit.builder.test_project_setup.TheChosenThemeIsTheDefaultTests.test_both_keeps_light_as_the_default_and_dark_behind_the_toggle) ... ok
+test_dark_puts_the_dark_values_where_nothing_has_to_be_toggled (test.unit.builder.test_project_setup.TheChosenThemeIsTheDefaultTests.test_dark_puts_the_dark_values_where_nothing_has_to_be_toggled) ... ok
+test_light_is_unchanged (test.unit.builder.test_project_setup.TheChosenThemeIsTheDefaultTests.test_light_is_unchanged) ... ok
+test_the_contract_says_how_the_theme_is_switched_on (test.unit.builder.test_project_setup.TheChosenThemeIsTheDefaultTests.test_the_contract_says_how_the_theme_is_switched_on) ... ok
 test_a_recognised_domain_still_wins_over_the_digest (test.unit.builder.test_project_setup.UnmatchedPaletteTests.test_a_recognised_domain_still_wins_over_the_digest) ... ok
 test_every_palette_the_digest_can_land_on_is_a_real_one (test.unit.builder.test_project_setup.UnmatchedPaletteTests.test_every_palette_the_digest_can_land_on_is_a_real_one) ... ok
 test_none_of_these_match_a_domain (test.unit.builder.test_project_setup.UnmatchedPaletteTests.test_none_of_these_match_a_domain)
@@ -598,6 +602,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 515 tests in 26.596s
+Ran 519 tests in 27.112s
 
 OK
