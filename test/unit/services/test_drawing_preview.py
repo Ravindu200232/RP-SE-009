@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 
 from test import _support  # noqa: F401
 from server_modules.services.shots import port_for
@@ -51,3 +52,39 @@ class ShotPortTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TheDrawingMayServeItsScriptTests(unittest.TestCase):
+    """A drawing that cannot serve demo.js is not a drawing anyone can click.
+
+    PROTOTYPE_TYPES listed html, css and images, so every `<script src="demo.js">`
+    in every drawing ever shown came back 400. The skill requires that script -
+    the basket, the filters, the sign-in and the localStorage that survives a
+    walk between pages all live in it - and none of it had ever run in the
+    preview. Motion made it visible: a Ferrari drawing whose content waited on an
+    IntersectionObserver came up as an empty black page.
+    """
+
+    SOURCE = Path("server_modules/builder/projects.py")
+
+    def _types(self):
+        # The module has no imports of its own and is exec'd into a prepared
+        # namespace, so it is read rather than imported.
+        text = self.SOURCE.read_text(encoding="utf-8")
+        block = text[text.index("PROTOTYPE_TYPES = {"):]
+        return block[:block.index("}") + 1]
+
+    def test_a_drawing_may_serve_its_own_script(self):
+        types = self._types()
+        self.assertIn('".js"', types)
+        self.assertIn("javascript", types)
+
+    def test_the_page_and_the_stylesheet_still_may(self):
+        types = self._types()
+        self.assertIn('".html"', types)
+        self.assertIn('".css"', types)
+
+    def test_the_path_guard_is_still_there(self):
+        text = self.SOURCE.read_text(encoding="utf-8")
+        self.assertIn("target.relative_to(root)", text)
+        self.assertIn("is outside the drawing", text)

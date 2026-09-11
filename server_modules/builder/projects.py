@@ -174,10 +174,18 @@ def delete_project(proj_name: str) -> dict:
 
 # What a drawing is allowed to be made of. It is opened in an iframe, so
 # anything else it asks for is refused rather than guessed at.
+# What a drawing is allowed to serve. `.js` belongs here: the whole point of
+# demo.js is that the flow can be clicked through, and without it the preview
+# refused the one file the skill requires - every drawing ever shown had its
+# script 400 and none of the state, filters or sign-in worked. It got worse with
+# motion, because content that starts at opacity 0 and waits for an observer
+# stays invisible when the observer never loads.
 PROTOTYPE_TYPES = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
+                   ".js": "text/javascript; charset=utf-8",
+                   ".mjs": "text/javascript; charset=utf-8",
                    ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg",
                    ".jpeg": "image/jpeg", ".webp": "image/webp", ".gif": "image/gif",
-                   ".ico": "image/x-icon"}
+                   ".ico": "image/x-icon", ".woff2": "font/woff2", ".woff": "font/woff"}
 
 
 def read_prototype(proj_name: str, rel: str) -> tuple:

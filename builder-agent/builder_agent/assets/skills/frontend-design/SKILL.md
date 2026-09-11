@@ -33,41 +33,6 @@ Use non-user-triggered motion sparingly and deliberately, only to draw attention
 
 Consider written content carefully. Often a design brief may not contain real content, and it's up to you to come up with copy and placeholder content. Copy can make a design feel as templated as the design itself. See the below section on writing for more guidance.
 
-## How to build motion, in any of these stacks
-
-Tailwind and plain browser APIs, so the same technique works in a static HTML
-page, in a Next component and in a MERN client. No animation library: a
-dependency for this buys nothing and does not survive being moved between the
-three.
-
-- **Tailwind carries the ordinary layer.** `transition`, `duration-300`,
-  `ease-out`, and a state variant — `hover:-translate-y-1`,
-  `hover:scale-[1.03]`, `focus-visible:ring-2`, `group-hover:opacity-100`.
-  That is most of the motion a page needs and it costs one class each.
-- **Arrive-on-scroll is `IntersectionObserver` plus two classes**: the element
-  starts `opacity-0 translate-y-4`, the observer adds `opacity-100
-  translate-y-0` once, and unobserves. No scroll listener for this.
-- **A signature moment is a scroll or pointer handler in
-  `requestAnimationFrame`**, reading measured geometry — `getBoundingClientRect`,
-  `clientHeight`, a scroll offset — and writing a `transform` or a CSS custom
-  property. Never a `setInterval`, never magic pixel constants.
-- **Animate `transform` and `opacity`.** Not `top`, `left`, `width`, `height`
-  or `margin`; those lay out the page again on every frame.
-- **Stop when it is not visible.** The same `IntersectionObserver` that starts
-  it cancels the frame when it leaves, so a page with three of these is not
-  three permanent loops.
-- **`@media (prefers-reduced-motion: reduce)` turns all of it off**, and the
-  page must still be complete and usable with it off, with the script deleted,
-  and before the fonts land. In Tailwind that is the `motion-reduce:` variant —
-  `motion-reduce:transition-none`, `motion-reduce:transform-none` — and a plain
-  media query for anything hand-written.
-- **Decoration is `aria-hidden` and `inert`** so nobody tabs into scenery, and
-  whatever the motion reveals stays reachable by keyboard.
-
-Where it lives differs by stack and nothing else does: a `<script>` at the end
-of the page, a `useEffect` with a cleanup that disconnects the observer and
-cancels the frame, or the same effect in the client app.
-
 ## Process: plan, review against the brief, build, critique
 
 For calibration, AI-generated design right now clusters around some traits:

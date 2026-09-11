@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-11T03:11:22+00:00
+Run at (UTC): 2026-09-11T03:32:57+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 499
+Unit tests: 501
 Integration tests: 24
-Total tests run: 523
+Total tests run: 525
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 28.068s
+Duration: 24.310s
 
 Detailed results
 ----------------
@@ -37,10 +37,9 @@ test_it_leads_the_drawing_prompt (test.unit.builder.test_agent_passes.LongPageIn
 test_planning_is_told_to_plan_the_sections (test.unit.builder.test_agent_passes.LongPageInstructionTests.test_planning_is_told_to_plan_the_sections) ... ok
 test_writing_a_page_says_it_again (test.unit.builder.test_agent_passes.LongPageInstructionTests.test_writing_a_page_says_it_again) ... ok
 test_writing_something_that_is_not_a_page_stays_quiet (test.unit.builder.test_agent_passes.LongPageInstructionTests.test_writing_something_that_is_not_a_page_stays_quiet) ... ok
-test_reduced_motion_is_required_not_suggested (test.unit.builder.test_agent_passes.MotionIsAskedForEverywhereTests.test_reduced_motion_is_required_not_suggested) ... ok
-test_the_drawing_asks_for_one_moment_of_its_own (test.unit.builder.test_agent_passes.MotionIsAskedForEverywhereTests.test_the_drawing_asks_for_one_moment_of_its_own) ... ok
-test_the_drawing_prompt_asks_for_it_too (test.unit.builder.test_agent_passes.MotionIsAskedForEverywhereTests.test_the_drawing_prompt_asks_for_it_too) ... ok
-test_the_mechanics_are_stack_agnostic_and_library_free (test.unit.builder.test_agent_passes.MotionIsAskedForEverywhereTests.test_the_mechanics_are_stack_agnostic_and_library_free) ... ok
+test_it_still_has_to_survive_the_animation_being_off (test.unit.builder.test_agent_passes.MotionIsAskedForEverywhereTests.test_it_still_has_to_survive_the_animation_being_off) ... ok
+test_the_ask_is_there (test.unit.builder.test_agent_passes.MotionIsAskedForEverywhereTests.test_the_ask_is_there) ... ok
+test_the_skills_no_longer_carry_a_motion_manual (test.unit.builder.test_agent_passes.MotionIsAskedForEverywhereTests.test_the_skills_no_longer_carry_a_motion_manual) ... ok
 test_a_question_nobody_can_answer_is_not_published (test.unit.builder.test_agent_passes.PendingQuestionTests.test_a_question_nobody_can_answer_is_not_published) ... ok
 test_a_waiting_question_can_be_read_back_in_full (test.unit.builder.test_agent_passes.PendingQuestionTests.test_a_waiting_question_can_be_read_back_in_full)
 The studio reloads, and the run is still waiting on it. ... ok
@@ -468,6 +467,9 @@ test_a_route_that_merely_mentions_a_prototype_is_still_the_app (test.unit.servic
 The application is allowed to have its own page about prototypes. ... ok
 test_an_unprefixed_drawing_route_still_reaches_the_studio (test.unit.services.test_drawing_preview.ShotPortTests.test_an_unprefixed_drawing_route_still_reaches_the_studio) ... ok
 test_the_running_application_is_photographed_from_the_dev_server (test.unit.services.test_drawing_preview.ShotPortTests.test_the_running_application_is_photographed_from_the_dev_server) ... ok
+test_a_drawing_may_serve_its_own_script (test.unit.services.test_drawing_preview.TheDrawingMayServeItsScriptTests.test_a_drawing_may_serve_its_own_script) ... ok
+test_the_page_and_the_stylesheet_still_may (test.unit.services.test_drawing_preview.TheDrawingMayServeItsScriptTests.test_the_page_and_the_stylesheet_still_may) ... ok
+test_the_path_guard_is_still_there (test.unit.services.test_drawing_preview.TheDrawingMayServeItsScriptTests.test_the_path_guard_is_still_there) ... ok
 test_a_failed_internal_service_cannot_be_hidden_by_the_gateway (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_a_failed_internal_service_cannot_be_hidden_by_the_gateway) ... ok
 test_a_missing_client_bundle_cannot_be_reported_ready (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_a_missing_client_bundle_cannot_be_reported_ready) ... ok
 test_client_and_all_declared_services_are_probed (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_client_and_all_declared_services_are_probed) ... ok
@@ -606,6 +608,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 523 tests in 28.068s
+Ran 525 tests in 24.310s
 
 OK

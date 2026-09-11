@@ -149,39 +149,6 @@ py-3 rounded-card` is forty places to edit when the user says "make the buttons
 bigger", and the fortieth will be missed. A request to change "the buttons" has
 to have one thing to change.
 
-## Motion, and the one moment that is yours
-
-A page that is correct and completely still reads as a wireframe with
-photographs in it. What separates a finished product from a competent one is
-small, restrained movement — and one moment that could not have come from a
-template.
-
-**The ordinary layer**, everywhere and cheap: everything clickable answers, a
-card lifts, an image scales inside its own frame, sections arrive as they are
-reached, the hero drifts very slowly, headings rise into place as the page
-opens.
-
-**The signature moment**, once per product and invented for this one. Not a
-carousel and not a bounce: something that belongs to what this page is about.
-Type the reader scrolls *into*. A total that counts as the options change. A
-map that draws its route. A card that turns to show its back. Decide it from
-the product, and keep the rest of the page quiet so it lands.
-
-`frontend-design` has the mechanics, and they are the same here as in the built
-application: Tailwind for the ordinary layer, `IntersectionObserver` for
-arrivals, `requestAnimationFrame` over measured geometry for the signature
-moment, `transform` and `opacity` only, no library. Three things matter enough
-to repeat:
-
-- **The reader drives it** — scroll, hover, focus, or a value they changed.
-  Never a timer that plays whether anyone is looking.
-- **It degrades honestly.** The drawing must be complete and walkable with the
-  animation off, with `demo.js` deleted, and before the fonts land. All of it
-  inside `@media (prefers-reduced-motion: reduce)`, switched off there.
-- **Restraint is the point.** Two or three of the ordinary layer plus one
-  signature moment reads as craft. All of them at once reads as a demo of
-  animations.
-
 ## The shell
 
 Every page carries the same header, navigation and footer, written into each

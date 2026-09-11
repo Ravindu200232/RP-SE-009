@@ -654,44 +654,37 @@ class PicturesAreOfTheSubjectTests(unittest.TestCase):
 
 
 class MotionIsAskedForEverywhereTests(unittest.TestCase):
-    """A correct, completely still page reads as a wireframe with photographs.
+    """The drawing is asked for motion in a line, not a manual.
 
-    The drawing skill mentioned motion, animation, transition and
-    prefers-reduced-motion exactly zero times, so that is what came back. The
-    mechanics live in `frontend-design` because the drawing, the Next build and
-    the MERN build all need the same ones - Tailwind, IntersectionObserver and
-    requestAnimationFrame, with no animation library to survive the move.
+    The long version - mechanics, bullet lists, a section in two skills - was
+    replaced by the ask itself. What stays is the part that is a requirement
+    rather than taste: the page has to survive the animation being off and the
+    script being deleted, because a Ferrari drawing whose content waited on an
+    IntersectionObserver that never loaded came up as an empty black page.
     """
 
-    SKILLS = Path("builder-agent/builder_agent/assets/skills")
-
-    def _skill(self, name):
-        return (self.SKILLS / name / "SKILL.md").read_text(encoding="utf-8")
-
-    def test_the_mechanics_are_stack_agnostic_and_library_free(self):
-        text = self._skill("frontend-design")
-        self.assertIn("IntersectionObserver", text)
-        self.assertIn("requestAnimationFrame", text)
-        self.assertIn("No animation library", text)
-        # Named for all three, so nobody reads it as React-only.
-        for stack in ("HTML", "Next", "MERN"):
-            self.assertIn(stack, text)
-
-    def test_reduced_motion_is_required_not_suggested(self):
-        for name in ("frontend-design", "html-prototype"):
-            with self.subTest(name):
-                self.assertIn("prefers-reduced-motion", self._skill(name))
-
-    def test_the_drawing_asks_for_one_moment_of_its_own(self):
-        self.assertIn("signature moment", self._skill("html-prototype"))
-
-    def test_the_drawing_prompt_asks_for_it_too(self):
+    def _drawing_prompt(self):
         root = Path(tempfile.mkdtemp())
         agent = BuilderAgent(
             Config(workspace=root, model="scripted", unit_tests=False,
                    e2e_tests=False, state_root=root / ".state"),
             events=Events(), client=object())
         agent.screens = [{"route": "/", "label": "Home", "what": "front"}]
-        prompt = agent._prototype_task("a bakery")
-        self.assertIn("GIVE IT MOVEMENT", prompt)
-        self.assertIn("prefers-reduced-motion", prompt)
+        return agent._prototype_task("a bakery")
+
+    def test_the_ask_is_there(self):
+        self.assertIn("USING BEAUTIFUL ANIMATIONS AND MATCHED CONTENT",
+                      self._drawing_prompt())
+
+    def test_it_still_has_to_survive_the_animation_being_off(self):
+        text = self._drawing_prompt()
+        self.assertIn("prefers-reduced-motion", text)
+        self.assertIn("script", text)
+
+    def test_the_skills_no_longer_carry_a_motion_manual(self):
+        skills = Path("builder-agent/builder_agent/assets/skills")
+        for name in ("html-prototype", "frontend-design"):
+            with self.subTest(name):
+                text = (skills / name / "SKILL.md").read_text(encoding="utf-8")
+                self.assertNotIn("IntersectionObserver", text)
+                self.assertNotIn("requestAnimationFrame", text)
