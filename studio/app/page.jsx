@@ -195,10 +195,17 @@ export default function Studio() {
     const st = useStore.getState()
     if (!name || (st.opening && st.project === name)) return
     const request = ++opening.current
+    const rowObj = row || projects.find(p => p.name === name)
+
     if (st.project === name && st.runtimes[name]?.status === 'running') {
       try {
         st.setRuntime(await api.open(name))
-        if (opening.current === request) setScreen('workspace')
+        if (opening.current === request) {
+          setScreen('workspace')
+          if (rowObj?.spec_only) setView('srs')
+          else if (rowObj?.prototype_only) setView('prototype')
+          else setView('preview')
+        }
       } catch (error) {
         if (opening.current === request) st.addLog('WARN', `Could not open app: ${error.message}`)
       }
@@ -208,9 +215,9 @@ export default function Studio() {
     st.reset(name)
     setScreen('workspace')
 
-    const rowObj = row || projects.find(p => p.name === name)
     if (rowObj?.spec_only) setView('srs')
     else if (rowObj?.prototype_only) setView('prototype')
+    else setView('preview')
 
     st.setOpening(true)
     st.setProgress(`Opening ${name}…`, 0)
@@ -245,6 +252,7 @@ export default function Studio() {
         out[path] = typeof v === 'string' ? v : (v?.content ?? '')
       }
       useStore.getState().setFiles(out)
+      useStore.getState().setOpening(false)
     } catch (e) {
       if (opening.current !== request) return
       useStore.getState().addLog('WARN', `could not open ${name}: ${e.message}`)
