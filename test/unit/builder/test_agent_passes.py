@@ -586,3 +586,32 @@ class TheBuildKeepsTheDrawnPicturesTests(unittest.TestCase):
 
     def test_it_says_where_a_data_driven_picture_should_live(self):
         self.assertIn("put that drawn address on the record", self._instruction())
+
+
+class UnconfiguredCapabilitiesTests(unittest.TestCase):
+    """What was skipped at setup is not built as though it had been supplied.
+
+    Stripe was skipped on a bakery build, and the checkout shipped a card
+    number, an expiry and a CVC in plain inputs under the line "Payments are
+    processed securely. Your card details are never stored by us." Nothing was
+    sent anywhere and nothing was charged - the fields were validated for
+    presence and dropped. A form that takes a real card and does nothing is a
+    worse thing to ship than an unfinished page.
+    """
+
+    def _agent(self, notes):
+        root = Path(tempfile.mkdtemp())
+        agent = BuilderAgent(
+            Config(workspace=root, model="scripted", unit_tests=False,
+                   e2e_tests=False, state_root=root / ".state"),
+            events=Events(), client=object())
+        agent.setup_notes = notes
+        return agent
+
+    def test_the_rule_travels_with_the_settled_notes(self):
+        text = self._agent(["Payments: names written to .env.local"])._with_settings("build it")
+        self.assertIn("ALREADY SETTLED WITH THE USER", text)
+        self.assertIn("does not collect a card", text)
+
+    def test_a_build_that_settled_nothing_is_not_lectured(self):
+        self.assertEqual(self._agent([])._with_settings("build it"), "build it")

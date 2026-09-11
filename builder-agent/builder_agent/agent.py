@@ -612,6 +612,13 @@ class BuilderAgent:
             "Every value above is already in this project's .env.local. Read each one from "
             "process.env at run time. Never write one into source, a test, a fixture or a "
             "message, and never invent a value for a name that was not supplied.",
+            "A capability whose keys were not supplied is not built as though they were. "
+            "A checkout with no payment provider configured does not collect a card "
+            "number, an expiry and a CVC into plain inputs and tell the reader their "
+            "details are processed securely - it took a real card, charged nothing and "
+            "threw it away, which is a worse thing to ship than an unfinished page. Build "
+            "the step it can honestly do: take the order, say how payment will be taken, "
+            "and leave the card to the provider's own form when there is one.",
         ])
 
     # -- plumbing --------------------------------------------------------
