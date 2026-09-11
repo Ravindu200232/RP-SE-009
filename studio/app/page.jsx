@@ -360,19 +360,8 @@ export default function Studio() {
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-panel">
         {/* Workspace Top Navbar */}
-        <div className="flex h-[48px] shrink-0 items-center gap-2 border-b border-line bg-panel/95 px-4 backdrop-blur-md">
-          {screen === 'home' && (
-            <span className="flex items-center rounded-full bg-white/[.05] border border-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[.14em] text-white/60">
-              New project
-            </span>
-          )}
-          {screen === 'projects' && (
-            <span className="flex items-center rounded-full bg-white/[.05] border border-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[.14em] text-white/60">
-              Projects
-            </span>
-          )}
-
-          {screen === 'workspace' && (
+        {screen === 'workspace' && (
+          <div className="flex h-[48px] shrink-0 items-center gap-2 border-b border-line bg-panel/95 px-4 backdrop-blur-md">
             <div className="flex items-center gap-1 rounded-full bg-panel2/80 p-0.5 border border-line">
               {tabs.map(({ id, label, Icon }) => (
                 <button key={id} onClick={() => setView(id)}
@@ -389,46 +378,38 @@ export default function Studio() {
                 </button>
               ))}
             </div>
-          )}
 
-          <span className="flex-1" />
+            <span className="flex-1" />
 
-          {/* Action to Build full app from SRS-only project */}
-          {screen === 'workspace' && specOnly && !busy && (
-            <button
-              onClick={resumeBuild}
-              title="Build this application from the approved SRS"
-              className="inline-flex h-9 items-center gap-2 rounded-full bg-accent px-4 text-[11.5px] font-semibold text-white shadow-md transition-all hover:bg-press mr-2"
-            >
-              <Rocket className="size-[13px]" /> Build Now
-            </button>
-          )}
+            {/* Action to Build full app from SRS-only project */}
+            {specOnly && !busy && (
+              <button
+                onClick={resumeBuild}
+                title="Build this application from the approved SRS"
+                className="inline-flex h-9 items-center gap-2 rounded-full bg-accent px-4 text-[11.5px] font-semibold text-white shadow-md transition-all hover:bg-press mr-2"
+              >
+                <Rocket className="size-[13px]" /> Build Now
+              </button>
+            )}
 
-          {/* Action to Build full app from Prototype-only project */}
-          {screen === 'workspace' && prototypeOnly && !busy && (
-            <button
-              onClick={resumeBuild}
-              title="Build full application from this prototype"
-              className="inline-flex h-9 items-center gap-2 rounded-full bg-blue-600 px-4 text-[11.5px] font-semibold text-white shadow-md transition-all hover:bg-blue-500 mr-2"
-            >
-              <Rocket className="size-[13px]" /> Build App Now
-            </button>
-          )}
+            {/* Action to Build full app from Prototype-only project */}
+            {prototypeOnly && !busy && (
+              <button
+                onClick={resumeBuild}
+                title="Build full application from this prototype"
+                className="inline-flex h-9 items-center gap-2 rounded-full bg-blue-600 px-4 text-[11.5px] font-semibold text-white shadow-md transition-all hover:bg-blue-500 mr-2"
+              >
+                <Rocket className="size-[13px]" /> Build App Now
+              </button>
+            )}
 
-          {screen === 'home' && !busy && (
-            <span className="flex items-center px-5 font-mono text-[10.5px] text-muted2">
-              ⌘↵ to build
-            </span>
-          )}
+            {busy && (
+              <span className="flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-[11px] font-medium text-accent">
+                <span className="size-1.5 animate-pulse bg-accent" />
+                working
+              </span>
+            )}
 
-          {busy && (
-            <span className="flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-[11px] font-medium text-accent">
-              <span className="size-1.5 animate-pulse bg-accent" />
-              working
-            </span>
-          )}
-
-          {screen === 'workspace' && (
             <button onClick={() => {
                       useStore.getState().resetSrs()
                       setScreen('home')
@@ -436,8 +417,8 @@ export default function Studio() {
                     className="inline-flex h-9 items-center gap-2 rounded-full bg-white/72 px-3.5 text-[11px] font-semibold text-ink shadow-sm ring-1 ring-line/70 transition-all hover:bg-white dark:bg-white/5 dark:hover:bg-white/10">
               <Plus className="size-[13px]" /> New
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {screen === 'home' ? (
           <Home modelOptions={cat.all} onStarted={() => setScreen('workspace')}
