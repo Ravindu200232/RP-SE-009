@@ -10,7 +10,6 @@ import { useStore, KEYS } from '@/lib/store'
 import { api } from '@/lib/api'
 import { Badge, Button, Input, SectionLabel, Tag, Tip } from './ui'
 import { cn } from '@/lib/utils'
-import SubscriptionModal from './SubscriptionModal'
 
 export default function Sidebar({
   projects = [],
@@ -37,7 +36,6 @@ export default function Sidebar({
   const [removing, setRemoving] = useState('')
 
   const [accountOpen, setAccountOpen] = useState(false)
-  const [subscriptionOpen, setSubscriptionOpen] = useState(false)
   const accountMenuRef = useRef(null)
 
   useEffect(() => {
@@ -51,8 +49,17 @@ export default function Sidebar({
     return () => window.removeEventListener('mousedown', handleClickAway)
   }, [accountOpen])
 
-  function handleSignOut() {
-    addLog('SUCCESS', 'Signed out of developer session (working in local offline mode)')
+  async function openInNewTab() {
+    if (!project) return
+    const tab = window.open('about:blank', '_blank')
+    try {
+      const runtime = await api.open(project)
+      useStore.getState().setRuntime(runtime)
+      if (tab) { tab.opener = null; tab.location.href = runtime.previewUrl }
+    } catch (error) {
+      tab?.close()
+      useStore.getState().addLog('WARN', `Could not open app: ${error.message}`)
+    }
   }
 
   async function remove(name) {
@@ -93,8 +100,7 @@ export default function Sidebar({
 
   if (collapsed) {
     return (
-      <>
-        <aside className="flex w-[52px] shrink-0 flex-col items-center gap-2 overflow-hidden h-full border-r border-line bg-[#0c0f17] py-3">
+      <aside className="flex w-[52px] shrink-0 flex-col items-center gap-2 overflow-hidden h-full border-r border-line bg-[#0c0f17] py-3">
         <Tip text="Show the sidebar" side="right">
           <button onClick={() => setCollapsed(false)}
                   className="grid size-9 place-items-center rounded-xl text-white/70 transition-colors hover:bg-white/[.08] hover:text-white">
@@ -141,11 +147,10 @@ export default function Sidebar({
         )}
 
         {/* Collapsed Account Avatar Button with Popover */}
-        <div className="relative mt-auto">
+        <div className="relative mt-auto" ref={accountMenuRef}>
           {accountOpen && (
             <div
-              ref={accountMenuRef}
-              className="absolute bottom-0 left-full ml-3 w-48 rounded-2xl border border-white/15 bg-[#0c101a]/95 p-1.5 shadow-2xl backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95"
+              className="absolute bottom-0 left-full ml-3 w-56 rounded-2xl border border-white/15 bg-[#0c101a]/95 p-1.5 shadow-2xl backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95"
             >
               <button
                 onClick={() => { setAccountOpen(false); onSettings?.() }}
@@ -155,18 +160,35 @@ export default function Sidebar({
                 <span>Settings</span>
               </button>
               <button
-                onClick={() => { setAccountOpen(false); setSubscriptionOpen(true) }}
+                onClick={() => { setAccountOpen(false); folderRef.current?.click() }}
                 className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors"
               >
-                <CreditCard className="size-4 text-white/80" />
-                <span>Subscription</span>
+                <FolderUp className="size-4 text-white/80" />
+                <span>Import project folder</span>
               </button>
               <button
-                onClick={() => { setAccountOpen(false); handleSignOut() }}
-                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors"
+                onClick={() => { setAccountOpen(false); onResume?.() }}
+                disabled={!project || status === 'busy'}
+                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
               >
-                <LogOut className="size-4 text-white/80" />
-                <span>Sign Out</span>
+                <Play className="size-4 text-white/80" />
+                <span>Resume build</span>
+              </button>
+              <button
+                onClick={() => { setAccountOpen(false); onZip?.() }}
+                disabled={!project}
+                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
+              >
+                <Download className="size-4 text-white/80" />
+                <span>Download project as zip</span>
+              </button>
+              <button
+                onClick={() => { setAccountOpen(false); openInNewTab() }}
+                disabled={!project}
+                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
+              >
+                <ExternalLink className="size-4 text-white/80" />
+                <span>Open in new tab</span>
               </button>
             </div>
           )}
@@ -179,14 +201,11 @@ export default function Sidebar({
           </button>
         </div>
       </aside>
-      {subscriptionOpen && <SubscriptionModal onClose={() => setSubscriptionOpen(false)} />}
-      </>
     )
   }
 
   return (
-    <>
-      <aside className="flex w-[var(--sidebar-w)] shrink-0 flex-col overflow-hidden h-full border-r border-line bg-[#0c0f17]">
+    <aside className="flex w-[var(--sidebar-w)] shrink-0 flex-col overflow-hidden h-full border-r border-line bg-[#0c0f17]">
       {/* Top Header: Brand and Controls */}
       <header className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-line px-4 py-3">
         <div className="flex items-center gap-2.5">
@@ -351,11 +370,20 @@ export default function Sidebar({
       </div>
 
       {/* User Account Row with Avatar & Popover Menu (Matching Bolt.new) */}
-      <div className="relative border-t border-line px-3 py-2" ref={accountMenuRef}>
+      <div className="relative border-t border-line px-3 py-2.5" ref={accountMenuRef}>
+        {/* Hidden folder input for import */}
+        <input ref={folderRef} type="file" hidden
+               webkitdirectory="" directory="" multiple
+               onChange={e => {
+                 const list = e.target.files
+                 e.target.value = ''
+                 if (list?.length) onImport(list)
+               }} />
+
         {/* Account Menu Popover */}
         {accountOpen && (
           <div
-            className="absolute bottom-full left-3 mb-2 w-48 rounded-2xl border border-white/15 bg-[#0c101a]/95 p-1.5 shadow-2xl backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95"
+            className="absolute bottom-full left-3 mb-2 w-56 rounded-2xl border border-white/15 bg-[#0c101a]/95 p-1.5 shadow-2xl backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95"
           >
             <button
               onClick={() => { setAccountOpen(false); onSettings?.() }}
@@ -365,18 +393,35 @@ export default function Sidebar({
               <span>Settings</span>
             </button>
             <button
-              onClick={() => { setAccountOpen(false); setSubscriptionOpen(true) }}
+              onClick={() => { setAccountOpen(false); folderRef.current?.click() }}
               className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors"
             >
-              <CreditCard className="size-4 text-white/80" />
-              <span>Subscription</span>
+              <FolderUp className="size-4 text-white/80" />
+              <span>Import project folder</span>
             </button>
             <button
-              onClick={() => { setAccountOpen(false); handleSignOut() }}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors"
+              onClick={() => { setAccountOpen(false); onResume?.() }}
+              disabled={!project || status === 'busy'}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
             >
-              <LogOut className="size-4 text-white/80" />
-              <span>Sign Out</span>
+              <Play className="size-4 text-white/80" />
+              <span>Resume build</span>
+            </button>
+            <button
+              onClick={() => { setAccountOpen(false); onZip?.() }}
+              disabled={!project}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
+            >
+              <Download className="size-4 text-white/80" />
+              <span>Download project as zip</span>
+            </button>
+            <button
+              onClick={() => { setAccountOpen(false); openInNewTab() }}
+              disabled={!project}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
+            >
+              <ExternalLink className="size-4 text-white/80" />
+              <span>Open in new tab</span>
             </button>
           </div>
         )}
@@ -391,45 +436,13 @@ export default function Sidebar({
             </div>
             <div className="min-w-0 text-left">
               <div className="truncate text-[12.5px] font-semibold text-white/90">Ravindu</div>
-              <div className="truncate text-[10.5px] text-white/40">Free Developer Plan</div>
+              <div className="truncate text-[10.5px] text-white/40">Developer Workspace</div>
             </div>
           </div>
           <ChevronDown className={cn("size-3.5 text-white/40 transition-transform", accountOpen && "rotate-180")} />
         </button>
       </div>
-
-      {/* Bottom Footer Actions */}
-      <footer className="flex items-stretch border-t border-line bg-black/20">
-        <input ref={folderRef} type="file" hidden
-               webkitdirectory="" directory="" multiple
-               onChange={e => {
-                 const list = e.target.files
-                 e.target.value = ''
-                 if (list?.length) onImport(list)
-               }} />
-        <Foot icon={FolderUp} tip="Import a project folder"
-              onClick={() => folderRef.current?.click()} />
-        <Foot icon={Play} tip="Resume this build where it stopped"
-              disabled={!project || status === 'busy'} onClick={onResume} />
-        <Foot icon={Settings} tip="Settings" onClick={onSettings} />
-        <Foot icon={Download} tip="Download this project as a zip"
-              disabled={!project} onClick={onZip} />
-        <Foot icon={ExternalLink} tip="Open the app in a new tab"
-              disabled={!project} onClick={async () => {
-                const tab = window.open('about:blank', '_blank')
-                try {
-                  const runtime = await api.open(project)
-                  useStore.getState().setRuntime(runtime)
-                  if (tab) { tab.opener = null; tab.location.href = runtime.previewUrl }
-                } catch (error) {
-                  tab?.close()
-                  useStore.getState().addLog('WARN', `Could not open app: ${error.message}`)
-                }
-              }} />
-      </footer>
     </aside>
-    {subscriptionOpen && <SubscriptionModal onClose={() => setSubscriptionOpen(false)} />}
-    </>
   )
 }
 
@@ -446,14 +459,3 @@ function DeployTag({ deployed }) {
     </Tip>
   )
 }
-
-const Foot = ({ icon: Icon, tip, ...rest }) => (
-  <Tip className="flex-1 border-r border-line last:border-r-0" text={tip}>
-    <button {...rest}
-            className="grid h-[36px] w-full place-items-center text-white/60
-                       transition-colors hover:bg-white/[.08] hover:text-white
-                       disabled:pointer-events-none disabled:text-white/20">
-      <Icon className="size-3.5" />
-    </button>
-  </Tip>
-)
