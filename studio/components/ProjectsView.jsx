@@ -1,11 +1,101 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Search, Plus, ChevronDown, Layers, FileText, Globe, Trash2,
   Calendar, ArrowRight, Play, FolderCode,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+function ProjectVisualThumbnail({ project, name }) {
+  const containerRef = useRef(null)
+  const [scale, setScale] = useState(0.28)
+  const [loaded, setLoaded] = useState(false)
+  const [failed, setFailed] = useState(false)
+
+  // Use explicit html_url from server or prototype endpoint
+  const htmlUrl = project.html_url || (project.has_html !== false && !project.spec_only
+    ? `/__agentforge/api/prototype/${encodeURIComponent(name)}/index.html`
+    : null)
+
+  useEffect(() => {
+    if (!containerRef.current) return
+    const el = containerRef.current
+    const calc = () => {
+      const w = el.clientWidth || 360
+      setScale(w / 1280)
+    }
+    calc()
+    const ro = new ResizeObserver(calc)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  if (failed || !htmlUrl) {
+    return (
+      <div className="flex h-full w-full items-center justify-center p-4">
+        {/* Project Visual Mockup / Illustration Fallback */}
+        <div className="h-full w-full rounded-xl border border-white/10 bg-white/[.03] p-3 shadow-inner transition-transform duration-300 group-hover:scale-[1.02]">
+          <div className="flex items-center gap-1.5 border-b border-white/5 pb-2">
+            <span className="size-2 rounded-full bg-red-500/60" />
+            <span className="size-2 rounded-full bg-amber-500/60" />
+            <span className="size-2 rounded-full bg-emerald-500/60" />
+            <span className="ml-2 font-mono text-[9px] text-white/30 truncate max-w-[120px]">
+              {name}.app
+            </span>
+          </div>
+          <div className="mt-2.5 grid grid-cols-12 gap-2">
+            <div className="col-span-3 space-y-1.5">
+              <div className="h-2 w-full rounded bg-white/10" />
+              <div className="h-2 w-3/4 rounded bg-white/5" />
+              <div className="h-2 w-4/5 rounded bg-white/5" />
+            </div>
+            <div className="col-span-9 space-y-2">
+              <div className="h-3 w-3/4 rounded bg-blue-500/20" />
+              <div className="grid grid-cols-2 gap-1.5">
+                <div className="h-10 rounded-md border border-white/5 bg-white/[.04]" />
+                <div className="h-10 rounded-md border border-white/5 bg-white/[.04]" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div ref={containerRef} className="relative h-full w-full overflow-hidden bg-[#0c0f17]">
+      {!loaded && (
+        <div className="absolute inset-0 flex items-center justify-center bg-[#0c0f17]/90 backdrop-blur-sm z-[1]">
+          <div className="flex items-center gap-2 text-[11px] text-white/40">
+            <span className="size-2.5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+            <span>Loading preview…</span>
+          </div>
+        </div>
+      )}
+      <iframe
+        src={htmlUrl}
+        title={`${name} preview`}
+        scrolling="no"
+        tabIndex={-1}
+        aria-hidden="true"
+        onLoad={() => setLoaded(true)}
+        onError={() => setFailed(true)}
+        style={{
+          width: '1280px',
+          height: '800px',
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
+          pointerEvents: 'none',
+        }}
+        className={cn(
+          'pointer-events-none absolute left-0 top-0 border-0 bg-white transition-opacity duration-300',
+          loaded ? 'opacity-100' : 'opacity-0'
+        )}
+      />
+    </div>
+  )
+}
 
 export default function ProjectsView({
   projects = [],
@@ -177,35 +267,9 @@ export default function ProjectsView({
                     {/* Thumbnail Preview Area */}
                     <div
                       onClick={() => onOpen?.(name, p)}
-                      className="relative flex h-[170px] cursor-pointer items-center justify-center overflow-hidden bg-gradient-to-br from-[#161c28] via-[#10141e] to-[#0c0f17] p-4"
+                      className="relative flex h-[195px] sm:h-[210px] cursor-pointer items-center justify-center overflow-hidden border-b border-white/10 bg-gradient-to-br from-[#161c28] via-[#10141e] to-[#0c0f17]"
                     >
-                      {/* Project Visual Mockup */}
-                      <div className="h-full w-full rounded-lg border border-white/10 bg-white/[.03] p-3 shadow-inner transition-transform duration-300 group-hover:scale-[1.02]">
-                        <div className="flex items-center gap-1.5 border-b border-white/5 pb-2">
-                          <span className="size-2 rounded-full bg-red-500/60" />
-                          <span className="size-2 rounded-full bg-amber-500/60" />
-                          <span className="size-2 rounded-full bg-emerald-500/60" />
-                          <span className="ml-2 font-mono text-[9px] text-white/30 truncate max-w-[120px]">
-                            {name}.app
-                          </span>
-                        </div>
-
-                        {/* Miniature layout illustration */}
-                        <div className="mt-2.5 grid grid-cols-12 gap-2">
-                          <div className="col-span-3 space-y-1.5">
-                            <div className="h-2 w-full rounded bg-white/10" />
-                            <div className="h-2 w-3/4 rounded bg-white/5" />
-                            <div className="h-2 w-4/5 rounded bg-white/5" />
-                          </div>
-                          <div className="col-span-9 space-y-2">
-                            <div className="h-3 w-3/4 rounded bg-blue-500/20" />
-                            <div className="grid grid-cols-2 gap-1.5">
-                              <div className="h-10 rounded-md border border-white/5 bg-white/[.04]" />
-                              <div className="h-10 rounded-md border border-white/5 bg-white/[.04]" />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      <ProjectVisualThumbnail project={p} name={name} />
 
                       {/* Type Badge */}
                       <div className="absolute left-3 top-3 z-10">

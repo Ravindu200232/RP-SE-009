@@ -201,6 +201,42 @@ PROTOTYPE_TYPES = {".html": "text/html; charset=utf-8", ".css": "text/css; chars
                    ".ico": "image/x-icon", ".woff2": "font/woff2", ".woff": "font/woff"}
 
 
+
+def _find_html_root(proj_dir: Path) -> Path:
+    """Find root directory containing index.html for preview."""
+    proto = (proj_dir / ".agentforge" / "prototype").resolve()
+    if (proto / "index.html").is_file():
+        return proto
+    for dist_rel in ("client/dist", "dist", "client/public", "public", "client"):
+        candidate = (proj_dir / dist_rel).resolve()
+        if candidate.is_dir() and (candidate / "index.html").is_file():
+            return candidate
+    if (proj_dir / "index.html").is_file():
+        return proj_dir.resolve()
+    return proto
+
+
+def _find_html_info(proj_dir: Path) -> dict:
+    """Check if the project has an HTML prototype or first-page HTML available."""
+    proto = proj_dir / ".agentforge" / "prototype"
+    if (proto / "index.html").is_file():
+        return {
+            "has_html": True,
+            "html_url": f"/__agentforge/api/prototype/{proj_dir.name}/index.html",
+        }
+    for dist_rel in ("client/dist", "dist", "client/public", "public", "client", ""):
+        candidate = proj_dir / dist_rel if dist_rel else proj_dir
+        if candidate.is_dir() and (candidate / "index.html").is_file():
+            return {
+                "has_html": True,
+                "html_url": f"/__agentforge/api/prototype/{proj_dir.name}/index.html",
+            }
+    return {
+        "has_html": False,
+        "html_url": "",
+    }
+
+
 def read_prototype(proj_name: str, rel: str) -> tuple:
     """One file of a project's HTML drawing, for the review pane to show.
 
@@ -212,7 +248,7 @@ def read_prototype(proj_name: str, rel: str) -> tuple:
     if error:
         raise FileNotFoundError(error)
 
-    root = (proj_dir / ".agentforge" / "prototype").resolve()
+    root = _find_html_root(proj_dir)
     rel = str(rel or "index.html").replace("\\", "/").strip("/") or "index.html"
     target = (root / rel).resolve()
     try:
@@ -229,6 +265,10 @@ def read_prototype(proj_name: str, rel: str) -> tuple:
             fallback = (Path(base) if base else Path(__file__).resolve().parent.parent.parent) / "builder-agent" / "builder_agent" / "assets" / "static" / "tailwind.js"
             if fallback.is_file():
                 return fallback.read_bytes(), kind
+        # Fallback check in prototype folder if root was dist or vice versa
+        proto_alt = (proj_dir / ".agentforge" / "prototype" / rel).resolve()
+        if proto_alt.is_file():
+            return proto_alt.read_bytes(), kind
         raise FileNotFoundError(f"no {rel} in this drawing")
     return target.read_bytes(), kind
 
@@ -249,6 +289,7 @@ def list_projects() -> list:
                 data = json.loads(pkg.read_text())
                 title = data.get("name", d.name)
             except: pass
+        html_info = _find_html_info(d)
         projects.append({
             "name": d.name,
             "title": title,
@@ -260,6 +301,9 @@ def list_projects() -> list:
 
             "spec_only": _spec_only(d),
             "prototype_only": _prototype_only(d),
+
+            "has_html": html_info["has_html"],
+            "html_url": html_info["html_url"],
 
             "deployed": _deploy_marker(d),
         })
