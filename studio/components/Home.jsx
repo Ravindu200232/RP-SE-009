@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  ArrowRight, ChevronDown, Languages, PencilLine, Sparkles, FileText, Layers,
-  FlaskConical, Rocket,
+  ArrowRight, Check, ChevronDown, FileText, FlaskConical, Languages, Layers,
+  PencilLine, Rocket, Search, Sparkles,
 } from 'lucide-react'
 import { useStore, KEYS } from '@/lib/store'
 import { send } from '@/lib/ws'
@@ -75,15 +75,42 @@ export default function Home({
   const [logoFor, setLogoFor] = useState(null)
   const [srsError, setSrsError] = useState('')
   const [srsLanguage, setSrsLanguage] = useState('en')
+  const [langOpen, setLangOpen] = useState(false)
+  const [langSearch, setLangSearch] = useState('')
   const [stack, setStack] = useState('')
   const [languageOptions, setLanguageOptions] = useState(SRS_LANGUAGES)
   const box = useRef(null)
+  const langRef = useRef(null)
   const attach = useAttachments()
   const builderModel = models.builder || models.agent || TIERS.medium.model
   const plannerModel = models.planner || models.agent || builderModel
   const designModel = models.design || models.agent || builderModel
 
   useEffect(() => { setLanguageOptions(displaySrsLanguages()) }, [])
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (langRef.current && !langRef.current.contains(e.target)) {
+        setLangOpen(false)
+        setLangSearch('')
+      }
+    }
+    if (langOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [langOpen])
+
+  const currentLang = languageOptions.find(l => l.code === srsLanguage)
+  const currentLangLabel = currentLang ? currentLang.name : 'English'
+
+  const filteredLanguages = useMemo(() => {
+    const q = langSearch.trim().toLowerCase()
+    if (!q) return languageOptions
+    return languageOptions.filter(l =>
+      l.name.toLowerCase().includes(q) || l.code.toLowerCase().includes(q)
+    )
+  }, [languageOptions, langSearch])
 
   function begin(p, srs = '', prototypeOnly = false) {
     if (!p || !builderModel.trim()) return
@@ -343,26 +370,81 @@ export default function Home({
                 <div className="flex flex-wrap items-center gap-2">
                   <AttachButtons attach={attach} cell />
 
-                  {/* Prettified Language Select Pill */}
-                  <div
-                    className="relative inline-flex h-9 items-center rounded-xl border border-white/10 bg-white/[.06] pl-3 pr-2 text-[11px] font-semibold text-white/90 shadow-sm transition-all hover:bg-white/[.12] hover:border-white/20 hover:text-white group"
-                    title="Interview language. SRS and builder handoff stay in English."
-                  >
-                    <Languages className="size-3.5 shrink-0 text-blue-400 transition-colors group-hover:text-blue-300 mr-1.5" aria-hidden="true" />
-                    <span className="sr-only">Interview language</span>
+                  {/* Custom Prettified Language Select Dropdown */}
+                  <div className="relative" ref={langRef}>
+                    <button
+                      type="button"
+                      onClick={() => setLangOpen(!langOpen)}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-white/10 bg-white/[.05] px-2.5 text-[11px] font-medium text-white/80 shadow-sm transition-all hover:bg-white/[.10] hover:border-white/20 hover:text-white"
+                      title="Interview language. SRS and builder handoff stay in English."
+                    >
+                      <Languages className="size-2.5 shrink-0 text-blue-400" aria-hidden="true" />
+                      <span>{currentLangLabel}</span>
+                      <ChevronDown className={cn("size-2.5 shrink-0 text-white/40 transition-transform duration-200", langOpen && "rotate-180 text-white")} />
+                    </button>
+
+                    {/* Hidden contract select */}
                     <select
                       id="srs-language"
                       value={srsLanguage}
                       onChange={event => setSrsLanguage(event.target.value)}
-                      className="h-full bg-transparent appearance-none text-white/90 text-[11.5px] font-medium pr-5 outline-none cursor-pointer focus:outline-none"
+                      className="sr-only"
+                      tabIndex={-1}
+                      aria-hidden="true"
                     >
                       {languageOptions.map(language => (
-                        <option key={language.code} value={language.code} className="bg-[#121622] text-white">
+                        <option key={language.code} value={language.code}>
                           {language.name}
                         </option>
                       ))}
                     </select>
-                    <ChevronDown className="pointer-events-none absolute right-2.5 size-3 shrink-0 text-white/50 transition-colors group-hover:text-white" />
+
+                    {langOpen && (
+                      <div className="absolute bottom-full mb-2 left-0 w-64 rounded-2xl border border-white/15 bg-[#121622]/95 p-2 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
+                        {/* Search Input */}
+                        <div className="relative mb-2">
+                          <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 size-2.5 text-white/40" />
+                          <input
+                            type="text"
+                            value={langSearch}
+                            onChange={e => setLangSearch(e.target.value)}
+                            placeholder="Search language..."
+                            autoFocus
+                            className="w-full rounded-xl border border-white/10 bg-white/[.04] py-1.5 pl-7 pr-2.5 text-[11px] text-white outline-none placeholder:text-white/35 focus:border-blue-500/50"
+                          />
+                        </div>
+
+                        {/* Scrollable Language List */}
+                        <div className="max-h-52 overflow-y-auto space-y-0.5 pr-1 custom-scrollbar">
+                          {filteredLanguages.map(language => {
+                            const isSelected = language.code === srsLanguage
+                            return (
+                              <button
+                                key={language.code}
+                                type="button"
+                                onClick={() => {
+                                  setSrsLanguage(language.code)
+                                  setLangOpen(false)
+                                  setLangSearch('')
+                                }}
+                                className={cn(
+                                  "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-[11.5px] transition-colors",
+                                  isSelected
+                                    ? "bg-blue-600/20 text-blue-300 font-semibold border border-blue-500/30"
+                                    : "text-white/70 hover:bg-white/[.08] hover:text-white border border-transparent"
+                                )}
+                              >
+                                <span className="truncate">{language.name}</span>
+                                {isSelected && <Check className="size-2.5 shrink-0 text-blue-400 ml-2" />}
+                              </button>
+                            )
+                          })}
+                          {filteredLanguages.length === 0 && (
+                            <p className="px-2 py-3 text-center text-[11px] text-white/40">No languages found</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -385,12 +467,12 @@ export default function Home({
                       ? 'Prototype Build: generate an interactive HTML prototype'
                       : 'App Build: generate full stack application with planner, design, builder, and testing'
                   }
-                  className="inline-flex h-9 items-center gap-2 rounded-xl bg-blue-600 px-4 font-display text-[12.5px] font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-500 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 font-display text-[12px] font-medium text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-500 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
                 >
                   <span>
                     {activeMode === 'srs' ? 'Generate SRS' : activeMode === 'prototype' ? 'Build Prototype' : 'Build App'}
                   </span>
-                  <ArrowRight className="size-3.5" />
+                  <ArrowRight className="size-3 shrink-0" />
                 </button>
               </div>
             </div>
@@ -479,22 +561,22 @@ export default function Home({
                     type="button"
                     onClick={card.onClick}
                     className={cn(
-                      "group relative flex flex-col items-center justify-center rounded-2xl border p-3.5 transition-all duration-200 hover:-translate-y-0.5 w-[136px] h-[98px] shadow-lg",
+                      "group relative flex flex-col items-center justify-center rounded-2xl border p-3 transition-all duration-200 hover:-translate-y-0.5 w-[136px] h-[96px] shadow-lg",
                       isSelected
                         ? card.activeBorder
                         : "border-white/10 bg-[#121622]/70 hover:border-white/20 hover:bg-[#121622] hover:shadow-xl"
                     )}
                   >
                     <div className={cn(
-                      "flex size-9 items-center justify-center rounded-xl transition-transform group-hover:scale-110",
+                      "flex size-8 items-center justify-center rounded-xl transition-transform group-hover:scale-110",
                       card.iconBg
                     )}>
-                      <card.Icon className={cn("size-5", card.iconColor)} />
+                      <card.Icon className={cn("size-4", card.iconColor)} />
                     </div>
-                    <span className="mt-2 text-[12px] font-semibold text-white/90 group-hover:text-white">
+                    <span className="mt-1.5 text-[11.5px] font-semibold text-white/90 group-hover:text-white">
                       {card.label}
                     </span>
-                    <span className="text-[10.5px] text-white/45 group-hover:text-white/70">
+                    <span className="text-[10px] text-white/45 group-hover:text-white/70">
                       {card.desc}
                     </span>
                   </button>
