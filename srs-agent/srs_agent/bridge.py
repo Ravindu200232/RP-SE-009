@@ -48,12 +48,11 @@ def agentforge_settings() -> dict:
 
 
 def srs_model() -> str:
-    """The model the SRS should use when the caller did not name one."""
-    settings = agentforge_settings()
-    for key in ("srs_model", "agent_model"):
-        value = str(settings.get(key, "")).strip()
-        if value:
-            return value
+    """The model that writes the specification.
+
+    Fixed, not a setting: the studio's model picker is for the build. SRS calls
+    never think (the Ollama adapter sends think: False).
+    """
     return DEFAULT_SRS_MODEL
 
 

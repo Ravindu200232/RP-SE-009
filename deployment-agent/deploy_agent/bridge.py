@@ -50,12 +50,14 @@ def agentforge_settings() -> dict:
 
 
 def deploy_model() -> str:
-    """The model that writes the deployment plan."""
-    settings = agentforge_settings()
-    for key in ("deploy_model", "agent_model"):
-        value = str(settings.get(key, "")).strip()
-        if value:
-            return value
+    """The model that writes the deployment plan.
+
+    Fixed, not a setting: the studio's model picker is for the build. The plan
+    must come back as JSON the agent can validate. gemma4:31b-cloud does;
+    glm-5.3-flash:cloud answered in prose even when handed the schema, so no
+    validated plan existed and the deploy was refused. The planner never
+    thinks (OllamaClient sends think: False).
+    """
     return DEFAULT_DEPLOY_MODEL
 
 

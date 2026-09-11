@@ -604,12 +604,8 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
                     pass
             if body.get("agent_model"):
                 patch["agent_model"] = str(body["agent_model"]).strip()
-
-            if "srs_model" in body:
-                patch["srs_model"] = str(body["srs_model"]).strip()
-
-            if "deploy_model" in body:
-                patch["deploy_model"] = str(body["deploy_model"]).strip()
+            # No srs_model or deploy_model: those two agents use one fixed model
+            # (see their bridges), and the studio's picker is for the build.
             for key in ("aws_profile", "aws_region", "aws_start_url",
                         "aws_sso_region"):
                 if key in body:

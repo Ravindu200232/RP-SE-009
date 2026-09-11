@@ -68,7 +68,6 @@ def deploy_settings_summary() -> dict:
         "vercel_token_hint": (f"…{token[-4:]}" if token else ""),
         "mongodb_uri_set": bool(mongo),
         "mongodb_uri_hint": _redact_uri(mongo),
-        "deploy_model": str(s.get("deploy_model", "")).strip(),
     }
 
 

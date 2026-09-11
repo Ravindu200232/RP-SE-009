@@ -25,7 +25,6 @@ import { projectUnitTestStatus } from '@/lib/test-counts'
 
 export default function DeployPanel({ onSettings }) {
   const project = useStore(s => s.project)
-  const models = useStore(s => s.models)
   const qa = useStore(s => s.qaReport)
   const setQa = useStore(s => s.setQaReport)
   const addLog = useStore(s => s.addLog)
@@ -164,10 +163,6 @@ export default function DeployPanel({ onSettings }) {
     setStarting(true)
     setError('')
     try {
-
-      await api.saveSettings({ deploy_model: models.deploy || models.planner
-                                            || models.agent || '' })
-        .catch(() => { })
       await api.deployStart({ project, target, validate_container: validateBuild })
       addLog('INFO', `Deploying ${project} to ${target === 'vercel' ? 'Vercel' : 'AWS EC2'}`)
       await refresh()

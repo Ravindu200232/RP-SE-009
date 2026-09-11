@@ -72,7 +72,12 @@ class MonitorAgent:
                 self._aws(run, snapshot)
             except Exception as exc:
                 snapshot["errors"].append(redact_text(str(exc)))
-        snapshot["api"] = self._validate_api(repo_state.get("application_url", ""))
+        # The plan's own health route: /api/health for Next.js, and whatever a
+        # workspace's gateway already serves, such as /ready.
+        snapshot["api"] = self._validate_api(
+            repo_state.get("application_url", ""),
+            (run.get("plan") or {}).get("health_path") or "/api/health",
+        )
         deploy_runs = [
             item
             for item in snapshot.get("github", {}).get("runs", [])
@@ -452,7 +457,7 @@ class MonitorAgent:
         self._cloudwatch(session, run, snapshot)
 
     @staticmethod
-    def _validate_api(base_url: str) -> list[dict[str, Any]]:
+    def _validate_api(base_url: str, health_path: str = "/api/health") -> list[dict[str, Any]]:
         if not base_url:
             return []
         try:
@@ -460,7 +465,7 @@ class MonitorAgent:
         except ImportError:
             return [{"name": "HTTP client", "method": "GET", "path": "/", "status": 0, "passed": False, "error": "requests is not installed"}]
         results: list[dict[str, Any]] = []
-        for path in ("/", "/api/health"):
+        for path in ("/", health_path):
             url = base_url.rstrip("/") + path
             try:
                 response = requests.get(url, timeout=12, allow_redirects=True)
