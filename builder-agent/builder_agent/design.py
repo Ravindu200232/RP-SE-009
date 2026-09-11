@@ -212,6 +212,15 @@ BARE_ROUTE = re.compile(
 # Routes that are not screens. An API handler has no design.
 NOT_A_SCREEN = ("/api/", "/_next", "/static/", "/assets/", "/public/")
 
+# The same, as the first segment, so `/api` itself goes as well as what is under
+# it. A MERN plan names its gateway's `/api` and `/ready` beside the screens,
+# and both were offered as pages to draw.
+NOT_A_SCREEN_ROOT = {"api", "_next", "static", "assets", "public"}
+
+# What a platform polls to ask whether the app is up. Only the bare route: a
+# screen at /orders/ready or /ready-meals is still a screen.
+HEALTH_ROUTES = {"health", "healthz", "ready", "readyz", "livez", "metrics"}
+
 # The last segment of a file path, not of a route: `app/menu/page.jsx` is how
 # the screen at /menu is built, and is not a second screen called /menu/page.
 NOT_A_SEGMENT = ("page", "route", "layout", "index", "middleware")
@@ -223,6 +232,8 @@ def _is_screen(route: str) -> bool:
     if route.count("/") > 4 or "." in route:
         return False
     parts = [part for part in route.strip("/").split("/") if part]
+    if parts and (parts[0] in NOT_A_SCREEN_ROOT or parts == parts[:1] and parts[0] in HEALTH_ROUTES):
+        return False
     if parts and parts[-1] in NOT_A_SEGMENT:
         return False
     # A number is a port, a status code or an octet - never a page.
