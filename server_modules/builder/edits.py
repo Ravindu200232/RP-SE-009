@@ -19,7 +19,7 @@ then hands the agent a brief.
 
 # The emit helpers, `PROD_DIR`, `ollama` and `_edit_run` come from the runtime
 # parts executed before this one; only real modules are imported here.
-from server_modules.services.picker import (ELEMENT_EDIT_SYSTEM, ElementResolver, describe,
+from server_modules.services.picker import (ELEMENT_EDIT_SYSTEM, ElementResolver, Resolution, describe,
                                             looks_like_global, looks_like_page_only,
                                             routes_rendering)
 from server_modules.services.sources import feature_prompt
@@ -171,6 +171,58 @@ def run_element_edit(project: str, prompt: str, elements, model: str,
             if page_file:
                 emit({"type": "element_picked", "file": page_file})
 
+        # Check if targeting an HTML prototype file
+        proto_dir = proj_dir / ".agentforge" / "prototype"
+        is_proto_target = (
+            proto_dir.is_dir() and (
+                (not (proj_dir / "package.json").is_file())
+                or "/api/prototype" in here
+                or here.startswith("/prototype")
+                or here.endswith(".html")
+                or any("/api/prototype" in str((p or {}).get("route") or "") for p in picked)
+                or any(str((p or {}).get("route") or "").endswith(".html") for p in picked)
+            )
+        )
+        if not page_file and is_proto_target:
+            target_name = ""
+            if ".html" in here:
+                target_name = here.split("/")[-1].split("?")[0]
+            elif picked:
+                for p in picked:
+                    p_route = str((p or {}).get("route") or "")
+                    if ".html" in p_route:
+                        target_name = p_route.split("/")[-1].split("?")[0]
+                        break
+            if not target_name:
+                if (proto_dir / "index.html").is_file():
+                    target_name = "index.html"
+                else:
+                    html_files = sorted(proto_dir.glob("*.html"))
+                    if html_files:
+                        target_name = html_files[0].name
+            if target_name and (proto_dir / target_name).is_file():
+                page_file = f".agentforge/prototype/{target_name}"
+                emit({"type": "element_picked", "file": page_file})
+                elog("INFO", f"   {page_file} (HTML prototype)")
+                if not found and picked:
+                    try:
+                        content_lines = (proto_dir / target_name).read_text("utf-8", errors="replace").splitlines()
+                    except OSError:
+                        content_lines = []
+                    for el in picked:
+                        line_num = 0
+                        el_text = str((el or {}).get("text") or "").strip()
+                        el_id = str((el or {}).get("id") or "").strip()
+                        for idx, line in enumerate(content_lines, 1):
+                            if el_id and f'id="{el_id}"' in line:
+                                line_num = idx
+                                break
+                            if el_text and len(el_text) > 3 and el_text in line:
+                                line_num = idx
+                                break
+                        resolution = Resolution(path=page_file, line=line_num, used_model=False)
+                        found.append((el, resolution))
+
         if not found and not page_file and not pictures:
             return eerr("that element could not be traced to a source file — "
                         "describe the change instead and it will be searched for")
@@ -183,7 +235,8 @@ def run_element_edit(project: str, prompt: str, elements, model: str,
         eprog("Changing it…", 40)
         brief = _selection_brief(found, pictures, prompt, here, page_file, model)
         _edit_run(project, prompt, model, think, "", console,
-                  kind="pencil" if drawn and not found else "select", brief=brief)
+                  kind="pencil" if drawn and not found else "select", brief=brief,
+                  route=here, elements=picked)
     except Exception as error:                                       # noqa: BLE001
         log.exception("element edit")
         eerr(f"{type(error).__name__}: {error}")

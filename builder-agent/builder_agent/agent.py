@@ -558,6 +558,8 @@ class BuilderAgent:
 
     def build(self, task: str, *, plan: str = "", verification_kinds=None) -> Outcome:
         """Implement the plan and prove it works."""
+        if not self.config.unit_tests and not self.config.e2e_tests and verification_kinds is None:
+            verification_kinds = []
         phase = verification_kinds[0] if verification_kinds and len(verification_kinds) == 1 else "build"
         title = {"unit": "Unit tests", "e2e": "End-to-end"}.get(phase, "Building")
         self.events.emit("phase", phase=phase, title=title, status="active")

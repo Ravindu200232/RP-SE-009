@@ -138,7 +138,6 @@ class Loop:
         self.layout_dirty = True
         self.active_lesson: dict | None = None
         self.state: dict = {"knowledge": self.knowledge, "skill_reads": {}, "plan": ""}
-        self.testing_enabled = (not config.review and registry.has("runTests"))
         memory.evidence.bind(str(sandbox.root))
         memory.evidence.enabled_kinds = {
             *(("unit",) if config.unit_tests else ()),
@@ -148,6 +147,8 @@ class Loop:
         self.verification_kinds = verification_kinds
         if verification_kinds is not None:
             memory.evidence.enabled_kinds = set(verification_kinds)
+        self.testing_enabled = (not config.review and registry.has("runTests")
+                                and bool(memory.evidence.enabled_kinds))
 
     # -- context frame ---------------------------------------------------
     def _refresh_system(self) -> None:

@@ -517,6 +517,63 @@ class MessageOwnershipTests(unittest.TestCase):
         self.assertNotIn("project", message)
 
 
+class HtmlModificationTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp_dir = tempfile.TemporaryDirectory()
+        self.proj_dir = Path(self.tmp_dir.name)
+
+    def tearDown(self):
+        self.tmp_dir.cleanup()
+
+    def test_prototype_only_project_is_html_modification(self):
+        (self.proj_dir / ".agentforge" / "prototype").mkdir(parents=True)
+        (self.proj_dir / ".agentforge" / "prototype" / "index.html").write_text("<h1>Hello</h1>", encoding="utf-8")
+        self.assertTrue(server._is_html_modification(self.proj_dir, "change heading"))
+
+    def test_route_pointing_to_prototype_is_html_modification(self):
+        self.assertTrue(server._is_html_modification(self.proj_dir, "change button", route="/api/prototype/demo/index.html"))
+        self.assertTrue(server._is_html_modification(self.proj_dir, "change button", route="/prototype"))
+        self.assertTrue(server._is_html_modification(self.proj_dir, "change button", route="/about.html"))
+
+    def test_element_with_prototype_route_is_html_modification(self):
+        elements = [{"route": "/api/prototype/demo/contact.html", "tag": "button"}]
+        self.assertTrue(server._is_html_modification(self.proj_dir, "change color", elements=elements))
+
+    def test_prompt_targeting_prototype_when_prototype_dir_exists(self):
+        (self.proj_dir / ".agentforge" / "prototype").mkdir(parents=True)
+        self.assertTrue(server._is_html_modification(self.proj_dir, "update the html prototype colors"))
+
+    def test_regular_app_edit_is_not_html_modification(self):
+        (self.proj_dir / "package.json").write_text("{}", encoding="utf-8")
+        (self.proj_dir / "app").mkdir()
+        (self.proj_dir / "app" / "page.jsx").write_text("export default function Page(){}", encoding="utf-8")
+        self.assertFalse(server._is_html_modification(self.proj_dir, "add search input", route="/search"))
+
+    def test_html_modification_bypasses_tests_and_verification(self):
+        (self.proj_dir / ".agentforge" / "prototype").mkdir(parents=True)
+        (self.proj_dir / ".agentforge" / "prototype" / "index.html").write_text("<h1>Hi</h1>", encoding="utf-8")
+        mock_outcome = types.SimpleNamespace(status="completed", result="done")
+        mock_agent = types.SimpleNamespace(processes=types.SimpleNamespace(stop_all=lambda: None))
+        
+        with patch.object(server, "_workspace", return_value=self.proj_dir), \
+             patch.object(server, "_run_agent", return_value=(mock_agent, mock_outcome)) as mock_run, \
+             patch.object(server, "_record_verification") as mock_record, \
+             patch.object(server, "_serve") as mock_serve, \
+             patch.object(server, "edone") as mock_edone:
+            server._edit_run("test_proj", "make title blue", "model", None, "", "",
+                             kind="edit", brief="brief", route="/prototype")
+            
+            # Must call _run_agent with no_tests=True and phases=("build",)
+            self.assertTrue(mock_run.called)
+            self.assertTrue(mock_run.call_args.kwargs.get("no_tests"))
+            self.assertEqual(mock_run.call_args.kwargs.get("phases"), ("build",))
+            # Must NOT call _record_verification or _serve
+            self.assertFalse(mock_record.called)
+            self.assertFalse(mock_serve.called)
+            # Must call edone with prototype url
+            self.assertTrue(mock_edone.called)
+            self.assertIn("/api/prototype/", mock_edone.call_args[0][0])
+
 
 if __name__ == "__main__":
     unittest.main()

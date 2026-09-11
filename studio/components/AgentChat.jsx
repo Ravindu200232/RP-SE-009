@@ -123,7 +123,7 @@ export default function AgentChat() {
       }
     }
 
-    const route = selection[0]?.route || useStore.getState().previewRoute || ''
+    const route = selection[0]?.route || (useStore.getState().view === 'prototype' ? '/prototype' : (useStore.getState().previewRoute || ''))
     const payload = {
       type: selection.length ? 'element_edit' : 'agent_update',
       project, route,

@@ -58,6 +58,7 @@ export default function PrototypePane({ project, hidden, onBuild }) {
   const [nav, setNav] = useState({ back: false, forward: false })
 
   const addLog = useStore(s => s.addLog)
+  const busy = useStore(s => s.busy)
   const drawing = useStore(s => s.drawing)
   const setDrawing = useStore(s => s.setDrawing)
   const selection = useStore(s => s.selection)
@@ -106,6 +107,14 @@ export default function PrototypePane({ project, hidden, onBuild }) {
       f.src = `${API}/prototype/${encodeURIComponent(project || '')}/${page}?t=${Date.now()}`
     }
   }
+
+  const prevBusyRef = useRef(busy)
+  useEffect(() => {
+    if (prevBusyRef.current && !busy) {
+      reload()
+    }
+    prevBusyRef.current = busy
+  }, [busy])
 
   const viewportOf = useCallback(() => {
     const f = frameRef.current

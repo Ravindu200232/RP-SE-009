@@ -527,7 +527,8 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
 
 
 def _run_agent(proj_dir: Path, brief: str, model: str, think, *, phases, kind: str,
-               plan: bool = True, stack: str = "", prototype_only: bool = False):
+               plan: bool = True, stack: str = "", prototype_only: bool = False,
+               no_tests: bool = False):
     """One builder-agent run, wired to the studio.
 
     A full build asks about its plan and its design, because the studio can
@@ -535,9 +536,13 @@ def _run_agent(proj_dir: Path, brief: str, model: str, think, *, phases, kind: s
     settled when the project was built.
     """
     agent = _agent_for(proj_dir, brief, model, think, stack,
-                       kind=kind, phases=phases, plan=plan)
+                       kind=kind, phases=phases, plan=plan,
+                       prototype_only=(prototype_only or no_tests))
     if prototype_only:
         agent.config.prototype_only = True
+    if no_tests:
+        agent.config.unit_tests = False
+        agent.config.e2e_tests = False
     register_approvals(agent.approvals)
     try:
         outcome = agent.run(brief) if plan else agent.build(brief)
@@ -698,11 +703,40 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
         cancel.finish()
 
 
+def _is_html_modification(proj_dir: Path, prompt: str, route: str = "", elements=None, brief: str = "") -> bool:
+    """Determine if an edit targets HTML prototypes or static HTML rather than full app code."""
+    if _prototype_only(proj_dir):
+        return True
+    route_str = str(route or "").lower()
+    if "/api/prototype" in route_str or route_str.startswith("/prototype") or route_str.endswith(".html"):
+        return True
+    if elements:
+        elems = elements if isinstance(elements, list) else [elements]
+        for elem in elems:
+            if isinstance(elem, dict):
+                r = str(elem.get("route") or "").lower()
+                if "/api/prototype" in r or "/prototype" in r or r.endswith(".html"):
+                    return True
+                f = str(elem.get("file") or "").lower()
+                if ".agentforge/prototype" in f or f.endswith(".html"):
+                    return True
+    combined_text = f"{prompt} {brief}".lower()
+    if (proj_dir / ".agentforge" / "prototype").is_dir():
+        if re.search(r"\b(prototype|html\s*prototype|drawing|\.html)\b", combined_text):
+            return True
+        if ".agentforge/prototype" in combined_text:
+            return True
+    if not (proj_dir / "package.json").is_file() and (proj_dir / ".agentforge" / "prototype").is_dir():
+        return True
+    return False
+
+
 def run_feature(project: str, prompt: str, model: str, think=None, qa_model: str = "",
                 route: str = "", console: str = "") -> None:
     """Add something to an application that already exists."""
     _edit_run(project, prompt, model, think, qa_model, console,
               kind="feature",
+              route=route,
               brief=(f"Add this to the existing application:\n\n{prompt}\n\n"
                      + (f"The user was on the route {route} when they asked.\n" if route else "")
                      + "Read the code that already exists before changing anything, follow the "
@@ -715,6 +749,7 @@ def run_chat(project: str, prompt: str, model: str, route: str = "", think=None,
     """Carry out a chat request against the existing application."""
     _edit_run(project, prompt, model, think, qa_model, console,
               kind="edit",
+              route=route,
               brief=(f"The user's next request in this project conversation:\n\n{prompt}\n\n"
                      + (f"They were on the route {route}.\n" if route else "")
                      + "Continue from the conversation and project memory already available. "
@@ -726,7 +761,7 @@ def run_chat(project: str, prompt: str, model: str, route: str = "", think=None,
 
 
 def _edit_run(project: str, prompt: str, model, think, qa_model: str, console: str,
-              *, kind: str, brief: str) -> None:
+              *, kind: str, brief: str, route: str = "", elements=None) -> None:
     runtime = None
     cancel.begin()
     cancel.note(project=project)
@@ -739,20 +774,50 @@ def _edit_run(project: str, prompt: str, model, think, qa_model: str, console: s
         RUNTIMES.begin_work(runtime)
         elog("INFO", f"✏️  {prompt[:160]}")
         estep("build", "active")
-        MONGO.ensure_running()
+
+        is_html_mod = _is_html_modification(proj_dir, prompt, route=route, elements=elements, brief=brief)
+        if not is_html_mod:
+            MONGO.ensure_running()
         snapshot_project(proj_dir)
 
         full = brief
+        if is_html_mod:
+            full = (
+                "DIRECT HTML/PROTOTYPE UPDATE: Update HTML, CSS, or prototype files directly "
+                "in .agentforge/prototype/ (or workspace HTML files). Do NOT run unit tests, do NOT run E2E journeys, "
+                "and do NOT start background servers. Make the requested visual or content edits directly.\n\n"
+            ) + full
         if console:
             full += ("\n\nThe browser had already logged this before they asked:\n"
                      + console[:6000])
         # The project is already built, so it knows its own stack far better
         # than the sentence asking for a change does.
+        phases = ("build",) if is_html_mod else EDIT_PHASES
         agent, outcome = _run_agent(proj_dir, _brief(proj_dir, full), model, think,
-                                    phases=EDIT_PHASES, kind=kind, plan=False,
-                                    stack=stack_of(proj_dir))
+                                    phases=phases, kind=kind, plan=False,
+                                    stack=stack_of(proj_dir), no_tests=is_html_mod)
         if outcome.status == "cancelled":
             return ecancel({"project": proj_dir.name})
+
+        if is_html_mod:
+            proto_root = proj_dir / ".agentforge" / "prototype"
+            target_url = f"/api/prototype/{proj_dir.name}/index.html"
+            if proto_root.is_dir():
+                from builder_agent.agent import _title_of
+                on_disk = {p.name for p in proto_root.glob("*.html")}
+                pages = []
+                for p_name in sorted(on_disk):
+                    pages.append({"file": p_name, "route": "", "label": _title_of(p_name), "what": ""})
+                emit({"type": "prototype", "project": proj_dir.name, "pages": pages, "path": str(proto_root)})
+                if route and ".html" in route:
+                    html_file = route.split("/")[-1].split("?")[0]
+                    if (proto_root / html_file).is_file():
+                        target_url = f"/api/prototype/{proj_dir.name}/{html_file}"
+            eprog("Done", 100)
+            estep("build", "done")
+            edone(target_url, proj_dir.name)
+            elog("SUCCESS", f"✅ {proj_dir.name} HTML update finished")
+            return
 
         fill_missing_images(proj_dir, "the edit")
         url = _serve(proj_dir, agent)
