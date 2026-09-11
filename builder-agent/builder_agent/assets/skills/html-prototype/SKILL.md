@@ -319,14 +319,28 @@ page and not one `<img>` tells the user nothing about their product.
 So wherever the real application shows a picture, show a real photograph:
 
 ```html
-<img src="https://picsum.photos/seed/room-willow/800/600"
+<img src="https://loremflickr.com/800/600/bedroom,garden,hotel?lock=12"
      width="800" height="600" alt="The Willow room, looking onto the garden">
 ```
 
+- **A photograph of the thing, not a photograph.** The address carries the
+  subject as tags — `bedroom,garden,hotel`, `sourdough,bread`,
+  `ferrari,supercar` — and what comes back is of that. Two or three tags,
+  most specific first.
+
+  This is the whole point and it is easy to get wrong. A seeded picture from a
+  random-photo service is stable and pretty and has nothing to do with the
+  product: a bakery's Country Sourdough card came back as a pine forest, and a
+  supercar page as a black-and-white photograph of somebody's arm. The page
+  looks finished in a thumbnail and absurd the moment anyone reads it.
+- **`?lock=<n>` on every one**, a different number per picture. Without it the
+  same address returns a different photograph on every request, so the page
+  reshuffles itself as you scroll and again on the next redraw. With it, the
+  same address is the same photograph every time — verified: three fetches of
+  `?lock=7`, three identical files.
 - **A public source that needs no account and no key, where any address you
-  write resolves.** `https://picsum.photos/seed/<seed>/<w>/<h>` is the
-  dependable one: any seed works, and the same seed always returns the same
-  photograph, so a card keeps its picture across a redraw.
+  write resolves.** Tags and a lock are all `loremflickr.com/<w>/<h>/<tags>`
+  needs, and both are yours to make up.
 
   **Not a source whose addresses have to be looked up.** A photograph on
   Unsplash lives at `photo-1566665797739-1674de7a4279`, and there is no way to
@@ -335,8 +349,6 @@ So wherever the real application shows a picture, show a real photograph:
   hypothetical: a drawing shipped with three of those, one of which 404s, and
   it is the first thing on the home page. If a source needs a real identifier
   you cannot verify, it is the wrong source for a drawing.
-- **A seed per subject**, named after the thing — `room-willow`, `chef-marta`,
-  `course-python`. Not an index, or every redraw reshuffles the pictures.
 - **Always `width` and `height`**, matching the ratio you asked for, so the
   layout does not jump as the pictures land.
 - **Real `alt` text** describing that specific subject, not "image" or the

@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-11T02:00:52+00:00
+Run at (UTC): 2026-09-11T02:44:53+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 488
+Unit tests: 491
 Integration tests: 24
-Total tests run: 512
+Total tests run: 515
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 25.203s
+Duration: 26.597s
 
 Detailed results
 ----------------
@@ -42,6 +42,9 @@ test_a_waiting_question_can_be_read_back_in_full (test.unit.builder.test_agent_p
 The studio reloads, and the run is still waiting on it. ... ok
 test_the_time_left_shrinks_rather_than_restarting (test.unit.builder.test_agent_passes.PendingQuestionTests.test_the_time_left_shrinks_rather_than_restarting)
 A recovered question shows what is left, not the whole budget. ... ok
+test_it_asks_for_the_lock_that_keeps_it_stable (test.unit.builder.test_agent_passes.PicturesAreOfTheSubjectTests.test_it_asks_for_the_lock_that_keeps_it_stable) ... ok
+test_the_address_carries_the_subject (test.unit.builder.test_agent_passes.PicturesAreOfTheSubjectTests.test_the_address_carries_the_subject) ... ok
+test_the_skill_agrees_with_the_prompt (test.unit.builder.test_agent_passes.PicturesAreOfTheSubjectTests.test_the_skill_agrees_with_the_prompt) ... ok
 test_a_build_that_drew_nothing_says_nothing_about_a_prototype (test.unit.builder.test_agent_passes.PrototypePassTests.test_a_build_that_drew_nothing_says_nothing_about_a_prototype) ... ok
 test_a_drawing_pass_cannot_install_serve_or_test (test.unit.builder.test_agent_passes.PrototypePassTests.test_a_drawing_pass_cannot_install_serve_or_test)
 It writes HTML. A pass that can run npm will find a reason to. ... ok
@@ -595,6 +598,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 512 tests in 25.203s
+Ran 515 tests in 26.596s
 
 OK

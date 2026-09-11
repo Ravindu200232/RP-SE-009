@@ -462,15 +462,21 @@ class BuilderAgent:
             "the markup, including the ones into a detail page. With demo.js deleted, "
             "every page must still be the whole page and every link must still work.",
             "",
-            "USE REAL PICTURES. Wherever the product shows a photograph - a hero, a "
-            "gallery, a card grid, an avatar - use one: "
-            "`https://picsum.photos/seed/<subject>/800/600`, seeded with the name of the "
-            "subject so it keeps the same picture across a redraw, with width, height and "
-            "real alt text. Never a grey box standing in for a photograph. A product with "
-            "rooms or dishes or people is mostly photographs, and a drawing of it with "
-            "none is a wireframe. Not a source whose addresses have to be looked up: an "
-            "Unsplash photo id cannot be known from here, so it gets invented, and an "
-            "invented one is a grey rectangle where the hero should be.",
+            "USE REAL PICTURES OF THE REAL THING. Wherever the product shows a "
+            "photograph - a hero, a gallery, a card grid, an avatar - use "
+            "`https://loremflickr.com/800/600/<tags>?lock=<n>`, where the tags name the "
+            "subject and nothing else: `sourdough,bread`, `ferrari,supercar`, "
+            "`bedroom,garden,hotel`. Two or three tags, most specific first, a different "
+            "lock number per picture, with width, height and real alt text. The lock is "
+            "what keeps it the same photograph on every request and across a redraw; "
+            "without it the page reshuffles as you scroll. A seeded picture from a "
+            "random-photo service is the mistake this replaces - stable, pretty and "
+            "unrelated: a bakery's sourdough card came back a pine forest and a supercar "
+            "page an arm. Never a grey box either, and not a source whose addresses have "
+            "to be looked up - an Unsplash photo id cannot be known from here, so it gets "
+            "invented, and an invented one is a grey rectangle where the hero should be. "
+            "A product with rooms or dishes or cars is mostly photographs, and a drawing "
+            "of it with none is a wireframe.",
             "",
             "STYLE IT WITH TAILWIND, wired to the contract. Every page head carries "
             "`<script src=\"https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4\"></script>` "

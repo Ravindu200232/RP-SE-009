@@ -615,3 +615,39 @@ class UnconfiguredCapabilitiesTests(unittest.TestCase):
 
     def test_a_build_that_settled_nothing_is_not_lectured(self):
         self.assertEqual(self._agent([])._with_settings("build it"), "build it")
+
+
+class PicturesAreOfTheSubjectTests(unittest.TestCase):
+    """A photograph of the product, not a photograph.
+
+    A seeded address on a random-photo service is stable, pretty and unrelated:
+    the bakery's Country Sourdough card came back a pine forest, and a supercar
+    page a black-and-white photograph of somebody's arm. The page looks finished
+    in a thumbnail and absurd the moment anyone reads it.
+    """
+
+    def _drawing_prompt(self):
+        root = Path(tempfile.mkdtemp())
+        agent = BuilderAgent(
+            Config(workspace=root, model="scripted", unit_tests=False,
+                   e2e_tests=False, state_root=root / ".state"),
+            events=Events(), client=object())
+        agent.screens = [{"route": "/", "label": "Home", "what": "front"}]
+        return agent._prototype_task("a bakery")
+
+    def test_the_address_carries_the_subject(self):
+        text = self._drawing_prompt()
+        self.assertIn("loremflickr.com", text)
+        self.assertIn("sourdough,bread", text)
+        self.assertNotIn("picsum", text)
+
+    def test_it_asks_for_the_lock_that_keeps_it_stable(self):
+        # Without it the same address is a different photograph every request.
+        self.assertIn("?lock=", self._drawing_prompt())
+
+    def test_the_skill_agrees_with_the_prompt(self):
+        skill = (Path("builder-agent/builder_agent/assets/skills/html-prototype/SKILL.md")
+                 .read_text(encoding="utf-8"))
+        self.assertIn("loremflickr.com", skill)
+        self.assertIn("?lock=", skill)
+        self.assertNotIn("picsum", skill)
