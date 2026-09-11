@@ -123,15 +123,29 @@ class MonitorAgent:
         if (
             latest
             and latest["state"] in {RunState.VALIDATING.value, RunState.LIVE.value}
-            and readiness["score"] >= 90
-            and snapshot["api"]
-            and all(item.get("passed") for item in snapshot["api"])
+            and self._serving(readiness, snapshot)
         ):
             if latest["state"] != RunState.LIVE.value:
                 self.emit(run_id, "step", "validation", "complete", 98, "Homepage and health API validation passed")
                 self._capture_evidence(run_id)
             self.store.transition_run(run_id, RunState.LIVE)
         return sanitized
+
+    @staticmethod
+    def _serving(readiness: dict, snapshot: dict) -> bool:
+        """Is the deployment up: its workflow passed, its provider reports it
+        running, and every page and health route it was asked for answers.
+
+        Not the readiness score. That also counts what the review found -
+        whether a production build ran on this machine first, and what an
+        audit said about dependencies, development ones included - and none of
+        it changes once the site is deployed. A healthy site that scored 88
+        was never promoted, and was polled every fifteen seconds for good.
+        """
+        categories = readiness.get("categories") or {}
+        api = snapshot.get("api") or []
+        return (bool(categories.get("cicd")) and bool(categories.get("provider"))
+                and bool(api) and all(item.get("passed") for item in api))
 
     def _capture_evidence(self, run_id: str) -> None:
         """Capture the dashboard now that the run is live."""
