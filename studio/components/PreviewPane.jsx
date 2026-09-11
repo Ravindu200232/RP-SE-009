@@ -21,7 +21,7 @@ import {
 import { useStore } from '@/lib/store'
 import { api, API } from '@/lib/api'
 import { attachPicker, pickedFrom, pickLabel } from '@/lib/picker'
-import { watchFrame } from '@/lib/console-log'
+import { watchFrame, recordConsole } from '@/lib/console-log'
 import { Tip } from './ui'
 import AgentBrowser from './AgentBrowser'
 import LiveE2EOverlay from './LiveE2EOverlay'
@@ -39,6 +39,7 @@ const MIN_INK = 3
 let seq = 0
 
 function currentPath(frame) {
+  if (frame?.dataset?.remote === 'true') return frame.dataset.route || '/'
   try {
     const loc = frame?.contentWindow?.location
     if (!loc || !loc.pathname?.startsWith('/') || !/^https?:$/.test(loc.protocol)) return '/'
@@ -57,7 +58,8 @@ export default function PreviewPane({ hidden }) {
   const lastPathRef = useRef('/')
 
   const project = useStore(s => s.project)
-  const busy = useStore(s => s.busy)
+  const busy = useStore(s => s.busy && (!s.busyProject || s.busyProject === s.project))
+  const runtime = useStore(s => s.runtimes[s.project])
   const addLog = useStore(s => s.addLog)
   const setPreviewRoute = useStore(s => s.setPreviewRoute)
   const undo = useStore(s => s.undo)
@@ -79,6 +81,42 @@ export default function PreviewPane({ hidden }) {
   const at = useRef(0)
   const jumping = useRef(false)
   const [nav, setNav] = useState({ back: false, forward: false })
+
+  const bridgeSend = useCallback((kind, data = {}) => {
+    if (!runtime?.previewUrl || !runtime.runtimeId) return
+    frameRef.current?.contentWindow?.postMessage({ type: 'agentforge:command', kind,
+      project, runtimeId: runtime.runtimeId, ...data }, new URL(runtime.previewUrl).origin)
+  }, [project, runtime?.runtimeId, runtime?.previewUrl])
+
+  const markActivity = useCallback(() => {
+    if (runtime?.runtimeId) api.previewActivity(project, runtime.runtimeId).catch(() => {})
+  }, [project, runtime?.runtimeId])
+
+  const navigate = useCallback((route = '/') => {
+    const f = frameRef.current
+    if (!f || !runtime?.previewUrl) return
+    f.dataset.remote = 'true'
+    f.dataset.route = route
+    f.dataset.scrollX = '0'; f.dataset.scrollY = '0'
+    f.src = new URL(route, runtime.previewUrl).href
+  }, [runtime?.previewUrl])
+
+  // Observing status never keeps an idle app alive. This also recovers missed
+  // socket events after a Studio reload or a backend reconnect.
+  useEffect(() => {
+    if (!project) return
+    let active = true
+    const read = () => api.runtime(project).then(result => {
+      if (active) useStore.getState().setRuntime(result)
+    }).catch(() => {})
+    read()
+    const timer = setInterval(read, 2000)
+    return () => { active = false; clearInterval(timer) }
+  }, [project])
+
+  useEffect(() => {
+    if (!drawing && runtime?.status === 'running') navigate(lastPathRef.current)
+  }, [runtime?.runtimeId, runtime?.status, drawing, navigate])
 
   const syncPath = useCallback((reason = 'navigation') => {
     const here = currentPath(frameRef.current)
@@ -113,7 +151,7 @@ export default function PreviewPane({ hidden }) {
   const attachShot = useCallback(async (item, body) => {
     addSelection(item)
     try {
-      const r = await api.shot(body)
+      const r = await api.shot({ ...body, project, runtimeId: runtime?.runtimeId })
       patchSelection(item.key, r?.image
         ? { shot: r.image, state: 'ready' }
         : { state: 'blank' })
@@ -121,10 +159,15 @@ export default function PreviewPane({ hidden }) {
       patchSelection(item.key, { state: 'blank' })
       addLog('WARN', `could not photograph that — ${e.message}`)
     }
-  }, [addSelection, patchSelection, addLog])
+  }, [addSelection, patchSelection, addLog, project, runtime?.runtimeId])
 
   const attach = useCallback(() => {
     detachRef.current?.()
+    if (frameRef.current?.dataset.remote === 'true') {
+      bridgeSend('pick', { enabled: true, mode: vp })
+      detachRef.current = () => bridgeSend('pick', { enabled: false })
+      return
+    }
     detachRef.current = attachPicker(frameRef.current, (el) => {
       const info = pickedFrom(frameRef.current, el, vp)
       attachShot(
@@ -134,7 +177,34 @@ export default function PreviewPane({ hidden }) {
           scroll: info.scroll, rect: info.rect })
     })
     if (!detachRef.current) addLog('WARN', 'The preview is not loaded yet')
-  }, [vp, addLog, attachShot, viewportOf])
+  }, [vp, addLog, attachShot, viewportOf, bridgeSend])
+
+  useEffect(() => {
+    const receive = event => {
+      const message = event.data
+      if (!runtime?.previewUrl || event.source !== frameRef.current?.contentWindow ||
+          event.origin !== new URL(runtime.previewUrl).origin ||
+          message?.type !== 'agentforge:preview' || message.project !== project ||
+          message.runtimeId !== runtime.runtimeId) return
+      if (message.kind === 'route' && typeof message.route === 'string' && message.route.startsWith('/')) {
+        const f = frameRef.current
+        f.dataset.route = message.route
+        f.dataset.scrollX = String(message.scroll?.x || 0)
+        f.dataset.scrollY = String(message.scroll?.y || 0)
+        syncPath()
+      }
+      if (message.kind === 'ready' && pickOn) bridgeSend('pick', { enabled: true, mode: vp })
+      if (message.kind === 'console') recordConsole(message.level, message.text)
+      if (message.kind === 'picked' && pickOn && message.info) {
+        const info = message.info
+        attachShot({ key: `sel-${++seq}`, kind: 'element', info, state: 'shooting',
+          label: pickLabel(info), route: info.route },
+          { route: info.route, viewport: info.viewport || viewportOf(), scroll: info.scroll, rect: info.rect })
+      }
+    }
+    window.addEventListener('message', receive)
+    return () => window.removeEventListener('message', receive)
+  }, [project, runtime?.previewUrl, runtime?.runtimeId, syncPath, pickOn, bridgeSend, vp, attachShot, viewportOf])
 
   useEffect(() => {
     if (pickOn) attach()
@@ -146,13 +216,14 @@ export default function PreviewPane({ hidden }) {
     const f = frameRef.current
     if (!f) return
     const onLoad = () => {
+      bridgeSend('init')
       watchFrame(f)
       syncPath('load')
       if (pickOn) attach()
     }
     f.addEventListener('load', onLoad)
     return () => f.removeEventListener('load', onLoad)
-  }, [pickOn, attach, syncPath])
+  }, [pickOn, attach, syncPath, bridgeSend])
 
   useEffect(() => {
     const id = setInterval(() => syncPath('poll'), 250)
@@ -166,8 +237,8 @@ export default function PreviewPane({ hidden }) {
     const f = frameRef.current
     if (!f || currentPath(f) === route) return
     jumping.current = true
-    f.src = route
-  }, [e2eLive?.route, tests.running])
+    if (runtime?.status === 'running') navigate(route)
+  }, [e2eLive?.route, tests.running, runtime?.status, navigate])
 
   const syncCanvas = useCallback(() => {
     const f = frameRef.current, c = canvasRef.current
@@ -203,6 +274,10 @@ export default function PreviewPane({ hidden }) {
     const c = canvasRef.current
     const r = c.getBoundingClientRect()
     let sx = 0, sy = 0
+    if (frameRef.current?.dataset.remote === 'true') {
+      sx = Number(frameRef.current.dataset.scrollX || 0)
+      sy = Number(frameRef.current.dataset.scrollY || 0)
+    }
     try {
       const w = frameRef.current.contentWindow
       sx = w.scrollX; sy = w.scrollY
@@ -220,6 +295,7 @@ export default function PreviewPane({ hidden }) {
     syncCanvas()
 
     const down = (e) => {
+      markActivity()
       drawingRef.current = true
       const pt = point(e)
       strokesRef.current.push([{ x: pt.x, y: pt.y }])
@@ -259,7 +335,7 @@ export default function PreviewPane({ hidden }) {
       window.removeEventListener('pointerup', up)
       window.removeEventListener('resize', onResize)
     }
-  }, [pencilOn, point, syncCanvas, clearStrokes, attachShot, viewportOf])
+  }, [pencilOn, point, syncCanvas, clearStrokes, attachShot, viewportOf, markActivity])
 
   function togglePick() {
     if (!project) return addLog('WARN', 'Open a project first')
@@ -280,7 +356,7 @@ export default function PreviewPane({ hidden }) {
       addLog('SUCCESS', 'Restored ' + (r.restored || []).join(', '))
       setUndo(null)
       const f = frameRef.current
-      if (f) f.src = currentPath(f)
+      if (f) navigate(currentPath(f))
     } catch (e) {
       addLog('WARN', 'Undo failed: ' + e.message)
     }
@@ -292,16 +368,22 @@ export default function PreviewPane({ hidden }) {
     if (!f || next < 0 || next >= trail.current.length) return
     at.current = next
     jumping.current = true
-    f.src = trail.current[next]
+    markActivity()
+    navigate(trail.current[next])
     setNav({ back: next > 0, forward: next < trail.current.length - 1 })
   }
 
-  function reloadPreview(fromRoot = false) {
+  async function reloadPreview(fromRoot = false) {
     const f = frameRef.current
     if (!f) return
     // An iframe mounted before startup may still be about:blank or a browser
     // error document. Reloading that document never reaches the ready app.
-    f.src = fromRoot === true ? '/' : currentPath(f)
+    if (drawing) { f.src = currentPath(f); return }
+    try {
+      const result = await api.open(project)
+      useStore.getState().setRuntime(result)
+      if (result.status === 'running') navigate(fromRoot === true ? '/' : currentPath(f))
+    } catch (error) { addLog('WARN', `Could not reopen app: ${error.message}`) }
   }
 
   /**
@@ -316,6 +398,7 @@ export default function PreviewPane({ hidden }) {
     const f = frameRef.current
     if (!f) return
     if (drawing) {
+      f.dataset.remote = 'false'
       const first = drawing.pages?.[0]?.file || 'index.html'
       f.src = `${API}/prototype/${encodeURIComponent(project)}/${first}`
       addLog('INFO', 'The drawing is in the preview — click through it, mark it '
@@ -323,7 +406,7 @@ export default function PreviewPane({ hidden }) {
     } else if (lastPathRef.current.includes(`${API}/prototype/`)) {
       // Approved or sent back: the preview belongs to the app again. The path
       // compared here is the iframe's own, so it carries the studio's prefix.
-      f.src = '/'
+      if (runtime?.status === 'running') navigate('/')
     }
   }, [drawing, project, addLog])
 
@@ -374,9 +457,11 @@ export default function PreviewPane({ hidden }) {
           <Globe className="size-3.5 shrink-0 text-accent" />
           <span className="truncate font-medium text-ink">
             {drawing ? `the drawing — ${shownPath.split('/').pop() || 'index.html'}`
-                     : `localhost:5173${shownPath === '/' ? '' : shownPath}`}
+                     : runtime?.previewUrl ? `${new URL(runtime.previewUrl).host}${shownPath === '/' ? '' : shownPath}` : 'App preview'}
           </span>
         </div>
+
+        {!drawing && runtime?.status === 'running' && <span className="text-xs font-medium text-ok">Running</span>}
 
         {/* The drawing is judged here, in the preview, so this is where it is
             accepted. Sending it back is typed in the chat like anything else. */}
@@ -438,8 +523,23 @@ export default function PreviewPane({ hidden }) {
         <div className="relative mx-auto flex h-full max-w-full items-start justify-center overflow-auto rounded-[28px] bg-white/28 p-2 ring-1 ring-white/55 dark:bg-white/[.02] dark:ring-white/[.06]">
           <div className="relative h-full w-full max-w-full overflow-hidden rounded-[22px] bg-white shadow-[0_24px_70px_rgba(15,23,42,.14)] ring-1 ring-black/[.06] dark:bg-[#0f1720] dark:shadow-[0_24px_70px_rgba(0,0,0,.45)] dark:ring-white/[.06]"
                style={{ width: width ? width + 'px' : '100%' }}>
-            <iframe ref={frameRef} id="frame" title="preview" src="/"
+            <iframe ref={frameRef} id="frame" title="preview" src="about:blank"
                     className="absolute inset-0 block h-full w-full border-0 bg-white" />
+            {!drawing && runtime?.status !== 'running' && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-panel p-8 text-center" role="status">
+                <p className="font-semibold text-ink">{runtime?.working ? 'Build in progress' : runtime?.status === 'starting'
+                  ? 'Starting app…' : runtime?.status === 'failed' ? 'App could not start' : 'App stopped'}</p>
+                <p className="max-w-lg text-sm text-muted">{runtime?.error || (runtime?.reason === 'idle'
+                  ? 'Stopped after 10 minutes without activity.' : runtime?.working
+                  ? 'The preview will open when the build is ready.' : runtime?.status === 'starting'
+                  ? 'Waiting for the app to become ready.' : 'Open the app to continue.')}</p>
+                {!runtime?.working && runtime?.status !== 'starting' && (
+                  <button onClick={() => reloadPreview()} className="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-white">
+                    {runtime?.status === 'failed' ? 'Retry' : 'Open app'}
+                  </button>
+                )}
+              </div>
+            )}
             {/* While the agent is driving its own browser, that is the more
                 interesting of the two — it is the one being tested. */}
             <AgentBrowser />

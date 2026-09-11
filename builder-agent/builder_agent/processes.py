@@ -64,6 +64,10 @@ class Processes:
     def __init__(self, events=None, env: dict | None = None) -> None:
         self.events = events
         self.env = env
+        self.env_provider = None
+        self.spawn_process = None
+        self.stop_process = None
+        self.runtime_info = None
         self.jobs: dict[str, Job] = {}
 
     # -- lifecycle -------------------------------------------------------
@@ -89,16 +93,20 @@ class Processes:
     # -- running ---------------------------------------------------------
     def start(self, command: str, cwd: str | Path, service: bool = False,
               env: dict | None = None) -> Job:
-        merged = {**os.environ, **(self.env or {}), **(env or {})}
+        runtime_env = self.env_provider(service=service) if self.env_provider else {}
+        merged = {**os.environ, **(self.env or {}), **(env or {}), **runtime_env}
         merged.setdefault("CI", "1")
         merged.setdefault("FORCE_COLOR", "0")
         merged.setdefault("NO_COLOR", "1")
-        popen = subprocess.Popen(
+        spawn = self.spawn_process or subprocess.Popen
+        group = ({} if self.spawn_process else
+                 {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if IS_WINDOWS
+                 else {"start_new_session": True})
+        popen = spawn(
             command, shell=True, cwd=str(cwd), env=merged,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             stdin=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace",
-            **({"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if IS_WINDOWS
-               else {"start_new_session": True}))
+            **group)
         job = Job(id=uuid.uuid4().hex[:12], command=command, cwd=str(cwd),
                   service=service, popen=popen)
         self.jobs[job.id] = job
@@ -167,9 +175,9 @@ class Processes:
     # -- stopping --------------------------------------------------------
     def stop(self, job_id: str) -> bool:
         job = self.jobs.get(job_id)
-        if not job or not job.running:
+        if not job or (not job.running and not getattr(job.popen, "_preview_job", None)):
             return False
-        self._kill_tree(job.popen)
+        (self.stop_process or self._kill_tree)(job.popen)
         job.exit_code = job.popen.poll()
         return True
 
@@ -177,8 +185,8 @@ class Processes:
         for job in list(self.jobs.values()):
             if keep_services and job.service and job.released:
                 continue
-            if job.running:
-                self._kill_tree(job.popen)
+            if job.running or getattr(job.popen, "_preview_job", None):
+                (self.stop_process or self._kill_tree)(job.popen)
                 job.exit_code = job.popen.poll()
 
     @staticmethod

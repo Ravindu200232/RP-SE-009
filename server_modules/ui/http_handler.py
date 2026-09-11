@@ -3,9 +3,10 @@
 # Everything else here comes from the runtime parts executed before this one;
 # only real modules are imported.
 from server_modules.services.shots import capture_drawing, capture_element, port_for
+from urllib.parse import parse_qs, unquote
 
 
-class UIHandler(SimpleHTTPRequestHandler):
+class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
 
     protocol_version = "HTTP/1.1"
 
@@ -52,6 +53,8 @@ class UIHandler(SimpleHTTPRequestHandler):
                 and self.headers.get("Upgrade", "").lower() == "websocket")
 
     def do_GET(self):
+        if self._on_preview_host():
+            return self._preview_request("GET")
         ours, path = self._split()
         if not ours:
             if self._is_websocket():
@@ -69,6 +72,8 @@ class UIHandler(SimpleHTTPRequestHandler):
         return self._serve_ui(path)
 
     def do_HEAD(self):
+        if self._on_preview_host():
+            return self._preview_request("HEAD")
         ours, path = self._split()
         if not ours:
             return self._proxy("HEAD")
@@ -84,6 +89,8 @@ class UIHandler(SimpleHTTPRequestHandler):
     def do_DELETE(self):  self._proxy_or_405("DELETE")
 
     def _proxy_or_405(self, method):
+        if self._on_preview_host():
+            return self._preview_request(method)
         ours, _ = self._split()
         if ours:
             return self._json({"error": "method not allowed"}, 405)
@@ -119,6 +126,11 @@ class UIHandler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def _api_get(self, path):
+        if path.startswith("/runtime/"):
+            try:
+                return self._json(RUNTIMES.snapshot(runtime_for(unquote(path[9:]))))
+            except ValueError as error:
+                return self._json({"error": str(error)}, 404)
 
         if path.startswith("/srs/"):
             return self._proxy_srs("GET", path[4:])
@@ -194,7 +206,6 @@ class UIHandler(SimpleHTTPRequestHandler):
         elif path == "/decisions":
             self._json({"pending": pending_decisions()})
         elif path.startswith("/qa-screenshot/"):
-            from urllib.parse import parse_qs, unquote
             query = parse_qs(urlsplit(self.path).query)
             try:
                 data = read_qa_screenshot(unquote(path[15:].strip("/")), query.get("path", [""])[0])
@@ -244,6 +255,8 @@ class UIHandler(SimpleHTTPRequestHandler):
             self._json({"error": f"unknown endpoint {path}"}, 404)
 
     def do_POST(self):
+        if self._on_preview_host():
+            return self._preview_request("POST")
         ours, path = self._split()
         if not ours:
             return self._proxy("POST")
@@ -294,6 +307,12 @@ class UIHandler(SimpleHTTPRequestHandler):
             return {}
 
     def _api_post(self, path):
+        if path.startswith("/runtime/") and path.endswith("/activity"):
+            try:
+                runtime = runtime_for(unquote(path[9:-9]))
+                return self._json({"ok": RUNTIMES.activity(runtime, self._body().get("runtimeId"))})
+            except ValueError as error:
+                return self._json({"error": str(error)}, 404)
 
         if path.startswith("/srs/"):
             return self._proxy_srs("POST", path[4:])
@@ -478,7 +497,16 @@ class UIHandler(SimpleHTTPRequestHandler):
             body = self._body()
             strokes = body.get("strokes") or []
             route = str(body.get("route") or "/")
-            port = port_for(route, app_port=DEV_PORT, studio_port=UI_PORT,
+            if not route.startswith("/") or route.startswith("//"):
+                return self._json({"error": "Invalid preview route"}, 400)
+            try:
+                runtime = runtime_for(body.get("project"))
+            except ValueError as error:
+                return self._json({"error": str(error)}, 404)
+            prototype = route.startswith(AGENTFORGE_PREFIX + "/api/prototype/")
+            if not prototype and (runtime.runtime_id != body.get("runtimeId") or runtime.status != "running"):
+                return self._json({"error": "This preview has stopped or restarted"}, 409)
+            port = port_for(route, app_port=runtime.port, studio_port=UI_PORT,
                             prefix=AGENTFORGE_PREFIX)
             if strokes:
                 image = capture_drawing(route, viewport=body.get("viewport") or {},
@@ -543,9 +571,10 @@ class UIHandler(SimpleHTTPRequestHandler):
             ).start()
             self._json({"ok": True})
         elif path.startswith("/open/"):
-            proj = path[6:].strip("/")
-            threading.Thread(target=_open_project, args=(proj,), daemon=True).start()
-            self._json({"ok": True})
+            try:
+                self._json({"ok": True, **_open_project(unquote(path[6:].strip("/")))})
+            except ValueError as error:
+                self._json({"error": str(error)}, 404)
         elif path == "/mongo/prefetch":
             threading.Thread(target=MONGO.prefetch, daemon=True).start()
             self._json({"ok": True})
@@ -619,52 +648,9 @@ class UIHandler(SimpleHTTPRequestHandler):
             self._json({"error": f"unknown endpoint {path}"}, 404)
 
     def _proxy(self, method: str):
-        url = f"http://127.0.0.1:{DEV_PORT}{self.path}"
-        length = int(self.headers.get("Content-Length", 0) or 0)
-        if not length and self.headers.get("Transfer-Encoding"):
-            return self._plain(411, b"chunked request bodies are not proxied")
-        body = self.rfile.read(length) if length else None
-
-        headers = {k: v for k, v in self.headers.items()
-                   if k.lower() not in HOP_BY_HOP}
-
-        headers["X-Forwarded-Host"] = self.headers.get("Host", "")
-        headers["X-Forwarded-Proto"] = "http"
-        headers["X-Forwarded-For"] = "127.0.0.1"
-        headers["Accept-Encoding"] = "identity"
-
-        try:
-            r = requests.request(method, url, headers=headers, data=body,
-                                 stream=True, allow_redirects=False,
-                                 timeout=(2, 300))
-        except requests.RequestException:
-            return self._preview_unavailable()
-
-        self.send_response(r.status_code)
-        upstream_length = None
-
-        for k, v in r.raw.headers.items():
-            kl = k.lower()
-            if kl in HOP_BY_HOP or kl == "content-encoding":
-                continue
-            if kl == "content-length":
-                upstream_length = v
-            if kl == "set-cookie":
-                v = re.sub(r";\s*Secure", "", v, flags=re.I)
-            self.send_header(k, v)
-        if upstream_length is None:
-
-            self.send_header("Connection", "close")
-            self.close_connection = True
-        self.end_headers()
-
-        if method == "HEAD":
-            return
-        try:
-            for chunk in r.raw.stream(65536, decode_content=False):
-                self.wfile.write(chunk)
-        except Exception:
-            self.close_connection = True
+        # Legacy root requests have no project identity. Never guess an app
+        # from a global port or a different browser tab's last selection.
+        return self._plain(503, b"Open a project from AgentForge to view its preview")
 
     def _proxy_srs(self, method: str, path: str):
         """
@@ -788,29 +774,7 @@ class UIHandler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def _preview_unavailable(self):
-        """The dev server is not up. Documents get a page; assets fail fast."""
-        dest = self.headers.get("Sec-Fetch-Dest", "")
-        wants_page = (dest in ("document", "iframe")
-                      or "text/html" in self.headers.get("Accept", ""))
-        if not wants_page:
-
-            return self._plain(502, b"")
-        page = (b"<!doctype html><meta charset=utf-8>"
-                b"<title>Preview not running</title>"
-                b"<style>body{font:14px system-ui;background:#0b0d10;color:#8b949e;"
-                b"display:grid;place-items:center;height:100vh;margin:0}"
-                b"b{color:#e6edf3;font-weight:600}</style>"
-                b"<div style=text-align:center><p><b>Preview not running</b>"
-                b"<p>Waiting for the dev server\xe2\x80\xa6"
-                b"<p><button onclick=location.reload() style=\"font:inherit;"
-                b"padding:6px 14px;border-radius:6px;border:1px solid #30363d;"
-                b"background:#161b22;color:#e6edf3;cursor:pointer\">Retry</button>"
-                b"</div><script>setTimeout(()=>location.reload(),2000)</script>")
-        self._plain(503, page, "text/html; charset=utf-8",
-                    extra=(("Retry-After", "2"), ("Cache-Control", "no-store")))
-
-    def _proxy_websocket(self):
+    def _proxy_websocket(self, runtime=None):
         """
         Relay the HMR socket byte for byte.
 
@@ -819,7 +783,9 @@ class UIHandler(SimpleHTTPRequestHandler):
         exactly the state someone is pointing at when they ask for a change.
         """
         try:
-            up = socket.create_connection(("127.0.0.1", DEV_PORT), timeout=5)
+            if runtime is None or not runtime.port or runtime.status != "running":
+                return self._plain(503, b"Preview is stopped")
+            up = socket.create_connection(("127.0.0.1", runtime.port), timeout=5)
         except OSError:
             self.close_connection = True
             try:

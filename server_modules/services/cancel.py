@@ -68,10 +68,10 @@ def finish() -> None:
 
 
 
-def request() -> dict:
+def request(project: str = "") -> dict:
     """Ask the current run to stop and end its active child processes."""
     with _lock:
-        if not _running:
+        if not _running or (project and project != _project):
             return {"ok": False, "error": "no build is running"}
         _flag.set()
         victims = list(_procs)

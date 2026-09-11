@@ -12,6 +12,7 @@ def start_http():
 async def main():
     global MAIN_LOOP
     MAIN_LOOP = asyncio.get_running_loop()
+    RUNTIMES.start_watcher()
 
     threading.Thread(target=MONGO.ensure_running, daemon=True).start()
     threading.Thread(target=start_srs_api, daemon=True).start()
@@ -34,12 +35,14 @@ async def main():
 def shutdown_all():
     print("\n🛑 Shutting down AgentForge backend...")
 
-    if active_vite.get("proc"):
+    RUNTIMES.close()
+    with _SESSIONS_LOCK:
+        sessions = list(_SESSIONS.values())
+    for session in sessions:
         try:
-            _stop_dev_proc()
-            print("   ✅ Dev server stopped")
-        except:
-            pass
+            session["agent"].processes.stop_all()
+        except Exception as error:
+            print(f"   Could not stop build processes: {error}")
 
     try:
         MONGO.stop()
@@ -68,6 +71,4 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         print("\n⛔ Stopped.")
-        if active_vite["proc"]:
-            try: active_vite["proc"].terminate()
-            except: pass
+        RUNTIMES.close()

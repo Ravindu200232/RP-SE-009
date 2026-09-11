@@ -11,6 +11,8 @@ For a full application task, read this skill at task start and again before runt
 
 ## Discover the real runtime
 
+- In Studio, call `runtimeInfo` before starting or probing services. Its allocated `PORT`, service `*_PORT` values and `PUBLIC_APP_URL` are inherited by terminal commands. Use those values in explicit CLI flags too; do not choose a different fixed port. Keep configured service URLs derived from these environment values. Never override provided environment values when loading a dotenv file.
+
 Inspect package/build manifests, lockfiles, scripts, environment examples, service manifests, containers, entry points, configured ports, health/readiness routes, external dependencies, and existing runbooks. Determine the selected package manager and exact development and production commands. If the technology or installed version is unfamiliar, consult its current official documentation; do not use a fixed command table.
 
 ## Run safely

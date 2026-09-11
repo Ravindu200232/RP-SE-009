@@ -17,11 +17,16 @@ const NOISE = new RegExp([
 
 
 let entries = []
+let observer = null
+
+export function observeConsole(callback) { observer = callback }
+export function recordConsole(kind, text) { push(kind, text) }
 
 
 function push(kind, text) {
   const line = String(text || '').replace(/\s+/g, ' ').trim().slice(0, MAX_TEXT)
   if (!line || NOISE.test(line)) return
+  observer?.(kind, line)
 
   const last = entries[entries.length - 1]
   if (last && last.kind === kind && last.text === line) {

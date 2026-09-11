@@ -8,6 +8,8 @@ which is the only thing that says whether the command worked.
 """
 from __future__ import annotations
 
+import json
+
 from ..errors import ToolError
 from ..policy import BLOCKED, DANGEROUS, MODERATE, SAFE, classify
 from .base import Tool
@@ -90,6 +92,15 @@ def stop_process(args, ctx):
 
 
 def register(registry):
+    registry.add(Tool(
+        name="runtimeInfo", risk=SAFE, review_safe=True,
+        handler=lambda args, ctx: {"ok": True, "content": json.dumps(
+            ctx.processes.runtime_info() if ctx.processes.runtime_info else
+            {"note": "Use the project's configured available ports."})},
+        description="Get this project's allocated PORT, service ports and PUBLIC_APP_URL before starting "
+                    "or probing its runtime. Commands inherit these environment values. Use them; "
+                    "never hardcode a different --port or kill a process holding another port.",
+        parameters={"type": "object", "properties": {}}, summarize=lambda args: "runtime ports"))
     registry.add(Tool(
         name="executeTerminal", risk=MODERATE, mutates=True, handler=execute_terminal,
         description="Run a shell command in the workspace. For a dev server or watcher pass "

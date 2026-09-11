@@ -268,7 +268,17 @@ export default function Sidebar({
         <Foot icon={Download} tip="Download this project as a zip"
               disabled={!project} onClick={onZip} />
         <Foot icon={ExternalLink} tip="Open the app in a new tab"
-              disabled={!project} onClick={() => window.open('/', '_blank')} />
+              disabled={!project} onClick={async () => {
+                const tab = window.open('about:blank', '_blank')
+                try {
+                  const runtime = await api.open(project)
+                  useStore.getState().setRuntime(runtime)
+                  if (tab) { tab.opener = null; tab.location.href = runtime.previewUrl }
+                } catch (error) {
+                  tab?.close()
+                  useStore.getState().addLog('WARN', `Could not open app: ${error.message}`)
+                }
+              }} />
       </footer>
     </aside>
   )

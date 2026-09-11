@@ -156,6 +156,7 @@ RUNTIME_DEADLINE = 900
 # Pictures draw on the GPU beside the build, so the run never waits on them
 # except once, right before the browser journeys that photograph the app.
 IMAGE_FINAL_WAIT = 120
+# Legacy preferred port; live app addresses come from RUNTIMES.
 DEV_PORT   = 5173
 UI_PORT    = 7824
 WS_PORT    = 7825
@@ -176,7 +177,6 @@ log = logging.getLogger("server")
 
 clients    = set()
 MAIN_LOOP  = None
-active_vite = {"proc": None, "stderr_lines": []}
 
 
 ollama = OllamaClient(OLLAMA_URL)

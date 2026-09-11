@@ -83,12 +83,9 @@ class ConversationContinuityTests(unittest.TestCase):
 
     def test_opening_the_preview_keeps_the_conversation(self):
         self.run_request("Build a shop with customer accounts")
-        with patch.object(server, "working_on"), patch.object(server, "free_declared_ports", return_value=[]), \
-                patch.object(server.MONGO, "ensure_running"), \
-                patch.object(server, "ensure_node_deps", return_value=True), \
-                patch.object(server, "start_dev_server"), patch.object(server, "wait_for_dev", return_value=True), \
-                patch.object(server, "edone"):
+        with patch.object(server.RUNTIMES, 'open', return_value={'status': 'running'}) as opened:
             server._open_project("shop")
+            opened.assert_called_once()
         self.run_request("Add a signup link to that page")
         self.assert_remembers()
 

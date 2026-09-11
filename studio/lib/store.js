@@ -50,8 +50,16 @@ export const useStore = create((set, get) => ({
   setStatus: (status, statusText) => set({ status, statusText }),
 
   busy: false,
-  // Stored projects use the build overlay while opening.
+  // Preview startup is independent of an agent build in another project.
   opening: false,
+  runtimes: {},
+  setRuntime: (runtime) => set(state => {
+    if (!runtime?.project) return {}
+    const previous = state.runtimes[runtime.project]
+    if (previous?.serverId === runtime.serverId && previous.revision > runtime.revision) return {}
+    return { runtimes: { ...state.runtimes, [runtime.project]: runtime },
+      ...(state.project === runtime.project ? { opening: runtime.status === 'starting' } : {}) }
+  }),
 
   // Increment when projects on disk change.
   projectsStamp: 0,

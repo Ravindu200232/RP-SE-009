@@ -4,20 +4,11 @@ import json
 import io
 import os
 import unittest
-import urllib.error
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
 import server_runtime as server
-
-
-class Response:
-    status = 200
-    def __enter__(self):
-        return self
-    def __exit__(self, *args):
-        pass
 
 
 class PreviewReadinessTests(unittest.TestCase):
@@ -26,75 +17,83 @@ class PreviewReadinessTests(unittest.TestCase):
         self.addCleanup(directory.cleanup)
         self.root = Path(directory.name)
         (self.root / '.env.local').write_text('PORT=4000\nAUTH_PORT=4101\n', encoding='utf-8')
-        patcher = patch.object(server, 'active_vite', {'dir': str(self.root), 'ready': True,
-            'proc': SimpleNamespace(poll=lambda: None)})
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        self.runtime = server.RUNTIMES.get(self.root, 'mern-microservices')
+        self.runtime.ports = {'PORT': 5173, 'AUTH_PORT': 4101}
+        self.runtime.proc = SimpleNamespace(poll=lambda: None)
+        self.addCleanup(lambda: setattr(self.runtime, 'proc', None))
+
+    def wait(self, **kwargs):
+        return server.wait_for_dev('mern-microservices', runtime=self.runtime, **kwargs)
 
     def test_a_missing_client_bundle_cannot_be_reported_ready(self):
-        error = urllib.error.HTTPError('http://127.0.0.1:5173/', 503, 'client not built', {}, None)
-        with patch('urllib.request.urlopen', side_effect=error), patch.object(server.time, 'sleep'), \
-                patch.object(server, 'elog'):
-            self.assertFalse(server.wait_for_dev('mern-microservices', timeout=0.02))
+        with patch.object(server.requests, 'get', return_value=SimpleNamespace(status_code=503, close=lambda: None)):
+            self.assertFalse(self.wait(timeout=0.02))
 
     def test_a_failed_internal_service_cannot_be_hidden_by_the_gateway(self):
         def probe(url, **kwargs):
-            if ':4101/' in url:
-                raise urllib.error.HTTPError(url, 503, 'DB not ready', {}, None)
-            return Response()
-        with patch('urllib.request.urlopen', side_effect=probe), patch.object(server.time, 'sleep'), \
-                patch.object(server, 'elog'):
-            self.assertFalse(server.wait_for_dev('mern-microservices', timeout=0.02))
+            return SimpleNamespace(status_code=503 if ':4101/' in url else 200, close=lambda: None)
+        with patch.object(server.requests, 'get', side_effect=probe):
+            self.assertFalse(self.wait(timeout=0.02))
 
-    def test_client_and_all_declared_services_are_probed(self):
-        with patch('urllib.request.urlopen', return_value=Response()) as probe:
-            self.assertTrue(server.wait_for_dev('mern-microservices', timeout=1))
+    def test_client_and_all_allocated_services_are_probed(self):
+        self.runtime.ports = {'PORT': 50100, 'AUTH_PORT': 50101}
+        with patch.object(server.requests, 'get', return_value=SimpleNamespace(status_code=200, close=lambda: None)) as probe:
+            self.assertTrue(self.wait(timeout=1))
         urls = [call.args[0] for call in probe.call_args_list]
-        self.assertIn('http://127.0.0.1:5173/', urls)
-        self.assertIn('http://127.0.0.1:4101/health', urls)
-        self.assertNotIn('http://127.0.0.1:4000/health', urls)
+        self.assertEqual(urls, ['http://127.0.0.1:50100/', 'http://127.0.0.1:50101/health'])
 
-    def test_old_startup_cannot_claim_the_next_projects_ready_response(self):
-        def switch_project(url, **kwargs):
-            server.active_vite['proc'] = SimpleNamespace(poll=lambda: None)
-            server.active_vite['dir'] = str(self.root / 'new-project')
-            return Response()
-        with patch('urllib.request.urlopen', side_effect=switch_project):
-            self.assertFalse(server.wait_for_dev('mern-microservices', timeout=1))
+    def test_old_startup_cannot_claim_a_replacement_response(self):
+        def replace(url, **kwargs):
+            self.runtime.generation += 1
+            return SimpleNamespace(status_code=200, close=lambda: None)
+        with patch.object(server.requests, 'get', side_effect=replace):
+            self.assertFalse(self.wait(timeout=1))
 
-    def test_replaced_open_never_stops_or_completes_the_new_project(self):
-        def replace_while_waiting(stack):
-            server.active_vite['request'] = 'newer-open-request'
-            return False
-        with patch.object(server, 'PROD_DIR', self.root.parent), \
-                patch.object(server, 'working_on'), patch.object(server, 'release_other_sessions'), \
-                patch.object(server, 'free_declared_ports', return_value=[]), \
-                patch.object(server.MONGO, 'ensure_running'), \
-                patch.object(server, 'ensure_node_deps', return_value=True), \
-                patch.object(server, 'start_dev_server', return_value=True), \
-                patch.object(server, 'wait_for_dev', side_effect=replace_while_waiting), \
-                patch.object(server, '_stop_dev_proc') as stop, \
-                patch.object(server, 'edone') as done, patch.object(server, 'eerr') as error:
-            server._open_project(self.root.name)
-        self.assertEqual(stop.call_count, 1)
-        done.assert_not_called()
-        error.assert_not_called()
-
-    def test_root_supervisor_receives_project_environment_and_public_port(self):
+    def test_root_supervisor_receives_project_environment_and_allocated_ports(self):
         (self.root / '.env.local').write_text('PORT=4000\nAUTH_PORT=4101\nAPP_NAME="Shop"\n', encoding='utf-8')
         process = SimpleNamespace(pid=999, stdout=io.StringIO(''), stderr=io.StringIO(''))
-        with patch.object(server, '_stop_dev_proc'), patch.object(server, '_kill_port'), \
-                patch.object(server.threading, 'Thread'), \
-                patch.object(server.subprocess, 'Popen', return_value=process) as spawn:
-            self.assertTrue(server.start_next(self.root, stack='mern-microservices'))
+        with patch.object(server.threading, 'Thread'), patch.object(server, 'spawn_owned', return_value=process) as spawn:
+            self.assertTrue(server._spawn_preview(self.runtime, self.runtime.generation))
         self.assertEqual(spawn.call_args.args[0], [server.NPM_BIN, 'run', 'dev'])
-        self.assertEqual(spawn.call_args.kwargs['env']['PORT'], str(server.DEV_PORT))
+        self.assertEqual(spawn.call_args.kwargs['env']['PORT'], '5173')
         self.assertEqual(spawn.call_args.kwargs['env']['AUTH_PORT'], '4101')
         self.assertEqual(spawn.call_args.kwargs['env']['APP_NAME'], 'Shop')
 
     def test_local_port_override_does_not_wait_for_the_example_port(self):
         (self.root / '.env.example').write_text('AUTH_PORT=4201\n', encoding='utf-8')
         self.assertEqual(server.declared_ports(self.root), [4000, 4101])
+
+    def test_runtime_info_allocates_before_the_first_agent_command(self):
+        self.runtime.ports.clear()
+        self.addCleanup(server.RUNTIMES.release_ports, self.runtime)
+        info = server.agent_runtime_info(self.runtime)
+        self.assertGreater(info['ports']['PORT'], 0)
+        self.assertEqual(info['environment']['AUTH_PORT'], str(info['ports']['AUTH_PORT']))
+        self.assertNotIn('MONGODB_URI', info['environment'])
+
+    def test_bind_races_retry_only_owned_startups_at_most_three_times(self):
+        for failures in (1, 3):
+            with self.subTest(failures=failures):
+                processes = []
+                self.runtime.logs = []
+                self.runtime.error = ''
+                self.runtime.proc = None
+                def spawn(runtime, generation):
+                    process = SimpleNamespace(poll=lambda: 1)
+                    processes.append(process)
+                    runtime.proc = process
+                    runtime.logs = ['EADDRINUSE'] if len(processes) <= failures else []
+                    return True
+                with patch.object(server, 'working_on'), patch.object(server.MONGO, 'ensure_running'), \
+                        patch.object(server, 'stack_of', return_value='mern-microservices'), \
+                        patch.object(server, 'ensure_node_deps', return_value=True), \
+                        patch.object(server, '_ensure_client_bundle', return_value=True), \
+                        patch.object(server, '_spawn_preview', side_effect=spawn), \
+                        patch.object(server, 'wait_for_dev', side_effect=lambda *a, **k: len(processes) > failures), \
+                        patch.object(server.RUNTIMES, 'stop_process') as stop:
+                    self.assertEqual(server.launch_runtime(self.runtime, self.runtime.generation), failures == 1)
+                self.assertEqual(len(processes), min(failures + 1, 3))
+                self.assertEqual([call.args[0] for call in stop.call_args_list], processes[:failures])
 
     def test_only_a_missing_or_changed_client_bundle_is_built(self):
         client = self.root / 'client'

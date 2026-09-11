@@ -226,7 +226,7 @@ def _deps_ready(proj_dir: Path) -> bool:
     return True
 
 
-def ensure_node_deps(proj_dir: Path) -> bool:
+def ensure_node_deps(proj_dir: Path, *, runner=None) -> bool:
     if _deps_ready(proj_dir):
         return True
 
@@ -236,7 +236,7 @@ def ensure_node_deps(proj_dir: Path) -> bool:
     from server_modules.services import NPM_LOCK
     with NPM_LOCK:
         try:
-            r = cancel.run(
+            r = (runner or cancel.run)(
                 [NPM_BIN, "install", "--no-audit", "--no-fund",
                  "--prefer-offline", "--loglevel=error"],
                 cwd=proj_dir,
@@ -330,7 +330,7 @@ def _kill_proc_tree(proc):
 
 
 # `PORT=4000`, `AUTH_PORT=4101`. Values only, so a URL is not mistaken for one.
-_PORT_LINE = re.compile(r"^\s*(?:export\s+)?([A-Z0-9_]*PORT)\s*=\s*(\d{2,5})\s*$", re.M)
+_PORT_LINE = re.compile(r"^\s*(?:export\s+)?([A-Z0-9_]*PORT)\s*=\s*['\"]?(\d{2,5})['\"]?\s*(?:#[^\n]*)?$", re.M)
 
 
 def declared_ports(proj_dir: Path) -> list[int]:
@@ -360,150 +360,6 @@ def _declared_port_values(proj_dir: Path) -> dict:
     return ports
 
 
-def free_declared_ports(proj_dir: Path) -> list[int]:
-    """Take back every port this project is about to bind."""
-    freed = [port for port in declared_ports(proj_dir) if port != DEV_PORT]
-    for port in freed:
-        _kill_port(port)
-    return freed
-
-
-def _kill_port(port: int):
-    """Force-kill whatever holds a port, on Windows as well as POSIX."""
-    if os.name == "nt":
-        try:
-            out = subprocess.run(["netstat", "-ano", "-p", "TCP"],
-                                 capture_output=True, text=True,
-                                 timeout=10).stdout
-            pids = set()
-            for line in out.splitlines():
-                parts = line.split()
-
-                if (len(parts) >= 5 and parts[3] == "LISTENING"
-                        and parts[1].rsplit(":", 1)[-1] == str(port)):
-                    pids.add(parts[-1])
-            for pid in pids - {"0", "4"}:
-                subprocess.run(["taskkill", "/F", "/T", "/PID", pid],
-                               capture_output=True, timeout=10)
-            if pids:
-                time.sleep(0.5)
-        except Exception:
-            pass
-        return
-
-    try:
-        result = subprocess.run(
-            ["lsof", "-ti", f":{port}"],
-            capture_output=True, text=True, timeout=5
-        )
-        pids = [p.strip() for p in result.stdout.strip().split() if p.strip()]
-        for pid in pids:
-            try: subprocess.run(["kill", "-9", pid], timeout=3, capture_output=True)
-            except: pass
-        if pids:
-            time.sleep(0.5)
-    except Exception:
-        pass
-
-
-def _stop_dev_proc():
-    """Terminate the tracked dev server, whatever stack it is."""
-    if active_vite.get("proc"):
-        _kill_proc_tree(active_vite["proc"])
-        active_vite["proc"] = None
-
-
-
-
-
-_ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
-_PREVIEW_LOCK = threading.RLock()
-
-
-def _strip_ansi(text: str) -> str:
-    return _ANSI_RE.sub("", text or "")
-
-
-def start_next(proj_dir: Path, port: int = DEV_PORT, stack: str = "next"):
-    """
-    Start `next dev` on DEV_PORT.
-
-    Note the dev server is started directly here: `--host` and `--strictPort`
-    flags, and `next dev` exits immediately on unknown arguments. Next is
-    launched directly through node rather than `npm run dev`, which removes a
-    process layer and makes the tree far more reliable to kill.
-    """
-    _stop_dev_proc()
-    _kill_port(port)
-    active_vite["stderr_lines"] = []
-    active_vite["ready"] = False
-    active_vite["stack"] = stack
-    label = "MERN" if stack == "mern-microservices" else "Next.js"
-
-    next_bin = proj_dir / "node_modules" / "next" / "dist" / "bin" / "next"
-    flags = _bundler_flag(proj_dir) if stack != "mern-microservices" else []
-    if stack == "mern-microservices":
-        # The project's supervisor starts its workspaces and the public client.
-        argv = [NPM_BIN, "run", "dev"]
-    elif next_bin.exists():
-        argv = [NODE_BIN, str(next_bin), "dev", *flags,
-                "--port", str(port), "--hostname", "127.0.0.1"]
-    else:
-        argv = [NPM_BIN, "run", "dev", "--", *flags,
-                "--port", str(port), "--hostname", "127.0.0.1"]
-
-    env = {**os.environ, **_project_env(proj_dir),
-           "NEXT_TELEMETRY_DISABLED": "1",
-           "PORT": str(port),
-           "NODE_ENV": "development",
-           "BROWSER": "none",
-
-           "FORCE_COLOR": "0", "NO_COLOR": "1"}
-
-    kwargs = ({"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
-              if os.name == "nt" else {"start_new_session": True})
-
-    try:
-        p = subprocess.Popen(
-            argv, cwd=proj_dir,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            text=True, encoding="utf-8", errors="replace", env=env, **kwargs)
-        active_vite["proc"] = p
-    except Exception as error:
-        elog("ERROR", f"   {label} could not start: {error}")
-        return False
-
-    def _run():
-        try:
-            def _pump(stream, is_err):
-                for line in stream:
-                    if active_vite.get("proc") is not p:
-                        return
-                    l = _strip_ansi(line).strip()
-                    if not l:
-                        continue
-                    active_vite["stderr_lines"].append(l)
-                    if len(active_vite["stderr_lines"]) > 400:
-                        del active_vite["stderr_lines"][:200]
-
-                        active_vite["dropped"] = active_vite.get("dropped", 0) + 200
-                    if any(k in l for k in ("Ready in", "✓ Ready", "- Local:")):
-                        active_vite["ready"] = True
-                    if is_err or any(k in l for k in
-                                     ("Error", "error", "Failed to compile")):
-                        elog("WARN", f"   [{label}] {l[:140]}")
-                    else:
-                        elog("INFO", f"   [{label}] {l[:140]}")
-
-            threading.Thread(target=_pump, args=(p.stderr, True), daemon=True).start()
-            _pump(p.stdout, False)
-        except Exception as e:
-            elog("ERROR", f"   {label} log stream ended: {e}")
-
-    threading.Thread(target=_run, daemon=True).start()
-    return True
-
-
 def _project_env(proj_dir: Path) -> dict:
     values = {}
     for name in (".env", ".env.local"):
@@ -520,7 +376,7 @@ def _project_env(proj_dir: Path) -> dict:
     return values
 
 
-def _ensure_client_bundle(proj_dir: Path) -> bool:
+def _ensure_client_bundle(proj_dir: Path, *, runner=None) -> bool:
     """Build a static workspace client only when its sources are newer."""
     client = Path(proj_dir) / "client"
     if not (client / "package.json").is_file():
@@ -539,174 +395,12 @@ def _ensure_client_bundle(proj_dir: Path) -> bool:
     if not changed:
         return True
     elog("INFO", "   Building the updated client bundle…")
-    result = cancel.run([NPM_BIN, "run", "build"], cwd=proj_dir,
+    result = (runner or cancel.run)([NPM_BIN, "run", "build"], cwd=proj_dir,
                         capture_output=True, text=True, encoding="utf-8", errors="replace",
                         timeout=NEXT_READY_TIMEOUT)
     if result.returncode:
         elog("ERROR", f"Client build failed: {(result.stderr or result.stdout or '')[-1600:]}")
         return False
     return True
-
-
-def wait_for_next(timeout: int = NEXT_READY_TIMEOUT, port: int = DEV_PORT) -> bool:
-    """
-    Wait for `next dev` to serve the index route.
-
-    Readiness and compilation are separate: the server accepts connections
-    quickly but then blocks while compiling `/`. So poll cheaply for liveness,
-    then spend one long request warming the route — which also means Playwright
-    never pays for the cold compile. A 500 counts as ready: the server is up
-    and a page is throwing, which is exactly what the tester needs to see.
-    """
-    import urllib.request, urllib.error
-
-    deadline = time.time() + timeout
-    live = False
-    while time.time() < deadline:
-        if active_vite.get("ready"):
-            live = True
-            break
-        try:
-            with socket.create_connection(("127.0.0.1", port), timeout=1):
-                live = True
-                break
-        except OSError:
-            pass
-        proc = active_vite.get("proc")
-        if proc is not None and proc.poll() is not None:
-            elog("ERROR", "   ❌ Next.js dev server exited during startup")
-            return False
-        time.sleep(0.3)
-
-    if not live:
-        elog("ERROR", f"   ❌ Next.js did not start within {timeout}s")
-        return False
-
-    remaining = max(30, int(deadline - time.time()))
-    try:
-        urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=remaining)
-        elog("INFO", "   ✅ Next.js compiled and serving")
-        return True
-    except urllib.error.HTTPError as e:
-
-        elog("WARN", f"   ⚠ Next.js served HTTP {e.code} on /")
-        return True
-    except Exception as e:
-        elog("WARN", f"   ⚠ Next.js warm-up request failed: {e}")
-        return True
-
-
-def next_stderr() -> str:
-    """Compile errors from the Next dev server, for the LLM fix prompt."""
-    lines = active_vite.get("stderr_lines", [])
-    keys = ("Failed to compile", "Module not found", "Can't resolve", "⨯",
-            "Error:", "SyntaxError", "ReferenceError", "TypeError",
-            "is not exported from", "is not defined",
-            "MongoServerSelectionError", "MongoNetworkError", "ECONNREFUSED")
-    return "\n".join([l for l in lines if any(k in l for k in keys)][-40:])
-
-
-def dev_log_mark() -> int:
-    """Absolute position of the next line the dev server will print."""
-    return (active_vite.get("dropped", 0)
-            + len(active_vite.get("stderr_lines", [])))
-
-
-_DEV_NOISE = re.compile(
-    r"^\s*(?:[○✓⚡]|- Local:|- Network:|Ready in\b|Compiling\b|✓ Compiled\b"
-    r"|GET .*\b[23]\d\d in\b|POST .*\b[23]\d\d in\b|Attention:|▲ Next\.js)")
-
-
-def dev_log_since(mark: int, limit: int = 60) -> str:
-    """
-    Everything the dev server printed since `mark`.
-
-    This exists because `next_stderr()` decides what matters by keyword, and a
-    plain `TypeError: Cannot read properties of undefined … at Inventory
-    (app/inventory/page.js:86:48)` — the shape of every 500 seen in this
-    project — has its *useful* half on continuation lines that no keyword
-    matches. Windowing the buffer around the request instead is exact: whatever
-    the server printed while we were probing is, by construction, about that
-    probe.
-
-    Pairs with `logging.browserToTerminal`, which puts client-side errors into
-    the same stream with a `[browser] … (file:line)` prefix.
-    """
-    lines = active_vite.get("stderr_lines", [])
-    start = max(0, mark - active_vite.get("dropped", 0))
-    fresh = [l for l in lines[start:] if not _DEV_NOISE.match(l)]
-    return "\n".join(fresh[-limit:])
-
-
-def start_dev_server(proj_dir: Path, stack: str = None, *, request=None):
-    """Dispatch to the right dev server for the project's stack."""
-    stack = stack_of(proj_dir) or stack
-    if stack == "mern-microservices" and not _ensure_client_bundle(proj_dir):
-        return False
-    with _PREVIEW_LOCK:
-        if request is not None and active_vite.get("request") != request:
-            return False
-        _stop_dev_proc()
-        active_vite["dir"] = str(Path(proj_dir).resolve())
-        return start_next(proj_dir, stack=stack)
-
-
-def _dev_alive(timeout: float = 2.0) -> bool:
-    """Is the dev server answering right now? Silent — no logs, no waiting."""
-    import urllib.request
-    try:
-        with urllib.request.urlopen(f"http://127.0.0.1:{DEV_PORT}/",
-                                    timeout=timeout) as r:
-            return r.status < 500
-    except Exception:
-        return False
-
-
-def wait_for_dev(stack: str = "next", timeout: int = None) -> bool:
-    owner = active_vite.get("proc")
-    directory = active_vite.get("dir")
-
-    def still_current():
-        return active_vite.get("proc") is owner and active_vite.get("dir") == directory
-
-    if stack == "mern-microservices":
-        import urllib.request
-
-        root = Path(active_vite["dir"])
-        urls = [f"http://127.0.0.1:{DEV_PORT}/"]
-        urls += [f"http://127.0.0.1:{port}/health"
-                 for name, port in _declared_port_values(root).items()
-                 if name != "PORT" and port != DEV_PORT]
-        deadline = time.monotonic() + (timeout or NEXT_READY_TIMEOUT)
-        pending = urls
-        while time.monotonic() < deadline:
-            if not still_current():
-                return False
-            proc = active_vite.get("proc")
-            if proc is not None and proc.poll() is not None:
-                elog("ERROR", "   MERN supervisor exited during startup")
-                return False
-            pending = []
-            for url in urls:
-                try:
-                    with urllib.request.urlopen(url, timeout=max(.01, min(2, deadline - time.monotonic()))) as response:
-                        if response.status >= 400:
-                            pending.append(url)
-                except Exception:
-                    pending.append(url)
-            if not still_current():
-                return False
-            if not pending:
-                elog("INFO", "   ✅ Client and all configured services are ready")
-                return True
-            time.sleep(min(.3, max(0, deadline - time.monotonic())))
-        elog("ERROR", f"   Startup did not become ready: {', '.join(pending)}")
-        return False
-    ready = wait_for_next(timeout or NEXT_READY_TIMEOUT)
-    return ready and still_current()
-
-
-def dev_stderr(stack: str = "next") -> str:
-    return next_stderr()
 
 

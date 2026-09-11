@@ -476,7 +476,6 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
     name = proj_dir.name
     key = _session_key(model, think, stack)
 
-    release_other_sessions(name)
     agent = None
     if not plan:
         with _SESSIONS_LOCK:
@@ -519,6 +518,11 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
         _SESSIONS[name] = {"agent": agent, "key": key, "reusable": True}
     if not fresh or restored:
         elog("INFO", f"   continuing the conversation ({len(agent.memory)} messages so far)")
+    runtime = RUNTIMES.get(proj_dir, stack)
+    agent.processes.env_provider = lambda service=False: agent_runtime_environment(runtime, agent, service=service)
+    agent.processes.spawn_process = spawn_owned
+    agent.processes.stop_process = stop_owned
+    agent.processes.runtime_info = lambda: agent_runtime_info(runtime)
     return agent
 
 
@@ -576,53 +580,22 @@ def _workspace(project: str):
 
 
 def _serve(proj_dir: Path, agent=None) -> str:
-    """Bring the app up so the preview and the journeys have something to hit.
-
-    The run's own dev servers go first. A finished run leaves them up so the
-    preview has something to show, but the preview is about to start its own
-    copy of the same application, and on a multi-service stack the old ones are
-    still holding the ports the new ones need - the gateway came up on the
-    preview port while every service behind it died with EADDRINUSE.
-
-    A Next app never noticed: it binds one port, and starting the dev server
-    frees that port first. Nothing here needs to know which ports a stack uses,
-    only that the processes holding them belong to the run that just ended.
-    """
+    """Transfer this build's processes to its project-owned final preview."""
     estep("preview", "active")
-    try:
-        if agent is not None:
-            agent.processes.stop_all()
-        # Whatever this run owned is gone; anything still on the project's own
-        # ports is an orphan from a run that ended badly, and it will stop the
-        # preview just as effectively.
-        freed = free_declared_ports(proj_dir)
-        if freed:
-            log.info(f"freed ports {', '.join(str(p) for p in freed)} before the preview")
-        stack = stack_of(proj_dir)
-        # A build may rewrite package.json, and one did: the new manifest was
-        # the scaffold's minus tailwindcss, postcss and autoprefixer, with the
-        # two configs gone too. Nothing failed - it built, served and passed
-        # every suite - and the page rendered as unstyled HTML, because the
-        # only symptom of a missing CSS toolchain is that no CSS comes out.
-        put_back = restore_styling(proj_dir, stack)
-        if put_back:
-            elog("WARN", f"   ⚠ restored the styling the build dropped: {', '.join(put_back)}")
-            # The compiled output was made without a CSS toolchain, and Next
-            # will happily serve that cache back rather than notice a postcss
-            # config appeared. Restoring the packages and leaving the cache is
-            # the same unstyled page with more dependencies installed.
-            cache = proj_dir / ".next"
-            if cache.is_dir():
-                shutil.rmtree(cache, ignore_errors=True)
-        ensure_node_deps(proj_dir)
-        if start_dev_server(proj_dir, stack) is False:
-            return ""
-        if wait_for_dev(stack):
-            estep("preview", "done")
-            return f"http://127.0.0.1:{DEV_PORT}"
-        elog("WARN", "   ⚠ the dev server did not become ready in time")
-    except Exception as error:                                       # noqa: BLE001
-        elog("WARN", f"   ⚠ the preview could not be started: {error}")
+    if agent is not None:
+        agent.processes.stop_all()
+    stack = stack_of(proj_dir)
+    put_back = restore_styling(proj_dir, stack)
+    if put_back:
+        elog("WARN", f"Restored styling: {', '.join(put_back)}")
+        cache = proj_dir / ".next"
+        if cache.is_dir():
+            shutil.rmtree(cache, ignore_errors=True)
+    runtime = RUNTIMES.get(proj_dir, stack)
+    result = RUNTIMES.restart_for_work(runtime, launch_runtime)
+    if result["status"] == "running":
+        estep("preview", "done")
+        return result["previewUrl"]
     estep("preview", "error")
     return ""
 
@@ -663,11 +636,14 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
                        stack: str = "", attachments: str = "") -> None:
     """Build an application from a request, then prove it works."""
     started = time.time()
+    runtime = None
     cancel.begin()
     try:
         proj_dir = _prepare_workspace(prompt, project, srs_id)
         name = proj_dir.name
         working_on(name)
+        runtime = RUNTIMES.get(proj_dir, stack)
+        RUNTIMES.begin_work(runtime)
         cancel.note(project=name, srs_id=srs_id)
         # A specification that was kept has a project directory and no code in
         # it. Told to "continue", the agent would look for work in progress
@@ -704,6 +680,12 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
         log.exception("agent pipeline")
         eerr(f"{type(error).__name__}: {error}")
     finally:
+        if runtime is not None:
+            with _SESSIONS_LOCK:
+                session = _SESSIONS.get(runtime.project)
+            if session:
+                session["agent"].processes.stop_all()
+            RUNTIMES.end_work(runtime)
         cancel.finish()
 
 
@@ -736,6 +718,7 @@ def run_chat(project: str, prompt: str, model: str, route: str = "", think=None,
 
 def _edit_run(project: str, prompt: str, model, think, qa_model: str, console: str,
               *, kind: str, brief: str) -> None:
+    runtime = None
     cancel.begin()
     cancel.note(project=project)
     try:
@@ -743,6 +726,8 @@ def _edit_run(project: str, prompt: str, model, think, qa_model: str, console: s
         if proj_dir is None:
             return
         working_on(proj_dir.name)
+        runtime = RUNTIMES.get(proj_dir)
+        RUNTIMES.begin_work(runtime)
         elog("INFO", f"✏️  {prompt[:160]}")
         estep("build", "active")
         MONGO.ensure_running()
@@ -770,4 +755,10 @@ def _edit_run(project: str, prompt: str, model, think, qa_model: str, console: s
         log.exception(kind)
         eerr(f"{type(error).__name__}: {error}")
     finally:
+        if runtime is not None:
+            with _SESSIONS_LOCK:
+                session = _SESSIONS.get(runtime.project)
+            if session:
+                session["agent"].processes.stop_all()
+            RUNTIMES.end_work(runtime)
         cancel.finish()

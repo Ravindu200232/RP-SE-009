@@ -102,7 +102,7 @@ export default function Studio() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   // The project the newest click asked for. An answer that arrives for any
   // other one is about a project nobody is looking at.
-  const opening = useRef('')
+  const opening = useRef(0)
 
   // Returns the list as well as storing it: a project that has only just been
   // created has to be found before the state holding it has re-rendered.
@@ -206,7 +206,16 @@ export default function Studio() {
     // start a second open: each stops the dev server the last one started, so
     // two clicks took longer than one and could end with nothing serving.
     if (!name || (st.opening && st.project === name)) return
-    opening.current = name
+    const request = ++opening.current
+    if (st.project === name && st.runtimes[name]?.status === 'running') {
+      try {
+        st.setRuntime(await api.open(name))
+        if (opening.current === request) setScreen('workspace')
+      } catch (error) {
+        if (opening.current === request) st.addLog('WARN', `Could not open app: ${error.message}`)
+      }
+      return
+    }
 
     st.reset(name)
     setScreen('workspace')
@@ -216,11 +225,7 @@ export default function Studio() {
     const spec = row?.spec_only ?? projects.find(p => p.name === name)?.spec_only
     if (spec) setView('srs')
 
-    // Busy from the click, not from the first file. The engine logs its own
-    // "Opening x (nextjs-mongo)" a moment later and says more than this would,
-    // so the progress line carries the gap rather than a second row saying the
-    // same thing with less in it.
-    st.setBusy(true)
+    // Show preview startup without changing the state of an agent build.
     st.setOpening(true)
     st.setProgress(`Opening ${name}…`, 0)
 
@@ -249,15 +254,18 @@ export default function Studio() {
       })
       .catch(() => { /* an older backend keeps no stream */ })
 
+    let opened = false
     try {
-      await api.open(name)
+      const runtime = await api.open(name)
+      useStore.getState().setRuntime(runtime)
+      opened = true
 
       const raw = await retry(() => api.files(name), 4, 700)
 
       // Opening a second project while the first was still reading dropped
       // one project's files into the other's tree, because nothing here
       // checked that the answer still belonged to the project on screen.
-      if (opening.current !== name || useStore.getState().project !== name) return
+      if (opening.current !== request || useStore.getState().project !== name) return
 
       const out = {}
       for (const [path, v] of Object.entries(raw || {})) {
@@ -265,9 +273,11 @@ export default function Studio() {
       }
       useStore.getState().setFiles(out)
     } catch (e) {
-      if (opening.current !== name) return
+      if (opening.current !== request) return
       useStore.getState().addLog('WARN', `could not open ${name}: ${e.message}`)
-      useStore.getState().setBusy(false)
+      useStore.getState().setOpening(false)
+      if (!opened) useStore.getState().setRuntime({ ...useStore.getState().runtimes[name],
+        project: name, status: 'failed', error: e.message })
     }
   }
 

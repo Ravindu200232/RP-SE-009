@@ -333,20 +333,9 @@ class DeclaredPortTests(unittest.TestCase):
         root = self.project(**{".env": "PORT=80\nDEBUG_PORT=99999\nAUTH_PORT=4101\n"})
         self.assertEqual(server.declared_ports(root), [4101])
 
-    def test_the_preview_port_is_left_to_the_dev_server_that_owns_it(self):
-        """Freeing it here would kill the server being started moments later."""
-        root = self.project(**{".env": f"PORT={server.DEV_PORT}\nAUTH_PORT=4101\n"})
-        killed = []
-        original = server._kill_port
-        server._kill_port = killed.append
-        try:
-            freed = server.free_declared_ports(root)
-        finally:
-            server._kill_port = original
-
-        self.assertEqual(freed, [4101])
-        self.assertEqual(killed, [4101])
-        self.assertNotIn(server.DEV_PORT, killed)
+    def test_port_cleanup_never_discovers_unrelated_processes(self):
+        self.assertFalse(hasattr(server, '_kill_port'))
+        self.assertFalse(hasattr(server, 'free_declared_ports'))
 
 
 

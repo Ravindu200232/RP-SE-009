@@ -235,6 +235,21 @@ function meantForMe(m) {
 
 
 function handle(m) {
+  if (m.type === 'runtime_state') {
+    useStore.getState().setRuntime(m)
+    return
+  }
+  // Completion from a background project updates its runtime/list without
+  // changing which project the user is looking at or closing its work.
+  const current = useStore.getState()
+  if (['done', 'cancelled', 'error'].includes(m.type) && m.project && m.project !== current.project) {
+    if (current.busyProject === m.project) {
+      current.setBusy(false)
+      current.setBusyProject('')
+    }
+    current.bumpProjects()
+    return
+  }
   if (!meantForMe(m)) return
 
   const s = useStore.getState()
@@ -310,6 +325,7 @@ function handle(m) {
 
   // Close every stream when the run ends.
     case 'done':
+      if (m.project) api.runtime(m.project).then(r => useStore.getState().setRuntime(r)).catch(() => {})
       s.setBusy(false)
       keepStream(s.busyProject)
       s.setBusyProject('')
