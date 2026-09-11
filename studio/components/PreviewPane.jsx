@@ -59,12 +59,12 @@ export default function PreviewPane({ hidden, onBuild }) {
 
   const project = useStore(s => s.project)
   const files = useStore(s => s.files)
+  const runtime = useStore(s => s.runtimes[s.project])
   const hasBuiltApp = Object.keys(files || {}).some(f =>
     f.startsWith('app/') || f.startsWith('src/') || f.startsWith('pages/') || f === 'package.json'
   )
   const isAppBuilt = hasBuiltApp || runtime?.status === 'running' || runtime?.status === 'starting'
   const busy = useStore(s => s.busy && (!s.busyProject || s.busyProject === s.project))
-  const runtime = useStore(s => s.runtimes[s.project])
   const addLog = useStore(s => s.addLog)
   const setPreviewRoute = useStore(s => s.setPreviewRoute)
   const undo = useStore(s => s.undo)
