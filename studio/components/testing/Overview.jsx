@@ -1,10 +1,22 @@
 'use client'
 
-import { Empty, Panel } from '../ui'
+import { Empty } from '../ui'
 import { Stat } from './TestingResult'
 import { cn } from '@/lib/utils'
 import { e2eStageSummary } from '@/lib/e2e-rate'
 import { unitTestStatus } from '@/lib/test-counts'
+import { 
+  FileCheck2, 
+  Layers, 
+  Compass, 
+  AlertCircle, 
+  ShieldAlert, 
+  Gauge, 
+  Terminal, 
+  CheckCircle2, 
+  AlertTriangle, 
+  Info 
+} from 'lucide-react'
 
 export default function Overview({ qa, live }) {
   const last = (qa?.history || []).slice(-1)[0]
@@ -31,153 +43,208 @@ export default function Overview({ qa, live }) {
   const roundAverage = history.length ? Math.round(history.reduce((sum, x) => sum + Number(x.rate || 0), 0) / history.length) : null
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {partial && (
-        <p className="rounded-panel border border-accent/30 bg-accent/5 px-3 py-2 text-[11px] text-muted">
-          <b className="text-ink">{live?.running ? 'Verification in progress.' : 'Partial saved report.'}</b>{' '}
-          {ran.length
-            ? `${ran.join(' and ')} ${ran.length === 1 ? 'has' : 'have'} run so far.`
-            : 'No stage has finished yet.'}{' '}
-          Only saved evidence is shown below.
-        </p>
+        <div className="flex items-center gap-3 rounded-2xl border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-[12px] text-slate-300 shadow-lg shadow-blue-500/5 backdrop-blur-xl">
+          <Info className="size-4 shrink-0 text-blue-400" />
+          <div>
+            <b className="font-semibold text-white">{live?.running ? 'Verification in progress.' : 'Partial saved report.'}</b>{' '}
+            <span className="text-slate-300">
+              {ran.length
+                ? `${ran.join(' and ')} ${ran.length === 1 ? 'has' : 'have'} run so far.`
+                : 'No stage has finished yet.'}{' '}
+              Only saved evidence is shown below.
+            </span>
+          </div>
+        </div>
       )}
 
-    <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(290px,1fr))]">
-      <Card title="Saved verification" hint="results already recorded for this project">
-        <p className="text-[12px] text-ink">{qa.complete ? 'Verification finished' : live?.running ? 'Verification in progress' : 'Partial saved report'}</p>
-        <p className="mt-2 text-[11px] text-muted">{qa.provenance || 'Results are saved as each check finishes.'}</p>
-        <div className="mt-3 flex flex-wrap gap-4"><Stat n={qa.timeline?.length || qa.history?.length || 0} label="timeline entries" /><Stat n={qa.screenshots?.length || 0} label="screenshots" /></div>
-      </Card>
-
-      {/* "as it stands", not "the last full run": a feature's stage only runs
-          the tests for what it changed, and those results are merged into this
-          report rather than replacing it — so this is the whole suite, with
-          the files that were just re-run showing their new result. */}
-      <Card title="The suite now" hint="every test file, at its latest result">
-        {qa.unitEvidenceStatus === 'outdated' && <p className="mb-2 text-[11px] text-warn">Saved results precede the latest code changes.</p>}
-        {v ? (
-          <div className="flex flex-col gap-1.5">
-            <div className="mb-2 flex items-center gap-3">
-              <div className="grid size-16 place-items-center rounded-full p-[6px] shadow-[0_8px_20px_rgba(15,23,42,.12)]"
-                   style={{ background: `conic-gradient(var(--ok) 0deg ${unitRate * 3.6}deg, var(--line) ${unitRate * 3.6}deg 360deg)` }}>
-                <div className="grid size-full place-items-center rounded-full bg-panel"><b className={cn('font-display text-[17px]', unitRate === 100 ? 'text-ok' : unitRate >= 80 ? 'text-warn' : 'text-bad')}>{unitRate}%</b></div>
-              </div>
-              <div className="text-[10.5px] leading-relaxed text-muted">
-                <b className="text-ink">{unit.unit === 'files' ? 'Saved file pass rate' : 'Recorded test pass rate'}</b>
-                {roundAverage != null && <><br />Round-one average: <b className="text-ink">{roundAverage}%</b> across {history.length} run{history.length === 1 ? '' : 's'}</>}
-              </div>
-            </div>
-            <Stat n={unit.passed} label={unit.unit === 'files' ? 'files passing' : 'cases passing'} tone="text-ok" />
-            <Stat n={unit.failed} label={unit.unit === 'files' ? 'files failing' : 'cases failing'}
-                  tone={unit.failed ? 'text-bad' : undefined} />
-            <Stat n={unit.files} label="files" />
-            {r?.unit?.deleted ? (
-              <p className="mt-1 text-[11px] text-bad">
-                <b>{r.unit.deleted}</b> case(s) that existed when the stage
-                started are gone from the suite — this is not 100%.
-              </p>
-            ) : null}
-            {r?.unit?.skipped ? (
-              <p className="mt-1 text-[11px] text-warn">
-                <b>{r.unit.skipped}</b> case(s) are marked <code>it.skip</code>{' '}
-                and never ran.
-              </p>
-            ) : null}
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
+        <Card title="Saved verification" hint="results already recorded for this project" icon={FileCheck2}>
+          <div className="flex items-center gap-2">
+            <span className={cn('size-2 rounded-full', qa.complete ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]' : live?.running ? 'animate-pulse bg-blue-400' : 'bg-amber-400')} />
+            <p className="text-[13px] font-semibold text-white">{qa.complete ? 'Verification finished' : live?.running ? 'Verification in progress' : 'Partial saved report'}</p>
           </div>
-        ) : <Empty>The suite has not run.</Empty>}
-      </Card>
-
-
-      <Card title="End-to-end proof" hint="all final browser journey stages, not repair retries">
-        {e2e.total ? (
-          <div className="flex items-center gap-4">
-            <div className="relative grid size-20 place-items-center rounded-full p-2 shadow-[0_9px_20px_rgba(15,23,42,.14)]"
-                 style={{ background: `conic-gradient(var(--ok) 0deg ${e2e.rate * 3.6}deg, var(--line) ${e2e.rate * 3.6}deg 360deg)` }}>
-              <div className="grid size-full place-items-center rounded-full bg-panel">
-                <b className={cn('font-display text-[21px]', e2e.rate === 100 ? 'text-ok' : e2e.rate >= 80 ? 'text-warn' : 'text-bad')}>{e2e.rate}%</b>
-              </div>
-            </div>
-            <div>
-              <Stat n={`${e2e.passed}/${e2e.total}`} label="stages passed" tone={e2e.passed === e2e.total ? 'text-ok' : 'text-warn'} />
-              <p className="mt-1 text-[10.5px] text-muted">{e2e.failed} failed · {e2e.notReached} not reached</p>
-            </div>
+          <p className="mt-2 text-[11px] text-slate-400">{qa.provenance || 'Results are saved as each check finishes.'}</p>
+          <div className="mt-4 flex flex-wrap gap-4 border-t border-white/5 pt-3">
+            <Stat n={qa.timeline?.length || qa.history?.length || 0} label="timeline entries" />
+            <Stat n={qa.screenshots?.length || 0} label="screenshots" />
           </div>
-        ) : <Empty>No saved step trace. {r?.e2e?.recordedOutcomes?.length || 0} historical journey outcome(s) available in Integration (E2E).</Empty>}
-      </Card>
+        </Card>
 
-      <Card title="Left unresolved" hint="cases repair could not make pass">
-        {r ? (
-          unresolved.length ? (
-            <ul className="space-y-1.5 text-[11px] text-muted">
-              {unresolved.slice(0, 6).map((u, i) => (
-                <li key={i}>
-                  <code className="font-mono text-ink">{shortFile(u.file)}</code>
-                  {' — '}{u.case}
-                  {u.diagnosis && (
-                    <span className="ml-1 rounded bg-line px-1.5 py-px text-[9px]">
-                      {u.diagnosis}
-                    </span>
+        {/* "as it stands", not "the last full run": a feature's stage only runs
+            the tests for what it changed, and those results are merged into this
+            report rather than replacing it — so this is the whole suite, with
+            the files that were just re-run showing their new result. */}
+        <Card title="The suite now" hint="every test file, at its latest result" icon={Layers}>
+          {qa.unitEvidenceStatus === 'outdated' && (
+            <p className="mb-2.5 rounded-lg border border-amber-500/20 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-300">
+              Saved results precede the latest code changes.
+            </p>
+          )}
+          {v ? (
+            <div className="flex flex-col gap-2">
+              <div className="mb-2 flex items-center gap-3.5">
+                <div 
+                  className="grid size-16 shrink-0 place-items-center rounded-full p-[5px] shadow-[0_0_20px_rgba(0,0,0,0.4)]"
+                  style={{ 
+                    background: `conic-gradient(#10b981 0deg ${unitRate * 3.6}deg, rgba(255,255,255,0.08) ${unitRate * 3.6}deg 360deg)` 
+                  }}
+                >
+                  <div className="grid size-full place-items-center rounded-full bg-[#0c0f17]">
+                    <b className={cn('font-display text-[16px] font-black', unitRate === 100 ? 'text-emerald-400' : unitRate >= 80 ? 'text-amber-400' : 'text-rose-400')}>
+                      {unitRate}%
+                    </b>
+                  </div>
+                </div>
+                <div className="text-[11px] leading-relaxed text-slate-400">
+                  <b className="text-white">{unit.unit === 'files' ? 'Saved file pass rate' : 'Recorded test pass rate'}</b>
+                  {roundAverage != null && (
+                    <>
+                      <br />Round-one average: <b className="text-slate-200">{roundAverage}%</b> across {history.length} run{history.length === 1 ? '' : 's'}
+                    </>
                   )}
-                </li>
-              ))}
-            </ul>
-          ) : <p className="text-[11.5px] text-ok">No unresolved failures recorded.</p>
-        ) : <Empty>No report — this project was built before results were kept.</Empty>}
-      </Card>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 border-t border-white/5 pt-2.5">
+                <Stat n={unit.passed} label={unit.unit === 'files' ? 'files passing' : 'cases passing'} tone="text-emerald-400" />
+                <Stat n={unit.failed} label={unit.unit === 'files' ? 'files failing' : 'cases failing'} tone={unit.failed ? 'text-rose-400' : 'text-slate-400'} />
+              </div>
+              <div className="border-t border-white/5 pt-2">
+                <Stat n={unit.files} label="files" />
+              </div>
+              {r?.unit?.deleted ? (
+                <p className="mt-1 text-[11px] text-rose-400">
+                  <b>{r.unit.deleted}</b> case(s) that existed when the stage started are gone from the suite — this is not 100%.
+                </p>
+              ) : null}
+              {r?.unit?.skipped ? (
+                <p className="mt-1 text-[11px] text-amber-400">
+                  <b>{r.unit.skipped}</b> case(s) are marked <code>it.skip</code> and never ran.
+                </p>
+              ) : null}
+            </div>
+          ) : <Empty>The suite has not run.</Empty>}
+        </Card>
 
-      <Card title="Security" hint="six checks over the generated source">
-        {r?.security ? (
-          sec.length ? (
-            <ul className="space-y-1.5 text-[11px] text-muted">
-              {sec.slice(0, 6).map((f, i) => (
-                <li key={i} className="flex items-center gap-1.5">
-                  <span className={cn('rounded px-1.5 py-px text-[8.5px] font-bold uppercase',
-                    f.severity === 'blocker' ? 'bg-bad/20 text-bad'
-                      : f.severity === 'major' ? 'bg-warn/20 text-warn'
-                      : 'bg-line text-muted2')}>
-                    {f.severity}
-                  </span>
-                  <code className="truncate font-mono text-ink">{f.path}</code>
-                </li>
-              ))}
-            </ul>
-          ) : <p className="text-[11.5px] text-ok">Nothing found.</p>
-        ) : <Empty>The security stage has no record here.</Empty>}
-      </Card>
+        <Card title="End-to-end proof" hint="all final browser journey stages, not repair retries" icon={Compass}>
+          {e2e.total ? (
+            <div className="flex items-center gap-4">
+              <div 
+                className="relative grid size-20 shrink-0 place-items-center rounded-full p-[6px] shadow-[0_0_25px_rgba(0,0,0,0.45)]"
+                style={{ 
+                  background: `conic-gradient(#10b981 0deg ${e2e.rate * 3.6}deg, rgba(255,255,255,0.08) ${e2e.rate * 3.6}deg 360deg)` 
+                }}
+              >
+                <div className="grid size-full place-items-center rounded-full bg-[#0c0f17]">
+                  <b className={cn('font-display text-[20px] font-black', e2e.rate === 100 ? 'text-emerald-400' : e2e.rate >= 80 ? 'text-amber-400' : 'text-rose-400')}>
+                    {e2e.rate}%
+                  </b>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Stat n={`${e2e.passed}/${e2e.total}`} label="stages passed" tone={e2e.passed === e2e.total ? 'text-emerald-400' : 'text-amber-400'} />
+                <p className="text-[11px] text-slate-400">{e2e.failed} failed · {e2e.notReached} not reached</p>
+              </div>
+            </div>
+          ) : <Empty>No saved step trace. {r?.e2e?.recordedOutcomes?.length || 0} historical journey outcome(s) available in Integration (E2E).</Empty>}
+        </Card>
 
-      <Card title="Performance" hint="Lighthouse, against the dev server">
-        {Object.keys(perf).length ? (
-          <div className="flex flex-col gap-1.5">
-            {Object.entries(perf).map(([k, n]) => (
-              <Stat key={k} n={n} label={k.replace(/-/g, ' ')}
-                    tone={n >= 90 ? 'text-ok' : n >= 50 ? 'text-warn' : 'text-bad'} />
-            ))}
-          </div>
-        ) : <Empty>Lighthouse has not run.</Empty>}
-      </Card>
+        <Card title="Left unresolved" hint="cases repair could not make pass" icon={AlertCircle}>
+          {r ? (
+            unresolved.length ? (
+              <ul className="space-y-2 text-[11px] text-slate-300">
+                {unresolved.slice(0, 6).map((u, i) => (
+                  <li key={i} className="rounded-lg border border-white/5 bg-white/[0.02] p-2">
+                    <code className="font-mono text-emerald-400">{shortFile(u.file)}</code>
+                    <span className="text-slate-400"> — {u.case}</span>
+                    {u.diagnosis && (
+                      <span className="mt-1 block rounded bg-white/5 px-2 py-0.5 text-[10px] text-amber-300 border border-amber-500/20">
+                        {u.diagnosis}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="flex items-center gap-2 text-[12px] font-medium text-emerald-400">
+                <CheckCircle2 className="size-4" />
+                <span>No unresolved failures recorded.</span>
+              </div>
+            )
+          ) : <Empty>No report — this project was built before results were kept.</Empty>}
+        </Card>
 
-      <Card title="Runtime" hint="what the browser probe saw">
-        {ran.includes('runtime') ? (
-          (r.runtime || []).length ? (
-            <ul className="space-y-1 text-[11px] text-bad">
-              {r.runtime.slice(0, 6).map((e, i) => (
-                <li key={i} className="truncate">{String(e).split('\n')[0]}</li>
+        <Card title="Security" hint="six checks over the generated source" icon={ShieldAlert}>
+          {r?.security ? (
+            sec.length ? (
+              <ul className="space-y-2 text-[11px] text-slate-300">
+                {sec.slice(0, 6).map((f, i) => (
+                  <li key={i} className="flex items-center gap-2 rounded-lg border border-white/5 bg-white/[0.02] p-2">
+                    <span className={cn('rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider',
+                      f.severity === 'blocker' ? 'border border-rose-500/30 bg-rose-500/20 text-rose-300'
+                        : f.severity === 'major' ? 'border border-amber-500/30 bg-amber-500/20 text-amber-300'
+                        : 'border border-white/10 bg-white/5 text-slate-400')}>
+                      {f.severity}
+                    </span>
+                    <code className="truncate font-mono text-[11px] text-slate-200">{f.path}</code>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="flex items-center gap-2 text-[12px] font-medium text-emerald-400">
+                <CheckCircle2 className="size-4" />
+                <span>Nothing found.</span>
+              </div>
+            )
+          ) : <Empty>The security stage has no record here.</Empty>}
+        </Card>
+
+        <Card title="Performance" hint="Lighthouse, against the dev server" icon={Gauge}>
+          {Object.keys(perf).length ? (
+            <div className="grid grid-cols-2 gap-3">
+              {Object.entries(perf).map(([k, n]) => (
+                <div key={k} className="rounded-xl border border-white/5 bg-white/[0.02] p-2.5">
+                  <Stat n={n} label={k.replace(/-/g, ' ')}
+                        tone={n >= 90 ? 'text-emerald-400' : n >= 50 ? 'text-amber-400' : 'text-rose-400'} />
+                </div>
               ))}
-            </ul>
-          ) : <p className="text-[11.5px] text-ok">No runtime errors.</p>
-        ) : <Empty>No record.</Empty>}
-      </Card>
-    </div>
+            </div>
+          ) : <Empty>Lighthouse has not run.</Empty>}
+        </Card>
+
+        <Card title="Runtime" hint="what the browser probe saw" icon={Terminal}>
+          {ran.includes('runtime') ? (
+            (r.runtime || []).length ? (
+              <ul className="space-y-1.5 text-[11px] text-rose-400">
+                {r.runtime.slice(0, 6).map((e, i) => (
+                  <li key={i} className="truncate rounded border border-rose-500/20 bg-rose-500/10 px-2 py-1 font-mono text-[10.5px]">
+                    {String(e).split('\n')[0]}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="flex items-center gap-2 text-[12px] font-medium text-emerald-400">
+                <CheckCircle2 className="size-4" />
+                <span>No runtime errors.</span>
+              </div>
+            )
+          ) : <Empty>No record.</Empty>}
+        </Card>
+      </div>
     </div>
   )
 }
 
-const Card = ({ title, hint, children }) => (
-  <Panel className="p-4">
-    <h3 className="text-[12px] font-semibold text-ink">{title}</h3>
-    {hint && <p className="mb-3 mt-0.5 text-[10px] text-muted2">{hint}</p>}
-    {children}
-  </Panel>
+const Card = ({ title, hint, icon: Icon, children }) => (
+  <div className="flex flex-col rounded-2xl border border-white/10 bg-[#121622]/80 p-5 shadow-xl backdrop-blur-xl transition-all duration-200 hover:border-white/20 hover:bg-[#121622]">
+    <div className="mb-2.5 flex items-center justify-between gap-2">
+      <h3 className="text-[13px] font-bold tracking-wide text-white">{title}</h3>
+      {Icon && <Icon className="size-4 text-slate-500" />}
+    </div>
+    {hint && <p className="-mt-1 mb-3 text-[11px] text-slate-400">{hint}</p>}
+    <div className="flex-1">{children}</div>
+  </div>
 )
 
 const shortFile = (p) => String(p || '').split('/').pop()

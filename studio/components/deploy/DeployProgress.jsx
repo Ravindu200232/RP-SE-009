@@ -12,8 +12,8 @@ export default function DeployProgress({ run }) {
   const [label, tone] = STATE_TEXT[run.state] || [run.state || 'Working', 'run']
 
   return (
-    <div className="border border-line2 p-4">
-      <SectionLabel className="border-b-2 border-line2 pb-1.5"
+    <div className="rounded-2xl border border-white/10 bg-[#121622]/90 p-5 shadow-xl backdrop-blur-xl text-white">
+      <SectionLabel className="border-b border-white/10 pb-2"
                     right={<Tag tone={{ pass: 'ok', fail: 'bad',
                                         run: 'accent' }[tone] || 'mute'}>
                       {label}
@@ -21,42 +21,42 @@ export default function DeployProgress({ run }) {
         Deploying to {run.target === 'vercel' ? 'Vercel' : 'AWS EC2'}
       </SectionLabel>
 
-      <div className="mt-3.5 flex h-2 border border-line2 bg-canvas">
-        <span className={cn('transition-all duration-500',
-                            tone === 'fail' ? 'bg-bad' : tone === 'pass' ? 'bg-ok' : 'bg-accent')}
+      <div className="mt-4 flex h-2 overflow-hidden rounded-full bg-white/10">
+        <span className={cn('transition-all duration-500 rounded-full',
+                            tone === 'fail' ? 'bg-rose-500' : tone === 'pass' ? 'bg-emerald-400' : 'bg-blue-500')}
               style={{ width: `${pct}%` }} />
       </div>
-      <p className="mt-2 flex items-center gap-2.5 text-[11.5px] text-muted">
-        <span className="font-mono text-[12px] text-accent">{pct}%</span>
+      <p className="mt-2 flex items-center gap-2.5 text-[12px] text-white/60">
+        <span className="font-mono text-[12px] font-bold text-blue-400">{pct}%</span>
         {run.message}
       </p>
 
-      <ol className="mt-4 border-t-2 border-line2">
+      <ol className="mt-4 overflow-hidden rounded-xl border border-white/10 bg-white/[.02]">
         {rows.map(r => (
           <li key={r.id}
-              className={cn('flex items-start gap-2.5 border-b border-line',
-                'border-l-[3px] py-2 pl-2.5 pr-1',
-                r.status === 'active' ? 'border-l-accent bg-panel2'
-                  : r.status === 'error' ? 'border-l-bad bg-tint'
-                  : r.status === 'done' ? 'border-l-ok'
+              className={cn('flex items-start gap-3 border-b border-white/5 last:border-0',
+                'border-l-[3px] py-2.5 px-3.5',
+                r.status === 'active' ? 'border-l-blue-500 bg-blue-500/[.06]'
+                  : r.status === 'error' ? 'border-l-rose-500 bg-rose-500/[.06]'
+                  : r.status === 'done' ? 'border-l-emerald-400'
                   : 'border-l-transparent')}>
             <span className="mt-[2px] grid size-3.5 shrink-0 place-items-center">
               {r.status === 'done'
-                ? <Check className="size-3.5 text-ok" />
+                ? <Check className="size-3.5 text-emerald-400" />
                 : r.status === 'error'
-                ? <AlertTriangle className="size-3.5 text-bad" />
+                ? <AlertTriangle className="size-3.5 text-rose-400" />
                 : r.status === 'active'
-                ? <Loader2 className="size-3 animate-spin text-accent" />
-                : <span className="size-1.5 bg-faint" />}
+                ? <Loader2 className="size-3 animate-spin text-blue-400" />
+                : <span className="size-1.5 rounded-full bg-white/20" />}
             </span>
             <span className="min-w-0 flex-1">
-              <span className={cn('block text-[12px]',
-                r.status === 'pending' ? 'text-muted2'
-                  : r.status === 'error' ? 'font-semibold text-deep'
-                  : r.status === 'active' ? 'font-extrabold text-ink' : 'text-ink')}>
+              <span className={cn('block text-[12.5px]',
+                r.status === 'pending' ? 'text-white/40'
+                  : r.status === 'error' ? 'font-semibold text-rose-300'
+                  : r.status === 'active' ? 'font-bold text-white' : 'text-white/90')}>
                 {r.title}
               </span>
-              <span className="block font-mono text-[10.5px] leading-snug text-muted2">
+              <span className="block font-mono text-[10.5px] leading-snug text-white/50 mt-0.5">
                 {r.message || r.detail}
               </span>
             </span>
@@ -65,19 +65,16 @@ export default function DeployProgress({ run }) {
       </ol>
 
       {run.error && (
-        <p className="mt-3 flex items-start gap-2.5 border border-line2
-                      border-l-[3px] border-l-accent bg-tint px-3 py-2.5
-                      text-[11.5px] text-deep">
-          <AlertTriangle className="mt-px size-3.5 shrink-0 text-accent" />
+        <p className="mt-3.5 flex items-start gap-2.5 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-3 text-[12px] text-rose-300">
+          <AlertTriangle className="mt-px size-4 shrink-0 text-rose-400" />
           <span className="min-w-0">{run.error}</span>
         </p>
       )}
 
       {run.url && (
         <a href={run.url} target="_blank" rel="noreferrer"
-           className="mt-3 flex items-center gap-2.5 bg-accent px-3 py-2.5
-                      font-mono text-[12px] text-bg transition-colors hover:bg-press">
-          <Rocket className="size-3.5 shrink-0" />
+           className="mt-3.5 flex items-center gap-2.5 rounded-xl bg-blue-600 px-4 py-3 font-mono text-[12px] font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-500">
+          <Rocket className="size-4 shrink-0" />
           <span className="min-w-0 truncate">{run.url}</span>
         </a>
       )}

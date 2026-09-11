@@ -12,17 +12,17 @@ export default function Performance({ qa }) {
     return <Empty bad>Lighthouse could not measure this app — {p.runtimeError}</Empty>
   }
   return (
-    <div>
-      <div className="mb-4 flex flex-wrap gap-3">
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
         {Object.entries(p.scores).map(([k, n]) => (
           <div key={k}
-               className={cn('min-w-[110px] rounded-panel border-2 px-4 py-3 text-center',
-                 n >= 90 ? 'border-ok/50' : n >= 50 ? 'border-warn/50' : 'border-bad/50')}>
-            <div className={cn('font-display text-[26px] font-bold leading-none',
-              n >= 90 ? 'text-ok' : n >= 50 ? 'text-warn' : 'text-bad')}>
+               className={cn('min-w-[120px] rounded-2xl border bg-[#121622]/80 px-5 py-3.5 text-center shadow-xl backdrop-blur-xl transition-all duration-200 hover:border-white/20',
+                 n >= 90 ? 'border-emerald-500/30' : n >= 50 ? 'border-amber-500/30' : 'border-rose-500/30')}>
+            <div className={cn('font-display text-[28px] font-black leading-none tracking-tight',
+              n >= 90 ? 'text-emerald-400' : n >= 50 ? 'text-amber-400' : 'text-rose-400')}>
               {n}
             </div>
-            <div className="mt-1 text-[9.5px] capitalize text-muted2">
+            <div className="mt-1.5 text-[11px] font-medium capitalize text-slate-400">
               {k.replace(/-/g, ' ')}
             </div>
           </div>

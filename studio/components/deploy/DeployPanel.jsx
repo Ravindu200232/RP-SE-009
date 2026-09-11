@@ -248,24 +248,24 @@ export default function DeployPanel({ onSettings }) {
       {running || live ? <DeployProgress run={live} /> : null}
 
       {!running && (
-        <div className="rounded-[22px] border border-line/80 bg-white/58 p-5 shadow-sm dark:bg-white/[.025]">
+        <div className="rounded-2xl border border-white/10 bg-[#121622]/90 p-6 shadow-xl backdrop-blur-xl">
           <SectionLabel>Where should it go?</SectionLabel>
-          <p className="mt-1 text-[11px] text-muted">Choose the cloud destination for this reviewed build.</p>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <p className="mt-1 text-[11.5px] text-white/60">Choose the cloud destination for this reviewed build.</p>
+          <div className="mt-3.5 grid gap-3 sm:grid-cols-2">
             {targets.map(t => (
               <button key={t.id} onClick={() => setTarget(t.id)}
-                      className={cn('rounded-[18px] border p-4 text-left shadow-sm transition-all',
+                      className={cn('rounded-xl border p-4 text-left shadow-sm transition-all',
                         target === t.id
-                          ? 'border-accent/35 bg-accent/[.07] ring-2 ring-accent/10'
-                          : 'border-line/80 bg-white/55 hover:-translate-y-px hover:bg-white dark:bg-white/[.025]')}>
-                <span className="flex items-center gap-2 text-[12.5px] font-extrabold text-ink">
+                          ? 'border-blue-500/50 bg-blue-500/10 ring-1 ring-blue-500/30'
+                          : 'border-white/10 bg-white/[.03] hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[.06]')}>
+                <span className="flex items-center gap-2.5 text-[13px] font-bold text-white">
                   <span className={cn('grid size-4 place-items-center rounded-full border',
-                    target === t.id ? 'border-accent bg-accent' : 'border-line2 bg-white/70 dark:bg-white/5')}>
+                    target === t.id ? 'border-blue-500 bg-blue-600' : 'border-white/20 bg-white/5')}>
                     {target === t.id && <Check className="size-2.5 text-white" />}
                   </span>
                   {t.label}
                 </span>
-                <span className="mt-1 block text-[10.5px] leading-snug text-muted">
+                <span className="mt-1.5 block text-[11px] leading-relaxed text-white/60">
                   {t.blurb}
                 </span>
               </button>
@@ -274,27 +274,27 @@ export default function DeployPanel({ onSettings }) {
 
           <SectionLabel className="mt-6"
                         right={onSettings && (
-                          <Button variant="outline" size="sm" onClick={onSettings}>
+                          <Button variant="outline" size="sm" className="rounded-xl border-white/10 bg-white/[.04] text-white/80 hover:bg-white/[.08]" onClick={onSettings}>
                             <Settings2 className="size-3" /> Settings
                           </Button>
                         )}>
             Accounts
           </SectionLabel>
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+          <ul className="mt-3 grid gap-2.5 sm:grid-cols-2">
             {needs.map(n => (
-              <li key={n.id} className={cn('flex items-start gap-2.5 rounded-2xl border px-3 py-3',
-                n.unknown ? 'border-line bg-white/45 dark:bg-white/[.02]'
-                  : n.ok ? 'border-ok/20 bg-ok/[.055]' : 'border-bad/20 bg-bad/[.045]')}>
+              <li key={n.id} className={cn('flex items-start gap-2.5 rounded-xl border px-3.5 py-3',
+                n.unknown ? 'border-white/10 bg-white/[.02]'
+                  : n.ok ? 'border-emerald-500/20 bg-emerald-500/[.06]' : 'border-red-500/20 bg-red-500/[.06]')}>
                 <span className="mt-[2px] grid size-3.5 shrink-0 place-items-center">
                   {n.unknown
-                    ? <Loader2 className="size-3 animate-spin text-muted2" />
-                    : n.ok ? <Check className="size-3.5 text-ok" />
-                           : <X className="size-3.5 text-bad" />}
+                    ? <Loader2 className="size-3 animate-spin text-white/40" />
+                    : n.ok ? <Check className="size-3.5 text-emerald-400" />
+                           : <X className="size-3.5 text-red-400" />}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="text-[12px] font-semibold text-ink">{n.label}</span>
-                  <span className={cn('ml-2 text-[10.5px]',
-                                      n.unknown || n.ok ? 'text-muted' : 'text-deep')}>
+                  <span className="text-[12px] font-semibold text-white">{n.label}</span>
+                  <span className={cn('ml-2 text-[11px]',
+                                      n.unknown || n.ok ? 'text-white/60' : 'text-red-300')}>
                     {n.hint}
                   </span>
                 </span>
@@ -303,10 +303,10 @@ export default function DeployPanel({ onSettings }) {
           </ul>
 
           {!green && (
-            <label className={cn('mt-4 flex cursor-pointer items-start gap-2.5 rounded-2xl border px-3 py-3 text-[11.5px]',
-              override ? 'border-accent/25 bg-accent/[.055] text-deep'
-                       : 'border-line bg-panel2/70 text-muted')}>
-              <input type="checkbox" checked={override} className="mt-0.5"
+            <label className={cn('mt-4 flex cursor-pointer items-start gap-2.5 rounded-xl border px-3.5 py-3 text-[12px]',
+              override ? 'border-accent/30 bg-accent/10 text-white'
+                       : 'border-white/10 bg-white/[.02] text-white/60')}>
+              <input type="checkbox" checked={override} className="mt-0.5 accent-blue-500"
                      onChange={e => setOverride(e.target.checked)} />
               <span>
                 {!tested
@@ -316,18 +316,18 @@ export default function DeployPanel({ onSettings }) {
             </label>
           )}
           {green && (
-            <p className="mt-4 flex items-center gap-2.5 rounded-2xl border border-ok/20 bg-ok/[.055] px-3 py-3 text-[11.5px] text-ok">
-              <Check className="size-3.5" />
+            <p className="mt-4 flex items-center gap-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/[.06] px-3.5 py-3 text-[12px] text-emerald-300">
+              <Check className="size-3.5 text-emerald-400" />
               Every unit test passes.
             </p>
           )}
 
-          <label className="mt-3 flex cursor-pointer items-start gap-2.5 text-[11.5px] text-muted">
-            <input type="checkbox" checked={validateBuild} className="mt-0.5"
+          <label className="mt-3.5 flex cursor-pointer items-start gap-2.5 text-[12px] text-white/60">
+            <input type="checkbox" checked={validateBuild} className="mt-0.5 accent-blue-500"
                    onChange={e => setValidateBuild(e.target.checked)} />
             <span>
               Run a production build first.
-              <span className="ml-1 text-muted2">
+              <span className="ml-1 text-white/40">
                 Slower, and it catches what only fails in a real build.
                 {' '}Turning it off also stops the agent from ever scoring the
                 deployment as healthy.
@@ -335,15 +335,15 @@ export default function DeployPanel({ onSettings }) {
             </span>
           </label>
 
-          <footer className="mt-5 flex items-center gap-3 border-t border-line/70 pt-4">
-            <Button variant="solid" size="lg" disabled={!ready || starting}
+          <footer className="mt-6 flex items-center gap-3 border-t border-white/10 pt-4">
+            <Button variant="solid" size="lg" className="h-11 rounded-xl bg-blue-600 px-6 font-display text-[13px] font-bold text-white shadow-lg shadow-blue-500/30 hover:bg-blue-500" disabled={!ready || starting}
                     onClick={deploy}>
               {starting ? <Loader2 className="size-3.5 animate-spin" />
                         : <Rocket className="size-3.5" />}
               Deploy to {where}
             </Button>
             {!ready && !starting && (
-              <span className="text-[11px] text-muted2">
+              <span className="text-[11.5px] text-white/50">
                 {needs.find(n => !n.ok)
                   ? `${needs.find(n => !n.ok).label} is not connected yet`
                   : 'confirm you want to deploy a failing build'}

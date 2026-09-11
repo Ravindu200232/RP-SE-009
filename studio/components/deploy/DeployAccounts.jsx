@@ -523,16 +523,16 @@ function Mongo({ deploy, onSave }) {
 
 function Row({ title, ok, unknown, detail, actions, children }) {
   return (
-    <div className={cn('border border-line2 border-l-[3px] bg-panel2 p-2.5',
-      unknown ? 'border-l-transparent' : ok ? 'border-l-ok' : 'border-l-bad')}>
+    <div className={cn('rounded-xl border border-white/10 border-l-[3px] bg-white/[.03] p-3 shadow-sm transition-all',
+      unknown ? 'border-l-white/20' : ok ? 'border-l-emerald-400' : 'border-l-rose-500')}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="grid size-3.5 shrink-0 place-items-center">
-          {unknown ? <Loader2 className="size-3 animate-spin text-muted2" />
-                   : ok ? <Check className="size-3.5 text-ok" />
-                        : <X className="size-3.5 text-bad" />}
+          {unknown ? <Loader2 className="size-3 animate-spin text-white/40" />
+                   : ok ? <Check className="size-3.5 text-emerald-400" />
+                        : <X className="size-3.5 text-rose-400" />}
         </span>
-        <span className="text-[12px] font-extrabold text-ink">{title}</span>
-        <span className="min-w-0 flex-1 truncate text-[10.5px] text-muted">{detail}</span>
+        <span className="text-[12.5px] font-bold text-white">{title}</span>
+        <span className="min-w-0 flex-1 truncate text-[11px] text-white/60">{detail}</span>
         {actions}
       </div>
       {children}
@@ -542,9 +542,9 @@ function Row({ title, ok, unknown, detail, actions, children }) {
 
 const Field = ({ label, hint, children }) => (
   <label className="block">
-    <span className="label-2xs mb-1 block text-label">{label}</span>
+    <span className="label-2xs mb-1 block text-white/50 font-bold uppercase tracking-wider">{label}</span>
     {children}
-    {hint && <span className="mt-1 block text-[9.5px] leading-snug text-muted2">
+    {hint && <span className="mt-1 block text-[10px] leading-snug text-white/40">
                {hint}
              </span>}
   </label>
@@ -552,13 +552,13 @@ const Field = ({ label, hint, children }) => (
 
 const Select = ({ value, onChange, options, placeholder }) => (
   <select value={value} onChange={e => onChange(e.target.value)}
-          className="h-[30px] w-full border border-line2 bg-panel2 px-2
-                     text-[12px] text-ink outline-none focus:border-accent">
-    {placeholder && <option value="">{placeholder}</option>}
+          className="h-[32px] w-full rounded-lg border border-white/10 bg-[#121622] px-2.5
+                     text-[12px] text-white outline-none focus:border-blue-500/60">
+    {placeholder && <option value="" className="bg-[#121622] text-white">{placeholder}</option>}
     {options.map(o => {
       const v = typeof o === 'string' ? o : o.value
       const l = typeof o === 'string' ? o : o.label
-      return <option key={v} value={v}>{l}</option>
+      return <option key={v} value={v} className="bg-[#121622] text-white">{l}</option>
     })}
   </select>
 )
