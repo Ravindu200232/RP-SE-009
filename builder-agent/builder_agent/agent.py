@@ -398,7 +398,7 @@ class BuilderAgent:
                 "prototype",
                 {"pages": drawn, "goal": task[:300], "round": round_number + 1,
                  "maxRounds": self.MAX_PROTOTYPE_ROUNDS},
-                default={"decision": "approve"}, cancel=self.cancel)
+                default={"decision": "stop"}, cancel=self.cancel)
             if answer.get("decision") in ("stop", "prototype_only", "keep"):
                 self._stop_at_prototype = True
                 break

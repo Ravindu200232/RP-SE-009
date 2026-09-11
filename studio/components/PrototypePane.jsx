@@ -359,26 +359,20 @@ export default function PrototypePane({ project, hidden, onBuild }) {
     }
   }
 
-  async function approveDrawing() {
+  async function handleBuildAppNow() {
+    if (isBusy) return
     const id = drawing?.id
-    if (!id) return
-    setDrawing(null)
-    try {
-      await api.decide({ id, decision: 'approve' })
-    } catch (e) {
-      addLog('WARN', `Could not accept prototype — ${e.message}`)
-    }
-  }
-
-  async function stopAtPrototype() {
-    const id = drawing?.id
-    if (!id) return
-    setDrawing(null)
-    try {
-      await api.decide({ id, decision: 'stop' })
-      addLog('SUCCESS', 'Prototype saved. Full app build stopped as requested.')
-    } catch (e) {
-      addLog('WARN', `Could not stop at prototype — ${e.message}`)
+    if (id) {
+      setDrawing(null)
+      try {
+        await api.decide({ id, decision: 'approve' })
+        addLog('INFO', `Starting full application build for ${project} from approved prototype…`)
+      } catch (e) {
+        addLog('WARN', `Could not accept prototype — ${e.message}`)
+        if (onBuild) onBuild()
+      }
+    } else if (onBuild) {
+      onBuild()
     }
   }
 
@@ -420,13 +414,14 @@ export default function PrototypePane({ project, hidden, onBuild }) {
         </div>
 
         {/* Action: Build app from prototype */}
-        {onBuild && (
+        {(onBuild || drawing?.id) && (
           <button
-            onClick={onBuild}
+            onClick={handleBuildAppNow}
+            disabled={isBusy}
             title="Build full application from this prototype"
-            className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3.5 py-1.5 text-[11.5px] font-semibold text-white shadow-sm transition hover:bg-press"
+            className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3.5 py-1.5 text-[11.5px] font-semibold text-white shadow-md shadow-blue-500/20 transition-all hover:bg-blue-500 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
           >
-            <Rocket className="size-3" /> Build App Now
+            <Rocket className="size-3" /> {isBusy ? 'Building…' : 'Build App Now'}
           </button>
         )}
 
@@ -489,36 +484,6 @@ export default function PrototypePane({ project, hidden, onBuild }) {
           </p>
         )}
 
-        {/* Prototype Approval Prompt Modal/Banner */}
-        {drawing && protoReady && (
-          <div className="absolute top-4 inset-x-6 z-30 flex items-center justify-between gap-4 rounded-2xl border border-purple-500/40 bg-panel/95 p-3.5 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-2">
-            <div className="flex items-center gap-3">
-              <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-purple-500/20 text-purple-400">
-                <Sparkles className="size-4" />
-              </div>
-              <div>
-                <h4 className="text-[13.5px] font-bold text-ink">HTML Prototype Ready</h4>
-                <p className="text-[12px] text-muted">
-                  Do you want to build the full app or is this prototype enough?
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={stopAtPrototype}
-                className="rounded-xl border border-line bg-white/80 px-3.5 py-2 text-[12px] font-semibold text-ink shadow-sm transition hover:bg-white dark:bg-white/10 dark:hover:bg-white/15"
-              >
-                Prototype is enough
-              </button>
-              <button
-                onClick={approveDrawing}
-                className="rounded-xl bg-accent px-4 py-2 text-[12px] font-semibold text-white shadow-md transition hover:bg-press"
-              >
-                Build this
-              </button>
-            </div>
-          </div>
-        )}
 
         <div className="relative flex min-h-0 h-full w-full items-start justify-center overflow-hidden bg-[#0c0f17]">
           <div
