@@ -429,6 +429,10 @@ class BuilderAgent:
         contract = (design_contract_message(self.design["selection"])
                     if self.design and self.design.get("selection") else "")
         return "\n".join([
+            "THE WHOLE APPLICATION, NOT HALF OF IT. Every screen on the list, finished, "
+            "and every link on every one of them landing on a page that exists. No stub, "
+            "no placeholder, nothing left for later.",
+            "",
             "EVERY PAGE IS A LONG, BIG PAGE. This is the thing that goes wrong most "
             "often, so it is said first and said again below: not a short page, not a "
             "summary, not a sketch - a long page of the kind a real product ships. Six "
@@ -601,6 +605,9 @@ class BuilderAgent:
         if not pages:
             return instruction
         return "\n".join([
+            "THE WHOLE APPLICATION, NOT HALF OF IT. Every screen in the drawing, built, "
+            "and every route it links to answering. No stub, no placeholder, nothing "
+            "left for later.",
             "THE APPROVED PROTOTYPE - this is what the product looks like.",
             f"`.agentforge/prototype/` holds the HTML the user approved: "
             f"{', '.join(pages)} and `styles.css`.",

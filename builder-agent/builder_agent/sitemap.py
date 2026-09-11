@@ -86,6 +86,20 @@ def unreachable(entries) -> list[str]:
                   if entry["file"] != "index.html" and entry["file"] not in linked)
 
 
+def dangling(entries) -> list[str]:
+    """Addresses the pages link to that no page answers.
+
+    The other half of a whole application, and the half nothing was reporting:
+    a bakery linked four pages at `rooms.html` and never wrote it, so every one
+    of those was a dead end the moment anybody clicked. Orphans are pages
+    nobody can reach; these are journeys that stop.
+    """
+    have = {entry["file"] for entry in entries}
+    missing = {target for entry in entries for target in entry.get("links") or []
+               if target not in have}
+    return sorted(missing)
+
+
 def render(entries, *, drawn: bool = False) -> str:
     """The map as a prompt block, or "" when there is nothing worth saying."""
     if not entries:
@@ -109,6 +123,13 @@ def render(entries, *, drawn: bool = False) -> str:
     if orphans:
         lines.append(f"Nothing links to: {', '.join(orphans)}. Every screen has to be "
                      "reachable from the navigation, so put them in it.")
+    dead = dangling(entries)
+    if dead:
+        lines.append(f"Linked but missing: {', '.join(dead)}. Every one of those is a "
+                     "dead end the moment somebody clicks it - write the page, or stop "
+                     "linking to it.")
+    if not orphans and not dead:
+        lines.append("Every screen is reachable and every link lands. Keep it that way.")
     return "\n".join(lines)
 
 

@@ -525,8 +525,12 @@ class LongPageInstructionTests(unittest.TestCase):
             events=Events(), client=object())
         agent.screens = [{"route": "/", "label": "Home", "what": "the front page"}]
         prompt = agent._prototype_task("a hotel booking site")
-        self.assertTrue(prompt.lstrip().startswith(self.HEADING),
-                        "the long-page directive has to come first, not fifth")
+        # It leads everything except the one line asking for the whole app,
+        # which now comes first in both passes.
+        head = prompt.lstrip().split("\n\n", 1)
+        self.assertTrue(head[0].startswith("THE WHOLE APPLICATION"), head[0][:60])
+        self.assertTrue(head[1].lstrip().startswith(self.HEADING),
+                        "the long-page directive has to come next, not fifth")
 
     def test_writing_a_page_says_it_again(self):
         from builder_agent.tools.files import _page_note
@@ -719,3 +723,28 @@ class TheDrawingsScriptHasToParseTests(unittest.TestCase):
     def test_no_script_is_not_an_error(self):
         from builder_agent.agent import _script_error
         self.assertEqual(_script_error(Path(tempfile.mkdtemp()) / "absent.js"), "")
+
+
+class TheWholeApplicationTests(unittest.TestCase):
+    """Both passes are asked for all of it, in one line, before anything else."""
+
+    def _agent(self):
+        root = Path(tempfile.mkdtemp())
+        proto = root / ".agentforge" / "prototype"
+        proto.mkdir(parents=True)
+        (proto / "index.html").write_text("<title>Home</title>", encoding="utf-8")
+        agent = BuilderAgent(
+            Config(workspace=root, model="scripted", unit_tests=False,
+                   e2e_tests=False, state_root=root / ".state"),
+            events=Events(), client=object())
+        agent.prototype_dir = proto
+        agent.screens = [{"route": "/", "label": "Home", "what": "front"}]
+        return agent
+
+    def test_the_drawing_is_asked_first(self):
+        first = self._agent()._prototype_task("a shop").lstrip().splitlines()[0]
+        self.assertTrue(first.startswith("THE WHOLE APPLICATION, NOT HALF OF IT"), first)
+
+    def test_the_build_is_asked_first(self):
+        first = self._agent()._with_prototype("BUILD IT").lstrip().splitlines()[0]
+        self.assertTrue(first.startswith("THE WHOLE APPLICATION, NOT HALF OF IT"), first)

@@ -79,3 +79,34 @@ class PersistenceTests(unittest.TestCase):
 
     def test_no_file_is_an_empty_map(self):
         self.assertEqual(sitemap.load(Path(tempfile.mkdtemp())), [])
+
+
+class DeadEndsTests(unittest.TestCase):
+    """A link that lands on nothing is the other half of an unfinished app.
+
+    Orphans - pages nobody can reach - were reported. Dead ends were not, and
+    they are the ones a person actually hits: a bakery linked four pages at
+    `rooms.html` and never wrote it.
+    """
+
+    ENTRIES = [
+        {"file": "index.html", "drawn": True, "links": ["models.html", "gone.html"]},
+        {"file": "models.html", "drawn": True, "links": ["index.html"]},
+        {"file": "admin.html", "drawn": True, "links": []},
+    ]
+
+    def test_a_link_with_no_page_behind_it_is_named(self):
+        self.assertEqual(sitemap.dangling(self.ENTRIES), ["gone.html"])
+
+    def test_a_page_that_exists_is_not(self):
+        self.assertNotIn("models.html", sitemap.dangling(self.ENTRIES))
+
+    def test_both_faults_are_reported_and_they_are_different_faults(self):
+        text = sitemap.render(self.ENTRIES, drawn=True)
+        self.assertIn("Nothing links to: admin.html", text)
+        self.assertIn("Linked but missing: gone.html", text)
+
+    def test_a_whole_map_says_so_rather_than_saying_nothing(self):
+        whole = [{"file": "index.html", "drawn": True, "links": ["a.html"]},
+                 {"file": "a.html", "drawn": True, "links": ["index.html"]}]
+        self.assertIn("every link lands", sitemap.render(whole, drawn=True))

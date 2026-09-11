@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-11T04:04:49+00:00
+Run at (UTC): 2026-09-11T04:13:45+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 504
+Unit tests: 510
 Integration tests: 24
-Total tests run: 528
+Total tests run: 534
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 28.916s
+Duration: 26.066s
 
 Detailed results
 ----------------
@@ -66,6 +66,8 @@ test_the_build_is_told_to_carry_the_addresses_over (test.unit.builder.test_agent
 test_a_broken_script_is_reported_with_its_error (test.unit.builder.test_agent_passes.TheDrawingsScriptHasToParseTests.test_a_broken_script_is_reported_with_its_error) ... ok
 test_a_good_script_is_silent (test.unit.builder.test_agent_passes.TheDrawingsScriptHasToParseTests.test_a_good_script_is_silent) ... ok
 test_no_script_is_not_an_error (test.unit.builder.test_agent_passes.TheDrawingsScriptHasToParseTests.test_no_script_is_not_an_error) ... ok
+test_the_build_is_asked_first (test.unit.builder.test_agent_passes.TheWholeApplicationTests.test_the_build_is_asked_first) ... ok
+test_the_drawing_is_asked_first (test.unit.builder.test_agent_passes.TheWholeApplicationTests.test_the_drawing_is_asked_first) ... ok
 test_a_build_that_settled_nothing_is_not_lectured (test.unit.builder.test_agent_passes.UnconfiguredCapabilitiesTests.test_a_build_that_settled_nothing_is_not_lectured) ... ok
 test_the_rule_travels_with_the_settled_notes (test.unit.builder.test_agent_passes.UnconfiguredCapabilitiesTests.test_the_rule_travels_with_the_settled_notes) ... ok
 test_a_compound_command_is_judged_by_its_worst_segment (test.unit.builder.test_engine.CommandPolicyTests.test_a_compound_command_is_judged_by_its_worst_segment) ... ok
@@ -317,6 +319,10 @@ test_the_same_setting_cannot_be_asked_for_twice (test.unit.builder.test_setup_qu
 test_a_declared_option_matches_a_file_the_skill_points_at (test.unit.builder.test_setup_questions.SkillFileTests.test_a_declared_option_matches_a_file_the_skill_points_at)
 The question and the guidance cannot drift apart silently. ... ok
 test_every_provider_named_by_a_skill_has_a_file_to_read (test.unit.builder.test_setup_questions.SkillFileTests.test_every_provider_named_by_a_skill_has_a_file_to_read) ... ok
+test_a_link_with_no_page_behind_it_is_named (test.unit.builder.test_sitemap.DeadEndsTests.test_a_link_with_no_page_behind_it_is_named) ... ok
+test_a_page_that_exists_is_not (test.unit.builder.test_sitemap.DeadEndsTests.test_a_page_that_exists_is_not) ... ok
+test_a_whole_map_says_so_rather_than_saying_nothing (test.unit.builder.test_sitemap.DeadEndsTests.test_a_whole_map_says_so_rather_than_saying_nothing) ... ok
+test_both_faults_are_reported_and_they_are_different_faults (test.unit.builder.test_sitemap.DeadEndsTests.test_both_faults_are_reported_and_they_are_different_faults) ... ok
 test_a_page_nothing_links_to_is_named (test.unit.builder.test_sitemap.FromTheDrawingTests.test_a_page_nothing_links_to_is_named) ... ok
 test_a_page_the_drawing_added_joins_the_map (test.unit.builder.test_sitemap.FromTheDrawingTests.test_a_page_the_drawing_added_joins_the_map) ... ok
 test_a_planned_screen_that_is_not_drawn_yet_survives_and_is_marked (test.unit.builder.test_sitemap.FromTheDrawingTests.test_a_planned_screen_that_is_not_drawn_yet_survives_and_is_marked) ... ok
@@ -611,6 +617,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 528 tests in 28.916s
+Ran 534 tests in 26.066s
 
 OK
