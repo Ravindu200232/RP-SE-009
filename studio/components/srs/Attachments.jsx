@@ -27,9 +27,9 @@ export function AttachButtons({ attach, disabled, label = 'Attach', cell }) {
   const picker = useRef(null)
   const recorder = useRecorder(file => attach.add([file]))
 
-  const cellClass = 'm-2 mr-0 inline-flex h-9 items-center gap-2 rounded-xl border border-line bg-white/70 '
-                  + 'px-3 text-[11px] font-semibold text-ink shadow-sm transition-all hover:bg-white '
-                  + 'disabled:pointer-events-none disabled:text-faint dark:bg-white/5 dark:hover:bg-white/10'
+  const cellClass = 'm-2 mr-0 inline-flex h-9 items-center gap-2 rounded-xl border border-white/10 bg-white/[.06] '
+                  + 'px-3 text-[11px] font-semibold text-white/90 shadow-sm transition-all hover:bg-white/[.12] hover:text-white '
+                  + 'disabled:pointer-events-none disabled:opacity-40'
 
   return (
     <>

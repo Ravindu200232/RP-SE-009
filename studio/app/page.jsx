@@ -348,12 +348,12 @@ export default function Studio() {
         {/* Workspace Top Navbar */}
         <div className="flex h-[48px] shrink-0 items-center gap-2 border-b border-line bg-panel/95 px-4 backdrop-blur-md">
           {screen === 'home' && (
-            <span className="flex items-center rounded-full bg-panel2 px-3 py-1 text-[10px] font-semibold uppercase tracking-[.14em] text-label border border-line">
+            <span className="flex items-center rounded-full bg-white/[.05] border border-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[.14em] text-white/60">
               New project
             </span>
           )}
           {screen === 'projects' && (
-            <span className="flex items-center rounded-full bg-panel2 px-3 py-1 text-[10px] font-semibold uppercase tracking-[.14em] text-label border border-line">
+            <span className="flex items-center rounded-full bg-white/[.05] border border-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[.14em] text-white/60">
               Projects
             </span>
           )}

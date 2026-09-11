@@ -12,8 +12,7 @@ const readJSON = (k, fallback) => {
 
 
 const DEFAULTS = {
-// Use the light theme until the browser saves another choice.
-  theme: 'light',
+  theme: 'dark',
 
   models: { planner: '', design: '', builder: '', agent: '', qa: '',
             srs: '', deploy: '', image: 'fooocus' },
@@ -211,12 +210,16 @@ export const useStore = create((set, get) => ({
 
   hydrate: () => {
     if (!LS) return
-    const theme = read(KEYS.theme, DEFAULTS.theme)
+    const theme = 'dark'
     // Migrate the former single Agent choice into each explicit role. Once a
     // role is picked it has its own key and no longer follows the legacy one.
     const legacyAgent = read(KEYS.agent, DEFAULTS.models.agent)
 
-    try { document.documentElement.setAttribute('data-theme', theme) } catch { }
+    try {
+      document.documentElement.setAttribute('data-theme', 'dark')
+      document.documentElement.classList.add('dark')
+      LS?.setItem(KEYS.theme, 'dark')
+    } catch { }
     set({
       theme,
       models: {

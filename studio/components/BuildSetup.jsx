@@ -23,7 +23,7 @@ export default function BuildSetup({
       <input type="hidden" id="build-model" value={model || TIERS[currentTier]?.model || ''} />
 
       {/* High and Ultra options beside the input composer */}
-      <div className="inline-flex h-9 items-center gap-1 rounded-full border border-line bg-raised p-1" role="group" aria-label="Performance tier">
+      <div className="inline-flex h-9 items-center gap-1 rounded-full border border-white/15 bg-white/[.05] p-1" role="group" aria-label="Performance tier">
         <button
           type="button"
           aria-pressed={currentTier === 'high'}
@@ -33,7 +33,7 @@ export default function BuildSetup({
             'inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium transition-all',
             currentTier === 'high'
               ? 'bg-accent text-white shadow-sm'
-              : 'text-muted hover:text-ink hover:bg-panel2'
+              : 'text-white/60 hover:text-white hover:bg-white/[.08]'
           )}
         >
           <Zap className="size-3 shrink-0" aria-hidden="true" />
@@ -48,7 +48,7 @@ export default function BuildSetup({
             'inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium transition-all',
             currentTier === 'ultra'
               ? 'bg-accent text-white shadow-sm'
-              : 'text-muted hover:text-ink hover:bg-panel2'
+              : 'text-white/60 hover:text-white hover:bg-white/[.08]'
           )}
         >
           <Sparkles className="size-3 shrink-0" aria-hidden="true" />
@@ -56,15 +56,15 @@ export default function BuildSetup({
         </button>
       </div>
 
-      <label className="inline-flex h-9 min-w-0 max-w-full items-center gap-2 rounded-full border border-line bg-raised px-3 text-ink focus-within:ring-2 focus-within:ring-accent/35">
-        <Layers className="size-3.5 shrink-0 text-muted" aria-hidden="true" />
+      <label className="inline-flex h-9 min-w-0 max-w-full items-center gap-2 rounded-full border border-white/15 bg-white/[.05] px-3 text-white focus-within:ring-2 focus-within:ring-accent/35">
+        <Layers className="size-3.5 shrink-0 text-white/50" aria-hidden="true" />
         <span className="sr-only">Stack</span>
         <select id="build-stack" value={stack} onChange={event => onStackChange(event.target.value)}
-                className="h-full min-w-0 max-w-[190px] appearance-none bg-transparent pr-1 text-[12px] font-medium outline-none">
-          <option value="">Auto stack</option>
-          {STACKS.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+                className="h-full min-w-0 max-w-[190px] appearance-none bg-transparent pr-1 text-[12px] font-medium text-white/80 outline-none">
+          <option value="" className="bg-[#121622] text-white">Auto stack</option>
+          {STACKS.map(item => <option key={item.id} value={item.id} className="bg-[#121622] text-white">{item.name}</option>)}
         </select>
-        <ChevronDown className="size-3 shrink-0 text-muted" aria-hidden="true" />
+        <ChevronDown className="size-3 shrink-0 text-white/50" aria-hidden="true" />
       </label>
     </div>
   )
