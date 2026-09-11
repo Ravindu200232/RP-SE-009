@@ -16,7 +16,7 @@
 
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  ChevronDown, CircleAlert, CircleCheck, Clock, FileCode2, FlaskConical, Loader2,
+  CheckCircle2, ChevronDown, ChevronRight, CircleAlert, CircleCheck, Clock, FileCode2, FlaskConical, ListChecks, Loader2,
   MessageSquare, MousePointerClick, Palette, Pencil, Search, Send, Sparkles,
   Square, Terminal, Wrench, X,
 } from 'lucide-react'
@@ -239,37 +239,39 @@ export default function AgentChat() {
         </div>
       </div>
 
-      <footer className="shrink-0 border-t border-line/60 px-3 py-2.5">
-              <Attached items={selection} onRemove={removeSelection} />
-              <div className="flex items-end gap-2">
-                <textarea
-                  ref={box}
-                  aria-label="Continue this project"
-                  value={text} rows={1}
-                  disabled={!project || reading}
-                  placeholder={question
-                    ? 'Answer the question above…'
-                    : drawing ? 'Say what to change about the drawing…'
-                    : busy ? 'Say what is next — it goes when this finishes'
-                    : selection.length
-                      ? 'Say what should change about it…'
-                    : project ? 'What would you like to do next?'
-                              : 'Open a project first'}
-                  onChange={e => setText(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit() }
-                  }}
-                  className="max-h-[110px] min-h-[38px] flex-1 resize-y rounded-xl border border-line bg-white/70 px-3 py-2 text-[12.5px] leading-relaxed outline-none transition-colors focus:border-accent disabled:opacity-45 dark:bg-white/5" />
-                <button onClick={submit}
-                        disabled={!project || reading || !text.trim()}
-                        title={busy ? 'Queue this (Enter)' : 'Send (Enter)'}
-                        className="grid size-[38px] shrink-0 place-items-center rounded-xl bg-accent text-white shadow-sm transition-opacity disabled:opacity-35">
-                  {reading ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-                </button>
-              </div>
-              {project && (
-                <EditAttach attach={attach} disabled={reading} className="mt-1.5" />
-              )}
+      <footer className="shrink-0 border-t border-line px-3.5 py-3">
+        <Attached items={selection} onRemove={removeSelection} />
+        <div className="rounded-2xl border border-line bg-panel2/70 p-2.5 focus-within:border-accent/50 focus-within:bg-panel shadow-sm transition-all">
+          <textarea
+            ref={box}
+            aria-label="Continue this project"
+            value={text} rows={2}
+            disabled={!project || reading}
+            placeholder={question
+              ? 'Answer the question above…'
+              : drawing ? 'Say what to change about the drawing…'
+              : busy ? 'Say what is next — it goes when this finishes'
+              : selection.length
+                ? 'Say what should change about it…'
+              : project ? 'How can AgentForge help you today? (or /command)'
+                        : 'Open a project first'}
+            onChange={e => setText(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit() }
+            }}
+            className="w-full resize-none bg-transparent px-2 py-1 text-[13px] leading-relaxed text-ink outline-none placeholder:text-muted2 disabled:opacity-45" />
+          <div className="mt-1 flex items-center justify-between border-t border-line/40 pt-1.5 px-1">
+            {project ? (
+              <EditAttach attach={attach} disabled={reading} />
+            ) : <span />}
+            <button onClick={submit}
+                    disabled={!project || reading || !text.trim()}
+                    title={busy ? 'Queue this (Enter)' : 'Send (Enter)'}
+                    className="grid size-8 shrink-0 place-items-center rounded-xl bg-accent text-white shadow-sm transition-all hover:bg-press disabled:opacity-30">
+              {reading ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
+            </button>
+          </div>
+        </div>
       </footer>
 
       <StatusLine stats={stats} />
@@ -510,6 +512,14 @@ function Queued({ item, onDrop }) {
   )
 }
 
+function parseFileInfo(title) {
+  const clean = String(title || '').replace(/^(written|created|patched|edited|writing|editing|removed)\s+/i, '').trim()
+  const pathOnly = clean.replace(/\s*\(\d+\s*lines\)/i, '').trim()
+  const parts = pathOnly.split('/')
+  const fileName = parts[parts.length - 1] || pathOnly
+  return { fileName, filePath: pathOnly }
+}
+
 /**
  * One row of the feed.
  *
@@ -522,7 +532,7 @@ function Queued({ item, onDrop }) {
 const Turn = memo(function Turn({ turn, live }) {
   if (turn.role === 'user') {
     return (
-      <div className="flex flex-col items-end gap-1.5">
+      <div className="flex flex-col items-end gap-1.5 my-1">
         {(turn.shots || []).length > 0 && (
           <div className="flex max-w-[88%] flex-wrap justify-end gap-1.5">
             {turn.shots.map((shot, i) => (
@@ -531,7 +541,7 @@ const Turn = memo(function Turn({ turn, live }) {
             ))}
           </div>
         )}
-        <p className="max-w-[88%] rounded-2xl rounded-br-md bg-accent px-3.5 py-2 text-[12px] leading-relaxed text-white shadow-sm">
+        <p className="max-w-[88%] rounded-2xl rounded-tr-sm bg-accent/15 border border-accent/25 px-4 py-2.5 text-[13px] leading-relaxed text-ink shadow-sm dark:bg-[#342f66]/50 dark:border-accent/35 dark:text-purple-100">
           {turn.text}
         </p>
       </div>
@@ -542,19 +552,57 @@ const Turn = memo(function Turn({ turn, live }) {
     const Icon = turn.kind === 'plan' ? Search
       : turn.kind === 'design' ? Palette : Sparkles
     return (
-      <div className="flex gap-2.5">
+      <div className="flex gap-2.5 my-1">
         <span className={cn('mt-0.5 grid size-6 shrink-0 place-items-center rounded-full',
           turn.tone === 'bad' ? 'bg-bad/12 text-bad'
             : turn.tone === 'ok' ? 'bg-ok-tint text-ok' : 'bg-tint text-accent')}>
           <Icon className="size-3" />
         </span>
         <div className="min-w-0 flex-1">
-          {turn.title && <p className="text-[12px] font-semibold text-ink">{turn.title}</p>}
+          {turn.title && <p className="text-[12.5px] font-semibold text-ink">{turn.title}</p>}
           {turn.kind === 'design' && turn.design
             ? <DesignCard design={turn.design} />
             : turn.kind === 'plan'
-              ? <pre className="mt-1 max-h-[280px] overflow-auto whitespace-pre-wrap rounded-xl border border-line/70 bg-panel2/60 p-3 font-mono text-[11px] leading-relaxed text-ink">{turn.text}</pre>
-              : <p className="whitespace-pre-wrap text-[12px] leading-relaxed text-muted">{turn.text}</p>}
+              ? (
+                <div className="mt-1 rounded-xl border border-line bg-panel2/60 p-3">
+                  <div className="flex items-center gap-2 text-accent font-semibold text-[12px] mb-2">
+                    <ListChecks className="size-3.5" /> Plan
+                  </div>
+                  <pre className="max-h-[280px] overflow-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-ink">{turn.text}</pre>
+                </div>
+              )
+              : <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-ink/90 font-normal">{turn.text}</p>}
+        </div>
+      </div>
+    )
+  }
+
+  // Bolt File Action Card (Image 1)
+  if (turn.kind === 'write') {
+    const { fileName, filePath } = parseFileInfo(turn.title)
+    return (
+      <div onClick={() => {
+             useStore.getState().setView('code')
+             if (filePath) useStore.getState().selectFile(filePath)
+           }}
+           title={filePath || fileName}
+           className="group my-1.5 flex items-center justify-between gap-3 rounded-2xl border border-line bg-panel2/60 p-3 shadow-sm transition-all hover:border-accent/40 hover:bg-panel cursor-pointer">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-blue-500/10 text-blue-500 transition-transform group-hover:scale-105">
+            <Pencil className="size-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="truncate font-semibold text-ink text-[13px]">{fileName}</p>
+            <p className="truncate font-mono text-[11px] text-muted">{filePath || fileName}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {live ? (
+            <Loader2 className="size-4 animate-spin text-accent" />
+          ) : (
+            <CheckCircle2 className="size-5 text-emerald-500" />
+          )}
+          <ChevronRight className="size-4 text-muted2 transition-transform group-hover:translate-x-0.5" />
         </div>
       </div>
     )
@@ -562,7 +610,7 @@ const Turn = memo(function Turn({ turn, live }) {
 
   const Icon = ICONS[turn.kind] || Sparkles
   return (
-    <div className="flex gap-2.5">
+    <div className="flex gap-2.5 my-1">
       <span className={cn('mt-0.5 grid size-6 shrink-0 place-items-center rounded-full',
         KIND_TONE[turn.kind] || 'bg-tint text-accent')}>
         {/* The step actually happening spins; the ones behind it do not. */}

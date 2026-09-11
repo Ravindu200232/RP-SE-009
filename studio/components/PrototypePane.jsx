@@ -422,7 +422,7 @@ export default function PrototypePane({ project, hidden, onBuild }) {
       </div>
 
       {/* Frame Container */}
-      <div className="relative min-h-0 flex-1 overflow-hidden bg-[radial-gradient(circle_at_top,#f8fbff_0%,#edf2fb_45%,#dfe7f5_100%)] p-4 dark:bg-[radial-gradient(circle_at_top,#1d2333_0%,#151a26_45%,#0f141d_100%)]">
+      <div className="relative min-h-0 flex-1 overflow-hidden bg-canvas">
         <canvas ref={canvasRef}
                 className={cn('absolute z-[8]', pencilOn ? 'block' : 'hidden')}
                 style={{ pointerEvents: pencilOn ? 'auto' : 'none',
@@ -466,9 +466,9 @@ export default function PrototypePane({ project, hidden, onBuild }) {
           </div>
         )}
 
-        <div className="relative mx-auto flex h-full max-w-full items-start justify-center overflow-auto rounded-[28px] bg-white/28 p-2 ring-1 ring-white/55 dark:bg-white/[.02] dark:ring-white/[.06]">
+        <div className="relative flex min-h-0 h-full w-full items-start justify-center overflow-hidden bg-canvas">
           <div
-            className="relative h-full w-full max-w-full overflow-hidden rounded-[22px] bg-white shadow-[0_24px_70px_rgba(15,23,42,.14)] ring-1 ring-black/[.06] dark:bg-[#0f1720] dark:shadow-[0_24px_70px_rgba(0,0,0,.45)] dark:ring-white/[.06]"
+            className={cn("relative h-full w-full max-w-full overflow-hidden bg-white", width && "border-x border-line shadow-lg")}
             style={{ width: width ? width + 'px' : '100%' }}
           >
             <iframe

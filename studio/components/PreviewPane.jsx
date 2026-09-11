@@ -513,8 +513,8 @@ export default function PreviewPane({ hidden, onBuild }) {
 
         {tests.running && e2eLive && <LiveE2EOverlay event={e2eLive} />}
 
-        <div className="relative mx-auto flex h-full max-w-full items-start justify-center overflow-auto rounded-[28px] bg-white/28 p-2 ring-1 ring-white/55 dark:bg-white/[.02] dark:ring-white/[.06]">
-          <div className="relative h-full w-full max-w-full overflow-hidden rounded-[22px] bg-white shadow-[0_24px_70px_rgba(15,23,42,.14)] ring-1 ring-black/[.06] dark:bg-[#0f1720] dark:shadow-[0_24px_70px_rgba(0,0,0,.45)] dark:ring-white/[.06]"
+        <div className="relative flex min-h-0 flex-1 w-full items-start justify-center overflow-hidden bg-canvas">
+          <div className={cn("relative h-full w-full max-w-full overflow-hidden bg-white", width && "border-x border-line shadow-lg")}
                style={{ width: width ? width + 'px' : '100%' }}>
             <iframe ref={frameRef} id="frame" title="preview" src="about:blank"
                     className="absolute inset-0 block h-full w-full border-0 bg-white" />

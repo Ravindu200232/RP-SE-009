@@ -320,7 +320,7 @@ export default function Studio() {
   }
 
   return (
-    <div className="flex h-full bg-[radial-gradient(circle_at_20%_0%,#f8faff_0%,#edf1f7_42%,#e7ebf3_100%)] p-2.5 dark:bg-[radial-gradient(circle_at_20%_0%,#1a2030_0%,#111722_42%,#0c1119_100%)]">
+    <div className="flex h-full w-full overflow-hidden bg-bg text-ink">
       <Sidebar
         projects={projects}
         onOpen={openProject}
@@ -344,34 +344,38 @@ export default function Studio() {
                                          .catch(() => { })} />
       )}
 
-      <div className="ml-2.5 flex min-w-0 flex-1 flex-col overflow-hidden rounded-[30px] bg-panel/92 shadow-[0_28px_75px_rgba(30,41,59,.13)] ring-1 ring-white/75 backdrop-blur-2xl dark:shadow-[0_28px_75px_rgba(0,0,0,.42)] dark:ring-white/[.055]">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-panel">
         {/* Workspace Top Navbar */}
-        <div className="flex h-[60px] shrink-0 items-center gap-1.5 border-b border-line/55 bg-white/48 px-4 backdrop-blur-2xl dark:bg-white/[.02]">
+        <div className="flex h-[48px] shrink-0 items-center gap-2 border-b border-line bg-panel/95 px-4 backdrop-blur-md">
           {screen === 'home' && (
-            <span className="flex items-center rounded-full bg-panel2 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[.16em] text-label">
+            <span className="flex items-center rounded-full bg-panel2 px-3 py-1 text-[10px] font-semibold uppercase tracking-[.14em] text-label border border-line">
               New project
             </span>
           )}
           {screen === 'projects' && (
-            <span className="flex items-center rounded-full bg-panel2 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[.16em] text-label">
+            <span className="flex items-center rounded-full bg-panel2 px-3 py-1 text-[10px] font-semibold uppercase tracking-[.14em] text-label border border-line">
               Projects
             </span>
           )}
 
-          {screen === 'workspace' && tabs.map(({ id, label, Icon }) => (
-            <button key={id} onClick={() => setView(id)}
-                    className={cn('inline-flex h-9 items-center gap-[7px] rounded-full px-3.5',
-                      'font-display text-[11px] font-semibold transition-all',
-                      view === id ? 'bg-white/90 text-ink shadow-[0_5px_16px_rgba(30,41,59,.08)] ring-1 ring-black/[.04] dark:bg-white/10 dark:ring-white/[.06]'
-                                  : 'text-muted hover:bg-white/55 hover:text-ink dark:hover:bg-white/5')}>
-              <Icon className="size-[13px] shrink-0" />
-              {label}
-              {id === 'testing' && unitStatus?.failed > 0
-                && !(busy && (!busyProject || busyProject === project)) && (
-                <Badge tone="bad">{unitStatus.failed}</Badge>
-              )}
-            </button>
-          ))}
+          {screen === 'workspace' && (
+            <div className="flex items-center gap-1 rounded-full bg-panel2/80 p-0.5 border border-line">
+              {tabs.map(({ id, label, Icon }) => (
+                <button key={id} onClick={() => setView(id)}
+                        className={cn('inline-flex h-7 items-center gap-1.5 rounded-full px-3',
+                          'font-display text-[11px] font-semibold transition-all',
+                          view === id ? 'bg-accent/15 text-accent shadow-sm ring-1 ring-accent/30 dark:bg-white/10 dark:text-ink dark:ring-white/10'
+                                      : 'text-muted hover:bg-black/[.03] hover:text-ink dark:hover:bg-white/5')}>
+                  <Icon className="size-3.5 shrink-0" />
+                  {label}
+                  {id === 'testing' && unitStatus?.failed > 0
+                    && !(busy && (!busyProject || busyProject === project)) && (
+                    <Badge tone="bad">{unitStatus.failed}</Badge>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
 
           <span className="flex-1" />
 

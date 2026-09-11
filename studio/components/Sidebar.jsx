@@ -75,7 +75,7 @@ export default function Sidebar({
 
   if (collapsed) {
     return (
-      <aside className="glass-panel flex w-[56px] shrink-0 flex-col items-center gap-2 overflow-hidden rounded-[24px] py-3">
+      <aside className="flex w-[52px] shrink-0 flex-col items-center gap-2 overflow-hidden h-full border-r border-line bg-panel py-3">
         <Tip text="Show the sidebar" side="right">
           <button onClick={() => setCollapsed(false)}
                   className="grid size-9 place-items-center rounded-xl text-ink transition-colors hover:bg-ink/[.07]">
@@ -125,14 +125,16 @@ export default function Sidebar({
   }
 
   return (
-    <aside className="glass-panel flex w-[var(--sidebar-w)] shrink-0 flex-col overflow-hidden rounded-[24px]">
-      {/* Top Header: Brand and Window Controls */}
-      <header className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-line/70 px-4 py-3.5">
+    <aside className="flex w-[var(--sidebar-w)] shrink-0 flex-col overflow-hidden h-full border-r border-line bg-panel">
+      {/* Top Header: Brand and Controls */}
+      <header className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-line px-4 py-3">
         <div className="flex items-center gap-2.5">
-          <img src="/__agentforge/agentforge-mark.png" alt="AgentForge"
-               width={30} height={30}
-               className="size-7 shrink-0 rounded-lg border border-white/60 object-cover shadow-sm" />
-          <span className="font-display text-[15px] font-bold tracking-tight text-ink">
+          <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-accent/15 ring-1 ring-accent/25 shadow-sm overflow-hidden">
+            <img src="/__agentforge/agentforge-mark.png" alt="AgentForge"
+                 width={22} height={22}
+                 className="size-5 object-contain" />
+          </div>
+          <span className="font-display text-[14.5px] font-bold tracking-tight text-ink">
             agentforge<span className="text-accent text-[12px] font-normal ml-0.5">.ai</span>
           </span>
         </div>
