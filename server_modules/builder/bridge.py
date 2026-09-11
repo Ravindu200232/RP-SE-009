@@ -96,7 +96,8 @@ class StudioBridge:
         ememory(dict(self.stats))
 
     def on_start(self, p):
-        elog("INFO", f"   {p.get('model')} · {p.get('stack')} · {p.get('quality')} profile")
+        # The tier is what the studio shows; the model behind it is not named.
+        elog("INFO", f"   {p.get('stack')} · {p.get('quality')} profile")
         self._stats(model=str(p.get("model") or ""), stack=str(p.get("stack") or ""),
                     quality=str(p.get("quality") or ""))
         eprog(_phase_label(self.phase), self._band(0.05))
