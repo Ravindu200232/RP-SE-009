@@ -17,6 +17,7 @@ an approval prompt is a convenience; skipping verification would be a lie.
 from __future__ import annotations
 
 import re
+import subprocess
 import uuid
 from pathlib import Path
 
@@ -78,6 +79,29 @@ def wants_design(task: str, plan: str = "") -> bool:
         # Unless the plan it produced is full of pages and components anyway.
         return bool(plan) and bool(_UI_FILES.search(str(plan)))
     return True
+
+
+
+def _script_error(path: Path) -> str:
+    """The first syntax error in a drawing's script, or "" if it parses.
+
+    Node is what the stack already requires, so this costs nothing and is
+    exact. If it is somehow absent the drawing proceeds - a missing checker is
+    not a reason to fail a pass.
+    """
+    if not path.is_file():
+        return ""
+    try:
+        done = subprocess.run(["node", "--check", str(path)], capture_output=True,
+                              text=True, timeout=20)
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    if done.returncode == 0:
+        return ""
+    for line in (done.stderr or "").splitlines():
+        if "SyntaxError" in line:
+            return line.strip()[:160]
+    return "it does not parse"
 
 
 def _page_file(route: str) -> str:
@@ -345,6 +369,22 @@ class BuilderAgent:
                                  message="The prototype pass wrote no pages; building "
                                          "from the design contract alone.")
                 break
+
+            # A script that does not parse takes the whole flow with it, and the
+            # page still looks finished, so nobody finds out until they click.
+            # Every drawing of a twenty-screen product broke this way - the model
+            # patches demo.js repeatedly and leaves a duplicated tail behind.
+            broken = _script_error(root / "demo.js")
+            if broken and round_number + 1 < self.MAX_PROTOTYPE_ROUNDS:
+                self.events.emit("notice", level="warn",
+                                 message=f"demo.js does not parse ({broken}); fixing it "
+                                         "before showing the drawing.")
+                feedback = ("`demo.js` has a syntax error and none of the flow runs: "
+                            f"{broken}. Read the file around that line and repair it - "
+                            "the usual cause is a block that was closed and then had its "
+                            "last few lines repeated after the closing brace. Change "
+                            "nothing else.")
+                continue
 
             answer = self.approvals.ask(
                 "prototype",

@@ -688,3 +688,34 @@ class MotionIsAskedForEverywhereTests(unittest.TestCase):
                 text = (skills / name / "SKILL.md").read_text(encoding="utf-8")
                 self.assertNotIn("IntersectionObserver", text)
                 self.assertNotIn("requestAnimationFrame", text)
+
+
+class TheDrawingsScriptHasToParseTests(unittest.TestCase):
+    """A drawing whose script is broken looks finished and does nothing.
+
+    Every drawing of the twenty-screen Ferrari platform shipped a demo.js with a
+    syntax error - the model patches that file repeatedly and leaves a
+    duplicated tail after a closing brace. The pages render, the flow is dead,
+    and nobody finds out until they click. The smaller products, with a smaller
+    script, were all fine.
+    """
+
+    def _write(self, body):
+        root = Path(tempfile.mkdtemp())
+        path = root / "demo.js"
+        path.write_text(body, encoding="utf-8")
+        return path
+
+    def test_a_broken_script_is_reported_with_its_error(self):
+        from builder_agent.agent import _script_error
+        # The shape that actually shipped: a block closed, then repeated.
+        broken = self._write("items.forEach(function (i) {\n  i.hidden = true;\n});\n});\n")
+        self.assertIn("SyntaxError", _script_error(broken))
+
+    def test_a_good_script_is_silent(self):
+        from builder_agent.agent import _script_error
+        self.assertEqual(_script_error(self._write("const KEY='x';\nlocalStorage.getItem(KEY);\n")), "")
+
+    def test_no_script_is_not_an_error(self):
+        from builder_agent.agent import _script_error
+        self.assertEqual(_script_error(Path(tempfile.mkdtemp()) / "absent.js"), "")

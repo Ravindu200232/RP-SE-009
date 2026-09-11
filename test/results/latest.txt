@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-11T03:32:57+00:00
+Run at (UTC): 2026-09-11T04:04:49+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 501
+Unit tests: 504
 Integration tests: 24
-Total tests run: 525
+Total tests run: 528
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 24.310s
+Duration: 28.916s
 
 Detailed results
 ----------------
@@ -63,6 +63,9 @@ test_thinking_can_be_turned_on_without_starting_again (test.unit.builder.test_ag
 test_it_names_both_ways_the_address_gets_lost (test.unit.builder.test_agent_passes.TheBuildKeepsTheDrawnPicturesTests.test_it_names_both_ways_the_address_gets_lost) ... ok
 test_it_says_where_a_data_driven_picture_should_live (test.unit.builder.test_agent_passes.TheBuildKeepsTheDrawnPicturesTests.test_it_says_where_a_data_driven_picture_should_live) ... ok
 test_the_build_is_told_to_carry_the_addresses_over (test.unit.builder.test_agent_passes.TheBuildKeepsTheDrawnPicturesTests.test_the_build_is_told_to_carry_the_addresses_over) ... ok
+test_a_broken_script_is_reported_with_its_error (test.unit.builder.test_agent_passes.TheDrawingsScriptHasToParseTests.test_a_broken_script_is_reported_with_its_error) ... ok
+test_a_good_script_is_silent (test.unit.builder.test_agent_passes.TheDrawingsScriptHasToParseTests.test_a_good_script_is_silent) ... ok
+test_no_script_is_not_an_error (test.unit.builder.test_agent_passes.TheDrawingsScriptHasToParseTests.test_no_script_is_not_an_error) ... ok
 test_a_build_that_settled_nothing_is_not_lectured (test.unit.builder.test_agent_passes.UnconfiguredCapabilitiesTests.test_a_build_that_settled_nothing_is_not_lectured) ... ok
 test_the_rule_travels_with_the_settled_notes (test.unit.builder.test_agent_passes.UnconfiguredCapabilitiesTests.test_the_rule_travels_with_the_settled_notes) ... ok
 test_a_compound_command_is_judged_by_its_worst_segment (test.unit.builder.test_engine.CommandPolicyTests.test_a_compound_command_is_judged_by_its_worst_segment) ... ok
@@ -608,6 +611,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 525 tests in 24.310s
+Ran 528 tests in 28.916s
 
 OK
