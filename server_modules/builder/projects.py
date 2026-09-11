@@ -1,22 +1,30 @@
 # Project flow: validate ownership -> read or change -> notify the Studio.
-SRC_ROOTS = ("app", "components", "lib", "src", "pages")
+SRC_ROOTS = ("app", "components", "lib", "src", "pages", "packages", "client", "server", "scripts", "services")
 SKIP_DIRS = {"node_modules", ".next", ".git", "dist", "out", ".vite", ".turbo",
-             ".agentforge"}
-SRC_EXT = {".js", ".jsx", ".css"}
+             ".agentforge", ".cache", "build", ".husky", ".idea", ".vscode", "coverage", ".output"}
+SRC_EXT = {
+    ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs",
+    ".css", ".scss", ".sass", ".less", ".html", ".htm",
+    ".json", ".md", ".yaml", ".yml", ".sql", ".prisma",
+    ".svg", ".env", ".toml"
+}
 
 
 def _iter_source(proj_dir: Path):
     """Every source file in a project, whatever layout it uses."""
-    for root in SRC_ROOTS:
-        base = proj_dir / root
-        if not base.is_dir():
-            continue
-        for fp in base.rglob("*"):
-            if not fp.is_file() or fp.suffix not in SRC_EXT:
+    if not proj_dir.is_dir():
+        return
+    for root_str, dirnames, filenames in os.walk(proj_dir):
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS and not (d.startswith(".") and d != ".env")]
+        root_path = Path(root_str)
+        for fname in filenames:
+            if fname.lower() in ("package-lock.json", "yarn.lock", "pnpm-lock.yaml"):
                 continue
-            if any(s in fp.parts for s in SKIP_DIRS):
+            if fname.startswith(".") and fname not in (".env", ".env.local", ".env.example"):
                 continue
-            yield fp
+            fp = root_path / fname
+            if fp.suffix.lower() in SRC_EXT or fname in (".env", ".env.local", ".env.example", "Dockerfile"):
+                yield fp
 
 
 def _owned_dir(root: Path, raw: str, label: str,
@@ -286,7 +294,7 @@ FILE_PRIORITY = [
     "app/globals.css", "next.config.mjs", "jsconfig.json",
     "package.json", "tailwind.config.js", "plan.md",
 ]
-MAX_LISTED_FILES = 120
+MAX_LISTED_FILES = 500
 MAX_FILE_BYTES = 256_000
 
 

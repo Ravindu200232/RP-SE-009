@@ -227,6 +227,9 @@ def _deps_ready(proj_dir: Path) -> bool:
 
 
 def ensure_node_deps(proj_dir: Path, *, runner=None) -> bool:
+    if not (proj_dir / "package.json").is_file():
+        elog("INFO", f"   ℹ️ No package.json in {proj_dir.name} — skipping npm install")
+        return False
     if _deps_ready(proj_dir):
         return True
 

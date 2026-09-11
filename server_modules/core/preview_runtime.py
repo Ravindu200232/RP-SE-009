@@ -109,6 +109,10 @@ def wait_for_dev(stack="next", timeout=None, *, runtime=None, generation=None):
 def launch_runtime(runtime, generation):
     working_on(runtime.project)
     root = runtime.directory
+    if not (root / "package.json").is_file():
+        runtime.status = "stopped"
+        runtime.error = "This app has not been built yet (no package.json)."
+        return False
     runtime.stack = stack_of(root) or runtime.stack or "nextjs-mongo"
     MONGO.ensure_running()
     runner = lambda argv, **kwargs: run_runtime_command(runtime, generation, argv, **kwargs)
@@ -193,4 +197,6 @@ def _open_project(proj_name, *, background=True):
     runtime = runtime_for(proj_name)
     if _spec_only(runtime.directory):
         return {**RUNTIMES.snapshot(runtime), "status": "specification"}
+    if not (runtime.directory / "package.json").is_file():
+        return {**RUNTIMES.snapshot(runtime), "status": "stopped", "error": "This app has not been built yet."}
     return RUNTIMES.open(runtime, launch_runtime, background=background)

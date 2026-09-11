@@ -238,27 +238,33 @@ export default function Studio() {
       })
       .catch(() => { })
 
+    api.files(name)
+      .then(raw => {
+        if (opening.current !== request || useStore.getState().project !== name) return
+        const out = {}
+        for (const [path, v] of Object.entries(raw || {})) {
+          out[path] = typeof v === 'string' ? v : (v?.content ?? '')
+        }
+        useStore.getState().setFiles(out)
+      })
+      .catch(() => { })
+
     let opened = false
     try {
       const runtime = await api.open(name)
-      useStore.getState().setRuntime(runtime)
-      opened = true
-
-      const raw = await retry(() => api.files(name), 4, 700)
-      if (opening.current !== request || useStore.getState().project !== name) return
-
-      const out = {}
-      for (const [path, v] of Object.entries(raw || {})) {
-        out[path] = typeof v === 'string' ? v : (v?.content ?? '')
+      if (opening.current === request && useStore.getState().project === name) {
+        useStore.getState().setRuntime(runtime)
+        opened = true
       }
-      useStore.getState().setFiles(out)
-      useStore.getState().setOpening(false)
     } catch (e) {
       if (opening.current !== request) return
       useStore.getState().addLog('WARN', `could not open ${name}: ${e.message}`)
-      useStore.getState().setOpening(false)
       if (!opened) useStore.getState().setRuntime({ ...useStore.getState().runtimes[name],
         project: name, status: 'failed', error: e.message })
+    } finally {
+      if (opening.current === request && useStore.getState().project === name) {
+        useStore.getState().setOpening(false)
+      }
     }
   }
 
