@@ -146,7 +146,7 @@ class SecurityValidatorAgent:
             if dockerfile:
                 if "USER " not in dockerfile:
                     warnings.append("The container image runs as root; add a non-root USER.")
-                if ".next/static" not in dockerfile:
+                if ".next/standalone" in dockerfile and ".next/static" not in dockerfile:
                     errors.append(
                         "The image does not copy .next/static into the standalone tree; "
                         "the deployed application would serve no CSS or images."

@@ -4,6 +4,29 @@ from .generator_shared import *
 from .generator_shared import _EAGER_CONNECT, _LAZY_CONNECT, generator_class
 
 
+# The step that packs what the EC2 release unpacks, one line per list item.
+_STANDALONE_PACKAGE = [
+    "- name: Package standalone release",
+    "  run: |",
+    "    test -f .next/standalone/server.js",
+    "    # Next.js emits static assets and public/ outside the",
+    "    # standalone tree; the runtime expects them alongside it.",
+    "    mkdir -p .next/standalone/.next",
+    "    cp -r .next/static .next/standalone/.next/static",
+    "    if [ -d public ]; then cp -r public .next/standalone/public; fi",
+    "    tar -czf /tmp/app.tar.gz -C .next/standalone .",
+]
+_WORKSPACE_PACKAGE = [
+    "- name: Package release",
+    "  run: |",
+    "    # Keep what the build produced and swap the dependencies for",
+    "    # runtime ones, so the instance installs nothing.",
+    "    find . -name node_modules -type d -prune -exec rm -rf {} +",
+    "    __PRODUCTION_INSTALL__",
+    "    tar -czf /tmp/app.tar.gz --exclude=./.git --exclude=./.github .",
+]
+
+
 class GeneratorWorkflowMixin:
     @staticmethod
     def _toolchain(service: ServiceSpec) -> dict[str, str]:
@@ -100,7 +123,7 @@ class GeneratorWorkflowMixin:
 
         standalone_check = (
             "      - name: Verify standalone output\n        run: test -f .next/standalone/server.js\n"
-            if target == DeploymentTarget.AWS_EC2
+            if target == DeploymentTarget.AWS_EC2 and service.framework == "nextjs"
             else ""
         )
         workflow = workflow.replace("__STANDALONE_CHECK__\n", standalone_check)
@@ -157,13 +180,14 @@ class GeneratorWorkflowMixin:
                       spec = json.load(open("deploy/task-definition.json"))
                       spec["executionRoleArn"] = os.environ["EXECUTION_ROLE_ARN"]
                       spec["taskRoleArn"] = os.environ["TASK_ROLE_ARN"]
-                      container = spec["containerDefinitions"][0]
-                      container["image"] = os.environ["IMAGE"]
-                      for item in container.get("secrets", []):
-                          item["valueFrom"] = item["valueFrom"].replace(
-                              "__RUNTIME_SECRET_ARN__", os.environ["RUNTIME_SECRET_ID"])
-                      container["logConfiguration"]["options"]["awslogs-region"] = \\
-                          os.environ["AWS_REGION"]
+                      # Every container: a workspace runs each of its services from the one image.
+                      for container in spec["containerDefinitions"]:
+                          container["image"] = os.environ["IMAGE"]
+                          for item in container.get("secrets", []):
+                              item["valueFrom"] = item["valueFrom"].replace(
+                                  "__RUNTIME_SECRET_ARN__", os.environ["RUNTIME_SECRET_ID"])
+                          container["logConfiguration"]["options"]["awslogs-region"] = \\
+                              os.environ["AWS_REGION"]
                       json.dump(spec, open("task-definition.rendered.json", "w"), indent=2)
                       PY
                     env:
@@ -212,6 +236,12 @@ class GeneratorWorkflowMixin:
         trigger_branches = ", ".join(dict.fromkeys([branch, "main", "master"]))
         build_env = generator_class()._build_env_yaml(service, 22)
         build_services = generator_class()._build_services_yaml(16)
+        if service.framework == "nextjs":
+            package = _STANDALONE_PACKAGE
+        else:
+            production = generator_class()._production_install(service)
+            package = [line.replace("__PRODUCTION_INSTALL__", production) for line in _WORKSPACE_PACKAGE]
+        package_step = "\n                  ".join(package)
         return textwrap.dedent(
             f"""
             name: Deploy to AWS EC2
@@ -247,15 +277,7 @@ class GeneratorWorkflowMixin:
                     env:
                       {build_env}
                     run: {service.build_command or 'npm run build'}
-                  - name: Package standalone release
-                    run: |
-                      test -f .next/standalone/server.js
-                      # Next.js emits static assets and public/ outside the
-                      # standalone tree; the runtime expects them alongside it.
-                      mkdir -p .next/standalone/.next
-                      cp -r .next/static .next/standalone/.next/static
-                      if [ -d public ]; then cp -r public .next/standalone/public; fi
-                      tar -czf /tmp/app.tar.gz -C .next/standalone .
+                  {package_step}
                   - uses: aws-actions/configure-aws-credentials@v4
                     with:
                       role-to-assume: ${{{{ vars.AWS_DEPLOY_ROLE_ARN }}}}

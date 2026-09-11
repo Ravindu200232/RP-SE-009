@@ -22,6 +22,9 @@ class ArtifactGeneratorAgent(GeneratorCommonMixin, GeneratorRuntimeMixin, Genera
         contract: EnvironmentContract | None = None,
     ) -> list[ArtifactRecord]:
         service = self._render_service(spec.services[0], plan)
+        companions = self._companions(spec)
+        if target == DeploymentTarget.VERCEL and service.framework != "nextjs":
+            raise ValueError("Vercel deploys Next.js only. Deploy this Node.js workspace to AWS EC2 or AWS ECS.")
         contract = contract or EnvironmentContractResolver.discover(
             service,
             staged_root / service.root if service.root else staged_root,
@@ -71,7 +74,8 @@ class ArtifactGeneratorAgent(GeneratorCommonMixin, GeneratorRuntimeMixin, Genera
                         json.dumps(self._parameters_example(spec, plan, service), indent=2) + "\n",
                         "aws",
                     ),
-                    self._write(spec, staged_root, "deploy/release.sh", self._release_script(service, contract), "aws"),
+                    self._write(spec, staged_root, "deploy/release.sh",
+                                self._release_script(service, contract, companions), "aws"),
                 ]
             )
             self.emit(run_id, "step", "aws", "complete", 70, "AWS EC2 artifacts generated")
@@ -98,7 +102,7 @@ class ArtifactGeneratorAgent(GeneratorCommonMixin, GeneratorRuntimeMixin, Genera
                         spec,
                         staged_root,
                         "deploy/task-definition.json",
-                        json.dumps(self._task_definition(service, plan, contract), indent=2) + "\n",
+                        json.dumps(self._task_definition(service, plan, contract, companions), indent=2) + "\n",
                         "aws",
                     ),
                 ]

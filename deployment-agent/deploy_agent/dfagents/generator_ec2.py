@@ -199,7 +199,7 @@ class GeneratorEc2Mixin:
                       Group=nextjs
                       WorkingDirectory=/opt/app/current
                       EnvironmentFile=/opt/app/shared/.env
-                      ExecStart=/usr/bin/node /opt/app/current/server.js
+                      ExecStart=/usr/bin/node /opt/app/current/__APP_ENTRY__
                       Restart=always
                       RestartSec=5
                       NoNewPrivileges=true
@@ -353,4 +353,6 @@ class GeneratorEc2Mixin:
               InstanceSecurityGroup: {Value: !Ref InstanceSecurityGroup}
             """
         ).lstrip()
-        return template.replace("__INSTANCE_TYPE__", instance_type)
+        # A workspace starts its gateway where a standalone Next.js build has server.js.
+        entry = "server.js" if service.framework == "nextjs" else generator_class()._node_command(service)[-1]
+        return template.replace("__INSTANCE_TYPE__", instance_type).replace("__APP_ENTRY__", entry)

@@ -4,6 +4,10 @@ from .generator_shared import *
 from .generator_shared import _EAGER_CONNECT, _LAZY_CONNECT, generator_class
 
 
+# `.listen(port, '127.0.0.1')`: the host literal, with the quote it is written in.
+_LOOPBACK_LISTEN = re.compile(r"(\.listen\(\s*[^,()]+?,\s*)((['\"])(?:127\.0\.0\.1|localhost)\3)")
+
+
 class GeneratorCommonMixin:
     @staticmethod
     def _render_service(service: ServiceSpec, plan: DeploymentPlan) -> ServiceSpec:
@@ -18,6 +22,16 @@ class GeneratorCommonMixin:
             port=plan.port or service.port,
             health_path=plan.health_path or service.health_path,
         )
+    @staticmethod
+    def _companions(spec: ProjectSpec) -> list[ServiceSpec]:
+        """The services a workspace runs beside its gateway. A Next.js app has none."""
+        if not spec.services or spec.services[0].framework == "nextjs":
+            return []
+        return list(spec.services[1:])
+    @staticmethod
+    def _node_command(service: ServiceSpec) -> list[str]:
+        """A workspace service's start command, `node <entry>`, as arguments."""
+        return shlex.split(service.start_command or "")
     def repair_compatibility(
         self,
         spec: ProjectSpec,
@@ -144,6 +158,8 @@ class GeneratorCommonMixin:
         service: ServiceSpec,
         target: DeploymentTarget = DeploymentTarget.AWS_EC2,
     ) -> tuple[list[ArtifactRecord], list[dict[str, str]]]:
+        if service.framework != "nextjs":
+            return self._workspace_patches(spec, staged_root, service, target)
         records: list[ArtifactRecord] = []
         patches: list[dict[str, str]] = []
         service_root = staged_root / service.root if service.root else staged_root
@@ -349,4 +365,37 @@ class GeneratorCommonMixin:
                     "reason": "Reads the database at request time",
                     "change": "Add export const dynamic = 'force-dynamic' so it is not prerendered",
                 })
+        return records, patches
+    def _workspace_patches(
+        self,
+        spec: ProjectSpec,
+        staged_root: Path,
+        service: ServiceSpec,
+        target: DeploymentTarget,
+    ) -> tuple[list[ArtifactRecord], list[dict[str, str]]]:
+        """On ECS the load balancer reaches the gateway on the task's network
+        interface. A gateway bound to loopback, right behind nginx on EC2, is
+        unreachable there, so it learns to listen on HOST when HOST is set."""
+        records: list[ArtifactRecord] = []
+        patches: list[dict[str, str]] = []
+        command = self._node_command(service)
+        if target != DeploymentTarget.AWS_ECS or len(command) < 2:
+            return records, patches
+        root = staged_root / service.root if service.root else staged_root
+        entry = root / command[-1]
+        for candidate in [entry, *sorted(entry.parent.glob("*.*js"))]:
+            if not candidate.is_file():
+                continue
+            content = candidate.read_text(encoding="utf-8")
+            updated, count = _LOOPBACK_LISTEN.subn(r"\1process.env.HOST ?? \2", content, count=1)
+            if not count:
+                continue
+            relative = candidate.relative_to(staged_root).as_posix()
+            records.append(self._write(spec, staged_root, relative, updated, "source-patch"))
+            patches.append({
+                "path": relative,
+                "reason": "The load balancer reaches the gateway on the task's network interface, not loopback",
+                "change": "Listen on HOST when it is set, and on loopback as before when it is not",
+            })
+            break
         return records, patches

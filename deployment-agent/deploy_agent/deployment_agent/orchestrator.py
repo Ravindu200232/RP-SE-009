@@ -191,7 +191,7 @@ class Orchestrator:
         output = redact_text("\n".join(combined)[-12000:])
         dependency_findings = self._dependency_findings(output)
 
-        if target in (DeploymentTarget.AWS_EC2, DeploymentTarget.AWS_ECS):
+        if target in (DeploymentTarget.AWS_EC2, DeploymentTarget.AWS_ECS) and service.framework == "nextjs":
             standalone = (root / ".next" / "standalone" / "server.js").is_file()
             if returncode == 0 and not standalone:
                 returncode = 1

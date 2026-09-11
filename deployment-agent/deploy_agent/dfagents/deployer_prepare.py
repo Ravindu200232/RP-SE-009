@@ -12,13 +12,18 @@ class DeploymentPrepareMixin:
         if missing:
             raise RuntimeError("Missing required deployment tools: " + ", ".join(missing))
     @staticmethod
-    def _runtime_secret_values(mongodb_uri: str, outputs: dict) -> dict:
+    def _runtime_secret_values(mongodb_uri: str, outputs: dict, plan: dict | None = None) -> dict:
         """Everything the running application needs, not just the database."""
         url = str(outputs.get("ApplicationUrl") or "").rstrip("/")
         values = {
             "MONGODB_URI": mongodb_uri,
             "BETTER_AUTH_SECRET": secrets.token_urlsafe(48),
         }
+        # Every secret the contract says the deployer generates, AUTH_SECRET
+        # among them. An ECS task naming a key the secret lacks never starts.
+        for entry in ((plan or {}).get("environment") or {}).get("entries") or []:
+            if entry.get("resolution") == "auto_generate" and entry.get("name") not in values:
+                values[str(entry["name"])] = secrets.token_urlsafe(48)
         if url:
 
             values.update({name: url for name in DEPLOYER_INJECTED})
@@ -59,7 +64,7 @@ class DeploymentPrepareMixin:
         session.client("secretsmanager").put_secret_value(
             SecretId=runtime_secret,
             SecretString=json.dumps(
-                self._runtime_secret_values(mongodb_uri, outputs)
+                self._runtime_secret_values(mongodb_uri, outputs, plan)
             ),
         )
         self.emit(run_id, "step", "secrets", "complete", 45, "Runtime secrets stored in AWS Secrets Manager")
@@ -121,7 +126,7 @@ class DeploymentPrepareMixin:
         session.client("secretsmanager").put_secret_value(
             SecretId=runtime_secret,
             SecretString=json.dumps(
-                self._runtime_secret_values(mongodb_uri, outputs)
+                self._runtime_secret_values(mongodb_uri, outputs, plan)
             ),
         )
         self.emit(run_id, "step", "secrets", "complete", 45,

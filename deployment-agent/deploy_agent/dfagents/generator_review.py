@@ -78,6 +78,10 @@ class GeneratorReviewMixin:
         target: DeploymentTarget = DeploymentTarget.AWS_EC2,
     ) -> str:
         service = spec.services[0]
+        framework = (
+            f"Next.js `{service.version}`" if service.framework == "nextjs"
+            else f"{service.framework.title()} `{service.version}`, {len(spec.services)} services from one workspace"
+        )
         env_names = ", ".join(item.name for item in service.environment) or "None detected"
         risks = "\n".join(f"- {item}" for item in plan.risks) or "- No model risks reported."
         recommendations = "\n".join(f"- {item}" for item in plan.recommendations) or "- Use the generated review checks."
@@ -87,7 +91,7 @@ class GeneratorReviewMixin:
                 "- No cloud access keys or provider tokens are written to GitHub; "
                 "Actions authenticates through OIDC.\n"
                 "- Provider credentials are kept only in the in-memory credential vault.\n"
-                "- The instance security group exposes port 80 only; the Next.js process listens on loopback."
+                "- The instance security group exposes port 80 only; the application listens on loopback."
             )
         else:
             database_note = "MongoDB Atlas URI set as a Vercel production environment variable"
@@ -106,7 +110,7 @@ class GeneratorReviewMixin:
             - Project: `{spec.name}`
             - Primary service: `{service.name}`
             - Detected root: `{service.root or '.'}`
-            - Framework: Next.js `{service.version}`
+            - Framework: {framework}
             - Target: {f"AWS EC2 ({(plan.aws_sizing or {}).get('instance_type', 't3.micro')}) behind nginx, released from S3 via SSM" if target == DeploymentTarget.AWS_EC2 else "Vercel production deployment"}
             - Database: {database_note}
             - Readiness: **{readiness['score']}/100** (review phase)
