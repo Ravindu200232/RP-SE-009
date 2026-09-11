@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import {
   Check, Cpu, Database, Keyboard,
-  LayoutGrid, Loader2, Palette, SlidersHorizontal, X,
+  LayoutGrid, Loader2, Palette, SlidersHorizontal, X, Link2,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { Modal } from './ui'
@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import { useStore } from '@/lib/store'
 import { useAuthStore } from '@/lib/auth'
 import { modelLabel } from '@/lib/models'
+import DeployAccounts from './deploy/DeployAccounts'
 
 export default function SettingsModal({ onClose, onSaved }) {
   const storeModels = useStore(s => s.models)
@@ -71,11 +72,12 @@ export default function SettingsModal({ onClose, onSaved }) {
   const initial = (user?.name || user?.username || 'U')[0]?.toUpperCase() || 'U'
 
   const settingsNav = [
-    { id: 'general',     label: 'General',     Icon: SlidersHorizontal },
-    { id: 'application', label: 'Application', Icon: LayoutGrid },
-    { id: 'models',      label: 'Models',      Icon: Cpu },
-    { id: 'appearance',  label: 'Appearance',  Icon: Palette },
-    { id: 'shortcuts',   label: 'Shortcuts',   Icon: Keyboard },
+    { id: 'general',      label: 'General',      Icon: SlidersHorizontal },
+    { id: 'application',  label: 'Application',  Icon: LayoutGrid },
+    { id: 'models',       label: 'Models',       Icon: Cpu },
+    { id: 'appearance',   label: 'Appearance',   Icon: Palette },
+    { id: 'integrations', label: 'Integrations', Icon: Link2 },
+    { id: 'shortcuts',    label: 'Shortcuts',    Icon: Keyboard },
   ]
 
   return (
@@ -133,11 +135,12 @@ export default function SettingsModal({ onClose, onSaved }) {
           <header className="h-[58px] shrink-0 border-b border-white/10 px-6 flex items-center justify-between">
             <div>
               <h2 className="font-display text-[16px] font-bold tracking-tight text-white">
-                {activeTab === 'general'     ? 'General'
-                 : activeTab === 'application' ? 'Application'
-                 : activeTab === 'models'    ? 'AI Models'
-                 : activeTab === 'appearance' ? 'Appearance'
-                 : 'Keyboard Shortcuts'}
+                {activeTab === 'general'      ? 'General'
+               : activeTab === 'application'  ? 'Application'
+               : activeTab === 'models'       ? 'AI Models'
+               : activeTab === 'appearance'   ? 'Appearance'
+               : activeTab === 'integrations' ? 'Integrations'
+               : 'Keyboard Shortcuts'}
               </h2>
               <p className="text-[11px] text-white/40 mt-0.5">
                 {activeTab === 'general'
@@ -148,6 +151,8 @@ export default function SettingsModal({ onClose, onSaved }) {
                   ? 'Active AI models for each build role.'
                   : activeTab === 'appearance'
                   ? 'Studio visual theme.'
+                  : activeTab === 'integrations'
+                  ? 'Connect GitHub, AWS, Vercel and production database for deployments.'
                   : 'Key bindings active in AgentForge Studio.'}
               </p>
             </div>
@@ -329,6 +334,16 @@ export default function SettingsModal({ onClose, onSaved }) {
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* ── INTEGRATIONS ── */}
+            {activeTab === 'integrations' && (
+              <div className="space-y-4 max-w-[700px]">
+                <DeployAccounts deploy={meta?.deploy} onSaved={() => {
+                  api.settings().then(setMeta).catch(() => {})
+                  onSaved?.()
+                }} />
               </div>
             )}
 
