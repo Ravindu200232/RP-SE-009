@@ -16,7 +16,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Monitor, Tablet, Smartphone, MousePointerClick, Pencil, Undo2, RotateCw,
-  ChevronLeft, ChevronRight, Globe, Eraser,
+  ChevronLeft, ChevronRight, Globe, Eraser, Rocket, Layers,
 } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { api, API } from '@/lib/api'
