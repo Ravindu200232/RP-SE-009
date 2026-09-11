@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Download, Loader2, RefreshCw } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useStore } from '@/lib/store'
@@ -43,6 +43,11 @@ export default function TestingResult() {
   const e2eLive = useStore(s => s.e2eParallel)
   const qa = useStore(s => s.qaReport)
   const addLog = useStore(s => s.addLog)
+  // While this project's build runs, what is here is half a run. It is shown
+  // blurred, the way the preview is, and read afresh when the build ends.
+  const busy = useStore(s => s.busy)
+  const busyProject = useStore(s => s.busyProject)
+  const building = busy && (!busyProject || busyProject === project)
   const [sub, setSub] = useState('overview')
   const [state, setState] = useState('idle')
   const [error, setError] = useState('')
@@ -98,6 +103,11 @@ export default function TestingResult() {
     if (!live.running && project) load()
 
   }, [live.running])
+  const wasBuilding = useRef(building)
+  useEffect(() => {
+    if (wasBuilding.current && !building) load()
+    wasBuilding.current = building
+  }, [building])
 
   const counts = useMemo(() => badges(qa), [qa])
   const View = (VIEWS.find(v => v.id === sub) || VIEWS[0]).C
@@ -106,9 +116,9 @@ export default function TestingResult() {
 
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 flex-wrap items-center gap-1 border-b
-                      border-line bg-panel px-3 py-2">
+    <div className="relative flex min-h-0 flex-1 flex-col" aria-busy={building || undefined}>
+      <div className={cn('flex shrink-0 flex-wrap items-center gap-1 border-b border-line bg-panel px-3 py-2',
+                         building && 'pointer-events-none select-none blur-sm')}>
         {VIEWS.map(v => (
           <button key={v.id} onClick={() => setSub(v.id)}
                   className={cn('flex items-center gap-1.5 rounded-ctl px-3 py-1.5',
@@ -139,13 +149,21 @@ export default function TestingResult() {
             </Button>}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-5">
+      <div className={cn('min-h-0 flex-1 overflow-y-auto p-5',
+                         building && 'pointer-events-none select-none blur-sm')}>
         {state === 'loading' && !qa && <Empty>Reading the results…</Empty>}
         {state === 'error' && <Empty bad>Could not read them — {error}</Empty>}
         {live.running && <p className="mb-3 text-[11px] text-accent">Testing is running. Completed results update here as each check finishes.</p>}
         {sub === 'e2e' && live.running && e2eLive?.active && <div className="mb-4"><E2ELiveLanes /></div>}
         {qa?.project === project && <View qa={qa} live={live} />}
       </div>
+
+      {building && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 p-8 text-center" role="status">
+          <p className="font-semibold text-ink">Build in progress</p>
+          <p className="max-w-lg text-sm text-muted">The test results will show when the build is ready.</p>
+        </div>
+      )}
     </div>
   )
 }

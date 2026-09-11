@@ -380,7 +380,8 @@ export default function Studio() {
                                   : 'text-muted hover:bg-white/55 hover:text-ink dark:hover:bg-white/5')}>
               <Icon className="size-[13px] shrink-0" />
               {label}
-              {id === 'testing' && unitStatus?.failed > 0 && (
+              {id === 'testing' && unitStatus?.failed > 0
+                && !(busy && (!busyProject || busyProject === project)) && (
                 <Badge tone="bad">{unitStatus.failed}</Badge>
               )}
             </button>
