@@ -141,11 +141,11 @@ export function Modal({ onClose, children, className }) {
   // Keep tall dialogs reachable within the viewport.
     <div onClick={onClose}
          className="fixed inset-0 z-[600] flex items-center justify-center
-                    overscroll-contain bg-slate-950/35 p-4 backdrop-blur-md">
+                    overscroll-contain bg-black/80 p-4">
       <div onClick={e => e.stopPropagation()}
            className={cn('w-full max-w-[520px] max-h-[90vh] overflow-y-auto',
-             'rounded-[24px] border border-white/60',
-             'bg-panel/95 p-5 shadow-[0_28px_80px_rgba(15,23,42,.25)] backdrop-blur-2xl dark:border-white/10', className)}>
+             'rounded-[24px] border border-white/15',
+             'bg-[#0c101a] p-6 shadow-[0_28px_80px_rgba(0,0,0,0.85)] text-slate-100', className)}>
         {children}
       </div>
     </div>

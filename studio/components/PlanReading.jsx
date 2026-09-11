@@ -14,11 +14,11 @@ import { cn } from '@/lib/utils'
 
 function Inline({ text }) {
   return readInline(text).map((part, i) => {
-    if (part.kind === 'strong') return <b key={i} className="font-semibold text-ink">{part.text}</b>
-    if (part.kind === 'em') return <i key={i}>{part.text}</i>
+    if (part.kind === 'strong') return <b key={i} className="font-semibold text-white">{part.text}</b>
+    if (part.kind === 'em') return <i key={i} className="text-slate-200">{part.text}</i>
     if (part.kind === 'code') {
       return (
-        <code key={i} className="rounded-[5px] bg-ink/[.06] px-1 py-[1px] font-mono text-[10.5px] text-ink dark:bg-white/10">
+        <code key={i} className="rounded-md border border-white/10 bg-white/[0.06] px-1.5 py-0.5 font-mono text-[11px] text-cyan-300">
           {part.text}
         </code>
       )
@@ -30,19 +30,18 @@ function Inline({ text }) {
 export default function PlanReading({ plan, className }) {
   const blocks = readPlan(plan)
   if (!blocks.length) {
-    return <p className={cn('text-[12px] text-muted', className)}>The planner returned nothing to read.</p>
+    return <p className={cn('text-xs text-slate-400', className)}>The planner returned nothing to read.</p>
   }
 
   return (
-    <div className={cn('space-y-3', className)}>
+    <div className={cn('space-y-4', className)}>
       {blocks.map((block, i) => {
         if (block.kind === 'heading') {
-          // Every heading below the title reads at one weight: a plan is not
-          // a document with chapters, it is a list of what will happen.
           return (
-            <h3 key={i} className={cn('text-ink', block.level <= 1
-              ? 'pt-1 text-[13.5px] font-semibold'
-              : 'pt-1 text-[12px] font-semibold uppercase tracking-[.08em] text-muted')}>
+            <h3 key={i} className={cn('flex items-center gap-2', block.level <= 1
+              ? 'pt-2 text-[14px] font-bold text-white tracking-tight'
+              : 'pt-2 text-[11px] font-bold uppercase tracking-[.12em] text-blue-400')}>
+              {block.level <= 1 && <span className="size-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]" />}
               <Inline text={block.text} />
             </h3>
           )
@@ -50,10 +49,10 @@ export default function PlanReading({ plan, className }) {
 
         if (block.kind === 'bullets') {
           return (
-            <ul key={i} className="space-y-1.5">
+            <ul key={i} className="space-y-2">
               {block.items.map((item, j) => (
-                <li key={j} className="flex gap-2.5 text-[12px] leading-relaxed text-muted">
-                  <span className="mt-[7px] size-1 shrink-0 rounded-full bg-accent/60" />
+                <li key={j} className="flex items-start gap-3 text-[12.5px] leading-relaxed text-slate-300">
+                  <span className="mt-2 size-1.5 shrink-0 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]" />
                   <span className="min-w-0"><Inline text={item} /></span>
                 </li>
               ))}
@@ -63,10 +62,10 @@ export default function PlanReading({ plan, className }) {
 
         if (block.kind === 'steps') {
           return (
-            <ol key={i} className="space-y-1.5">
+            <ol key={i} className="space-y-2">
               {block.items.map((item, j) => (
-                <li key={j} className="flex gap-2.5 text-[12px] leading-relaxed text-muted">
-                  <span className="mt-[1px] grid size-[17px] shrink-0 place-items-center rounded-full bg-accent/10 font-mono text-[9.5px] font-semibold text-accent">
+                <li key={j} className="flex items-start gap-3 text-[12.5px] leading-relaxed text-slate-300">
+                  <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-lg border border-blue-500/30 bg-blue-500/10 font-mono text-[10px] font-bold text-blue-400 shadow-sm">
                     {j + 1}
                   </span>
                   <span className="min-w-0"><Inline text={item} /></span>
@@ -78,14 +77,14 @@ export default function PlanReading({ plan, className }) {
 
         if (block.kind === 'code') {
           return (
-            <pre key={i} className="overflow-x-auto rounded-lg border border-line/70 bg-panel2/60 p-2.5 font-mono text-[10.5px] leading-relaxed text-ink">
+            <pre key={i} className="overflow-x-auto rounded-xl border border-white/10 bg-[#080b12] p-3 font-mono text-[11px] leading-relaxed text-emerald-400 shadow-inner">
               {block.text}
             </pre>
           )
         }
 
         return (
-          <p key={i} className="text-[12px] leading-relaxed text-muted">
+          <p key={i} className="text-[12.5px] leading-relaxed text-slate-300">
             <Inline text={block.text} />
           </p>
         )
