@@ -44,6 +44,47 @@ class DeploymentGitMixin:
             applied.append(relative)
         self.emit(run_id, "step", "apply", "complete", 58, f"Applied {len(applied)} reviewed files to the source repository")
         return applied
+    @staticmethod
+    def _stage_reviewed_tree(source: Path, applied: list[str]) -> list[str]:
+        """Stage the project for the deployment commit, never an environment value file.
+
+        The excludes use `glob`, so `**/` also matches the project root. Without
+        it a pattern needs a directory in front of the name, and a `.env.local`
+        at the root went straight into the index. One an earlier attempt left
+        there is taken back out, so a retry does not refuse on what it never
+        meant to add. The refusal stays as the last check.
+        """
+        def env_values(names):
+            return [name for name in names
+                    if Path(name).name.startswith(".env") and Path(name).name != ".env.example"]
+
+        def staged():
+            return run_command(["git", "diff", "--cached", "--name-only"], cwd=source,
+                               timeout=GIT_TIMEOUT_SECONDS, check=True).stdout.splitlines()
+
+        run_command(
+            [
+                "git", "add", "-A", "--", ".",
+                ":(exclude,glob)**/.env", ":(exclude,glob)**/.env.*",
+                ":(exclude,glob)**/node_modules/**", ":(exclude,glob)**/.next/**",
+                ":(exclude,glob)**/.vercel/**",
+            ],
+            cwd=source,
+            timeout=GIT_TIMEOUT_SECONDS,
+            check=True,
+        )
+        leftover = env_values(staged())
+        if leftover:
+            run_command(["git", "rm", "--cached", "--quiet", "--ignore-unmatch", "--", *leftover],
+                        cwd=source, timeout=GIT_TIMEOUT_SECONDS, check=True)
+        for relative in applied:
+            if relative.endswith(".env.example"):
+                run_command(["git", "add", "-f", "--", relative], cwd=source, timeout=GIT_TIMEOUT_SECONDS, check=True)
+        names = staged()
+        secret_files = env_values(names)
+        if secret_files:
+            raise RuntimeError("Refusing to commit environment value files: " + ", ".join(secret_files[:10]))
+        return names
     def _commit_and_push(
         self,
         run_id: str,
@@ -56,30 +97,7 @@ class DeploymentGitMixin:
         profile = profile or profile_for(None)
         previous_workflow_url = self._latest_workflow_url(source, repo)
 
-        run_command(
-            [
-                "git", "add", "-A", "--", ".",
-                ":(exclude)**/.env", ":(exclude)**/.env.local", ":(exclude)**/.env.production",
-                ":(exclude)**/.env.development", ":(exclude)**/node_modules/**", ":(exclude)**/.next/**",
-                ":(exclude)**/.vercel/**",
-            ],
-            cwd=source,
-            timeout=GIT_TIMEOUT_SECONDS,
-            check=True,
-        )
-        for relative in applied:
-
-            if relative.endswith(".env.example"):
-                run_command(["git", "add", "-f", "--", relative], cwd=source, timeout=GIT_TIMEOUT_SECONDS, check=True)
-        staged_names = run_command(
-            ["git", "diff", "--cached", "--name-only"], cwd=source, timeout=GIT_TIMEOUT_SECONDS, check=True
-        ).stdout.splitlines()
-        secret_files = [
-            name for name in staged_names
-            if Path(name).name.startswith(".env") and Path(name).name != ".env.example"
-        ]
-        if secret_files:
-            raise RuntimeError("Refusing to commit environment value files: " + ", ".join(secret_files[:10]))
+        staged_names = self._stage_reviewed_tree(source, applied)
 
         if staged_names:
             commit = run_command(
