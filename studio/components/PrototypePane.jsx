@@ -11,7 +11,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Monitor, Tablet, Smartphone, MousePointerClick, Pencil, RotateCw,
   ExternalLink, Globe, Layers, Eraser, Undo2, ChevronLeft, ChevronRight,
-  Sparkles, Rocket,
+  Sparkles, Rocket, FlaskConical, Loader2,
 } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { api, API } from '@/lib/api'
@@ -51,6 +51,8 @@ export default function PrototypePane({ project, hidden, onBuild }) {
   const [pickOn, setPickOn] = useState(false)
   const [pencilOn, setPencilOn] = useState(false)
   const [currentFile, setCurrentFile] = useState('index.html')
+  const [protoReady, setProtoReady] = useState(false)
+  const [iframeLoading, setIframeLoading] = useState(true)
 
   const trail = useRef(['index.html'])
   const at = useRef(0)
@@ -59,6 +61,10 @@ export default function PrototypePane({ project, hidden, onBuild }) {
 
   const addLog = useStore(s => s.addLog)
   const busy = useStore(s => s.busy)
+  const busyProject = useStore(s => s.busyProject)
+  const progress = useStore(s => s.progress)
+  const statusText = useStore(s => s.statusText)
+  const isBusy = busy && (!busyProject || busyProject === project)
   const drawing = useStore(s => s.drawing)
   const setDrawing = useStore(s => s.setDrawing)
   const selection = useStore(s => s.selection)
@@ -70,6 +76,51 @@ export default function PrototypePane({ project, hidden, onBuild }) {
 
   const prototypeUrl = `${API}/prototype/${encodeURIComponent(project || '')}/${currentFile}`
   const width = VIEWPORTS.find(x => x.id === vp)?.w
+
+  const checkPrototypeReady = useCallback(async () => {
+    if (!project) return false
+    try {
+      const url = `${API}/prototype/${encodeURIComponent(project)}/${currentFile || 'index.html'}?check=${Date.now()}`
+      const res = await fetch(url)
+      if (res.ok) {
+        const text = await res.text()
+        if (text.includes('Generating HTML Prototype') || text.includes('no index.html in this drawing')) {
+          setProtoReady(false)
+          return false
+        }
+        setProtoReady(true)
+        setIframeLoading(false)
+        return true
+      }
+      setProtoReady(false)
+      return false
+    } catch {
+      setProtoReady(false)
+      return false
+    }
+  }, [project, currentFile])
+
+  useEffect(() => {
+    let active = true
+    checkPrototypeReady()
+
+    const interval = setInterval(async () => {
+      if (!active) return
+      const ready = await checkPrototypeReady()
+      if (ready && frameRef.current) {
+        if (!frameRef.current.dataset.loaded) {
+          frameRef.current.dataset.loaded = 'true'
+          const page = currentPath(frameRef.current)
+          frameRef.current.src = `${API}/prototype/${encodeURIComponent(project)}/${page}?t=${Date.now()}`
+        }
+      }
+    }, isBusy ? 1500 : 2500)
+
+    return () => {
+      active = false
+      clearInterval(interval)
+    }
+  }, [project, isBusy, checkPrototypeReady])
 
   const syncPath = useCallback(() => {
     const here = currentPath(frameRef.current)
@@ -104,6 +155,8 @@ export default function PrototypePane({ project, hidden, onBuild }) {
     const f = frameRef.current
     if (f) {
       const page = currentPath(f)
+      setIframeLoading(true)
+      checkPrototypeReady()
       f.src = `${API}/prototype/${encodeURIComponent(project || '')}/${page}?t=${Date.now()}`
     }
   }
@@ -111,6 +164,7 @@ export default function PrototypePane({ project, hidden, onBuild }) {
   const prevBusyRef = useRef(busy)
   useEffect(() => {
     if (prevBusyRef.current && !busy) {
+      checkPrototypeReady()
       reload()
     }
     prevBusyRef.current = busy
@@ -436,7 +490,7 @@ export default function PrototypePane({ project, hidden, onBuild }) {
         )}
 
         {/* Prototype Approval Prompt Modal/Banner */}
-        {drawing && (
+        {drawing && protoReady && (
           <div className="absolute top-4 inset-x-6 z-30 flex items-center justify-between gap-4 rounded-2xl border border-purple-500/40 bg-panel/95 p-3.5 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-2">
             <div className="flex items-center gap-3">
               <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-purple-500/20 text-purple-400">
@@ -466,17 +520,54 @@ export default function PrototypePane({ project, hidden, onBuild }) {
           </div>
         )}
 
-        <div className="relative flex min-h-0 h-full w-full items-start justify-center overflow-hidden bg-canvas">
+        <div className="relative flex min-h-0 h-full w-full items-start justify-center overflow-hidden bg-[#0c0f17]">
           <div
-            className={cn("relative h-full w-full max-w-full overflow-hidden bg-white", width && "border-x border-line shadow-lg")}
+            className={cn("relative h-full w-full max-w-full overflow-hidden bg-[#0c0f17]", width && "border-x border-white/10 shadow-2xl")}
             style={{ width: width ? width + 'px' : '100%' }}
           >
             <iframe
               ref={frameRef}
               title="prototype-preview"
               src={prototypeUrl}
-              className="absolute inset-0 block h-full w-full border-0 bg-white"
+              onLoad={() => {
+                checkPrototypeReady()
+              }}
+              className={cn(
+                "absolute inset-0 block h-full w-full border-0 bg-white transition-opacity duration-300",
+                (!protoReady || isBusy) ? "opacity-0 pointer-events-none" : "opacity-100"
+              )}
             />
+
+            {(!protoReady || isBusy) && (
+              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0c0f17] p-6 text-center select-none">
+                {/* Glowing top line */}
+                <div className="absolute inset-x-0 top-0 h-[2px] overflow-hidden bg-white/5">
+                  <div className="h-full w-full bg-gradient-to-r from-purple-500 via-blue-500 to-indigo-400 animate-pulse" />
+                </div>
+
+                <div className="relative mb-5 grid size-16 place-items-center rounded-2xl border border-purple-500/25 bg-purple-500/10 shadow-[0_0_35px_rgba(168,85,247,0.2)]">
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-purple-600/20 to-indigo-600/20 animate-pulse" />
+                  <FlaskConical className="size-7 text-purple-400 animate-pulse" />
+                  <Loader2 className="absolute size-10 animate-spin text-purple-400/40" />
+                </div>
+
+                <h3 className="font-display text-[16px] font-bold tracking-tight text-white">
+                  {isBusy ? 'Generating HTML Prototype…' : 'Loading prototype preview…'}
+                </h3>
+                <p className="mt-1.5 max-w-sm text-center text-[12px] text-slate-400 leading-relaxed">
+                  {isBusy
+                    ? 'The AI agent is crafting interactive wireframes, layouts, and responsive components.'
+                    : 'Connecting to prototype canvas and mounting UI assets.'}
+                </p>
+
+                <div className="mt-4 flex items-center gap-2 rounded-full border border-purple-500/20 bg-purple-500/[0.06] px-4 py-1.5 font-mono text-[11px] text-purple-300 shadow-sm">
+                  <span className="size-2 rounded-full bg-purple-400 animate-ping" />
+                  <span className="truncate max-w-[280px]">
+                    {statusText || (typeof progress === 'string' ? progress : '') || (isBusy ? 'Designing pages…' : `${project || 'project'} / ${currentFile}`)}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

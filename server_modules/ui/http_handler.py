@@ -254,7 +254,81 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
             except ValueError as error:
                 self._json({"error": str(error)}, 400)
             except (FileNotFoundError, OSError) as error:
-                self._json({"error": str(error)}, 404)
+                rel_clean = (rel or "index.html").strip("/")
+                if rel_clean == "index.html" or rel_clean.endswith(".html"):
+                    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="2">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generating Prototype · AgentForge</title>
+  <style>
+    * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+    body {{
+      background: radial-gradient(circle at 50% 20%, #171c2e 0%, #0c0f17 60%, #07090f 100%);
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      overflow: hidden;
+    }}
+    .glow {{
+      width: 64px; height: 64px;
+      border-radius: 18px;
+      background: rgba(168, 85, 247, 0.12);
+      border: 1px solid rgba(168, 85, 247, 0.25);
+      box-shadow: 0 0 40px rgba(168, 85, 247, 0.25);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 20px;
+      position: relative;
+    }}
+    .spinner {{
+      width: 32px; height: 32px;
+      border: 3px solid rgba(168, 85, 247, 0.2);
+      border-top-color: #a855f7;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }}
+    @keyframes spin {{ to {{ transform: rotate(360deg); }} }}
+    h2 {{ font-size: 18px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 8px; color: #fff; }}
+    p {{ font-size: 13px; color: #94a3b8; max-width: 360px; line-height: 1.5; }}
+    .badge {{
+      margin-top: 18px;
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-family: monospace; font-size: 12px; color: #cbd5e1;
+    }}
+    .dot {{
+      width: 7px; height: 7px; border-radius: 50%; background: #a855f7;
+      animation: pulse 1.5s ease-in-out infinite;
+    }}
+    @keyframes pulse {{ 0%, 100% {{ opacity: 1; transform: scale(1); }} 50% {{ opacity: 0.4; transform: scale(0.85); }} }}
+  </style>
+</head>
+<body>
+  <div class="glow">
+    <div class="spinner"></div>
+  </div>
+  <h2>Generating HTML Prototype…</h2>
+  <p>Designing interactive wireframes, layouts, and responsive components.</p>
+  <div class="badge">
+    <span class="dot"></span>
+    <span>{proj}</span>
+  </div>
+</body>
+</html>"""
+                    self._plain(200, html.encode("utf-8"), "text/html; charset=utf-8", extra=(("Cache-Control", "no-cache"),))
+                else:
+                    self._json({"error": str(error)}, 404)
         elif path.startswith("/qa/"):
             self._json(read_qa_results(path[4:].strip("/")))
         elif path.startswith("/srs-results/"):
