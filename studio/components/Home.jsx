@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import {
-  ArrowRight, Languages, PencilLine, Sparkles, FileText, Layers,
-  Globe, Presentation, Monitor, FlaskConical, Github, Figma, Code,
+  ArrowRight, ChevronDown, Languages, PencilLine, Sparkles, FileText, Layers,
+  FlaskConical, Rocket,
 } from 'lucide-react'
 import { useStore, KEYS } from '@/lib/store'
 import { send } from '@/lib/ws'
@@ -63,6 +63,7 @@ export default function Home({ onStarted, onKept, modelOptions = [] }) {
   const s = useStore()
   const { images, think, models, srsId, srsPhase } = s
   const [prompt, setPrompt] = useState('')
+  const [activeMode, setActiveMode] = useState('app')
   const [logoFor, setLogoFor] = useState(null)
   const [srsError, setSrsError] = useState('')
   const [srsLanguage, setSrsLanguage] = useState('en')
@@ -249,10 +250,20 @@ export default function Home({ onStarted, onKept, modelOptions = [] }) {
                 rows={4}
                 ref={box}
                 aria-label="Describe your app"
-                placeholder="How can AgentForge help you today? Describe an app, prototype, or SRS..."
+                placeholder={
+                  activeMode === 'srs'
+                    ? 'Describe your project for SRS interview & specification generation...'
+                    : activeMode === 'prototype'
+                    ? 'Describe the prototype you want to generate (interactive HTML preview)...'
+                    : 'How can AgentForge help you today? Describe an app, prototype, or SRS...'
+                }
                 onChange={e => setPrompt(e.target.value)}
                 onKeyDown={e => {
-                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit()
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                    if (activeMode === 'srs') planFirst()
+                    else if (activeMode === 'prototype') submitPrototype()
+                    else submit()
+                  }
                 }}
                 className="min-h-[130px] w-full resize-none bg-transparent p-5 text-[15px] leading-[1.6] text-white caret-blue-400 outline-none placeholder:text-white/40"
               />
@@ -272,21 +283,23 @@ export default function Home({ onStarted, onKept, modelOptions = [] }) {
 
               <AttachList attach={attach} className="mx-5 mb-2" />
 
-              {/* Bottom Action Row with 3 Target Options */}
+              {/* Bottom Action Row with Attachments, Prettified Language Selector & Submit */}
               <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 bg-white/[.02] p-2.5">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <AttachButtons attach={attach} cell />
-                  <label
-                    className="inline-flex min-w-0 items-center gap-1.5 px-2 text-[11px] text-white/50"
+
+                  {/* Prettified Language Select Pill */}
+                  <div
+                    className="relative inline-flex h-9 items-center rounded-xl border border-white/10 bg-white/[.06] pl-3 pr-2 text-[11px] font-semibold text-white/90 shadow-sm transition-all hover:bg-white/[.12] hover:border-white/20 hover:text-white group"
                     title="Interview language. SRS and builder handoff stay in English."
                   >
-                    <Languages className="size-3.5 shrink-0" aria-hidden="true" />
+                    <Languages className="size-3.5 shrink-0 text-blue-400 transition-colors group-hover:text-blue-300 mr-1.5" aria-hidden="true" />
                     <span className="sr-only">Interview language</span>
                     <select
                       id="srs-language"
                       value={srsLanguage}
                       onChange={event => setSrsLanguage(event.target.value)}
-                      className="h-8 max-w-[130px] bg-transparent text-white/80 focus:outline-none"
+                      className="h-full bg-transparent appearance-none text-white/90 text-[11.5px] font-medium pr-5 outline-none cursor-pointer focus:outline-none"
                     >
                       {languageOptions.map(language => (
                         <option key={language.code} value={language.code} className="bg-[#121622] text-white">
@@ -294,48 +307,32 @@ export default function Home({ onStarted, onKept, modelOptions = [] }) {
                         </option>
                       ))}
                     </select>
-                  </label>
+                    <ChevronDown className="pointer-events-none absolute right-2.5 size-3 shrink-0 text-white/50 transition-colors group-hover:text-white" />
+                  </div>
                 </div>
 
-                {/* 3 User Creation Options: SRS Generate | Prototype Build | App Build */}
-                <div className="flex items-center gap-2">
-                  {/* Option 1: SRS Generate */}
-                  <button
-                    onClick={() => {
-                      if (!prompt.trim() && !attach.items.length) return box.current?.focus()
-                      chooseModel(builderModel)
-                      planFirst()
-                    }}
-                    disabled={!builderModel.trim()}
-                    title="SRS Generate: answer interview questions and get a complete software specification"
-                    className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/[.06] px-3.5 py-2.5 font-display text-[12px] font-semibold text-white/90 shadow-sm transition-all hover:bg-white/[.12] hover:text-white"
-                  >
-                    <FileText className="size-3.5 text-amber-400" />
-                    <span>SRS Generate</span>
-                  </button>
-
-                  {/* Option 2: Prototype Build */}
-                  <button
-                    onClick={submitPrototype}
-                    disabled={!prompt.trim() || !builderModel.trim()}
-                    title="Prototype Build: generate an interactive HTML prototype first and decide whether to build full app"
-                    className="inline-flex items-center gap-2 rounded-xl border border-purple-500/40 bg-purple-500/15 px-3.5 py-2.5 font-display text-[12px] font-semibold text-purple-200 shadow-sm transition-all hover:bg-purple-500/25 hover:text-white disabled:pointer-events-none disabled:opacity-40"
-                  >
-                    <Layers className="size-3.5 text-purple-400" />
-                    <span>Prototype Build</span>
-                  </button>
-
-                  {/* Option 3: App Build */}
-                  <button
-                    disabled={!prompt.trim() || !builderModel.trim()}
-                    onClick={submit}
-                    title="App Build: generate full stack application with planner, design, builder, and testing"
-                    className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 font-display text-[12px] font-semibold text-white shadow-lg shadow-blue-500/30 transition-all hover:bg-blue-500 disabled:pointer-events-none disabled:opacity-40"
-                  >
-                    <span>App Build</span>
-                    <ArrowRight className="size-3.5" />
-                  </button>
-                </div>
+                {/* Right Action: Clean Bolt-style Submit Button */}
+                <button
+                  disabled={!prompt.trim() || !builderModel.trim()}
+                  onClick={() => {
+                    if (activeMode === 'srs') planFirst()
+                    else if (activeMode === 'prototype') submitPrototype()
+                    else submit()
+                  }}
+                  title={
+                    activeMode === 'srs'
+                      ? 'SRS Generate: answer interview questions and get a complete software specification'
+                      : activeMode === 'prototype'
+                      ? 'Prototype Build: generate an interactive HTML prototype'
+                      : 'App Build: generate full stack application with planner, design, builder, and testing'
+                  }
+                  className="inline-flex h-9 items-center gap-2 rounded-xl bg-blue-600 px-4 font-display text-[12.5px] font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-500 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
+                >
+                  <span>
+                    {activeMode === 'srs' ? 'Generate SRS' : activeMode === 'prototype' ? 'Build Prototype' : 'Build App'}
+                  </span>
+                  <ArrowRight className="size-3.5" />
+                </button>
               </div>
             </div>
 
@@ -345,33 +342,93 @@ export default function Home({ onStarted, onKept, modelOptions = [] }) {
               </p>
             )}
 
-            {/* Quick-Start Category Cards (Matching Bolt.new Image) */}
-            <div className="mt-7 flex items-center justify-center gap-4">
+            {/* Quick-Start Mode Cards: SRS Generate | Prototype Build | App Build */}
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-4">
               {[
-                { id: 'website', label: 'Website', Icon: Globe },
-                { id: 'slides', label: 'Slides', Icon: Presentation, badge: 'New' },
-                { id: 'app', label: 'App', Icon: Monitor },
-                { id: 'prototype', label: 'Prototype', Icon: FlaskConical },
-              ].map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => {
-                    if (cat.id === 'prototype') submitPrototype()
-                    else submit()
-                  }}
-                  className="group relative flex flex-col items-center justify-center rounded-2xl border border-white/10 bg-[#121622]/60 p-4 transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-[#121622] hover:shadow-lg w-[84px] h-[84px]"
-                >
-                  {cat.badge && (
-                    <span className="absolute -top-1.5 -right-1 rounded-full bg-blue-500 px-1.5 py-0.2 text-[9px] font-bold text-white uppercase tracking-wider shadow">
-                      {cat.badge}
+                {
+                  id: 'srs',
+                  label: 'SRS Generate',
+                  desc: 'Interview & Spec',
+                  Icon: FileText,
+                  badge: 'Planning',
+                  iconColor: 'text-amber-400',
+                  iconBg: 'bg-amber-500/15 ring-1 ring-amber-500/25',
+                  activeBorder: 'border-amber-500/50 bg-[#141a26] shadow-amber-500/10 ring-1 ring-amber-500/30',
+                  onClick: () => {
+                    setActiveMode('srs')
+                    if (!prompt.trim() && !attach.items.length) {
+                      box.current?.focus()
+                      return
+                    }
+                    chooseModel(builderModel)
+                    planFirst()
+                  },
+                },
+                {
+                  id: 'prototype',
+                  label: 'Prototype Build',
+                  desc: 'Fast UI Preview',
+                  Icon: FlaskConical,
+                  badge: 'Preview',
+                  iconColor: 'text-purple-400',
+                  iconBg: 'bg-purple-500/15 ring-1 ring-purple-500/25',
+                  activeBorder: 'border-purple-500/50 bg-[#141a26] shadow-purple-500/10 ring-1 ring-purple-500/30',
+                  onClick: () => {
+                    setActiveMode('prototype')
+                    if (!prompt.trim()) {
+                      box.current?.focus()
+                      return
+                    }
+                    submitPrototype()
+                  },
+                },
+                {
+                  id: 'app',
+                  label: 'App Build',
+                  desc: 'Full-Stack Code',
+                  Icon: Rocket,
+                  badge: 'Full Stack',
+                  iconColor: 'text-blue-400',
+                  iconBg: 'bg-blue-500/15 ring-1 ring-blue-500/25',
+                  activeBorder: 'border-blue-500/50 bg-[#141a26] shadow-blue-500/10 ring-1 ring-blue-500/30',
+                  onClick: () => {
+                    setActiveMode('app')
+                    if (!prompt.trim()) {
+                      box.current?.focus()
+                      return
+                    }
+                    submit()
+                  },
+                },
+              ].map(card => {
+                const isSelected = activeMode === card.id
+                return (
+                  <button
+                    key={card.id}
+                    type="button"
+                    onClick={card.onClick}
+                    className={cn(
+                      "group relative flex flex-col items-center justify-center rounded-2xl border p-3.5 transition-all duration-200 hover:-translate-y-0.5 w-[136px] h-[98px] shadow-lg",
+                      isSelected
+                        ? card.activeBorder
+                        : "border-white/10 bg-[#121622]/70 hover:border-white/20 hover:bg-[#121622] hover:shadow-xl"
+                    )}
+                  >
+                    <div className={cn(
+                      "flex size-9 items-center justify-center rounded-xl transition-transform group-hover:scale-110",
+                      card.iconBg
+                    )}>
+                      <card.Icon className={cn("size-5", card.iconColor)} />
+                    </div>
+                    <span className="mt-2 text-[12px] font-semibold text-white/90 group-hover:text-white">
+                      {card.label}
                     </span>
-                  )}
-                  <cat.Icon className="size-6 text-white/70 transition-colors group-hover:text-blue-400" />
-                  <span className="mt-2 text-[11px] font-medium text-white/60 group-hover:text-white">
-                    {cat.label}
-                  </span>
-                </button>
-              ))}
+                    <span className="text-[10.5px] text-white/45 group-hover:text-white/70">
+                      {card.desc}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
 
             {/* Starter Briefs / Inspirations */}
