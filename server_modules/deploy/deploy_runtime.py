@@ -244,8 +244,8 @@ def _deploy_autopilot(project: str, target: str, opts: dict,
     """analyze → wait for review → deploy → wait for terminal → adopt."""
     proj_dir = PROD_DIR / project
     try:
-        elog("INFO", f"🚀 Deploying {project} to "
-                     f"{'Vercel' if target == 'vercel' else 'AWS EC2'}")
+        where = {"vercel": "Vercel", "aws_ecs": "AWS ECS"}.get(target, "AWS EC2")
+        elog("INFO", f"🚀 Deploying {project} to {where}")
         started = _deploy_call("POST", "/api/runs/analyze", {
             "cloud_consent": True,
             "path": str(proj_dir),
@@ -430,8 +430,12 @@ def read_deploy_results(proj_name: str) -> dict:
 
     d_dir = proj_dir / ".agentforge" / "deploy"
     live = DEPLOY_RUNS.get(proj_name)
+    from builder_agent.config import stack_of
+
     out = {
         "project": proj_name,
+        # Which targets fit: Vercel runs a Next.js app, not a workspace of services.
+        "stack": stack_of(proj_dir),
         "agent": deploy_status(),
         "live": dict(live) if live else None,
         "have": {"last": False},

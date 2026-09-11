@@ -120,6 +120,15 @@ export default function DeployPanel({ onSettings }) {
     return () => { ok = false }
   }, [])
 
+  // Vercel runs a Next.js app. A workspace of services goes to AWS, and EC2 is
+  // where it starts, because it is the one that stays inside the free tier.
+  const targets = mine?.stack === 'mern-microservices'
+    ? TARGETS.filter(t => t.id !== 'vercel') : TARGETS
+  useEffect(() => {
+    if (!targets.some(t => t.id === target)) setTarget('aws_ec2')
+  }, [targets, target])
+  const where = TARGETS.find(t => t.id === target)?.label || target
+
   const s = mine?.settings || {}
   const unit = projectUnitTestStatus(qa, project)
   const failures = unit?.failed ?? null
@@ -164,7 +173,7 @@ export default function DeployPanel({ onSettings }) {
     setError('')
     try {
       await api.deployStart({ project, target, validate_container: validateBuild })
-      addLog('INFO', `Deploying ${project} to ${target === 'vercel' ? 'Vercel' : 'AWS EC2'}`)
+      addLog('INFO', `Deploying ${project} to ${where}`)
       await refresh()
     } catch (e) {
       setError(e.message)
@@ -243,7 +252,7 @@ export default function DeployPanel({ onSettings }) {
           <SectionLabel>Where should it go?</SectionLabel>
           <p className="mt-1 text-[11px] text-muted">Choose the cloud destination for this reviewed build.</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            {TARGETS.map(t => (
+            {targets.map(t => (
               <button key={t.id} onClick={() => setTarget(t.id)}
                       className={cn('rounded-[18px] border p-4 text-left shadow-sm transition-all',
                         target === t.id
@@ -331,7 +340,7 @@ export default function DeployPanel({ onSettings }) {
                     onClick={deploy}>
               {starting ? <Loader2 className="size-3.5 animate-spin" />
                         : <Rocket className="size-3.5" />}
-              Deploy to {target === 'vercel' ? 'Vercel' : 'AWS EC2'}
+              Deploy to {where}
             </Button>
             {!ready && !starting && (
               <span className="text-[11px] text-muted2">
