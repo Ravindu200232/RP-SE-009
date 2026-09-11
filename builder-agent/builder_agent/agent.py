@@ -583,6 +583,16 @@ class BuilderAgent:
             "be somewhere.",
             "It is a drawing, so it has no data layer. Replace its written-in content "
             "with the real thing from the database and keep everything else it settled.",
+            "THE PICTURES ARE PART OF WHAT WAS APPROVED. Every image address in the "
+            "drawing carries over exactly as written - the same seed, so the same "
+            "photograph. Do not re-derive one from a field that happens to be nearby: "
+            "seeding a bakery's picture from `product.slug` gives country-sourdough "
+            "where the drawing had sourdough-country, which is a different photograph, "
+            "and seeding it from a database id gives a different one again every time "
+            "the data is re-seeded. Where the drawing shows a picture for a thing that "
+            "now comes from the database, put that drawn address on the record in the "
+            "seed and render the stored value, so the built page shows the picture they "
+            "said yes to and keeps showing it.",
             (sitemap_of.render(self.sitemap, drawn=True)
              + "\nThat is the whole product. Every screen on it is a route in the"
                " built application, and every link on it still works when the"

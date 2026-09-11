@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: PASS
-Run at (UTC): 2026-09-10T23:14:10+00:00
+Run at (UTC): 2026-09-11T01:57:02+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 483
+Unit tests: 486
 Integration tests: 24
-Total tests run: 507
+Total tests run: 510
 Failures: 0
 Errors: 0
 Skipped: 0
-Duration: 24.035s
+Duration: 24.130s
 
 Detailed results
 ----------------
@@ -54,6 +54,9 @@ test_retargeting_to_what_is_already_set_changes_nothing (test.unit.builder.test_
 test_the_transcript_survives_a_change_of_model (test.unit.builder.test_agent_passes.RetargetTests.test_the_transcript_survives_a_change_of_model) ... ok
 test_the_window_is_remeasured_so_a_smaller_model_is_not_overfilled (test.unit.builder.test_agent_passes.RetargetTests.test_the_window_is_remeasured_so_a_smaller_model_is_not_overfilled) ... ok
 test_thinking_can_be_turned_on_without_starting_again (test.unit.builder.test_agent_passes.RetargetTests.test_thinking_can_be_turned_on_without_starting_again) ... ok
+test_it_names_both_ways_the_address_gets_lost (test.unit.builder.test_agent_passes.TheBuildKeepsTheDrawnPicturesTests.test_it_names_both_ways_the_address_gets_lost) ... ok
+test_it_says_where_a_data_driven_picture_should_live (test.unit.builder.test_agent_passes.TheBuildKeepsTheDrawnPicturesTests.test_it_says_where_a_data_driven_picture_should_live) ... ok
+test_the_build_is_told_to_carry_the_addresses_over (test.unit.builder.test_agent_passes.TheBuildKeepsTheDrawnPicturesTests.test_the_build_is_told_to_carry_the_addresses_over) ... ok
 test_a_compound_command_is_judged_by_its_worst_segment (test.unit.builder.test_engine.CommandPolicyTests.test_a_compound_command_is_judged_by_its_worst_segment) ... ok
 test_an_interpreter_running_a_script_is_not_read_only (test.unit.builder.test_engine.CommandPolicyTests.test_an_interpreter_running_a_script_is_not_read_only) ... ok
 test_read_only_commands_are_safe (test.unit.builder.test_engine.CommandPolicyTests.test_read_only_commands_are_safe) ... ok
@@ -590,6 +593,6 @@ test_the_agents_are_importable_packages_beside_the_server (test.integration.test
 The agents are libraries, not runtime parts. ... ok
 
 ----------------------------------------------------------------------
-Ran 507 tests in 24.035s
+Ran 510 tests in 24.130s
 
 OK

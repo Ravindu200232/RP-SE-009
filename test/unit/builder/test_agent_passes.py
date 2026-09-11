@@ -547,3 +547,42 @@ class LongPageInstructionTests(unittest.TestCase):
         self.assertIn("406 bytes", note)
         # A built page maps over data, so a byte count there would be wrong.
         self.assertNotIn("9,000", _page_note("app/rooms/page.tsx", "x" * 400))
+
+
+class TheBuildKeepsTheDrawnPicturesTests(unittest.TestCase):
+    """A drawn picture is part of what the user approved.
+
+    The drawing seeded a bakery's loaf from `sourdough-country`; the build
+    re-derived it from `product.slug` and got `country-sourdough`, which is a
+    different photograph. The basket went further and seeded from the database
+    id, so every re-seed changed the pictures. All three look reasonable in
+    isolation and none of them shows what was agreed.
+    """
+
+    def _instruction(self):
+        root = Path(tempfile.mkdtemp())
+        proto = root / ".agentforge" / "prototype"
+        proto.mkdir(parents=True)
+        (proto / "index.html").write_text(
+            '<img src="https://picsum.photos/seed/sourdough-country/600/400">',
+            encoding="utf-8")
+        agent = BuilderAgent(
+            Config(workspace=root, model="scripted", unit_tests=False,
+                   e2e_tests=False, state_root=root / ".state"),
+            events=Events(), client=object())
+        agent.prototype_dir = proto
+        return agent._with_prototype("BUILD IT")
+
+    def test_the_build_is_told_to_carry_the_addresses_over(self):
+        text = self._instruction()
+        self.assertIn("THE PICTURES ARE PART OF WHAT WAS APPROVED", text)
+        self.assertIn("the same seed", text)
+
+    def test_it_names_both_ways_the_address_gets_lost(self):
+        text = self._instruction()
+        # Re-derived from a neighbouring field, and derived from a row id.
+        self.assertIn("product.slug", text)
+        self.assertIn("re-seeded", text)
+
+    def test_it_says_where_a_data_driven_picture_should_live(self):
+        self.assertIn("put that drawn address on the record", self._instruction())
