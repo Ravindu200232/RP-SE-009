@@ -70,6 +70,12 @@ The failure this project keeps hitting is a thin page, and it is the expensive o
 Length comes from content, never from padding. More sections, and more of what belongs inside them; never the same thing said twice to fill space. One caveat that is not a loophole: a real screen that maps over data gets its nine rows from the data, so one written row there is correct and complete. Judge a built screen by its sections and by what is in them, never by its character count. A drawing has no data layer, so its rows are written out by hand."""
 
 
+# Short, and on every call a build makes - planning, the drawing and the build
+# itself - because the look is judged on every page, not on the first one.
+DESIGN_NOTE = ("LONG PAGE, ULTRA DESIGN. Every screen you plan, draw or build is a long "
+               "page with an ultra, premium design.")
+
+
 BACKGROUND = """BACKGROUND WORK
 Long commands return a process id while still running. Use waitForProcess to observe completion and do independent work meanwhile. Never start the same work twice, and never assume it passed before you have seen exit code 0. Managed services survive a successful run; finite work must finish."""
 
@@ -137,6 +143,8 @@ def system_prompt(*, workspace, model: str, stack: str, quality: Quality,
         parts.append(REVIEW)
         return "\n\n".join(_fit(parts, context_tokens))
 
+    # Planning, drawing and building alike: every call carries it.
+    parts.insert(1, DESIGN_NOTE)
     if plan_only:
         parts.append(PLANNING)
         return "\n\n".join(_fit(parts, context_tokens))

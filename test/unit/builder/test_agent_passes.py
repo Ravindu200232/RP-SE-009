@@ -485,6 +485,31 @@ class PrototypePassTests(unittest.TestCase):
         self.assertIsNone(self.agent.prototype("a cron job"))
 
 
+class DesignNoteTests(unittest.TestCase):
+    """"Long page, ultra design" rides on every call a build makes."""
+
+    NOTE = "LONG PAGE, ULTRA DESIGN"
+
+    def _system(self, **extra):
+        kwargs = dict(workspace=Path("."), model="m", stack="next",
+                      quality=BUILD_QUALITY, context_tokens=128000)
+        kwargs.update(extra)
+        return system_prompt(**kwargs)
+
+    def test_planning_drawing_and_building_all_carry_it(self):
+        self.assertIn(self.NOTE, self._system(plan_only=True))
+        # The drawing pass is the build prompt with testing off.
+        self.assertIn(self.NOTE, self._system(testing_enabled=False))
+        self.assertIn(self.NOTE, self._system())
+
+    def test_a_small_window_keeps_it(self):
+        self.assertIn(self.NOTE, self._system(context_tokens=6000))
+        self.assertIn(self.NOTE, self._system(plan_only=True, context_tokens=6000))
+
+    def test_a_code_review_does_not_carry_it(self):
+        self.assertNotIn(self.NOTE, self._system(review=True))
+
+
 class LongPageInstructionTests(unittest.TestCase):
     """The page being long is said everywhere a page gets written.
 
