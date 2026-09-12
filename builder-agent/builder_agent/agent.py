@@ -575,6 +575,13 @@ class BuilderAgent:
             "sections arriving, a state change, something loading - with a "
             "`prefers-reduced-motion` block at the end.",
             "",
+            "PHONE, TABLET AND DESKTOP, all three finished. Two `@media` blocks: a phone at "
+            "~390px (one column, the navigation collapsed to a button, touch targets 44px, "
+            "tables scrolling inside their own box) and a tablet at ~820px (two columns "
+            "where three do not fit). Desktop is the full layout, held to the contract's "
+            "container width and centred rather than stretched across a wide screen. No "
+            "page scrolls sideways at any of the three.",
+            "",
             "No build step, no bundler, no npm install, no backend, no fetch, no server. "
             "Link the pages to each other so the whole application can be walked. Write "
             "content that belongs to this product, not placeholder text.",

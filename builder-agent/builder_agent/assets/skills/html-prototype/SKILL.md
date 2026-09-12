@@ -471,11 +471,20 @@ and the action that creates it, a form with an error on one field, a row in
 each status the product defines. Put them on the page they belong to, not on a
 separate "states" page.
 
-## Responsive
+## Three widths, all three finished
 
-It has to hold together on a phone. One column, larger touch targets, the
-navigation collapsed to something usable. Check it at about 360px as well as
-wide — the user will.
+Every page is looked at on a phone, a tablet and a desktop, so draw all three:
+
+- **Phone, ~390px.** One column, the navigation collapsed to a button that
+  opens it, touch targets at least 44px, tables that scroll sideways inside
+  their own box rather than squashing. The page never scrolls sideways.
+- **Tablet, ~820px.** Two columns where three do not fit, the navigation back
+  on the page, the sidebar above the content rather than beside it.
+- **Desktop.** The full layout, held to the contract's container width and
+  centred — not stretched edge to edge on a wide screen.
+
+Two `@media` blocks do it, and fluid sizes (`clamp()`, `minmax()`, `auto-fit`)
+do most of the rest. Check each page at all three before you stop.
 
 ## Changing it
 
@@ -538,7 +547,7 @@ page's worth.
 | `transition:` | **12 or more** |
 | `@keyframes` | **3 or more** |
 | `:hover`, `:focus-visible`, `:disabled`, empty and error states | all present |
-| `@media` | at least the phone; more if the layout needs it |
+| `@media` | the phone and the tablet, both |
 
 A page under those is not finished — go back to it and add what is actually
 missing, rather than padding what is already there.
@@ -561,5 +570,6 @@ missing, rather than padding what is already there.
 - Does any page look thin — a list of two, a table with no statuses, a form
   missing half its fields?
 - Does every place the real product shows a picture show a real photograph?
-- Does it hold together at 360px?
+- Does it hold together on a phone, a tablet and a desktop — all three drawn,
+  none of them scrolling sideways?
 - Would the person who wrote the request recognise their product?
