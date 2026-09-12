@@ -472,6 +472,14 @@ class BuilderAgent:
             "one failure this step cannot afford, because a short page is what gets "
             "approved and then built.",
             "",
+            "WHAT `/` IS BELONGS TO THE PRODUCT. Something being sold to the public opens "
+            "with a hero and ends with a call to action. Something people work in - a "
+            "counter, a console, a back office - opens on the work: today's figures, what "
+            "needs doing now, the queue, what is running late. No hero selling it to the "
+            "person already using it, no 'how it works' explainer, no call to action. A "
+            "till that greets its own cashier with a landing page was written for the "
+            "wrong reader.",
+            "",
             "Draw this whole application as static HTML, before any of it is built for "
             "real. This is the finished thing on paper, not a sketch of it.",
             "",

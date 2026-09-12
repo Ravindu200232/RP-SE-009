@@ -335,10 +335,24 @@ product's header, its own layout, the form with its fields and its error state,
 and the footer — a 3KB page in a set of 12KB pages is the one the user will
 point at.
 
-**A page is several sections, not one block.** A home page is a hero, then the
-thing the product does, then the proof or the detail, then a call to action,
-then the footer — **six to ten distinct sections** that each do something the
-one above it does not. One long column of cards is not a page.
+**A page is several sections, not one block.** Six to ten distinct sections,
+each doing something the one above it does not. One long column of cards is
+not a page.
+
+What those sections are depends on who the product is for, and this is the
+first decision, not a detail:
+
+- **A product that sells to the public** opens with a hero, then what it is,
+  then the proof or the detail, then a call to action, then the footer.
+- **A product people work in** — a counter, a console, a back office — opens
+  on the work: today's figures, what needs doing now, the queue, the thing
+  that is running late. No hero selling it to the person already using it, no
+  "how it works" explainer, no call to action. They are signed in and standing
+  at the counter; the page's job is to tell them where the shop is right now
+  and let them get on with it.
+
+A till that greets its own cashier with a landing page has been written for
+the wrong reader.
 
 Six is the floor, not the aim. A landing page for a product with anything to
 say runs to ten or twelve: the hero, what it is, the categories, the featured
