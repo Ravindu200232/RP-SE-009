@@ -36,6 +36,7 @@ from .memory import Memory
 from .processes import Processes
 from .prompts import task_message
 from .setup import ASK_TIMEOUT, apply_answer, questions_for
+from . import pictures as pictures_of
 from . import sitemap as sitemap_of
 from .skills import read_manifest
 from .skills import select as select_skills
@@ -365,6 +366,15 @@ class BuilderAgent:
                 return None
 
             drawn = self._drawn_pages(root)
+            # A picture the photo service cannot match comes back as its one
+            # stand-in photograph, so every miss on every page is the same
+            # picture. They are swapped before anyone is shown the drawing.
+            replaced = pictures_of.repair(root)
+            if replaced:
+                self.events.emit("notice", level="info",
+                                 message=f"{len(replaced)} picture(s) came back as the photo "
+                                         "service's stand-in; swapped for photographs of "
+                                         "the subject.")
             # A redraw adds pages, removes them and re-points the navigation, so
             # the map is folded again after every round rather than once at the
             # end. The build reads it, and reads it after the last change.
