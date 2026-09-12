@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: FAIL
-Run at (UTC): 2026-09-12T05:50:28+00:00
+Run at (UTC): 2026-09-12T06:19:14+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 661
+Unit tests: 662
 Integration tests: 24
-Total tests run: 685
+Total tests run: 686
 Failures: 4
 Errors: 0
 Skipped: 0
-Duration: 35.534s
+Duration: 36.123s
 
 Detailed results
 ----------------
@@ -48,6 +48,7 @@ test_a_waiting_question_can_be_read_back_in_full (test.unit.builder.test_agent_p
 The studio reloads, and the run is still waiting on it. ... ok
 test_the_time_left_shrinks_rather_than_restarting (test.unit.builder.test_agent_passes.PendingQuestionTests.test_the_time_left_shrinks_rather_than_restarting)
 A recovered question shows what is left, not the whole budget. ... ok
+test_it_asks_for_any_so_the_address_resolves (test.unit.builder.test_agent_passes.PicturesAreOfTheSubjectTests.test_it_asks_for_any_so_the_address_resolves) ... ok
 test_it_asks_for_the_lock_that_keeps_it_stable (test.unit.builder.test_agent_passes.PicturesAreOfTheSubjectTests.test_it_asks_for_the_lock_that_keeps_it_stable) ... ok
 test_the_address_carries_the_subject (test.unit.builder.test_agent_passes.PicturesAreOfTheSubjectTests.test_the_address_carries_the_subject) ... ok
 test_the_skill_agrees_with_the_prompt (test.unit.builder.test_agent_passes.PicturesAreOfTheSubjectTests.test_the_skill_agrees_with_the_prompt) ... ok
@@ -804,6 +805,6 @@ Traceback (most recent call last):
 AssertionError: 0 != 3
 
 ----------------------------------------------------------------------
-Ran 685 tests in 35.533s
+Ran 686 tests in 36.123s
 
 FAILED (failures=4)

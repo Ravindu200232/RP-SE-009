@@ -476,17 +476,23 @@ class PrototypePassTests(unittest.TestCase):
         self.assertIn("1. A reader browses books", task)
         self.assertIn("Sunset Ember", task)
         self.assertIn("Every requirement it enumerates", task)
-        # And it is a full page, not a sketch of one.
-        self.assertIn("FULL SIZE", task.upper())
-        self.assertIn("No stubs", task)
-        # And something they can click through, not a picture of one.
-        self.assertIn("demo.js", task)
+        # How to draw it is the skill's, and the prompt sends them there.
+        self.assertIn("html-prototype", task)
+        self.assertIn("READ THE", task)
+        # Said once: the page rules are not restated in the instruction, they
+        # are in the skill it was just told to read. Two of them used to
+        # disagree - the skill asking for the drawing's own CSS while this
+        # dictated a Tailwind head - and the instruction won in silence.
+        self.assertNotIn("FULL SIZE", task.upper())
+        self.assertNotIn("loremflickr", task)
+        skill = (Path("builder-agent/builder_agent/assets/skills/html-prototype")
+                 / "SKILL.md").read_text(encoding="utf-8")
+        for rule in ("localStorage", "No fetch", "real `<a href", "loremflickr",
+                     "No CSS framework", "prefers-reduced-motion"):
+            self.assertIn(rule, skill)
+        # What it does keep is the shortlist of what has actually gone wrong.
         self.assertIn("localStorage", task)
-        self.assertIn("no fetch", task)
-        # Told to make it work, it moved the content into the script: empty
-        # divs, four hollow sections, and nothing linking anywhere.
-        self.assertIn("SCRIPT NEVER SUPPLIES THE CONTENT", task)
-        self.assertIn("real anchor", task)
+        self.assertIn("written in the HTML", task)
 
     def test_what_they_ask_for_is_sent_back_to_be_redrawn(self):
         asked = []
@@ -605,10 +611,14 @@ class LongPageInstructionTests(unittest.TestCase):
         prompt = agent._prototype_task("a hotel booking site")
         # It leads everything except the one line asking for the whole app,
         # which now comes first in both passes.
-        head = prompt.lstrip().split("\n\n", 1)
+        head = prompt.lstrip().split("\n\n")
         self.assertTrue(head[0].startswith("THE WHOLE APPLICATION"), head[0][:60])
-        self.assertTrue(head[1].lstrip().startswith(self.HEADING),
-                        "the long-page directive has to come next, not fifth")
+        # What a page has to be is said once, in the skill, and the prompt
+        # sends them to read it before anything is written.
+        self.assertIn("READ THE `html-prototype` SKILL IN FULL", prompt)
+        skill = (Path("builder-agent/builder_agent/assets/skills/html-prototype")
+                 / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("Full size, not a sketch", skill)
 
     def test_writing_a_page_says_it_again(self):
         from builder_agent.tools.files import _page_note
@@ -708,6 +718,11 @@ class PicturesAreOfTheSubjectTests(unittest.TestCase):
     in a thumbnail and absurd the moment anyone reads it.
     """
 
+    @staticmethod
+    def _skill():
+        return (Path("builder-agent/builder_agent/assets/skills/html-prototype")
+                / "SKILL.md").read_text(encoding="utf-8")
+
     def _drawing_prompt(self):
         root = Path(tempfile.mkdtemp())
         agent = BuilderAgent(
@@ -718,14 +733,19 @@ class PicturesAreOfTheSubjectTests(unittest.TestCase):
         return agent._prototype_task("a bakery")
 
     def test_the_address_carries_the_subject(self):
-        text = self._drawing_prompt()
+        text = self._skill()
         self.assertIn("loremflickr.com", text)
-        self.assertIn("sourdough,bread", text)
+        self.assertIn("bedroom,garden,hotel", text)
         self.assertNotIn("picsum", text)
 
     def test_it_asks_for_the_lock_that_keeps_it_stable(self):
         # Without it the same address is a different photograph every request.
-        self.assertIn("?lock=", self._drawing_prompt())
+        self.assertIn("?lock=", self._skill())
+
+    def test_it_asks_for_any_so_the_address_resolves(self):
+        # Without `/any` the service wants one photograph carrying every tag
+        # and errors when there is none: nine blanks in one hotel drawing.
+        self.assertIn("/any", self._skill())
 
     def test_the_skill_agrees_with_the_prompt(self):
         skill = (Path("builder-agent/builder_agent/assets/skills/html-prototype/SKILL.md")
@@ -745,6 +765,11 @@ class MotionIsAskedForEverywhereTests(unittest.TestCase):
     IntersectionObserver that never loaded came up as an empty black page.
     """
 
+    @staticmethod
+    def _skill():
+        return (Path("builder-agent/builder_agent/assets/skills/html-prototype")
+                / "SKILL.md").read_text(encoding="utf-8")
+
     def _drawing_prompt(self):
         root = Path(tempfile.mkdtemp())
         agent = BuilderAgent(
@@ -755,13 +780,12 @@ class MotionIsAskedForEverywhereTests(unittest.TestCase):
         return agent._prototype_task("a bakery")
 
     def test_the_ask_is_there(self):
-        self.assertIn("USING BEAUTIFUL ANIMATIONS AND MATCHED CONTENT",
-                      self._drawing_prompt())
+        self.assertIn("## Motion", self._skill())
 
     def test_it_still_has_to_survive_the_animation_being_off(self):
-        text = self._drawing_prompt()
+        text = self._skill()
         self.assertIn("prefers-reduced-motion", text)
-        self.assertIn("script", text)
+        self.assertIn("demo.js", text)
 
     def test_the_skills_no_longer_carry_a_motion_manual(self):
         skills = Path("builder-agent/builder_agent/assets/skills")

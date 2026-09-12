@@ -450,10 +450,20 @@ class BuilderAgent:
         return pages
 
     def _prototype_task(self, task: str, plan: str = "") -> str:
+        """What to draw, and what was already settled. How to draw it is the skill's.
+
+        Every rule in `html-prototype` used to be written into this instruction
+        as well - the page counts, the shell, the pictures, the styling, the
+        motion, all of it twice. When the two disagreed the instruction won
+        silently: the skill was changed to say a drawing writes its own CSS
+        while this still dictated a Tailwind head, and drawings kept coming
+        back with the framework in them. One document says how; this one says
+        what, and points at it.
+        """
         screens = "\n".join(
             f"- {page.get('label', '')} ({page.get('route', '')}) -> "
             f"{_page_file(page.get('route', ''))}"
-            + (f" — {page['what']}" if page.get("what") else "")
+            + (f" - {page['what']}" if page.get("what") else "")
             for page in self.screens)
         contract = (design_contract_message(self.design["selection"], drawing=True)
                     if self.design and self.design.get("selection") else "")
@@ -462,28 +472,15 @@ class BuilderAgent:
             "and every link on every one of them landing on a page that exists. No stub, "
             "no placeholder, nothing left for later.",
             "",
-            "EVERY PAGE IS A LONG, BIG PAGE. This is the thing that goes wrong most "
-            "often, so it is said first and said again below: not a short page, not a "
-            "summary, not a sketch - a long page of the kind a real product ships. Six "
-            "to ten full sections between the header and the footer, lists of eight or "
-            "ten rows, the whole footer sitemap, 9,000 bytes at the very least and "
-            "15,000 for a landing page. Before you write each file, decide what its six "
-            "to ten sections are; after you write it, count them. A short page is the "
-            "one failure this step cannot afford, because a short page is what gets "
-            "approved and then built.",
-            "",
-            "WHAT `/` IS BELONGS TO THE PRODUCT. Something being sold to the public opens "
-            "with a hero and ends with a call to action. Something people work in - a "
-            "counter, a console, a back office - opens on the work: today's figures, what "
-            "needs doing now, the queue, what is running late. No hero selling it to the "
-            "person already using it, no 'how it works' explainer, no call to action. A "
-            "till that greets its own cashier with a landing page was written for the "
-            "wrong reader.",
-            "",
             "Draw this whole application as static HTML, before any of it is built for "
             "real. This is the finished thing on paper, not a sketch of it.",
             "",
-            "Read the `html-prototype` skill first and follow it exactly.",
+            "READ THE `html-prototype` SKILL IN FULL BEFORE YOU WRITE ANYTHING, and "
+            "follow it to the letter. It is the contract for this pass: which files to "
+            "write and in what order, how a page is shaped, how it is styled, how it "
+            "moves, what its pictures are, what it must never say, and the counts every "
+            "page has to meet. None of that is repeated here, so a drawing made without "
+            "reading it will be wrong in ways nothing below mentions.",
             "",
             "GOAL:", task[:2000], "",
             "SCREENS TO DRAW - a separate file for each, in .agentforge/prototype/. "
@@ -505,94 +502,17 @@ class BuilderAgent:
             "scale, corners, spacing, borders, depth, width, voice - is expressed in "
             "styles.css and used on every page. Do not re-decide any of it.",
             "",
-            "MAKE IT FULL SIZE. Each page is the whole page: the shared header and "
-            "navigation, six to ten distinct sections that each do something the one "
-            "above it does not, and the footer. A list has enough rows to look like a "
-            "list - eight or ten, not two. A table has its columns, its statuses and its "
-            "actions. A dashboard has its figures. A form has all of its fields. Where "
-            "the product has an empty or error state, draw it on the page it belongs to. "
-            "No stubs: a sign-in page is a full page too. A thin page is the one thing "
-            "this step cannot afford, because a thin page is what gets approved and then "
-            "built.",
-            "",
-            "THE SHELL IS MOST OF THE LINKS. The header and the footer are identical on "
-            "every page and together carry thirty to forty links: a header listing every "
-            "section of the product with its sub-items, and a footer that is a sitemap of "
-            "three or four columns plus the small print. A header of five links and a "
-            "footer of one copyright line is the clearest sign a drawing is a sketch, and "
-            "it is what has come back every time so far.",
-            "",
-            "NEVER SAY IT IS A DRAWING. No page says prototype, mockup, demo, coming soon "
-            "or not implemented, and none explains what is missing. No lorem ipsum. The "
-            "only thing this cannot do is store data on a server, and that is invisible.",
-            "",
-            "MAKE IT WORK. Write a small `demo.js`, linked from every page, so the "
-            "product's main flow actually runs in the browser: adding something updates "
-            "the count and shows up on the next page, a filter filters, a form shows its "
-            "error and then its success, signing in changes the navigation. The state "
-            "lives in localStorage under one key - one load(), one save(), called on "
-            "every change - so it survives walking between pages and a reload. A demo.js "
-            "with no localStorage in it has not done this, whatever it looks like on one "
-            "page. A demo nobody can click through cannot answer the question they are "
-            "looking at it to answer.",
-            "",
-            "THE SCRIPT NEVER SUPPLIES THE CONTENT. Every card, row, link and word is "
-            "written in the HTML; the script only changes what is already on the page. "
-            "An empty `<div id=\"grid\"></div>` that the script fills is a page with "
-            "nothing in it and nothing linking anywhere. Every link is a real anchor in "
-            "the markup, including the ones into a detail page. With demo.js deleted, "
-            "every page must still be the whole page and every link must still work.",
-            "",
-            "USING BEAUTIFUL ANIMATIONS AND MATCHED CONTENT. The page moves the way a "
-            "finished product moves and every picture is of the thing it sits beside. "
-            "It still has to be complete with the animation off and with the script "
-            "deleted, and all of it goes inside `@media (prefers-reduced-motion: "
-            "reduce)`.",
-            "",
-            "USE REAL PICTURES OF THE REAL THING. Wherever the product shows a "
-            "photograph - a hero, a gallery, a card grid, an avatar - use "
-            "`https://loremflickr.com/800/600/<tags>/any?lock=<n>`, where the tags name the "
-            "subject and nothing else: `sourdough,bread/any`, `ferrari,supercar/any`, "
-            "`bedroom,garden,hotel/any`. The `/any` is not optional: without it the service "
-            "will only answer with a photograph carrying every one of the tags at once, and "
-            "sends an error when none does - a blank space where the picture should be. "
-            "Measured on one hotel drawing: nine of its forty-two pictures were blank for "
-            "exactly that, and every one of them had a photograph behind `/any`. "
-            "Two or three tags, most specific first, a different "
-            "lock number per picture, with width, height and real alt text. The lock is "
-            "what keeps it the same photograph on every request and across a redraw; "
-            "without it the page reshuffles as you scroll. A seeded picture from a "
-            "random-photo service is the mistake this replaces - stable, pretty and "
-            "unrelated: a bakery's sourdough card came back a pine forest and a supercar "
-            "page an arm. Never a grey box either, and not a source whose addresses have "
-            "to be looked up - an Unsplash photo id cannot be known from here, so it gets "
-            "invented, and an invented one is a grey rectangle where the hero should be. "
-            "A product with rooms or dishes or cars is mostly photographs, and a drawing "
-            "of it with none is a wireframe.",
-            "",
-            "STYLE IT YOURSELF, in one stylesheet, and write that stylesheet first. "
-            "`styles.css` carries the contract's tokens as custom properties on `:root` - "
-            "the only place a hex appears - then the shell, a rule for each component "
-            "(.button-primary, .button-secondary, .card, .field, .nav-link, .badge), the "
-            "layout, and the motion. Every page links it with "
-            "`<link rel=\"stylesheet\" href=\"styles.css\">` and loads no framework: no "
-            "Tailwind, no CDN, no `<style>` block in a page, no `style=` on an element. A "
-            "class does something only because a rule in styles.css says what it does. "
-            "Make that stylesheet worth reusing twelve times: 120 rules or more, a "
-            "transition on everything that responds, and at least three `@keyframes` - the "
-            "sections arriving, a state change, something loading - with a "
-            "`prefers-reduced-motion` block at the end.",
-            "",
-            "PHONE, TABLET AND DESKTOP, all three finished. Two `@media` blocks: a phone at "
-            "~390px (one column, the navigation collapsed to a button, touch targets 44px, "
-            "tables scrolling inside their own box) and a tablet at ~820px (two columns "
-            "where three do not fit). Desktop is the full layout, held to the contract's "
-            "container width and centred rather than stretched across a wide screen. No "
-            "page scrolls sideways at any of the three.",
-            "",
-            "No build step, no bundler, no npm install, no backend, no fetch, no server. "
-            "Link the pages to each other so the whole application can be walked. Write "
-            "content that belongs to this product, not placeholder text.",
+            "BEFORE YOU STOP, the four that have actually been shipped. The skill says "
+            "what each one should be; this is the list to check yourself against:",
+            "- A thin page. The pages that come back short are the ones nobody argues "
+            "with, and they are what the build is then made to match.",
+            "- A sketch's shell: a header of five links and a footer of one line, when "
+            "the real product's header and footer carry thirty between them.",
+            "- A page that admits what it is - 'prototype', 'demo', 'coming soon', an "
+            "explanation of what is missing, or lorem ipsum anywhere.",
+            "- A drawing nobody can click through, because the flow keeps its state in "
+            "a variable instead of localStorage, or the content is built by the script "
+            "rather than written in the HTML.",
             "",
             "Write the files and stop. Do not install anything, do not start a server, "
             "and do not write tests.",
