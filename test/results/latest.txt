@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: FAIL
-Run at (UTC): 2026-09-12T06:36:35+00:00
+Run at (UTC): 2026-09-12T09:03:38+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 662
+Unit tests: 666
 Integration tests: 24
-Total tests run: 686
+Total tests run: 690
 Failures: 4
 Errors: 0
 Skipped: 0
-Duration: 35.388s
+Duration: 36.266s
 
 Detailed results
 ----------------
@@ -343,6 +343,12 @@ test_nothing_planned_is_an_empty_map_not_a_crash (test.unit.builder.test_sitemap
 test_the_same_screen_twice_is_one_entry (test.unit.builder.test_sitemap.FromThePlanTests.test_the_same_screen_twice_is_one_entry) ... ok
 test_it_survives_a_round_trip_through_the_project (test.unit.builder.test_sitemap.PersistenceTests.test_it_survives_a_round_trip_through_the_project) ... ok
 test_no_file_is_an_empty_map (test.unit.builder.test_sitemap.PersistenceTests.test_no_file_is_an_empty_map) ... ok
+test_a_rule_is_not_stated_twice_in_two_skills (test.unit.builder.test_skill_contract.TheSkillContractTests.test_a_rule_is_not_stated_twice_in_two_skills)
+Two skills saying the same thing is how they come to disagree. ... ok
+test_every_rule_is_still_said (test.unit.builder.test_skill_contract.TheSkillContractTests.test_every_rule_is_still_said) ... ok
+test_no_skill_asks_for_a_fixed_page_size (test.unit.builder.test_skill_contract.TheSkillContractTests.test_no_skill_asks_for_a_fixed_page_size)
+A page is as long as its content, not as long as a number. ... ok
+test_they_stay_short_enough_to_be_read (test.unit.builder.test_skill_contract.TheSkillContractTests.test_they_stay_short_enough_to_be_read) ... ok
 test_a_browser_that_fails_mid_look_is_asked_once_and_let_be (test.unit.builder.test_styles.AskingTheBrowserTests.test_a_browser_that_fails_mid_look_is_asked_once_and_let_be) ... ok
 test_a_browser_that_is_not_open_is_not_started_to_look (test.unit.builder.test_styles.AskingTheBrowserTests.test_a_browser_that_is_not_open_is_not_started_to_look) ... ok
 test_a_page_the_browser_applied_nothing_to_is_bare (test.unit.builder.test_styles.AskingTheBrowserTests.test_a_page_the_browser_applied_nothing_to_is_bare) ... ok
@@ -805,6 +811,6 @@ Traceback (most recent call last):
 AssertionError: 0 != 3
 
 ----------------------------------------------------------------------
-Ran 686 tests in 35.388s
+Ran 690 tests in 36.265s
 
 FAILED (failures=4)
