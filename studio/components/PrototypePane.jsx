@@ -194,7 +194,7 @@ export default function PrototypePane({ project, hidden, onBuild }) {
     detachRef.current = attachPicker(frameRef.current, (el) => {
       const info = pickedFrom(frameRef.current, el, vp)
       const pageFile = currentPath(frameRef.current)
-      const shotRoute = `/api/prototype/${encodeURIComponent(project)}/${pageFile}`
+      const shotRoute = `${API}/prototype/${encodeURIComponent(project)}/${pageFile}`
       attachShot(
         {
           key: `sel-${++seq}`,
@@ -307,7 +307,7 @@ export default function PrototypePane({ project, hidden, onBuild }) {
       const strokes = strokesRef.current
       if (strokes.reduce((a, s) => a + s.length, 0) < MIN_INK) return clearStrokes()
       const pageFile = currentPath(frameRef.current)
-      const shotRoute = `/api/prototype/${encodeURIComponent(project)}/${pageFile}`
+      const shotRoute = `${API}/prototype/${encodeURIComponent(project)}/${pageFile}`
       attachShot(
         {
           key: `sel-${++seq}`,

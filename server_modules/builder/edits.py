@@ -233,7 +233,10 @@ def run_element_edit(project: str, prompt: str, elements, model: str,
             return
 
         eprog("Changing it…", 40)
-        brief = _selection_brief(found, pictures, prompt, here, page_file, model)
+        # The model is told what the words are about; the studio and the log
+        # keep showing only what was typed.
+        brief = _selection_brief(found, pictures, _pointed_at(prompt, picked, pictures),
+                                 here, page_file, model)
         _edit_run(project, prompt, model, think, "", console,
                   kind="pencil" if drawn and not found else "select", brief=brief,
                   route=here, elements=picked)
@@ -257,6 +260,23 @@ def _image_of(shot) -> str:
     raw = shot.get("image", "") if isinstance(shot, dict) else shot
     raw = str(raw or "")
     return raw.split(",", 1)[1] if raw.startswith("data:") else raw
+
+
+def _pointed_at(prompt: str, picked: list, pictures: list) -> str:
+    """What they typed, and what it is about - said to the model, never shown.
+
+    "Make it red" with a section attached means that section, and with a
+    drawing attached it means the part of the picture that was marked. The
+    studio shows only what was typed, so the words that tie it to what was
+    pointed at go to the model alone.
+    """
+    about = []
+    if picked:
+        about.append("this section or sections")
+    if any(_kind_of(shot) == "drawing" for shot in pictures):
+        about.append("this image")
+    typed = str(prompt or "").strip()
+    return f"{typed} ({' and '.join(about)})" if about else typed
 
 
 def _selection_brief(found: list, pictures: list, prompt: str, route: str,

@@ -1,8 +1,11 @@
 """Pointing at something in the preview, and what the agent is told about it."""
 from __future__ import annotations
 
+import tempfile
 import types
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 
 from test import _support  # noqa: F401
 import server_runtime as server
@@ -96,6 +99,39 @@ class SelectionBriefTests(unittest.TestCase):
             server.ollama = original
         self.assertEqual(seen, [["QUJD"]])          # unwrapped, once
         self.assertIn("no gap above the price", text)
+
+
+class PointedAtTests(unittest.TestCase):
+    """What was pointed at is named to the model, and to nobody else."""
+
+    def test_a_selection_is_named_as_this_section_or_sections(self):
+        self.assertEqual(server._pointed_at("make it red", [{"tag": "header"}], []),
+                         "make it red (this section or sections)")
+
+    def test_a_drawing_is_named_as_this_image(self):
+        self.assertEqual(server._pointed_at("make it bigger", [], [{"kind": "drawing"}]),
+                         "make it bigger (this image)")
+        self.assertEqual(server._pointed_at("fix it", [{"tag": "div"}], [{"kind": "drawing"}]),
+                         "fix it (this section or sections and this image)")
+
+    def test_the_photograph_of_a_click_is_not_a_drawing(self):
+        self.assertEqual(server._pointed_at("fix it", [{"tag": "div"}],
+                                            [{"kind": "element", "image": "x"}]),
+                         "fix it (this section or sections)")
+
+    def test_the_model_hears_it_and_the_studio_does_not(self):
+        logged = []
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(server, "_workspace", return_value=Path(directory)), \
+                patch.object(server, "_edit_run") as run, \
+                patch.object(server, "elog", side_effect=lambda level, text: logged.append(text)), \
+                patch.object(server, "eprog"), patch.object(server, "emit"):
+            server.run_element_edit("shop", "make it red", [{"tag": "header", "text": "Shop"}],
+                                    "model", shots=[{"kind": "drawing"}], route="/")
+        self.assertEqual(run.call_args.args[1], "make it red")
+        self.assertIn("make it red (this section or sections and this image)",
+                      run.call_args.kwargs["brief"])
+        self.assertFalse([line for line in logged if "this section" in line or "this image" in line])
 
 
 class ScreenshotGeometryTests(unittest.TestCase):
