@@ -149,21 +149,21 @@ export default function ProjectsView({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#0a0d14] px-8 py-8 text-white">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#0a0d14] px-4 sm:px-8 py-5 sm:py-8 text-white">
       <div className="mx-auto w-full max-w-[1240px]">
         {/* Header Row */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-[30px] font-bold tracking-tight text-white/95">
+            <h1 className="text-[24px] sm:text-[30px] font-bold tracking-tight text-white/95">
               All projects
             </h1>
-            <p className="mt-1 text-[13px] text-white/50">
+            <p className="mt-1 text-[12px] sm:text-[13px] text-white/50">
               Manage, preview, and build your AI-generated applications and prototypes.
             </p>
           </div>
           <button
             onClick={onCreateNew}
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-[13px] font-semibold text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500 active:scale-95"
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3.5 sm:px-4 py-2 sm:py-2.5 text-[12.5px] sm:text-[13px] font-semibold text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500 active:scale-95 shrink-0"
           >
             <Plus className="size-4" />
             Create project
@@ -171,8 +171,8 @@ export default function ProjectsView({
         </div>
 
         {/* Filter and Search Bar */}
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <div className="relative min-w-[280px] flex-1">
+        <div className="mt-5 sm:mt-6 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
+          <div className="relative min-w-0 sm:min-w-[260px] flex-1">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-white/35" />
             <input
               type="text"
@@ -183,43 +183,45 @@ export default function ProjectsView({
             />
           </div>
 
-          {/* Filter Pills */}
-          <div className="flex items-center rounded-xl border border-white/10 bg-white/[.03] p-1 text-[12px]">
-            {[
-              { id: 'all', label: 'All', count: counts.all },
-              { id: 'app', label: 'Apps', count: counts.app },
-              { id: 'prototype', label: 'Prototypes', count: counts.prototype },
-              { id: 'srs', label: 'SRS Specs', count: counts.srs },
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setFilterTag(tab.id)}
-                className={cn(
-                  'flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium transition-colors',
-                  filterTag === tab.id
-                    ? 'bg-white/15 text-white shadow-sm'
-                    : 'text-white/50 hover:text-white/80'
-                )}
-              >
-                <span>{tab.label}</span>
-                <span className="text-[10px] opacity-60">({tab.count})</span>
-              </button>
-            ))}
-          </div>
+          <div className="flex items-center justify-between sm:justify-start gap-2.5 overflow-x-auto no-scrollbar">
+            {/* Filter Pills */}
+            <div className="flex items-center rounded-xl border border-white/10 bg-white/[.03] p-1 text-[12px] shrink-0">
+              {[
+                { id: 'all', label: 'All', count: counts.all },
+                { id: 'app', label: 'Apps', count: counts.app },
+                { id: 'prototype', label: 'Prototypes', count: counts.prototype },
+                { id: 'srs', label: 'SRS Specs', count: counts.srs },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setFilterTag(tab.id)}
+                  className={cn(
+                    'flex items-center gap-1.5 rounded-lg px-2.5 sm:px-3 py-1.5 font-medium whitespace-nowrap transition-colors text-[11.5px] sm:text-[12px]',
+                    filterTag === tab.id
+                      ? 'bg-white/15 text-white shadow-sm'
+                      : 'text-white/50 hover:text-white/80'
+                  )}
+                >
+                  <span>{tab.label}</span>
+                  <span className="text-[10px] opacity-60">({tab.count})</span>
+                </button>
+              ))}
+            </div>
 
-          {/* Sort Dropdown */}
-          <div className="relative">
-            <select
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value)}
-              className="h-10 cursor-pointer appearance-none rounded-xl border border-white/10 bg-white/[.04] pl-3.5 pr-8 text-[12.5px] font-medium text-white/80 transition-colors hover:border-white/20 focus:outline-none"
-            >
-              <option value="mtime_desc" className="bg-[#121620] text-white">Last edited</option>
-              <option value="mtime_asc" className="bg-[#121620] text-white">Oldest first</option>
-              <option value="title_asc" className="bg-[#121620] text-white">Name (A-Z)</option>
-              <option value="title_desc" className="bg-[#121620] text-white">Name (Z-A)</option>
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-white/40" />
+            {/* Sort Dropdown */}
+            <div className="relative shrink-0">
+              <select
+                value={sortBy}
+                onChange={e => setSortBy(e.target.value)}
+                className="h-10 cursor-pointer appearance-none rounded-xl border border-white/10 bg-white/[.04] pl-3 sm:pl-3.5 pr-7 sm:pr-8 text-[12px] sm:text-[12.5px] font-medium text-white/80 transition-colors hover:border-white/20 focus:outline-none"
+              >
+                <option value="mtime_desc" className="bg-[#121620] text-white">Last edited</option>
+                <option value="mtime_asc" className="bg-[#121620] text-white">Oldest first</option>
+                <option value="title_asc" className="bg-[#121620] text-white">Name (A-Z)</option>
+                <option value="title_desc" className="bg-[#121620] text-white">Name (Z-A)</option>
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2.5 sm:right-3 top-1/2 size-3.5 -translate-y-1/2 text-white/40" />
+            </div>
           </div>
         </div>
 
@@ -333,7 +335,7 @@ export default function ProjectsView({
                           {!isDeleting ? (
                             <button
                               onClick={() => setConfirmDelete(name)}
-                              className="text-white/30 hover:text-red-400 transition-colors p-1 opacity-0 group-hover:opacity-100"
+                              className="text-white/30 hover:text-red-400 transition-colors p-1 opacity-70 sm:opacity-0 group-hover:opacity-100"
                               title="Delete project"
                             >
                               <Trash2 className="size-3.5" />

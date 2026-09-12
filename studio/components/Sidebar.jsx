@@ -5,6 +5,7 @@ import {
   FolderUp, Settings, Download, ExternalLink, Search, Play, Trash2,
   PanelLeftClose, PanelLeftOpen, Home, LayoutGrid, Star, Clock, Folder,
   BookOpen, FileText, Activity, ChevronDown, Gift, CreditCard, LogOut,
+  X, Menu,
 } from 'lucide-react'
 import { useStore, KEYS } from '@/lib/store'
 import { api } from '@/lib/api'
@@ -23,6 +24,8 @@ export default function Sidebar({
   onScreenChange,
   user = null,
   onLogout = null,
+  mobileOpen = false,
+  onMobileClose = null,
 }) {
   const project = useStore(z => z.project)
   const status = useStore(z => z.status)
@@ -104,157 +107,15 @@ export default function Sidebar({
   const dot = { live: 'bg-emerald-500', busy: 'bg-amber-400', connecting: 'bg-blue-400' }[status]
     || 'bg-rose-500'
 
-  if (collapsed) {
-    return (
-      <aside className="flex w-[52px] shrink-0 flex-col items-center gap-2 overflow-hidden h-full border-r border-line bg-[#0c0f17] py-3">
-        <Tip text="Show the sidebar" side="right">
-          <button onClick={() => setCollapsed(false)}
-                  className="grid size-9 place-items-center rounded-xl text-white/70 transition-colors hover:bg-white/[.08] hover:text-white">
-            <PanelLeftOpen className="size-4" />
-          </button>
-        </Tip>
-        <span className={cn('size-2 shrink-0 rounded-full', dot)} title={statusText} />
-        <span className="my-1 h-px w-6 bg-white/10" />
-
-        <Tip text="Home" side="right">
-          <button onClick={() => onScreenChange?.('home')}
-                  className={cn('grid size-9 place-items-center rounded-xl transition-colors',
-                    screen === 'home' ? 'bg-accent/20 text-accent font-semibold' : 'text-white/60 hover:bg-white/[.06] hover:text-white')}>
-            <Home className="size-4" />
-          </button>
-        </Tip>
-
-        <Tip text="All Projects" side="right">
-          <button onClick={() => onScreenChange?.('projects')}
-                  className={cn('grid size-9 place-items-center rounded-xl transition-colors',
-                    screen === 'projects' ? 'bg-accent/20 text-accent font-semibold' : 'text-white/60 hover:bg-white/[.06] hover:text-white')}>
-            <LayoutGrid className="size-4" />
-          </button>
-        </Tip>
-
-        <Tip text="Settings" side="right">
-          <button onClick={onSettings}
-                  className="grid size-9 place-items-center rounded-xl text-white/60 transition-colors hover:bg-white/[.06] hover:text-white">
-            <Settings className="size-3.5" />
-          </button>
-        </Tip>
-        <Tip text="Resume this build where it stopped" side="right">
-          <button onClick={onResume} disabled={!project || status === 'busy'}
-                  className="grid size-9 place-items-center rounded-xl text-white/60 transition-colors hover:bg-white/[.06] hover:text-white disabled:pointer-events-none disabled:text-white/20">
-            <Play className="size-3.5" />
-          </button>
-        </Tip>
-        <span className="flex-1" />
-        {project && (
-          <span className="max-h-[220px] [writing-mode:vertical-rl] truncate text-[10px] font-semibold text-white/40"
-                title={project}>
-            {project}
-          </span>
-        )}
-
-        {/* Collapsed Account Avatar Button with Popover */}
-        <div className="relative mt-auto" ref={accountMenuRef}>
-          {accountOpen && (
-            <div
-              className="absolute bottom-0 left-full ml-3 w-56 rounded-2xl border border-white/15 bg-[#0c101a]/95 p-1.5 shadow-2xl backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95"
-            >
-              <button
-                onClick={() => { setAccountOpen(false); onSettings?.() }}
-                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors"
-              >
-                <Settings className="size-4 text-white/80" />
-                <span>Settings</span>
-              </button>
-              <button
-                onClick={() => { setAccountOpen(false); folderRef.current?.click() }}
-                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors"
-              >
-                <FolderUp className="size-4 text-white/80" />
-                <span>Import project folder</span>
-              </button>
-              <button
-                onClick={() => { setAccountOpen(false); onResume?.() }}
-                disabled={!project || status === 'busy'}
-                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
-              >
-                <Play className="size-4 text-white/80" />
-                <span>Resume build</span>
-              </button>
-              <button
-                onClick={() => { setAccountOpen(false); onZip?.() }}
-                disabled={!project}
-                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
-              >
-                <Download className="size-4 text-white/80" />
-                <span>Download project as zip</span>
-              </button>
-              <button
-                onClick={() => { setAccountOpen(false); openInNewTab() }}
-                disabled={!project}
-                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
-              >
-                <ExternalLink className="size-4 text-white/80" />
-                <span>Open in new tab</span>
-              </button>
-              {onLogout && (
-                <>
-                  <div className="my-1 border-t border-white/10" />
-                  <button
-                    onClick={() => { setAccountOpen(false); onLogout?.() }}
-                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors"
-                  >
-                    <LogOut className="size-4" />
-                    <span>Sign out</span>
-                  </button>
-                </>
-              )}
-            </div>
-          )}
-          <button
-            onClick={() => setAccountOpen(v => !v)}
-            title={`Account: ${displayName}`}
-            className="flex size-8 items-center justify-center rounded-lg bg-[#ec4899] font-bold text-[13px] text-white shadow-sm transition-transform hover:scale-105 active:scale-95"
-          >
-            {initial}
-          </button>
-        </div>
-      </aside>
-    )
-  }
-
-  return (
-    <aside className="flex w-[var(--sidebar-w)] shrink-0 flex-col overflow-hidden h-full border-r border-line bg-[#0c0f17]">
-      {/* Top Header: Brand and Controls */}
-      <header className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-line px-4 py-3">
-        <div className="flex items-center gap-2.5">
-          <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-accent/15 ring-1 ring-accent/25 shadow-sm overflow-hidden">
-            <img src="/__agentforge/agentforge-mark.png" alt="AgentForge"
-                 width={22} height={22}
-                 className="size-5 object-contain" />
-          </div>
-          <span className="font-display text-[14.5px] font-bold tracking-tight text-white">
-            agentforge<span className="text-accent text-[12px] font-normal ml-0.5">.ai</span>
-          </span>
-        </div>
-
-        <div className="flex justify-end items-center gap-1 col-span-2">
-          <Tip text="Hide the sidebar">
-            <button
-              className="grid size-[26px] place-items-center rounded-lg border border-white/10 bg-white/[.04] text-white/70 transition-colors hover:bg-white/[.08] hover:text-white"
-              onClick={() => setCollapsed(true)}
-            >
-              <PanelLeftClose className="size-3" />
-            </button>
-          </Tip>
-        </div>
-      </header>
-
-
-
+  const renderBody = (isMobile = false) => (
+    <>
       {/* Primary Navigation Menu */}
       <nav className="flex flex-col gap-0.5 p-2 border-b border-line text-[13px]">
         <button
-          onClick={() => onScreenChange?.('home')}
+          onClick={() => {
+            onScreenChange?.('home')
+            if (isMobile) onMobileClose?.()
+          }}
           className={cn(
             'flex items-center gap-3 rounded-xl px-3 py-2 font-medium transition-colors text-left',
             screen === 'home'
@@ -267,7 +128,10 @@ export default function Sidebar({
         </button>
 
         <button
-          onClick={() => onScreenChange?.('projects')}
+          onClick={() => {
+            onScreenChange?.('projects')
+            if (isMobile) onMobileClose?.()
+          }}
           className={cn(
             'flex items-center justify-between rounded-xl px-3 py-2 font-medium transition-colors text-left',
             screen === 'projects'
@@ -282,6 +146,17 @@ export default function Sidebar({
           <span className="rounded-full bg-white/10 px-2 py-0.5 font-mono text-[10px] text-white/70">
             {projects.length}
           </span>
+        </button>
+
+        <button
+          onClick={() => {
+            onSettings?.()
+            if (isMobile) onMobileClose?.()
+          }}
+          className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-white/60 hover:bg-white/[.05] hover:text-white text-left"
+        >
+          <Settings className="size-4 shrink-0 text-white/40" />
+          <span>Settings</span>
         </button>
 
         <button className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-white/60 hover:bg-white/[.05] hover:text-white">
@@ -322,7 +197,7 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* Active Project Card (Contract requirement: busyProject === name) */}
+      {/* Active Project Card */}
       {project && (() => {
         const name = project
         const working = busyProject === name
@@ -342,7 +217,10 @@ export default function Sidebar({
                 </span>
               ) : (
                 <button
-                  onClick={() => onScreenChange?.('projects')}
+                  onClick={() => {
+                    onScreenChange?.('projects')
+                    if (isMobile) onMobileClose?.()
+                  }}
                   className="text-[11px] font-medium text-accent hover:underline"
                 >
                   Change
@@ -353,10 +231,10 @@ export default function Sidebar({
         )
       })()}
 
-      {/* Spacer to push Referral banner and Footer to bottom */}
+      {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Earn $50 referral banner from Bolt.new */}
+      {/* Earn $50 referral banner */}
       <div className="border-t border-line p-2">
         <div className="flex items-center justify-between rounded-xl bg-accent/15 border border-accent/25 px-3 py-2 text-[12px] text-accent">
           <div className="flex items-center gap-2">
@@ -367,7 +245,7 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* User Account Row with Avatar & Popover Menu (Matching Bolt.new) */}
+      {/* User Account Row */}
       <div className="relative border-t border-line px-3 py-2.5" ref={accountMenuRef}>
         {/* Hidden folder input for import */}
         <input ref={folderRef} type="file" hidden
@@ -384,21 +262,21 @@ export default function Sidebar({
             className="absolute bottom-full left-3 mb-2 w-56 rounded-2xl border border-white/15 bg-[#0c101a]/95 p-1.5 shadow-2xl backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95"
           >
             <button
-              onClick={() => { setAccountOpen(false); onSettings?.() }}
+              onClick={() => { setAccountOpen(false); onSettings?.(); if (isMobile) onMobileClose?.() }}
               className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors"
             >
               <Settings className="size-4 text-white/80" />
               <span>Settings</span>
             </button>
             <button
-              onClick={() => { setAccountOpen(false); folderRef.current?.click() }}
+              onClick={() => { setAccountOpen(false); folderRef.current?.click(); if (isMobile) onMobileClose?.() }}
               className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors"
             >
               <FolderUp className="size-4 text-white/80" />
               <span>Import project folder</span>
             </button>
             <button
-              onClick={() => { setAccountOpen(false); onResume?.() }}
+              onClick={() => { setAccountOpen(false); onResume?.(); if (isMobile) onMobileClose?.() }}
               disabled={!project || status === 'busy'}
               className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
             >
@@ -406,7 +284,7 @@ export default function Sidebar({
               <span>Resume build</span>
             </button>
             <button
-              onClick={() => { setAccountOpen(false); onZip?.() }}
+              onClick={() => { setAccountOpen(false); onZip?.(); if (isMobile) onMobileClose?.() }}
               disabled={!project}
               className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
             >
@@ -414,7 +292,7 @@ export default function Sidebar({
               <span>Download project as zip</span>
             </button>
             <button
-              onClick={() => { setAccountOpen(false); openInNewTab() }}
+              onClick={() => { setAccountOpen(false); openInNewTab(); if (isMobile) onMobileClose?.() }}
               disabled={!project}
               className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
             >
@@ -425,7 +303,7 @@ export default function Sidebar({
               <>
                 <div className="my-1 border-t border-white/10" />
                 <button
-                  onClick={() => { setAccountOpen(false); onLogout?.() }}
+                  onClick={() => { setAccountOpen(false); onLogout?.(); if (isMobile) onMobileClose?.() }}
                   className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors"
                 >
                   <LogOut className="size-4" />
@@ -452,9 +330,200 @@ export default function Sidebar({
           <ChevronDown className={cn("size-3.5 text-white/40 transition-transform", accountOpen && "rotate-180")} />
         </button>
       </div>
-    </aside>
+    </>
+  )
+
+  const renderMobileDrawer = () => (
+    <div className={cn(
+      "fixed inset-0 z-50 md:hidden transition-all duration-300",
+      mobileOpen ? "visible opacity-100" : "invisible opacity-0 pointer-events-none"
+    )}>
+      <div
+        className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+        onClick={onMobileClose}
+      />
+      <aside className={cn(
+        "absolute top-0 bottom-0 left-0 w-[280px] max-w-[85vw] flex flex-col bg-[#0c0f17] border-r border-line shadow-2xl transition-transform duration-300 ease-out z-10",
+        mobileOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <header className="flex items-center justify-between border-b border-line px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-accent/15 ring-1 ring-accent/25 shadow-sm overflow-hidden">
+              <img src="/__agentforge/agentforge-mark.png" alt="AgentForge" width={22} height={22} className="size-5 object-contain" />
+            </div>
+            <span className="font-display text-[14.5px] font-bold tracking-tight text-white">
+              agentforge<span className="text-accent text-[12px] font-normal ml-0.5">.ai</span>
+            </span>
+          </div>
+          <button
+            onClick={onMobileClose}
+            className="grid size-7 place-items-center rounded-lg border border-white/10 bg-white/[.04] text-white/70 hover:bg-white/[.08] hover:text-white"
+          >
+            <X className="size-3.5" />
+          </button>
+        </header>
+        {renderBody(true)}
+      </aside>
+    </div>
+  )
+
+  if (collapsed) {
+    return (
+      <>
+        {renderMobileDrawer()}
+        <aside className="hidden md:flex w-[52px] shrink-0 flex-col items-center gap-2 overflow-hidden h-full border-r border-line bg-[#0c0f17] py-3">
+          <Tip text="Show the sidebar" side="right">
+            <button onClick={() => setCollapsed(false)}
+                    className="grid size-9 place-items-center rounded-xl text-white/70 transition-colors hover:bg-white/[.08] hover:text-white">
+              <PanelLeftOpen className="size-4" />
+            </button>
+          </Tip>
+          <span className={cn('size-2 shrink-0 rounded-full', dot)} title={statusText} />
+          <span className="my-1 h-px w-6 bg-white/10" />
+
+          <Tip text="Home" side="right">
+            <button onClick={() => onScreenChange?.('home')}
+                    className={cn('grid size-9 place-items-center rounded-xl transition-colors',
+                      screen === 'home' ? 'bg-accent/20 text-accent font-semibold' : 'text-white/60 hover:bg-white/[.06] hover:text-white')}>
+              <Home className="size-4" />
+            </button>
+          </Tip>
+
+          <Tip text="All Projects" side="right">
+            <button onClick={() => onScreenChange?.('projects')}
+                    className={cn('grid size-9 place-items-center rounded-xl transition-colors',
+                      screen === 'projects' ? 'bg-accent/20 text-accent font-semibold' : 'text-white/60 hover:bg-white/[.06] hover:text-white')}>
+              <LayoutGrid className="size-4" />
+            </button>
+          </Tip>
+
+          <Tip text="Settings" side="right">
+            <button onClick={onSettings}
+                    className="grid size-9 place-items-center rounded-xl text-white/60 transition-colors hover:bg-white/[.06] hover:text-white">
+              <Settings className="size-3.5" />
+            </button>
+          </Tip>
+          <Tip text="Resume this build where it stopped" side="right">
+            <button onClick={onResume} disabled={!project || status === 'busy'}
+                    className="grid size-9 place-items-center rounded-xl text-white/60 transition-colors hover:bg-white/[.06] hover:text-white disabled:pointer-events-none disabled:text-white/20">
+              <Play className="size-3.5" />
+            </button>
+          </Tip>
+          <span className="flex-1" />
+          {project && (
+            <span className="max-h-[220px] [writing-mode:vertical-rl] truncate text-[10px] font-semibold text-white/40"
+                  title={project}>
+              {project}
+            </span>
+          )}
+
+          {/* Collapsed Account Avatar Button with Popover */}
+          <div className="relative mt-auto" ref={accountMenuRef}>
+            {accountOpen && (
+              <div
+                className="absolute bottom-0 left-full ml-3 w-56 rounded-2xl border border-white/15 bg-[#0c101a]/95 p-1.5 shadow-2xl backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95"
+              >
+                <button
+                  onClick={() => { setAccountOpen(false); onSettings?.() }}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors"
+                >
+                  <Settings className="size-4 text-white/80" />
+                  <span>Settings</span>
+                </button>
+                <button
+                  onClick={() => { setAccountOpen(false); folderRef.current?.click() }}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors"
+                >
+                  <FolderUp className="size-4 text-white/80" />
+                  <span>Import project folder</span>
+                </button>
+                <button
+                  onClick={() => { setAccountOpen(false); onResume?.() }}
+                  disabled={!project || status === 'busy'}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                >
+                  <Play className="size-4 text-white/80" />
+                  <span>Resume build</span>
+                </button>
+                <button
+                  onClick={() => { setAccountOpen(false); onZip?.() }}
+                  disabled={!project}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                >
+                  <Download className="size-4 text-white/80" />
+                  <span>Download project as zip</span>
+                </button>
+                <button
+                  onClick={() => { setAccountOpen(false); openInNewTab() }}
+                  disabled={!project}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                >
+                  <ExternalLink className="size-4 text-white/80" />
+                  <span>Open in new tab</span>
+                </button>
+                {onLogout && (
+                  <>
+                    <div className="my-1 border-t border-white/10" />
+                    <button
+                      onClick={() => { setAccountOpen(false); onLogout?.() }}
+                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors"
+                    >
+                      <LogOut className="size-4" />
+                      <span>Sign out</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+            <button
+              onClick={() => setAccountOpen(v => !v)}
+              title={`Account: ${displayName}`}
+              className="flex size-8 items-center justify-center rounded-lg bg-[#ec4899] font-bold text-[13px] text-white shadow-sm transition-transform hover:scale-105 active:scale-95"
+            >
+              {initial}
+            </button>
+          </div>
+        </aside>
+      </>
+    )
+  }
+
+  return (
+    <>
+      {renderMobileDrawer()}
+      <aside className="hidden md:flex w-[var(--sidebar-w)] shrink-0 flex-col overflow-hidden h-full border-r border-line bg-[#0c0f17]">
+        {/* Top Header: Brand and Controls */}
+        <header className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-line px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-accent/15 ring-1 ring-accent/25 shadow-sm overflow-hidden">
+              <img src="/__agentforge/agentforge-mark.png" alt="AgentForge"
+                   width={22} height={22}
+                   className="size-5 object-contain" />
+            </div>
+            <span className="font-display text-[14.5px] font-bold tracking-tight text-white">
+              agentforge<span className="text-accent text-[12px] font-normal ml-0.5">.ai</span>
+            </span>
+          </div>
+
+          <div className="flex justify-end items-center gap-1 col-span-2">
+            <Tip text="Hide the sidebar">
+              <button
+                className="grid size-[26px] place-items-center rounded-lg border border-white/10 bg-white/[.04] text-white/70 transition-colors hover:bg-white/[.08] hover:text-white"
+                onClick={() => setCollapsed(true)}
+              >
+                <PanelLeftClose className="size-3" />
+              </button>
+            </Tip>
+          </div>
+        </header>
+        {renderBody(false)}
+      </aside>
+    </>
   )
 }
+
+
+
 
 function DeployTag({ deployed }) {
   if (!deployed) return null

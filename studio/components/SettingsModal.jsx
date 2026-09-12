@@ -84,16 +84,16 @@ export default function SettingsModal({ onClose, onSaved }) {
   ]
 
   return (
-    <Modal onClose={onClose} className="max-w-none w-[min(1040px,95vw)] h-[min(650px,88vh)] p-0 overflow-hidden flex flex-col rounded-[26px] border border-white/15 bg-[#0e1320] shadow-[0_30px_90px_rgba(0,0,0,0.85)]">
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+    <Modal onClose={onClose} className="max-w-none w-[min(1040px,95vw)] h-[min(650px,90vh)] p-0 overflow-hidden flex flex-col rounded-[22px] sm:rounded-[26px] border border-white/15 bg-[#0e1320] shadow-[0_30px_90px_rgba(0,0,0,0.85)]">
+      <div className="flex flex-col sm:flex-row flex-1 min-h-0 overflow-hidden">
 
-        {/* ── Left Sidebar ── */}
-        <aside className="w-56 shrink-0 border-r border-white/10 bg-[#0a0d16]/95 flex flex-col justify-between p-3 select-none">
-          <div className="flex-1 overflow-y-auto pr-1">
-            <div className="px-2.5 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wider text-white/35">
+        {/* ── Left Sidebar / Mobile Top Nav ── */}
+        <aside className="w-full sm:w-56 shrink-0 border-b sm:border-b-0 sm:border-r border-white/10 bg-[#0a0d16]/95 flex sm:flex-col justify-between p-2 sm:p-3 select-none">
+          <div className="flex-1 overflow-x-auto sm:overflow-y-auto no-scrollbar sm:pr-1">
+            <div className="hidden sm:block px-2.5 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wider text-white/35">
               Settings
             </div>
-            <div className="space-y-0.5">
+            <div className="flex sm:flex-col gap-1 sm:gap-0.5">
               {settingsNav.map(item => {
                 const active = activeTab === item.id
                 return (
@@ -102,7 +102,7 @@ export default function SettingsModal({ onClose, onSaved }) {
                     type="button"
                     onClick={() => setActiveTab(item.id)}
                     className={cn(
-                      'w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-left text-[12px] transition-all',
+                      'shrink-0 sm:w-full flex items-center gap-2 sm:gap-2.5 px-2.5 py-1.5 rounded-xl text-left text-[12px] whitespace-nowrap transition-all',
                       active
                         ? 'bg-white/[.12] text-white font-semibold shadow-sm'
                         : 'text-white/55 hover:text-white hover:bg-white/[.05] font-medium'
@@ -117,7 +117,7 @@ export default function SettingsModal({ onClose, onSaved }) {
           </div>
 
           {/* User profile footer */}
-          <div className="pt-2 border-t border-white/10">
+          <div className="hidden sm:block pt-2 border-t border-white/10">
             <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl bg-white/[.02]">
               <div className="size-7 rounded-full bg-blue-600 flex items-center justify-center text-[12px] font-bold text-white shrink-0 shadow-md shadow-blue-500/25">
                 {initial}
@@ -135,9 +135,9 @@ export default function SettingsModal({ onClose, onSaved }) {
         {/* ── Right Content ── */}
         <main className="flex-1 flex flex-col min-w-0 bg-[#0e1320] overflow-hidden">
           {/* Header */}
-          <header className="h-[58px] shrink-0 border-b border-white/10 px-6 flex items-center justify-between">
-            <div>
-              <h2 className="font-display text-[16px] font-bold tracking-tight text-white">
+          <header className="h-[52px] sm:h-[58px] shrink-0 border-b border-white/10 px-4 sm:px-6 flex items-center justify-between">
+            <div className="min-w-0 flex-1 pr-2">
+              <h2 className="font-display text-[15px] sm:text-[16px] font-bold tracking-tight text-white truncate">
                 {activeTab === 'general'      ? 'General'
                : activeTab === 'application'  ? 'Application'
                : activeTab === 'models'       ? 'AI Models'
@@ -145,7 +145,7 @@ export default function SettingsModal({ onClose, onSaved }) {
                : activeTab === 'integrations' ? 'Integrations'
                : 'Keyboard Shortcuts'}
               </h2>
-              <p className="text-[11px] text-white/40 mt-0.5">
+              <p className="text-[10.5px] sm:text-[11px] text-white/40 mt-0.5 truncate">
                 {activeTab === 'general'
                   ? isAdmin ? 'Ollama engine, API key and MongoDB connection.'
                             : 'What this machine runs, and what is yours.'
@@ -163,14 +163,14 @@ export default function SettingsModal({ onClose, onSaved }) {
             <button
               onClick={onClose}
               title="Close"
-              className="rounded-xl p-1.5 text-white/40 hover:bg-white/10 hover:text-white transition-all"
+              className="rounded-xl p-1.5 text-white/40 hover:bg-white/10 hover:text-white transition-all shrink-0"
             >
               <X className="size-4" />
             </button>
           </header>
 
           {/* Body */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-5 text-white" style={{ scrollbarWidth: 'thin' }}>
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 text-white" style={{ scrollbarWidth: 'thin' }}>
 
             {/* ── GENERAL ── */}
             {activeTab === 'general' && !isAdmin && (

@@ -250,10 +250,10 @@ export default function Home({
   }
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-[radial-gradient(circle_at_50%_15%,#152e68_0%,#0c152a_38%,#080c16_100%)] px-6 py-10 text-white">
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-[radial-gradient(circle_at_50%_15%,#152e68_0%,#0c152a_38%,#080c16_100%)] px-3.5 sm:px-6 py-6 sm:py-10 text-white">
       {/* Bolt.new Public Top Navigation (When signed out, matching media_1789153650649.png) */}
       {!user && (
-        <header className="absolute top-0 inset-x-0 z-30 flex items-center justify-between px-6 py-4 md:px-10 border-b border-white/[.07] bg-[#0c0f17]/60 backdrop-blur-md">
+        <header className="absolute top-0 inset-x-0 z-30 flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 md:px-10 border-b border-white/[.07] bg-[#0c0f17]/60 backdrop-blur-md">
           <div className="flex items-center gap-2.5">
             <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-blue-500/20 ring-1 ring-blue-500/30">
               <img src="/__agentforge/agentforge-mark.png" alt="AgentForge" className="size-5 object-contain" />
@@ -281,7 +281,7 @@ export default function Home({
             <button
               type="button"
               onClick={onSignUp}
-              className="rounded-xl bg-blue-600 px-4 py-2 font-display text-[13px] font-semibold text-white shadow-md shadow-blue-500/25 hover:bg-blue-500 transition-all active:scale-95"
+              className="rounded-xl bg-blue-600 px-3.5 sm:px-4 py-1.5 sm:py-2 font-display text-[12px] sm:text-[13px] font-semibold text-white shadow-md shadow-blue-500/25 hover:bg-blue-500 transition-all active:scale-95"
             >
               Get Started
             </button>
@@ -291,11 +291,11 @@ export default function Home({
 
       <div className={cn("relative mx-auto my-auto w-full max-w-[940px]", !user && "pt-12")}>
         {/* Bolt.new Style Hero */}
-        <div className="text-center">
-          <h1 className="font-display text-[46px] font-bold tracking-tight text-white md:text-[56px] leading-[1.08]">
+        <div className="text-center px-2">
+          <h1 className="font-display text-[28px] sm:text-[44px] md:text-[56px] font-bold tracking-tight text-white leading-[1.12]">
             What will you build today?
           </h1>
-          <p className="mt-3 text-[16px] text-white/65">
+          <p className="mt-2 sm:mt-3 text-[14px] sm:text-[16px] text-white/65">
             Create stunning apps & websites by chatting with AI.
           </p>
         </div>
@@ -484,7 +484,7 @@ export default function Home({
             )}
 
             {/* Quick-Start Mode Cards: SRS Generate | Prototype Build | App Build */}
-            <div className="mt-7 flex flex-wrap items-center justify-center gap-4">
+            <div className="mt-7 grid grid-cols-3 gap-2 sm:gap-4 max-w-[480px] w-full mx-auto">
               {[
                 {
                   id: 'srs',
@@ -561,22 +561,22 @@ export default function Home({
                     type="button"
                     onClick={card.onClick}
                     className={cn(
-                      "group relative flex flex-col items-center justify-center rounded-2xl border p-3 transition-all duration-200 hover:-translate-y-0.5 w-[136px] h-[96px] shadow-lg",
+                      "group relative flex flex-col items-center justify-center rounded-2xl border p-2 sm:p-3 transition-all duration-200 hover:-translate-y-0.5 w-full h-[88px] sm:h-[96px] shadow-lg",
                       isSelected
                         ? card.activeBorder
                         : "border-white/10 bg-[#121622]/70 hover:border-white/20 hover:bg-[#121622] hover:shadow-xl"
                     )}
                   >
                     <div className={cn(
-                      "flex size-8 items-center justify-center rounded-xl transition-transform group-hover:scale-110",
+                      "flex size-7 sm:size-8 items-center justify-center rounded-xl transition-transform group-hover:scale-110",
                       card.iconBg
                     )}>
-                      <card.Icon className={cn("size-4", card.iconColor)} />
+                      <card.Icon className={cn("size-3.5 sm:size-4", card.iconColor)} />
                     </div>
-                    <span className="mt-1.5 text-[11.5px] font-semibold text-white/90 group-hover:text-white">
+                    <span className="mt-1 sm:mt-1.5 text-[10.5px] sm:text-[11.5px] font-semibold text-white/90 group-hover:text-white truncate max-w-full">
                       {card.label}
                     </span>
-                    <span className="text-[10px] text-white/45 group-hover:text-white/70">
+                    <span className="text-[9px] sm:text-[10px] text-white/45 group-hover:text-white/70 truncate max-w-full">
                       {card.desc}
                     </span>
                   </button>

@@ -188,7 +188,7 @@ export default function AgentChat() {
   }
 
   return (
-    <aside className="flex w-[var(--chat-w,460px)] shrink-0 flex-col overflow-hidden border-r border-line/60 bg-panel/80">
+    <aside className="flex w-[100%] lg:w-[var(--chat-w,460px)] max-w-full shrink-0 flex-col overflow-hidden border-r border-line/60 bg-panel/80">
       <header className="shrink-0 border-b border-line/60 px-3.5 py-3">
         <div className="flex items-center gap-2">
           <span className="grid size-7 place-items-center rounded-xl bg-accent/10 text-accent">

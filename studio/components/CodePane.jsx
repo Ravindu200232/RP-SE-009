@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { FileCode2, Loader2, Save, Undo2 } from 'lucide-react'
+import { FileCode2, Folder, Loader2, Save, Undo2 } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { api } from '@/lib/api'
 import { highlight } from '@/lib/highlight'
@@ -31,6 +31,7 @@ export default function CodePane({ hidden }) {
   const [draft, setDraft] = useState({})
   const [saving, setSaving] = useState('')
   const [error, setError] = useState('')
+  const [showFilesOnMobile, setShowFilesOnMobile] = useState(false)
 
   useEffect(() => {
     if (liveFile && follow) tailRef.current?.scrollIntoView({ block: 'end' })
@@ -124,6 +125,16 @@ export default function CodePane({ hidden }) {
           {isDirty && <span className="ml-1.5 text-accent">●</span>}
         </span>
 
+        {/* Mobile Files / Editor toggle button */}
+        <button
+          type="button"
+          onClick={() => setShowFilesOnMobile(v => !v)}
+          className="sm:hidden flex shrink-0 items-center gap-1 rounded-lg border border-line bg-white/60 px-2.5 py-1 font-mono text-[10.5px] text-muted shadow-sm transition hover:bg-white dark:bg-white/5"
+        >
+          <Folder className="size-3" />
+          <span>{showFilesOnMobile ? 'Editor' : 'Files'}</span>
+        </button>
+
         {error && (
           <span className="max-w-[280px] truncate text-[10px] text-deep"
                 title={error}>{error}</span>
@@ -162,8 +173,12 @@ export default function CodePane({ hidden }) {
         )}
       </div>
 
-      <div className="flex min-h-0 flex-1">
-        <div className="m-3 mr-0 flex w-[238px] shrink-0 flex-col overflow-hidden rounded-[18px] border border-line/80 bg-white/50 shadow-sm dark:bg-white/[.025]">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        {/* File Tree Drawer / Column */}
+        <div className={cn(
+          "m-2 sm:m-3 sm:mr-0 w-full sm:w-[238px] shrink-0 flex-col overflow-hidden rounded-[18px] border border-line/80 bg-white/50 shadow-sm dark:bg-white/[.025]",
+          showFilesOnMobile ? "flex" : "hidden sm:flex"
+        )}>
           <div className="flex shrink-0 items-center justify-between border-b border-line/70 px-3.5 py-3">
             <span className="label-xs text-ink">Files</span>
             <span className="font-mono text-[10px] text-muted2">
@@ -172,11 +187,18 @@ export default function CodePane({ hidden }) {
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto">
             <FileTree files={files} active={activeFile} dirty={dirty}
-                      onPick={setActiveFile} />
+                      onPick={(f) => {
+                        setActiveFile(f)
+                        setShowFilesOnMobile(false)
+                      }} />
           </div>
         </div>
 
-        <div className="relative m-3 min-h-0 flex-1 overflow-hidden rounded-[18px] border border-line/80 bg-code shadow-[inset_0_1px_0_rgba(255,255,255,.04)]">
+        {/* Code Editor Container */}
+        <div className={cn(
+          "relative m-2 sm:m-3 min-h-0 flex-1 overflow-hidden rounded-[18px] border border-line/80 bg-code shadow-[inset_0_1px_0_rgba(255,255,255,.04)]",
+          showFilesOnMobile ? "hidden sm:block" : "block"
+        )}>
           {body || activeFile ? (
             <div className="flex h-full min-h-0">
               <div ref={gutterRef}

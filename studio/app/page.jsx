@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Eye, Code2, FileText, FlaskConical, Plus, Rocket, Layers } from 'lucide-react'
+import { Eye, Code2, FileText, FlaskConical, Plus, Rocket, Layers, Menu } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { answerQuestion, connect, send } from '@/lib/ws'
 import { forgetConsole } from '@/lib/console-log'
@@ -100,7 +100,13 @@ export default function Studio() {
   const [cat, setCat] = useState(() => catalogue(null))
   const [screen, setScreen] = useState('home')
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [mobileView, setMobileView] = useState('view') // 'chat' | 'view'
   const opening = useRef(0)
+
+  useEffect(() => {
+    if (busy) setMobileView('chat')
+  }, [busy])
 
   const { user, init: initAuth, logout } = useAuthStore()
   const [authModalOpen, setAuthModalOpen] = useState(false)
@@ -385,19 +391,33 @@ export default function Studio() {
       {user && (
         <Sidebar
           projects={projects}
-          onOpen={openProject}
+          onOpen={(name, p) => {
+            setMobileNavOpen(false)
+            openProject(name, p)
+          }}
           onImport={importFolder}
-          onSettings={() => setSettingsOpen(true)}
+          onSettings={() => {
+            setMobileNavOpen(false)
+            setSettingsOpen(true)
+          }}
           onZip={downloadZip}
-          onResume={resumeBuild}
+          onResume={() => {
+            setMobileNavOpen(false)
+            resumeBuild()
+          }}
           screen={screen}
-          onScreenChange={setScreen}
+          onScreenChange={(s) => {
+            setMobileNavOpen(false)
+            setScreen(s)
+          }}
           user={user}
           onLogout={signOut}
           onDeleted={(name) => {
             refreshProjects()
             if (project === name) setScreen('home')
           }}
+          mobileOpen={mobileNavOpen}
+          onMobileClose={() => setMobileNavOpen(false)}
         />
       )}
 
@@ -421,13 +441,48 @@ export default function Studio() {
       />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-panel">
+        {/* Mobile Header for Home / Projects when signed in */}
+        {user && screen !== 'workspace' && (
+          <div className="md:hidden flex h-12 shrink-0 items-center justify-between border-b border-line bg-panel/95 px-4 backdrop-blur-md">
+            <button
+              onClick={() => setMobileNavOpen(true)}
+              className="flex items-center justify-center size-8 rounded-lg border border-line bg-panel2/80 text-muted hover:text-ink"
+              title="Open Navigation"
+            >
+              <Menu className="size-4" />
+            </button>
+            <div className="flex items-center gap-2">
+              <div className="flex size-6 items-center justify-center rounded-lg bg-accent/20 ring-1 ring-accent/30">
+                <img src="/__agentforge/agentforge-mark.png" alt="AgentForge" className="size-4 object-contain" />
+              </div>
+              <span className="font-display text-[14px] font-bold text-ink">agentforge</span>
+            </div>
+            <button
+              onClick={() => setScreen('home')}
+              className="flex items-center justify-center size-8 rounded-lg border border-line bg-panel2/80 text-muted hover:text-ink"
+              title="New project"
+            >
+              <Plus className="size-4" />
+            </button>
+          </div>
+        )}
+
         {/* Workspace Top Navbar */}
         {screen === 'workspace' && (
-          <div className="flex h-[48px] shrink-0 items-center gap-2 border-b border-line bg-panel/95 px-4 backdrop-blur-md">
-            <div className="flex items-center gap-1 rounded-full bg-panel2/80 p-0.5 border border-line">
+          <div className="flex h-[48px] shrink-0 items-center gap-2 border-b border-line bg-panel/95 px-2 sm:px-4 backdrop-blur-md">
+            {/* Mobile Sidebar Hamburger Button */}
+            <button
+              onClick={() => setMobileNavOpen(true)}
+              className="md:hidden flex items-center justify-center size-8 rounded-lg border border-line bg-panel2/80 text-muted hover:text-ink shrink-0"
+              title="Open Menu"
+            >
+              <Menu className="size-4" />
+            </button>
+
+            <div className="flex items-center gap-1 rounded-full bg-panel2/80 p-0.5 border border-line overflow-x-auto no-scrollbar max-w-[calc(100vw-190px)] sm:max-w-none">
               {tabs.map(({ id, label, Icon }) => (
                 <button key={id} onClick={() => setView(id)}
-                        className={cn('inline-flex h-7 items-center gap-1.5 rounded-full px-3',
+                        className={cn('inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full px-3',
                           'font-display text-[11px] font-semibold transition-all',
                           view === id ? 'bg-accent/15 text-accent shadow-sm ring-1 ring-accent/30 dark:bg-white/10 dark:text-ink dark:ring-white/10'
                                       : 'text-muted hover:bg-black/[.03] hover:text-ink dark:hover:bg-white/5')}>
@@ -442,6 +497,35 @@ export default function Studio() {
             </div>
 
             <span className="flex-1" />
+
+            {/* Mobile View Switcher Pill: Chat vs Workspace View */}
+            <div className="lg:hidden flex items-center rounded-full bg-panel2/80 p-0.5 border border-line shrink-0 mr-1">
+              <button
+                type="button"
+                onClick={() => setMobileView('chat')}
+                className={cn(
+                  'h-7 px-2.5 rounded-full text-[11px] font-semibold transition-all flex items-center gap-1.5',
+                  mobileView === 'chat'
+                    ? 'bg-accent text-white shadow-sm'
+                    : 'text-muted hover:text-ink'
+                )}
+              >
+                <span>Chat</span>
+                {busy && <span className="size-1.5 rounded-full bg-white animate-pulse" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileView('view')}
+                className={cn(
+                  'h-7 px-2.5 rounded-full text-[11px] font-semibold transition-all',
+                  mobileView === 'view'
+                    ? 'bg-accent text-white shadow-sm'
+                    : 'text-muted hover:text-ink'
+                )}
+              >
+                <span>Workspace</span>
+              </button>
+            </div>
 
             {/* Action to Build full app from SRS-only project */}
             {specOnly && !busy && (
@@ -512,10 +596,18 @@ export default function Studio() {
             }}
           />
         ) : (
-          <div className="flex min-h-0 flex-1 bg-bg/40">
-            <AgentChat />
+          <div className="flex min-h-0 flex-1 bg-bg/40 overflow-hidden">
+            <div className={cn(
+              "shrink-0 h-full",
+              mobileView === 'chat' ? 'flex w-full lg:w-auto' : 'hidden lg:flex'
+            )}>
+              <AgentChat />
+            </div>
 
-            <div className="relative flex min-w-0 flex-1 flex-col">
+            <div className={cn(
+              "relative min-w-0 flex-1 flex-col h-full",
+              mobileView === 'view' ? 'flex' : 'hidden lg:flex'
+            )}>
               <ScopeQuestion />
 
               <PreviewPane key={`preview-${project}`} hidden={view !== 'preview'} onBuild={resumeBuild} />
