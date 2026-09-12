@@ -181,21 +181,17 @@ stylesheet, where it is reused twelve times.
 
 ## The shell
 
-The same header, navigation and footer on every page, written into each file.
-The product's name links to `index.html` and the current page is marked.
+An authentic navigation shell on every page, designed for the product's actual archetype:
+- **Public products and storefronts**: A top navigation bar with brand, primary sections, search/actions, and a structured multi-column sitemap footer with secondary links and copyright.
+- **Applications, dashboards, and tools**: A real application shell — sidebar navigation with active route highlights, top workspace bar with breadcrumbs, search, user menu, and status bar.
 
-**The shell is most of the links.** A real site's header and footer carry
-thirty to forty between them, identical everywhere: a header listing every
-section with its sub-items as dropdowns of real anchors (twelve to twenty), and
-a footer that is a sitemap of three or four columns plus the small print
-(twelve to eighteen). A header of five links and a footer of one copyright line
-is the clearest sign a drawing is a sketch.
+The product's name links to `index.html` and the current page is clearly marked as active.
 
 **Every link is a real `<a href="…">` in the markup**, including into detail
-pages: a list of rooms is a list of written-out anchors, one per room. A page
+pages: a list of items is a list of written-out anchors, one per item. A page
 reachable only because a script built its link is a page nobody finds by
-reading the file. An admin screen's link is in the markup too — let the script
-hide it for a guest, not the other way round.
+reading the file. An admin or settings screen's link is in the markup too — let the script
+hide or disable it when appropriate, rather than generating anchors out of thin air.
 
 ## Make the flow work
 
@@ -230,26 +226,24 @@ Keep it small: one file, plain functions, no framework, no `fetch`.
 ## Full size, not a sketch
 
 A thin page gets approved — there is nothing in it to disagree with — and then
-the build is made to match it. Every screen is the whole page: the shell above
-and below, the sections between, no stubs. A sign-in page is a full page too.
+the build is made to match it. Every screen is the whole page: the full shell appropriate to the archetype, complete functional views, no stubs. A sign-in page is a full page too.
 
-**Six to ten sections**, each doing something the one above it does not. What
-they are depends on who the product is for, and that is the first decision:
+**Substantial, archetype-native composition.** What goes on the screen depends on what the product genuinely is:
 
 - **Sold to the public**: the hero, then what it is, then the proof or the
   detail, then a call to action, then the footer.
-- **Worked in** — a counter, a console, a back office: today's figures, what
-  needs doing now, the queue, what is running late. No "how it works"
-  explainer, no call to action.
+- **Worked in** — a counter, a console, a back office, a dashboard, or a tool: opens directly on the work. Today's figures, what
+  needs doing now, the queue, or the interactive canvas. No "how it works"
+  explainer, no marketing hero banner, and no promotional call to action. A till that greets its own cashier with a landing page was built for the wrong reader.
 
-A working screen gets its own six, and three of them keep going missing:
+A working screen gets its own functional areas:
 
 1. What this screen is, and what the person is looking at now.
 2. **The numbers across the top** — the counts or totals that say how today is
    going.
 3. **The controls** — the date, the filters, the search, the tabs.
 4. The thing itself, with its columns, statuses and row actions.
-5. **What it looks like with nothing in it**, drawn rather than described.
+5. **What it looks like with nothing in it** — the empty state, drawn rather than described.
 6. The next thing the person needs: the related queue, the recent activity.
 
 Density is what a working screen is for; it has no hero photograph.
@@ -265,9 +259,9 @@ page, and inventing one is worse than drawing a thin one.
 
 ## The content
 
-What this product would actually hold: six soups with names, prices and
-descriptions; eight books with titles and authors; three bookings with dates
-and guests and states. Not "Item 1". Not lorem ipsum. Prices with the right
+What this product would actually hold: realistic domain items with names, prices,
+and descriptions; books with titles and authors; bookings with dates,
+guests, and states. Not "Item 1". Not lorem ipsum. Prices with the right
 currency, dates in a real format, statuses from the real set.
 
 Invented but plausible content is what lets someone say "that is not what I
@@ -284,20 +278,15 @@ drawing of it with none is a wireframe.
 ```
 
 - **A photograph of the thing.** The tags name the subject and nothing else —
-  two or three, most specific first. A seeded picture from a random-photo
-  service is stable, pretty and unrelated: a bakery's sourdough card came back
-  a pine forest.
+  two or three, most specific first.
 - **`/any` after the tags, always.** Without it the service wants one
-  photograph carrying every tag at once and errors when there is none — a blank
-  space on the page. Nine of forty-two pictures in one hotel drawing were blank
-  for that, and every one had a photograph waiting behind `/any`.
+  photograph carrying every tag at once and errors when there is none.
 - **`?lock=<n>`, a different number per picture.** Without it the same address
   returns a different photograph on every request and the page reshuffles as
   you scroll.
 - **A source whose addresses always resolve.** Tags and a lock are all
   `loremflickr.com/<w>/<h>/<tags>` needs. Never a source whose ids have to be
-  looked up — an Unsplash id cannot be known from here, so it gets invented,
-  and an invented one is a grey rectangle where the hero should be.
+  looked up.
 - **Always `width` and `height`** matching the ratio, so the layout does not
   jump, and **real `alt`** describing that subject.
 - Never a grey box, never a coloured rectangle, never an `<img>` with no `src`.
@@ -350,12 +339,12 @@ There is nothing to apologise for.
 
 | | Every page |
 | --- | --- |
-| links in the header | **12 or more** — every section, sub-items included |
-| links in the footer | **12 or more** — a sitemap of three or four columns |
-| the two together | **30 or more**, identical on every page |
-| sections between header and footer | **6 or more** — the header, nav and footer are not three of them |
+| links in the header | **12 or more** — on public sites (or complete app navigation for tools) |
+| links in the footer | **12 or more** — sitemap columns (or status bar for tools) |
+| the two together | **30 or more** — all planned routes linked across the shell |
+| sections between header and footer | **6 or more** — full vertical composition, or complete app panels |
 | rows in a list or table | **8 or more** |
-| pictures, where the product shows them | enough that the page is of something |
+| pictures, where the product shows them | enough that the page is of something (none on raw dashboards) |
 | `localStorage` in `demo.js` | present |
 | text saying "demo", "prototype" or "coming soon" | none |
 

@@ -146,6 +146,8 @@ class BuilderAgent:
         self.registry = build_registry()
         self.plan_text = ""
         self.plan_approval = True
+        self.design_approval = True
+        self.prototype_approval = True
         self.design: dict | None = None
         # The screens the design step agreed, and the drawing made of them.
         self.screens: list[dict] = []
@@ -289,8 +291,11 @@ class BuilderAgent:
         # The task sets the mood; the plan names the screens. They are read
         # separately because only one of them has been approved.
         form = form_payload(f"{task}\n{plan}"[:8000], plan=plan)
-        answer = self.approvals.ask(
-            "design", form, default={"decision": "apply"}, cancel=self.cancel)
+        if not getattr(self, "design_approval", True):
+            answer = {"decision": "apply", "selection": form["chosen"]}
+        else:
+            answer = self.approvals.ask(
+                "design", form, default={"decision": "apply"}, cancel=self.cancel)
         if answer.get("decision") == "skip":
             self.events.emit("notice", level="info",
                              message="Design contract skipped; the build will choose its own look.")
@@ -425,9 +430,15 @@ class BuilderAgent:
             # Parallel flow verification, screenshot capture, and living SRS update
             try:
                 from server_modules.srs.srs_sync import sync_from_prototype_async
-                sync_from_prototype_async(Path(root), drawn)
+                if isinstance(root, (str, Path)):
+                    sync_from_prototype_async(Path(root), drawn)
             except Exception:
                 pass
+
+            if not getattr(self, "prototype_approval", True):
+                if getattr(self.config, "prototype_only", False):
+                    self._stop_at_prototype = True
+                break
 
             answer = self.approvals.ask(
                 "prototype",

@@ -87,16 +87,16 @@ def _page_note(rel: str, content: str) -> str:
     """
     if not _PAGE_FILE.search(str(rel).replace("\\", "/")):
         return ""
-    note = (" This is a page: it and the next one are long, big pages - the full shell above "
-            "and below, six to ten sections between them that each do something the one above "
-            "does not, lists with enough rows to read as lists, forms with all their fields, "
-            "and the loading, empty and error states on the page they belong to. Count this "
-            "page's sections before you start the next one.")
+    note = (" This is a page: make it authentic, complete, and fully realized for its archetype - "
+            "with its working shell and navigation, fully developed functional views tailored to the app "
+            "(dashboards with metrics/tables/charts; tools with panels/canvases; forms with validation; "
+            "portals with full workflows), genuine records and data rows, and the loading, empty and error "
+            "states on the view they belong to. No generic filler or placeholder sections.")
     if str(rel).lower().endswith(".html"):
         size = len(content.encode("utf-8", "ignore"))
-        note += (f" This one is {size:,} bytes; a drawn page is 9,000 at the very least and a "
-                 "landing page 15,000. Under that, go back and add what is missing rather than "
-                 "padding what is there.")
+        note += (f" This one is {size:,} bytes; a drawn page is 9,000 at the very least to ensure "
+                 "complete content, states, and interactive markup. Under that, go back and add what "
+                 "is missing rather than padding what is there.")
     return note
 
 

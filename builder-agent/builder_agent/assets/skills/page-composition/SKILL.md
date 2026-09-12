@@ -146,9 +146,9 @@ its URL. Every page was defensible on its own and the product was not usable.
 
 - The shell is in `app/layout.jsx` (or the equivalent), not repeated per page.
   A page that draws its own header is a page that will drift from the others.
-- **Comprehensive sitemap navigation (thirty-odd links, not three)**:
-  * **Header**: lists primary sections with sub-route dropdowns or grouped sections.
-  * **Footer sitemap**: 3–4 categorized columns (Product, Workflows, Resources, Company/Legal) with deep links, copyright, and status.
+- **Comprehensive sitemap navigation (thirty-odd links, not three on public sites; full working app shell for tools)**:
+  * **Header / App Bar**: lists primary sections with sub-route dropdowns, search, or workspace view switcher.
+  * **Footer sitemap**: 3–4 categorized columns (Product, Workflows, Resources, Company/Legal) with deep links for public products; status bar for tools.
   * **Breadcrumbs**: Deep/detail views carry hierarchical breadcrumbs (`Home / Category / Item Detail`) so users never get lost.
   * **Contextual cross-links**: Related items, category filters, and next steps link directly across screens.
   * **Zero dead-ends**: Every link must reach a real page or open an interactive modal/drawer. No dangling `href="#"` or broken journeys.
@@ -178,9 +178,9 @@ actually being written, because a count read thirty files ago is not a count:
 
 | | Every screen |
 | --- | --- |
-| sections | the table above — **6 or more** on a marketing or landing page |
+| sections | the table above — **6 or more** on a marketing or landing page, or dense working panels on an app |
 | what `/` is | what the approved drawing made it: a shop front for something being sold, the day's figures and what needs doing for something people work in. A till that greets its own cashier with a landing page was built for the wrong reader |
-| the shared shell | a header listing every section of the product, and a footer of **three or four columns of links** — thirty-odd links, identical on every page |
+| the shared shell | a header or sidebar listing every section of the product, and three or four columns of links for public footers (thirty-odd links across the shell) or an authentic app workspace shell |
 | rows in a list or table | **8 or more**, with the empty state written too |
 | fields in a form | every field the product needs, with labels and help text |
 | words of real content | enough to say what the screen is for, in this product's own words |
