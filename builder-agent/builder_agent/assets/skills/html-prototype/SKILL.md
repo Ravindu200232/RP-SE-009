@@ -1,6 +1,6 @@
 ---
 name: html-prototype
-description: Draw the whole application as static HTML before any of it is built — every planned screen, the chosen design tokens, realistic content, styled with Tailwind from a CDN, no build step and no backend — so the look can be agreed before the expensive part starts.
+description: Draw the whole application as static HTML before any of it is built — every planned screen, the chosen design tokens, realistic content, styled by one stylesheet of your own CSS, no framework, no build step and no backend — so the look can be agreed before the expensive part starts.
 ---
 
 # The HTML prototype
@@ -17,9 +17,10 @@ build.
 
 ## What it is
 
-- **Plain HTML, Tailwind and a little JavaScript.** No React, no bundler, no
-  npm install, no build step — Tailwind arrives as one `<script>` and compiles
-  in the browser. A file opens in a browser and works.
+- **Plain HTML, one stylesheet of your own CSS, and a little JavaScript.** No
+  React, no bundler, no npm install, no build step, and no CSS framework —
+  nothing is compiled in the browser. A file opens in a browser and works,
+  offline, first time.
 - **It works.** This is a demo somebody clicks through, not a picture of one.
   See "Make the flow work" below.
 - **No backend.** No fetch, no API, no database, no server. Every piece of
@@ -60,14 +61,10 @@ Start writing. There is nothing to look up first: the screens are listed in the
 request, and the tokens are in `design-system.md`, which is the one other file
 worth reading.
 
-One `styles.css`, linked from every page, holding the tokens. Nothing else
-belongs in a page's own CSS: a rule written into one file is a rule that will
-drift from the other eleven, and a colour change the user asks for then has to
-be made five times instead of once.
-
-The one exception is the Tailwind theme block below, which the browser build
-can only read inline. It is identical on every page, the same way the header
-and footer are.
+**One `styles.css`, linked from every page, and every rule lives in it.** No
+`<style>` block in a page, no `style="…"` on an element. A rule written into
+one file is a rule that will drift from the other eleven, and a colour change
+the user asks for then has to be made five times instead of once.
 
 ## The design contract owns the look
 
@@ -75,8 +72,6 @@ The palette, type, radius, spacing, border weight, shadow depth and container
 width were chosen and written to `design-system.md` and its token block. Put
 those tokens at the top of `styles.css` as custom properties and reference them
 everywhere:
-
-`styles.css` is that token block and little else:
 
 ```css
 :root {
@@ -89,15 +84,12 @@ everywhere:
 **Never write a hex value anywhere but that block.** When the user asks for a
 different colour, one property changes and the whole prototype follows. That is
 the point of the exercise, and a hard-coded `#EA580C` in a button rule breaks
-it — as does a Tailwind `bg-orange-600`, which is the same mistake spelled
-differently. Tailwind's own colour names are not this product's palette.
+it.
 
-## Setting Tailwind up
+## The head of every page
 
-Tailwind compiles in the browser, so there is nothing to install and nothing to
-build. Every page starts with the same head, loading local `tailwind.js` with CDN
-fallback and the design contract's token config, and it is the same in all twelve
-files:
+The same five lines in all twelve files. Nothing is fetched from the internet
+and nothing is compiled in the browser:
 
 ```html
 <!DOCTYPE html>
@@ -107,84 +99,107 @@ files:
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Rooms & Suites | Royal Azure</title>
   <link rel="stylesheet" href="styles.css">
-  <script src="tailwind.js"></script>
-  <script>
-    if (!window.tailwind) {
-      document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
-    }
-  </script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            primary: 'var(--primary)',
-            'primary-hover': 'var(--primary-hover, #6D28D9)',
-            accent: 'var(--accent)',
-            surface: 'var(--surface)',
-            'surface-alt': 'var(--surface-alt, #F4F4F5)',
-            background: 'var(--background, #FAFAFA)',
-            border: 'var(--border, #E4E4E7)',
-            text: 'var(--text, #09090B)',
-            muted: 'var(--text-muted, #71717A)',
-            success: 'var(--success, #059669)',
-            warning: 'var(--warning, #D97706)',
-            danger: 'var(--danger, #E11D48)',
-            info: 'var(--info, #0284C7)',
-          },
-          borderRadius: {
-            card: 'var(--radius, 14px)',
-          },
-          boxShadow: {
-            raised: '0 1px 3px rgba(0, 0, 0, 0.08)',
-          },
-          fontFamily: {
-            heading: 'var(--font-heading)',
-            body: 'var(--font-body)',
-            display: 'var(--font-heading)',
-          }
-        }
-      }
-    }
-  </script>
-  <style type="text/tailwindcss">
-    @layer components {
-      .button-primary { @apply inline-flex items-center justify-center gap-2 bg-primary text-white px-6 py-3 rounded-card font-semibold hover:opacity-90 active:scale-[0.98] transition-all duration-150; }
-      .button-secondary { @apply inline-flex items-center justify-center gap-2 bg-surface text-text border border-border px-6 py-3 rounded-card font-semibold hover:border-primary hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150; }
-      .card           { @apply bg-surface rounded-card shadow-raised p-6 hover:shadow-overlay transition-all duration-200; }
-      .field          { @apply w-full rounded-card border border-border bg-surface px-4 py-3 text-text placeholder:text-muted focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-150; }
-      .nav-link       { @apply text-sm font-medium text-text hover:text-primary transition-colors duration-150; }
-      .badge          { @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold; }
-    }
-  </style>
 </head>
 ```
 
-Three things are load-bearing there:
+**No CSS framework.** No Tailwind, no Bootstrap, no `<script src="…cdn…">`
+that styles the page, no `@apply`, no `<style>` block in the page. A drawing
+that compiles its stylesheet in the browser is one unknown class away from
+rendering as bare HTML — which is exactly what happened to a hotel drawing of
+seven pages, where a single `hover:shadow-overlay` in a `.card` rule left every
+page unstyled. Your own CSS cannot fail that way: a rule the browser does not
+understand is skipped, and the rest of the page still has its styling.
 
-- **`tailwind.config` connects the design contract tokens directly to Tailwind.**
-  `primary: 'var(--primary)'`, `card: 'var(--radius)'`, etc. allow `bg-primary`,
-  `text-primary`, `bg-surface`, `bg-background`, `border-border`, `rounded-card`
-  and all standard utilities to paint with the agreed design tokens.
-- **Local `tailwind.js` loads instantly without internet**, with `https://cdn.tailwindcss.com`
-  as transparent fallback.
-- **`styles.css` also defines pure CSS component fallbacks** for `.button-primary`,
-  `.button-secondary`, `.card`, `.field`, `.nav-link` so the application is
-  styled even before client scripts execute.
+`demo.js` goes at the end of `<body>`, once, with `<script src="demo.js"></script>`.
 
-## Utilities in the markup, classes for what repeats
+## The stylesheet
 
-Tailwind utilities are for layout and one-offs — `grid grid-cols-3 gap-6`,
-`flex items-center justify-between`, `mt-12`, `max-w-6xl mx-auto`. Use them
-freely; that is what they are good at.
+`styles.css` is the whole look of the product, in this order:
 
-Anything that appears more than twice gets a component class in
-`@layer components` instead: `.button-primary`, `.button-secondary`, `.card`,
-`.field`, `.nav-link`. Forty buttons each carrying `bg-primary text-white px-6
-py-3 rounded-card` is forty places to edit when the user says "make the buttons
-bigger", and the fortieth will be missed. A request to change "the buttons" has
-to have one thing to change.
+1. **The tokens** from the design contract, as custom properties on `:root`.
+2. **A short reset** — `box-sizing`, margins off, `body` type and colour,
+   `img { max-width: 100% }`.
+3. **The shell**: the header, the navigation, the footer, the page container.
+4. **The components**, each named for what it is: `.button-primary`,
+   `.button-secondary`, `.card`, `.field`, `.nav-link`, `.badge`, `.table`,
+   `.stat`, `.empty`.
+5. **The layout helpers** you actually use — a `.grid-3`, a `.row`, a
+   `.stack` — written once, not a utility library.
+6. **Motion**, below.
+7. **The phone**, in one `@media (max-width: 720px)` block at the end.
+
+Write it as ordinary CSS a person can read:
+
+```css
+.button-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .8rem 1.5rem;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.button-primary:hover  { background: var(--primary-hover); transform: translateY(-1px); }
+.button-primary:active { transform: translateY(0) scale(.98); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  transition: box-shadow .2s ease, transform .2s ease;
+}
+.card:hover { box-shadow: 0 10px 30px rgb(0 0 0 / .12); transform: translateY(-2px); }
+```
+
+**A class says what the thing is, not what it looks like.** `.room-card`,
+`.booking-row`, `.price`, `.status-paid` — never `.mt-12`, `.text-sm`,
+`.flex-row-gap-6`. Forty buttons each carrying a handful of look-alike classes
+is forty places to edit when the user says "make the buttons bigger", and the
+fortieth will be missed. A request to change "the buttons" has to have one
+thing to change.
+
+Use what CSS already gives you rather than inventing scaffolding: `display:
+grid` with `grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr))`,
+`flex`, `gap`, `clamp()` for type that scales, `:hover`, `:focus-visible`,
+`:disabled`, `[data-state="paid"]`, `:nth-child`.
+
+## Motion
+
+The product should feel alive when it is clicked, and this is where that is
+decided — the build copies what it sees here.
+
+- **Every interactive thing transitions.** Buttons, cards, rows, links, fields:
+  `transition: … .15s ease` on the property that changes. Nothing jumps.
+- **The page arrives.** A short fade-and-rise on the main sections, staggered
+  by a few tens of milliseconds, is enough:
+
+  ```css
+  @keyframes rise { from { opacity: 0; transform: translateY(12px); } }
+  .section { animation: rise .5s ease both; }
+  .section:nth-child(2) { animation-delay: .06s; }
+  ```
+- **State changes are animated, not swapped.** A row marked paid, a basket
+  count going up, an error appearing, a panel opening: give it a keyframe —
+  a pulse, a slide, a tick that draws itself.
+- **Loading looks like loading.** A skeleton shimmer or a spinner drawn in CSS,
+  where the real product would wait for data.
+- **Respect the setting.** End the motion section with:
+
+  ```css
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important;
+                             transition-duration: .01ms !important; }
+  }
+  ```
+
+Keep it quick and small — 150ms to 500ms, a few pixels, never a bounce that
+holds the page up. Motion that has to be waited for is worse than none.
 
 ## The shell
 
@@ -418,9 +433,9 @@ wide — the user will.
 The user will ask for changes, in their own words: "make the buttons blue",
 "this heading is too big", "put the price above the description". Apply the
 change everywhere it belongs — a token in `styles.css` where it is a colour or
-a radius, a component class in `@layer components` where it is the look of one
-kind of thing — and re-render only the files that changed. A change made by
-editing utilities across nine files is a change that will be half-applied.
+a radius, that component's own rule where it is the look of one kind of thing —
+and re-render only the files that changed. A change made by editing markup
+across nine files is a change that will be half-applied.
 
 If they point at one element and ask for a change to that alone, change that
 one — a class used once, or a modifier on it, never a new inline style.
@@ -461,6 +476,7 @@ sketch of a page, and each one has been the fault at least once:
 | pictures, where the product shows them | **6 or more** on a page that shows things |
 | rows in a list or table | **8 or more** |
 | `localStorage` in `demo.js` | **present** |
+| `@keyframes` in `styles.css` | **3 or more**, and a `transition` on everything that responds |
 | text that says "demo", "prototype" or "coming soon" | **none** |
 
 A page under those is not finished — go back to it and add what is actually
@@ -475,10 +491,11 @@ missing, rather than padding what is already there.
 - Can you point at where each of the plan's requirements is on a page?
 - Is every dimension the design contract settled actually expressed?
 - Can you reach every screen from every screen?
-- Is every colour a token reference — no hex outside `styles.css`, and no
-  stock Tailwind colour like `bg-orange-600` standing in for the palette?
-- Does each page carry the Tailwind script and the `@theme` block inline, with
-  every token the contract settled mapped in it?
+- Is every colour a token reference — no hex outside `styles.css`?
+- Is `styles.css` the only stylesheet: no framework, no CDN, no `<style>` block
+  in a page, no `style="…"` on an element?
+- Does it move — a transition on everything that responds, the sections
+  arriving, the state changes animated, and `prefers-reduced-motion` honoured?
 - Is the content this product's content, with no placeholder text left?
 - Does any page look thin — a list of two, a table with no statuses, a form
   missing half its fields?

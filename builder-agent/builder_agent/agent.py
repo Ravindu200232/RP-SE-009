@@ -340,13 +340,6 @@ class BuilderAgent:
 
         root = Path(self.sandbox.root) / ".agentforge" / "prototype"
         root.mkdir(parents=True, exist_ok=True)
-        static_tailwind = Path(__file__).resolve().parent / "assets" / "static" / "tailwind.js"
-        if static_tailwind.is_file() and not (root / "tailwind.js").is_file():
-            try:
-                import shutil
-                shutil.copyfile(static_tailwind, root / "tailwind.js")
-            except Exception:
-                pass
         self.prototype_dir = root
         self.events.emit("phase", phase="prototype", title="Drawing it", status="active")
 
@@ -376,28 +369,6 @@ class BuilderAgent:
                                  message=f"{len(replaced)} picture(s) came back as the photo "
                                          "service's stand-in; swapped for photographs of "
                                          "the subject.")
-            # Tailwind compiles the drawing in the browser and throws on a class
-            # it does not know, leaving the page with no styling at all. One
-            # invented name would cost the whole drawing, so the theme is made
-            # to declare whatever the pages actually ask for.
-            if styles_of.restore_engine(root):
-                self.events.emit("notice", level="info",
-                                 message="The drawing's own copy of Tailwind was missing or "
-                                         "empty; put back, so the pages do not need the "
-                                         "internet to have their styling.")
-            faded = styles_of.alpha_colors(root)
-            if faded:
-                self.events.emit("notice", level="info",
-                                 message=f"{len(faded)} theme colour(s) could not be used at "
-                                         "part strength; written so a page may fade them.")
-            named = styles_of.repair(root)
-            if named:
-                names = sorted({item["name"] for item in named})
-                self.events.emit("notice", level="info",
-                                 message="The pages use " + ", ".join(names)
-                                         + " which their own theme did not define; declared "
-                                         + ("it" if len(names) == 1 else "them")
-                                         + " so the drawing keeps its styling.")
             # A redraw adds pages, removes them and re-points the navigation, so
             # the map is folded again after every round rather than once at the
             # end. The build reads it, and reads it after the last change.
@@ -425,6 +396,24 @@ class BuilderAgent:
                             "the usual cause is a block that was closed and then had its "
                             "last few lines repeated after the closing brace. Change "
                             "nothing else.")
+                continue
+
+            # The one way a drawing of plain CSS can still be shown bare: the
+            # stylesheet was never really written, or the pages never link it.
+            bare = styles_of.unstyled(root, styles_of.browser_check(self.browser))
+            if bare and round_number + 1 < self.MAX_PROTOTYPE_ROUNDS:
+                self.events.emit("notice", level="warn",
+                                 message=f"{len(bare)} page(s) have no styling on them; "
+                                         "writing it before showing the drawing.")
+                feedback = (
+                    "These pages render with no styling at all: " + ", ".join(bare[:8])
+                    + ". Everything is in `styles.css` - the design contract's tokens on "
+                    "`:root`, then the shell, the components, the layout and the motion - "
+                    "and every page links it with "
+                    "`<link rel=\"stylesheet\" href=\"styles.css\">` in its head. There is "
+                    "no CSS framework to fall back on: a class only does something if a "
+                    "rule in `styles.css` says what it does. Write that stylesheet, point "
+                    "the pages at it, and leave the markup alone otherwise.")
                 continue
 
             answer = self.approvals.ask(
