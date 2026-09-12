@@ -38,6 +38,7 @@ from .prompts import task_message
 from .setup import ASK_TIMEOUT, apply_answer, questions_for
 from . import pictures as pictures_of
 from . import sitemap as sitemap_of
+from . import styles as styles_of
 from .skills import read_manifest
 from .skills import select as select_skills
 from .sandbox import Sandbox
@@ -375,6 +376,28 @@ class BuilderAgent:
                                  message=f"{len(replaced)} picture(s) came back as the photo "
                                          "service's stand-in; swapped for photographs of "
                                          "the subject.")
+            # Tailwind compiles the drawing in the browser and throws on a class
+            # it does not know, leaving the page with no styling at all. One
+            # invented name would cost the whole drawing, so the theme is made
+            # to declare whatever the pages actually ask for.
+            if styles_of.restore_engine(root):
+                self.events.emit("notice", level="info",
+                                 message="The drawing's own copy of Tailwind was missing or "
+                                         "empty; put back, so the pages do not need the "
+                                         "internet to have their styling.")
+            faded = styles_of.alpha_colors(root)
+            if faded:
+                self.events.emit("notice", level="info",
+                                 message=f"{len(faded)} theme colour(s) could not be used at "
+                                         "part strength; written so a page may fade them.")
+            named = styles_of.repair(root)
+            if named:
+                names = sorted({item["name"] for item in named})
+                self.events.emit("notice", level="info",
+                                 message="The pages use " + ", ".join(names)
+                                         + " which their own theme did not define; declared "
+                                         + ("it" if len(names) == 1 else "them")
+                                         + " so the drawing keeps its styling.")
             # A redraw adds pages, removes them and re-points the navigation, so
             # the map is folded again after every round rather than once at the
             # end. The build reads it, and reads it after the last change.
