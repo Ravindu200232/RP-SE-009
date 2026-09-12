@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: FAIL
-Run at (UTC): 2026-09-12T03:46:52+00:00
+Run at (UTC): 2026-09-12T05:14:06+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 669
+Unit tests: 659
 Integration tests: 24
-Total tests run: 693
+Total tests run: 683
 Failures: 4
 Errors: 0
 Skipped: 0
-Duration: 37.796s
+Duration: 39.196s
 
 Detailed results
 ----------------
@@ -201,17 +201,6 @@ test_a_different_file_starts_its_own_count (test.unit.builder.test_loop.Repeated
 test_changing_the_project_clears_the_count (test.unit.builder.test_loop.RepeatedReadTests.test_changing_the_project_clears_the_count)
 After an edit the same read is a new question, not a repeat. ... ok
 test_the_same_answer_three_times_is_called_out (test.unit.builder.test_loop.RepeatedReadTests.test_the_same_answer_three_times_is_called_out) ... ok
-test_the_drawing_is_shown_with_photographs_of_the_subject (test.unit.builder.test_pictures.DrawingTests.test_the_drawing_is_shown_with_photographs_of_the_subject) ... ok
-test_a_lock_is_not_mistaken_for_the_start_of_a_longer_one (test.unit.builder.test_pictures.RepairTests.test_a_lock_is_not_mistaken_for_the_start_of_a_longer_one) ... ok
-test_a_miss_becomes_any_of_its_tags_on_every_page (test.unit.builder.test_pictures.RepairTests.test_a_miss_becomes_any_of_its_tags_on_every_page) ... ok
-test_a_miss_is_mended_the_same_way_at_every_size (test.unit.builder.test_pictures.RepairTests.test_a_miss_is_mended_the_same_way_at_every_size) ... ok
-test_an_address_that_cannot_be_checked_is_left_alone (test.unit.builder.test_pictures.RepairTests.test_an_address_that_cannot_be_checked_is_left_alone) ... ok
-test_installed_packages_and_hidden_folders_are_not_touched (test.unit.builder.test_pictures.RepairTests.test_installed_packages_and_hidden_folders_are_not_touched) ... ok
-test_line_endings_are_kept (test.unit.builder.test_pictures.RepairTests.test_line_endings_are_kept) ... ok
-test_one_photograph_behind_two_addresses_is_not_shown_twice (test.unit.builder.test_pictures.RepairTests.test_one_photograph_behind_two_addresses_is_not_shown_twice) ... ok
-test_the_same_picture_at_two_sizes_is_not_a_photograph_shown_twice (test.unit.builder.test_pictures.RepairTests.test_the_same_picture_at_two_sizes_is_not_a_photograph_shown_twice)
-A room's card and its detail page ask for one picture at two sizes. ... ok
-test_then_fewer_tags_and_then_one (test.unit.builder.test_pictures.RepairTests.test_then_fewer_tags_and_then_one) ... ok
 test_a_plan_that_files_components_settles_it (test.unit.builder.test_project_setup.DesignReachTests.test_a_plan_that_files_components_settles_it) ... ok
 test_every_chosen_dimension_reaches_the_written_contract (test.unit.builder.test_project_setup.DesignReachTests.test_every_chosen_dimension_reaches_the_written_contract) ... ok
 test_routes_are_read_from_where_the_files_sit (test.unit.builder.test_project_setup.DesignReachTests.test_routes_are_read_from_where_the_files_sit) ... ok
@@ -812,6 +801,6 @@ Traceback (most recent call last):
 AssertionError: 0 != 3
 
 ----------------------------------------------------------------------
-Ran 693 tests in 37.796s
+Ran 683 tests in 39.196s
 
 FAILED (failures=4)

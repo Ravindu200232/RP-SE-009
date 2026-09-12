@@ -29,7 +29,6 @@ from qa_agent import QAAgent  # noqa: E402
 from qa_agent.agent import QAOutcome  # noqa: E402
 from qa_agent import report as qa_report, security as qa_security  # noqa: E402
 from builder_agent.templates import restore_styling  # noqa: E402
-from builder_agent.pictures import repair as repair_pictures  # noqa: E402
 
 from server_modules.services.mongo_common import db_name_for  # noqa: E402
 
@@ -628,17 +627,6 @@ def _record_verification(proj_dir: Path, project: str, agent, outcome):
     return QAOutcome(project=project, ok=ok, record=record, path=str(path), reason=reason)
 
 
-def _real_pictures(root: Path, why: str) -> None:
-    """Swap the photo service's stand-in for photographs of the subject (pictures.py)."""
-    try:
-        replaced = repair_pictures(root)
-    except Exception as error:                                       # noqa: BLE001
-        log.debug(f"pictures in {why}: {error}")
-        return
-    if replaced:
-        elog("INFO", f"   🖼 {len(replaced)} picture(s) in {why} came back as the photo "
-                     "service's stand-in; swapped for photographs of the subject")
-
 
 def _finish(project: str, url: str, outcome, qa_outcome=None) -> bool:
     if outcome.status != "completed":
@@ -700,7 +688,6 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
             elog("SUCCESS", f"✅ {name} HTML prototype finished in {int(time.time() - started)}s")
             return
 
-        _real_pictures(proj_dir, "the build")
         fill_missing_images(proj_dir, "the build")
         url = _serve(proj_dir, agent)
         qa_outcome = _record_verification(proj_dir, name, agent, outcome)
@@ -821,7 +808,6 @@ def _edit_run(project: str, prompt: str, model, think, qa_model: str, console: s
             proto_root = proj_dir / ".agentforge" / "prototype"
             target_url = f"/api/prototype/{proj_dir.name}/index.html"
             if proto_root.is_dir():
-                _real_pictures(proto_root, "the drawing")
                 from builder_agent.agent import _title_of
                 on_disk = {p.name for p in proto_root.glob("*.html")}
                 pages = []
@@ -838,7 +824,6 @@ def _edit_run(project: str, prompt: str, model, think, qa_model: str, console: s
             elog("SUCCESS", f"✅ {proj_dir.name} HTML update finished")
             return
 
-        _real_pictures(proj_dir, "the edit")
         fill_missing_images(proj_dir, "the edit")
         url = _serve(proj_dir, agent)
         qa_outcome = _record_verification(proj_dir, proj_dir.name, agent, outcome)

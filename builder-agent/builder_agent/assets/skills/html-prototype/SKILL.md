@@ -414,7 +414,7 @@ page and not one `<img>` tells the user nothing about their product.
 So wherever the real application shows a picture, show a real photograph:
 
 ```html
-<img src="https://loremflickr.com/800/600/bedroom,garden,hotel?lock=12"
+<img src="https://loremflickr.com/800/600/bedroom,garden,hotel/any?lock=12"
      width="800" height="600" alt="The Willow room, looking onto the garden">
 ```
 
@@ -422,6 +422,12 @@ So wherever the real application shows a picture, show a real photograph:
   subject as tags — `bedroom,garden,hotel`, `sourdough,bread`,
   `ferrari,supercar` — and what comes back is of that. Two or three tags,
   most specific first.
+- **`/any` after the tags, always.** Without it the service looks for one
+  photograph carrying every tag at once, and answers with an error when there
+  is none — a blank space on the page where the picture should be. Counted on
+  one hotel drawing: nine of its forty-two pictures were blank for that
+  reason, `bedroom,forest,cabin` and `forest,stream,water` among them, and
+  every one of the nine had a photograph waiting behind `/any`.
 
   This is the whole point and it is easy to get wrong. A seeded picture from a
   random-photo service is stable and pretty and has nothing to do with the

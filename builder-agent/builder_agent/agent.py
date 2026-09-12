@@ -36,7 +36,6 @@ from .memory import Memory
 from .processes import Processes
 from .prompts import task_message
 from .setup import ASK_TIMEOUT, apply_answer, questions_for
-from . import pictures as pictures_of
 from . import sitemap as sitemap_of
 from . import styles as styles_of
 from .skills import read_manifest
@@ -360,15 +359,6 @@ class BuilderAgent:
                 return None
 
             drawn = self._drawn_pages(root)
-            # A picture the photo service cannot match comes back as its one
-            # stand-in photograph, so every miss on every page is the same
-            # picture. They are swapped before anyone is shown the drawing.
-            replaced = pictures_of.repair(root)
-            if replaced:
-                self.events.emit("notice", level="info",
-                                 message=f"{len(replaced)} picture(s) came back as the photo "
-                                         "service's stand-in; swapped for photographs of "
-                                         "the subject.")
             # A redraw adds pages, removes them and re-points the navigation, so
             # the map is folded again after every round rather than once at the
             # end. The build reads it, and reads it after the last change.
@@ -547,9 +537,14 @@ class BuilderAgent:
             "",
             "USE REAL PICTURES OF THE REAL THING. Wherever the product shows a "
             "photograph - a hero, a gallery, a card grid, an avatar - use "
-            "`https://loremflickr.com/800/600/<tags>?lock=<n>`, where the tags name the "
-            "subject and nothing else: `sourdough,bread`, `ferrari,supercar`, "
-            "`bedroom,garden,hotel`. Two or three tags, most specific first, a different "
+            "`https://loremflickr.com/800/600/<tags>/any?lock=<n>`, where the tags name the "
+            "subject and nothing else: `sourdough,bread/any`, `ferrari,supercar/any`, "
+            "`bedroom,garden,hotel/any`. The `/any` is not optional: without it the service "
+            "will only answer with a photograph carrying every one of the tags at once, and "
+            "sends an error when none does - a blank space where the picture should be. "
+            "Measured on one hotel drawing: nine of its forty-two pictures were blank for "
+            "exactly that, and every one of them had a photograph behind `/any`. "
+            "Two or three tags, most specific first, a different "
             "lock number per picture, with width, height and real alt text. The lock is "
             "what keeps it the same photograph on every request and across a redraw; "
             "without it the page reshuffles as you scroll. A seeded picture from a "
