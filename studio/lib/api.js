@@ -69,6 +69,9 @@ export const api = {
   saveFile: (project, path, content) => post('/save-file', { project, path, content }),
   open: (project) => post(`/open/${encodeURIComponent(project)}`, {}),
   runtime: (project) => req(`/runtime/${encodeURIComponent(project)}`),
+
+  // An address for this project's app that works away from this machine.
+  previewLink: (project) => post('/preview-link', { project }),
   previewActivity: (project, runtimeId) => post(`/runtime/${encodeURIComponent(project)}/activity`, { runtimeId }),
   deleteProject: (project) => post('/delete-project', { project }),
 

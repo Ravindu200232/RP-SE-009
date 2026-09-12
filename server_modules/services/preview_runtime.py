@@ -58,10 +58,14 @@ class Runtime:
 
 class RuntimeRegistry:
     def __init__(self, *, stop_process, emit=lambda event: None, ui_port=7824,
-                 clock=time.monotonic, idle_seconds=IDLE_SECONDS):
+                 clock=time.monotonic, idle_seconds=IDLE_SECONDS,
+                 public_url=lambda project: ""):
         self.stop_process = stop_process
         self.emit = emit
         self.ui_port = ui_port
+        # The address this preview answers on from elsewhere, when it has one
+        # (preview_link.py). Empty means "only on this machine".
+        self.public_url = public_url
         self.clock = clock
         self.idle_seconds = idle_seconds
         self.records = {}
@@ -92,6 +96,7 @@ class RuntimeRegistry:
                     "status": runtime.status, "reason": runtime.reason,
                     "error": runtime.error, "working": bool(runtime.leases),
                     "previewUrl": f"http://{project_host(runtime.project)}:{self.ui_port}/",
+                    "publicUrl": self.public_url(runtime.project),
                     "idleSeconds": self.idle_seconds}
 
     def changed(self, runtime):

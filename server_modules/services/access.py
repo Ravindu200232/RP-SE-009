@@ -27,7 +27,7 @@ PROJECT_GET = ("/runtime/", "/files/", "/stream/", "/session/", "/qa-screenshot/
 # One project, named in the body.
 PROJECT_POST = {"/resume", "/delete-project", "/save-file", "/element-edit", "/feature",
                 "/agent-update", "/stream", "/shot", "/undo", "/deploy-start",
-                "/projects/assign"}
+                "/projects/assign", "/preview-link"}
 # One project if the body names one, otherwise nobody's in particular.
 MAYBE_PROJECT_POST = {"/attach", "/image", "/image-upload"}
 # One specification, named in the body.

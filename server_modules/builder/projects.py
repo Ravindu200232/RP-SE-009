@@ -155,6 +155,8 @@ def delete_project(proj_name: str) -> dict:
         elog("INFO", f"   ⏹ Stopped the run working on {name}")
 
     RUNTIMES.stop(runtime_for(name), "deleted", delete=True)
+    # Its public address goes with it (preview_link.py).
+    unpublish_preview(name)
 
     trash = PROD_DIR / f".trash-{name}-{int(time.time())}"
     try:
@@ -442,6 +444,11 @@ async def ws_handler(websocket, path=None):
         async for raw in websocket:
             try:
                 msg = json.loads(raw)
+                if msg.get("type") == "ping":
+                    # Traffic, so that a quiet socket is not mistaken for a
+                    # dead one by whatever sits between here and the studio.
+                    await websocket.send(json.dumps({"type": "pong"}))
+                    continue
                 job = _message_job(msg)
                 if job:
                     denied = job_denied(msg, user)

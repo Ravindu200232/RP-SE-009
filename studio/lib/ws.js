@@ -16,7 +16,14 @@ const WORK_KIND = {
 
 let sock = null
 let retry = null
+let heartbeat = null
 let lastEdit = null
+
+// A socket with nothing on it is closed by whatever sits in the middle — a
+// tunnel, a proxy — after a minute or two of silence, and a studio watching a
+// build that is thinking looks like a studio that lost the server. A word
+// every half a minute is enough to keep it open.
+const HEARTBEAT_MS = 25000
 
 let streamPending = ''
 let streamTimer = null
@@ -129,6 +136,7 @@ export function connect() {
     sock = null
   }
   clearTimeout(retry)
+  clearInterval(heartbeat)
 
   try {
     sock = new WebSocket(wsUrl())
@@ -141,10 +149,16 @@ export function connect() {
   sock.onopen = () => {
     if (mine !== sock) return
     useStore.getState().setStatus('live', 'ready')
+    clearInterval(heartbeat)
+    heartbeat = setInterval(() => {
+      if (mine !== sock || sock.readyState !== 1) return
+      try { sock.send(JSON.stringify({ type: 'ping' })) } catch { }
+    }, HEARTBEAT_MS)
     recoverPendingDecision()
   }
   sock.onclose = (event) => {
     if (mine !== sock) return
+    clearInterval(heartbeat)
     // 4401: nobody is signed in on this socket. Reconnecting cannot fix that;
     // signing in does, and that calls connect() again.
     if (event?.code === 4401) {
@@ -172,7 +186,8 @@ export function connect() {
 
 export function disconnect() {
   clearTimeout(retry)
-  retry = null
+  clearInterval(heartbeat)
+  retry = heartbeat = null
   if (sock) {
     sock.onopen = sock.onclose = sock.onerror = sock.onmessage = null
     sock.close()

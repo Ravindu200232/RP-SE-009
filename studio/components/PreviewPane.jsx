@@ -21,6 +21,7 @@ import {
 import { useStore } from '@/lib/store'
 import { api, API } from '@/lib/api'
 import { attachPicker, pickedFrom, pickLabel } from '@/lib/picker'
+import { previewHref, needsAddress } from '@/lib/preview'
 import { watchFrame, recordConsole } from '@/lib/console-log'
 import { Tip } from './ui'
 import AgentBrowser from './AgentBrowser'
@@ -88,11 +89,17 @@ export default function PreviewPane({ hidden, onBuild }) {
   const jumping = useRef(false)
   const [nav, setNav] = useState({ back: false, forward: false })
 
+  // The app's own address as seen from this browser: its local one here, the
+  // published one from a phone or another computer (lib/preview.js).
+  const previewUrl = previewHref(runtime)
+  const [publishing, setPublishing] = useState('')
+  const asked = useRef('')
+
   const bridgeSend = useCallback((kind, data = {}) => {
-    if (!runtime?.previewUrl || !runtime.runtimeId) return
+    if (!previewUrl || !runtime?.runtimeId) return
     frameRef.current?.contentWindow?.postMessage({ type: 'agentforge:command', kind,
-      project, runtimeId: runtime.runtimeId, ...data }, new URL(runtime.previewUrl).origin)
-  }, [project, runtime?.runtimeId, runtime?.previewUrl])
+      project, runtimeId: runtime.runtimeId, ...data }, new URL(previewUrl).origin)
+  }, [project, runtime?.runtimeId, previewUrl])
 
   const markActivity = useCallback(() => {
     if (runtime?.runtimeId) api.previewActivity(project, runtime.runtimeId).catch(() => {})
@@ -100,16 +107,31 @@ export default function PreviewPane({ hidden, onBuild }) {
 
   const navigate = useCallback((route = '/') => {
     const f = frameRef.current
-    if (!f || !runtime?.previewUrl) return
+    if (!f || !previewUrl) return
     f.dataset.remote = 'true'
     f.dataset.route = route
     f.dataset.scrollX = '0'; f.dataset.scrollY = '0'
-    const targetUrl = new URL(route, runtime.previewUrl).href
+    const targetUrl = new URL(route, previewUrl).href
     if (f.src !== targetUrl) {
       setIframeLoading(true)
       f.src = targetUrl
     }
-  }, [runtime?.previewUrl])
+  }, [previewUrl])
+
+  // Opened from a phone or another computer, the app's local host name means
+  // nothing there, so AgentForge publishes an address for it. Asked for once
+  // per project; the answer arrives here and over the socket.
+  useEffect(() => {
+    if (!project || !needsAddress(runtime) || asked.current === project) return
+    asked.current = project
+    setPublishing('working')
+    api.previewLink(project)
+      .then(state => { useStore.getState().setRuntime(state); setPublishing('') })
+      .catch(error => {
+        setPublishing(error.message)
+        addLog('WARN', `This app has no public address — ${error.message}`)
+      })
+  }, [project, runtime?.previewUrl, runtime?.publicUrl, addLog])
 
   // Reset loading state and auto-start project if stopped
   useEffect(() => {
@@ -211,8 +233,8 @@ export default function PreviewPane({ hidden, onBuild }) {
   useEffect(() => {
     const receive = event => {
       const message = event.data
-      if (!runtime?.previewUrl || event.source !== frameRef.current?.contentWindow ||
-          event.origin !== new URL(runtime.previewUrl).origin ||
+      if (!previewUrl || event.source !== frameRef.current?.contentWindow ||
+          event.origin !== new URL(previewUrl).origin ||
           message?.type !== 'agentforge:preview' || message.project !== project ||
           message.runtimeId !== runtime.runtimeId) return
       if (message.kind === 'route' && typeof message.route === 'string' && message.route.startsWith('/')) {
@@ -480,7 +502,10 @@ export default function PreviewPane({ hidden, onBuild }) {
           <Globe className="size-3.5 shrink-0 text-blue-400" />
           <span className="truncate font-mono text-[11.5px] font-medium text-slate-200">
             {drawing ? `the drawing — ${shownPath.split('/').pop() || 'index.html'}`
-                     : runtime?.previewUrl ? `${new URL(runtime.previewUrl).host}${shownPath === '/' ? '' : shownPath}` : 'App preview'}
+                     : previewUrl ? `${new URL(previewUrl).host}${shownPath === '/' ? '' : shownPath}`
+                     : publishing === 'working' ? 'publishing an address for this app…'
+                     : publishing ? publishing
+                     : 'App preview'}
           </span>
         </div>
 

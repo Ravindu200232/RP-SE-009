@@ -157,6 +157,11 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
         finally:
             act_as(None)
 
+    def _studio_origin(self) -> str:
+        """The address the studio itself was opened at, as this request arrived."""
+        host = studio_host(self.headers)
+        return f"{'https' if self._https() else 'http'}://{host}" if host else ""
+
     def _https(self) -> bool:
         """Did the browser reach the studio over HTTPS? Behind a proxy, it says so."""
         return (str(self.headers.get("X-Forwarded-Proto", ""))
@@ -712,6 +717,15 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
                 daemon=True
             ).start()
             self._json({"ok": True})
+        elif path == "/preview-link":
+            # Give this project's app an address of its own, for a studio that
+            # is not on this machine (preview_link.py).
+            body = self._body()
+            try:
+                self._json(publish_preview(str(body.get("project", "")).strip(),
+                                           self._studio_origin()))
+            except ValueError as error:
+                self._json({"error": str(error)}, 503)
         elif path.startswith("/open/"):
             try:
                 self._json({"ok": True, **_open_project(unquote(path[6:].strip("/")))})

@@ -100,6 +100,10 @@ export default function PrototypePane({ project, hidden, onBuild }) {
     }
   }, [project, currentFile])
 
+  // Wait for the drawing to exist, then stop asking. This used to download
+  // the whole page every couple of seconds for as long as the tab was open,
+  // which on a phone is a page of traffic a minute for nothing. A build that
+  // is still drawing keeps it checking, because then the pages do change.
   useEffect(() => {
     let active = true
     checkPrototypeReady()
@@ -107,13 +111,13 @@ export default function PrototypePane({ project, hidden, onBuild }) {
     const interval = setInterval(async () => {
       if (!active) return
       const ready = await checkPrototypeReady()
-      if (ready && frameRef.current) {
-        if (!frameRef.current.dataset.loaded) {
-          frameRef.current.dataset.loaded = 'true'
-          const page = currentPath(frameRef.current)
-          frameRef.current.src = `${API}/prototype/${encodeURIComponent(project)}/${page}?t=${Date.now()}`
-        }
+      if (!ready || !frameRef.current) return
+      if (!frameRef.current.dataset.loaded) {
+        frameRef.current.dataset.loaded = 'true'
+        const page = currentPath(frameRef.current)
+        frameRef.current.src = `${API}/prototype/${encodeURIComponent(project)}/${page}?t=${Date.now()}`
       }
+      if (!isBusy) clearInterval(interval)
     }, isBusy ? 1500 : 2500)
 
     return () => {

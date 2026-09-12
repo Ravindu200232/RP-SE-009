@@ -3,8 +3,19 @@ PREVIEW_PATH = "/__agentforge/preview"
 
 
 def studio_origins():
+    """The pages a preview may be framed by and talk to.
+
+    This machine's studio addresses, and the address a studio was opened at
+    when it asked for this preview to be published (core/preview_runtime.py).
+    """
     return [f"http://{host}:{port}" for host in ("localhost", "127.0.0.1")
-            for port in (3000, UI_PORT)]
+            for port in (3000, UI_PORT)] + sorted(STUDIO_ORIGINS)
+
+
+def preview_origins(runtime):
+    """The addresses this preview itself answers on."""
+    state = RUNTIMES.snapshot(runtime)
+    return [url.rstrip("/") for url in (state["previewUrl"], state.get("publicUrl")) if url]
 
 
 class PreviewHTTPMixin:
@@ -22,7 +33,7 @@ class PreviewHTTPMixin:
         if path == PREVIEW_PATH + "/bridge.js" and method == "GET":
             return self._preview_bridge(runtime)
         if path in (PREVIEW_PATH + "/activity", PREVIEW_PATH + "/start") and method == "POST":
-            if self.headers.get("Origin") != RUNTIMES.snapshot(runtime)["previewUrl"].rstrip("/"):
+            if self.headers.get("Origin") not in preview_origins(runtime):
                 return self._plain(403, b"Invalid preview origin")
             length = int(self.headers.get("Content-Length", 0) or 0)
             self._raw = self.rfile.read(length) if length else b""

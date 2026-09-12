@@ -28,7 +28,11 @@ async def main():
     print(f"  🏗️  Build       :  {DEFAULT_BUILD}")
     print(f"  📝 Local development mode")
     print(f"{'━'*46}\n")
-    async with websockets.serve(ws_handler, bind_host(), WS_PORT):
+    # Kept alive on purpose. Reached through a tunnel, a socket with nothing on
+    # it is closed by whatever is in the middle after a minute or two, and the
+    # studio then reconnects every time the build it is watching goes quiet.
+    async with websockets.serve(ws_handler, bind_host(), WS_PORT,
+                                ping_interval=20, ping_timeout=60):
         await asyncio.Future()
 
 
@@ -43,6 +47,12 @@ def shutdown_all():
             session["agent"].processes.stop_all()
         except Exception as error:
             print(f"   Could not stop build processes: {error}")
+
+    try:
+        # Every published preview address stops answering with this server.
+        PREVIEW_LINKS.close_all()
+    except Exception:                                                # noqa: BLE001
+        pass
 
     try:
         MONGO.stop()

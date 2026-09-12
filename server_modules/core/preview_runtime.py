@@ -1,10 +1,36 @@
 """Stack adapters for the project runtime registry (shared server namespace)."""
 from server_modules.services.preview_runtime import (RuntimeRegistry, project_host,
                                                      runtime_environment)
+from server_modules.services.preview_link import PreviewLinks
 from server_modules.services.process_tree import spawn_owned, stop_owned
 
 
-RUNTIMES = RuntimeRegistry(stop_process=stop_owned, emit=lambda event: emit(event), ui_port=UI_PORT)
+# A preview answers on p-<hash>.localhost, which is this machine's name for it.
+# A studio opened from anywhere else needs an address of its own (preview_link.py).
+PREVIEW_LINKS = PreviewLinks(port=UI_PORT)
+# The addresses a studio was opened at, so a published preview knows which
+# parent page may talk to it.
+STUDIO_ORIGINS: set = set()
+
+RUNTIMES = RuntimeRegistry(stop_process=stop_owned, emit=lambda event: emit(event),
+                           ui_port=UI_PORT,
+                           public_url=lambda project: PREVIEW_LINKS.url(project_host(project)))
+
+
+def publish_preview(project: str, studio_origin: str = "") -> dict:
+    """An address for this project's app that works away from this machine."""
+    runtime = runtime_for(project)
+    if studio_origin:
+        STUDIO_ORIGINS.add(studio_origin)
+    url = PREVIEW_LINKS.open(project_host(runtime.project))
+    with runtime.lock:
+        RUNTIMES.changed(runtime)          # the studio is watching for this
+    return {"ok": True, "publicUrl": url, **RUNTIMES.snapshot(runtime)}
+
+
+def unpublish_preview(project: str) -> dict:
+    PREVIEW_LINKS.close(project_host(str(project or "")))
+    return {"ok": True}
 
 
 def runtime_for(project=None, *, stack=""):
