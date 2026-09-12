@@ -40,8 +40,8 @@ Consider written content carefully. Often a design brief may not contain real co
 
 ## Process: plan, review against the brief, build, critique
 
-For calibration, AI-generated design right now clusters around some traits:
-1. a warm cream background (near #F4F1EA) with a high-contrast serif display and a terracotta or warm-clay accent (often near #D97757 — Anthropic's own Claude-interaction accent, so on a user's brief it reads as a tell);
+For calibration, generic design right now clusters around some tells:
+1. a warm cream background (near #F4F1EA) with a high-contrast serif display and an overused terracotta or warm-clay accent (near #D97757);
 2. a near-black background with a single bright acid-green or vermilion accent;
 3. a broadsheet-style layout with hairline rules, zero border-radius, and dense newspaper-like columns;
 4. the SaaS-card kit: content chopped into identical rounded cards, one border-radius on everything regardless of hierarchy, the same soft grey shadow (rgba(0,0,0,.1)) under each, and gradient washes as decoration;
@@ -75,9 +75,9 @@ Treat failure and emptiness as moments for direction, not mood. Explain what wen
 
 Keep the tone conversational: plain verbs, sentence case, no filler, with tone matched to the brand and the audience. Let each written element do exactly one job.
 
-## AgentForge full-product extension
+## Full-product design extension
 
-For AgentForge builds, the approved plan and `.agents/skills/design-system/blocks.json` define the product scope and provider sources. Read that block record before writing the first screen. Use the selected provider blocks as complete structural starting points, then adapt their content and flows to the product. Preserve the useful hierarchy, responsiveness, and interaction patterns instead of shrinking a full block into a generic card.
+For full application builds, the approved plan and `.agents/skills/design-system/blocks.json` define the product scope and provider sources. Read that block record before writing the first screen. Use the selected provider blocks as complete structural starting points, then adapt their content and flows to the product. Preserve the useful hierarchy, responsiveness, and interaction patterns instead of shrinking a full block into a generic card.
 
 Generate a professional app with long quality. Build the amount of interface the product actually needs without rigid section checklists: the LLM naturally selects all necessary views, panels, workflows, and authentic content for the application's archetype. Public sites develop the story through natural flow and deliberate close; applications include complete planned routes and dense working screens rather than landing pages plus placeholders. There is no fixed page or section formula.
 
