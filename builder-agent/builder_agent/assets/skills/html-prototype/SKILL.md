@@ -132,7 +132,7 @@ understand is skipped, and the rest of the page still has its styling.
 5. **The layout helpers** you actually use — a `.grid-3`, a `.row`, a
    `.stack` — written once, not a utility library.
 6. **Motion**, below.
-7. **The phone**, in one `@media (max-width: 720px)` block at the end.
+7. **The tablet and the phone**, in the two `@media` blocks below, at the end.
 
 Write it as ordinary CSS a person can read:
 

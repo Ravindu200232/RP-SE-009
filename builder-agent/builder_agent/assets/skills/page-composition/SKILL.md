@@ -163,8 +163,13 @@ screen.
 
 Design the narrow layout as a real layout, not a squeezed one: one column,
 larger touch targets, navigation that collapses to something usable, tables
-that become cards or scroll deliberately. Check ~360px, ~768px, ~1280px and
-one width wider than the content's maximum.
+that become cards or scroll deliberately.
+
+**The same three widths the drawing was checked at** — a phone at ~390px, a
+tablet at ~820px, and the desktop layout held to the contract's container
+width rather than stretched. The user approved the drawing at those three, and
+a built screen that only holds at two of them is not the screen they approved.
+Check one width wider than the content's maximum as well.
 
 ## Before you call a page done
 
@@ -174,6 +179,7 @@ actually being written, because a count read thirty files ago is not a count:
 | | Every screen |
 | --- | --- |
 | sections | the table above — **6 or more** on a marketing or landing page |
+| what `/` is | what the approved drawing made it: a shop front for something being sold, the day's figures and what needs doing for something people work in. A till that greets its own cashier with a landing page was built for the wrong reader |
 | the shared shell | a header listing every section of the product, and a footer of **three or four columns of links** — thirty-odd links, identical on every page |
 | rows in a list or table | **8 or more**, with the empty state written too |
 | fields in a form | every field the product needs, with labels and help text |
@@ -191,6 +197,7 @@ Then:
 - Does every section do something the one above it does not?
 - Do the loading, empty and error states exist for every screen?
 - Is every number, logo and quotation either real or clearly a demo?
-- Does it hold together at 360px?
+- Does it hold together at all three widths — the phone, the tablet and the
+  desktop the drawing was approved at?
 - Can you reach every other screen you are allowed to reach, from here?
 - Did you avoid every tell in the list above?

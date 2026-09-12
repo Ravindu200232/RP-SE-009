@@ -1,7 +1,7 @@
 AgentForge repository test result
 =================================
 Status: FAIL
-Run at (UTC): 2026-09-12T06:19:14+00:00
+Run at (UTC): 2026-09-12T06:36:35+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
 Unit tests: 662
@@ -10,7 +10,7 @@ Total tests run: 686
 Failures: 4
 Errors: 0
 Skipped: 0
-Duration: 36.123s
+Duration: 35.388s
 
 Detailed results
 ----------------
@@ -805,6 +805,6 @@ Traceback (most recent call last):
 AssertionError: 0 != 3
 
 ----------------------------------------------------------------------
-Ran 686 tests in 36.123s
+Ran 686 tests in 35.388s
 
 FAILED (failures=4)

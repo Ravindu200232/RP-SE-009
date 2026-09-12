@@ -707,7 +707,9 @@ def render_skill(selection: dict, goal: str = "") -> str:
         "- Every interactive element needs a visible focus ring using `primary`.",
         "- Finish the loading, empty, error and success state of every screen. A screen that "
         "only has its happy path is not done.",
-        "- Layout must work at 360px and at 1280px. Test both.", "",
+        "- Layout must work at all three widths the drawing was approved at: a phone "
+        "at ~390px, a tablet at ~820px, and the desktop held to the container width "
+        "rather than stretched. Test all three.", "",
         "## Palette reference", "",
         "| role | light | dark |", "| --- | --- | --- |",
         *[f"| {role} | `{light[role]}` | `{dark[role]}` |" for role in light],
