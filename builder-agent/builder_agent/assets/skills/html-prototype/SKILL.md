@@ -228,7 +228,10 @@ Keep it small: one file, plain functions, no framework, no `fetch`.
 A thin page gets approved — there is nothing in it to disagree with — and then
 the build is made to match it. Every screen is the whole page: the full shell appropriate to the archetype, complete functional views, no stubs. A sign-in page is a full page too.
 
-**Substantial, archetype-native composition.** What goes on the screen depends on what the product genuinely is:
+**Substantial, archetype-native composition.** Generate a professional app with
+long quality and comprehensive depth. Do not impose fixed section lists,
+arbitrary counts, or artificial templates — what is needed for the product,
+the LLM naturally selects. What goes on the screen depends on what the product genuinely is:
 
 - **Sold to the public**: the hero, then what it is, then the proof or the
   detail, then a call to action, then the footer.
@@ -236,17 +239,7 @@ the build is made to match it. Every screen is the whole page: the full shell ap
   needs doing now, the queue, or the interactive canvas. No "how it works"
   explainer, no marketing hero banner, and no promotional call to action. A till that greets its own cashier with a landing page was built for the wrong reader.
 
-A working screen gets its own functional areas:
-
-1. What this screen is, and what the person is looking at now.
-2. **The numbers across the top** — the counts or totals that say how today is
-   going.
-3. **The controls** — the date, the filters, the search, the tabs.
-4. The thing itself, with its columns, statuses and row actions.
-5. **What it looks like with nothing in it** — the empty state, drawn rather than described.
-6. The next thing the person needs: the related queue, the recent activity.
-
-Density is what a working screen is for; it has no hero photograph.
+A working screen opens directly on the work: current metrics, controls, data views, and row actions. Density is what a working screen is for; it has no hero photograph. Include the **empty state**, drawn rather than described.
 
 Then: lists look like lists (eight or ten rows, not two), tables have their
 columns and statuses and actions, dashboards have their figures, forms have
@@ -342,7 +335,7 @@ There is nothing to apologise for.
 | links in the header | **12 or more** — on public sites (or complete app navigation for tools) |
 | links in the footer | **12 or more** — sitemap columns (or status bar for tools) |
 | the two together | **30 or more** — all planned routes linked across the shell |
-| sections between header and footer | **6 or more** — full vertical composition, or complete app panels |
+| depth & quality | professional app with long quality — the LLM naturally selects all panels and views |
 | rows in a list or table | **8 or more** |
 | pictures, where the product shows them | enough that the page is of something (none on raw dashboards) |
 | `localStorage` in `demo.js` | present |
@@ -356,9 +349,9 @@ There is nothing to apologise for.
 | `:hover`, `:focus-visible`, `:disabled`, empty and error states | all present |
 | `@media` | the phone and the tablet, both |
 
-A page is as long as what it has to say — write the sections this product
+A page is as long as what it has to say — write the authentic views this product
 actually has and stop when you run out of true things, rather than padding to
-reach a size. A page with three real sections is thin whatever it weighs.
+reach a size. A page with thin stubs is empty whatever it weighs.
 
 - Does every screen the plan named exist, as a full page rather than a stub?
 - Can you click the main flow from beginning to end and see it respond?

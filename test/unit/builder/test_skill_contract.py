@@ -49,7 +49,8 @@ DRAWING = [
     ("every link is a real anchor", r"real `<a href"),
     ("state survives the walk", r"localStorage"),
     ("the script never supplies the content", r"never supplies the content"),
-    ("six to ten sections a page", r"[Ss]ix to ten|6 or more"),
+    ("professional app of long quality with natural composition",
+     r"professional app.*long quality|natural"),
     ("what `/` is follows the reader", r"wrong reader"),
     ("a working screen has its own six", r"empty state"),
     ("real content, no lorem ipsum", r"lorem ipsum"),
@@ -207,7 +208,8 @@ COMPOSITION = [
     ("the palette and personality belong to other skills", r"Do not re-open"),
     ("answer what this product is before composing", r"What is this\?"),
     ("the tells of a generated page", r"tells"),
-    ("the sections a page of each kind needs", r"8[-–]16"),
+    ("professional app of long quality with natural composition",
+     r"professional app.*long quality|natural"),
     ("never pad to reach a number", r"Never pad"),
     ("the page argues in an order", r"Orient"),
     ("a dashboard argues differently", r"needs attention now"),
@@ -271,6 +273,14 @@ class TheSkillContractTests(unittest.TestCase):
             with self.subTest(skill=skill):
                 self.assertNotIn("9,000", text)
                 self.assertNotIn("15,000", text)
+
+    def test_no_skill_forces_rigid_sections(self):
+        """Skills must not prescribe rigid section formulas or arbitrary counts."""
+        for skill in ("html-prototype", "page-composition"):
+            text = (SKILLS / skill / "SKILL.md").read_text(encoding="utf-8")
+            with self.subTest(skill=skill):
+                self.assertIn("professional app", text.lower())
+                self.assertIn("natural", text.lower())
 
     def test_no_skill_hardcodes_one_kind_of_product(self):
         """A hero belongs to a page someone is sold, not to every page.

@@ -45,19 +45,13 @@ These are what a generated page looks like. Do not produce them:
 
 ## Give it real depth
 
-A page with three sections and a lot of whitespace reads as a demo. Compose
-what the product actually needs:
+Generate a professional app with long quality and authentic depth. Do not
+prescribe or enforce rigid section lists, artificial formulas, or arbitrary
+counts. The LLM naturally selects what is needed for the application — its
+authentic views, functional panels, interactive workflows, and domain content.
 
-| Page | Sections |
-|---|---|
-| Marketing or landing | 8–16, when there is enough to say |
-| Product or item detail | 5–9 |
-| List, catalogue or search | 4–7 including filters and empty state |
-| Dashboard or console | 4–8 panels, densest first |
-| Form or single task | 2–4, and nothing that distracts from the task |
-
-Every section must earn its place. Never pad to reach a number — a short page
-that says something beats a long one that repeats itself.
+Every section must earn its place. Never pad to reach a number — a concise screen
+that performs real work beats an over-padded layout that repeats itself.
 
 ## Order it as a narrative
 
@@ -173,12 +167,12 @@ Check one width wider than the content's maximum as well.
 
 ## Before you call a page done
 
-Count these first. They are the section table above, restated where the page is
+Count these first. They are the composition standards above, restated where the page is
 actually being written, because a count read thirty files ago is not a count:
 
 | | Every screen |
 | --- | --- |
-| sections | the table above — **6 or more** on a marketing or landing page, or dense working panels on an app |
+| depth & quality | professional app with long quality — the LLM naturally selects all necessary views, panels and workflows |
 | what `/` is | what the approved drawing made it: a shop front for something being sold, the day's figures and what needs doing for something people work in. A till that greets its own cashier with a landing page was built for the wrong reader |
 | the shared shell | a header or sidebar listing every section of the product, and three or four columns of links for public footers (thirty-odd links across the shell) or an authentic app workspace shell |
 | rows in a list or table | **8 or more**, with the empty state written too |

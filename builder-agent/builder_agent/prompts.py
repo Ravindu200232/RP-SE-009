@@ -65,15 +65,16 @@ Scope every declared route and public boundary with its operation, address, inpu
 For UI work, derive a product-specific responsive and accessible design from the user's constraints, and finish the loading, empty, error and success states. Do not reuse one hard-coded theme across every app you build."""
 
 
-FULL_PAGES = """EVERY PAGE IS A LONG, BIG PAGE
-The failure this project avoids is a thin page, and it is the expensive one: a thin page is what gets shown, approved and then shipped. Whatever you are writing - a drawing, a real screen, a component - build the full, authentic screen a real product has for its archetype. Never force an app, dashboard, or tool to look like a marketing landing page, and never slap promotional hero banners on working software. A till or admin opens directly on work; a dashboard opens on metrics and controls; a workspace opens on tools and canvas; a public site opens on value.
+FULL_PAGES = """EVERY PAGE IS A LONG, BIG PAGE — PROFESSIONAL APP WITH LONG QUALITY
+The failure this project avoids is a thin page, and it is the expensive one: a thin page is what gets shown, approved and then shipped. Whatever you are writing - a drawing, a real screen, a component - build a professional app with long quality tailored to its authentic archetype. Do not enforce rigid section lists or artificial templates; what is needed for the application, the LLM naturally selects. Never force an app, dashboard, or tool to look like a marketing landing page, and never slap promotional hero banners on working software. A till or admin opens directly on work; a dashboard opens on metrics and controls; a workspace opens on tools and canvas; a public site opens on value.
 Include the full shell appropriate to the application (sidebar, app bar, workspace header, or nav). Include all functional views, rich interactive components, filterable tables with action rows, charts with real data, forms with complete validation, and the loading, empty, and error states drawn on the page they belong to. No stubs, no placeholder sections, no artificial filler - depth comes from real functionality and genuine content."""
 
 
 # Short, and on every call a build makes - planning, the drawing and the build
 # itself - because the look is judged on every page, not on the first one.
-DESIGN_NOTE = ("LONG PAGE, ULTRA DESIGN. Every screen you plan, draw or build is a "
-               "complete, authentic interface tailored to its specific archetype, without forced landing banners or generic marketing filler.")
+DESIGN_NOTE = ("LONG PAGE, ULTRA DESIGN. Generate a professional app with long quality. "
+               "Every screen is tailored to its specific archetype; no rigid section lists - "
+               "the LLM naturally selects all necessary views and panels without forced landing banners or generic marketing filler.")
 
 
 BACKGROUND = """BACKGROUND WORK
@@ -86,7 +87,7 @@ REVIEW = """MODE: READ-ONLY REVIEW. Inspect the requested changes and the code a
 PLANNING = """MODE: READ-ONLY PRODUCT PLANNING.
 Start with inspectProject once. Its fresh-scaffold summary and project layout are authoritative for planning. Do not inventory the scaffold by opening its gateway, service skeleton, client primitives, tests, configs or manifests. Read a project file only when the request conflicts with the summary or leaves a material requirement, route, data or compatibility question that the summary cannot answer.
 Read the `planning` skill first, with readSkill. It is how a request is turned into a plan that covers all of it, and it is the only skill this pass reads. Do not call listSkills and do not enumerate or read implementation, framework, UI-provider, scaffold, runtime, testing, debugging or verification skills. Those skills belong to the execution phase and reading them now wastes the user's time and context. Do not inspect template examples or generated scaffold files merely to restate their structure.
-For a user interface, set the design direction from the product itself: who uses it, what each screen is for, and what the approved design contract already fixes. Plan every screen as a long, big page tailored to its archetype - specify the working sections, functional panels and interactive components it carries, not just the screen; a plan that says "a rooms page" is what produces a rooms page with two cards on it. Never force landing pages or marketing banners onto tools, dashboards, or internal software. Then submit one complete plan. Order it as requirements and implementation, production build, runtime readiness, unit/integration evidence, E2E evidence, Done. Keep test commands out of intermediate implementation done conditions so execution does not run the same suites twice. Do not install, generate, seed, start, build, test or implement during planning."""
+For a user interface, set the design direction from the product itself: who uses it, what each screen is for, and what the approved design contract already fixes. Plan every screen as a long, big page — a professional app with long quality tailored to its archetype - let the LLM naturally select the working views, functional panels and interactive components it carries, without rigid section formulas. Never force landing pages or marketing banners onto tools, dashboards, or internal software. Then submit one complete plan. Order it as requirements and implementation, production build, runtime readiness, unit/integration evidence, E2E evidence, Done. Keep test commands out of intermediate implementation done conditions so execution does not run the same suites twice. Do not install, generate, seed, start, build, test or implement during planning."""
 
 
 # Given up in this order when the window cannot hold everything.
