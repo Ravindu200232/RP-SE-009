@@ -76,7 +76,7 @@ a button rule breaks it.
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Rooms & Suites | Royal Azure</title>
+  <title>Overview | Workspace</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 ```
@@ -110,8 +110,8 @@ Ordinary CSS a person can read:
 .button-primary:active { transform: translateY(0) scale(.98); }
 ```
 
-**A class says what the thing is, not what it looks like.** `.room-card`,
-`.booking-row`, `.price`, `.status-paid` — never `.mt-12` or `.text-sm`. Forty
+**A class says what the thing is, not what it looks like.** `.metric-card`,
+`.item-row`, `.price`, `.status-badge` — never `.mt-12` or `.text-sm`. Forty
 buttons carrying look-alike classes is forty places to edit when the user says
 "make the buttons bigger", and the fortieth will be missed.
 
@@ -269,7 +269,7 @@ meant". Grey placeholder boxes tell them nothing.
 
 ## Pictures
 
-A product with rooms, dishes, courses or people is mostly photographs, and a
+A product with catalog items, portfolios, courses, or people uses photographs where appropriate, and a
 drawing of it with none is a wireframe.
 
 ```html

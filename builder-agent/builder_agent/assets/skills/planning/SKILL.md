@@ -80,10 +80,10 @@ dashboard of KPIs" — leaves both of those steps guessing, and a six-screen
 product has been shown to the user as a single page because of it.
 
 Every screen, including the ones that are obvious: whatever answers at `/`,
-the sign-in page, the empty state someone lands on first. What `/` is belongs
-to the product — a shop front for something being sold, the day's figures and
-what needs doing for something people work in — so say which it is rather than
-writing "home" and leaving it to be guessed. If a screen has no route yet
+the sign-in page, the empty state someone reaches first. What `/` is belongs
+to the product — a workspace or dashboard for something people work in, the day's figures and
+what needs doing for software tools, or a value proposition for something being sold to the public — so say which it is rather than
+writing "home" and leaving it to be guessed. Never force a marketing landing page or hero banner onto tools, dashboards, or internal software. If a screen has no route yet
 because the stack decides it, say so rather than leaving it out.
 
 ## What the plan must contain

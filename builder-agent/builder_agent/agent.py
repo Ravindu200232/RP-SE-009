@@ -497,7 +497,7 @@ class BuilderAgent:
                     if self.design and self.design.get("selection") else "")
         return "\n".join([
             "THE WHOLE APPLICATION, NOT HALF OF IT. Every screen on the list, finished, "
-            "and every link on every one of them landing on a page that exists. No stub, "
+            "and every link on every one of them resolving to a page that exists. No stub, "
             "no placeholder, nothing left for later.",
             "",
             "Draw this whole application as static HTML, before any of it is built for "

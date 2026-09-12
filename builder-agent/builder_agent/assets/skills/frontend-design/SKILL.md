@@ -14,7 +14,7 @@ If the brief does not identify what the product or subject matter is, identify i
 
 ## Design principles
 
-For web designs, the hero is the first thing viewers will see. Open with the most characteristic thing in the subject's world, in the form that is most appropriate: a headline, an image, an animation, a live demo, an interactive moment, or other treatments. Be deliberate with your choice: a big number with a small label, supporting stats, and a gradient accent is the default treatment, so only use it if that's truly the best option.
+Match the opening to the app archetype. For public marketing sites, the hero is what viewers will see first. For applications, dashboards, consoles, and tools (software someone *works in*), open directly on the core workspace, active canvas, or metrics instead of a hero banner or promotional landing page. Open with the most characteristic thing in the subject's world, in the form that is most appropriate: a live dashboard, an interactive canvas, a data grid, or for public sites, a focused value proposition. Be deliberate with your choice: never slap a generic marketing hero banner onto an application.
 
 Typography carries the personality of the page. You don't need a different typeface for display or headline text and body content: use one family or two, and if two, make them clearly distinct.
 

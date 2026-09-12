@@ -520,7 +520,7 @@ TOPICS: list[Topic] = [
         intent="Which images are needed.",
         applies_to=wants_images,
         fallback_options=[
-            {"label": "Hero banner", "value": "banner"},
+            {"label": "Product visual / illustrations", "value": "illustrations"},
             {"label": "Logo mark", "value": "logo"},
             {"label": "Avatar placeholders", "value": "avatar"},
             {"label": "Empty-state art", "value": "empty"},
