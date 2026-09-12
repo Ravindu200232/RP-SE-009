@@ -5,63 +5,99 @@ description: Plan, write, debug, and run Vitest unit, integration, or component 
 
 # Vitest testing
 
-Vitest is the permanent project unit/integration runner for this builder. Preserve the project's package manager, module system, Next.js conventions, aliases, test layout, and pinned versions; do not substitute another unit runner.
+Vitest is the permanent unit and integration runner for this builder. Preserve
+the project's package manager, module system, framework conventions, aliases,
+test layout and pinned versions; do not substitute another runner.
 
-Read this skill at task start when selected and again immediately before entering the unit-test phase, after context compaction, or when a new unit-test failure changes the repair approach. Do not reread it between unchanged retries.
+Read this skill at task start when selected, and again immediately before the
+unit-test phase, after compaction, or when new failure evidence changes the
+repair. Do not reread it between unchanged retries.
 
-Run the suite through `runTests` from its first execution, with a stable suite ID and `covers` requirement IDs. For per-case reporting, have that same command write Vitest JSON (`--reporter=json --outputFile=.agentforge/qa/vitest.json`) and pass `reportPath: ".agentforge/qa/vitest.json"`; create the output directory through a file write if the installed runner needs it. Do not execute the suite again just to register evidence or produce a report. Once current checks pass, proceed to E2E and finish.
+## One run, one record
 
-Read the saved coverage JSON or captured command output to inspect totals, files and uncovered lines. Changing a `findstr`/`grep` filter on the same test command is an output-reading task, not a reason to execute the suite again. Capture the report once, then read or filter that artifact until a source, test or configuration change calls for fresh evidence.
+Run the suite through `runTests` from its very first execution, with a stable
+suite ID and the `covers` requirement IDs. Have that same command write Vitest
+JSON (`--reporter=json --outputFile=.agentforge/qa/vitest.json`) and pass
+`reportPath: ".agentforge/qa/vitest.json"`; create the directory with a file
+write if the installed runner needs it. Never execute the suite a second time
+to register evidence, produce a report, or change a `findstr`/`grep` filter —
+filtering saved output is an output-reading task, not a reason to run anything.
+Capture once, then read that artifact until a source, test or config change
+earns fresh evidence. Once the current checks pass, go on to E2E and finish.
 
-Coverage is optional diagnostic information. Do not add tests, rerun a passing suite, or block completion solely to increase a percentage. Add meaningful tests for required behaviour and repaired defects, reuse existing passing cases, and inspect relevant implementation when a case needs repair.
+Coverage is optional diagnostic information. Do not add tests, rerun a passing
+suite, or block completion to move a percentage. When machine coverage is
+required, configure or reuse an Istanbul JSON summary, LCOV or Cobertura
+report, keep it to changed and high-risk first-party source rather than tests,
+generated files or framework glue, and prefer that plus a concise terminal
+summary over dumping every covered file into context. Report the measured
+percentages honestly; never edit tests or thresholds to raise one. A
+transform or parser failure while collecting coverage is a build defect to
+repair, not a reason to narrow coverage until it disappears.
 
 ## Before planning or editing
 
-Inspect the source under test with its imports/types and callers, nearby tests, `package.json` and lockfile, Vitest configuration (and any underlying Vite config only when Vitest actually consumes it), setup files, environment selection, path aliases, and relevant dependency interfaces. In Planner, put any installation or file creation in the blueprint; do not perform it before approval.
+Inspect the source under test with its imports, types and callers, the nearby
+tests, `package.json` and the lockfile, the Vitest configuration and any Vite
+config it actually consumes, setup files, environment selection, path aliases,
+and the dependency interfaces in play. In Planner, put any installation or file
+creation in the blueprint; do not perform it before approval.
 
 Choose tests from behavior and risk, not line count:
 
-- Cover critical business rules, changed/high-risk behavior, boundaries, error/async paths, and a regression for every repaired bug.
-- Match existing `test`/`it`, `describe`, fixture, naming, and import conventions.
-- Assert observable outputs, state, errors, and contracts. Avoid weak existence-only assertions, snapshots of volatile output, and assertions coupled only to call order or private implementation.
-- Mock only nondeterministic or external boundaries. Prefer real collaborators when fast and isolated; restore spies/mocks so tests cannot leak state.
-- Keep tests independently runnable. Prefer test-scoped fixtures for mutable state and use fixture cleanup or lifecycle hooks to close databases, timers, servers, and other resources even after failure.
-- Use Vitest APIs such as `vi.fn`, `vi.mock`, and `vi.spyOn`, never Jest globals. Respect `globals`, `environment`, `setupFiles`, and `restoreMocks` rather than guessing them.
-- Use `async`/`await` and `resolves`/`rejects` correctly. Include empty, nullish, invalid, boundary, dependency-failure, and concurrency cases only when relevant to the actual contract.
-- Use table-driven cases when they express one rule more clearly than repeated tests. Enable concurrency only for genuinely isolated work; concurrent snapshots/assertions must use the test-context `expect`.
+- Cover the critical business rules, changed and high-risk behaviour,
+  boundaries, error and async paths, and a regression for every repaired bug.
+- Match the existing `test`/`it`, `describe`, fixture, naming and import
+  conventions.
+- Assert observable outputs, state, errors and contracts. Avoid existence-only
+  assertions, snapshots of volatile output, and assertions coupled to call
+  order or private implementation.
+- Mock only nondeterministic or external boundaries; prefer real collaborators
+  when they are fast and isolated, and restore spies and mocks so no test leaks
+  state.
+- Keep every test independently runnable. Prefer test-scoped fixtures for
+  mutable state, and close databases, timers and servers in cleanup that runs
+  even after a failure.
+- Use Vitest APIs — `vi.fn`, `vi.mock`, `vi.spyOn` — never Jest globals, and
+  respect the configured `globals`, `environment`, `setupFiles` and
+  `restoreMocks` rather than guessing them.
+- Use `async`/`await` and `resolves`/`rejects` correctly. Add empty, nullish,
+  invalid, boundary, dependency-failure and concurrency cases when the contract
+  actually has them.
+- Use table-driven cases where they express one rule more clearly than repeated
+  tests. Enable concurrency only for genuinely isolated work; a concurrent
+  assertion must use the test-context `expect`.
 
 ## Passing on the first run
 
-A suite that fails on its first run and then gets repaired costs several model
+A suite that fails on its first run and is then repaired costs several model
 turns per failure, and most of those failures are not defects in the code under
-test — they are the test disagreeing with an implementation the author did not
-look at. Aim for a first-run pass, and get it mechanically rather than by
-writing weaker assertions.
+test — they are the test disagreeing with an implementation nobody looked at.
+Aim for a first-run pass, and get it mechanically rather than by writing weaker
+assertions.
 
-- **Read the module before you test it.** Open the file and copy the real export
-  names, signatures, argument order, return shape and error type. Never write a
-  test from what the implementation *should* look like or from what you wrote
-  earlier in the run: read it now.
-- **Import the way the application imports.** Same specifier, same default vs
+- **Read the module before you test it.** Copy the real export names,
+  signatures, argument order, return shape and error type out of the file. Not
+  from what it should look like, not from what you wrote earlier in the run.
+- **Import the way the application imports.** Same specifier, same default or
   named form, same extension. A test that reaches past the public entry point
-  into an internal path will break the moment the module moves.
-- **Assert the shape you actually produce.** If a function returns a document,
-  do not assert a plain object; if it returns cents, do not assert a formatted
-  string; if it throws a typed error, assert that type, not a message that will
-  be reworded.
-- **Give every test its own data.** Create the rows a test needs inside that
-  test with unique keys, and clear only what it created. Tests that share seeded
-  rows pass alone and fail in a suite, which reads as a product bug and is not
-  one.
-- **Reset shared state between tests, not once per file.** Database collections,
-  in-memory caches, rate-limiter counters and module-level singletons all
-  survive a test and change the result of the next one.
+  into an internal path breaks the moment the module moves.
+- **Assert the shape you actually produce.** A function returning a document is
+  not a plain object; one returning cents is not a formatted string; one
+  throwing a typed error is asserted by type, not by a message that will be
+  reworded.
+- **Give every test its own data.** Create the rows it needs inside it with
+  unique keys and clear only what it created. Tests sharing seeded rows pass
+  alone and fail in a suite, which reads as a product bug and is not one.
+- **Reset shared state between tests, not once per file.** Collections, caches,
+  rate-limiter counters and module-level singletons all survive a test and
+  change the next one's result.
 - **Await everything.** Every promise gets `await` or a `resolves`/`rejects`
-  matcher. A floating promise turns into an unhandled rejection attributed to
-  whichever test happens to be running.
-- **Do not assert on wall-clock time or the local timezone.** Fix the instant
-  with fake timers or an injected clock, and compare instants rather than
-  formatted dates.
+  matcher. A floating promise becomes an unhandled rejection attributed to
+  whichever test happened to be running.
+- **Never assert on wall-clock time or the local timezone.** Fix the instant
+  with fake timers or an injected clock and compare instants, not formatted
+  dates.
 - **Write the failing edge case last.** Get the happy path green first; an edge
   case written against an untested happy path multiplies the causes of one
   failure.
@@ -72,73 +108,131 @@ Measured on a real build: every service suite passed on its first run and the
 React client suite collected **zero** tests, on this alone.
 
 A matcher package such as `@testing-library/jest-dom` works by extending the
-runner's `expect`. Importing it from a setup file therefore requires an `expect`
-to already exist in that scope, and one only exists globally when the config
-enables it. So a setup file that extends matchers and a config without
-`globals` is a contradiction, and it fails at collection with
-`ReferenceError: expect is not defined` — pointing at the setup file, which
-looks like the setup file is broken when the config is what disagrees.
+runner's `expect`, so importing it from a setup file requires an `expect` to
+exist in that scope — and one exists globally only when the config enables it.
+A setup file that extends matchers plus a config without `globals` is therefore
+a contradiction, and it fails at collection with `ReferenceError: expect is not
+defined`, pointing at the setup file when the config is what disagrees.
 
-Pick one and make the config and the setup file agree:
-
-- **Import the runner-specific entry** — `@testing-library/jest-dom/vitest` —
-  which brings its own `expect` and needs no globals. Prefer this: nothing
-  becomes global that was not already.
-- **Or enable `globals: true`** in the config, and then `describe`/`it`/`expect`
-  need no import anywhere.
-
-The same rule covers any setup file that touches `expect`, `vi` or lifecycle
-hooks: whatever it reaches for must be either imported there or enabled in the
-config. Read the config before writing the setup file, not after the failure.
+Pick one and make them agree: import the runner-specific entry
+`@testing-library/jest-dom/vitest`, which brings its own `expect` and needs no
+globals (prefer this — nothing becomes global that was not already), or enable
+`globals: true` and import nothing anywhere. The same rule covers any setup
+file touching `expect`, `vi` or lifecycle hooks: whatever it reaches for is
+either imported there or enabled in the config. Read the config before writing
+the setup file, not after the failure.
 
 When a first run does fail, read every failure before repairing any of them and
 group them by cause. A whole file failing on import, or twenty tests failing on
-the same missing fixture, is one defect, not twenty.
+one missing fixture, is a single defect.
 
-For DOM/component behavior, query the rendered interface the way a user or assistive technology does: prefer role and accessible name, then labels and visible text. Use the query whose timing contract matches the UI (`getBy*` for present-now, `findBy*` for async appearance, `queryBy*` for absence). Prefer a fresh `userEvent.setup()` inside each test and await interactions; use low-level event dispatch only when the real interaction cannot be expressed otherwise.
+## Components and the network
 
-If an application talks to HTTP/GraphQL services, mock at the network boundary only when real local integration would be slow, unsafe, or nondeterministic. A request interceptor such as MSW is optional, not a default dependency. When used, let production request code execute unchanged, fail tests on unexpected first-party requests, reset handlers between tests, and still keep separate real integration/E2E evidence for critical contracts.
+Query the rendered interface the way a user or assistive technology does:
+prefer role and accessible name, then labels and visible text. Use the query
+whose timing contract matches the UI — `getBy*` for present-now, `findBy*` for
+async appearance, `queryBy*` for absence. Prefer a fresh `userEvent.setup()`
+inside each test and await the interactions; drop to low-level event dispatch
+only when the real interaction cannot be expressed otherwise.
 
-That preference for real collaborators is about your own code. **A third party's API is never called from a unit test** — not Stripe, not a mail or SMS provider, not an image host, not a map or model API. Stub the client with `vi.mock` and assert what your code asked it for. A unit suite that reaches the internet is slow, fails on a plane, fails in CI, and either spends someone's quota or fails on a placeholder key — and "Invalid API key" tells you nothing about the code under test. The thing worth asserting is that the right call was made with the right arguments, and a stub asserts exactly that. Real provider traffic belongs in a sandbox E2E journey, if anywhere.
+Mock at the network boundary only when real local integration would be slow,
+unsafe or nondeterministic. A request interceptor such as MSW is optional, not
+a default dependency; when used, let production request code run unchanged,
+fail on unexpected first-party requests, reset handlers between tests, and keep
+separate real integration evidence for the critical contracts.
+
+That preference for real collaborators is about your own code. **A third
+party's API is never called from a unit test** — not Stripe, not a mail or SMS
+provider, not an image host, not a map or model API. Stub the client with
+`vi.mock` and assert what your code asked it for. A unit suite that reaches the
+internet is slow, fails on a plane, fails in CI, and either spends someone's
+quota or fails on a placeholder key — and "Invalid API key" tells you nothing
+about the code under test. Real provider traffic belongs in a sandbox E2E
+journey, if anywhere.
 
 ## Execute and verify
 
-Use the existing package script/package manager. Direct commands must be finite (`vitest run` or `vitest --no-watch`), never the default watch loop. Run affected tests after edits, then the full discovered unit regression once the implementation is stable.
+Use the existing package script or package manager. Direct commands must be
+finite — `vitest run` or `vitest --no-watch`, never the default watch loop. Run
+the affected tests after an edit, then the full discovered regression once the
+implementation is stable.
 
-Treat file filters as runner input, not as assumed shell expansion. On a cross-platform project, confirm the installed CLI's filter semantics or pass explicit test paths; a wildcard that works in one shell may reach Vitest literally in another. If a filtered command fails without new evidence, inspect its diagnostic and change the filter or owning code instead of submitting the identical command again.
+A file filter is runner input, not shell expansion. A positional filter checks
+whether the test-file path contains that string; it does not parse regular
+expressions or globs unless the terminal expanded them first — and no terminal
+on Windows expands `**`. So before a filtered run, use `search` or the
+project-layout snapshot to find the real test directory or the exact file, and
+pass an observed substring or observed paths. Never guess `tests` against
+`test` against `src/test`, and never probe `vitest.config` extensions one by
+one — search for it and use the extension you observe. If a filtered command
+fails without new evidence, read its diagnostic and change the filter or the
+owning code; do not submit the identical command again.
 
-Current Vitest CLI documentation is explicit: a positional filter checks whether the test-file path contains that string; it does not parse regular expressions or glob patterns unless the current terminal expands the glob first. Therefore, before a filtered run, use `search`/the project-layout snapshot to discover the actual test directory or exact test file. Prefer an observed directory substring such as the project's real test root, or explicit observed test paths. Never guess `tests` vs `test` vs `src/test`, and never assume `**` expansion on Windows. If you need a config file, call `search` for `vitest.config` and use the observed extension; do not probe `.ts`, `.js`, `.mjs` variants one by one.
+Vitest transforms TypeScript but does not replace the project's type checker;
+run the discovered typecheck separately. Choose Node, DOM emulation or browser
+mode from the behaviour under test — do not make server code pass by putting
+everything in a browser-like environment.
 
-Vitest transforms TypeScript but does not replace the project's type checker. Run the discovered typecheck separately. Choose Node, DOM emulation, or browser mode from the behavior under test; do not make server code pass by placing everything in a browser-like environment.
+Make time deterministic with fake timers only where the contract depends on
+clocks, delays or intervals, and restore real timers and mocks in cleanup even
+when assertions fail. Treat unhandled rejections, uncaught errors, resource
+leaks and warnings caused by the changed code as failures to diagnose, not
+noise to suppress.
 
-Before adding a coverage provider, inspect the installed Vitest version, manifest, lockfile, and current dependency graph. Keep `@vitest/coverage-v8` or another provider on the exact compatible version line required by the installed runner; do not resolve the runner and provider independently with `latest`. Run only one package-manager mutation at a time in a workspace. A provider import/export failure inside dependencies is a dependency-runtime mismatch, not application syntax.
+## Dependencies and configuration
 
-Install the smallest test surface the project uses. The core runner does not imply that the interactive UI package, a browser package, DOM emulator, or a framework build plugin is required. Add each adapter only when the planned tests/config actually use it; do not add a Vite framework plugin to a non-Vite application by habit. When the solver reports a named peer range conflict, align or remove the exact conflicting declaration, or choose a runner version compatible with the project's supported runtime. Do not make force/legacy peer resolution the first repair because it can create an install that fails only when tests load.
+Before the first test run, derive one install and config checklist from the
+planned evidence — the runner, its required build or runtime peer, an
+exact-version coverage provider if machine coverage is needed, the chosen
+environment, and only the component wrappers actually used — and verify that
+peer-complete graph once, before generating a large suite.
 
-Before installing a component-testing wrapper or interaction helper, inspect its current peer dependencies and install one compatible peer-complete set in the same serialized operation. For example, a wrapper may intentionally require its DOM core as a direct peer rather than bundling it. A missing peer discovered only on the first test run is a preventable setup defect; do not respond with repeated one-package installs when the package metadata already names the complete set.
+- Keep `@vitest/coverage-v8` or another provider on the exact version line the
+  installed runner requires. Never resolve runner and provider independently
+  as `latest`.
+- Run one package-manager mutation at a time in a workspace.
+- Install the smallest test surface the project uses. The core runner does not
+  imply the interactive UI package, a browser package, a DOM emulator or a
+  framework build plugin; add each adapter only when the planned tests or
+  config use it, and never add a Vite framework plugin to a non-Vite app out of
+  habit.
+- On a named peer-range conflict, align or remove the exact conflicting
+  declaration, or pick a runner version compatible with the supported runtime.
+  Do not reach for force or legacy peer resolution first — it can produce an
+  install that fails only once tests load.
+- Before a component-testing wrapper or interaction helper, read its current
+  peer dependencies and install one compatible peer-complete set in the same
+  serialized operation. A wrapper may deliberately require its DOM core as a
+  peer rather than bundling it, and a missing peer found on the first test run
+  is a preventable setup defect — not a reason for repeated one-package
+  installs when the metadata already names the set.
+- Match the test-config filename and syntax to the package's ESM/CommonJS
+  contract; do not leave an ESM config to be loaded as CommonJS, or silence the
+  warning that says so.
+- A dedicated `vitest.config.*` takes precedence rather than inheriting every
+  Vite option, so merge the application config explicitly when its plugins,
+  aliases, transforms or defines are required — and do not maintain a drifting
+  copy of that setup in two configs.
+- Keep the runners' discovery boundaries disjoint. Unit and component config
+  includes its own sources and tests and excludes browser-E2E artifacts,
+  reports, build output and dependency trees. AgentX browser journeys are
+  external harness evidence and must never be imported into Vitest. Inspect the
+  discovered file set before a broad run so one runner never loads another
+  runner's test API as application code.
+- Do not delete the lockfile or the dependency directory as a first repair.
+  Read the package-manager diagnostic and the graph, stop task-owned processes
+  holding the tree, then apply the smallest compatible manifest or lockfile
+  repair. If a clean install is genuinely required, serialize it and confirm no
+  build, server or test process is holding native modules.
 
-Before the first test run, derive one install/config checklist from the planned evidence: runner, its required build/runtime peer, exact-version coverage provider when machine coverage is required, chosen environment, and only the component wrappers actually used. Verify that peer-complete graph once before generating a large suite. Match the test-config filename and syntax to the package's ESM/CommonJS contract; do not leave an ESM config to be loaded as CommonJS or silence the resulting warning.
+Read current official documentation when configuration or version behaviour is
+uncertain: https://vitest.dev/guide/, https://vitest.dev/guide/coverage.html,
+https://vitest.dev/config/, https://vitest.dev/guide/test-context,
+https://testing-library.com/docs/queries/about/,
+https://testing-library.com/docs/user-event/intro/, and the
+`vitest-dev/vitest`, `testing-library/react-testing-library` and `mswjs/msw`
+repositories.
 
-Vitest reads Vite configuration by default. A dedicated `vitest.config.*` takes precedence rather than automatically inheriting every Vite option, so explicitly merge the application config when its plugins, aliases, transforms, or defines are required. Do not duplicate a drifting alias/plugin setup in two unrelated configs.
-
-Keep runner discovery boundaries disjoint. Unit/component configuration must include its intended sources/tests and exclude browser-E2E artifacts, generated reports, build output, and dependency trees. AgentX browser journeys are external harness evidence and must not be imported into Vitest. Before a broad run, inspect the discovered file set so one runner never imports another runner's test API as application code.
-
-Make time deterministic with fake timers only for code whose contract depends on clocks, delays, or intervals. Restore real timers and mocks in cleanup even when assertions fail; never leave fake time active for later tests. Treat unhandled rejections, uncaught errors, resource leaks, and warnings caused by the changed code as failures to diagnose rather than noise to suppress.
-
-Do not delete the lockfile or dependency directory as the first repair. Read the package-manager diagnostic and graph, wait for or stop task-owned processes using the dependency tree, then apply the smallest compatible manifest/lockfile repair. If a clean install is genuinely required, serialize it and confirm no build, server, or test process is holding native modules first.
-
-For AgentX coverage evidence, configure or reuse a machine-readable Istanbul JSON summary, LCOV, or Cobertura report. Current Vitest also supports concise agent-oriented terminal reporting; prefer machine-readable output plus concise summaries instead of dumping every fully covered file into model context. Configure coverage include/reporters from the installed project's needs and current docs, not from remembered defaults. Then and include relevant changed/high-risk first-party source. Confirm the report includes the intended source set instead of tests, generated files, build output, or unrelated framework glue. Report measured percentages honestly; do not alter tests or thresholds simply to raise coverage. A transform/parser failure while collecting source coverage is a build/config defect to repair, not a reason to narrow coverage until it disappears.
-
-Read current official documentation when configuration or version behavior is uncertain:
-
-- https://vitest.dev/guide/
-- https://vitest.dev/guide/coverage.html
-- https://vitest.dev/config/
-- https://vitest.dev/guide/test-context
-- https://testing-library.com/docs/queries/about/
-- https://testing-library.com/docs/user-event/intro/
-- https://github.com/vitest-dev/vitest
-- https://github.com/testing-library/react-testing-library
-- https://github.com/mswjs/msw
-
-Run generated tests immediately. Treat import/API/config errors and flaky behavior as defects to diagnose, not reasons to weaken assertions or raise retries.
+Run generated tests immediately. Treat import, API and config errors and flaky
+behaviour as defects to diagnose, never as reasons to weaken assertions or
+raise retries.

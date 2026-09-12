@@ -183,7 +183,7 @@ actually being written, because a count read thirty files ago is not a count:
 | the shared shell | a header listing every section of the product, and a footer of **three or four columns of links** — thirty-odd links, identical on every page |
 | rows in a list or table | **8 or more**, with the empty state written too |
 | fields in a form | every field the product needs, with labels and help text |
-| words of real content | **400 or more** on a landing page; enough elsewhere to say what the screen is for |
+| words of real content | enough to say what the screen is for, in this product's own words |
 
 A home page that is a heading, a paragraph and a button is the single most
 common failure here, and it passes every qualitative check below. It is not a

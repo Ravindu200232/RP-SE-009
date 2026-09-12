@@ -48,6 +48,12 @@ from .tools import build_registry, review_registry
 # accepted, and the alternative is a build that never starts.
 MAX_PLAN_REVISIONS = 3
 
+# What the drawing is asked at. The build stays at the config's own setting,
+# which is low on purpose: code is judged by whether it runs. A drawing is
+# judged by whether anyone likes looking at it, and two drawings of the same
+# product should not be the same drawing.
+DRAWING_TEMPERATURE = 0.8
+
 # Work that genuinely has no user interface. A design contract for a cron job
 # is noise, and this is the only case where it is.
 NON_UI_TERMS = ("cli", "command line", "cron job", "cron", "worker", "daemon",
@@ -669,7 +675,14 @@ class BuilderAgent:
             # A drawing writes files and proves nothing, so the verification
             # contract is off for it. It is not a review either: it changes the
             # workspace, and the file tools have to be on the table.
+            #
+            # It is also the one pass where the safest next word is the wrong
+            # one. A build wants 0.2 - the same function, spelled the same way,
+            # every time - but a drawing asked at 0.2 returns the same page
+            # anyone else would have got, and "the design is flat" is what came
+            # back. Nothing here has to compile, so it is allowed to reach.
             config = replace(config, plan_only=plan_only, review=review,
+                             temperature=DRAWING_TEMPERATURE if prototype else config.temperature,
                              unit_tests=config.unit_tests and not prototype,
                              e2e_tests=config.e2e_tests and not prototype)
         return Loop(config=config, registry=registry, router=self.router, memory=self.memory,
