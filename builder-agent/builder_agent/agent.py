@@ -418,6 +418,13 @@ class BuilderAgent:
                     "the pages at it, and leave the markup alone otherwise.")
                 continue
 
+            # Parallel flow verification, screenshot capture, and living SRS update
+            try:
+                from server_modules.srs.srs_sync import sync_from_prototype_async
+                sync_from_prototype_async(Path(root), drawn)
+            except Exception:
+                pass
+
             answer = self.approvals.ask(
                 "prototype",
                 {"pages": drawn, "goal": task[:300], "round": round_number + 1,

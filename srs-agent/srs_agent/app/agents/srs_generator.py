@@ -23,6 +23,7 @@ from ..llm import LLMRepairFailed, LLMUnavailable, get_llm
 from ..schemas.srs import summarize_srs, validate_srs
 from ..generators.standards import apply_international_profile
 from ..services.events import bus
+from ..skills import get_active_skills_guidance
 from .state import AgentState
 
 _SYS = (
@@ -191,6 +192,7 @@ async def generate_srs_node(state: AgentState) -> AgentState:
         await bus.emit(pid, "SrsJsonGeneratorAgent", "Asking the LLM for domain-specific content…", progress=35)
         digest = _answers_digest(questions, answers)
         plan_md = str(state.get("plan_markdown") or "").strip()
+        skills_guidance = get_active_skills_guidance(f"{brief} {plan_md}")
         user = (
             f"DETECTED DOMAIN: {state.get('classification', {}).get('detected_domain')}\n\n"
             f"USER IDEA / BRIEF:\n{brief[:3000]}\n\n"
@@ -198,7 +200,8 @@ async def generate_srs_node(state: AgentState) -> AgentState:
             + (("This app has NO login and NO user accounts. Say nothing about "
                 "users, roles, permissions or admins.\n\n") if plan and not auth else "")
             + f"USER ANSWERS:\n{digest}\n\n"
-            "Now produce the enrichment JSON described in the system message, "
+            + (f"{skills_guidance}\n\n" if skills_guidance else "")
+            + "Now produce the enrichment JSON described in the system message, "
             "tailored precisely to this idea."
         )
         pack = await llm.complete_json(

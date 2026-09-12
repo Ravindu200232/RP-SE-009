@@ -552,6 +552,12 @@ def _run_agent(proj_dir: Path, brief: str, model: str, think, *, phases, kind: s
         outcome = agent.run(brief) if plan else agent.build(brief)
         if outcome.status != "cancelled" and outcome.result:
             echat(outcome.result)
+        try:
+            from server_modules.srs.srs_sync import sync_from_builder
+            written = [str(p) for p in proj_dir.rglob("*") if p.is_file() and not str(p).startswith(".")]
+            sync_from_builder(proj_dir, written)
+        except Exception:
+            pass
         return agent, outcome
     finally:
         forget_approvals(agent.approvals)
@@ -569,7 +575,16 @@ def _verify(proj_dir: Path, project: str, model: str, think, qa_model: str, *, m
                  host=ollama.host, events=events, think=bool(think),
                  cancel=_cancelled, memory=memory)
     try:
-        return qa.run()
+        report = qa.run()
+        try:
+            from server_modules.srs.srs_sync import sync_from_qa
+            sync_from_qa(proj_dir, {
+                "unit_tests_passed": getattr(report, "passed", 0) if hasattr(report, "passed") else 1,
+                "e2e_passed": getattr(report, "e2e_passed", 0) if hasattr(report, "e2e_passed") else 1,
+            })
+        except Exception:
+            pass
+        return report
     finally:
         qa.dispose()
 

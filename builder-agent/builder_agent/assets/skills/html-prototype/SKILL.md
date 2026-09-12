@@ -19,7 +19,7 @@ costs a re-render, the same layout wrong after the build costs the build.
   React, no bundler, no npm install, no build step, no CSS framework. A file
   opens in a browser and works, offline, first time.
 - **A multi-page application.** A file per screen, reached through the
-  navigation — not one long page with sections, not one file with tabs. The
+  navigation — Not one page with sections, not one file with tabs. The
   user opens `menu.html`, clicks through to `checkout.html`, and sees what that
   is like.
 - **It works.** Somebody clicks through it. See "Make the flow work".
