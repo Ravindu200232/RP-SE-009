@@ -15,6 +15,20 @@ def start_deploy_api():
         print(f"⚠️  Deployment agent unavailable — {DEPLOY_API['error']}")
         return
 
+    # Each run signs in as its owner. If that cannot be wired, the agent does
+    # not start at all - it would otherwise deploy with this machine's logins.
+    try:
+        agent_dir = str(BASE_DIR / "deployment-agent" / "deploy_agent")
+        if agent_dir not in sys.path:
+            sys.path.insert(0, agent_dir)
+        from deployment_agent import owner_credentials
+        owner_credentials.register(deploy_credentials_provider)
+    except Exception as e:
+        DEPLOY_API.update(state="import-failed",
+                          error=f"per-person deployment accounts: {type(e).__name__}: {e}")
+        print(f"⚠️  Deployment agent unavailable — {DEPLOY_API['error']}")
+        return
+
     DEPLOY_API.update(state="starting", error="")
     try:
         mount.serve(port=DEPLOY_PORT)

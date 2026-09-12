@@ -230,10 +230,14 @@ def emit(msg: dict):
     none is about the server itself and is shown wherever anyone is looking.
     """
     if MAIN_LOOP is None: return
-    data = json.dumps(stamp_owner(msg), ensure_ascii=False)
+    stamped = stamp_owner(msg)
+    data = json.dumps(stamped, ensure_ascii=False)
+    # Worked out here, on the sending thread: who a message is for is read off
+    # that thread's run or request. Only its owner hears it (tenancy.py).
+    targets = recipients(stamped)
     async def _s():
         dead = set()
-        for ws in list(clients):
+        for ws in targets:
             try: await ws.send(data)
             except: dead.add(ws)
         clients.difference_update(dead)

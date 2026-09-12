@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
-Status: PASS
-Run at (UTC): 2026-09-11T04:13:45+00:00
+Status: FAIL
+Run at (UTC): 2026-09-12T00:26:56+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 510
+Unit tests: 646
 Integration tests: 24
-Total tests run: 534
-Failures: 0
+Total tests run: 670
+Failures: 4
 Errors: 0
 Skipped: 0
-Duration: 26.066s
+Duration: 40.631s
 
 Detailed results
 ----------------
@@ -29,6 +29,9 @@ test_the_plan_is_told_to_enumerate_what_was_asked_for (test.unit.builder.test_ag
 A request read once produces a plan about most of it. ... ok
 test_the_planning_pass_investigates_but_does_not_implement (test.unit.builder.test_agent_passes.AgentPassTests.test_the_planning_pass_investigates_but_does_not_implement) ... ok
 test_work_with_no_interface_gets_no_design_contract (test.unit.builder.test_agent_passes.AgentPassTests.test_work_with_no_interface_gets_no_design_contract) ... ok
+test_a_code_review_does_not_carry_it (test.unit.builder.test_agent_passes.DesignNoteTests.test_a_code_review_does_not_carry_it) ... ok
+test_a_small_window_keeps_it (test.unit.builder.test_agent_passes.DesignNoteTests.test_a_small_window_keeps_it) ... ok
+test_planning_drawing_and_building_all_carry_it (test.unit.builder.test_agent_passes.DesignNoteTests.test_planning_drawing_and_building_all_carry_it) ... ok
 test_a_drawn_page_is_told_its_own_size (test.unit.builder.test_agent_passes.LongPageInstructionTests.test_a_drawn_page_is_told_its_own_size) ... ok
 test_a_read_only_pass_does_not_carry_it (test.unit.builder.test_agent_passes.LongPageInstructionTests.test_a_read_only_pass_does_not_carry_it) ... ok
 test_a_small_window_does_not_drop_it (test.unit.builder.test_agent_passes.LongPageInstructionTests.test_a_small_window_does_not_drop_it) ... ok
@@ -198,6 +201,17 @@ test_a_different_file_starts_its_own_count (test.unit.builder.test_loop.Repeated
 test_changing_the_project_clears_the_count (test.unit.builder.test_loop.RepeatedReadTests.test_changing_the_project_clears_the_count)
 After an edit the same read is a new question, not a repeat. ... ok
 test_the_same_answer_three_times_is_called_out (test.unit.builder.test_loop.RepeatedReadTests.test_the_same_answer_three_times_is_called_out) ... ok
+test_the_drawing_is_shown_with_photographs_of_the_subject (test.unit.builder.test_pictures.DrawingTests.test_the_drawing_is_shown_with_photographs_of_the_subject) ... ok
+test_a_lock_is_not_mistaken_for_the_start_of_a_longer_one (test.unit.builder.test_pictures.RepairTests.test_a_lock_is_not_mistaken_for_the_start_of_a_longer_one) ... ok
+test_a_miss_becomes_any_of_its_tags_on_every_page (test.unit.builder.test_pictures.RepairTests.test_a_miss_becomes_any_of_its_tags_on_every_page) ... ok
+test_a_miss_is_mended_the_same_way_at_every_size (test.unit.builder.test_pictures.RepairTests.test_a_miss_is_mended_the_same_way_at_every_size) ... ok
+test_an_address_that_cannot_be_checked_is_left_alone (test.unit.builder.test_pictures.RepairTests.test_an_address_that_cannot_be_checked_is_left_alone) ... ok
+test_installed_packages_and_hidden_folders_are_not_touched (test.unit.builder.test_pictures.RepairTests.test_installed_packages_and_hidden_folders_are_not_touched) ... ok
+test_line_endings_are_kept (test.unit.builder.test_pictures.RepairTests.test_line_endings_are_kept) ... ok
+test_one_photograph_behind_two_addresses_is_not_shown_twice (test.unit.builder.test_pictures.RepairTests.test_one_photograph_behind_two_addresses_is_not_shown_twice) ... ok
+test_the_same_picture_at_two_sizes_is_not_a_photograph_shown_twice (test.unit.builder.test_pictures.RepairTests.test_the_same_picture_at_two_sizes_is_not_a_photograph_shown_twice)
+A room's card and its detail page ask for one picture at two sizes. ... ok
+test_then_fewer_tags_and_then_one (test.unit.builder.test_pictures.RepairTests.test_then_fewer_tags_and_then_one) ... ok
 test_a_plan_that_files_components_settles_it (test.unit.builder.test_project_setup.DesignReachTests.test_a_plan_that_files_components_settles_it) ... ok
 test_every_chosen_dimension_reaches_the_written_contract (test.unit.builder.test_project_setup.DesignReachTests.test_every_chosen_dimension_reaches_the_written_contract) ... ok
 test_routes_are_read_from_where_the_files_sit (test.unit.builder.test_project_setup.DesignReachTests.test_routes_are_read_from_where_the_files_sit) ... ok
@@ -289,6 +303,8 @@ test_none_of_these_match_a_domain (test.unit.builder.test_project_setup.Unmatche
 If one starts matching, this test is measuring the wrong thing. ... ok
 test_the_same_request_always_gets_the_same_look (test.unit.builder.test_project_setup.UnmatchedPaletteTests.test_the_same_request_always_gets_the_same_look) ... ok
 test_unmatched_products_do_not_all_look_the_same (test.unit.builder.test_project_setup.UnmatchedPaletteTests.test_unmatched_products_do_not_all_look_the_same) ... ok
+test_only_the_bare_health_route_is_an_endpoint (test.unit.builder.test_screens_not_endpoints.EndpointsAreNotScreensTests.test_only_the_bare_health_route_is_an_endpoint) ... ok
+test_the_api_prefix_and_health_routes_are_not_offered_as_screens (test.unit.builder.test_screens_not_endpoints.EndpointsAreNotScreensTests.test_the_api_prefix_and_health_routes_are_not_offered_as_screens) ... ok
 test_a_value_cannot_smuggle_a_second_setting_in_on_a_new_line (test.unit.builder.test_setup_questions.AppliedAnswerTests.test_a_value_cannot_smuggle_a_second_setting_in_on_a_new_line)
 A newline inside a value would otherwise become a setting of its own. ... ok
 test_answering_twice_updates_rather_than_appends (test.unit.builder.test_setup_questions.AppliedAnswerTests.test_answering_twice_updates_rather_than_appends) ... ok
@@ -334,6 +350,33 @@ test_nothing_planned_is_an_empty_map_not_a_crash (test.unit.builder.test_sitemap
 test_the_same_screen_twice_is_one_entry (test.unit.builder.test_sitemap.FromThePlanTests.test_the_same_screen_twice_is_one_entry) ... ok
 test_it_survives_a_round_trip_through_the_project (test.unit.builder.test_sitemap.PersistenceTests.test_it_survives_a_round_trip_through_the_project) ... ok
 test_no_file_is_an_empty_map (test.unit.builder.test_sitemap.PersistenceTests.test_no_file_is_an_empty_map) ... ok
+test_a_retry_takes_out_what_an_earlier_attempt_left_staged (test.unit.deployment.test_env_files_never_committed.EnvironmentFilesTests.test_a_retry_takes_out_what_an_earlier_attempt_left_staged) ... ok
+test_env_files_at_the_root_and_below_are_left_out (test.unit.deployment.test_env_files_never_committed.EnvironmentFilesTests.test_env_files_at_the_root_and_below_are_left_out) ... ok
+test_the_deployment_plan_is_written_by_gemma_whatever_was_saved (test.unit.deployment.test_fixed_models.FixedModelTests.test_the_deployment_plan_is_written_by_gemma_whatever_was_saved) ... ok
+test_the_specification_is_written_by_gemma_whatever_was_saved (test.unit.deployment.test_fixed_models.FixedModelTests.test_the_specification_is_written_by_gemma_whatever_was_saved) ... ok
+test_a_plan_without_a_health_route_keeps_the_nextjs_one (test.unit.deployment.test_fixed_models.HealthProbeTests.test_a_plan_without_a_health_route_keeps_the_nextjs_one) ... ok
+test_the_monitor_asks_the_health_route_the_plan_names (test.unit.deployment.test_fixed_models.HealthProbeTests.test_the_monitor_asks_the_health_route_the_plan_names) ... ok
+test_ec2_runs_the_companions_under_systemd_beside_the_gateway (test.unit.deployment.test_mern_workspace.MernWorkspaceTests.test_ec2_runs_the_companions_under_systemd_beside_the_gateway) ... ok
+test_ecs_runs_the_companions_as_containers_of_the_one_task (test.unit.deployment.test_mern_workspace.MernWorkspaceTests.test_ecs_runs_the_companions_as_containers_of_the_one_task) ... ok
+test_every_secret_the_task_names_is_one_the_deployer_writes (test.unit.deployment.test_mern_workspace.MernWorkspaceTests.test_every_secret_the_task_names_is_one_the_deployer_writes) ... ok
+test_intake_reads_config_that_receives_process_env_as_a_parameter (test.unit.deployment.test_mern_workspace.MernWorkspaceTests.test_intake_reads_config_that_receives_process_env_as_a_parameter) ... ok
+test_intake_takes_the_gateway_as_the_service_and_the_rest_as_its_companions (test.unit.deployment.test_mern_workspace.MernWorkspaceTests.test_intake_takes_the_gateway_as_the_service_and_the_rest_as_its_companions) ... ok
+test_vercel_is_refused_for_a_workspace (test.unit.deployment.test_mern_workspace.MernWorkspaceTests.test_vercel_is_refused_for_a_workspace) ... ok
+test_ec2_releases_the_standalone_build_under_one_unit (test.unit.deployment.test_mern_workspace.NextjsDeploymentTests.test_ec2_releases_the_standalone_build_under_one_unit) ... ok
+test_ecs_task_is_one_container (test.unit.deployment.test_mern_workspace.NextjsDeploymentTests.test_ecs_task_is_one_container) ... ok
+test_a_failed_workflow_is_not_promoted (test.unit.deployment.test_monitor_promotion.PromotionTests.test_a_failed_workflow_is_not_promoted) ... ok
+test_a_provider_that_is_not_running_it_is_not_promoted (test.unit.deployment.test_monitor_promotion.PromotionTests.test_a_provider_that_is_not_running_it_is_not_promoted) ... ok
+test_a_route_that_does_not_answer_is_not_promoted (test.unit.deployment.test_monitor_promotion.PromotionTests.test_a_route_that_does_not_answer_is_not_promoted) ... ok
+test_a_serving_site_is_promoted_whatever_the_review_scored (test.unit.deployment.test_monitor_promotion.PromotionTests.test_a_serving_site_is_promoted_whatever_the_review_scored) ... ok
+test_a_command_run_for_someone_signs_in_as_them (test.unit.deployment.test_owner_credentials.CommandTests.test_a_command_run_for_someone_signs_in_as_them) ... ok
+test_a_token_handed_in_for_the_run_wins (test.unit.deployment.test_owner_credentials.VercelTokenTests.test_a_token_handed_in_for_the_run_wins) ... ok
+test_deploying_for_someone_it_is_their_token_or_none_at_all (test.unit.deployment.test_owner_credentials.VercelTokenTests.test_deploying_for_someone_it_is_their_token_or_none_at_all) ... ok
+test_the_machines_vercel_login_is_used_when_nobody_else_is_deploying (test.unit.deployment.test_owner_credentials.VercelTokenTests.test_the_machines_vercel_login_is_used_when_nobody_else_is_deploying) ... ok
+test_a_run_carries_its_own_owners_token (test.unit.deployment.test_owner_credentials.WhoseAccountsTests.test_a_run_carries_its_own_owners_token) ... ok
+test_on_its_own_the_agent_carries_nothing_extra (test.unit.deployment.test_owner_credentials.WhoseAccountsTests.test_on_its_own_the_agent_carries_nothing_extra) ... ok
+test_two_runs_at_once_do_not_borrow_each_others_accounts (test.unit.deployment.test_owner_credentials.WhoseAccountsTests.test_two_runs_at_once_do_not_borrow_each_others_accounts) ... ok
+test_without_a_token_gh_is_still_kept_away_from_this_machines_login (test.unit.deployment.test_owner_credentials.WhoseAccountsTests.test_without_a_token_gh_is_still_kept_away_from_this_machines_login) ... ok
+test_work_handed_to_another_thread_keeps_its_owner (test.unit.deployment.test_owner_credentials.WhoseAccountsTests.test_work_handed_to_another_thread_keeps_its_owner) ... ok
 test_environment_style_secret_line_keeps_the_key_but_hides_the_value (test.unit.deployment.test_security.DeploymentSecurityTests.test_environment_style_secret_line_keeps_the_key_but_hides_the_value) ... ok
 test_hash_helpers_produce_the_same_artifact_digest (test.unit.deployment.test_security.DeploymentSecurityTests.test_hash_helpers_produce_the_same_artifact_digest) ... ok
 test_missing_artifact_has_no_false_digest (test.unit.deployment.test_security.DeploymentSecurityTests.test_missing_artifact_has_no_false_digest) ... ok
@@ -440,6 +483,38 @@ test_totals_only_printed_never_erase_a_detailed_suite (test.unit.qa.test_result_
 test_a_fresh_project_carries_nothing_it_never_had (test.unit.qa.test_result_carry.ReportCarryTests.test_a_fresh_project_carries_nothing_it_never_had) ... ok
 test_an_edit_adds_to_the_suite_rather_than_replacing_it (test.unit.qa.test_result_carry.ReportCarryTests.test_an_edit_adds_to_the_suite_rather_than_replacing_it) ... ok
 test_the_stages_and_the_scan_a_project_already_had_survive (test.unit.qa.test_result_carry.ReportCarryTests.test_the_stages_and_the_scan_a_project_already_had_survive) ... ok
+test_a_body_that_names_a_project_needs_that_project (test.unit.services.test_access.AgentForgeRouteTests.test_a_body_that_names_a_project_needs_that_project) ... ok
+test_a_job_belongs_to_whoever_started_it (test.unit.services.test_access.AgentForgeRouteTests.test_a_job_belongs_to_whoever_started_it) ... ok
+test_a_path_that_names_a_project_needs_that_project (test.unit.services.test_access.AgentForgeRouteTests.test_a_path_that_names_a_project_needs_that_project) ... ok
+test_a_route_nobody_classified_is_the_admins (test.unit.services.test_access.AgentForgeRouteTests.test_a_route_nobody_classified_is_the_admins) ... ok
+test_a_signed_in_person_may_read_their_own_lists (test.unit.services.test_access.AgentForgeRouteTests.test_a_signed_in_person_may_read_their_own_lists) ... ok
+test_an_upload_without_a_project_is_nobodys_in_particular (test.unit.services.test_access.AgentForgeRouteTests.test_an_upload_without_a_project_is_nobodys_in_particular) ... ok
+test_building_from_a_specification_needs_that_specification (test.unit.services.test_access.AgentForgeRouteTests.test_building_from_a_specification_needs_that_specification) ... ok
+test_the_run_in_progress_is_one_persons (test.unit.services.test_access.AgentForgeRouteTests.test_the_run_in_progress_is_one_persons) ... ok
+test_a_job_carries_the_rule_of_what_it_runs (test.unit.services.test_access.DeploymentRouteTests.test_a_job_carries_the_rule_of_what_it_runs) ... ok
+test_a_run_belongs_to_whoever_owns_its_project (test.unit.services.test_access.DeploymentRouteTests.test_a_run_belongs_to_whoever_owns_its_project) ... ok
+test_accounts_and_lists_are_each_persons_own (test.unit.services.test_access.DeploymentRouteTests.test_accounts_and_lists_are_each_persons_own) ... ok
+test_analysis_needs_the_project_at_that_path (test.unit.services.test_access.DeploymentRouteTests.test_analysis_needs_the_project_at_that_path) ... ok
+test_making_one_is_open_and_reading_one_is_not (test.unit.services.test_access.SpecificationRouteTests.test_making_one_is_open_and_reading_one_is_not) ... ok
+test_reading_one_needs_that_specification (test.unit.services.test_access.SpecificationRouteTests.test_reading_one_needs_that_specification) ... ok
+test_the_list_is_open_and_answered_with_their_own (test.unit.services.test_access.SpecificationRouteTests.test_the_list_is_open_and_answered_with_their_own) ... ok
+test_a_secret_sealed_with_another_key_reads_as_nothing (test.unit.services.test_auth_db.DeploymentAccountTests.test_a_secret_sealed_with_another_key_reads_as_nothing) ... ok
+test_a_token_comes_back_but_is_unreadable_in_the_database (test.unit.services.test_auth_db.DeploymentAccountTests.test_a_token_comes_back_but_is_unreadable_in_the_database) ... ok
+test_one_persons_accounts_are_never_anothers (test.unit.services.test_auth_db.DeploymentAccountTests.test_one_persons_accounts_are_never_anothers) ... ok
+test_saving_one_account_leaves_the_others_alone (test.unit.services.test_auth_db.DeploymentAccountTests.test_saving_one_account_leaves_the_others_alone) ... ok
+test_a_claim_never_moves_a_project_to_someone_else (test.unit.services.test_auth_db.OwnershipTests.test_a_claim_never_moves_a_project_to_someone_else) ... ok
+test_a_deleted_project_lets_the_name_be_claimed_again (test.unit.services.test_auth_db.OwnershipTests.test_a_deleted_project_lets_the_name_be_claimed_again) ... ok
+test_the_named_admin_wins_over_the_first_account (test.unit.services.test_auth_db.OwnershipTests.test_the_named_admin_wins_over_the_first_account) ... ok
+test_what_nobody_owns_is_the_admins_alone (test.unit.services.test_auth_db.OwnershipTests.test_what_nobody_owns_is_the_admins_alone) ... ok
+test_what_one_person_builds_is_not_another_persons (test.unit.services.test_auth_db.OwnershipTests.test_what_one_person_builds_is_not_another_persons) ... ok
+test_a_session_is_kept_as_a_hash_and_ends_on_sign_out (test.unit.services.test_auth_db.SignInTests.test_a_session_is_kept_as_a_hash_and_ends_on_sign_out) ... ok
+test_an_expired_session_signs_nobody_in (test.unit.services.test_auth_db.SignInTests.test_an_expired_session_signs_nobody_in) ... ok
+test_guessing_stops_being_answered (test.unit.services.test_auth_db.SignInTests.test_guessing_stops_being_answered) ... ok
+test_the_wrong_password_says_nothing_about_which_half_was_wrong (test.unit.services.test_auth_db.SignInTests.test_the_wrong_password_says_nothing_about_which_half_was_wrong) ... ok
+test_a_name_or_address_is_only_registered_once (test.unit.services.test_auth_db.SignUpTests.test_a_name_or_address_is_only_registered_once) ... ok
+test_a_short_password_is_refused (test.unit.services.test_auth_db.SignUpTests.test_a_short_password_is_refused) ... ok
+test_signing_up_signs_in_and_the_password_is_not_stored (test.unit.services.test_auth_db.SignUpTests.test_signing_up_signs_in_and_the_password_is_not_stored) ... ok
+test_the_first_account_adopts_what_was_here_before_accounts (test.unit.services.test_auth_db.SignUpTests.test_the_first_account_adopts_what_was_here_before_accounts) ... ok
 test_a_manifest_means_a_build_happened (test.unit.services.test_build_attachments.SpecificationOnlyProjectTests.test_a_manifest_means_a_build_happened) ... ok
 test_a_project_that_never_had_a_specification_is_not_one (test.unit.services.test_build_attachments.SpecificationOnlyProjectTests.test_a_project_that_never_had_a_specification_is_not_one) ... ok
 test_a_single_source_file_means_a_build_happened (test.unit.services.test_build_attachments.SpecificationOnlyProjectTests.test_a_single_source_file_means_a_build_happened) ... ok
@@ -463,7 +538,7 @@ test_explicit_new_build_starts_its_own_conversation (test.unit.services.test_con
 test_failed_save_leaves_the_previous_transcript_intact (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_failed_save_leaves_the_previous_transcript_intact) ... ok
 test_first_feature_keeps_the_build_transcript (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_first_feature_keeps_the_build_transcript) ... ok
 test_older_projects_recover_saved_chat_without_inventing_tool_evidence (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_older_projects_recover_saved_chat_without_inventing_tool_evidence) ... ok
-test_opening_the_preview_keeps_the_conversation (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_opening_the_preview_keeps_the_conversation) ... ok
+test_opening_the_preview_keeps_the_conversation (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_opening_the_preview_keeps_the_conversation) ... FAIL
 test_restart_preserves_compaction_design_and_usage (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_restart_preserves_compaction_design_and_usage) ... ok
 test_saved_conversation_cannot_cross_project_boundaries (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_saved_conversation_cannot_cross_project_boundaries) ... ok
 test_switching_projects_restores_the_right_history (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_switching_projects_restores_the_right_history) ... ok
@@ -479,19 +554,44 @@ test_the_running_application_is_photographed_from_the_dev_server (test.unit.serv
 test_a_drawing_may_serve_its_own_script (test.unit.services.test_drawing_preview.TheDrawingMayServeItsScriptTests.test_a_drawing_may_serve_its_own_script) ... ok
 test_the_page_and_the_stylesheet_still_may (test.unit.services.test_drawing_preview.TheDrawingMayServeItsScriptTests.test_the_page_and_the_stylesheet_still_may) ... ok
 test_the_path_guard_is_still_there (test.unit.services.test_drawing_preview.TheDrawingMayServeItsScriptTests.test_the_path_guard_is_still_there) ... ok
+test_activity_requires_current_runtime_and_matching_origin (test.unit.services.test_preview_http.PreviewHTTPTests.test_activity_requires_current_runtime_and_matching_origin) ... ok
+test_browser_refresh_starts_stopped_app_and_reuses_running_app (test.unit.services.test_preview_http.PreviewHTTPTests.test_browser_refresh_starts_stopped_app_and_reuses_running_app) ... FAIL
+test_generated_origin_cannot_access_management_api_or_old_bridge (test.unit.services.test_preview_http.PreviewHTTPTests.test_generated_origin_cannot_access_management_api_or_old_bridge) ... ok
+test_proxy_injects_bridge_preserves_body_and_does_not_touch_activity (test.unit.services.test_preview_http.PreviewHTTPTests.test_proxy_injects_bridge_preserves_body_and_does_not_touch_activity) ... ok
+test_stopped_background_requests_and_status_never_start_app (test.unit.services.test_preview_http.PreviewHTTPTests.test_stopped_background_requests_and_status_never_start_app) ... ok
+test_activity_extends_deadline_but_status_reads_do_not (test.unit.services.test_preview_registry.RegistryTests.test_activity_extends_deadline_but_status_reads_do_not) ... ok
+test_build_lease_starts_clock_after_completion (test.unit.services.test_preview_registry.RegistryTests.test_build_lease_starts_clock_after_completion) ... ok
+test_busy_ports_are_skipped_and_external_listener_survives (test.unit.services.test_preview_registry.RegistryTests.test_busy_ports_are_skipped_and_external_listener_survives) ... ok
+test_concurrent_allocations_are_distinct (test.unit.services.test_preview_registry.RegistryTests.test_concurrent_allocations_are_distinct) ... ok
+test_duplicate_open_joins_startup_and_other_project_can_start (test.unit.services.test_preview_registry.RegistryTests.test_duplicate_open_joins_startup_and_other_project_can_start) ... ok
+test_host_identity_is_stable_and_distinct (test.unit.services.test_preview_registry.RegistryTests.test_host_identity_is_stable_and_distinct) ... ok
+test_idle_boundary_and_other_project_activity (test.unit.services.test_preview_registry.RegistryTests.test_idle_boundary_and_other_project_activity) ... ok
+test_local_url_overrides_follow_ports_without_changing_external_dependencies (test.unit.services.test_preview_registry.RegistryTests.test_local_url_overrides_follow_ports_without_changing_external_dependencies) ... ok
+test_old_activity_cannot_extend_a_restarted_runtime (test.unit.services.test_preview_registry.RegistryTests.test_old_activity_cannot_extend_a_restarted_runtime) ... ok
+test_reopen_running_reuses_process (test.unit.services.test_preview_registry.RegistryTests.test_reopen_running_reuses_process) ... ok
+test_stale_failure_does_not_stop_replacement (test.unit.services.test_preview_registry.RegistryTests.test_stale_failure_does_not_stop_replacement) ... ok
+test_startup_failure_stops_only_owned_tree (test.unit.services.test_preview_registry.RegistryTests.test_startup_failure_stops_only_owned_tree) ... ok
 test_a_failed_internal_service_cannot_be_hidden_by_the_gateway (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_a_failed_internal_service_cannot_be_hidden_by_the_gateway) ... ok
 test_a_missing_client_bundle_cannot_be_reported_ready (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_a_missing_client_bundle_cannot_be_reported_ready) ... ok
-test_client_and_all_declared_services_are_probed (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_client_and_all_declared_services_are_probed) ... ok
+test_bind_races_retry_only_owned_startups_at_most_three_times (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_bind_races_retry_only_owned_startups_at_most_three_times) ... 
+  test_bind_races_retry_only_owned_startups_at_most_three_times (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_bind_races_retry_only_owned_startups_at_most_three_times) (failures=1) ... FAIL
+  test_bind_races_retry_only_owned_startups_at_most_three_times (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_bind_races_retry_only_owned_startups_at_most_three_times) (failures=3) ... FAIL
+test_client_and_all_allocated_services_are_probed (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_client_and_all_allocated_services_are_probed) ... ok
 test_local_port_override_does_not_wait_for_the_example_port (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_local_port_override_does_not_wait_for_the_example_port) ... ok
-test_old_startup_cannot_claim_the_next_projects_ready_response (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_old_startup_cannot_claim_the_next_projects_ready_response) ... ok
+test_old_startup_cannot_claim_a_replacement_response (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_old_startup_cannot_claim_a_replacement_response) ... ok
 test_only_a_missing_or_changed_client_bundle_is_built (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_only_a_missing_or_changed_client_bundle_is_built) ... ok
-test_replaced_open_never_stops_or_completes_the_new_project (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_replaced_open_never_stops_or_completes_the_new_project) ... ok
-test_root_supervisor_receives_project_environment_and_public_port (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_root_supervisor_receives_project_environment_and_public_port) ... ok
+test_root_supervisor_receives_project_environment_and_allocated_ports (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_root_supervisor_receives_project_environment_and_allocated_ports) ... ok
+test_runtime_info_allocates_before_the_first_agent_command (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_runtime_info_allocates_before_the_first_agent_command) ... ok
+test_cleanup_after_parent_exit_releases_child_port (test.unit.services.test_process_tree.ProcessTreeTests.test_cleanup_after_parent_exit_releases_child_port) ... ok
 test_a_data_uri_is_unwrapped_before_it_reaches_the_model (test.unit.services.test_selection_edit.AttachmentShapeTests.test_a_data_uri_is_unwrapped_before_it_reaches_the_model)
 The browser needs the `data:` prefix to render it; Ollama chokes on it. ... ok
 test_a_drawing_is_told_apart_from_a_click (test.unit.services.test_selection_edit.AttachmentShapeTests.test_a_drawing_is_told_apart_from_a_click) ... ok
 test_one_element_or_many_arrive_the_same_way (test.unit.services.test_selection_edit.AttachmentShapeTests.test_one_element_or_many_arrive_the_same_way)
 The old contract sent a bare dict; the studio now sends a list. ... ok
+test_a_drawing_is_named_as_this_image (test.unit.services.test_selection_edit.PointedAtTests.test_a_drawing_is_named_as_this_image) ... ok
+test_a_selection_is_named_as_this_section_or_sections (test.unit.services.test_selection_edit.PointedAtTests.test_a_selection_is_named_as_this_section_or_sections) ... ok
+test_the_model_hears_it_and_the_studio_does_not (test.unit.services.test_selection_edit.PointedAtTests.test_the_model_hears_it_and_the_studio_does_not) ... ok
+test_the_photograph_of_a_click_is_not_a_drawing (test.unit.services.test_selection_edit.PointedAtTests.test_the_photograph_of_a_click_is_not_a_drawing) ... ok
 test_a_box_at_the_top_left_is_not_pushed_off_the_page (test.unit.services.test_selection_edit.ScreenshotGeometryTests.test_a_box_at_the_top_left_is_not_pushed_off_the_page) ... ok
 test_a_drawing_is_photographed_with_room_around_it (test.unit.services.test_selection_edit.ScreenshotGeometryTests.test_a_drawing_is_photographed_with_room_around_it) ... ok
 test_a_stray_click_is_not_a_drawing (test.unit.services.test_selection_edit.ScreenshotGeometryTests.test_a_stray_click_is_not_a_drawing) ... ok
@@ -521,9 +621,14 @@ test_a_connection_string_is_not_mistaken_for_a_port (test.unit.services.test_ser
 test_a_privileged_or_nonsense_value_is_ignored (test.unit.services.test_server_wiring.DeclaredPortTests.test_a_privileged_or_nonsense_value_is_ignored) ... ok
 test_a_project_that_declares_nothing_frees_nothing (test.unit.services.test_server_wiring.DeclaredPortTests.test_a_project_that_declares_nothing_frees_nothing) ... ok
 test_every_port_the_project_declares_is_found (test.unit.services.test_server_wiring.DeclaredPortTests.test_every_port_the_project_declares_is_found) ... ok
+test_port_cleanup_never_discovers_unrelated_processes (test.unit.services.test_server_wiring.DeclaredPortTests.test_port_cleanup_never_discovers_unrelated_processes) ... ok
 test_the_local_file_and_the_example_are_read_without_duplicates (test.unit.services.test_server_wiring.DeclaredPortTests.test_the_local_file_and_the_example_are_read_without_duplicates) ... ok
-test_the_preview_port_is_left_to_the_dev_server_that_owns_it (test.unit.services.test_server_wiring.DeclaredPortTests.test_the_preview_port_is_left_to_the_dev_server_that_owns_it)
-Freeing it here would kill the server being started moments later. ... ok
+test_element_with_prototype_route_is_html_modification (test.unit.services.test_server_wiring.HtmlModificationTests.test_element_with_prototype_route_is_html_modification) ... ok
+test_html_modification_bypasses_tests_and_verification (test.unit.services.test_server_wiring.HtmlModificationTests.test_html_modification_bypasses_tests_and_verification) ... ok
+test_prompt_targeting_prototype_when_prototype_dir_exists (test.unit.services.test_server_wiring.HtmlModificationTests.test_prompt_targeting_prototype_when_prototype_dir_exists) ... ok
+test_prototype_only_project_is_html_modification (test.unit.services.test_server_wiring.HtmlModificationTests.test_prototype_only_project_is_html_modification) ... ok
+test_regular_app_edit_is_not_html_modification (test.unit.services.test_server_wiring.HtmlModificationTests.test_regular_app_edit_is_not_html_modification) ... ok
+test_route_pointing_to_prototype_is_html_modification (test.unit.services.test_server_wiring.HtmlModificationTests.test_route_pointing_to_prototype_is_html_modification) ... ok
 test_a_selection_of_several_elements_travels_whole (test.unit.services.test_server_wiring.MessageDispatchTests.test_a_selection_of_several_elements_travels_whole)
 Clicking three things has to send three things, with their pictures. ... ok
 test_a_stack_chosen_in_the_studio_reaches_the_run (test.unit.services.test_server_wiring.MessageDispatchTests.test_a_stack_chosen_in_the_studio_reaches_the_run)
@@ -563,6 +668,39 @@ Blank is honest; zero would claim a context that was measured. ... ok
 test_nothing_is_written_for_an_agent_that_cannot_be_measured (test.unit.services.test_server_wiring.SessionStatsTests.test_nothing_is_written_for_an_agent_that_cannot_be_measured) ... ok
 test_what_a_run_spent_is_written_down_with_the_project (test.unit.services.test_server_wiring.SessionStatsTests.test_what_a_run_spent_is_written_down_with_the_project)
 A conversation dies with the backend; the project outlives it. ... ok
+test_a_run_is_started_in_the_name_of_whoever_asked (test.unit.services.test_tenancy.DeploymentRequestTests.test_a_run_is_started_in_the_name_of_whoever_asked) ... ok
+test_a_vercel_check_uses_their_own_saved_token (test.unit.services.test_tenancy.DeploymentRequestTests.test_a_vercel_check_uses_their_own_saved_token) ... ok
+test_an_aws_browser_sign_in_is_allowed_under_their_own_profile (test.unit.services.test_tenancy.DeploymentRequestTests.test_an_aws_browser_sign_in_is_allowed_under_their_own_profile) ... ok
+test_an_aws_profile_is_named_for_the_person_asking (test.unit.services.test_tenancy.DeploymentRequestTests.test_an_aws_profile_is_named_for_the_person_asking) ... ok
+test_an_empty_profile_does_not_fall_back_to_this_machines_account (test.unit.services.test_tenancy.DeploymentRequestTests.test_an_empty_profile_does_not_fall_back_to_this_machines_account) ... ok
+test_nobody_can_deploy_with_someone_elses_aws_profile (test.unit.services.test_tenancy.DeploymentRequestTests.test_nobody_can_deploy_with_someone_elses_aws_profile) ... ok
+test_signing_this_machine_in_is_refused (test.unit.services.test_tenancy.DeploymentRequestTests.test_signing_this_machine_in_is_refused) ... ok
+test_stored_credentials_are_never_taken_from_a_request (test.unit.services.test_tenancy.DeploymentRequestTests.test_stored_credentials_are_never_taken_from_a_request) ... ok
+test_a_list_of_deployments_shows_only_their_own (test.unit.services.test_tenancy.DeploymentViewTests.test_a_list_of_deployments_shows_only_their_own) ... ok
+test_the_accounts_view_shows_their_own_sign_ins (test.unit.services.test_tenancy.DeploymentViewTests.test_the_accounts_view_shows_their_own_sign_ins) ... ok
+test_a_deployment_belongs_to_whoever_owns_its_project (test.unit.services.test_tenancy.MayTests.test_a_deployment_belongs_to_whoever_owns_its_project) ... ok
+test_a_file_under_a_project_is_the_projects (test.unit.services.test_tenancy.MayTests.test_a_file_under_a_project_is_the_projects) ... ok
+test_a_job_belongs_to_whoever_started_it (test.unit.services.test_tenancy.MayTests.test_a_job_belongs_to_whoever_started_it) ... ok
+test_a_project_is_only_its_owners (test.unit.services.test_tenancy.MayTests.test_a_project_is_only_its_owners) ... ok
+test_a_specification_is_only_its_owners (test.unit.services.test_tenancy.MayTests.test_a_specification_is_only_its_owners) ... ok
+test_agentforges_own_settings_are_the_admins (test.unit.services.test_tenancy.MayTests.test_agentforges_own_settings_are_the_admins) ... ok
+test_nobody_signed_in_may_do_nothing (test.unit.services.test_tenancy.MayTests.test_nobody_signed_in_may_do_nothing) ... ok
+test_a_build_is_reported_only_to_whoever_owns_the_project (test.unit.services.test_tenancy.MessageDeliveryTests.test_a_build_is_reported_only_to_whoever_owns_the_project) ... ok
+test_a_message_about_no_project_goes_to_whoever_it_is_for (test.unit.services.test_tenancy.MessageDeliveryTests.test_a_message_about_no_project_goes_to_whoever_it_is_for) ... ok
+test_the_server_talking_about_itself_is_for_everyone (test.unit.services.test_tenancy.MessageDeliveryTests.test_the_server_talking_about_itself_is_for_everyone) ... ok
+test_a_generated_app_on_its_own_preview_host_is_not_the_studio (test.unit.services.test_tenancy.RequestOriginTests.test_a_generated_app_on_its_own_preview_host_is_not_the_studio) ... ok
+test_a_page_on_another_site_cannot_act_on_this_ones_cookie (test.unit.services.test_tenancy.RequestOriginTests.test_a_page_on_another_site_cannot_act_on_this_ones_cookie) ... ok
+test_something_that_is_not_a_browser_carries_no_cookie_to_ride_on (test.unit.services.test_tenancy.RequestOriginTests.test_something_that_is_not_a_browser_carries_no_cookie_to_ride_on) ... ok
+test_the_first_forwarded_address_is_the_one_the_browser_used (test.unit.services.test_tenancy.RequestOriginTests.test_the_first_forwarded_address_is_the_one_the_browser_used) ... ok
+test_the_studios_own_page_is_trusted_through_its_proxy (test.unit.services.test_tenancy.RequestOriginTests.test_the_studios_own_page_is_trusted_through_its_proxy) ... ok
+test_signing_out_removes_it (test.unit.services.test_tenancy.SessionCookieTests.test_signing_out_removes_it) ... ok
+test_the_cookie_is_out_of_reach_of_a_page_and_of_other_sites (test.unit.services.test_tenancy.SessionCookieTests.test_the_cookie_is_out_of_reach_of_a_page_and_of_other_sites) ... ok
+test_agentforges_own_key_and_database_are_not_shown_to_everyone (test.unit.services.test_tenancy.SettingsViewTests.test_agentforges_own_key_and_database_are_not_shown_to_everyone) ... ok
+test_each_person_sees_their_own_deployment_accounts (test.unit.services.test_tenancy.SettingsViewTests.test_each_person_sees_their_own_deployment_accounts) ... ok
+test_the_admin_still_sees_them (test.unit.services.test_tenancy.SettingsViewTests.test_the_admin_still_sees_them) ... ok
+test_a_finished_job_makes_the_new_specification_its_starters (test.unit.services.test_tenancy.SpecificationViewTests.test_a_finished_job_makes_the_new_specification_its_starters) ... ok
+test_a_listing_job_is_answered_with_their_own (test.unit.services.test_tenancy.SpecificationViewTests.test_a_listing_job_is_answered_with_their_own) ... ok
+test_the_list_is_cut_down_to_their_own (test.unit.services.test_tenancy.SpecificationViewTests.test_the_list_is_cut_down_to_their_own) ... ok
 test_entity_hint_singularizes_plain_plural_names (test.unit.srs.test_builder_handoff.BuilderHandoffTests.test_entity_hint_singularizes_plain_plural_names) ... ok
 test_page_and_api_paths_follow_next_app_router_layout (test.unit.srs.test_builder_handoff.BuilderHandoffTests.test_page_and_api_paths_follow_next_app_router_layout) ... ok
 test_reference_field_preserves_object_id_semantics (test.unit.srs.test_builder_handoff.BuilderHandoffTests.test_reference_field_preserves_object_id_semantics) ... ok
@@ -616,7 +754,41 @@ test_stable_server_entrypoint_delegates_to_shared_runtime (test.integration.test
 test_the_agents_are_importable_packages_beside_the_server (test.integration.test_runtime_composition.SharedRuntimeCompositionTests.test_the_agents_are_importable_packages_beside_the_server)
 The agents are libraries, not runtime parts. ... ok
 
+======================================================================
+FAIL: test_opening_the_preview_keeps_the_conversation (test.unit.services.test_conversation_continuity.ConversationContinuityTests.test_opening_the_preview_keeps_the_conversation)
 ----------------------------------------------------------------------
-Ran 534 tests in 26.066s
+Traceback (most recent call last):
+  File "D:\Github\RP-SE-009\test\unit\services\test_conversation_continuity.py", line 88, in test_opening_the_preview_keeps_the_conversation
+    opened.assert_called_once()
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.12_3.12.2800.0_x64__qbz5n2kfra8p0\Lib\unittest\mock.py", line 928, in assert_called_once
+    raise AssertionError(msg)
+AssertionError: Expected 'open' to have been called once. Called 0 times.
 
-OK
+======================================================================
+FAIL: test_browser_refresh_starts_stopped_app_and_reuses_running_app (test.unit.services.test_preview_http.PreviewHTTPTests.test_browser_refresh_starts_stopped_app_and_reuses_running_app)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\Github\RP-SE-009\test\unit\services\test_preview_http.py", line 91, in test_browser_refresh_starts_stopped_app_and_reuses_running_app
+    self.assertTrue(self.started.wait(2))
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_bind_races_retry_only_owned_startups_at_most_three_times (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_bind_races_retry_only_owned_startups_at_most_three_times) (failures=1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\Github\RP-SE-009\test\unit\services\test_preview_runtime.py", line 94, in test_bind_races_retry_only_owned_startups_at_most_three_times
+    self.assertEqual(server.launch_runtime(self.runtime, self.runtime.generation), failures == 1)
+AssertionError: False != True
+
+======================================================================
+FAIL: test_bind_races_retry_only_owned_startups_at_most_three_times (test.unit.services.test_preview_runtime.PreviewReadinessTests.test_bind_races_retry_only_owned_startups_at_most_three_times) (failures=3)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\Github\RP-SE-009\test\unit\services\test_preview_runtime.py", line 95, in test_bind_races_retry_only_owned_startups_at_most_three_times
+    self.assertEqual(len(processes), min(failures + 1, 3))
+AssertionError: 0 != 3
+
+----------------------------------------------------------------------
+Ran 670 tests in 40.631s
+
+FAILED (failures=4)

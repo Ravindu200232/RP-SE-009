@@ -34,13 +34,15 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
         self.send_header("Content-Length", "0")
         self.end_headers()
 
-    def _json(self, payload, code=200):
+    def _json(self, payload, code=200, extra=()):
         data = json.dumps(payload).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+        for k, v in extra:
+            self.send_header(k, v)
         self.end_headers()
         self.wfile.write(data)
 
@@ -56,6 +58,8 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
                 and self.headers.get("Upgrade", "").lower() == "websocket")
 
     def do_GET(self):
+        # One connection carries many requests: a POST's body is not this GET's.
+        self._raw = b""
         if self._on_preview_host():
             return self._preview_request("GET")
         ours, path = self._split()
@@ -71,7 +75,7 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
                 return
             return self._proxy("GET")
         if path.startswith("/api/"):
-            return self._guarded(self._api_get, path[4:])
+            return self._guarded(self._api, path[4:])
         return self._serve_ui(path)
 
     def do_HEAD(self):
@@ -128,6 +132,72 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _api(self, path):
+        """Every API request is signed in, and checked before it is answered (access.py)."""
+        if path.startswith("/auth/"):
+            return self._auth(path[5:])
+        user = request_user(self.headers)
+        if user is None:
+            return self._json({"error": "sign in to continue", "auth": "required"}, 401)
+        _, from_cookie = session_token(self.headers)
+        if from_cookie and self.command != "GET" and not trusted(self.headers):
+            return self._json({"error": "that request did not come from the studio"}, 403)
+        kind, key = access_rule(self.command, path, self._body())
+        if not may(user, kind, key):
+            if kind == "run" and self.command == "GET":
+                return self._json({"pending": []})   # someone else's build asks them nothing
+            # Someone else's things are not there, as far as anyone else can tell.
+            hidden = kind in ("project", "srs", "job", "srs-job", "deploy-run", "deploy-job",
+                              "project-path", "run")
+            return self._json({"error": "not found" if hidden else "only the admin can do that"},
+                              404 if hidden else 403)
+        act_as(user)
+        try:
+            return (self._api_get if self.command == "GET" else self._api_post)(path)
+        finally:
+            act_as(None)
+
+    def _https(self) -> bool:
+        """Did the browser reach the studio over HTTPS? Behind a proxy, it says so."""
+        return (str(self.headers.get("X-Forwarded-Proto", ""))
+                .split(",")[0].strip().lower() == "https")
+
+    def _auth(self, path):
+        """Sign up, sign in, sign out, and who is signed in."""
+        secure = self._https()
+        token, _ = session_token(self.headers)
+        if path == "/me" and self.command == "GET":
+            user = auth_db.get_user_by_token(token)
+            if user is None:
+                return self._json({"error": "sign in to continue", "auth": "required"}, 401)
+            # Signed in by the header alone, the frames and the socket still need the cookie.
+            return self._json({"ok": True, "user": user},
+                              extra=(("Set-Cookie", session_cookie(token, secure=secure)),))
+        if self.command != "POST":
+            return self._json({"error": "method not allowed"}, 405)
+        if not trusted(self.headers):
+            return self._json({"error": "that request did not come from the studio"}, 403)
+        body = self._body()
+        if path == "/logout":
+            auth_db.logout_user(token)
+            return self._json({"ok": True},
+                              extra=(("Set-Cookie", session_cookie("", secure=secure)),))
+        if path == "/signup":
+            result = auth_db.signup_user(username=body.get("username", ""),
+                                         email=body.get("email", ""),
+                                         password=body.get("password", ""),
+                                         name=body.get("name", ""))
+        elif path == "/login":
+            result = auth_db.login_user(
+                login=body.get("login") or body.get("email") or body.get("username", ""),
+                password=body.get("password", ""))
+        else:
+            return self._json({"error": f"unknown endpoint /auth{path}"}, 404)
+        if result.get("error"):
+            return self._json(result, 400)
+        return self._json(result, extra=(
+            ("Set-Cookie", session_cookie(result["token"], secure=secure)),))
+
     def _api_get(self, path):
         if path.startswith("/runtime/"):
             try:
@@ -149,44 +219,14 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
             except KeyError as e:
                 return self._json({"error": str(e)}, 404)
         if path.startswith("/deploy/"):
-            return self._proxy_deploy("GET", "/api" + path[7:])
+            return self._deploy_for_user("GET", "/api" + path[7:])
         if path == "/deploy-status":
             return self._json(deploy_status())
         if path.startswith("/deploy-results/"):
             return self._json(read_deploy_results(path[16:].strip("/")))
-        if path == "/auth/me":
-            auth_header = self.headers.get("Authorization", "")
-            token = auth_header.replace("Bearer ", "").strip() if auth_header.startswith("Bearer ") else ""
-            if not token:
-                return self._json({"error": "Unauthorized"}, 401)
-            try:
-                from server_modules.services.auth_db import get_user_by_token
-                user = get_user_by_token(token)
-                if not user:
-                    return self._json({"error": "Invalid or expired token"}, 401)
-                return self._json({"ok": True, "user": user})
-            except Exception as e:
-                return self._json({"error": str(e)}, 500)
         if path == "/projects":
-            auth_header = self.headers.get("Authorization", "")
-            token = auth_header.replace("Bearer ", "").strip() if auth_header.startswith("Bearer ") else ""
-            all_projs = list_projects()
-            if not token:
-                return self._json([])
-            try:
-                from server_modules.services.auth_db import get_user_by_token, get_user_project_names, assign_project_to_user
-                user = get_user_by_token(token)
-                if not user:
-                    return self._json([])
-                user_projs = set(get_user_project_names(user["id"]))
-                if not user_projs and all_projs:
-                    for p in all_projs:
-                        assign_project_to_user(user["id"], p["name"])
-                    user_projs = set(get_user_project_names(user["id"]))
-                filtered = [p for p in all_projs if p["name"] in user_projs]
-                return self._json(filtered)
-            except Exception:
-                return self._json(all_projs)
+            # Only this person's. Nothing is handed to anyone for having none yet.
+            return self._json([p for p in list_projects() if visible_project(p["name"])])
         elif path == "/image-check":
 
             agent = image_agent()
@@ -212,7 +252,7 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
             s = load_settings()
             key = ollama.api_key
             uri = str(s.get("mongodb_uri", "")).strip()
-            self._json({
+            self._json(shared_settings({
                 "ollama_host": ollama.host,
                 "cloud_enabled": ollama.cloud_ready(),
                 "cloud_via": ("api-key" if key
@@ -227,8 +267,8 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
                 "mongodb_uri_hint": _redact_uri(uri),
                 "mongo": MONGO.status(),
 
-                "deploy": deploy_settings_summary(),
-            })
+                "deploy": {},
+            }))
         elif path == "/mongo":
             self._json(MONGO.status())
         elif path.startswith("/files/"):
@@ -373,7 +413,7 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
         self._raw = self.rfile.read(length) if length else b""
         if not path.startswith("/api/"):
             return self._json({"error": "not found"}, 404)
-        self._guarded(self._api_post, path[4:])
+        self._guarded(self._api, path[4:])
 
     def _guarded(self, fn, path):
         """
@@ -431,20 +471,14 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
                 return self._json(job_start(
                     str(body.get("method", "POST")).upper(),
                     str(body.get("path", "")),
-                    body.get("body") or {}))
+                    body.get("body") or {},
+                    headers=self._forward_auth()))
             except ValueError as e:
                 return self._json({"error": str(e)}, 400)
         if path == "/deploy/jobs":
-            body = self._body()
-            try:
-                return self._json(deploy_job_start(
-                    str(body.get("method", "POST")).upper(),
-                    "/api" + str(body.get("path", "")),
-                    body.get("body") or {}))
-            except ValueError as e:
-                return self._json({"error": str(e)}, 400)
+            return self._deploy_job_for_user(self._body())
         if path.startswith("/deploy/"):
-            return self._proxy_deploy("POST", "/api" + path[7:])
+            return self._deploy_for_user("POST", "/api" + path[7:])
         if path == "/deploy-start":
             body = self._body()
             try:
@@ -467,11 +501,11 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
             out = resolve_decision(str(body.get("id", "")), body)
             return self._json(out, 404 if out.get("error") else 200)
         if path == "/build/cancel":
-            out = cancel.request()
-            return self._json(out, 200 if out.get("ok") else 409)
+            # Their own run, or their place in the line - never someone else's build.
+            return self._json(*cancel_mine())
         if path == "/resume":
             body = self._body()
-            threading.Thread(
+            run_thread(
                 target=run_agent_pipeline,
                 args=("", body.get("model") or default_agent_model(),
                       _think_flag(body),
@@ -571,7 +605,7 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
                         "url": (f"/generated/{name}.png" if proj else "")})
         elif path == "/agent-build":
             body = self._body()
-            threading.Thread(
+            run_thread(
                 target=run_agent_pipeline,
                 args=(body.get("prompt", ""),
                       body.get("model") or default_agent_model(),
@@ -585,7 +619,7 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
             self._json({"ok": True})
         elif path == "/element-edit":
             body = self._body()
-            threading.Thread(
+            run_thread(
                 target=run_element_edit,
                 args=(body.get("project", ""), body.get("prompt", ""),
                       body.get("elements") or body.get("element") or {},
@@ -654,7 +688,7 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
                                         body.get("id", "")))
         elif path == "/feature":
             body = self._body()
-            threading.Thread(
+            run_thread(
                 target=run_feature,
                 args=(body.get("project", ""),
                       body.get("prompt", ""),
@@ -668,7 +702,7 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
             self._json({"ok": True})
         elif path == "/agent-update":
             body = self._body()
-            threading.Thread(
+            run_thread(
                 target=run_chat,
                 args=(body.get("project", ""), body.get("prompt", ""),
                       body.get("model") or default_agent_model(),
@@ -683,48 +717,27 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
                 self._json({"ok": True, **_open_project(unquote(path[6:].strip("/")))})
             except ValueError as error:
                 self._json({"error": str(error)}, 404)
-        elif path == "/auth/signup":
-            body = self._body()
-            from server_modules.services.auth_db import signup_user
-            res = signup_user(
-                username=body.get("username", ""),
-                email=body.get("email", ""),
-                password=body.get("password", ""),
-                name=body.get("name", ""),
-            )
-            return self._json(res, 400 if "error" in res else 200)
-        elif path == "/auth/login":
-            body = self._body()
-            from server_modules.services.auth_db import login_user
-            res = login_user(
-                login=body.get("login") or body.get("email") or body.get("username", ""),
-                password=body.get("password", ""),
-            )
-            return self._json(res, 400 if "error" in res else 200)
-        elif path == "/auth/logout":
-            auth_header = self.headers.get("Authorization", "")
-            token = auth_header.replace("Bearer ", "").strip() if auth_header.startswith("Bearer ") else ""
-            if token:
-                from server_modules.services.auth_db import logout_user
-                logout_user(token)
-            return self._json({"ok": True})
         elif path == "/projects/assign":
-            body = self._body()
-            auth_header = self.headers.get("Authorization", "")
-            token = auth_header.replace("Bearer ", "").strip() if auth_header.startswith("Bearer ") else ""
-            proj_name = str(body.get("project") or "").strip()
-            if token and proj_name:
-                from server_modules.services.auth_db import get_user_by_token, assign_project_to_user
-                user = get_user_by_token(token)
-                if user:
-                    assign_project_to_user(user["id"], proj_name)
-                    return self._json({"ok": True})
-            return self._json({"ok": False, "error": "Unauthorized or missing project"}, 400)
+            # A new project is its builder's the moment it is made (pipeline.py).
+            # This only confirms that - it never moves one.
+            self._json({"ok": True})
         elif path == "/mongo/prefetch":
             threading.Thread(target=MONGO.prefetch, daemon=True).start()
             self._json({"ok": True})
         elif path == "/settings":
             body = self._body()
+            user = acting() or {}
+            server_keys = ("ollama_api_key", "mongodb_uri", "ollama_host", "lan_access",
+                           "image_enabled", "image_host", "image_config", "image_launcher",
+                           "local_num_ctx", "agent_model")
+            if any(key in body for key in server_keys) and not user.get("admin"):
+                return self._json({"error": "only the admin can change AgentForge's own settings "
+                                            "- your deployment accounts are under Deploy"}, 403)
+            try:
+                # Each person's deployment accounts are their own (deploy_tenancy.py).
+                deploy = save_deploy_settings(user, body)
+            except ValueError as error:
+                return self._json({"error": str(error)}, 400)
             patch = {}
             if "ollama_api_key" in body:
                 patch["ollama_api_key"] = str(body["ollama_api_key"]).strip()
@@ -751,20 +764,10 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
                 patch["agent_model"] = str(body["agent_model"]).strip()
             # No srs_model or deploy_model: those two agents use one fixed model
             # (see their bridges), and the studio's picker is for the build.
-            for key in ("aws_profile", "aws_region", "aws_start_url",
-                        "aws_sso_region"):
-                if key in body:
-                    patch[key] = str(body[key]).strip()
-            if "vercel_token" in body:
-                v = str(body["vercel_token"]).strip()
-                patch["vercel_token"] = "" if v == "-" else v
-            if "deploy_mongodb_uri" in body:
-                v = str(body["deploy_mongodb_uri"]).strip()
-                patch["deploy_mongodb_uri"] = "" if v == "-" else v
-            ok = save_settings(patch)
+            ok = save_settings(patch) if patch else True
             if patch.get("ollama_host"):
                 ollama.host = patch["ollama_host"].rstrip("/")
-            self._json({"ok": ok, "cloud_enabled": ollama.cloud_ready(),
+            self._json({"ok": ok, "deploy": deploy, "cloud_enabled": ollama.cloud_ready(),
                         "cloud_reachable": ollama.cloud_reachable()
                         if ollama.api_key else ollama.signed_in()})
         elif path == "/upload-project":
@@ -773,6 +776,11 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
             files = body.get("files", {})
 
             pname = re.sub(r"[^a-z0-9]", "", name.lower())[:20] or "imported"
+            # Never written into someone else's project for having the same name.
+            if (PROD_DIR / pname).exists() and not visible_project(pname):
+                pname = project_name_for(pname)
+            if not claim_project(pname):
+                return self._json({"error": "that name was taken a moment ago - try again"}, 409)
             proj_dir = PROD_DIR / pname
             proj_dir.mkdir(parents=True, exist_ok=True)
 
@@ -809,6 +817,9 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
         if SRS_API["state"] in ("off", "import-failed"):
             return self._json({"error": "the SRS agent is not running",
                                "srs": srs_status()}, 503)
+
+        if path == "/jobs" or path.startswith("/jobs/") or (path == "/projects" and method == "GET"):
+            return self._proxy_srs_json(method, path)
 
         query = urlsplit(self.path).query
         url = f"http://127.0.0.1:{SRS_PORT}{path}" + (f"?{query}" if query else "")
@@ -850,6 +861,79 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
         except Exception:
             self.close_connection = True
 
+    def _forward_auth(self) -> dict:
+        """The caller's sign-in, for a request this server makes to itself for them."""
+        return {key: self.headers[key] for key in ("Authorization", "Cookie")
+                if self.headers.get(key)}
+
+    def _proxy_srs_json(self, method: str, path: str):
+        """An SRS job, or the list of specifications, read whole: who started a
+        job, what it created, and whose specifications a list may show."""
+        query = urlsplit(self.path).query
+        try:
+            r = requests.request(method, f"http://127.0.0.1:{SRS_PORT}{path}"
+                                 + (f"?{query}" if query else ""),
+                                 data=(self._raw or None) if method == "POST" else None,
+                                 headers={"Content-Type": "application/json"},
+                                 timeout=(2, 60))
+            answer = r.json()
+        except (requests.RequestException, ValueError) as e:
+            return self._json({"error": f"SRS agent unreachable: {e}",
+                               "srs": srs_status()}, 502)
+        user = acting()
+        if path == "/projects":
+            answer = visible_srs_list(answer, user)
+        elif method == "POST":
+            body = self._body()
+            srs_job_started(str((answer or {}).get("job_id") or ""), user,
+                            create=access_rule("POST", "/srs/jobs", body)[0] == "srs-create",
+                            listing=str(body.get("path") or "").split("?")[0] == "/projects")
+        else:
+            answer = srs_job_answered(path[len("/jobs/"):].strip("/"), answer, user)
+        return self._json(answer, r.status_code)
+
+    def _deploy_for_user(self, method: str, path: str):
+        """A request to the deployment agent, made for the person asking (deploy_tenancy.py)."""
+        user = acting()
+        try:
+            path, body, answer = deploy_request_for(user, method, path, self._body())
+        except ValueError as error:
+            return self._json({"error": str(error)}, 400)
+        if answer is not None:
+            return self._json(answer)
+        route = path.split("?")[0]
+        if method == "GET" and route in ("/api/onboarding/status", "/api/runs"):
+            try:
+                data = _deploy_call("GET", path, timeout=(2, 120))
+            except Exception as error:                                   # noqa: BLE001
+                return self._json({"error": str(error)}, 502)
+            return self._json(visible_onboarding(user, data)
+                              if route == "/api/onboarding/status" else visible_runs(user, data))
+        if method == "POST":
+            self._raw = json.dumps(body).encode()
+        return self._proxy_deploy(method, path)
+
+    def _deploy_job_for_user(self, body: dict):
+        """A deployment-agent job, rewritten for its starter and kept theirs."""
+        user = acting()
+        method = str(body.get("method", "POST")).upper()
+        try:
+            path, inner, answer = deploy_request_for(
+                user, method, "/api" + str(body.get("path", "")), body.get("body") or {})
+            if answer is not None:
+                started = deploy_job_done(answer)
+            else:
+                route = path.split("?")[0]
+                shown = ((lambda data: visible_onboarding(user, data))
+                         if method == "GET" and route == "/api/onboarding/status"
+                         else (lambda data: visible_runs(user, data))
+                         if method == "GET" and route == "/api/runs" else None)
+                started = deploy_job_start(method, path, inner, transform=shown)
+        except ValueError as error:
+            return self._json({"error": str(error)}, 400)
+        DEPLOY_JOB_OWNERS[started["job_id"]] = user["id"]
+        return self._json(started)
+
     def _proxy_deploy(self, method: str, path: str):
         """
         Hand this request to the deployment agent on DEPLOY_PORT.
@@ -871,8 +955,11 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
                + (f"?{query}" if query else ""))
 
         body = self._raw or None
+        # The agent is given the request, not the caller's sign-in - and the
+        # body's length as it now is, since it may have been rewritten.
         headers = {k: v for k, v in self.headers.items()
-                   if k.lower() not in HOP_BY_HOP}
+                   if k.lower() not in HOP_BY_HOP
+                   and k.lower() not in ("content-length", "cookie", "authorization")}
         headers["Accept-Encoding"] = "identity"
 
         try:

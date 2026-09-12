@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from .deployer_shared import *
 from .deployer_shared import _ACTIVE_PROJECTS, _ACTIVE_LOCK, _PERSISTED_ACTIVE_STATES, _CANCELLABLE_STATES
+from deployment_agent import owner_credentials
 
 
 class DeploymentLifecycleMixin:
@@ -82,13 +83,17 @@ class DeploymentLifecycleMixin:
             self.store.transition_run(run_id, RunState.DESTROYED, error="")
             self.emit(run_id, "step", "teardown", "complete", 100, "No cloud resources were created by this run")
             return {"deleted": [], "slug": slug}
+        # Torn down with the accounts it was deployed with (owner_credentials.py).
+        owner = str(repo.get("owner") or owner_credentials.owner())
         if target_of(run) is DeploymentTarget.VERCEL:
             threading.Thread(
-                target=self._teardown_vercel, args=(run_id, slug, repo), daemon=True
+                target=owner_credentials.carry(self._teardown_vercel, owner),
+                args=(run_id, slug, repo), daemon=True
             ).start()
             return {"accepted": True, "slug": slug}
         threading.Thread(
-            target=self._teardown_worker, args=(run_id, slug, repo, credential_reference), daemon=True
+            target=owner_credentials.carry(self._teardown_worker, owner),
+            args=(run_id, slug, repo, credential_reference), daemon=True
         ).start()
         return {"accepted": True, "slug": slug}
     def _teardown_vercel(self, run_id: str, slug: str, repo: dict[str, Any]) -> None:

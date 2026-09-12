@@ -180,10 +180,19 @@ class APIHandler(SimpleHTTPRequestHandler):
             return parts[2], "/".join(parts[3:])
         return None
 
+    @staticmethod
+    def _act_for(run: dict[str, Any], body: dict[str, Any] | None = None) -> None:
+        """Sign this request's work in as the run's owner (owner_credentials.py)."""
+        from deployment_agent import owner_credentials
+
+        repo = run.get("repo") if isinstance(run.get("repo"), dict) else {}
+        owner_credentials.set_owner(str(repo.get("owner") or (body or {}).get("owner") or ""))
+
     def _get_run_action(self, run_id: str, action: str, query: dict[str, list[str]]) -> None:
         run = STORE.get_run(run_id)
         if not run:
             return self._error(HTTPStatus.NOT_FOUND, "Run not found")
+        self._act_for(run)
         if not action:
             return self._json(public_run(run))
         if action == "domains":
@@ -296,6 +305,7 @@ class APIHandler(SimpleHTTPRequestHandler):
         run = STORE.get_run(run_id)
         if not run:
             return self._error(HTTPStatus.NOT_FOUND, "Run not found")
+        self._act_for(run, body)
         if action == "deploy":
             if body.get("approved") is not True:
                 raise ValueError("Deployment approval is required")
@@ -305,7 +315,8 @@ class APIHandler(SimpleHTTPRequestHandler):
             credential_reference = str(body.get("credential_reference", "")).strip()
             vercel_token = str(body.get("vercel_token", "")).strip()
             DEPLOYER.start_deployment(
-                run_id, profile, region, mongodb_uri, True, credential_reference, vercel_token
+                run_id, profile, region, mongodb_uri, True, credential_reference, vercel_token,
+                owner=str(body.get("owner", "")).strip(),
             )
             return self._json({"accepted": True, "run_id": run_id}, HTTPStatus.ACCEPTED)
         if action == "domains":
@@ -332,7 +343,10 @@ class APIHandler(SimpleHTTPRequestHandler):
                 HTTPStatus.ACCEPTED,
             )
         if action == "rollback":
-            threading.Thread(target=self._rollback, args=(run_id,), daemon=True).start()
+            from deployment_agent import owner_credentials
+
+            threading.Thread(target=owner_credentials.carry(self._rollback), args=(run_id,),
+                             daemon=True).start()
             return self._json({"accepted": True}, HTTPStatus.ACCEPTED)
         if action == "retry":
             new_id = ORCHESTRATOR.start_analysis(

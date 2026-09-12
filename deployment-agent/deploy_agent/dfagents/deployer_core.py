@@ -139,6 +139,9 @@ class DeploymentCoreMixin:
         applied = self._apply_reviewed_artifacts(run_id, source, staged)
         push = self._commit_and_push(run_id, source, repo, branch, applied, target_profile)
         repo_state = {
+            # Kept with the run, so its monitoring, domains and teardown sign in
+            # as the same person later (owner_credentials.py).
+            "owner": getattr(self, "_owners", {}).get(run_id, ""),
             "repository": repo,
             "branch": branch,
             "push": push,

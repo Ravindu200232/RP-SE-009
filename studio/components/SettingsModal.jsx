@@ -66,6 +66,9 @@ export default function SettingsModal({ onClose, onSaved }) {
   }
 
   const cloudOn = tone === 'ok'
+  // AgentForge's own engine and database are the whole machine's, so they are
+  // its admin's. Everyone's deployment accounts are their own — Integrations.
+  const isAdmin = Boolean(meta?.admin)
 
   const displayName = user?.name || user?.username || 'User'
   const displayEmail = user?.email || ''
@@ -144,7 +147,8 @@ export default function SettingsModal({ onClose, onSaved }) {
               </h2>
               <p className="text-[11px] text-white/40 mt-0.5">
                 {activeTab === 'general'
-                  ? 'Ollama engine, API key and MongoDB connection.'
+                  ? isAdmin ? 'Ollama engine, API key and MongoDB connection.'
+                            : 'What this machine runs, and what is yours.'
                   : activeTab === 'application'
                   ? 'Running services and database status.'
                   : activeTab === 'models'
@@ -169,7 +173,19 @@ export default function SettingsModal({ onClose, onSaved }) {
           <div className="flex-1 overflow-y-auto p-6 space-y-5 text-white" style={{ scrollbarWidth: 'thin' }}>
 
             {/* ── GENERAL ── */}
-            {activeTab === 'general' && (
+            {activeTab === 'general' && !isAdmin && (
+              <div className="space-y-4 max-w-[700px]">
+                <p className="rounded-xl border border-white/10 bg-white/[.03] px-4 py-3 text-[12px] text-white/60">
+                  The Ollama engine, its key and AgentForge's own database are
+                  shared by everyone on this machine, so only its admin changes
+                  them. Your GitHub, AWS, Vercel and production database are
+                  yours alone — they are under <b className="text-white/80">Integrations</b>.
+                </p>
+                <MongoState mongo={meta?.mongo} />
+              </div>
+            )}
+
+            {activeTab === 'general' && isAdmin && (
               <div className="space-y-5 max-w-[700px]">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label className="block">
@@ -262,7 +278,7 @@ export default function SettingsModal({ onClose, onSaved }) {
 
                 <MongoState mongo={meta?.mongo} />
 
-                {meta?.mongo && !meta.mongo.downloaded && !meta.mongo.override && (
+                {isAdmin && meta?.mongo && !meta.mongo.downloaded && !meta.mongo.override && (
                   <button
                     type="button"
                     onClick={() => api.mongoPrefetch().catch(() => {})}

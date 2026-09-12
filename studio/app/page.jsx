@@ -105,6 +105,26 @@ export default function Studio() {
   const { user, init: initAuth, logout } = useAuthStore()
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authInitialScreen, setAuthInitialScreen] = useState('methods')
+  // A fresh modal every time it opens: its screen is only read when it mounts,
+  // and the last person's email and password must not be waiting in it.
+  const [authKey, setAuthKey] = useState(0)
+
+  function openAuth(which) {
+    setAuthInitialScreen(which)
+    setAuthKey(k => k + 1)
+    setAuthModalOpen(true)
+  }
+
+  // Signing out goes straight to signing in, with nothing of the last
+  // person's work left on screen for whoever signs in next.
+  async function signOut() {
+    await logout()
+    useStore.getState().reset(null)
+    useStore.getState().resetSrs()
+    useStore.setState({ streams: {} })
+    setProjects([])
+    setScreen('home')
+  }
 
   const refreshProjects = () => api.projects()
     .then(r => {
@@ -122,6 +142,19 @@ export default function Studio() {
   useEffect(() => {
     initAuth()
   }, [])
+
+  // A session that ends - signed out here, expired, or ended from somewhere
+  // else - lands on the sign-in page rather than an empty studio.
+  const wasSignedIn = useRef(false)
+  useEffect(() => {
+    if (user) {
+      wasSignedIn.current = true
+      return
+    }
+    if (!wasSignedIn.current) return
+    wasSignedIn.current = false
+    openAuth('email')
+  }, [user])
 
   useEffect(() => {
     refreshProjects()
@@ -360,7 +393,7 @@ export default function Studio() {
           screen={screen}
           onScreenChange={setScreen}
           user={user}
-          onLogout={logout}
+          onLogout={signOut}
           onDeleted={(name) => {
             refreshProjects()
             if (project === name) setScreen('home')
@@ -377,6 +410,7 @@ export default function Studio() {
       )}
 
       <AuthModal
+        key={authKey}
         isOpen={authModalOpen}
         initialScreen={authInitialScreen}
         onClose={() => setAuthModalOpen(false)}
@@ -452,18 +486,9 @@ export default function Studio() {
           <Home
             modelOptions={cat.all}
             user={user}
-            onRequireAuth={() => {
-              setAuthInitialScreen('methods')
-              setAuthModalOpen(true)
-            }}
-            onSignIn={() => {
-              setAuthInitialScreen('email')
-              setAuthModalOpen(true)
-            }}
-            onSignUp={() => {
-              setAuthInitialScreen('email')
-              setAuthModalOpen(true)
-            }}
+            onRequireAuth={() => openAuth('methods')}
+            onSignIn={() => openAuth('email')}
+            onSignUp={() => openAuth('email')}
             onStarted={() => setScreen('workspace')}
             onKept={async (name) => {
               const list = await refreshProjects()

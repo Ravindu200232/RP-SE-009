@@ -73,8 +73,12 @@ export function reviseDrawing(feedback) {
 }
 
 function wsUrl() {
-  const host = (typeof location !== 'undefined' && location.hostname) || 'localhost'
-  return `ws://${host}:7825`
+  if (typeof location === 'undefined') return 'ws://127.0.0.1:7825'
+  // Through the studio's own address rather than the backend's port: one
+  // address to publish, and a wss:// feed when the studio is served over
+  // HTTPS. next.config.js sends this path to the socket.
+  const scheme = location.protocol === 'https:' ? 'wss' : 'ws'
+  return `${scheme}://${location.host}/__agentforge/ws`
 }
 
 /**
@@ -139,8 +143,15 @@ export function connect() {
     useStore.getState().setStatus('live', 'ready')
     recoverPendingDecision()
   }
-  sock.onclose = () => {
+  sock.onclose = (event) => {
     if (mine !== sock) return
+    // 4401: nobody is signed in on this socket. Reconnecting cannot fix that;
+    // signing in does, and that calls connect() again.
+    if (event?.code === 4401) {
+      sock = null
+      useStore.getState().setStatus('disconnected', 'sign in to continue')
+      return
+    }
     useStore.getState().setStatus('disconnected', 'reconnecting…')
     clearTimeout(retry)
     retry = setTimeout(connect, 3000)
@@ -263,7 +274,6 @@ function handle(m) {
       if (m.project) {
         useStore.setState({ project: m.project })
         s.setBusyProject(m.project)     // a new build had no name until now
-        api.assignProject(m.project).catch(() => {})
       }
       s.bumpProjects()
       break

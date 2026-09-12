@@ -83,7 +83,9 @@ def start_deployment(project: str, target: str, opts: dict) -> dict:
     if DEPLOY_API["state"] in ("off", "import-failed"):
         raise ValueError("the deployment agent is not running")
 
-    settings = load_settings()
+    # The accounts of the person deploying, never this machine's (deploy_tenancy.py).
+    owner = acting() or {}
+    settings = deploy_settings_for(owner)
     mongo = str(opts.get("mongodb_uri", "")).strip() or _deploy_mongo_uri(settings)
     if not mongo:
         raise ValueError("no production MongoDB URI — set one in Settings")
@@ -116,7 +118,7 @@ def start_deployment(project: str, target: str, opts: dict) -> dict:
         }
 
     threading.Thread(target=_deploy_autopilot,
-                     args=(project, target, dict(opts), mongo, settings),
+                     args=(project, target, dict(opts), mongo, settings, owner.get("id", "")),
                      daemon=True).start()
     return dict(DEPLOY_RUNS[project])
 
@@ -240,7 +242,7 @@ def _deploy_wait(project: str, run_id: str, until: set, deadline: float,
 
 
 def _deploy_autopilot(project: str, target: str, opts: dict,
-                      mongo: str, settings: dict):
+                      mongo: str, settings: dict, owner: str = ""):
     """analyze → wait for review → deploy → wait for terminal → adopt."""
     proj_dir = PROD_DIR / project
     try:
@@ -269,7 +271,9 @@ def _deploy_autopilot(project: str, target: str, opts: dict,
                 "the deployment plan was written without a model, and the agent "
                 "will not deploy one — check the deploy model in Settings")
 
-        body = {"approved": True, "mongodb_uri": mongo}
+        # The run signs in to GitHub and Vercel as its owner, looked up by the
+        # agent for this run and never taken from the machine.
+        body = {"approved": True, "mongodb_uri": mongo, "owner": owner}
         if target == "vercel":
             token = str(settings.get("vercel_token", "")).strip()
             if token:

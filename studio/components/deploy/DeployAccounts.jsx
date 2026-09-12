@@ -55,7 +55,8 @@ export default function DeployAccounts({ deploy, onSaved }) {
               {note}
             </p>
           )}
-          <Github probe={probe} onRecheck={() => setProbe(null)} />
+          <Github deploy={deploy} onSave={save} probe={probe}
+                  onRecheck={() => setProbe(null)} />
           <Aws deploy={deploy} onSave={save} probe={probe}
                onRecheck={() => setProbe(null)} />
           <Vercel deploy={deploy} onSave={save} />
@@ -67,43 +68,63 @@ export default function DeployAccounts({ deploy, onSaved }) {
 }
 
 function summarise(d) {
-  if (!d) return 'AWS, Vercel and the production database.'
+  if (!d) return 'GitHub, AWS, Vercel and the production database.'
   const bits = []
+  bits.push(d.github_token_set
+    ? `GitHub ${d.github_login || 'connected'}` : 'GitHub not connected')
   bits.push(d.aws_profile ? `AWS ${d.aws_profile}` : 'AWS not connected')
-
-  bits.push(d.vercel_token_set || d.vercel_cli_signed_in
-    ? 'Vercel connected' : 'Vercel not connected')
+  bits.push(d.vercel_token_set ? 'Vercel connected' : 'Vercel not connected')
   bits.push(d.mongodb_uri_set ? 'database set' : 'no database')
   return bits.join(' · ')
 }
 
 
-function Github({ probe, onRecheck }) {
+function Github({ deploy, onSave, probe, onRecheck }) {
+  const [token, setToken] = useState('')
   const [busy, setBusy] = useState(false)
-  const ok = Boolean(probe?.github_authenticated)
+  const [err, setErr] = useState('')
+  const ok = Boolean(deploy?.github_token_set)
+  const login = deploy?.github_login || probe?.github_account || ''
 
-  async function signIn() {
+  async function save() {
     setBusy(true)
+    setErr('')
     try {
-
-      await api.deploy('/onboarding/login', { tool: 'github' })
-    } catch { }
+      await onSave({ github_token: token.trim() })
+      setToken('')
+      onRecheck?.()
+    } catch (e) { setErr(e.message) }
     setBusy(false)
   }
 
   return (
-    <Row title="GitHub" ok={ok} unknown={!probe}
-         detail={ok ? `signed in as ${probe.github_account || 'your account'}`
-                    : 'the deployment creates a private repository and pushes'
-                      + 'the workflows that build it'}
-         actions={<>
-           {!ok && (
-             <Button size="sm" variant="outline" disabled={busy} onClick={signIn}>
-               {busy && <Loader2 className="size-3 animate-spin" />} Sign in
-             </Button>
-           )}
-           <Button size="sm" onClick={onRecheck}>Recheck</Button>
-         </>} />
+    <Row title="GitHub" ok={ok} unknown={false}
+         detail={ok ? `connected as ${login || 'your account'}`
+                    : 'the deployment creates a private repository under your '
+                      + 'account and pushes the workflows that build it'}>
+      <div className="mt-2 w-full space-y-2">
+        <Field label="Personal access token"
+               hint={<>Your own GitHub account, not this machine's — deployments
+                       push as you. Create a token with the <b>repo</b> and{' '}
+                       <b>workflow</b> scopes at{' '}
+                       <a className="text-accent hover:underline" target="_blank"
+                          rel="noreferrer"
+                          href="https://github.com/settings/tokens/new?scopes=repo,workflow&description=AgentForge">
+                         github.com/settings/tokens
+                       </a>. Type a single - to clear it.</>}>
+          <Input type="password" value={token} onChange={e => setToken(e.target.value)}
+                 placeholder={ok ? `connected as ${login}` : 'ghp_…'} />
+        </Field>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="outline" disabled={!token.trim() || busy}
+                  onClick={save}>
+            {busy && <Loader2 className="size-3 animate-spin" />} Save token
+          </Button>
+          <Button size="sm" onClick={onRecheck}>Recheck</Button>
+        </div>
+        {err && <p className="text-[10.5px] text-deep">{err}</p>}
+      </div>
+    </Row>
   )
 }
 
@@ -394,12 +415,6 @@ function Vercel({ deploy, onSave }) {
     setBusy('')
   }
 
-  async function cli() {
-    setBusy('cli')
-    try { await api.deploy('/onboarding/login', { tool: 'vercel' }) } catch { }
-    setBusy('')
-  }
-
   async function saveToken() {
     setBusy('save')
     setErr('')
@@ -412,21 +427,21 @@ function Vercel({ deploy, onSave }) {
 
   const who = status?.username || status?.email || status?.name || ''
   const connected = Boolean(status?.connected) || Boolean(deploy?.vercel_token_set)
-    || Boolean(deploy?.vercel_cli_signed_in)
   const detail = status?.connected
-    ? `connected as ${who}${status.source ? ` (${status.source})` : ''}`
+    ? `connected as ${who}`
     : deploy?.vercel_token_set
       ? `token saved (${deploy.vercel_token_hint})`
-      : 'sign in with the CLI, or paste a token'
+      : 'paste a token from your own Vercel account'
 
   return (
     <Row title="Vercel" ok={connected}
-         unknown={!status && !deploy?.vercel_token_set && !deploy?.vercel_cli_signed_in}
+         unknown={!status && !deploy?.vercel_token_set}
          detail={detail}>
       <div className="mt-2 w-full space-y-2">
         <Field label="Access token"
-               hint="Stored here and set as a GitHub Actions secret on the repository
-                     the deployment creates — Vercel has no OIDC equivalent. Type a
+               hint="Your own Vercel account. Kept with your account here, encrypted,
+                     and set as a GitHub Actions secret on the repository the
+                     deployment creates — Vercel has no OIDC equivalent. Type a
                      single - to clear it.">
           <Input type="password" value={token} onChange={e => setToken(e.target.value)}
                  placeholder={deploy?.vercel_token_set
@@ -437,10 +452,6 @@ function Vercel({ deploy, onSave }) {
           <Button size="sm" variant="outline" disabled={!token.trim() || Boolean(busy)}
                   onClick={saveToken}>
             {busy === 'save' && <Loader2 className="size-3 animate-spin" />} Save token
-          </Button>
-          <Button size="sm" disabled={Boolean(busy)} onClick={cli}>
-            {busy === 'cli' && <Loader2 className="size-3 animate-spin" />}
-            Sign in with the CLI
           </Button>
           <Button size="sm" disabled={Boolean(busy)} onClick={check}>
             {busy === 'check' && <Loader2 className="size-3 animate-spin" />} Check

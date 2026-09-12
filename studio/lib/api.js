@@ -19,6 +19,13 @@ export function getAuthToken() {
   return ''
 }
 
+let onSignedOut = null
+
+/** Called when the server says this session is over, from wherever it happens. */
+export function whenSignedOut(fn) {
+  onSignedOut = fn
+}
+
 async function req(path, opts = {}) {
   const token = getAuthToken()
   const headers = { ...(opts.headers || {}) }
@@ -29,6 +36,9 @@ async function req(path, opts = {}) {
   const text = await r.text()
   let data = null
   try { data = text ? JSON.parse(text) : null } catch { data = { raw: text } }
+  // The session expired, or was ended elsewhere: back to the sign-in page
+  // rather than a studio full of errors about someone who is not signed in.
+  if (r.status === 401 && data?.auth === 'required') onSignedOut?.()
   if (!r.ok) throw new Error((data && (data.error || data.detail)) || `HTTP ${r.status}`)
   return data
 }
@@ -46,7 +56,8 @@ export const api = {
     me: () => req('/auth/me'),
     logout: () => post('/auth/logout', {}),
   },
-  assignProject: (project) => post('/projects/assign', { project }),
+  // A project belongs to whoever built it, from the moment it is created;
+  // there is nothing for the studio to assign.
   projects: () => req('/projects'),
   models: () => req('/models'),
   mongo: () => req('/mongo'),

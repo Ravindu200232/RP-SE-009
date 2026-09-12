@@ -17,9 +17,11 @@ from pathlib import Path
 # Order matters: each part uses what the ones before it defined.
 _RUNTIME_PARTS = (
     'server_modules/core/bootstrap.py',
+    'server_modules/core/tenancy.py',
     'server_modules/core/dev_runtime.py',
     'server_modules/srs/srs_runtime.py',
     'server_modules/deploy/deploy_runtime.py',
+    'server_modules/deploy/deploy_tenancy.py',
     'server_modules/builder/media.py',
     'server_modules/builder/qa.py',
     'server_modules/builder/bridge.py',

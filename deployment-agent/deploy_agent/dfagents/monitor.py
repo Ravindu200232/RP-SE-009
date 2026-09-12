@@ -5,6 +5,7 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Callable
 
+from deployment_agent import owner_credentials
 from deployment_agent.models import ACTIVE_STATES as _ACTIVE_STATES
 from deployment_agent.models import DeploymentTarget, RunState
 from deployment_agent.providers import target_of
@@ -43,6 +44,13 @@ class MonitorAgent:
         run = self.store.get_run(run_id)
         if not run:
             raise ValueError("Run not found")
+        # Looked at with its owner's accounts, whichever thread asks - the
+        # supervisor's included (owner_credentials.py).
+        owner = str((run.get("repo") or {}).get("owner") or owner_credentials.owner())
+        with owner_credentials.acting_for(owner):
+            return self._snapshot(run_id, run)
+
+    def _snapshot(self, run_id: str, run: dict[str, Any]) -> dict[str, Any]:
         repo_state = run.get("repo") or {}
         snapshot: dict[str, Any] = {
             "captured_at": datetime.now(timezone.utc).isoformat(),

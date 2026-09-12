@@ -7,6 +7,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+from . import owner_credentials
 from .config import OLLAMA_MODEL, OLLAMA_URL
 from .security import redact_text
 
@@ -65,7 +66,8 @@ def run_command(
     check: bool = False,
     input: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    merged_env = _runtime_environment(env)
+    # A command run for a person signs in as them (owner_credentials.py).
+    merged_env = _runtime_environment({**owner_credentials.command_env(), **(env or {})})
     resolved_args = list(args)
     resolved_args[0] = resolve_command(resolved_args[0]) or resolved_args[0]
 

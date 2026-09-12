@@ -100,6 +100,8 @@ def keep_srs(srs_id: str) -> dict:
         proj_dir.mkdir(parents=True, exist_ok=True)
     except OSError as e:
         return {"error": f"could not keep {sid}: {e}"}
+    if not claim_project(name):
+        return {"error": f"{name} was taken by someone else a moment ago - try again"}
 
     if not adopt_srs(sid, proj_dir):
         # An empty directory is worse than no directory: it lists as a project
@@ -161,6 +163,7 @@ def delete_project(proj_name: str) -> dict:
         return {"error": f"could not delete {name}: {e}"}
 
     DEPLOY_RUNS.pop(name, None)
+    release_project(name)
 
     def _finish():
         dropped, why = "", ""
@@ -422,6 +425,13 @@ def get_project_files(proj_name: str) -> dict:
 
 
 async def ws_handler(websocket, path=None):
+    # Signed in once, when the socket opens: every run it starts is theirs,
+    # and it hears only about what is theirs.
+    user = await asyncio.get_running_loop().run_in_executor(None, socket_user, websocket)
+    if user is None:
+        await websocket.close(code=4401, reason="sign in")
+        return
+    WS_USERS[websocket] = user
     clients.add(websocket)
     log.info(f"WS connected ({len(clients)})")
     try:
@@ -434,14 +444,18 @@ async def ws_handler(websocket, path=None):
                 msg = json.loads(raw)
                 job = _message_job(msg)
                 if job:
-                    threading.Thread(
-                        target=job[0], args=job[1], daemon=True).start()
+                    denied = job_denied(msg, user)
+                    if denied:
+                        await websocket.send(json.dumps({"type": "error", "text": denied}))
+                        continue
+                    start_run(job[0], job[1], user=user)
             except json.JSONDecodeError:
                 pass
     except websockets.exceptions.ConnectionClosed:
         pass
     finally:
         clients.discard(websocket)
+        WS_USERS.pop(websocket, None)
         log.info(f"WS disconnected ({len(clients)})")
 
 
