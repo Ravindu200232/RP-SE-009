@@ -12,7 +12,7 @@ export default function SrsResult({ specOnly = false, onBuild }) {
   const project = useStore(s => s.project)
   const busy = useStore(s => s.busy)
   const [srs, setSrs] = useState(null)
-  const [sub, setSub] = useState('document')
+  const [sub, setSub] = useState('overview')
   const [state, setState] = useState('idle')
   const [error, setError] = useState('')
 

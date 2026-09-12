@@ -17,7 +17,7 @@ export default function SrsReview({ projectId, onApproved, onKept, onBack }) {
   const [srs, setSrs] = useState(null)
   const [state, setState] = useState('loading')
   const [error, setError] = useState('')
-  const [sub, setSub] = useState('document')
+  const [sub, setSub] = useState('overview')
   const [specOpen, setSpecOpen] = useState(false)
   const [asking, setAsking] = useState(false)
 

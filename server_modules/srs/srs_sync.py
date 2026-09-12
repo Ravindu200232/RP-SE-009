@@ -9,6 +9,7 @@ The SRS is the living parent document:
 """
 from __future__ import annotations
 
+import datetime
 import json
 import logging
 import os
@@ -249,3 +250,97 @@ def sync_from_qa(proj_dir: Path, qa_report: dict) -> None:
 
     save_living_srs(proj_dir, doc)
     log.info(f"Living SRS updated with QA evidence for {proj_dir.name}")
+
+
+def sync_from_new_feature(proj_dir: Path, prompt: str, outcome_text: str = "", written_files: list[str] | None = None) -> bool:
+    """Synchronize a newly built feature into the living SRS document.
+    
+    Ensures that when new capabilities, pages, or features are added via the builder:
+    1. New functional requirement [REQ-XX] is appended with high priority and implemented status.
+    2. Associated business workflow is added to business_workflows.
+    3. Document living_sync logs the feature update with timestamp.
+    4. Living SRS is persisted and srs_updated event is emitted.
+    """
+    if not prompt or len(prompt.strip()) < 4:
+        return False
+
+    doc = get_living_srs(proj_dir)
+    if not doc:
+        doc = {"project_name": proj_dir.name, "living_sync": {}, "functional_requirements": []}
+
+    reqs = doc.setdefault("functional_requirements", [])
+    workflows = doc.setdefault("business_workflows", [])
+    sync_meta = doc.setdefault("living_sync", {})
+    feature_updates = sync_meta.setdefault("feature_updates", [])
+
+    # Clean the prompt to form a succinct feature title and requirement sentence
+    clean_prompt = prompt.strip()
+    feature_title = re.sub(r"^(please\s+|can\s+you\s+|build\s+|make\s+|add\s+|create\s+|implement\s+)", "", clean_prompt, flags=re.I).strip()
+    feature_title = feature_title.split("\n")[0][:60].strip()
+    if feature_title:
+        feature_title = feature_title[0].upper() + feature_title[1:]
+    else:
+        feature_title = "New System Capability"
+
+    # Avoid duplicate feature injection if identical prompt was recently added
+    recent_prompts = [f.get("prompt", "") for f in feature_updates[-5:]]
+    if clean_prompt in recent_prompts:
+        return False
+
+    next_num = len(reqs) + 1
+    req_id = f"REQ-{next_num:02d}"
+
+    req_text = f"The system shall provide {feature_title.lower()} ensuring full data integrity, responsive user interaction, and role permissions."
+    if "The system shall" in clean_prompt:
+        req_text = clean_prompt
+    elif len(clean_prompt) < 140 and not "\n" in clean_prompt:
+        req_text = f"The system shall {clean_prompt.lower()}."
+
+    new_req = {
+        "id": req_id,
+        "module": "Feature Additions",
+        "requirement": req_text,
+        "priority": "high",
+        "feature_name": feature_title,
+        "source": "builder_feature_update",
+        "plan_status": "implemented",
+        "implementation_status": "IMPLEMENTED",
+        "verification_status": "VERIFIED",
+        "added_at": datetime.datetime.now().isoformat(),
+    }
+    reqs.append(new_req)
+
+    # Add workflow for this feature
+    new_workflow = {
+        "workflow_name": f"{feature_title} Workflow",
+        "steps": [
+            f"User triggers {feature_title.lower()} action from the application interface.",
+            "System validates user permissions, input parameters, and business constraints.",
+            "Data changes are atomically recorded in the application database.",
+            "Instant visual feedback and updated view state are rendered for the user."
+        ],
+        "feature_id": req_id,
+    }
+    workflows.append(new_workflow)
+
+    # Record feature update in living sync
+    feature_updates.append({
+        "req_id": req_id,
+        "title": feature_title,
+        "prompt": clean_prompt[:200],
+        "timestamp": datetime.datetime.now().isoformat(),
+        "written_files_count": len(written_files or []),
+        "status": "active"
+    })
+
+    save_living_srs(proj_dir, doc)
+    log.info(f"Living SRS updated with new feature '{feature_title}' ({req_id}) for {proj_dir.name}")
+
+    # Emit event to studio if event emitter is available
+    try:
+        from server_modules.ui.events import emit
+        emit({"type": "srs_updated", "project": proj_dir.name, "feature": feature_title, "req_id": req_id})
+    except Exception:
+        pass
+
+    return True

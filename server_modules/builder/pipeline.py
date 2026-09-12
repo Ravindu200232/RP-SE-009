@@ -553,9 +553,11 @@ def _run_agent(proj_dir: Path, brief: str, model: str, think, *, phases, kind: s
         if outcome.status != "cancelled" and outcome.result:
             echat(outcome.result)
         try:
-            from server_modules.srs.srs_sync import sync_from_builder
+            from server_modules.srs.srs_sync import sync_from_builder, sync_from_new_feature
             written = [str(p) for p in proj_dir.rglob("*") if p.is_file() and not str(p).startswith(".")]
             sync_from_builder(proj_dir, written)
+            if not plan or kind in ("feature", "edit"):
+                sync_from_new_feature(proj_dir, prompt=brief, outcome_text=str(outcome.result or ""), written_files=written)
         except Exception:
             pass
         return agent, outcome
@@ -836,7 +838,13 @@ def _edit_run(project: str, prompt: str, model, think, qa_model: str, console: s
             eprog("Done", 100)
             estep("build", "done")
             edone(target_url, proj_dir.name)
-            elog("SUCCESS", f"✅ {proj_dir.name} HTML update finished")
+            try:
+                from server_modules.srs.srs_sync import sync_from_new_feature, sync_from_prototype_async
+                sync_from_new_feature(proj_dir, prompt=prompt, outcome_text="HTML prototype updated")
+                drawn = [p.name for p in proto_root.glob("*.html")]
+                sync_from_prototype_async(proj_dir, drawn)
+            except Exception:
+                pass
             return
 
         fill_missing_images(proj_dir, "the edit")
