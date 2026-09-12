@@ -150,11 +150,11 @@ files:
   </script>
   <style type="text/tailwindcss">
     @layer components {
-      .button-primary { @apply inline-flex items-center justify-center gap-2 bg-primary text-white px-6 py-3 rounded-card font-semibold hover:opacity-90 transition-colors; }
-      .button-secondary { @apply inline-flex items-center justify-center gap-2 bg-surface text-text border border-border px-6 py-3 rounded-card font-semibold hover:border-primary transition-colors; }
-      .card           { @apply bg-surface rounded-card shadow-raised p-6; }
-      .field          { @apply w-full rounded-card border border-border bg-surface px-4 py-3 text-text placeholder:text-muted; }
-      .nav-link       { @apply text-sm font-medium text-text hover:text-primary transition-colors; }
+      .button-primary { @apply inline-flex items-center justify-center gap-2 bg-primary text-white px-6 py-3 rounded-card font-semibold hover:opacity-90 active:scale-[0.98] transition-all duration-150; }
+      .button-secondary { @apply inline-flex items-center justify-center gap-2 bg-surface text-text border border-border px-6 py-3 rounded-card font-semibold hover:border-primary hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-150; }
+      .card           { @apply bg-surface rounded-card shadow-raised p-6 hover:shadow-overlay transition-all duration-200; }
+      .field          { @apply w-full rounded-card border border-border bg-surface px-4 py-3 text-text placeholder:text-muted focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-150; }
+      .nav-link       { @apply text-sm font-medium text-text hover:text-primary transition-colors duration-150; }
       .badge          { @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold; }
     }
   </style>

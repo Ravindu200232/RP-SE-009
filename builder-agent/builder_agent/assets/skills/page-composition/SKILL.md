@@ -146,20 +146,15 @@ its URL. Every page was defensible on its own and the product was not usable.
 
 - The shell is in `app/layout.jsx` (or the equivalent), not repeated per page.
   A page that draws its own header is a page that will drift from the others.
-- **The shell is thirty-odd links, not three.** The header lists every section
-  of the product, with sub-items where a section has parts; the footer is a
-  sitemap of three or four columns with headings, plus the small print row.
-  This is the most-skipped item on the page: builds that composed decent
-  screens have shipped a layout with a product name and one link in it, and
-  that is a set of documents rather than an application. Count the links in
-  the header and footer components — under thirty and the shell is a stub.
-- Navigation shows what this visitor can actually reach. A customer does not
-  see the admin link; an admin does. Hiding a link is not access control — the
-  server still checks — but showing one that 403s is a broken door.
-- The current page is marked in the navigation, so someone always knows where
-  they are.
-- The product's name is a link home from every page.
-- Sign in and sign out live in the shell, and the shell says who is signed in.
+- **Comprehensive sitemap navigation (thirty-odd links, not three)**:
+  * **Header**: lists primary sections with sub-route dropdowns or grouped sections.
+  * **Footer sitemap**: 3–4 categorized columns (Product, Workflows, Resources, Company/Legal) with deep links, copyright, and status.
+  * **Breadcrumbs**: Deep/detail views carry hierarchical breadcrumbs (`Home / Category / Item Detail`) so users never get lost.
+  * **Contextual cross-links**: Related items, category filters, and next steps link directly across screens.
+  * **Zero dead-ends**: Every link must reach a real page or open an interactive modal/drawer. No dangling `href="#"` or broken journeys.
+- Navigation reflects real roles: visitors see public routes; signed-in users see workspace actions; admins see management links.
+- The current route is actively marked in the navigation, and the brand mark links home from every screen.
+- Sign-in/out and active profile live in the shell.
 
 A single-page tool is the exception, and only when there is genuinely one
 screen.

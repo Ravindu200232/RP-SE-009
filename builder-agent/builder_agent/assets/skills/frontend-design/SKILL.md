@@ -29,7 +29,12 @@ Avoid these default typographic treatments; they are the commonest tells of a ge
 
 Visual structure is information. Structural devices like outlines, borders, numbering, eyebrows, dividers, labels, etc., encode useful information about the content rather than decorate it. Many generic designs use numbered markers (01 / 02 / 03), but that's only appropriate if the content actually is a sequence — like a stepped process or a timeline. Before adding numbered markers, check the content really is a sequence.
 
-Use non-user-triggered motion sparingly and deliberately, only to draw attention. A single orchestrated moment — one page-load sequence or one reveal — lands better than scattered effects; fade-and-slide-up entrances on each section and hover transitions on every card are the generic default and read as AI-generated. Motion that answers a person's action (opening, expanding, confirming) is welcome when it shows what changed.
+## Natural human creativity & fluid animations
+
+- **Human-crafted personality**: Design with the organic warmth and asymmetric balance of an expert human designer, not a robotic SaaS card generator. Vary layout rhythms across the page; use distinctive typography pairing, contextual metadata tags, and realistic domain-specific copy over dry corporate filler.
+- **Tactile feedback**: Every interactive element should feel alive. Add responsive active presses (`active:scale-[0.98]`), gentle hover lifts (`hover:-translate-y-0.5 transition-all duration-200`), and clean focus rings.
+- **Fluid transitions**: Use natural easing curves (`cubic-bezier(0.16, 1, 0.3, 1)` or `ease-out`) instead of stiff linear timing. Keep micro-interactions snappy (150–200ms) and modal/drawer reveals smooth (250–350ms).
+- **Purposeful motion**: Include smooth tab indicators, collapsible accordion height transitions, subtle loading shimmer/pulses, and rotational chevron cues on open/close. Motion must clarify state changes without feeling gimmicky.
 
 Consider written content carefully. Often a design brief may not contain real content, and it's up to you to come up with copy and placeholder content. Copy can make a design feel as templated as the design itself. See the below section on writing for more guidance.
 

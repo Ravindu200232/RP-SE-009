@@ -20,37 +20,31 @@ Before any thought about structure, read the request again and write down every
 distinct thing it asks for. Work through it phrase by phrase rather than
 summarising it — a summary is exactly where a requirement goes missing.
 
-Take one requirement from each of these when the request contains it:
+### 100% Requirements coverage & traceability
 
-- **Every role or kind of person named**, and what each one can do. "A manager
-  sees the money" is a role, a screen and an authorisation rule.
-- **Every screen, page or view**, named or implied. "Book a bench" implies
-  something that lists benches and something that confirms.
-- **Every action** somebody performs: browse, filter, book, cancel, pay, mark
-  done, export, approve.
-- **Every piece of data** that has to exist for those actions to be possible,
-  and what relates to what.
-- **Every rule** — a booking cannot overlap, only the owner can cancel, stock
-  cannot go below zero, a price is fixed at the time of order.
+Enumerate requirements as numbered identifiers `[REQ-01]`, `[REQ-02]`, etc. Every requirement must directly trace to:
+1. **The Route/Screen** where the user interacts with it.
+2. **The Data & Actions**: required schema fields and API endpoints.
+3. **The Non-happy States**: empty state, loading skeleton, validation errors, and unauthorized access.
+
+Extract both explicit and implicit requirements:
+- **Every role or kind of person named**, and what each one can do. "A manager sees the money" is a role, a screen and an authorisation rule.
+- **Every screen, page or view**, named or implied. "Book a room" implies room browsing, availability filtering, conflict check, and confirmation receipt.
+- **Every action** somebody performs: browse, filter, search, book, cancel, pay, mark done, export, approve.
+- **Every piece of data** that has to exist for those actions to be possible, and what relates to what.
+- **Every rule** — bookings cannot overlap, only owners can cancel, stock cannot go below zero, prices fix on checkout.
 - **Every integration**: payment, email, SMS, upload, map, calendar, export.
-  These carry credentials and belong in the plan as their own work.
-- **Everything about state that is not the happy path**: empty, loading, error,
-  unauthorised, not found, and what a first-time user sees before there is any
-  data.
-- **Everything said about seeding**: demo users, sample data, "enough that
-  every screen has something on it".
-- **Everything said in passing.** "…and it should work on a phone" is a
-  requirement. So is "in Sinhala", "no login", "with photos".
+- **Non-happy states**: empty state with guidance, loading skeletons, error toasts, 404, unauthorized.
+- **Seeding & sample data**: realistic domain seed data so every screen displays populated state on first boot.
+- **Passing details**: "mobile responsive", "dark mode", "language switch", "Sinhala", "no password".
 
-Constraints are requirements too, including the negative ones. "No payments"
-means the plan says payments are out of scope — not that payments are absent
-from the plan.
+Constraints are requirements too. "No payments" means the plan explicitly rules payments out of scope.
 
 ## Then check the list against the request
 
 Go back over the request one more time with the list beside it, and ask of each
 sentence: which item covers this? A sentence that no item covers is a
-requirement you have just missed. Add it.
+requirement you have just missed. Add it. Zero requirements may be dropped.
 
 This second pass is the whole method. Skipping it is how eight-of-eleven
 happens.
