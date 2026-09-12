@@ -359,6 +359,9 @@ class PrototypePassTests(unittest.TestCase):
     """
 
     PAGE = "<!doctype html><html><head><link rel=stylesheet href=styles.css></head><body>x</body></html>"
+    STYLESHEET = (":root { --primary: #EA580C; }\n"
+                  ".card { border-radius: var(--radius); transition: box-shadow .2s ease; }\n"
+                  * 20)
 
     def setUp(self):
         self.root = Path(tempfile.mkdtemp())
@@ -382,10 +385,15 @@ class PrototypePassTests(unittest.TestCase):
         ]
 
     def draws(self, *names):
-        return Reply(calls=[
-            ToolCall(str(i), "writeFile",
-                     {"filePath": f".agentforge/prototype/{name}", "content": self.PAGE})
-            for i, name in enumerate(names)])
+        # A drawing writes its stylesheet as well as its pages: pages with
+        # nowhere to take their styling from are sent back to be styled.
+        calls = [ToolCall("css", "writeFile",
+                          {"filePath": ".agentforge/prototype/styles.css",
+                           "content": self.STYLESHEET})]
+        calls += [ToolCall(str(i), "writeFile",
+                           {"filePath": f".agentforge/prototype/{name}", "content": self.PAGE})
+                  for i, name in enumerate(names)]
+        return Reply(calls=calls)
 
     def test_it_draws_a_file_for_every_agreed_screen(self):
         router = ScriptedRouter([self.draws("index.html", "menu.html", "admin-orders.html"),

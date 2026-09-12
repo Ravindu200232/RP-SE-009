@@ -82,16 +82,30 @@ class AskingTheBrowserTests(DrawingTestCase):
         self.draw()
         self.assertEqual(styles.unstyled(self.root, lambda page: None), [])
 
-    def test_a_browser_that_will_not_start_is_asked_once_and_let_be(self):
-        class Broken:
+    def test_a_browser_that_is_not_open_is_not_started_to_look(self):
+        class Closed:
+            running = False
+
             def open_tab(self, url="about:blank"):
                 asked.append(url)
-                raise RuntimeError("no chrome here")
+                raise AssertionError("a drawing must not start a browser")
 
         asked = []
         self.draw(pages=("index.html", "rooms.html", "login.html"))
-        look = styles.browser_check(Broken())
-        self.assertEqual(styles.unstyled(self.root, look), [])
+        self.assertEqual(styles.unstyled(self.root, styles.browser_check(Closed())), [])
+        self.assertEqual(asked, [])
+
+    def test_a_browser_that_fails_mid_look_is_asked_once_and_let_be(self):
+        class Breaks:
+            running = True
+
+            def open_tab(self, url="about:blank"):
+                asked.append(url)
+                raise RuntimeError("the tab would not open")
+
+        asked = []
+        self.draw(pages=("index.html", "rooms.html", "login.html"))
+        self.assertEqual(styles.unstyled(self.root, styles.browser_check(Breaks())), [])
         self.assertEqual(len(asked), 1)
 
 

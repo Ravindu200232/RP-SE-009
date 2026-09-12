@@ -28,7 +28,7 @@ MIN_STYLESHEET_BYTES = 800
 # Signs that a stylesheet actually reached the page. Two of them is styled.
 MIN_STYLE_SIGNS = 2
 
-STYLESHEET_LINK = re.compile(r"""<link[^>]+rel=["']stylesheet["'][^>]*>""", re.I)
+STYLESHEET_LINK = re.compile(r"""<link[^>]+rel=["']?stylesheet["']?[^>]*>""", re.I)
 PAGES = (".html",)
 
 # What the page looks like once it has loaded, rather than what it links to.
@@ -94,11 +94,17 @@ def unstyled(root: Path, look=None) -> list:
 
 
 def browser_check(browser):
-    """A way to ask a browser whether a page came out styled, or nothing."""
+    """A way to ask a browser whether a page came out styled, or nothing.
+
+    Only a browser that is already open is asked. Starting one to look at a
+    drawing would cost every build a browser it may never otherwise need, and
+    the reading off the files is what catches the failure that actually
+    happens - a stylesheet nobody wrote.
+    """
     state: dict = {}
 
     def applied(path: Path):
-        if state.get("off"):
+        if state.get("off") or not getattr(browser, "running", False):
             return None
         try:
             page = state.get("page") or browser.open_tab("about:blank")

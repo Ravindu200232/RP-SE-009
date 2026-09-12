@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: FAIL
-Run at (UTC): 2026-09-12T00:26:56+00:00
+Run at (UTC): 2026-09-12T03:46:52+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 646
+Unit tests: 669
 Integration tests: 24
-Total tests run: 670
+Total tests run: 693
 Failures: 4
 Errors: 0
 Skipped: 0
-Duration: 40.631s
+Duration: 37.796s
 
 Detailed results
 ----------------
@@ -350,6 +350,18 @@ test_nothing_planned_is_an_empty_map_not_a_crash (test.unit.builder.test_sitemap
 test_the_same_screen_twice_is_one_entry (test.unit.builder.test_sitemap.FromThePlanTests.test_the_same_screen_twice_is_one_entry) ... ok
 test_it_survives_a_round_trip_through_the_project (test.unit.builder.test_sitemap.PersistenceTests.test_it_survives_a_round_trip_through_the_project) ... ok
 test_no_file_is_an_empty_map (test.unit.builder.test_sitemap.PersistenceTests.test_no_file_is_an_empty_map) ... ok
+test_a_browser_that_fails_mid_look_is_asked_once_and_let_be (test.unit.builder.test_styles.AskingTheBrowserTests.test_a_browser_that_fails_mid_look_is_asked_once_and_let_be) ... ok
+test_a_browser_that_is_not_open_is_not_started_to_look (test.unit.builder.test_styles.AskingTheBrowserTests.test_a_browser_that_is_not_open_is_not_started_to_look) ... ok
+test_a_page_the_browser_applied_nothing_to_is_bare (test.unit.builder.test_styles.AskingTheBrowserTests.test_a_page_the_browser_applied_nothing_to_is_bare) ... ok
+test_a_page_the_browser_styled_passes (test.unit.builder.test_styles.AskingTheBrowserTests.test_a_page_the_browser_styled_passes) ... ok
+test_no_browser_is_not_a_failure (test.unit.builder.test_styles.AskingTheBrowserTests.test_no_browser_is_not_a_failure) ... ok
+test_the_drawing_no_longer_carries_a_tailwind_build (test.unit.builder.test_styles.NoFrameworkTests.test_the_drawing_no_longer_carries_a_tailwind_build) ... ok
+test_the_skill_tells_the_drawing_to_write_its_own_css (test.unit.builder.test_styles.NoFrameworkTests.test_the_skill_tells_the_drawing_to_write_its_own_css) ... ok
+test_a_drawing_that_is_not_there_is_not_a_failure (test.unit.builder.test_styles.ReadingTheFilesTests.test_a_drawing_that_is_not_there_is_not_a_failure) ... ok
+test_a_drawing_that_wrote_its_stylesheet_passes (test.unit.builder.test_styles.ReadingTheFilesTests.test_a_drawing_that_wrote_its_stylesheet_passes) ... ok
+test_a_page_that_never_links_the_stylesheet_is_bare (test.unit.builder.test_styles.ReadingTheFilesTests.test_a_page_that_never_links_the_stylesheet_is_bare) ... ok
+test_a_stylesheet_of_a_few_lines_is_not_a_stylesheet (test.unit.builder.test_styles.ReadingTheFilesTests.test_a_stylesheet_of_a_few_lines_is_not_a_stylesheet) ... ok
+test_a_stylesheet_that_was_never_written_leaves_every_page_bare (test.unit.builder.test_styles.ReadingTheFilesTests.test_a_stylesheet_that_was_never_written_leaves_every_page_bare) ... ok
 test_a_retry_takes_out_what_an_earlier_attempt_left_staged (test.unit.deployment.test_env_files_never_committed.EnvironmentFilesTests.test_a_retry_takes_out_what_an_earlier_attempt_left_staged) ... ok
 test_env_files_at_the_root_and_below_are_left_out (test.unit.deployment.test_env_files_never_committed.EnvironmentFilesTests.test_env_files_at_the_root_and_below_are_left_out) ... ok
 test_the_deployment_plan_is_written_by_gemma_whatever_was_saved (test.unit.deployment.test_fixed_models.FixedModelTests.test_the_deployment_plan_is_written_by_gemma_whatever_was_saved) ... ok
@@ -559,6 +571,17 @@ test_browser_refresh_starts_stopped_app_and_reuses_running_app (test.unit.servic
 test_generated_origin_cannot_access_management_api_or_old_bridge (test.unit.services.test_preview_http.PreviewHTTPTests.test_generated_origin_cannot_access_management_api_or_old_bridge) ... ok
 test_proxy_injects_bridge_preserves_body_and_does_not_touch_activity (test.unit.services.test_preview_http.PreviewHTTPTests.test_proxy_injects_bridge_preserves_body_and_does_not_touch_activity) ... ok
 test_stopped_background_requests_and_status_never_start_app (test.unit.services.test_preview_http.PreviewHTTPTests.test_stopped_background_requests_and_status_never_start_app) ... ok
+test_a_tunnel_that_says_nothing_is_not_left_running (test.unit.services.test_preview_link.NotPublishableTests.test_a_tunnel_that_says_nothing_is_not_left_running) ... ok
+test_without_the_program_it_says_so_instead_of_failing_oddly (test.unit.services.test_preview_link.NotPublishableTests.test_without_the_program_it_says_so_instead_of_failing_oddly) ... ok
+test_a_tunnel_that_died_no_longer_counts_as_an_address (test.unit.services.test_preview_link.PublishingTests.test_a_tunnel_that_died_no_longer_counts_as_an_address) ... ok
+test_an_unpublished_preview_has_no_address (test.unit.services.test_preview_link.PublishingTests.test_an_unpublished_preview_has_no_address) ... ok
+test_closing_takes_the_address_away_and_stops_the_tunnel (test.unit.services.test_preview_link.PublishingTests.test_closing_takes_the_address_away_and_stops_the_tunnel) ... ok
+test_publishing_answers_with_the_address_the_tunnel_printed (test.unit.services.test_preview_link.PublishingTests.test_publishing_answers_with_the_address_the_tunnel_printed) ... ok
+test_publishing_twice_keeps_the_one_address (test.unit.services.test_preview_link.PublishingTests.test_publishing_twice_keeps_the_one_address) ... ok
+test_shutting_down_stops_every_tunnel (test.unit.services.test_preview_link.PublishingTests.test_shutting_down_stops_every_tunnel) ... ok
+test_the_tunnel_is_told_which_preview_it_is_for (test.unit.services.test_preview_link.PublishingTests.test_the_tunnel_is_told_which_preview_it_is_for) ... ok
+test_two_projects_are_published_separately (test.unit.services.test_preview_link.PublishingTests.test_two_projects_are_published_separately) ... ok
+test_two_requests_at_once_publish_one_address (test.unit.services.test_preview_link.PublishingTests.test_two_requests_at_once_publish_one_address) ... ok
 test_activity_extends_deadline_but_status_reads_do_not (test.unit.services.test_preview_registry.RegistryTests.test_activity_extends_deadline_but_status_reads_do_not) ... ok
 test_build_lease_starts_clock_after_completion (test.unit.services.test_preview_registry.RegistryTests.test_build_lease_starts_clock_after_completion) ... ok
 test_busy_ports_are_skipped_and_external_listener_survives (test.unit.services.test_preview_registry.RegistryTests.test_busy_ports_are_skipped_and_external_listener_survives) ... ok
@@ -789,6 +812,6 @@ Traceback (most recent call last):
 AssertionError: 0 != 3
 
 ----------------------------------------------------------------------
-Ran 670 tests in 40.631s
+Ran 693 tests in 37.796s
 
 FAILED (failures=4)

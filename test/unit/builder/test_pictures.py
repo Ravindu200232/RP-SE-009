@@ -143,9 +143,15 @@ class DrawingTests(unittest.TestCase):
         agent.screens = [{"id": "/", "route": "/", "label": "Home", "what": "the rooms"}]
         page = (f'<!doctype html><html><head><link rel=stylesheet href=styles.css></head>'
                 f'<body><img src="{STUDIO}" alt="The studio room"></body></html>')
+        # The stylesheet as well as the page: a drawing with nowhere to take
+        # its styling from is sent back to be styled before it is shown.
         agent.router = ScriptedRouter([
-            Reply(calls=[ToolCall("1", "writeFile", {"filePath": ".agentforge/prototype/index.html",
-                                                     "content": page})]),
+            Reply(calls=[
+                ToolCall("0", "writeFile",
+                         {"filePath": ".agentforge/prototype/styles.css",
+                          "content": ".card { border-radius: 12px; transition: all .2s; }\n" * 30}),
+                ToolCall("1", "writeFile", {"filePath": ".agentforge/prototype/index.html",
+                                            "content": page})]),
             Reply(content="Drawn.")])
         any_of = STUDIO.replace("minimal?", "minimal/any?")
 

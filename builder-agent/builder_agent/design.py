@@ -688,14 +688,10 @@ def render_skill(selection: dict, goal: str = "") -> str:
         f"{TONES[selection.get('tone', 'professional')]}",
         f"- Contrast: {CONTRAST[selection.get('contrast', 'aa')]}", "",
         "## Styling", "",
-        ("The drawing has no framework and nothing to install: write the CSS yourself in "
-         "`styles.css`, with the tokens above on `:root` and a rule for each component. A "
-         "class does something only because a rule there says what it does."
-         if drawing else
-         "Tailwind is installed and configured in the scaffold, and its theme reads the tokens "
-         "above. Compose the interface from Tailwind utilities and your own components; do not "
-         "install a component library on top of it, and do not hand-write a second colour or "
-         "spacing scale beside the tokens."), "",
+        "Tailwind is installed and configured in the scaffold, and its theme reads the tokens "
+        "above. Compose the interface from Tailwind utilities and your own components; do not "
+        "install a component library on top of it, and do not hand-write a second colour or "
+        "spacing scale beside the tokens.", "",
         "## Screens this product needs", "",
         "Implement the screens and routes in the approved plan. Apply this design to those "
         "screens without adding routes based on domain words or generic UI examples. "
@@ -733,14 +729,25 @@ def write_design_skill(workspace: Path | str, selection: dict, goal: str = "",
 
 
 def design_contract_message(selection: dict, *, drawing: bool = False) -> str:
-    """The decided design, for the build — or for the drawing, which has no framework."""
+    """The decided design, for the build — or for the drawing, which has no framework.
+
+    The design skill is written for the application, where Tailwind is
+    installed and compiled. A drawing has neither, and being told to compose
+    from utilities is how it ends up loading a framework from a CDN.
+    """
     return "\n".join([
         "DESIGN CONTRACT (already decided; do not re-open it):",
         f"- Palette: {selection['paletteName']} - {selection['mood']}",
         f"- Default theme: {selection['themeMode']}; both modes must work.",
         f"- Type: {selection['font']}, {selection['typeScale']} scale.",
         f"- Shape: {selection['radius']} radius, {selection['density']} density.",
-        f"Read `.agents/skills/{SKILL_NAME}/SKILL.md` in full before writing any UI, and copy "
-        "its token block into the application's global stylesheet. Do not invent a second "
-        "palette, and do not hard-code hex values in components.",
+        (f"Read `.agents/skills/{SKILL_NAME}/SKILL.md` for the tokens and the voice, and put "
+         "its token block at the top of `styles.css`. Everything else in that skill is "
+         "written for the application, which has Tailwind compiled into it; the drawing has "
+         "no framework and nothing to install, so its look is CSS you write yourself. Do not "
+         "invent a second palette, and no hex outside the token block."
+         if drawing else
+         f"Read `.agents/skills/{SKILL_NAME}/SKILL.md` in full before writing any UI, and copy "
+         "its token block into the application's global stylesheet. Do not invent a second "
+         "palette, and do not hard-code hex values in components."),
     ])
