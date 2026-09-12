@@ -81,6 +81,8 @@ For AgentForge builds, the approved plan and `.agents/skills/design-system/block
 
 Build the amount of interface the product actually needs. Public sites should feel complete when scrolled: establish a strong opening, develop the story through distinct content sections, add proof and product detail, and end with a deliberate close. Applications should include the complete planned route set and dense working screens, rather than a landing page plus placeholders. There is no fixed page or section maximum.
 
+The hero guidance above is the opening of a page someone is being *sold*. A page someone *works in* — a counter, a console, a back office — opens on the work instead: the figures that say how today is going, then what needs doing, at density. It is designed just as deliberately, and it has no hero photograph, no "how it works" explainer and no call to action. Read `/` the same way: what it is follows from who opens it, and a till that greets its own cashier with a landing page was built for the wrong reader.
+
 
 Before considering the UI complete, review it twice: first for composition, hierarchy, route completeness, and responsive behavior; then for typography, spacing, states, contrast, and visual details. Fix the product during these passes, before final browser evidence.
 

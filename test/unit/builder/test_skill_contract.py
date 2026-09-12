@@ -272,6 +272,31 @@ class TheSkillContractTests(unittest.TestCase):
                 self.assertNotIn("9,000", text)
                 self.assertNotIn("15,000", text)
 
+    def test_no_skill_hardcodes_one_kind_of_product(self):
+        """A hero belongs to a page someone is sold, not to every page.
+
+        Both skills branched on this — a public page opens on a hero, a working
+        screen opens on the work — but both stated the hero first and
+        unconditionally, and stated the branch much later. The unconditional
+        sentence is the one that won: the tyre-shop till was drawn with a hero
+        photograph, an overlay, and a "How a sale flows" explainer, on the
+        screen its own cashier opens all day.
+
+        So wherever a skill tells a hero to be built, the same passage says who
+        it is for. A skill that names one without the other is back to
+        designing every product as a landing page.
+        """
+        for skill in ("html-prototype", "frontend-design"):
+            text = (SKILLS / skill / "SKILL.md").read_text(encoding="utf-8")
+            with self.subTest(skill=skill):
+                self.assertRegex(text, r"hero", "no hero guidance to qualify")
+                self.assertRegex(
+                    text, r"worked in|works in|working screen",
+                    f"{skill} describes a hero without saying who it is for")
+                self.assertRegex(
+                    text, r"wrong reader",
+                    f"{skill} never says what `/` follows from")
+
     def test_a_rule_is_not_stated_twice_in_two_skills(self):
         """Two skills saying the same thing is how they come to disagree.
 

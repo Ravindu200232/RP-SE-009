@@ -155,15 +155,21 @@ rules; drawing twelve screens against a checklist it wrote 44. The checklist
 takes the attention the design should have had — so spend it here, on the
 stylesheet, where it is reused twelve times.
 
-- **The hero decides the product**: a real photograph with something over it —
-  a gradient scrim, a vignette, a wash from the palette — the title in the
-  display face at `clamp()` size, one line under it. A heading on a white band
-  is the clearest sign nobody designed this.
+- **The opening decides the product — and what the opening *is* depends on who
+  opens it.** Something sold to the public opens on a hero: a real photograph
+  with something over it, a gradient scrim, a vignette, a wash from the
+  palette, the title in the display face at `clamp()` size. Something worked in
+  opens on the work: today's figures across the top, then the queue, at
+  density. Both are designed. Only one of them is a hero, and a till given a
+  hero was designed for the wrong reader. A heading on a white band is the
+  clearest sign nobody designed either.
 - **Depth in the palette's own colours**: a shadow tinted with the primary
   rather than black, a border one shade off the surface, a section on
   `--surface-alt`. Flat grey on white is the default nobody chose.
-- **A rhythm, not a list**: full-bleed photograph, contained text, a grid, a
-  quiet band. Same padding everywhere reads as a template.
+- **A rhythm, not a list**: for a public page, full-bleed photograph, contained
+  text, a grid, a quiet band; for a working screen, the figures, a dense table,
+  a narrower panel beside it. Same padding everywhere reads as a template
+  either way.
 - **One thing that is yours** — a card that lifts and shows its price, a number
   that counts up, a nav that condenses, a photograph that zooms inside its
   frame, a hand-drawn underline in SVG. One is enough, and it is what they
@@ -230,13 +236,11 @@ and below, the sections between, no stubs. A sign-in page is a full page too.
 **Six to ten sections**, each doing something the one above it does not. What
 they are depends on who the product is for, and that is the first decision:
 
-- **Sold to the public**: a hero, then what it is, then the proof or the
+- **Sold to the public**: the hero, then what it is, then the proof or the
   detail, then a call to action, then the footer.
-- **Worked in** — a counter, a console, a back office: opens on the work.
-  Today's figures, what needs doing now, the queue, what is running late. No
-  hero selling it to the person already using it, no "how it works" explainer,
-  no call to action. A till that greets its own cashier with a landing page was
-  drawn for the wrong reader.
+- **Worked in** — a counter, a console, a back office: today's figures, what
+  needs doing now, the queue, what is running late. No "how it works"
+  explainer, no call to action.
 
 A working screen gets its own six, and three of them keep going missing:
 
