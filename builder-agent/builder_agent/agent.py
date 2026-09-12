@@ -459,7 +459,7 @@ class BuilderAgent:
             f"{_page_file(page.get('route', ''))}"
             + (f" — {page['what']}" if page.get("what") else "")
             for page in self.screens)
-        contract = (design_contract_message(self.design["selection"])
+        contract = (design_contract_message(self.design["selection"], drawing=True)
                     if self.design and self.design.get("selection") else "")
         return "\n".join([
             "THE WHOLE APPLICATION, NOT HALF OF IT. Every screen on the list, finished, "
@@ -561,12 +561,18 @@ class BuilderAgent:
             "A product with rooms or dishes or cars is mostly photographs, and a drawing "
             "of it with none is a wireframe.",
             "",
-            "STYLE IT WITH TAILWIND, wired to the contract. Every page head carries "
-            "`<script src=\"tailwind.js\"></script><script>if(!window.tailwind){document.write('<script src=\"https://cdn.tailwindcss.com\"><\\/script>');}</script>` "
-            "and an inline `<script>` setting `tailwind.config = { darkMode: 'class', theme: { extend: { colors: { primary: 'var(--primary)', 'primary-hover': 'var(--primary-hover, #6D28D9)', accent: 'var(--accent)', surface: 'var(--surface)', 'surface-alt': 'var(--surface-alt, #F4F4F5)', background: 'var(--background, #FAFAFA)', border: 'var(--border, #E4E4E7)', text: 'var(--text, #09090B)', muted: 'var(--text-muted, #71717A)', success: 'var(--success, #059669)', warning: 'var(--warning, #D97706)', danger: 'var(--danger, #E11D48)', info: 'var(--info, #0284C7)' }, borderRadius: { card: 'var(--radius, 14px)' }, boxShadow: { raised: '0 1px 3px rgba(0,0,0,0.08)' } } } }` "
-            "and then `<style type=\"text/tailwindcss\">` defining component classes (.button-primary, .button-secondary, .card, .field, .nav-link, .badge) with `@apply`. "
-            "The tokens themselves stay in styles.css as custom properties, the only "
-            "place a hex appears. In addition, styles.css also defines pure CSS fallback rules for .button-primary, .button-secondary, .card, .field, .nav-link so the pages are styled even before scripts run. Utilities for layout, component classes for anything repeated.",
+            "STYLE IT YOURSELF, in one stylesheet, and write that stylesheet first. "
+            "`styles.css` carries the contract's tokens as custom properties on `:root` - "
+            "the only place a hex appears - then the shell, a rule for each component "
+            "(.button-primary, .button-secondary, .card, .field, .nav-link, .badge), the "
+            "layout, and the motion. Every page links it with "
+            "`<link rel=\"stylesheet\" href=\"styles.css\">` and loads no framework: no "
+            "Tailwind, no CDN, no `<style>` block in a page, no `style=` on an element. A "
+            "class does something only because a rule in styles.css says what it does. "
+            "Make that stylesheet worth reusing twelve times: 120 rules or more, a "
+            "transition on everything that responds, and at least three `@keyframes` - the "
+            "sections arriving, a state change, something loading - with a "
+            "`prefers-reduced-motion` block at the end.",
             "",
             "No build step, no bundler, no npm install, no backend, no fetch, no server. "
             "Link the pages to each other so the whole application can be walked. Write "

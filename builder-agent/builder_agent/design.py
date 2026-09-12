@@ -688,10 +688,14 @@ def render_skill(selection: dict, goal: str = "") -> str:
         f"{TONES[selection.get('tone', 'professional')]}",
         f"- Contrast: {CONTRAST[selection.get('contrast', 'aa')]}", "",
         "## Styling", "",
-        "Tailwind is installed and configured in the scaffold, and its theme reads the tokens "
-        "above. Compose the interface from Tailwind utilities and your own components; do not "
-        "install a component library on top of it, and do not hand-write a second colour or "
-        "spacing scale beside the tokens.", "",
+        ("The drawing has no framework and nothing to install: write the CSS yourself in "
+         "`styles.css`, with the tokens above on `:root` and a rule for each component. A "
+         "class does something only because a rule there says what it does."
+         if drawing else
+         "Tailwind is installed and configured in the scaffold, and its theme reads the tokens "
+         "above. Compose the interface from Tailwind utilities and your own components; do not "
+         "install a component library on top of it, and do not hand-write a second colour or "
+         "spacing scale beside the tokens."), "",
         "## Screens this product needs", "",
         "Implement the screens and routes in the approved plan. Apply this design to those "
         "screens without adding routes based on domain words or generic UI examples. "
@@ -728,7 +732,8 @@ def write_design_skill(workspace: Path | str, selection: dict, goal: str = "",
             "selection": selection}
 
 
-def design_contract_message(selection: dict) -> str:
+def design_contract_message(selection: dict, *, drawing: bool = False) -> str:
+    """The decided design, for the build — or for the drawing, which has no framework."""
     return "\n".join([
         "DESIGN CONTRACT (already decided; do not re-open it):",
         f"- Palette: {selection['paletteName']} - {selection['mood']}",

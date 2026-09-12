@@ -25,19 +25,31 @@ from pathlib import Path
 
 # A stylesheet with less in it than this was not written for a product.
 MIN_STYLESHEET_BYTES = 800
-# Rules the browser actually applied. A page with fewer is bare.
-MIN_APPLIED_RULES = 20
+# Signs that a stylesheet actually reached the page. Two of them is styled.
+MIN_STYLE_SIGNS = 2
 
 STYLESHEET_LINK = re.compile(r"""<link[^>]+rel=["']stylesheet["'][^>]*>""", re.I)
 PAGES = (".html",)
 
-RULE_COUNT = """
+# What the page looks like once it has loaded, rather than what it links to.
+# Counting the rules in `document.styleSheets` cannot be used: a page opened
+# from a file is not allowed to read its own stylesheet, and every page then
+# reads as unstyled - which had this asking for a stylesheet that was already
+# 16KB long, round after round.
+STYLE_SIGNS = """
 (() => {
-  let rules = 0;
-  for (const sheet of document.styleSheets) {
-    try { rules += sheet.cssRules.length; } catch (error) { /* not ours to read */ }
+  const body = getComputedStyle(document.body);
+  let signs = 0;
+  if (!/^(Times|serif)/i.test(body.fontFamily || '')) signs++;
+  if (parseFloat(body.marginTop || '0') === 0) signs++;
+  const colour = body.backgroundColor || '';
+  if (colour && colour !== 'rgba(0, 0, 0, 0)' && colour !== 'rgb(255, 255, 255)') signs++;
+  for (const element of document.querySelectorAll('header, nav, main, section, .card, a, button')) {
+    const style = getComputedStyle(element);
+    if (parseFloat(style.paddingTop) > 0 || parseFloat(style.paddingLeft) > 0
+        || style.borderRadius !== '0px' || style.transitionDuration !== '0s') { signs++; break; }
   }
-  return rules;
+  return signs;
 })()
 """
 
@@ -58,8 +70,8 @@ def unstyled(root: Path, look=None) -> list:
 
     Read off the files first, because that needs nothing running: a page with
     no stylesheet linked, or a `styles.css` that was never really written. Then
-    asked of a browser, when one is available, because that is the only thing
-    that knows whether the rules reached the page.
+    asked of a browser, when one is available, because what the page ended up
+    looking like is the only thing that settles it.
     """
     sheet = _prototype(root) / "styles.css"
     try:
@@ -75,14 +87,14 @@ def unstyled(root: Path, look=None) -> list:
         if thin or not STYLESHEET_LINK.search(text):
             bare.append(page.name)
             continue
-        applied = look(page) if look else None
-        if applied is not None and applied < MIN_APPLIED_RULES:
+        signs = look(page) if look else None
+        if signs is not None and signs < MIN_STYLE_SIGNS:
             bare.append(page.name)
     return bare
 
 
 def browser_check(browser):
-    """A way to ask a browser how much CSS a page ended up with, or nothing."""
+    """A way to ask a browser whether a page came out styled, or nothing."""
     state: dict = {}
 
     def applied(path: Path):
@@ -93,7 +105,7 @@ def browser_check(browser):
             state["page"] = page
             page.navigate(Path(path).resolve().as_uri(), timeout=20)
             time.sleep(0.3)
-            return int(page.evaluate(RULE_COUNT) or 0)
+            return int(page.evaluate(STYLE_SIGNS) or 0)
         except Exception:                                            # noqa: BLE001
             # No browser, no second opinion. The check off the files still ran.
             state["off"] = True

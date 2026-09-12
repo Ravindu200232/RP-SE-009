@@ -51,11 +51,17 @@ call `readSkill` for anything under `.agentforge/`.
 Write these, with `writeFile`, using the paths exactly as shown:
 
 ```
+.agentforge/prototype/styles.css    the whole look, written first
 .agentforge/prototype/index.html    the first screen the plan named
 .agentforge/prototype/<screen>.html one per remaining screen, named after its route
-.agentforge/prototype/styles.css    the design tokens, linked by all of them
 .agentforge/prototype/demo.js       the small amount of script that makes the flow work
 ```
+
+**`styles.css` first, and finished.** It is the one file where the product gets
+its character, and writing it first is what makes the twelve pages look like
+one product instead of twelve documents. Pages written before their stylesheet
+end up carrying their design in their markup, and then the look cannot be
+changed in one place.
 
 Start writing. There is nothing to look up first: the screens are listed in the
 request, and the tokens are in `design-system.md`, which is the one other file
@@ -200,6 +206,43 @@ decided — the build copies what it sees here.
 
 Keep it quick and small — 150ms to 500ms, a few pixels, never a bounce that
 holds the page up. Motion that has to be waited for is worse than none.
+
+## Make it good, not only complete
+
+The counts below catch a thin page. They do not make a good one, and a page
+that passes every one of them can still look like a form someone filled in.
+Asked for a page in a single sitting, this same model writes 127 CSS rules and
+fifteen transitions; drawing twelve screens against a checklist, it wrote 44
+and none. The difference is not effort, it is attention: the checklist gets the
+attention and the design does not.
+
+So spend the attention here, on the stylesheet, where it is reused twelve
+times:
+
+- **The hero decides the product.** Give it a real photograph with something
+  over it — a gradient scrim, a soft vignette, a colour wash from the palette —
+  the title in the display face at `clamp()` size, and one line under it that
+  says what this is. A hero that is a heading on a white band is the clearest
+  sign nobody designed this.
+- **Depth, in the palette's own colours.** A shadow that is a tint of the
+  primary rather than black, a border that is one shade off the surface, a
+  section on `--surface-alt` to separate it from the one above. Flat grey on
+  white is the default nobody chose.
+- **A rhythm, not a list.** Sections alternate — full-bleed photograph, then
+  contained text, then a grid, then a quiet band. Same padding everywhere and
+  everything centred reads as a template.
+- **One thing that is yours.** A card that lifts and reveals its price, a
+  number that counts up, a nav that condenses as it scrolls, a photograph that
+  zooms a little inside its frame on hover, a heading with a hand-drawn
+  underline in SVG. One is enough, and it is what the user remembers.
+- **Type does the work.** Two faces from the contract, used with intent: a
+  display face large and tight for headings, the body face at a comfortable
+  measure. Sizes from a scale, not eight arbitrary pixel values.
+- **Detail at the edges.** Focus rings that match the brand, a selection
+  colour, a caret colour, a hover state on every single interactive thing, an
+  empty state with a drawing in it rather than a sentence.
+
+None of this is extra work at the end — it is what the stylesheet is for.
 
 ## The shell
 
@@ -476,8 +519,20 @@ sketch of a page, and each one has been the fault at least once:
 | pictures, where the product shows them | **6 or more** on a page that shows things |
 | rows in a list or table | **8 or more** |
 | `localStorage` in `demo.js` | **present** |
-| `@keyframes` in `styles.css` | **3 or more**, and a `transition` on everything that responds |
 | text that says "demo", "prototype" or "coming soon" | **none** |
+
+And `styles.css`, once, for the whole product. These are measured: they are
+what the same model writes for a single page when nobody is counting, and a
+drawing of twelve screens that comes in under them is styling less than one
+page's worth.
+
+| | `styles.css` |
+| --- | --- |
+| rules | **120 or more** |
+| `transition:` | **12 or more** |
+| `@keyframes` | **3 or more** |
+| `:hover`, `:focus-visible`, `:disabled`, empty and error states | all present |
+| `@media` | at least the phone; more if the layout needs it |
 
 A page under those is not finished — go back to it and add what is actually
 missing, rather than padding what is already there.
