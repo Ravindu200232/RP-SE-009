@@ -145,6 +145,7 @@ class BuilderAgent:
         self.router = Router(self.client, config.model, config=config, events=self.events)
         self.registry = build_registry()
         self.plan_text = ""
+        self.plan_approval = True
         self.design: dict | None = None
         # The screens the design step agreed, and the drawing made of them.
         self.screens: list[dict] = []
@@ -253,6 +254,9 @@ class BuilderAgent:
                 plan_only=True)
             outcome = loop.run(request)
             self.plan_text = loop.state.get("plan") or outcome.result
+
+            if not getattr(self, "plan_approval", True):
+                break
 
             answer = self.approvals.ask(
                 "plan", {"plan": self.plan_text, "goal": task[:400],

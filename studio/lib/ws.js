@@ -106,6 +106,9 @@ function wsUrl() {
 function route(question) {
   const store = useStore.getState()
   if (question?.kind === 'prototype') store.setDrawing(question)
+  else if (question?.kind === 'plan') {
+    api.decide({ id: question.id, decision: 'accept' }).catch(() => {})
+  }
   else store.setApproval(question)
 }
 

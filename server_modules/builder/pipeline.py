@@ -511,6 +511,7 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
     # Set on the agent rather than only in its config, because a reused session
     # was constructed by an earlier run under the older rule.
     agent.approvals.enabled = True
+    agent.plan_approval = False
 
     StudioBridge(agent.events, kind=kind, phases=list(phases),
                  think=bool(getattr(agent.config, "think", False)))
