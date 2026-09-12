@@ -27,8 +27,16 @@ TEMPLATE_SUFFIX = ".tpl"
 
 # The engine's own directories do not make a workspace non-empty: a task that
 # was planned, saved or restored has these and is still greenfield.
+#
+# `.env.example` is one of them, and leaving it out cost a whole stack: the
+# setup step writes the names it asked about there, so a build that was asked
+# anything at all arrived here with one file in the workspace, was declared to
+# contain a project, and never got its template. The MERN builds that went
+# through that had no .gitignore - which is also why their security review
+# read the client bundle and reported four findings against React's own code.
 ENGINE_ENTRIES = frozenset({".agent", ".agents", ".agentforge", ".git", ".gitignore",
-                            ".env", ".env.local", ".vscode", ".idea", "node_modules"})
+                            ".env", ".env.local", ".env.example",
+                            ".vscode", ".idea", "node_modules"})
 
 
 @dataclass

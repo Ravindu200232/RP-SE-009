@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: FAIL
-Run at (UTC): 2026-09-12T05:23:04+00:00
+Run at (UTC): 2026-09-12T05:50:28+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 660
+Unit tests: 661
 Integration tests: 24
-Total tests run: 684
+Total tests run: 685
 Failures: 4
 Errors: 0
 Skipped: 0
-Duration: 39.118s
+Duration: 35.534s
 
 Detailed results
 ----------------
@@ -275,6 +275,8 @@ test_the_contract_is_written_where_the_model_will_read_it (test.unit.builder.tes
 test_the_engines_own_directories_do_not_make_a_workspace_non_empty (test.unit.builder.test_project_setup.StackTemplateTests.test_the_engines_own_directories_do_not_make_a_workspace_non_empty) ... ok
 test_the_foreground_on_a_fill_is_measured_not_assumed (test.unit.builder.test_project_setup.StackTemplateTests.test_the_foreground_on_a_fill_is_measured_not_assumed) ... ok
 test_the_microservices_template_keeps_its_scaffold_directory_inert (test.unit.builder.test_project_setup.StackTemplateTests.test_the_microservices_template_keeps_its_scaffold_directory_inert) ... ok
+test_the_names_the_setup_step_wrote_down_do_not_either (test.unit.builder.test_project_setup.StackTemplateTests.test_the_names_the_setup_step_wrote_down_do_not_either)
+`.env.example` is the engine's note of what it asked for. ... ok
 test_the_notice_says_how_to_replace_what_it_says_to_replace (test.unit.builder.test_project_setup.StackTemplateTests.test_the_notice_says_how_to_replace_what_it_says_to_replace)
 It asks for the placeholder page to be replaced; writeFile refuses that. ... ok
 test_the_root_manifest_takes_the_folder_name_so_npm_can_install_it (test.unit.builder.test_project_setup.StackTemplateTests.test_the_root_manifest_takes_the_folder_name_so_npm_can_install_it) ... ok
@@ -802,6 +804,6 @@ Traceback (most recent call last):
 AssertionError: 0 != 3
 
 ----------------------------------------------------------------------
-Ran 684 tests in 39.117s
+Ran 685 tests in 35.533s
 
 FAILED (failures=4)

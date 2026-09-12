@@ -185,6 +185,27 @@ class StackTemplateTests(unittest.TestCase):
         (self.root / ".gitignore").write_text("node_modules\n", encoding="utf-8")
         self.assertTrue(is_greenfield(self.root))
 
+    def test_the_names_the_setup_step_wrote_down_do_not_either(self):
+        """`.env.example` is the engine's note of what it asked for.
+
+        It cost a stack: any build that asked a setup question arrived here
+        with that one file, was told the workspace already contained a
+        project, and was never given its template - so MERN projects had no
+        .gitignore, and their security review then read the client bundle and
+        reported four findings against React's own minified code.
+        """
+        (self.root / ".agentforge").mkdir()
+        (self.root / ".env.example").write_text("STRIPE_SECRET_KEY=\n", encoding="utf-8")
+
+        self.assertTrue(is_greenfield(self.root))
+        result = install_template(self.root, "mern-microservices")
+
+        self.assertTrue(result.scaffolded)
+        self.assertIn(".gitignore", result.files)
+        self.assertIn("dist", (self.root / ".gitignore").read_text(encoding="utf-8"))
+        # And what it had written down is still there.
+        self.assertIn("STRIPE_SECRET_KEY", (self.root / ".env.example").read_text(encoding="utf-8"))
+
     def test_a_file_the_workspace_already_has_survives_scaffolding(self):
         (self.root / ".gitignore").write_text("mine\n", encoding="utf-8")
 
