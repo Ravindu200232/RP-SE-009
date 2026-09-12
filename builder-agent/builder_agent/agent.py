@@ -181,22 +181,28 @@ class BuilderAgent:
         return changed
 
     # -- passes ----------------------------------------------------------
-    def settings(self, task: str) -> list[str]:
-        """Ask for the account settings this request needs, before planning it.
+    def settings(self, task: str, plan: str = "") -> list[str]:
+        """Ask for the accounts the agreed plan needs, before anything is designed.
 
         A Stripe secret or a Cloudinary cloud name cannot be read out of a
-        repository, and asking for one half way through the build is too late:
-        by then the plan has been written, and it was written without knowing
-        which provider it was for. So the question comes first and its answer
-        goes into the plan, which is what everything after it works from.
+        repository, so it has to be asked for. The request is too early to know
+        which of them this product will want - "a shop for my bakery" does not
+        say whether it takes cards, sends receipts or lets anyone upload a
+        photograph - and asking then means questions about providers the
+        product will never have, and none about the ones the plan invents.
 
-        Nothing here is enumerated in code. The skills selected from the
-        request are what decide the questions, and a skill declares its own -
-        so a request that never mentions money is never asked about Stripe, and
-        a new integration is a new skill directory rather than a branch here.
+        The approved plan does say. So the questions are read off it, after the
+        user has agreed it and before the design is customised, which is the
+        last moment they still cost nothing: the design, the drawing and the
+        build all follow from here.
+
+        Nothing is enumerated in code. The skills the plan selects are what
+        decide the questions, and a skill declares its own - so a plan that
+        never mentions money is never asked about Stripe, and a new integration
+        is a new skill directory rather than a branch here.
         """
         try:
-            selected = select_skills(read_manifest(), "", task, self.config.stack)
+            selected = select_skills(read_manifest(), plan, task, self.config.stack)
             questions = questions_for(selected)
         except Exception as error:                                   # noqa: BLE001
             self.events.emit("notice", level="warn",
@@ -606,7 +612,6 @@ class BuilderAgent:
         if not str(task or "").strip():
             raise ConfigError("A task description is required.")
         try:
-            self.settings(task)
             plan_outcome = self.plan(task)
             if plan_outcome.status not in ("completed",):
                 # A planning pass that could not finish is not fatal: the build
@@ -616,6 +621,11 @@ class BuilderAgent:
                                  message="Planning did not complete; building from the request "
                                          "directly.")
                 self.plan_text = ""
+            # What the agreed plan needs an account for - a card processor, a
+            # mail service, somewhere to put an upload - asked between the plan
+            # and the design, because the plan is what says which of them the
+            # product actually has.
+            self.settings(task, plan=self.plan_text)
             self.apply_design(task, plan=self.plan_text)
             # Drawn, changed until they are happy with it, and only then built.
             self.prototype(task, plan=self.plan_text)
@@ -696,7 +706,7 @@ class BuilderAgent:
         ])
 
     def _with_settings(self, task: str) -> str:
-        """The request, plus what the user settled about it before planning."""
+        """The request, plus the accounts the user settled once the plan was agreed."""
         if not self.setup_notes:
             return task
         return "\n".join([

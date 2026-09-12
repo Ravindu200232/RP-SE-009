@@ -19,6 +19,7 @@ from builder_agent.config import BUILD_QUALITY, Config
 from builder_agent.events import Events
 from builder_agent.approvals import Approvals
 from builder_agent.llm import Reply, ToolCall
+from builder_agent.loop import Outcome
 from builder_agent.prompts import system_prompt, task_message
 
 PLAN = ("Goal: a hotel booking site.\n"
@@ -348,6 +349,50 @@ class RetargetTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SettleAfterThePlanTests(unittest.TestCase):
+    """What the product needs an account for is asked once the plan is agreed.
+
+    Asked before planning, the questions came off the request - "a shop for my
+    bakery" - which says nothing about cards, receipts or photograph uploads,
+    so the wrong ones were asked and the ones the plan invented never were.
+    """
+
+    def build(self, tmp):
+        return BuilderAgent(
+            Config(workspace=Path(tmp), model="scripted", unit_tests=False,
+                   e2e_tests=False, state_root=Path(tmp) / ".state"),
+            events=Events(), client=object())
+
+    def test_the_accounts_are_asked_between_the_plan_and_the_design(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            agent = self.build(tmp)
+            order, asked = [], {}
+
+            def plan(task):
+                order.append("plan")
+                agent.plan_text = "## Requirements\n1. A reader pays by card at /checkout."
+                return Outcome(status="completed", result="planned")
+
+            def settings(task, plan=""):
+                order.append("settings")
+                asked["plan"] = plan
+                return []
+
+            agent.plan = plan
+            agent.settings = settings
+            agent.apply_design = lambda task, plan="": order.append("design")
+            agent.prototype = lambda task, plan="": order.append("drawing")
+            agent.build_ = agent.build
+            agent.build = lambda task, plan="": (order.append("build"),
+                                                 Outcome(status="completed", result="built"))[1]
+
+            agent.run("a shop for my bakery")
+
+            self.assertEqual(order, ["plan", "settings", "design", "drawing", "build"])
+            # And it is asked of the plan, which is what names the card payment.
+            self.assertIn("pays by card", asked["plan"])
 
 
 class PrototypePassTests(unittest.TestCase):

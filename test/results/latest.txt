@@ -1,16 +1,16 @@
 AgentForge repository test result
 =================================
 Status: FAIL
-Run at (UTC): 2026-09-12T05:14:06+00:00
+Run at (UTC): 2026-09-12T05:23:04+00:00
 Command: python test/run_suite.py
 Python: 3.12.10
-Unit tests: 659
+Unit tests: 660
 Integration tests: 24
-Total tests run: 683
+Total tests run: 684
 Failures: 4
 Errors: 0
 Skipped: 0
-Duration: 39.196s
+Duration: 39.118s
 
 Detailed results
 ----------------
@@ -63,6 +63,7 @@ test_retargeting_to_what_is_already_set_changes_nothing (test.unit.builder.test_
 test_the_transcript_survives_a_change_of_model (test.unit.builder.test_agent_passes.RetargetTests.test_the_transcript_survives_a_change_of_model) ... ok
 test_the_window_is_remeasured_so_a_smaller_model_is_not_overfilled (test.unit.builder.test_agent_passes.RetargetTests.test_the_window_is_remeasured_so_a_smaller_model_is_not_overfilled) ... ok
 test_thinking_can_be_turned_on_without_starting_again (test.unit.builder.test_agent_passes.RetargetTests.test_thinking_can_be_turned_on_without_starting_again) ... ok
+test_the_accounts_are_asked_between_the_plan_and_the_design (test.unit.builder.test_agent_passes.SettleAfterThePlanTests.test_the_accounts_are_asked_between_the_plan_and_the_design) ... ok
 test_it_names_both_ways_the_address_gets_lost (test.unit.builder.test_agent_passes.TheBuildKeepsTheDrawnPicturesTests.test_it_names_both_ways_the_address_gets_lost) ... ok
 test_it_says_where_a_data_driven_picture_should_live (test.unit.builder.test_agent_passes.TheBuildKeepsTheDrawnPicturesTests.test_it_says_where_a_data_driven_picture_should_live) ... ok
 test_the_build_is_told_to_carry_the_addresses_over (test.unit.builder.test_agent_passes.TheBuildKeepsTheDrawnPicturesTests.test_the_build_is_told_to_carry_the_addresses_over) ... ok
@@ -801,6 +802,6 @@ Traceback (most recent call last):
 AssertionError: 0 != 3
 
 ----------------------------------------------------------------------
-Ran 683 tests in 39.196s
+Ran 684 tests in 39.117s
 
 FAILED (failures=4)
