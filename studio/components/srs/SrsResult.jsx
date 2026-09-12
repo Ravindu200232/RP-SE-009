@@ -34,7 +34,9 @@ export default function SrsResult({ specOnly = false, onBuild }) {
     setState('error')
   }
 
-  useEffect(() => { load()  }, [project])
+  useEffect(() => {
+    if (!busy) load()
+  }, [project, busy])
 
   if (!project) return <Empty>Open a project to see the SRS it was built from.</Empty>
 
@@ -88,7 +90,7 @@ export default function SrsResult({ specOnly = false, onBuild }) {
             start one with “Plan it first” on the home screen.
           </Empty>
         )}
-        {state === 'ready' && anything && <View srs={srs} />}
+        {state === 'ready' && anything && <View srs={srs} onSelectView={setSub} />}
       </div>
     </div>
   )

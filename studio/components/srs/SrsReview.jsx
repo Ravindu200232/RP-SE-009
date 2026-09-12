@@ -335,7 +335,7 @@ export default function SrsReview({ projectId, onApproved, onKept, onBack }) {
 
           <div className="min-h-0 flex-1 overflow-y-auto p-5">
             {shown?.have && Object.values(shown.have).some(Boolean)
-              ? <View srs={shown} />
+              ? <View srs={shown} onSelectView={setSub} />
               : <Empty>Nothing was written for this version.</Empty>}
           </div>
         </div>
