@@ -149,11 +149,7 @@ none.
 
 ## Make it good, not only complete
 
-A page can pass every count below and still look like a form someone filled
-in. Asked for one page in a single sitting this same model writes 127 CSS
-rules; drawing twelve screens against a checklist it wrote 44. The checklist
-takes the attention the design should have had — so spend it here, on the
-stylesheet, where it is reused twelve times.
+A page must have genuine aesthetic depth and completeness. Invest deliberate craft into the stylesheet: build comprehensive, reusable styling with 120 or more CSS rules across the application so every screen shares cohesive visual polish.
 
 - **The opening decides the product — and what the opening *is* depends on who
   opens it.** Something sold to the public opens on a hero: a real photograph

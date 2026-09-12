@@ -40,14 +40,10 @@ Consider written content carefully. Often a design brief may not contain real co
 
 ## Process: plan, review against the brief, build, critique
 
-For calibration, generic design right now clusters around some tells:
-1. a warm cream background (near #F4F1EA) with a high-contrast serif display and an overused terracotta or warm-clay accent (near #D97757);
-2. a near-black background with a single bright acid-green or vermilion accent;
-3. a broadsheet-style layout with hairline rules, zero border-radius, and dense newspaper-like columns;
-4. the SaaS-card kit: content chopped into identical rounded cards, one border-radius on everything regardless of hierarchy, the same soft grey shadow (rgba(0,0,0,.1)) under each, and gradient washes as decoration;
-5. template chrome that appears whatever the subject: a tracked-out ALL-CAPS eyebrow label above every heading; meta strings joined with middle dots ('A · B · C'); labels built as 'WORD — fragment' with a spaced em dash; tinted near-black (#0B0B0B, #111) standing in for black; a monospace face for small data labels; a '→' appended to link and button text.
-
-All traits are legitimate for some briefs, but they are defaults rather than choices, and they appear regardless of subject. Where the brief pins down a visual direction, follow it exactly — the brief's own words always win, including when it asks for one of these looks. Where it leaves an axis free, don't spend that freedom on one of these defaults. As with a hired human designer, there's often a careful balance between doing what you're good at and taking each project as a chance to experiment and learn.
+Focus on clean, authentic design tailored directly to the client's brief:
+- **Balance & hierarchy**: Establish clear visual priorities with consistent spacing, purposeful contrast, and structured typography.
+- **Intentional styling**: Choose color schemes, card layouts, and borders that serve the product's actual use cases rather than decorative trends.
+- **Content clarity**: Let domain content drive the layout. Where the brief specifies a direction, follow it accurately; where open, choose a cohesive, accessible palette and rhythm suited to the user's workflow.
 
 Work in two passes. First, brainstorm a short design plan based on the client's design brief: create a compact token system with color, type, layout, and principles.
 - Color: describe the core base palette as 4–6 named hex values.
@@ -61,7 +57,7 @@ When writing the code, be careful of structuring your CSS selector specificities
 
 ## Restraint and self-critique
 
-Spend your boldness in one place. Let one element be the memorable thing, keep everything around it quiet and disciplined, and cut any decoration that does not serve the brief. Build to a quality floor without announcing it: responsive down to mobile, visible keyboard focus, reduced motion respected, visually accessible, harmonious color palettes. Critique your own work as you build, taking screenshots to review if your environment supports it — a picture is worth 1000 tokens. Consider Chanel's advice: before leaving the house, take a look in the mirror and remove one accessory. Human creatives have memory and always try to do something new, so if you have a space to quickly jot down notes about what you've tried, it can help you in future passes.
+Spend your boldness in one place. Let one element be the memorable thing, keep everything around it quiet and disciplined, and cut any decoration that does not serve the brief. Build to a high-quality standard: responsive down to mobile, visible keyboard focus, reduced motion respected, visually accessible, harmonious color palettes. Critique your own work as you build: verify visual balance, remove redundant elements, and ensure cohesive contrast and layout consistency across all viewports.
 
 ## More on writing in design
 

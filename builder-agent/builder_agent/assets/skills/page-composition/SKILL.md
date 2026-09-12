@@ -27,9 +27,9 @@ Two products built from this skill should not be recognisable as siblings. If
 what you are composing would work just as well for a different product with
 the words swapped, it is not finished.
 
-## The tells
+## Design quality and avoiding templated tells
 
-These are what a generated page looks like. Do not produce them:
+Produce authentic, product-specific interfaces. Avoid generic templated tells:
 
 - A centred hero, a centred paragraph and a centred button — on every page
 - Row after row of identical cards, icon above title above two lines
