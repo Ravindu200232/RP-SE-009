@@ -37,7 +37,7 @@ export default function AgentBrowser() {
   if (!shot?.frame || stale) return null
 
   return (
-    <div className="absolute inset-0 z-[6] flex flex-col bg-[#1f2430]">
+    <div className="absolute inset-0 z-[20] flex flex-col bg-[#1f2430] shadow-2xl">
       <div className="flex shrink-0 items-center gap-2 bg-[#2b3140] px-3 py-2">
         {['#ff5f57', '#febc2e', '#28c840'].map(colour => (
           <span key={colour} className="size-2.5 rounded-full"

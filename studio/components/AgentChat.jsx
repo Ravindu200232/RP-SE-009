@@ -16,7 +16,7 @@
 
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  CheckCircle2, ChevronDown, ChevronRight, CircleAlert, CircleCheck, Clock, FileCode2, FlaskConical, ListChecks, Loader2,
+  ArrowDown, Check, CheckCircle2, ChevronDown, ChevronRight, CircleAlert, CircleCheck, Clock, Copy, ExternalLink, Eye, FileCode2, FlaskConical, ListChecks, Loader2,
   MessageSquare, MousePointerClick, Palette, Pencil, Search, Send, Sparkles,
   Square, Terminal, Wrench, X,
 } from 'lucide-react'
@@ -24,6 +24,7 @@ import {
 import { api } from '@/lib/api'
 import { chatTurns } from '@/lib/chat'
 import { consoleReport, forgetConsole } from '@/lib/console-log'
+import { computeLineDiff } from '@/lib/diff'
 import { useStore } from '@/lib/store'
 import { useEditAttachments } from '@/lib/use-edit-attachments'
 import { answerQuestion, reviseDrawing, send } from '@/lib/ws'
@@ -68,6 +69,9 @@ export default function AgentChat() {
   const attach = useEditAttachments()
   const end = useRef(null)
   const box = useRef(null)
+  const scrollRef = useRef(null)
+  const userScrolledUp = useRef(false)
+  const [showScrollBottom, setShowScrollBottom] = useState(false)
 
   const turns = useMemo(() => chatTurns(logs, chat), [logs, chat])
   const waiting = useStore(s => s.queue)
@@ -86,8 +90,24 @@ export default function AgentChat() {
     box.current?.focus()
   }, [selection.length])
 
+  const handleScroll = () => {
+    const el = scrollRef.current
+    if (!el) return
+    const isBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60
+    userScrolledUp.current = !isBottom
+    setShowScrollBottom(!isBottom)
+  }
+
+  const scrollToBottom = () => {
+    userScrolledUp.current = false
+    setShowScrollBottom(false)
+    end.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
+  }
+
   useEffect(() => {
-    if (open) end.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
+    if (open && !userScrolledUp.current) {
+      end.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
+    }
   }, [open, turns.length])
 
   // The moment a run ends, the next thing they typed goes. Firing sets the
@@ -227,7 +247,7 @@ export default function AgentChat() {
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3.5 py-3">
+      <div ref={scrollRef} onScroll={handleScroll} className="relative min-h-0 flex-1 overflow-y-auto px-3.5 py-3">
         <div className="space-y-3">
           {/* The last row is the one happening now, so it is the one that
               spins; the rows behind it have already happened. */}
@@ -248,6 +268,13 @@ export default function AgentChat() {
           )}
           <div ref={end} />
         </div>
+        {showScrollBottom && (
+          <button onClick={scrollToBottom}
+                  title="Scroll to latest messages"
+                  className="sticky bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 rounded-full border border-line/90 bg-panel px-3.5 py-1.5 text-[11px] font-semibold text-accent shadow-xl backdrop-blur hover:bg-accent hover:text-white transition-all">
+            <ArrowDown className="size-3.5" /> Latest messages
+          </button>
+        )}
       </div>
 
       <footer className="shrink-0 border-t border-line px-3.5 py-3">
@@ -525,11 +552,179 @@ function Queued({ item, onDrop }) {
 }
 
 function parseFileInfo(title) {
-  const clean = String(title || '').replace(/^(written|created|patched|edited|writing|editing|removed)\s+/i, '').trim()
+  const clean = String(title || '').replace(/^(written|created|patched|edited|writing|editing|removed|reading|read)\s+/i, '').trim()
   const pathOnly = clean.replace(/\s*\(\d+\s*lines\)/i, '').trim()
   const parts = pathOnly.split('/')
   const fileName = parts[parts.length - 1] || pathOnly
   return { fileName, filePath: pathOnly }
+}
+
+function FileActionCard({ turn, live }) {
+  const [expanded, setExpanded] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [fetchedContent, setFetchedContent] = useState(null)
+  const [fetching, setFetching] = useState(false)
+
+  const { fileName, filePath } = parseFileInfo(turn.file || turn.title)
+  const files = useStore(s => s.files)
+  const fileHistory = useStore(s => s.fileHistory || {})
+  const readFiles = useStore(s => s.readFiles || {})
+  const project = useStore(s => s.project)
+  const agentRole = useStore(s => s.agentRole)
+
+  const isPatch = turn.action === 'patched' || turn.action === 'edited' || /patched|edited/i.test(turn.title || '')
+  const isRead = turn.kind === 'read'
+
+  // History & contents
+  const history = fileHistory[filePath] || fileHistory[fileName] || {}
+  const oldText = history.oldContent || ''
+  const currentText = files[filePath] || files[fileName] || history.newContent || fetchedContent || ''
+  const readContent = readFiles[filePath] || readFiles[fileName] || currentText || ''
+
+  const diff = useMemo(() => {
+    if (!isPatch) return null
+    return computeLineDiff(oldText, currentText)
+  }, [isPatch, oldText, currentText])
+
+  // Lazy fetch if expanded and not in memory
+  useEffect(() => {
+    if (expanded && !currentText && !readContent && !fetching && project) {
+      setFetching(true)
+      api.files(project, agentRole)
+        .then(res => {
+          if (res?.files?.[filePath]) setFetchedContent(res.files[filePath])
+        })
+        .catch(() => {})
+        .finally(() => setFetching(false))
+    }
+  }, [expanded, currentText, readContent, fetching, project, agentRole, filePath])
+
+  const copyCode = (e) => {
+    e.stopPropagation()
+    const textToCopy = isRead ? readContent : currentText
+    if (!textToCopy) return
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  const openInEditor = (e) => {
+    e.stopPropagation()
+    useStore.getState().setView('code')
+    if (filePath) useStore.getState().selectFile(filePath)
+  }
+
+  const iconBg = isRead
+    ? 'bg-amber-500/10 text-amber-400'
+    : isPatch
+      ? 'bg-purple-500/10 text-purple-400'
+      : 'bg-blue-500/10 text-blue-400'
+
+  const IconComponent = isRead ? Eye : Pencil
+
+  const badgeText = isRead
+    ? 'read'
+    : isPatch
+      ? (diff && (diff.additions > 0 || diff.deletions > 0) ? `+${diff.additions} -${diff.deletions}` : 'patched')
+      : (turn.action || 'created')
+
+  const badgeStyle = isRead
+    ? 'bg-amber-500/10 text-amber-400 border-amber-500/25'
+    : isPatch
+      ? 'bg-purple-500/10 text-purple-400 border-purple-500/25'
+      : 'bg-blue-500/10 text-blue-400 border-blue-500/25'
+
+  return (
+    <div className="my-1.5 overflow-hidden rounded-2xl border border-line bg-panel2/60 shadow-sm transition-all hover:border-accent/40">
+      <div onClick={() => setExpanded(prev => !prev)}
+           title={expanded ? 'Click to collapse' : 'Click to inspect code'}
+           className="flex items-center justify-between gap-3 p-3 cursor-pointer select-none hover:bg-panel transition-colors">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={cn('grid size-9 shrink-0 place-items-center rounded-xl transition-transform', iconBg)}>
+            <IconComponent className="size-4" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="truncate font-semibold text-ink text-[13px]">{fileName}</p>
+              <span className={cn('rounded px-1.5 py-0.5 text-[9px] font-mono border uppercase tracking-wide', badgeStyle)}>
+                {badgeText}
+              </span>
+            </div>
+            <p className="truncate font-mono text-[11px] text-muted">{filePath || fileName}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {live ? (
+            <Loader2 className="size-4 animate-spin text-accent" />
+          ) : (
+            <CheckCircle2 className="size-5 text-emerald-500" />
+          )}
+          <ChevronRight className={cn('size-4 text-muted2 transition-transform duration-200', expanded && 'rotate-90 text-ink')} />
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="border-t border-line/60 bg-[#0c0f17] p-3 text-white">
+          <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-white/10 text-xs">
+            <span className="font-mono text-[11px] text-slate-400 truncate max-w-[220px]" title={filePath}>
+              {filePath}
+            </span>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button onClick={copyCode}
+                      title="Copy code"
+                      className="flex items-center gap-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-colors">
+                {copied ? <Check className="size-3 text-emerald-400" /> : <Copy className="size-3" />}
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+              <button onClick={openInEditor}
+                      title="Open in editor"
+                      className="flex items-center gap-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-colors">
+                <ExternalLink className="size-3" /> Editor
+              </button>
+            </div>
+          </div>
+
+          <div className="max-h-[320px] overflow-auto rounded-lg border border-white/10 bg-[#080b11] p-2 font-mono text-[11px] leading-relaxed select-text">
+            {fetching ? (
+              <div className="py-6 flex items-center justify-center gap-2 text-slate-400 text-xs">
+                <Loader2 className="size-3.5 animate-spin text-accent" /> Loading file content…
+              </div>
+            ) : isPatch && diff ? (
+              <div className="space-y-0.5">
+                {diff.lines.map((line, idx) => (
+                  <div key={idx}
+                       className={cn('flex items-start px-2 py-0.5 rounded-[3px]',
+                         line.type === 'del' && 'bg-rose-500/15 text-rose-300 border-l-2 border-rose-500 font-medium',
+                         line.type === 'add' && 'bg-emerald-500/15 text-emerald-300 border-l-2 border-emerald-500 font-medium',
+                         line.type === 'same' && 'text-slate-400 hover:bg-white/[0.03]')}>
+                    <span className="w-8 shrink-0 select-none text-right pr-2 opacity-40 tabular-nums">
+                      {line.type === 'del' ? line.oldNo : line.type === 'add' ? line.newNo : line.newNo || line.oldNo}
+                    </span>
+                    <span className="w-4 shrink-0 select-none text-center font-bold">
+                      {line.type === 'del' ? '-' : line.type === 'add' ? '+' : ' '}
+                    </span>
+                    <span className="flex-1 whitespace-pre-wrap break-all">{line.text || ' '}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-0.5">
+                {((isRead ? readContent : currentText) || '// File content empty or loaded from environment').split(/\r?\n/).map((line, idx) => (
+                  <div key={idx} className="flex items-start px-2 py-0.5 text-slate-300 hover:bg-white/[0.03] rounded-[3px]">
+                    <span className="w-8 shrink-0 select-none text-right pr-2 opacity-40 tabular-nums">
+                      {idx + 1}
+                    </span>
+                    <span className="flex-1 whitespace-pre-wrap break-all">{line || ' '}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 /**
@@ -590,34 +785,9 @@ const Turn = memo(function Turn({ turn, live }) {
   }
 
   // Bolt File Action Card (Image 1)
-  if (turn.kind === 'write') {
-    const { fileName, filePath } = parseFileInfo(turn.title)
-    return (
-      <div onClick={() => {
-             useStore.getState().setView('code')
-             if (filePath) useStore.getState().selectFile(filePath)
-           }}
-           title={filePath || fileName}
-           className="group my-1.5 flex items-center justify-between gap-3 rounded-2xl border border-line bg-panel2/60 p-3 shadow-sm transition-all hover:border-accent/40 hover:bg-panel cursor-pointer">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-blue-500/10 text-blue-500 transition-transform group-hover:scale-105">
-            <Pencil className="size-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="truncate font-semibold text-ink text-[13px]">{fileName}</p>
-            <p className="truncate font-mono text-[11px] text-muted">{filePath || fileName}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {live ? (
-            <Loader2 className="size-4 animate-spin text-accent" />
-          ) : (
-            <CheckCircle2 className="size-5 text-emerald-500" />
-          )}
-          <ChevronRight className="size-4 text-muted2 transition-transform group-hover:translate-x-0.5" />
-        </div>
-      </div>
-    )
+  // Interactive File Action Card for write, patch and read (Image 1)
+  if (turn.kind === 'write' || (turn.kind === 'read' && (turn.file || /^(?:read|reading)\s+/i.test(turn.title || '')))) {
+    return <FileActionCard turn={turn} live={live} />
   }
 
   const Icon = ICONS[turn.kind] || Sparkles

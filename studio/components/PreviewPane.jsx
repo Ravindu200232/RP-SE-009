@@ -60,8 +60,10 @@ export default function PreviewPane({ hidden, onBuild }) {
   const lastPathRef = useRef('/')
 
   const project = useStore(s => s.project)
+  const browserFrame = useStore(s => s.browserFrame)
   const { files, busy, addLog, setPreviewRoute, undo, setUndo, tests, e2eLive,
     drawing, setDrawing, selection, addSelection, patchSelection, clearSelection } = useAgentPreview(project, 'developer')
+  const isE2EActive = Boolean(tests?.running || e2eLive || browserFrame?.frame)
   const runtime = useStore(s => s.runtimes[project])
   const hasBuiltApp = Object.keys(files || {}).some(f =>
     f.startsWith('app/') || f.startsWith('src/') || f.startsWith('pages/') || f.startsWith('packages/') || f.startsWith('client/') || f === 'package.json'
@@ -572,10 +574,10 @@ export default function PreviewPane({ hidden, onBuild }) {
                style={{ width: width ? width + 'px' : '100%' }}>
             <iframe ref={frameRef} id="frame" title="preview" src="about:blank"
                     className={cn("absolute inset-0 block h-full w-full border-0 bg-[#0c0f17] transition-opacity duration-300",
-                      (iframeLoading || runtime?.status === 'starting') ? "opacity-0 pointer-events-none" : "opacity-100")} />
+                      ((iframeLoading || runtime?.status === 'starting') && !isE2EActive) ? "opacity-0 pointer-events-none" : "opacity-100")} />
 
             {/* Smooth Bolt.new loading animation */}
-            {(iframeLoading || runtime?.status === 'starting') && (
+            {((iframeLoading || runtime?.status === 'starting') && !isE2EActive) && (
               <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#0c0f17] p-6 text-center">
                 <div className="absolute inset-x-0 top-0 h-[2px] overflow-hidden bg-white/5">
                   <div className="h-full w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400 animate-pulse" />

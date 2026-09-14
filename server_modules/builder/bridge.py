@@ -91,6 +91,7 @@ class StudioBridge:
         bus.on("tool:start", self.on_tool_start)
         bus.on("tool:end", self.on_tool_end)
         bus.on("file", self.on_file)
+        bus.on("read", self.on_read)
         bus.on("test", self.on_test)
         bus.on("e2e", self.on_e2e)
         bus.on("browser", self.on_browser)
@@ -168,8 +169,9 @@ class StudioBridge:
         name = p.get("name", "")
         content = p.get("content") or ""
         note = p.get("note", "written")
+        old_content = p.get("old_content") or ""
         if note == "deleted":
-            efile(name, 0, "")
+            efile(name, 0, "", note="deleted")
             elog("INFO", f"   removed {name}")
             return
         # The studio's code pane follows a file as it lands. The engine writes
@@ -178,10 +180,15 @@ class StudioBridge:
         # being worked on, which is the part anyone actually watches.
         estream_start(name)
         estream_end(name, content)
-        efile(name, len(content), content)
+        efile(name, len(content), content, note=note, old_content=old_content)
         self.files_seen.add(name)
         self._stats(files=len(self.files_seen))
         elog("INFO", f"   {note} {name} ({len(content.splitlines())} lines)")
+
+    def on_read(self, p):
+        name = p.get("name", "")
+        content = p.get("content") or ""
+        emit({"type": "file_read", "name": name, "content": content})
 
     def on_test(self, p):
         state = p.get("state")

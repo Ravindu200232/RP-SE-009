@@ -271,7 +271,7 @@ def estep(s, st):
         log.error(f"step {s} failed")
     emit({"type": "step", "step": s, "status": st})
     cancel.check()
-def efile(n, sz, c=""):   emit({"type":"file",         "name":n,     "size":sz,   "content":c})
+def efile(n, sz, c="", note="written", old_content=""):   emit({"type":"file", "name":n, "size":sz, "content":c, "note":note, "old_content":old_content})
 def edetect(t, s):        emit({"type":"detected",     "site_type":t,"strategy":s})
 def eprog(lbl, pct):
     emit({"type": "progress", "step": lbl, "pct": pct})

@@ -4,7 +4,7 @@ export const ROLES = ['designer', 'developer']
 
 export function emptySession() {
   return { logs: [], chat: [], runStats: null, agentState: '', reasoning: false, busy: false,
-    steps: {}, phases: [], files: {}, activeFile: null, liveFile: null, liveBuf: '',
+    steps: {}, phases: [], files: {}, fileHistory: {}, readFiles: {}, activeFile: null, liveFile: null, liveBuf: '',
     progress: emptyProgress(), selection: [], approval: null, drawing: null,
     browserFrame: null, browserConsole: [], question: null, undo: null, previewRoute: '/', draft: '',
     tests: { running: false, attempt: 0, rows: [], fixing: [], pass: 0, fail: 0, warn: 0 },
@@ -40,7 +40,29 @@ export function reduceSession(session, event) {
     case 'step': next.steps = { ...s.steps, [event.step]: event.status }; break
     case 'progress': next.progress = advance(s.progress, event.step, event.pct, at); break
     case 'phase': next.phases = [...s.phases.filter(p => p.phase !== event.phase), event]; break
-    case 'file': if (event.agent === 'designer') next.prototypeStamp = at; if (event.content !== undefined) next.files = { ...s.files, [event.name]: event.content }; break
+    case 'file': {
+      if (event.agent === 'designer') next.prototypeStamp = at
+      if (event.content !== undefined) {
+        const prev = s.files[event.name] || event.old_content || ''
+        next.files = { ...s.files, [event.name]: event.content }
+        next.fileHistory = {
+          ...(s.fileHistory || {}),
+          [event.name]: {
+            oldContent: event.old_content !== undefined ? event.old_content : prev,
+            newContent: event.content,
+            note: event.note || (prev ? 'patched' : 'written'),
+            at,
+          },
+        }
+      }
+      break
+    }
+    case 'file_read': {
+      if (event.name && event.content !== undefined) {
+        next.readFiles = { ...(s.readFiles || {}), [event.name]: event.content }
+      }
+      break
+    }
     case 'stream_start': next.liveFile = event.file; next.liveBuf = ''; break
     case 'stream': next.liveBuf = (s.liveBuf + (event.token || '')).slice(-200000); break
     case 'stream_end': next.files = { ...s.files, [event.file]: event.content || '' }; next.liveFile = null; next.liveBuf = ''; break

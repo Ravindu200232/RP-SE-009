@@ -35,7 +35,7 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="replace")
 
 
-def _write(ctx, path: Path, text: str, note: str) -> None:
+def _write(ctx, path: Path, text: str, note: str, old_text: str = "") -> None:
     ctx.sandbox.check_access(path, write=True)
     if len(text.encode("utf-8", "replace")) > MAX_WRITE_BYTES:
         raise ToolError(f"Refusing to write more than {MAX_WRITE_BYTES // 1024} KiB in one call.")
@@ -45,7 +45,7 @@ def _write(ctx, path: Path, text: str, note: str) -> None:
     temporary.replace(path)
     relative = ctx.sandbox.relative(path)
     ctx.memory.digest["files"].add(relative)
-    ctx.events.emit("file", name=relative, size=len(text), content=text, note=note)
+    ctx.events.emit("file", name=relative, size=len(text), content=text, note=note, old_content=old_text)
 
 
 # ---------------------------------------------------------------------------
@@ -68,8 +68,10 @@ def read_file(args, ctx):
     if offset + len(window) < len(lines) or truncated:
         tail = (f"\n[showing lines {offset + 1}-{offset + len(window)} of {len(lines)}. "
                 "Call readFile again with a larger offset for the rest.]")
+    relative = ctx.sandbox.relative(path)
+    ctx.events.emit("read", name=str(relative), size=len(text), content=text)
     return {"ok": True,
-            "content": (f"{ctx.sandbox.relative(path)} (revision {revision_of(text)}, "
+            "content": (f"{relative} (revision {revision_of(text)}, "
                         f"{len(lines)} lines)\n{body}{tail}")}
 
 
@@ -147,7 +149,7 @@ def patch_file(args, ctx):
         applied.append(f"{start}-{end}")
 
     updated = "\n".join(lines)
-    _write(ctx, path, updated, "patched")
+    _write(ctx, path, updated, "patched", old_text=text)
     return {"ok": True, "mutated": True,
             "content": (f"Patched {ctx.sandbox.relative(path)} at line(s) "
                         f"{', '.join(reversed(applied))}. New revision {revision_of(updated)}, "
@@ -170,7 +172,7 @@ def edit_file(args, ctx):
                             "Include more surrounding context to make it unique, or pass "
                             "replaceAll:true.")}
     updated = text.replace(old, new) if args.get("replaceAll") else text.replace(old, new, 1)
-    _write(ctx, path, updated, "edited")
+    _write(ctx, path, updated, "edited", old_text=text)
     return {"ok": True, "mutated": True,
             "content": f"Replaced {count if args.get('replaceAll') else 1} occurrence(s) in "
                        f"{ctx.sandbox.relative(path)}. New revision {revision_of(updated)}."}

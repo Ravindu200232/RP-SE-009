@@ -12,7 +12,7 @@ export default function LiveE2EOverlay({ event }) {
   const pct = total ? Math.max(4, Math.min(100, Math.round(index / total * 100))) : 8
 
   return (
-    <div className="pointer-events-none absolute inset-x-5 top-5 z-[12] flex justify-center">
+    <div className="pointer-events-none absolute inset-x-5 top-5 z-[25] flex justify-center">
       <div className="w-full max-w-[620px] rounded-2xl border border-white/15 bg-[#121622]/95 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-2xl">
         <div className="flex items-center gap-3.5">
           <div className={cn('grid size-10 place-items-center rounded-xl',

@@ -128,6 +128,11 @@ function classify(row) {
     const path = changed[2].replace(/^[`'"]|[`'"]$/g, '').replace(/\\/g, '/')
     return { kind: 'write', title: line, detail: '', file: path, action: changed[1].toLowerCase() }
   }
+  const readMatched = /^(?:read|reading)\s+(.+?)(?:\s+\(\d+ lines\))?$/i.exec(line)
+  if (readMatched && !/^(?:the|a|from|into|about)\s+/i.test(readMatched[1])) {
+    const path = readMatched[1].replace(/^[`'"]|[`'"]$/g, '').replace(/\\/g, '/')
+    return { kind: 'read', title: `Read ${path}`, detail: '', file: path, action: 'read' }
+  }
   for (const [pattern, kind, title] of KINDS) {
     const match = pattern.exec(line)
     if (match) return { kind, title: title(match), detail: '' }
