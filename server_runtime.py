@@ -28,6 +28,7 @@ _RUNTIME_PARTS = (
     'server_modules/builder/pipeline.py',
     'server_modules/builder/edits.py',
     'server_modules/builder/projects.py',
+    'server_modules/srs/parent_sync.py',
     'server_modules/core/preview_runtime.py',
     'server_modules/ui/http_base.py',
     'server_modules/ui/preview_http.py',

@@ -38,8 +38,12 @@ async function req(path, opts = {}) {
   try { data = text ? JSON.parse(text) : null } catch { data = { raw: text } }
   // The session expired, or was ended elsewhere: back to the sign-in page
   // rather than a studio full of errors about someone who is not signed in.
-  if (r.status === 401 && data?.auth === 'required') onSignedOut?.()
-  if (!r.ok) throw new Error((data && (data.error || data.detail)) || `HTTP ${r.status}`)
+  if (r.status === 401 && data?.auth === 'required' && token === getAuthToken()) onSignedOut?.()
+  if (!r.ok) {
+    const error = new Error((data && (data.error || data.detail)) || `HTTP ${r.status}`)
+    error.status = r.status
+    throw error
+  }
   return data
 }
 
@@ -65,7 +69,7 @@ export const api = {
   saveSettings: (s) => post('/settings', s),
   imageCheck: () => req('/image-check'),
   imageStart: () => post('/image-start', {}),
-  files: (project) => req(`/files/${encodeURIComponent(project)}`),
+  files: (project, agent = 'developer') => req(`/files/${encodeURIComponent(project)}?agent=${agent}`),
   saveFile: (project, path, content) => post('/save-file', { project, path, content }),
   open: (project) => post(`/open/${encodeURIComponent(project)}`, {}),
   runtime: (project) => req(`/runtime/${encodeURIComponent(project)}`),
@@ -76,7 +80,7 @@ export const api = {
   deleteProject: (project) => post('/delete-project', { project }),
 
   // Stop the running build.
-  cancelBuild: () => post('/build/cancel', {}),
+  cancelBuild: (project, agent) => post('/build/cancel', { project, agent }),
 
   // Answer a question the run is waiting on: the plan, or the design.
   decide: (body) => post('/decision', body),
@@ -89,6 +93,8 @@ export const api = {
 
   // Everything that has happened to a project, so a reload does not lose it.
   stream: (project) => req(`/stream/${encodeURIComponent(project)}`),
+  retrySync: project => post('/sync/retry', { project }),
+  workflow: (project) => req(`/workflow/${encodeURIComponent(project)}`),
   saveStream: (project, logs, chat) => post('/stream', { project, logs, chat }),
 
   // Throw away a specification that has not been approved.
@@ -138,7 +144,10 @@ export const api = {
 
   srsPdfUrl: (project) => `${API}/srs-pdf/${encodeURIComponent(project)}`,
   srsStatus: () => req('/srs-status'),
+  integrations: (project) => req(`/srs/projects/${encodeURIComponent(project)}/integrations`),
+  saveIntegrations: (project, answers) => post(`/srs/projects/${encodeURIComponent(project)}/integrations`, { answers }),
 
+  resumeSrs: path => resumeSrsJob(path),
   srs: (path, body) => body === undefined
     ? req(`/srs${path}`)
     : srsJob(path, body),
@@ -186,22 +195,60 @@ async function deployJob(method, path, body, { onWait, signal } = {}) {
   }
 }
 
-async function srsJob(path, body, { onWait, signal } = {}) {
-  const started = await post('/srs/jobs', { path, method: 'POST', body })
-  const id = started.job_id
-  for (let i = 0; ; i++) {
+const srsInflight = new Map()
+async function digest(text) {
+  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
+  return Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, '0')).join('')
+}
+async function srsPrefix() { return `agentforge-srs-job:${await digest(getAuthToken())}:` }
+async function pollSrs(id, key, { onWait, signal } = {}) {
+  const started = Date.now()
+  let failures = 0
+  while (Date.now() - started < 60 * 60 * 1000) {
     if (signal?.aborted) throw new Error('cancelled')
-    await new Promise(r => setTimeout(r, i < 10 ? 300 : 900))
-    const job = await req(`/srs/jobs/${id}`)
-    if (job.status === 'running') { onWait?.(job.elapsed); continue }
-    if (job.status === 'error') throw new Error(job.error || 'the SRS failed')
-    if (job.http_status >= 400) {
-      const detail = job.result?.detail ?? job.result?.error
-      throw new Error(typeof detail === 'string'
-        ? detail : `HTTP ${job.http_status}`)
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    let job
+    try { job = await req(`/srs/jobs/${id}`); failures = 0 }
+    catch (error) {
+      if (error.status === 404) { try { localStorage.removeItem(key) } catch { }; throw error }
+      if (++failures >= 3) throw error
+      continue
     }
+    if (job.status === 'running') { onWait?.(job.elapsed); continue }
+    try { localStorage.removeItem(key) } catch { }
+    if (job.status === 'error') throw new Error(job.error || 'The SRS update failed')
+    if (job.http_status >= 400) throw new Error(job.result?.detail || job.result?.error || `HTTP ${job.http_status}`)
     return job.result
   }
+  throw new Error('The SRS job is still pending. Reopen this project to continue following it.')
+}
+async function srsJob(path, body, options = {}) {
+  const key = (await srsPrefix()) + await digest(path + JSON.stringify(body))
+  if (srsInflight.has(key)) return srsInflight.get(key)
+  const work = (async () => {
+    let saved
+    try { saved = JSON.parse(localStorage.getItem(key) || 'null') } catch { }
+    if (!saved) {
+      const started = await post('/srs/jobs', { path, method: 'POST', body })
+      saved = { id: started.job_id, path, started: Date.now() }
+      try { localStorage.setItem(key, JSON.stringify(saved)) } catch { }
+    }
+    return pollSrs(saved.id, key, options)
+  })()
+  srsInflight.set(key, work)
+  try { return await work } finally { srsInflight.delete(key) }
+}
+async function resumeSrsJob(path) {
+  const prefix = await srsPrefix()
+  for (const key of Object.keys(localStorage)) {
+    if (!key.startsWith(prefix)) continue
+    let saved
+    try { saved = JSON.parse(localStorage.getItem(key)) } catch { continue }
+    if (saved?.path !== path) continue
+    try { return { resumed: true, result: await (srsInflight.get(key) || pollSrs(saved.id, key)) } }
+    catch (error) { if (error.status !== 404) throw error }
+  }
+  return { resumed: false }
 }
 
 const MAX_UPLOAD_BYTES = 7_500_000

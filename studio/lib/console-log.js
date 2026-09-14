@@ -1,3 +1,4 @@
+import { useStore } from './store'
 
 /** Capture preview browser evidence for bug reports. */
 
@@ -16,25 +17,34 @@ const NOISE = new RegExp([
 ].join('|'), 'i')
 
 
-let entries = []
+function owner(project, role) {
+  const state = useStore.getState()
+  return { project: project || state.project, role: role || state.agentRole, epoch: state.accountEpoch }
+}
+function entriesFor(scope) {
+  const state = useStore.getState()
+  if (scope.epoch !== state.accountEpoch) return []
+  return (state.project === scope.project && state.agentRole === scope.role
+    ? state.browserConsole : state.projectSessions[scope.project]?.[scope.role]?.browserConsole) || []
+}
 let observer = null
 
 export function observeConsole(callback) { observer = callback }
-export function recordConsole(kind, text) { push(kind, text) }
+export function recordConsole(kind, text, project, role) { push(kind, text, owner(project, role)) }
 
 
-function push(kind, text) {
+function push(kind, text, scope = owner()) {
+  if (scope.epoch !== useStore.getState().accountEpoch) return
+  let entries = entriesFor(scope)
   const line = String(text || '').replace(/\s+/g, ' ').trim().slice(0, MAX_TEXT)
   if (!line || NOISE.test(line)) return
   observer?.(kind, line)
 
   const last = entries[entries.length - 1]
   if (last && last.kind === kind && last.text === line) {
-    last.count += 1
-    return
-  }
-  entries.push({ kind, text: line, count: 1, at: Date.now() })
-  if (entries.length > MAX_ENTRIES) entries = entries.slice(-MAX_ENTRIES)
+    entries = [...entries.slice(0, -1), { ...last, count: last.count + 1 }]
+  } else entries = [...entries.slice(-(MAX_ENTRIES - 1)), { kind, text: line, count: 1, at: Date.now() }]
+  useStore.getState().patchAgentSession(scope.project, scope.role, { browserConsole: entries })
 }
 
 
@@ -50,7 +60,9 @@ function say(value) {
 
 
 /** Start recording in this frame's document. */
-export function watchFrame(frame) {
+export function watchFrame(frame, project, role) {
+  const scope = owner(project, role)
+  const report = (kind, text) => push(kind, text, scope)
   let w
   try { w = frame && frame.contentWindow } catch { return }
   if (!w) return
@@ -63,7 +75,7 @@ export function watchFrame(frame) {
     for (const level of ['error', 'warn']) {
       const original = w.console[level].bind(w.console)
       w.console[level] = (...args) => {
-        try { push(level, args.map(say).join(' ')) } catch { }
+        try { report(level, args.map(say).join(' ')) } catch { }
         original(...args)
       }
     }
@@ -71,12 +83,12 @@ export function watchFrame(frame) {
     w.addEventListener('error', (e) => {
       const where = e.filename
         ? ` (${String(e.filename).split('/').pop()}:${e.lineno})` : ''
-      push('uncaught', (e.error && e.error.stack) || e.message + where)
+      report('uncaught', (e.error && e.error.stack) || e.message + where)
     })
 
     w.addEventListener('unhandledrejection', (e) => {
       const r = e.reason
-      push('uncaught', 'in a promise: ' + ((r && r.stack) || say(r)))
+      report('uncaught', 'in a promise: ' + ((r && r.stack) || say(r)))
     })
 
     // The requests are the half `console` cannot give.
@@ -91,7 +103,7 @@ export function watchFrame(frame) {
               || (args[0] && args[0].method) || 'GET').toUpperCase()
             let body = ''
             try { body = (await res.clone().text()).slice(0, MAX_BODY) } catch { }
-            push('request', `${method} ${url} → ${res.status}`
+            report('request', `${method} ${url} → ${res.status}`
                           + (body ? ` — ${body}` : ''))
           }
         } catch { }
@@ -106,12 +118,14 @@ export function watchFrame(frame) {
 
 /** Clear evidence before the next run. */
 export function forgetConsole() {
-  entries = []
+  const scope = owner()
+  useStore.getState().patchAgentSession(scope.project, scope.role, { browserConsole: [] })
 }
 
 
 /** The evidence as prose, or "" when the browser saw nothing wrong. */
 export function consoleReport() {
+  const entries = entriesFor(owner())
   if (!entries.length) return ''
 
   const line = (e) => `  ${e.text}${e.count > 1 ? `  (×${e.count})` : ''}`

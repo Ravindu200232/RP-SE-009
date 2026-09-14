@@ -214,6 +214,10 @@ def working_on(project: str = ""):
 
 def stamp_owner(msg: dict) -> dict:
     """Name the project a message came from, unless it already names one."""
+    if getattr(RUN, "agent", "") and "agent" not in msg:
+        msg = {**msg, "agent": RUN.agent}
+    if getattr(RUN, "run_id", "") and "run_id" not in msg:
+        msg = {**msg, "run_id": RUN.run_id}
     if "project" in msg:
         return msg
     owner = getattr(RUN, "project", "")
@@ -229,8 +233,21 @@ def emit(msg: dict):
     message that already names its project keeps that name; one that names
     none is about the server itself and is shown wherever anyone is looking.
     """
-    if MAIN_LOOP is None: return
     stamped = stamp_owner(msg)
+    project = stamped.get("project")
+    if project and stamped.get("agent") and (PROD_DIR / project).is_dir():
+        from server_modules.services.project_state import ProjectState
+        try:
+            state = ProjectState(PROD_DIR / project)
+            stamped = state.record(stamped)
+            if stamped.get("type") in ("done", "cancelled", "error"):
+                status = {"done": "completed", "cancelled": "paused", "error": "failed"}[stamped["type"]]
+                state.agent(stamped["agent"], status=status, error=stamped.get("text", ""))
+                if stamped["type"] == "done":
+                    state.agent(stamped["agent"], completed_at=time.time())
+        except (OSError, ValueError) as error:
+            log.error("Could not persist project event: %s", error)
+    if MAIN_LOOP is None: return
     data = json.dumps(stamped, ensure_ascii=False)
     # Worked out here, on the sending thread: who a message is for is read off
     # that thread's run or request. Only its owner hears it (tenancy.py).
@@ -246,6 +263,8 @@ def emit(msg: dict):
 def elog(lvl, txt):
 
     log.info(f"[{lvl}] {txt}")
+    if getattr(RUN, "document_sync", False):
+        return
     emit({"type": "log", "level": lvl, "text": txt})
 def estep(s, st):
     if st == "error":

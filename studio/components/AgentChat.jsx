@@ -46,7 +46,10 @@ export default function AgentChat() {
   const logs = useStore(s => s.logs)
   const chat = useStore(s => s.chat)
   const busy = useStore(s => s.busy)
+  const buildAllowed = useStore(s => Boolean(s.buildAvailability[s.project]))
   const project = useStore(s => s.project)
+  const agentRole = useStore(s => s.agentRole)
+  const switchAgent = useStore(s => s.switchAgent)
   const question = useStore(s => s.question)
   const drawing = useStore(s => s.drawing)
   const stats = useStore(s => s.runStats)
@@ -59,7 +62,8 @@ export default function AgentChat() {
 
   // Collapsing gives the whole width back to the work when someone wants it.
   const [open, setOpen] = useState(true)
-  const [text, setText] = useState('')
+  const text = useStore(s => s.draft || '')
+  const setText = useStore(s => s.setDraft)
   const [reading, setReading] = useState(false)
   const attach = useEditAttachments()
   const end = useRef(null)
@@ -67,8 +71,8 @@ export default function AgentChat() {
 
   const turns = useMemo(() => chatTurns(logs, chat), [logs, chat])
   const waiting = useStore(s => s.queue)
-  const queued = useMemo(() => waiting.filter(item => item.project === project),
-                         [waiting, project])
+  const queued = useMemo(() => waiting.filter(item => item.project === project && item.payload?.agent === agentRole),
+                         [waiting, project, agentRole])
 
   useEffect(() => {
     if (busy) setOpen(true)     // a run is the thing you watch
@@ -90,7 +94,7 @@ export default function AgentChat() {
   // agent working again, which brings this back for the one after it.
   useEffect(() => {
     if (busy || !project) return
-    const next = useStore.getState().takeQueued(project)
+    const next = useStore.getState().takeQueued(project, agentRole)
     if (next) fire(next.payload, next.body, next.shown, next.shots)
   }, [busy, project])
 
@@ -123,11 +127,12 @@ export default function AgentChat() {
       }
     }
 
-    const route = selection[0]?.route || (useStore.getState().view === 'prototype' ? '/prototype' : (useStore.getState().previewRoute || ''))
+    if (useStore.getState().project !== project || useStore.getState().agentRole !== agentRole) return
+    const route = agentRole === 'designer' ? '/prototype' : (selection[0]?.route || useStore.getState().previewRoute || '/')
     const payload = {
       type: selection.length ? 'element_edit' : 'agent_update',
-      project, route,
-      model: useStore.getState().models.builder || useStore.getState().models.agent,
+      project, route, agent: agentRole,
+      model: (agentRole === 'designer' ? useStore.getState().models.design : useStore.getState().models.builder) || useStore.getState().models.agent,
       think: useStore.getState().think,
       qa_model: useStore.getState().models.qa || '',
       console: consoleReport(),
@@ -139,8 +144,7 @@ export default function AgentChat() {
     }
 
     const shots = selection.filter(s => s.shot).map(s => s.shot)
-    if (busy) queueUp(payload, full, typed, shots)
-    else fire(payload, full, typed, shots)
+    fire(payload, full, typed, shots)
     setReading(false)
   }
 
@@ -166,7 +170,7 @@ export default function AgentChat() {
    */
   function fire(payload, body, shown, shots = []) {
     const s = useStore.getState()
-    pushChat({ role: 'user', text: shown, at: Date.now(), shots })
+    // The server journals and echoes the message, including queued requests.
     send({ ...payload, prompt: body })
     forgetConsole()
     s.setBusy(true)
@@ -189,6 +193,13 @@ export default function AgentChat() {
 
   return (
     <aside className="flex w-[100%] lg:w-[var(--chat-w,460px)] max-w-full shrink-0 flex-col overflow-hidden border-r border-line/60 bg-panel/80">
+      <div className="flex gap-1 border-b border-line p-2" aria-label="Agent conversations">
+        {[['designer', 'Designer · UI/UX'], ['developer', 'Developer · QA']].map(([role, label]) => (
+          <button key={role} disabled={role === 'developer' && !buildAllowed} title={role === 'developer' && !buildAllowed ? 'Complete the prototype first' : label} onClick={() => { switchAgent(role); useStore.getState().setView(role === 'designer' ? 'prototype' : 'preview') }}
+            className={cn('flex-1 rounded-lg px-2 py-2 text-xs font-semibold', agentRole === role ? 'bg-accent/15 text-accent' : 'text-muted hover:text-ink')}
+            aria-pressed={agentRole === role}>{label}</button>
+        ))}
+      </div>
       <header className="shrink-0 border-b border-line/60 px-3.5 py-3">
         <div className="flex items-center gap-2">
           <span className="grid size-7 place-items-center rounded-xl bg-accent/10 text-accent">
@@ -344,7 +355,8 @@ function CancelRun() {
   async function stop() {
     setSending(true)
     try {
-      await api.cancelBuild()
+      const current = useStore.getState()
+      await api.cancelBuild(current.project, current.agentRole)
     } catch (e) {
       addLog('WARN', `could not cancel — ${e.message}`)
       setSending(false)

@@ -1,6 +1,7 @@
 
 import { create } from 'zustand'
 import { advance, emptyProgress } from './progress-model'
+import { captureSession, emptySession, reduceSession, ROLES } from './agent-session'
 
 const LS = typeof window === 'undefined' ? null : window.localStorage
 const read = (k, fallback) => {
@@ -38,12 +39,94 @@ export const KEYS = {
 }
 
 
-const RESUMABLE_SRS_PHASES = new Set(['interview', 'plan', 'review'])
+const RESUMABLE_SRS_PHASES = new Set(['planning', 'interview', 'plan', 'review', 'design'])
 
 
 
 
 export const useStore = create((set, get) => ({
+  accountEpoch: 0,
+  projectSessions: {},
+  projectViews: {},
+  buildAvailability: {},
+  projectSync: {},
+  srsStamp: {},
+  setProjectMetadata: (rows, requestedAt = Date.now()) => set(state => ({ buildAvailability: { ...state.buildAvailability,
+    ...Object.fromEntries(rows.filter(row => {
+      const designer = state.project === row.name && state.agentRole === 'designer'
+        ? state : state.projectSessions[row.name]?.designer
+      return !designer || designer.lastEventAt <= requestedAt
+    }).map(row => [row.name, Boolean(row.build_available)])) } })),
+  agentRole: 'developer',
+  draft: '',
+  setDraft: (draft) => set({ draft }),
+  patchAgentSession: (project, role, patch) => set(state => {
+    if (!project || !ROLES.includes(role)) return {}
+    const own = state.projectSessions[project] || {}
+    const visible = state.project === project && state.agentRole === role
+    const previous = visible ? captureSession(state) : (own[role] || emptySession())
+    const session = { ...previous, ...(typeof patch === 'function' ? patch(previous) : patch) }
+    return { projectSessions: { ...state.projectSessions, [project]: { ...own, [role]: session } },
+      ...(visible ? session : {}) }
+  }),
+  clearAccount: () => {
+    get().reset(null)
+    get().resetSrs()
+    try { LS?.removeItem('agentforge-project-views') } catch { }
+    set({ accountEpoch: get().accountEpoch + 1, streams: {}, projectSessions: {}, projectViews: {}, buildAvailability: {}, projectSync: {},
+      srsStamp: {}, runtimes: {}, queue: [] })
+  },
+  switchAgent: (agentRole) => set(state => {
+    if (agentRole === 'developer' && state.project && !state.buildAvailability[state.project]) return {}
+    if (!ROLES.includes(agentRole) || agentRole === state.agentRole) return {}
+    const own = state.projectSessions[state.project] || {}
+    return { projectSessions: { ...state.projectSessions, [state.project]: {
+      ...own, [state.agentRole]: captureSession(state) } },
+      ...emptySession(), ...own[agentRole], agentRole }
+  }),
+  applyProjectEvent: (event) => set(state => {
+    const project = event.project
+    if (!project) return {}
+    if (event.type === 'sync_state') return { projectSync: { ...state.projectSync, [project]: event },
+      srsStamp: { ...state.srsStamp, [project]: Date.now() } }
+    const role = ROLES.includes(event.agent) ? event.agent : 'developer'
+    const own = state.projectSessions[project] || {}
+    const visible = project === state.project && role === state.agentRole
+    const session = reduceSession(visible ? captureSession(state) : own[role], event)
+    const availability = role === 'designer' && event.type === 'done'
+      ? { buildAvailability: { ...state.buildAvailability, [project]: event.type === 'done' } } : {}
+    return { ...availability, projectSessions: { ...state.projectSessions, [project]: { ...own, [role]: session } },
+      ...(visible ? session : {}) }
+  }),
+  restoreProject: (snapshot) => set(state => {
+    if (!snapshot?.project) return {}
+    const own = state.projectSessions[snapshot.project] || {}
+    const restored = {}
+    for (const role of ROLES) {
+      const current = snapshot.project === state.project && role === state.agentRole
+        ? captureSession(state) : own[role]
+      let session = (snapshot.events?.[role] || []).reduce(reduceSession, emptySession())
+      // Preserve live events and composer state which arrived while the snapshot was fetched.
+      if (current) {
+        const saved = session
+        if (current.lastEventAt > (snapshot.updated_at || 0) * 1000) session = { ...session, ...current }
+        const ids = new Set(session.eventIds)
+        session.logs = [...saved.logs, ...current.logs.filter(row => row.at > (saved.logs.at(-1)?.at || 0))].slice(-800)
+        session.chat = [...saved.chat, ...current.chat.filter(row => row.at > (saved.chat.at(-1)?.at || 0))].slice(-300)
+        session = { ...session, draft: current.draft, selection: current.selection, previewRoute: current.previewRoute,
+          files: current.files, eventIds: [...new Set([...ids, ...current.eventIds])].slice(-1200) }
+      }
+      const run = snapshot.agents?.[role]
+      if (run && (!current || current.lastEventAt <= (snapshot.updated_at || 0) * 1000)) { session.busy = ['running', 'queued'].includes(run.status); session.workflowStatus = run.status; session.runId = run.run_id || '' }
+      restored[role] = session
+    }
+    const designerCurrent = snapshot.project === state.project && state.agentRole === 'designer' ? captureSession(state) : own.designer
+    const allowed = designerCurrent?.lastEventAt > snapshot.updated_at * 1000 ? state.buildAvailability[snapshot.project] : Boolean(snapshot.build_available)
+    return { buildAvailability: { ...state.buildAvailability, [snapshot.project]: allowed },
+      projectSync: { ...state.projectSync, [snapshot.project]: snapshot.sync },
+      projectSessions: { ...state.projectSessions, [snapshot.project]: restored },
+      ...(state.project === snapshot.project ? restored[state.agentRole] : {}) }
+  }),
 
   status: 'connecting',
   statusText: 'connecting…',
@@ -81,7 +164,15 @@ export const useStore = create((set, get) => ({
   setE2eLive: (e2eLive) => set({ e2eLive }),
   project: null,
   view: 'preview',
-  setView: (view) => set({ view }),
+  setView: (view) => {
+    const state = get()
+    if (['preview', 'testing', 'deploy'].includes(view) && state.project && !state.buildAvailability[state.project]) return
+    if (view === 'prototype' || view === 'design') get().switchAgent('designer')
+    else if (['preview', 'testing', 'deploy'].includes(view)) get().switchAgent('developer')
+    const views = state.project ? { ...state.projectViews, [state.project]: view } : state.projectViews
+    set({ view, projectViews: views })
+    try { LS?.setItem('agentforge-project-views', JSON.stringify(views)) } catch { }
+  },
 
   srsId: null,
 
@@ -92,10 +183,9 @@ export const useStore = create((set, get) => ({
     set(patch)
     try {
       const s = get()
-      if (s.srsId) {
-        LS?.setItem(KEYS.srsId, s.srsId)
-        LS?.setItem(KEYS.srsPhase, s.srsPhase || 'idle')
-      }
+      if (s.srsId) LS?.setItem(KEYS.srsId, s.srsId)
+      else LS?.removeItem(KEYS.srsId)
+      LS?.setItem(KEYS.srsPhase, s.srsPhase || 'idle')
     } catch { }
   },
   resetSrs: () => {
@@ -175,8 +265,8 @@ export const useStore = create((set, get) => ({
     queue: [...s.queue, { id: `q-${Date.now()}-${s.queue.length}`, at: Date.now(), ...entry }],
   })),
   dropQueued: (id) => set(s => ({ queue: s.queue.filter(item => item.id !== id) })),
-  takeQueued: (project) => {
-    const next = get().queue.find(item => item.project === project)
+  takeQueued: (project, role = get().agentRole) => {
+    const next = get().queue.find(item => item.project === project && (!item.payload?.agent || item.payload.agent === role))
     if (next) set(s => ({ queue: s.queue.filter(item => item.id !== next.id) }))
     return next || null
   },
@@ -237,12 +327,13 @@ export const useStore = create((set, get) => ({
       think: DEFAULTS.think,
       images: read(KEYS.images, '0') === '1',
       hist: readJSON(KEYS.hist, []),
+      projectViews: readJSON('agentforge-project-views', {}),
     })
 
     const srsId = read(KEYS.srsId, '')
     const srsPhase = read(KEYS.srsPhase, 'idle')
-    if (srsId && RESUMABLE_SRS_PHASES.has(srsPhase)) {
-      set({ srsId, srsPhase })
+    if ((srsId || srsPhase === 'planning') && RESUMABLE_SRS_PHASES.has(srsPhase)) {
+      set({ srsId: srsId || null, srsPhase })
     }
   },
 
@@ -285,17 +376,13 @@ export const useStore = create((set, get) => ({
       // set aside is also written down, because a tab that is closed next
       // takes the in-memory copy with it.
   reset: (project) => set(state => {
-    if (state.project && (state.logs.length || state.chat.length)) {
-      import('./api').then(({ api }) =>
-        api.saveStream(state.project, state.logs, state.chat).catch(() => { }))
-    }
+    const sessions = { ...state.projectSessions }
+    if (state.project) sessions[state.project] = { ...sessions[state.project], [state.agentRole]: captureSession(state) }
+    const restoredSession = sessions[project]?.[state.agentRole]
+    // Event histories and model contexts are durable on the server. Bound browser caches.
+    const evictable = Object.keys(sessions).filter(name => name !== project && !ROLES.some(role => sessions[name]?.[role]?.busy))
+    for (const name of evictable.slice(0, Math.max(0, Object.keys(sessions).length - 8))) delete sessions[name]
     return {
-    streams: state.project
-      ? { ...state.streams,
-          [state.project]: { logs: state.logs, chat: state.chat,
-                             runStats: state.runStats } }
-      : state.streams,
-    ...restored(state.streams[project]),
     project, agentState: '', approval: null, drawing: null,
     browserFrame: null, selection: [],
     steps: {}, phases: [], files: {},
@@ -308,6 +395,9 @@ export const useStore = create((set, get) => ({
     previewRoute: '/',
     e2eLive: null,
     e2eParallel: emptyE2eParallel(),
+    ...emptySession(), ...restoredSession,
+    projectSessions: sessions,
+    opening: false,
     }
   }),
 

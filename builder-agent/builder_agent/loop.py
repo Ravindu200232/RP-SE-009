@@ -120,7 +120,9 @@ class Loop:
 
         self.budget = ContextBudget(config.context_tokens)
         self.compactor = Compactor(memory, self.budget, router, events)
-        self.knowledge = Knowledge(sandbox.root, config.state_root)
+        role = config.extra.get("agent_role")
+        knowledge_root = sandbox.root / ".agentforge" / "agents" / role if role else sandbox.root
+        self.knowledge = Knowledge(knowledge_root, knowledge_root if role else config.state_root)
 
         self.iterations = 0
         self.tool_calls = 0
@@ -152,6 +154,29 @@ class Loop:
 
     # -- context frame ---------------------------------------------------
     def _refresh_system(self) -> None:
+        if self.config.extra.get("agent_role") == "designer":
+            self.memory.set_system(
+                "You are the Designer, a UI/UX engineer. Build and refine the specified complete interface "
+                "using HTML, CSS and JavaScript. Your context is independent from the developer's conversation. "
+                "The shared Markdown handoffs describe the product and its selected technology. "
+                "Read them before work. Only .agentforge/prototype/ is writable. "
+                "Use responsive layouts, accessible controls and working navigation. No server, package installation, "
+                "product replanning, app-specific template or approval gate is needed. Read before editing, "
+                "avoid repeated failed actions, and finish with an accurate account of what changed.")
+            return
+        if self.config.extra.get("agent_role") == "developer":
+            self.memory.set_system(
+                "You are the Developer and QA engineer for this project. Your conversation is independent "
+                "from the Designer's. Read .agentforge/handoff/app.md, sitemap.md and builder.md, and the "
+                "generated .agentforge/prototype/ files. Implement the approved specification using the user's "
+                "selected stack. Continue existing work without generating a second product plan. "
+                "Write application code and tests only in this project's application folders. Handoffs and the "
+                "prototype are read-only. Never read or disclose credential values; applications use environment "
+                "variables. Use runtimeInfo for assigned ports. Read before changing files. "
+                "Define verification scope for changed behavior, run appropriate checks and inspect their evidence. "
+                "Repair actionable failures; do not repeat an unchanged failing action. "
+                "Use waitForProcess for pending processes. Report completion and any remaining failures accurately.")
+            return
         self.memory.set_system(system_prompt(
             workspace=self.sandbox.root, model=self.router.label,
             stack=self.config.stack, quality=self.config.quality,
@@ -160,6 +185,9 @@ class Loop:
             plan_only=self.config.plan_only))
 
     def _sync_layout(self, force: bool = False) -> None:
+        if self.config.extra.get("agent_role") == "designer":
+            self.layout_dirty = False
+            return
         if not force and not self.layout_dirty:
             return
         try:
@@ -174,6 +202,9 @@ class Loop:
         self.memory.add_pinned(format_layout(layout), "project-layout")
 
     def _prepare_workspace(self, task: str) -> None:
+        if self.config.extra.get("agent_role") == "designer":
+            # Designer owns only the prototype. It must never scaffold app code.
+            return
         scaffold = install_template(
             self.sandbox.root, self.config.stack)
         if scaffold.scaffolded:
@@ -184,6 +215,11 @@ class Loop:
         elif scaffold.reason and "already contains a project" not in scaffold.reason:
             self.events.emit("notice", level="warn",
                              message=f"Stack template not applied: {scaffold.reason}")
+
+        if self.config.extra.get("agent_role") == "developer":
+            # The SRS owns the product instructions. Do not install category-specific
+            # skills or inject a fresh plan/design checklist into an approved build.
+            return
 
         pack = install_skill_pack(
             self.sandbox.root, task, self.config.stack)
@@ -255,6 +291,8 @@ class Loop:
                        else task_message(task, stack=self.config.stack,
                                          quality=self.config.quality,
                                          plan_only=self.config.plan_only))
+        if self.config.extra.get("agent_role"):
+            instruction = task
         self.memory.set_task(instruction)
         self.events.emit("agent:start", task=task[:2000], model=self.router.label,
                          workspace=str(self.sandbox.root), stack=self.config.stack,
@@ -492,6 +530,7 @@ class Loop:
         self.events.emit("tool:end", tool=call.tool, summary=summary, ok=ok,
                          detail=body[:400])
         self.memory.add_tool_result(call.tool, body, call.call_id, args=args, ok=ok)
+        self.events.emit("checkpoint", tool=call.tool)
         self._hint_phase_skills(call.tool)
         return result
 

@@ -29,6 +29,9 @@ from qa_agent import QAAgent  # noqa: E402
 from qa_agent.agent import QAOutcome  # noqa: E402
 from qa_agent import report as qa_report, security as qa_security  # noqa: E402
 from builder_agent.templates import restore_styling  # noqa: E402
+from builder_agent.designer import DesignerAgent
+from builder_agent.sandbox import Sandbox
+from server_modules.services.project_state import ProjectState, atomic_json
 
 from server_modules.services.mongo_common import db_name_for  # noqa: E402
 
@@ -36,11 +39,11 @@ from server_modules.services.mongo_common import db_name_for  # noqa: E402
 # the runtime parts executed before this one, not from an import: these files
 # are one program sharing one namespace.
 
-BUILD_PHASES = ("plan", "design", "prototype", "build", "unit", "e2e")
+BUILD_PHASES = ("build", "unit", "e2e")
 EDIT_PHASES = ("build", "unit", "e2e")
 
 # Files worth snapshotting before an edit so a single click can undo it.
-UNDO_EXT = {".js", ".jsx", ".ts", ".tsx", ".css", ".json", ".md"}
+UNDO_EXT = {".js", ".jsx", ".ts", ".tsx", ".css", ".json", ".md", ".html", ".svg"}
 UNDO_SKIP = {"node_modules", ".next", ".git", ".agentforge", ".agent", "coverage"}
 UNDO_KEEP = 12
 
@@ -86,9 +89,12 @@ def _write_env(proj_dir: Path) -> None:
 
 def _prepare_workspace(prompt: str, project: str, srs_id: str) -> Path:
     if project:
-        proj_dir = PROD_DIR / project
-        proj_dir.mkdir(parents=True, exist_ok=True)
+        _, proj_dir, error = _owned_dir(PROD_DIR, project, "project name", "project")
+        if error:
+            raise ValueError(error)
         _write_env(proj_dir)
+        if srs_id and not adopt_srs(srs_id, proj_dir):
+            raise RuntimeError("Could not load the approved specification")
         return proj_dir
     name = project_name_for(prompt)
     proj_dir = PROD_DIR / name
@@ -100,10 +106,8 @@ def _prepare_workspace(prompt: str, project: str, srs_id: str) -> Path:
     _write_env(proj_dir)
     eproject(name)
     if srs_id:
-        try:
-            adopt_srs(srs_id, proj_dir)
-        except Exception as error:                                   # noqa: BLE001
-            elog("WARN", f"   ⚠ the specification could not be attached: {error}")
+        if not adopt_srs(srs_id, proj_dir):
+            raise RuntimeError("Could not load the approved specification")
     return proj_dir
 
 
@@ -119,10 +123,9 @@ def _brief(proj_dir: Path, prompt: str) -> str:
     # The per-project database keeps generated apps out of each other's
     # collections, and the URI reaches the app through its environment so
     # nothing has to be hard-coded into the source.
-    parts += ["", f"MongoDB is running and this project's database is "
+    parts += ["", f"This project's database is "
                   f"`{db_name_for(proj_dir.name)}`. Read the connection string from "
-                  f"MONGODB_URI in the environment (it is set to "
-                  f"{MONGO.uri_for(proj_dir.name)}); never hard-code one."]
+                  "MONGODB_URI in the environment; never hard-code one."]
     return "\n".join(parts)
 
 
@@ -189,18 +192,24 @@ def pending_decisions() -> list:
 # --------------------------------------------------------------------------
 # Undo
 # --------------------------------------------------------------------------
-def snapshot_project(proj_dir: Path) -> dict:
+def snapshot_project(proj_dir: Path, role: str = "developer") -> dict:
     """Copy the source files before an edit so one click can put them back."""
     snap_id = uuid.uuid4().hex[:10]
     store = proj_dir / ".agentforge" / "undo" / snap_id
+    source = proj_dir / ".agentforge" / "prototype" if role == "designer" else proj_dir
+    sandbox = Sandbox(proj_dir, role=role)
     files = []
-    for path in proj_dir.rglob("*"):
+    for path in sandbox.walk(source):
         if not path.is_file() or path.suffix not in UNDO_EXT:
             continue
         relative = path.relative_to(proj_dir)
-        if any(part in UNDO_SKIP for part in relative.parts):
+        if any(part in UNDO_SKIP for part in path.relative_to(source).parts):
             continue
-        target = store / relative
+        try:
+            sandbox.check_access(sandbox.resolve(str(path)), write=True)
+        except Exception:
+            continue
+        target = store / "files" / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         try:
             shutil.copy2(path, target)
@@ -209,8 +218,9 @@ def snapshot_project(proj_dir: Path) -> dict:
             continue
         if len(files) > 400:
             break
+    atomic_json(store / "snapshot.json", {"agent": role, "files": files})
     _trim_undo(proj_dir)
-    emit({"type": "undo_point", "id": snap_id, "files": files[:20]})
+    emit({"type": "undo_point", "id": snap_id, "files": files[:20], "agent": role})
     return {"id": snap_id, "files": files}
 
 
@@ -227,20 +237,30 @@ def restore_snapshot(project: str, snap_id: str) -> dict:
     name, proj_dir, error = _owned_dir(PROD_DIR, project, "project name", "project")
     if error:
         return {"error": error}
-    store = proj_dir / ".agentforge" / "undo" / str(snap_id or "")
+    if not re.fullmatch(r"[a-f0-9]{10}", str(snap_id or "")):
+        return {"error": "Invalid undo point"}
+    store = proj_dir / ".agentforge" / "undo" / snap_id
     if not store.is_dir():
         return {"error": "that undo point is no longer available"}
+    metadata = store / "snapshot.json"
+    body = json.loads(metadata.read_text(encoding="utf-8")) if metadata.is_file() else {}
+    role = body.get("agent", "developer")
+    sandbox = Sandbox(proj_dir, role=role)
     restored = []
-    for path in store.rglob("*"):
+    source = store / "files" if metadata.is_file() else store
+    for path in source.rglob("*"):
         if not path.is_file():
             continue
-        relative = path.relative_to(store)
-        target = proj_dir / relative
+        if path == metadata:
+            continue
+        relative = path.relative_to(source)
+        target = sandbox.resolve(relative.as_posix())
+        sandbox.check_access(target, write=True)
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(path, target)
         restored.append(relative.as_posix())
-        efile(relative.as_posix(), target.stat().st_size,
-              target.read_text("utf-8", errors="replace"))
+        emit({"type": "file", "project": name, "agent": role, "name": relative.as_posix(),
+              "size": target.stat().st_size, "content": target.read_text("utf-8", errors="replace")})
     return {"ok": True, "restored": restored}
 
 
@@ -265,11 +285,18 @@ def _session_key(model: str, think, stack: str) -> tuple:
     return (str(stack or ""),)
 
 
-def forget_session(project: str) -> None:
+def forget_session(project: str, role: str = "") -> None:
     """Drop the conversation about a project that is closing or gone."""
     with _SESSIONS_LOCK:
-        session = _SESSIONS.pop(str(project or ""), None)
-    if session:
+        keys = [key for key in _SESSIONS if key == project or
+                (isinstance(key, tuple) and key[0] == project and (not role or key[1] == role))]
+        sessions = [_SESSIONS.pop(key) for key in keys]
+    for session in sessions:
+        try:
+            if hasattr(session["agent"], "config"):
+                save_conversation(PROD_DIR / project, session["agent"])
+        except Exception as error:
+            log.warning("Could not checkpoint session: %s", error)
         try:
             session["agent"].dispose()
         except Exception as error:                                   # noqa: BLE001
@@ -278,8 +305,20 @@ def forget_session(project: str) -> None:
 
 # What one project's conversation cost, kept with the project rather than in
 # the process that happened to run it.
-STATS_FILE = ".agentforge/session.json"
-CONVERSATION_FILE = ".agentforge/conversation.json"
+STATS_FILE = ".agentforge/agents/developer/stats.json"
+CONVERSATION_FILE = ".agentforge/agents/developer/conversation.json"
+
+
+def project_stack(proj_dir: Path, fallback: str = "") -> str:
+    detected = stack_of(proj_dir)
+    if detected:
+        return detected
+    state = ProjectState(proj_dir).read()
+    for role in ("developer", "designer"):
+        selected = state.get("agents", {}).get(role, {}).get("request", {}).get("stack")
+        if selected:
+            return selected
+    return fallback
 
 # And what it said. A browser tab is not a record: reload it, or open the
 # project tomorrow, and everything the run reported was gone.
@@ -323,7 +362,8 @@ def save_session_stats(proj_dir: Path, agent) -> None:
     if not stats:
         return
     try:
-        path = Path(proj_dir) / STATS_FILE
+        role = getattr(agent.config, "extra", {}).get("agent_role", "developer")
+        path = Path(proj_dir) / ".agentforge" / "agents" / role / "stats.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(stats, indent=2), encoding="utf-8")
     except OSError as error:
@@ -332,15 +372,15 @@ def save_session_stats(proj_dir: Path, agent) -> None:
 
 def save_conversation(proj_dir: Path, agent) -> None:
     """Persist the transcript itself, including its compacted memory."""
-    path = Path(proj_dir) / CONVERSATION_FILE
+    role = agent.config.extra.get("agent_role", "developer")
+    path = Path(proj_dir) / ".agentforge" / "agents" / role / "conversation.json"
     temporary = path.with_name(f"conversation-{uuid.uuid4().hex}.tmp")
     try:
         body = {"workspace": str(Path(proj_dir).resolve()), "stack": agent.config.stack,
                 "memory": agent.memory.serialize(), "plan": agent.plan_text,
-                "design": agent.design, "usage": dict(agent.router.usage)}
+                "design": agent.design, "usage": dict(agent.router.usage), "agent": role}
         path.parent.mkdir(parents=True, exist_ok=True)
-        temporary.write_text(json.dumps(body, ensure_ascii=False), encoding="utf-8")
-        temporary.replace(path)
+        atomic_json(path, body)
     except OSError as error:
         elog("WARN", f"Could not save the conversation for {proj_dir.name}: {error}")
     finally:
@@ -352,11 +392,15 @@ def save_conversation(proj_dir: Path, agent) -> None:
 
 def restore_conversation(proj_dir: Path, agent) -> bool:
     """Resume this project's saved context when its live agent is gone."""
-    path = Path(proj_dir) / CONVERSATION_FILE
+    role = agent.config.extra.get("agent_role", "developer")
+    path = Path(proj_dir) / ".agentforge" / "agents" / role / "conversation.json"
+    if not path.is_file() and role == "developer":
+        path = Path(proj_dir) / ".agentforge/conversation.json"
     try:
         body = json.loads(path.read_text(encoding="utf-8"))
         if (body.get("workspace") != str(Path(proj_dir).resolve())
-                or body.get("stack") != agent.config.stack):
+                or body.get("stack") != agent.config.stack
+                or body.get("agent", "developer") != role):
             return False
         from builder_agent.memory import Memory
 
@@ -369,6 +413,8 @@ def restore_conversation(proj_dir: Path, agent) -> bool:
         agent.router.usage.update(body.get("usage") or {})
         return bool(len(agent.memory))
     except FileNotFoundError:
+        if role == "designer":
+            return False
         # Older versions saved visible chat and counters, but not tool turns.
         # Recover that partial account without pretending the missing context
         # or verification evidence survived.
@@ -437,7 +483,7 @@ def session_stats(project: str) -> dict:
     has ended.
     """
     with _SESSIONS_LOCK:
-        session = _SESSIONS.get(str(project or ""))
+        session = _SESSIONS.get((str(project or ""), "developer")) or _SESSIONS.get(str(project or ""))
     agent = session["agent"] if session else None
     if agent is None:
         return _saved_session_stats(project)
@@ -456,7 +502,9 @@ def release_other_sessions(keep: str) -> list:
     behind it.
     """
     with _SESSIONS_LOCK:
-        others = [name for name in _SESSIONS if name != str(keep or "")]
+        active = (RUN_QUEUE.active() or {}).get("project")
+        others = list({name[0] if isinstance(name, tuple) else name for name in _SESSIONS
+                       if (name[0] if isinstance(name, tuple) else name) not in (keep, active)})
     for name in others:
         forget_session(name)
     return others
@@ -477,7 +525,8 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
     change of model or of thinking does not: it is applied to the conversation
     already running, because what was said stays true whoever answers next.
     """
-    name = proj_dir.name
+    role = "designer" if prototype_only else "developer"
+    name = (proj_dir.name, role)
     key = _session_key(model, think, stack)
 
     agent = None
@@ -488,15 +537,16 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
             agent = session["agent"]
             agent.retarget(model, think)
         elif session:
-            forget_session(name)
+            forget_session(proj_dir.name, role)
 
     fresh = agent is None
     restored = False
     if fresh:
-        forget_session(name)
-        agent = BuilderAgent(
-            _config(proj_dir, brief, model, think, gates=True, stack=stack, prototype_only=prototype_only),
-            events=Events(), cancel=_cancelled)
+        forget_session(proj_dir.name, role)
+        config = _config(proj_dir, brief, model, think, gates=False, stack=stack, prototype_only=prototype_only)
+        config.extra["agent_role"] = role
+        agent = (DesignerAgent if role == "designer" else BuilderAgent)(config, events=Events(), cancel=_cancelled)
+        agent.sandbox = Sandbox(proj_dir, role=role)
         if not plan:
             restored = restore_conversation(proj_dir, agent)
     else:
@@ -517,9 +567,13 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
 
     StudioBridge(agent.events, kind=kind, phases=list(phases),
                  think=bool(getattr(agent.config, "think", False)))
-    agent.events.any(qa_report.LiveReport(
-        proj_dir, agent.memory.evidence, emit,
-        lambda error: elog("WARN", f"Could not save testing results: {error}")))
+    agent.events.on("checkpoint", lambda _: save_conversation(proj_dir, agent))
+    agent.events.on("agent:start", lambda _: save_conversation(proj_dir, agent))
+    agent.events.on("agent:done", lambda _: save_conversation(proj_dir, agent))
+    if role == "developer":
+        agent.events.any(qa_report.LiveReport(
+            proj_dir, agent.memory.evidence, emit,
+            lambda error: elog("WARN", f"Could not save testing results: {error}")))
     # Both a build and an edit leave context for the next chat request.
     with _SESSIONS_LOCK:
         _SESSIONS[name] = {"agent": agent, "key": key, "reusable": True}
@@ -542,6 +596,13 @@ def _run_agent(proj_dir: Path, brief: str, model: str, think, *, phases, kind: s
     answer. An edit does not: there is no plan to review, and the design was
     settled when the project was built.
     """
+    role = "designer" if prototype_only or no_tests else "developer"
+    RUN.project = proj_dir.name
+    RUN.agent = role
+    state = ProjectState(proj_dir)
+    RUN.run_id = state.start(role, {"prompt": brief, "model": model, "think": think,
+                                   "stack": stack, "prototype_only": role == "designer"},
+                             (acting() or {}).get("id", ""))
     agent = _agent_for(proj_dir, brief, model, think, stack,
                        kind=kind, phases=phases, plan=plan,
                        prototype_only=(prototype_only or no_tests))
@@ -551,20 +612,24 @@ def _run_agent(proj_dir: Path, brief: str, model: str, think, *, phases, kind: s
         agent.config.unit_tests = False
         agent.config.e2e_tests = False
     register_approvals(agent.approvals)
+    emit({"type": "run_state", "project": proj_dir.name, "status": "running"})
+    def phase_checkpoint(payload):
+        state.agent(role, phase=payload.get("phase", ""))
+        save_conversation(proj_dir, agent)
+    agent.events.on("phase", phase_checkpoint)
+    outcome = None
     try:
-        outcome = agent.run(brief) if plan else agent.build(brief)
+        if role == "developer":
+            agent.prototype_dir = proj_dir / ".agentforge" / "prototype"
+        outcome = agent.run(brief) if role == "designer" or plan else agent.build(brief)
         if outcome.status != "cancelled" and outcome.result:
             echat(outcome.result)
-        try:
-            from server_modules.srs.srs_sync import sync_from_builder, sync_from_new_feature
-            written = [str(p) for p in proj_dir.rglob("*") if p.is_file() and not str(p).startswith(".")]
-            sync_from_builder(proj_dir, written)
-            if not plan or kind in ("feature", "edit"):
-                sync_from_new_feature(proj_dir, prompt=brief, outcome_text=str(outcome.result or ""), written_files=written)
-        except Exception:
-            pass
         return agent, outcome
     finally:
+        state.agent(role, summary=str(getattr(outcome, "result", ""))[:8000],
+                    status="finishing" if outcome and outcome.status == "completed" else
+                    "paused" if outcome and outcome.status == "cancelled" else "failed",
+                    error="" if outcome and outcome.status == "completed" else str(getattr(outcome, "result", "Run interrupted")))
         forget_approvals(agent.approvals)
         agent._finish()
         save_conversation(proj_dir, agent)
@@ -675,8 +740,13 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
         proj_dir = _prepare_workspace(prompt, project, srs_id)
         name = proj_dir.name
         working_on(name)
-        runtime = RUNTIMES.get(proj_dir, stack)
-        RUNTIMES.begin_work(runtime)
+        RUN.agent = "designer" if prototype_only else "developer"
+        stack = project_stack(proj_dir, stack) or stack
+        if not prototype_only and not build_available(proj_dir):
+            raise ValueError("Complete the prototype before starting the build")
+        if not prototype_only:
+            runtime = RUNTIMES.get(proj_dir, stack)
+            RUNTIMES.begin_work(runtime)
         cancel.note(project=name, srs_id=srs_id)
         # A specification or prototype that was kept has a project directory and no code in
         # it. Told to "continue", the agent would look for work in progress
@@ -684,10 +754,13 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
         first = not prompt and (_spec_only(proj_dir) or _prototype_only(proj_dir))
         resuming = bool(project) and not first
         elog("INFO", f"🏗️  {'Resuming' if resuming else 'Building'} {name}")
-        estep("plan", "active")
+        estep("prototype" if prototype_only else "build", "active")
 
-        MONGO.ensure_running()
-        brief = _brief(proj_dir, prompt or (
+        if not prototype_only:
+            MONGO.ensure_running()
+        saved = ProjectState(proj_dir).read().get("agents", {}).get(RUN.agent, {})
+        request = saved.get("request", {}) if not prompt and saved.get("status") in ("interrupted", "paused", "failed") else {}
+        brief = request.get("prompt") or _brief(proj_dir, prompt or (
             "Build this application from the approved prototype and specification below. "
             "Nothing has been written yet." if first else
             "Continue this project: finish whatever is incomplete and "
@@ -696,14 +769,19 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
             brief += f"\n\nA logo has already been generated at {logo}; use it in the header."
         if attachments:
             brief += read_staged_attachments(attachments, proj_dir)
+        if not request:
+            brief = ("Read the shared .agentforge/handoff/app.md, sitemap.md, prototype.md and builder.md. "
+                     "The approved specification is the implementation brief. Do not generate another plan.\n\n" + brief)
 
         agent, outcome = _run_agent(proj_dir, brief, model, think,
-                                    phases=BUILD_PHASES, kind="build", stack=stack,
-                                    prototype_only=prototype_only)
+                                    phases=("prototype",) if prototype_only else BUILD_PHASES,
+                                    kind="build", stack=stack, plan=False, prototype_only=prototype_only)
         if outcome.status == "cancelled":
             return ecancel({"project": name})
 
-        if _prototype_only(proj_dir) or getattr(agent, "_stop_at_prototype", False):
+        if prototype_only:
+            if outcome.status != "completed":
+                return eerr(outcome.result)
             edone(f"/api/prototype/{name}/index.html", name)
             elog("SUCCESS", f"✅ {name} HTML prototype finished in {int(time.time() - started)}s")
             return
@@ -721,7 +799,7 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
     finally:
         if runtime is not None:
             with _SESSIONS_LOCK:
-                session = _SESSIONS.get(runtime.project)
+                session = _SESSIONS.get((runtime.project, "developer"))
             if session:
                 session["agent"].processes.stop_all()
             RUNTIMES.end_work(runtime)
@@ -730,6 +808,8 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
 
 def _is_html_modification(proj_dir: Path, prompt: str, route: str = "", elements=None, brief: str = "") -> bool:
     """Determine if an edit targets HTML prototypes or static HTML rather than full app code."""
+    if route == "/__builder":
+        return False
     if _prototype_only(proj_dir):
         return True
     route_str = str(route or "").lower()
@@ -770,11 +850,11 @@ def run_feature(project: str, prompt: str, model: str, think=None, qa_model: str
 
 
 def run_chat(project: str, prompt: str, model: str, route: str = "", think=None,
-             qa_model: str = "", console: str = "") -> None:
+             qa_model: str = "", console: str = "", agent_role: str = "") -> None:
     """Carry out a chat request against the existing application."""
     _edit_run(project, prompt, model, think, qa_model, console,
               kind="edit",
-              route=route,
+              route="/prototype" if agent_role == "designer" else "/__builder" if agent_role == "developer" else route,
               brief=(f"The user's next request in this project conversation:\n\n{prompt}\n\n"
                      + (f"They were on the route {route}.\n" if route else "")
                      + "Continue from the conversation and project memory already available. "
@@ -795,15 +875,19 @@ def _edit_run(project: str, prompt: str, model, think, qa_model: str, console: s
         if proj_dir is None:
             return
         working_on(proj_dir.name)
-        runtime = RUNTIMES.get(proj_dir)
-        RUNTIMES.begin_work(runtime)
         elog("INFO", f"✏️  {prompt[:160]}")
         estep("build", "active")
 
         is_html_mod = _is_html_modification(proj_dir, prompt, route=route, elements=elements, brief=brief)
+        if not is_html_mod and not build_available(proj_dir):
+            raise ValueError("Complete the prototype before updating the build")
+        RUN.agent = "designer" if is_html_mod else "developer"
+        if not is_html_mod:
+            runtime = RUNTIMES.get(proj_dir)
+            RUNTIMES.begin_work(runtime)
         if not is_html_mod:
             MONGO.ensure_running()
-        snapshot_project(proj_dir)
+        snapshot_project(proj_dir, RUN.agent)
 
         full = brief
         if is_html_mod:
@@ -820,9 +904,11 @@ def _edit_run(project: str, prompt: str, model, think, qa_model: str, console: s
         phases = ("build",) if is_html_mod else EDIT_PHASES
         agent, outcome = _run_agent(proj_dir, _brief(proj_dir, full), model, think,
                                     phases=phases, kind=kind, plan=False,
-                                    stack=stack_of(proj_dir), no_tests=is_html_mod)
+                                    stack=project_stack(proj_dir), no_tests=is_html_mod)
         if outcome.status == "cancelled":
             return ecancel({"project": proj_dir.name})
+        if outcome.status != "completed":
+            return eerr(outcome.result)
 
         if is_html_mod:
             proto_root = proj_dir / ".agentforge" / "prototype"
@@ -841,13 +927,6 @@ def _edit_run(project: str, prompt: str, model, think, qa_model: str, console: s
             eprog("Done", 100)
             estep("build", "done")
             edone(target_url, proj_dir.name)
-            try:
-                from server_modules.srs.srs_sync import sync_from_new_feature, sync_from_prototype_async
-                sync_from_new_feature(proj_dir, prompt=prompt, outcome_text="HTML prototype updated")
-                drawn = [p.name for p in proto_root.glob("*.html")]
-                sync_from_prototype_async(proj_dir, drawn)
-            except Exception:
-                pass
             return
 
         fill_missing_images(proj_dir, "the edit")
@@ -862,7 +941,7 @@ def _edit_run(project: str, prompt: str, model, think, qa_model: str, console: s
     finally:
         if runtime is not None:
             with _SESSIONS_LOCK:
-                session = _SESSIONS.get(runtime.project)
+                session = _SESSIONS.get((runtime.project, "developer"))
             if session:
                 session["agent"].processes.stop_all()
             RUNTIMES.end_work(runtime)

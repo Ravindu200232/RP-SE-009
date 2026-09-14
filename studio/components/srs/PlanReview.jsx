@@ -44,6 +44,9 @@ export default function PlanReview({ projectId, onGenerated, onCancel }) {
     ;(async () => {
       setPhase('loading')
       try {
+        const pending = await api.resumeSrs(`/projects/${projectId}/generate-srs`)
+        if (!live) return
+        if (pending.resumed) { onGenerated?.(projectId); return }
         const existing = await api.srs(`/projects/${projectId}/plan`)
         if (!live) return
         if (existing?.plan) {

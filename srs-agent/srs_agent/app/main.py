@@ -27,7 +27,15 @@ from .routers import (
 async def lifespan(app: FastAPI):
     store = await connect_store()
     app.state.store_backend = store.backend
+    from .. import jobs
+    if jobs._app is not None:
+        await jobs.recover()
     yield
+    import asyncio
+    tasks = list(jobs._TASKS.values())
+    for task in tasks:
+        task.cancel()
+    await asyncio.gather(*tasks, return_exceptions=True)
     await close_store()
 
 

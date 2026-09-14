@@ -24,6 +24,8 @@ MAX_UPLOAD_BYTES = 7_500_000
 @router.post("")
 async def create_project(req: CreateProjectRequest):
     project = await orchestrator.create_project(req.idea, req.language)
+    await repo.update_project(project["id"], {"stack": req.stack})
+    project["stack"] = req.stack
     return {"project": project}
 
 
@@ -45,6 +47,11 @@ async def approve_project(project_id: str):
     project = await repo.get_project(project_id)
     if not project:
         raise HTTPException(404, "project not found")
+    if not await repo.latest_version(project_id):
+        raise HTTPException(409, "Generate an SRS before approving it")
+    from ..generators.agent_handoff import FILES
+    if not all((storage.project_dir(project_id) / "handoff" / name).is_file() for name in FILES):
+        raise HTTPException(409, "SRS handoffs are not ready yet; finish generation before approval")
     await repo.update_project(project_id, {"status": "approved"})
     return {"project": await repo.get_project(project_id)}
 

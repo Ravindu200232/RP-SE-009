@@ -7,6 +7,7 @@
  * on the prototype attaches it to the chat composer with a photographed screenshot.
  */
 
+import { useAgentPreview } from '@/lib/agent-preview'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Monitor, Tablet, Smartphone, MousePointerClick, Pencil, RotateCw,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { api, API } from '@/lib/api'
+import { watchFrame } from '@/lib/console-log'
 import { attachPicker, pickedFrom, pickLabel } from '@/lib/picker'
 import { Tip } from './ui'
 import { cn } from '@/lib/utils'
@@ -59,20 +61,11 @@ export default function PrototypePane({ project, hidden, onBuild }) {
   const jumping = useRef(false)
   const [nav, setNav] = useState({ back: false, forward: false })
 
-  const addLog = useStore(s => s.addLog)
-  const busy = useStore(s => s.busy)
-  const busyProject = useStore(s => s.busyProject)
-  const progress = useStore(s => s.progress)
+  const { addLog, busy, prototypeStamp, progress, drawing, setDrawing,
+    selection, addSelection, patchSelection, clearSelection, undo, setUndo } = useAgentPreview(project, 'designer')
+  const buildAllowed = useStore(s => Boolean(s.buildAvailability[project]))
   const statusText = useStore(s => s.statusText)
-  const isBusy = busy && (!busyProject || busyProject === project)
-  const drawing = useStore(s => s.drawing)
-  const setDrawing = useStore(s => s.setDrawing)
-  const selection = useStore(s => s.selection)
-  const addSelection = useStore(s => s.addSelection)
-  const patchSelection = useStore(s => s.patchSelection)
-  const clearSelection = useStore(s => s.clearSelection)
-  const undo = useStore(s => s.undo)
-  const setUndo = useStore(s => s.setUndo)
+  const isBusy = busy
 
   const prototypeUrl = `${API}/prototype/${encodeURIComponent(project || '')}/${currentFile}`
   const width = VIEWPORTS.find(x => x.id === vp)?.w
@@ -100,31 +93,11 @@ export default function PrototypePane({ project, hidden, onBuild }) {
     }
   }, [project, currentFile])
 
-  // Wait for the drawing to exist, then stop asking. This used to download
-  // the whole page every couple of seconds for as long as the tab was open,
-  // which on a phone is a page of traffic a minute for nothing. A build that
-  // is still drawing keeps it checking, because then the pages do change.
+  // Check on open and on completed file events; never poll an absent idle drawing.
   useEffect(() => {
-    let active = true
-    checkPrototypeReady()
-
-    const interval = setInterval(async () => {
-      if (!active) return
-      const ready = await checkPrototypeReady()
-      if (!ready || !frameRef.current) return
-      if (!frameRef.current.dataset.loaded) {
-        frameRef.current.dataset.loaded = 'true'
-        const page = currentPath(frameRef.current)
-        frameRef.current.src = `${API}/prototype/${encodeURIComponent(project)}/${page}?t=${Date.now()}`
-      }
-      if (!isBusy) clearInterval(interval)
-    }, isBusy ? 1500 : 2500)
-
-    return () => {
-      active = false
-      clearInterval(interval)
-    }
-  }, [project, isBusy, checkPrototypeReady])
+    const timer = setTimeout(() => { checkPrototypeReady() }, 200)
+    return () => clearTimeout(timer)
+  }, [project, isBusy, prototypeStamp, checkPrototypeReady])
 
   const syncPath = useCallback(() => {
     const here = currentPath(frameRef.current)
@@ -229,6 +202,7 @@ export default function PrototypePane({ project, hidden, onBuild }) {
     const f = frameRef.current
     if (!f) return
     const onLoad = () => {
+      watchFrame(f, project, 'designer')
       syncPath()
       if (pickOn) attach()
     }
@@ -364,7 +338,7 @@ export default function PrototypePane({ project, hidden, onBuild }) {
   }
 
   async function handleBuildAppNow() {
-    if (isBusy) return
+    if (isBusy || !buildAllowed) return
     const id = drawing?.id
     if (id) {
       setDrawing(null)
@@ -421,7 +395,7 @@ export default function PrototypePane({ project, hidden, onBuild }) {
         {(onBuild || drawing?.id) && (
           <button
             onClick={handleBuildAppNow}
-            disabled={isBusy}
+            disabled={isBusy || !buildAllowed}
             title="Build full application from this prototype"
             className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3.5 py-1.5 text-[11.5px] font-semibold text-white shadow-md shadow-blue-500/20 transition-all hover:bg-blue-500 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
           >
@@ -521,7 +495,7 @@ export default function PrototypePane({ project, hidden, onBuild }) {
                 </div>
 
                 <h3 className="font-display text-[16px] font-bold tracking-tight text-white">
-                  {isBusy ? 'Generating HTML Prototype…' : 'Loading prototype preview…'}
+                  {isBusy ? 'Generating HTML Prototype…' : 'No prototype is ready yet'}
                 </h3>
                 <p className="mt-1.5 max-w-sm text-center text-[12px] text-slate-400 leading-relaxed">
                   {isBusy

@@ -69,6 +69,19 @@ class ConversationContinuityTests(unittest.TestCase):
         self.run_request("Add a signup link to that page")
         self.assert_remembers()
 
+    def test_restart_keeps_designer_and_developer_contexts_separate(self):
+        from builder_agent.designer import DesignerAgent
+        with patch.object(DesignerAgent, 'run', autospec=True, side_effect=self.reply):
+            server._run_agent(self.project, 'Design the blue navigation', 'test-model', False,
+                kind='build', phases=('build',), plan=False, stack='mern-microservices', prototype_only=True)
+            self.run_request('Implement durable search records')
+            self.assertNotIn('Design the blue navigation', str(self.inputs[-1]))
+            server._SESSIONS.clear()
+            server._run_agent(self.project, 'Make that navigation compact', 'test-model', False,
+                kind='edit', phases=('build',), plan=False, stack='mern-microservices', prototype_only=True)
+        self.assertIn('Design the blue navigation', str(self.inputs[-1]))
+        self.assertNotIn('Implement durable search records', str(self.inputs[-1]))
+
     def test_older_projects_recover_saved_chat_without_inventing_tool_evidence(self):
         path = self.project / server.STREAM_FILE
         path.parent.mkdir(parents=True)
@@ -83,6 +96,7 @@ class ConversationContinuityTests(unittest.TestCase):
 
     def test_opening_the_preview_keeps_the_conversation(self):
         self.run_request("Build a shop with customer accounts")
+        (self.project / 'package.json').write_text('{"name":"shop"}', encoding='utf-8')
         with patch.object(server.RUNTIMES, 'open', return_value={'status': 'running'}) as opened:
             server._open_project("shop")
             opened.assert_called_once()

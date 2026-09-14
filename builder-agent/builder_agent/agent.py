@@ -607,6 +607,10 @@ class BuilderAgent:
         reference or an inspiration: it is the settled appearance of the
         product, and it outranks whatever the model would otherwise reach for.
         """
+        if self.config.extra.get("agent_role") == "developer":
+            return ("Read the current SRS handoffs and prototype before implementation. Match the "
+                    "prototype while applying any new feature or revision explicitly requested in this turn. "
+                    "Report a concise summary of completed changes for the parent SRS.\n\n" + instruction)
         if not self.prototype_dir or not self.prototype_dir.is_dir():
             return instruction
         pages = sorted(path.name for path in self.prototype_dir.glob("*.html"))

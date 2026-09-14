@@ -36,10 +36,13 @@ def _read(path: Path) -> str:
 
 
 def _write(ctx, path: Path, text: str, note: str) -> None:
+    ctx.sandbox.check_access(path, write=True)
     if len(text.encode("utf-8", "replace")) > MAX_WRITE_BYTES:
         raise ToolError(f"Refusing to write more than {MAX_WRITE_BYTES // 1024} KiB in one call.")
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8", newline="")
+    temporary = path.with_name(path.name + ".agent-write.tmp")
+    temporary.write_text(text, encoding="utf-8", newline="")
+    temporary.replace(path)
     relative = ctx.sandbox.relative(path)
     ctx.memory.digest["files"].add(relative)
     ctx.events.emit("file", name=relative, size=len(text), content=text, note=note)
@@ -113,7 +116,7 @@ def write_file(args, ctx):
     return {"ok": True, "mutated": True,
             "content": (f"{'Replaced' if existed else 'Created'} {rel} "
                         f"({len(content.splitlines())} lines, revision {revision_of(content)})."
-                        + _page_note(str(rel), content))}
+                        + ("" if getattr(ctx.sandbox, "role", "") else _page_note(str(rel), content)))}
 
 
 def patch_file(args, ctx):
@@ -233,6 +236,7 @@ def delete_file(args, ctx):
     if path.is_dir():
         raise ToolError("deleteFile removes one file. Remove a directory with an approved command.")
     relative = ctx.sandbox.relative(path)
+    ctx.sandbox.check_access(path, write=True)
     path.unlink()
     ctx.events.emit("file", name=relative, size=0, content="", note="deleted")
     return {"ok": True, "mutated": True, "content": f"Deleted {relative}."}
@@ -245,6 +249,8 @@ def list_dir(args, ctx):
         raise ToolError(f"{ctx.sandbox.relative(path)} is not a directory.")
     rows = []
     for entry in sorted(path.iterdir(), key=lambda p: (not p.is_dir(), p.name.lower())):
+        if not ctx.sandbox.allows(str(entry)):
+            continue
         if entry.name in IGNORED_DIRS:
             rows.append(f"  {entry.name}/  (skipped)")
             continue

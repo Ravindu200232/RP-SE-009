@@ -11,6 +11,20 @@ from ..services import orchestrator
 
 router = APIRouter(prefix="/projects", tags=["srs"])
 
+from pydantic import BaseModel, Field
+
+
+class ParentChange(BaseModel):
+    change_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,100}$")
+    source: str = Field(pattern=r"^(designer|developer|design-customizer)$")
+    summary: str = Field(min_length=1, max_length=12000)
+
+
+@router.post("/{project_id}/changes")
+async def parent_change(project_id: str, request: ParentChange):
+    from ..services.parent_sync import synchronize
+    return await synchronize(project_id, request.change_id, request.source, request.summary)
+
 
 async def _doc_or_404(project_id: str) -> dict:
     srs = await orchestrator.latest_srs(project_id)
@@ -101,7 +115,7 @@ async def _live_handoff(project_id: str) -> dict:
         from ..services import plan_approval
         plan_doc = (await plan_approval.approved_plan(project_id)
                     or await repo.latest_plan(project_id))
-        plan = (plan_doc or {}).get("plan") or {}
+        plan = doc.get("effective_plan") or (plan_doc or {}).get("plan") or {}
         if plan:
             fresh = refresh_handoff(handoff, plan, doc)
             if fresh.get("prompt") and len(fresh["prompt"]) > 200:
@@ -115,6 +129,19 @@ async def _live_handoff(project_id: str) -> dict:
 async def builder_handoff(project_id: str):
     """The plan restated in the app builder's vocabulary, plus its prompt."""
     return await _live_handoff(project_id)
+
+
+@router.get("/{project_id}/agent-handoff")
+async def agent_handoff(project_id: str):
+    from ..generators.agent_handoff import FILES
+    from ..services.storage import project_dir
+    project = await repo.get_project(project_id)
+    if not project:
+        raise HTTPException(404, "Project not found")
+    target = project_dir(project_id) / "handoff"
+    if not all((target / name).is_file() for name in FILES):
+        raise HTTPException(409, "Generate or revise the SRS to create its agent handoffs")
+    return {"files": {name: (target / name).read_text(encoding="utf-8") for name in FILES}}
 
 
 @router.get("/{project_id}/builder-prompt", response_class=PlainTextResponse)

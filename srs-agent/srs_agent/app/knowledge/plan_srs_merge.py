@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import json
 
 from .plan_srs_base import _rtm, _sentence, _snake, _table_name, _title
 
@@ -182,7 +183,8 @@ def effective_plan(doc: dict) -> dict:
         if isinstance(w, dict) and w.get("steps")
     ]
 
-    features = [str(f) for f in (approved.get("features") or []) if str(f).strip()]
+    features = [str(item.get("requirement") or "") for item in doc.get("functional_requirements", [])
+                if isinstance(item, dict) and item.get("requirement")]
 
     auth = doc.get("authentication_requirement") or {}
     account_policy = dict(approved.get("account_policy") or {})
@@ -207,13 +209,14 @@ def effective_plan(doc: dict) -> dict:
         account_policy = {"accounts_required": False, "registration_mode": "none"}
 
     return {
-        "product_intent": approved.get("product_intent", ""),
-        "look_and_feel": approved.get("look_and_feel", ""),
-        "users": users or approved.get("users") or [],
-        "screens": screens or approved.get("screens") or [],
-        "records": records or approved.get("records") or [],
-        "workflows": workflows or approved.get("workflows") or [],
-        "features": features or approved.get("features") or [],
+        "app_name": doc.get("project_name") or (doc.get("app_summary") or {}).get("app_name", ""),
+        "product_intent": (doc.get("app_summary") or {}).get("short_description") or approved.get("product_intent", ""),
+        "look_and_feel": json.dumps(doc["ui_ux_requirements"], ensure_ascii=False) if "ui_ux_requirements" in doc else approved.get("look_and_feel", ""),
+        "users": users if "roles" in doc else approved.get("users") or [],
+        "screens": screens if "public_pages" in doc or "protected_pages" in doc else approved.get("screens") or [],
+        "records": records if "database_design" in doc else approved.get("records") or [],
+        "workflows": workflows if "business_workflows" in doc else approved.get("workflows") or [],
+        "features": features if "functional_requirements" in doc else approved.get("features") or [],
         "account_policy": account_policy,
     }
 

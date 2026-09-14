@@ -12,6 +12,7 @@ import Sidebar from '@/components/Sidebar'
 import Home from '@/components/Home'
 import ProjectsView from '@/components/ProjectsView'
 import PreviewPane from '@/components/PreviewPane'
+import DesignCustomize from '@/components/DesignCustomize'
 import PrototypePane from '@/components/PrototypePane'
 import CodePane from '@/components/CodePane'
 import SettingsModal from '@/components/SettingsModal'
@@ -27,6 +28,7 @@ import { cn } from '@/lib/utils'
 import { projectUnitTestStatus } from '@/lib/test-counts'
 
 const TABS = [
+  { id: 'design', label: 'Design', Icon: Layers },
   { id: 'srs', label: 'SRS', Icon: FileText },
   { id: 'prototype', label: 'Prototype', Icon: Layers },
   { id: 'preview', label: 'Preview', Icon: Eye },
@@ -89,6 +91,9 @@ export default function Studio() {
   const view = useStore(s => s.view)
   const setView = useStore(s => s.setView)
   const project = useStore(s => s.project)
+  const agentRole = useStore(s => s.agentRole)
+  const buildAllowed = useStore(s => Boolean(s.buildAvailability[s.project]))
+  const syncState = useStore(s => s.projectSync[s.project])
   const busy = useStore(s => s.busy)
   const busyProject = useStore(s => s.busyProject)
   const testsRunning = useStore(s => s.tests.running)
@@ -125,20 +130,22 @@ export default function Studio() {
   // person's work left on screen for whoever signs in next.
   async function signOut() {
     await logout()
-    useStore.getState().reset(null)
-    useStore.getState().resetSrs()
-    useStore.setState({ streams: {} })
     setProjects([])
     setScreen('home')
   }
 
-  const refreshProjects = () => api.projects()
-    .then(r => {
+  const refreshProjects = () => {
+    const requestedAt = Date.now()
+    const epoch = useStore.getState().accountEpoch
+    return api.projects().then(r => {
+      if (useStore.getState().accountEpoch !== epoch) return []
       const list = Array.isArray(r) ? r : (r.projects || [])
       setProjects(list)
+      useStore.getState().setProjectMetadata(list, requestedAt)
       return list
     })
     .catch(() => [])
+  }
 
   const projectsStamp = useStore(s => s.projectsStamp)
   useEffect(() => {
@@ -205,16 +212,27 @@ export default function Studio() {
   }, [])
 
   useEffect(() => {
-    if (!project || testsRunning || qa?.project === project) return
+    if (!project || agentRole !== 'developer' || testsRunning || qa?.project === project) return
     let active = true
     retry(() => api.qa(project), 4, 700).then(report => {
       const current = useStore.getState()
-      if (active && current.project === project && !current.tests.running) {
+      if (active && current.project === project && current.agentRole === 'developer' && !current.tests.running) {
         setQa(report)
       }
     }).catch(() => { })
     return () => { active = false }
-  }, [project, testsRunning, qa?.project, setQa])
+  }, [project, agentRole, testsRunning, qa?.project, setQa])
+
+  useEffect(() => {
+    if (!project) return
+    let live = true
+    api.files(project, agentRole).then(raw => {
+      if (!live) return
+      const files = Object.fromEntries(Object.entries(raw || {}).map(([name, value]) => [name, typeof value === 'string' ? value : value.content || '']))
+      useStore.getState().setFiles(files)
+    }).catch(() => {})
+    return () => { live = false }
+  }, [project, agentRole])
 
   const unitStatus = projectUnitTestStatus(qa, project)
 
@@ -223,11 +241,6 @@ export default function Studio() {
   const prototypeOnly = Boolean(currentProjectObj?.prototype_only) && busyProject !== project
 
   let tabs = TABS
-  if (specOnly) {
-    tabs = TABS.filter(tab => tab.id === 'srs')
-  } else if (prototypeOnly) {
-    tabs = TABS.filter(tab => tab.id === 'prototype')
-  }
 
   useEffect(() => {
     if (liveFile) setScreen('workspace')
@@ -239,25 +252,21 @@ export default function Studio() {
     if (drawing && view !== 'prototype') setView('prototype')
   }, [drawing, view, setView])
 
-  useEffect(() => {
-    if (specOnly && view !== 'srs') setView('srs')
-    else if (prototypeOnly && view !== 'prototype') setView('prototype')
-  }, [specOnly, prototypeOnly, view, setView])
 
   async function openProject(name, row = null) {
     const st = useStore.getState()
     if (!name || (st.opening && st.project === name)) return
     const request = ++opening.current
     const rowObj = row || projects.find(p => p.name === name)
+    const requestedView = st.projectViews[name] || (rowObj?.spec_only && !rowObj?.prototype_only ? 'srs' : rowObj?.prototype_only ? 'prototype' : 'preview')
+    const projectView = ['preview', 'testing', 'deploy'].includes(requestedView) && !st.buildAvailability[name] ? 'prototype' : requestedView
 
     if (st.project === name && st.runtimes[name]?.status === 'running') {
       try {
         st.setRuntime(await api.open(name))
         if (opening.current === request) {
           setScreen('workspace')
-          if (rowObj?.spec_only) setView('srs')
-          else if (rowObj?.prototype_only) setView('prototype')
-          else setView('preview')
+          setView(projectView)
         }
       } catch (error) {
         if (opening.current === request) st.addLog('WARN', `Could not open app: ${error.message}`)
@@ -268,39 +277,19 @@ export default function Studio() {
     st.reset(name)
     setScreen('workspace')
 
-    if (rowObj?.spec_only) setView('srs')
-    else if (rowObj?.prototype_only) setView('prototype')
-    else setView('preview')
+    setView(projectView)
 
     st.setOpening(true)
     st.setProgress(`Opening ${name}…`, 0)
     forgetConsole()
 
-    api.session(name)
-      .then(({ stats }) => {
-        if (stats && Object.keys(stats).length
-            && useStore.getState().project === name) useStore.getState().setRunStats(stats)
+    api.workflow(name)
+      .then(snapshot => {
+        if (opening.current !== request) return
+        useStore.getState().restoreProject(snapshot)
       })
       .catch(() => { })
 
-    api.stream(name)
-      .then(({ stream }) => {
-        const store = useStore.getState()
-        if (store.project !== name) return
-        if (stream?.logs?.length || stream?.chat?.length) store.adoptStream(stream)
-      })
-      .catch(() => { })
-
-    api.files(name)
-      .then(raw => {
-        if (opening.current !== request || useStore.getState().project !== name) return
-        const out = {}
-        for (const [path, v] of Object.entries(raw || {})) {
-          out[path] = typeof v === 'string' ? v : (v?.content ?? '')
-        }
-        useStore.getState().setFiles(out)
-      })
-      .catch(() => { })
 
     let opened = false
     try {
@@ -324,12 +313,15 @@ export default function Studio() {
   function resumeBuild() {
     const st = useStore.getState()
     const name = st.project
-    if (!name || st.busy) return
+    if (!name || st.busy || !st.buildAvailability[name]) return
+    st.switchAgent('developer')
+    st.setView('preview')
     st.setBusy(true)
     st.setProgress('Resuming…', 0)
     st.addLog('INFO', `Resuming ${name} — picking up where it stopped`)
     setScreen('workspace')
     send({ type: 'agent_resume', project: name,
+           agent: 'developer',
            model: st.models.builder || st.models.agent,
            builder_model: st.models.builder || st.models.agent,
            planner_model: st.models.planner || st.models.agent,
@@ -482,8 +474,10 @@ export default function Studio() {
             <div className="flex items-center gap-1 rounded-full bg-panel2/80 p-0.5 border border-line overflow-x-auto no-scrollbar max-w-[calc(100vw-190px)] sm:max-w-none">
               {tabs.map(({ id, label, Icon }) => (
                 <button key={id} onClick={() => setView(id)}
+                        disabled={!buildAllowed && ['preview', 'testing', 'deploy'].includes(id)}
+                        title={!buildAllowed && ['preview', 'testing', 'deploy'].includes(id) ? 'Complete the prototype first' : label}
                         className={cn('inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full px-3',
-                          'font-display text-[11px] font-semibold transition-all',
+                          'font-display text-[11px] font-semibold transition-all disabled:opacity-35 disabled:cursor-not-allowed',
                           view === id ? 'bg-accent/15 text-accent shadow-sm ring-1 ring-accent/30 dark:bg-white/10 dark:text-ink dark:ring-white/10'
                                       : 'text-muted hover:bg-black/[.03] hover:text-ink dark:hover:bg-white/5')}>
                   <Icon className="size-3.5 shrink-0" />
@@ -528,7 +522,7 @@ export default function Studio() {
             </div>
 
             {/* Action to Build full app from SRS-only project */}
-            {specOnly && !busy && (
+            {specOnly && !prototypeOnly && !busy && buildAllowed && (
               <button
                 onClick={resumeBuild}
                 title="Build this application from the approved SRS"
@@ -539,7 +533,7 @@ export default function Studio() {
             )}
 
             {/* Action to Build full app from Prototype-only project */}
-            {prototypeOnly && !busy && (
+            {prototypeOnly && !busy && buildAllowed && (
               <button
                 onClick={resumeBuild}
                 title="Build full application from this prototype"
@@ -590,9 +584,9 @@ export default function Studio() {
               refreshProjects()
               if (project === name) setScreen('home')
             }}
-            onBuildProject={(name, p) => {
-              openProject(name, p)
-              setTimeout(resumeBuild, 400)
+            onBuildProject={async (name, p) => {
+              await openProject(name, p)
+              if (useStore.getState().project === name) resumeBuild()
             }}
           />
         ) : (
@@ -601,7 +595,7 @@ export default function Studio() {
               "shrink-0 h-full",
               mobileView === 'chat' ? 'flex w-full lg:w-auto' : 'hidden lg:flex'
             )}>
-              <AgentChat />
+              <AgentChat key={`${project}-${agentRole}`} />
             </div>
 
             <div className={cn(
@@ -609,9 +603,21 @@ export default function Studio() {
               mobileView === 'view' ? 'flex' : 'hidden lg:flex'
             )}>
               <ScopeQuestion />
+              {syncState?.status === 'failed' && <div role="alert" className="flex items-center gap-3 border-b border-line bg-panel p-3 text-xs text-muted">
+                <span>Document update paused: {syncState.error}</span>
+                <button className="shrink-0 text-accent" onClick={() => api.retrySync(project)}>Retry update</button>
+              </div>}
 
               <PreviewPane key={`preview-${project}`} hidden={view !== 'preview'} onBuild={resumeBuild} />
               <PrototypePane key={`proto-${project}`} project={project} hidden={view !== 'prototype'} onBuild={resumeBuild} />
+              {view === 'design' && <DesignCustomize key={`design-${project}`} projectId={project}
+                onBack={() => setView('srs')}
+                onContinue={async direction => {
+                  const current = useStore.getState()
+                  send({ type: 'agent_update', project, agent: 'designer', route: '/prototype',
+                    prompt: direction, model: current.models.design || current.models.agent, think: current.think })
+                  setView('prototype')
+                }} />}
               <CodePane hidden={view !== 'code'} />
               {view === 'testing' && <TestingResult key={`testing-${project}`} />}
               {view === 'srs' && (

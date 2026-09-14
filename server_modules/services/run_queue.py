@@ -34,6 +34,7 @@ class RunQueue:
             return [self._public(entry) for entry in self._waiting]
 
     def run(self, work: Callable, *, user: str = "", project: str = "", kind: str = "",
+            agent: str = "",
             on_wait: Optional[Callable[[int], None]] = None):
         """Run `work` when it is its turn, and answer with what it answered.
 
@@ -42,6 +43,7 @@ class RunQueue:
         """
         entry = {"id": next(self._numbers), "user": str(user or ""),
                  "project": str(project or ""), "kind": str(kind or ""),
+                 "agent": agent,
                  "turn": threading.Event(), "left": False}
         with self._lock:
             ahead = (1 if self._active else 0) + len(self._waiting)
@@ -60,7 +62,12 @@ class RunQueue:
         finally:
             self._finish(entry)
 
-    def leave(self, user: str) -> int:
+    def set_agent(self, agent: str) -> None:
+        with self._lock:
+            if self._active:
+                self._active["agent"] = agent
+
+    def leave(self, user: str, project: str = "", agent: str = "") -> int:
         """Take this person's waiting runs out of the line; how many left.
 
         The active run is not one of them: stopping that is cancelling it.
@@ -69,8 +76,10 @@ class RunQueue:
         if not user:
             return 0
         with self._lock:
-            leaving = [entry for entry in self._waiting if entry["user"] == user]
-            self._waiting = [entry for entry in self._waiting if entry["user"] != user]
+            leaving = [entry for entry in self._waiting if entry["user"] == user
+                       and (not project or entry["project"] == project)
+                       and (not agent or entry["agent"] == agent)]
+            self._waiting = [entry for entry in self._waiting if entry not in leaving]
             for entry in leaving:
                 entry["left"] = True
                 entry["turn"].set()

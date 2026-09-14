@@ -13,6 +13,7 @@
  * during a build the preview underneath has nothing in it yet.
  */
 
+import { useAgentPreview } from '@/lib/agent-preview'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Monitor, Tablet, Smartphone, MousePointerClick, Pencil, Undo2, RotateCw,
@@ -59,25 +60,13 @@ export default function PreviewPane({ hidden, onBuild }) {
   const lastPathRef = useRef('/')
 
   const project = useStore(s => s.project)
-  const files = useStore(s => s.files)
-  const runtime = useStore(s => s.runtimes[s.project])
+  const { files, busy, addLog, setPreviewRoute, undo, setUndo, tests, e2eLive,
+    drawing, setDrawing, selection, addSelection, patchSelection, clearSelection } = useAgentPreview(project, 'developer')
+  const runtime = useStore(s => s.runtimes[project])
   const hasBuiltApp = Object.keys(files || {}).some(f =>
     f.startsWith('app/') || f.startsWith('src/') || f.startsWith('pages/') || f.startsWith('packages/') || f.startsWith('client/') || f === 'package.json'
   )
   const isAppBuilt = hasBuiltApp || runtime?.status === 'running' || runtime?.status === 'starting'
-  const busy = useStore(s => s.busy && (!s.busyProject || s.busyProject === s.project))
-  const addLog = useStore(s => s.addLog)
-  const setPreviewRoute = useStore(s => s.setPreviewRoute)
-  const undo = useStore(s => s.undo)
-  const setUndo = useStore(s => s.setUndo)
-  const tests = useStore(s => s.tests)
-  const e2eLive = useStore(s => s.e2eLive)
-  const drawing = useStore(s => s.drawing)
-  const setDrawing = useStore(s => s.setDrawing)
-  const selection = useStore(s => s.selection)
-  const addSelection = useStore(s => s.addSelection)
-  const patchSelection = useStore(s => s.patchSelection)
-  const clearSelection = useStore(s => s.clearSelection)
 
   const [vp, setVp] = useState('desktop')
   const [pickOn, setPickOn] = useState(false)
@@ -136,13 +125,13 @@ export default function PreviewPane({ hidden, onBuild }) {
   // Reset loading state and auto-start project if stopped
   useEffect(() => {
     setIframeLoading(true)
-    if (!project || busy || drawing) return
+    if (hidden || !project || busy || drawing || !hasBuiltApp) return
     if (!runtime || runtime?.status === 'stopped') {
       api.open(project).then(res => {
         useStore.getState().setRuntime(res)
       }).catch(() => {})
     }
-  }, [project])
+  }, [project, hidden, hasBuiltApp])
 
   // Safety fallback for iframe loading state once status is running
   useEffect(() => {
@@ -245,7 +234,7 @@ export default function PreviewPane({ hidden, onBuild }) {
         syncPath()
       }
       if (message.kind === 'ready' && pickOn) bridgeSend('pick', { enabled: true, mode: vp })
-      if (message.kind === 'console') recordConsole(message.level, message.text)
+      if (message.kind === 'console') recordConsole(message.level, message.text, project, 'developer')
       if (message.kind === 'picked' && pickOn && message.info) {
         const info = message.info
         attachShot({ key: `sel-${++seq}`, kind: 'element', info, state: 'shooting',
@@ -269,7 +258,7 @@ export default function PreviewPane({ hidden, onBuild }) {
     const onLoad = () => {
       setIframeLoading(false)
       bridgeSend('init')
-      watchFrame(f)
+      watchFrame(f, project, 'developer')
       syncPath('load')
       if (pickOn) attach()
     }

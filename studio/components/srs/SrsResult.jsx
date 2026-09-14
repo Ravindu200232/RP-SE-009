@@ -11,6 +11,7 @@ import { VIEWS, badgeFor } from './views'
 export default function SrsResult({ specOnly = false, onBuild }) {
   const project = useStore(s => s.project)
   const busy = useStore(s => s.busy)
+  const srsStamp = useStore(s => s.srsStamp[s.project])
   const [srs, setSrs] = useState(null)
   const [sub, setSub] = useState('overview')
   const [state, setState] = useState('idle')
@@ -36,7 +37,7 @@ export default function SrsResult({ specOnly = false, onBuild }) {
 
   useEffect(() => {
     if (!busy) load()
-  }, [project, busy])
+  }, [project, busy, srsStamp])
 
   if (!project) return <Empty>Open a project to see the SRS it was built from.</Empty>
 

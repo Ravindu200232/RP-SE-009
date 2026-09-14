@@ -7,7 +7,7 @@ let requestVersion = 0
 export async function refreshQaReport(project) {
   const version = ++requestVersion
   const report = await api.qa(project)
-  if (version !== requestVersion || useStore.getState().project !== project) return
+  if (version !== requestVersion || useStore.getState().project !== project || useStore.getState().agentRole !== 'developer') return
   if (report.error) throw new Error(report.error)
   useStore.getState().setQaReport(report)
   return report

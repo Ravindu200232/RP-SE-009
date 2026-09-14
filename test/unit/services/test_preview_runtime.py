@@ -72,6 +72,7 @@ class PreviewReadinessTests(unittest.TestCase):
         self.assertNotIn('MONGODB_URI', info['environment'])
 
     def test_bind_races_retry_only_owned_startups_at_most_three_times(self):
+        (self.root / "package.json").write_text("{}", encoding="utf-8")
         for failures in (1, 3):
             with self.subTest(failures=failures):
                 processes = []

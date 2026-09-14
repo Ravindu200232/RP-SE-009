@@ -68,7 +68,22 @@ class StudioBridge:
 
     # -- wiring ----------------------------------------------------------
     def attach(self):
-        bus = self.events
+        events = self.events
+        context = {key: getattr(RUN, key, None) for key in ("project", "agent", "run_id")} if "RUN" in globals() else {}
+
+        class ScopedEvents:
+            def on(self, event, handler):
+                def dispatch(payload):
+                    previous = {key: getattr(RUN, key, None) for key in context}
+                    try:
+                        for key, value in context.items():
+                            setattr(RUN, key, value)
+                        return handler(payload)
+                    finally:
+                        for key, value in previous.items():
+                            setattr(RUN, key, value)
+                events.on(event, dispatch)
+        bus = ScopedEvents()
         bus.on("agent:start", self.on_start)
         bus.on("notice", self.on_notice)
         bus.on("phase", self.on_phase)

@@ -12,6 +12,7 @@ import { useAttachments } from '@/lib/use-attachments'
 import { AttachButtons, AttachList } from './Attachments'
 import { Button, TextArea } from '../ui'
 import { cn } from '@/lib/utils'
+import InterviewIntegrations from './InterviewIntegrations'
 
 export default function Interview({ projectId, onDone, onCancel }) {
   const addLog = useStore(s => s.addLog)
@@ -24,9 +25,13 @@ export default function Interview({ projectId, onDone, onCancel }) {
   const composer = useRef(null)
   const tail = useRef(null)
   const attach = useAttachments()
+  const [integrations, setIntegrations] = useState(null)
 
   async function refresh() {
     try {
+      const setup = await api.integrations(projectId)
+      if (!setup.confirmed) { setIntegrations(setup.questions); setPhase('integrations'); return }
+      setIntegrations(null)
       const next = await api.srs(`/projects/${projectId}/interview`)
       setState(next)
       setTyping(false)
@@ -86,6 +91,7 @@ export default function Interview({ projectId, onDone, onCancel }) {
   }, [state.transcript, state.answers])
   const answered = (state.answers || []).length
   const total = Math.max((state.transcript || []).length, answered + 1, 8)
+  if (integrations) return <InterviewIntegrations key={projectId} projectId={projectId} questions={integrations} onDone={refresh} />
 
   if (phase === 'loading') return <div className="grid min-h-0 flex-1 place-items-center"><Waiting>Preparing your interview…</Waiting></div>
   if (phase === 'error' && !q) return (

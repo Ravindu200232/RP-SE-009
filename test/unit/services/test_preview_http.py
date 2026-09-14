@@ -39,6 +39,7 @@ class PreviewHTTPTests(unittest.TestCase):
         self.addCleanup(self.folder.cleanup)
         self.root = Path(self.folder.name)
         (self.root / 'shop').mkdir()
+        (self.root / 'shop' / 'package.json').write_text('{}', encoding='utf-8')
         self.now = 0
         self.registry = RuntimeRegistry(stop_process=lambda proc: None, clock=lambda: self.now)
         self.addCleanup(self.registry.close)

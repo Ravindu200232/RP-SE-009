@@ -60,6 +60,13 @@ async def state(project_id: str) -> dict:
     plans = await repo.list_plans(project_id)
     project = await repo.get_project(project_id)
     plan, markdown = _fresh(doc, project)
+    if doc and doc.get("approved") and (project or {}).get("status") == "approved":
+        latest = await repo.latest_version(project_id)
+        current = (latest or {}).get("srs", {}).get("srs_document", {})
+        if current.get("effective_plan"):
+            from ..agents.plan_generator import render_plan_markdown
+            plan = current["effective_plan"]
+            markdown = render_plan_markdown(plan, app_name=plan.get("app_name", ""))
     return {
         "plan": plan,
         "markdown": markdown,

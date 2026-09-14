@@ -62,8 +62,9 @@ def looks_binary(path: Path) -> bool:
 class Sandbox:
     """Resolves model-supplied paths, or refuses them."""
 
-    def __init__(self, root: str | Path) -> None:
+    def __init__(self, root: str | Path, *, role: str = "") -> None:
         self.root = Path(root).resolve()
+        self.role = role
         # Resolve symlinks in the root once (/tmp -> /private/tmp on macOS) so
         # later real-path comparisons line up instead of always failing.
         try:
@@ -95,7 +96,31 @@ class Sandbox:
 
         if must_exist and not target.exists():
             raise SecurityError(f"No such file or directory: {self.relative(target)}", path=text)
+        self.check_access(target)
         return target
+
+    def check_access(self, target: Path, *, write: bool = False) -> None:
+        if not self.role:
+            return
+        relative = self.relative(target).casefold()
+        if relative == ".":
+            if write:
+                raise SecurityError("The workspace root cannot be changed")
+            return
+        parts = relative.split("/")
+        if any(part.startswith(".env") and part != ".env.example" for part in parts):
+            raise SecurityError("Credential values are available to the runtime, not the agent tools")
+        handoff = relative.startswith(".agentforge/handoff/") and target.suffix.lower() == ".md"
+        prototype = relative == ".agentforge/prototype" or relative.startswith(".agentforge/prototype/")
+        own = relative == f".agentforge/agents/{self.role}" or relative.startswith(f".agentforge/agents/{self.role}/")
+        ancestors = relative in (".agentforge", ".agentforge/handoff", ".agentforge/agents")
+        if self.role == "designer":
+            allowed = prototype or own or (not write and (handoff or ancestors))
+        else:
+            allowed = (not relative.startswith(".agentforge") and not relative.startswith(".agent/")) or own
+            allowed = allowed or (not write and (handoff or prototype or ancestors))
+        if not allowed or (write and handoff):
+            raise SecurityError(f"{self.role} cannot {'write' if write else 'read'} {relative}")
 
     def _inside(self, target: Path) -> bool:
         for root in (self.root, self.real_root):
@@ -144,6 +169,10 @@ class Sandbox:
             for name in names:
                 path = Path(base) / name
                 if path.suffix.lower() in BINARY_SUFFIXES:
+                    continue
+                try:
+                    self.resolve(str(path))
+                except SecurityError:
                     continue
                 yield path
                 seen += 1

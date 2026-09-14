@@ -6,6 +6,7 @@ live here so the same logic is reused by tests.
 from __future__ import annotations
 
 import copy
+import json
 import re
 
 from ..agents import clarify, interview, plan_generator
@@ -72,7 +73,13 @@ async def add_source(project_id: str, mode: str, text: str, filename: str | None
 
 async def _brief_for(project: dict) -> str:
     sources = await repo.list_sources(project["id"])
-    return build_brief(project.get("raw_idea", ""), sources)
+    brief = build_brief(project.get("raw_idea", ""), sources)
+    integrations = project.get("integrations", [])
+    if integrations:
+        brief += "\n\nIntegration choices from the interview (credential names only):\n" + json.dumps(integrations)
+    if project.get("stack"):
+        brief += "\n\nUser-selected implementation stack: " + project["stack"]
+    return brief
 
 
 def _fallback_analysis(state: dict) -> dict:
@@ -418,11 +425,16 @@ async def generate_srs(project_id: str) -> dict:
     project = await repo.get_project(project_id)
     if not project:
         raise KeyError("project not found")
+    recovered = await _completed_operation(project_id)
+    if recovered:
+        return recovered
     brief = await _brief_for(project)
     session = await repo.get_question_session(project_id) or {"questions": []}
     answers = await repo.get_answers(project_id)
 
-    plan_doc = await plan_approval.approved_plan(project_id) or await repo.latest_plan(project_id)
+    plan_doc = await plan_approval.approved_plan(project_id)
+    if not plan_doc:
+        raise ValueError("Approve the product plan before generating the SRS")
 
     state = {
         "project_id": project_id, "project": project, "raw_idea": project.get("raw_idea", ""),
@@ -441,11 +453,14 @@ async def generate_srs(project_id: str) -> dict:
     srs["srs_document"]["version"] = version
 
     storage.save_srs_json(project_id, srs, version)
+    from ..generators.agent_handoff import write_handoff
+    write_handoff(storage.project_dir(project_id) / "handoff", srs, project.get("stack", ""))
 
     snapshot = copy.deepcopy(srs)
     snapshot["srs_document"]["diagrams"] = storage.snapshot_diagrams(
         project_id, version, srs["srs_document"].get("diagrams", []))
-    await repo.save_version({"id": repo.new_id("ver_"), "project_id": project_id, "version": version,
+    from ...jobs import CURRENT_JOB
+    await repo.save_version({"id": repo.new_id("ver_"), "project_id": project_id, "version": version, "operation_id": CURRENT_JOB.get(),
                              "label": "Initial generation" if not existing
                                       else "Rewritten from a changed plan",
                              "srs": snapshot, "diff_summary": [],
@@ -462,6 +477,9 @@ async def customize(project_id: str, prompt: str) -> dict:
     project = await repo.get_project(project_id)
     if not project:
         raise KeyError("project not found")
+    recovered = await _completed_operation(project_id)
+    if recovered:
+        return recovered
     latest = await repo.latest_version(project_id)
     if not latest:
         raise ValueError("no SRS to customize yet; generate first")
@@ -483,11 +501,14 @@ async def customize(project_id: str, prompt: str) -> dict:
         attach_handoff(srs, plan, pack, auth=_auth_on(pack, plan))
 
     storage.save_srs_json(project_id, srs, version)
+    from ..generators.agent_handoff import write_handoff
+    write_handoff(storage.project_dir(project_id) / "handoff", srs, project.get("stack", ""))
 
     snapshot = copy.deepcopy(srs)
     snapshot["srs_document"]["diagrams"] = storage.snapshot_diagrams(
         project_id, version, srs["srs_document"].get("diagrams", []))
-    await repo.save_version({"id": repo.new_id("ver_"), "project_id": project_id, "version": version,
+    from ...jobs import CURRENT_JOB
+    await repo.save_version({"id": repo.new_id("ver_"), "project_id": project_id, "version": version, "operation_id": CURRENT_JOB.get(),
                              "label": f"Customized: {prompt[:60]}", "srs": snapshot, "diff_summary": diff,
                              "created_at": now_iso()})
     await repo.save_diagrams(project_id, srs["srs_document"].get("diagrams", []))
@@ -496,6 +517,18 @@ async def customize(project_id: str, prompt: str) -> dict:
     summary = summarize_srs(srs)
     project = await repo.get_project(project_id)
     return {"project": project, "version": version, "diff_summary": diff, "summary": summary, "srs": srs}
+
+
+async def _completed_operation(project_id: str):
+    from ...jobs import CURRENT_JOB
+    operation = CURRENT_JOB.get()
+    latest = await repo.latest_version(project_id) if operation else None
+    if not latest or latest.get("operation_id") != operation:
+        return None
+    await repo.update_project(project_id, {"status": "generated", "current_version": latest["version"]})
+    await repo.save_diagrams(project_id, latest["srs"]["srs_document"].get("diagrams", []))
+    return {"project": await repo.get_project(project_id), "version": latest["version"],
+            "srs": latest["srs"], "summary": summarize_srs(latest["srs"]), "diff_summary": latest.get("diff_summary", [])}
 
 
 async def project_detail(project_id: str) -> dict:

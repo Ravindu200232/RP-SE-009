@@ -4,6 +4,7 @@ from __future__ import annotations
 import copy
 
 from .config import settings
+from .sqlite_store import SQLiteStore
 
 
 PROJECTS = "projects"
@@ -159,6 +160,11 @@ async def connect_store() -> MotorStore | MemoryStore:
     global _store
     if _store is not None:
         return _store
+    local_path = settings.storage_path / ".srs-store.sqlite3"
+    if local_path.is_file():
+        # Keep using the selected backend across restarts; never hide saved work.
+        _store = SQLiteStore(local_path)
+        return _store
     try:
         from motor.motor_asyncio import AsyncIOMotorClient
 
@@ -166,12 +172,12 @@ async def connect_store() -> MotorStore | MemoryStore:
         await client.admin.command("ping")
         _store = MotorStore(client, client[settings.mongodb_db])
         await _ensure_indexes(_store)
-        print(f"[db] connected to MongoDB at {settings.mongodb_uri}")
+        print("[db] connected to MongoDB")
     except Exception as exc:  # noqa: BLE001 - any failure -> fallback
         if not settings.mongodb_allow_memory_fallback:
             raise
-        print(f"[db] MongoDB unavailable ({exc!s}); using in-memory store")
-        _store = MemoryStore()
+        print("[db] MongoDB unavailable; using durable local SQLite storage")
+        _store = SQLiteStore(local_path)
     return _store
 
 
@@ -190,6 +196,8 @@ async def ensure_store() -> MotorStore | MemoryStore:
     global _store
     if _store is None:
         return await connect_store()
+    if isinstance(_store, SQLiteStore):
+        return _store
 
     if isinstance(_store, MotorStore):
         try:

@@ -26,10 +26,13 @@ def adopt_srs(srs_id: str, proj_dir: Path) -> bool:
     interview, and the PDF. Doing it here rather than inside the SRS keeps that
     package free of any knowledge of AgentForge.
 
-    Never fatal. A missing SRS tab is not worth failing a build over.
+    Required handoffs must be available before an agent starts.
     """
     from datetime import datetime, timezone
     try:
+        parent = _srs_get(f"/projects/{srs_id}")
+        if parent is None or (parent.json().get("project") or {}).get("status") != "approved":
+            raise ValueError("Approve the generated SRS before starting the design or build")
         staging = PROD_DIR / ".srs" / srs_id
         dest = proj_dir / ".agentforge" / "srs"
         dest.mkdir(parents=True, exist_ok=True)
@@ -37,12 +40,28 @@ def adopt_srs(srs_id: str, proj_dir: Path) -> bool:
         copied = 0
         if staging.is_dir():
             for src in staging.rglob("*"):
-                if not src.is_file():
+                if (not src.is_file() or src.name.endswith("-checkpoint.json") or
+                        any(part.startswith(".") for part in src.relative_to(staging).parts) or "changes" in src.relative_to(staging).parts):
+                    continue
+                if src.name.startswith(".env") and src.name != ".env.example":
                     continue
                 target = dest / src.relative_to(staging)
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src, target)
                 copied += 1
+        staged_env = staging / ".env.local"
+        if staged_env.is_file():
+            from builder_agent.setup import merge_env
+            credentials = {}
+            for line in staged_env.read_text(encoding="utf-8").splitlines():
+                key, sep, value = line.partition("=")
+                if sep and re.fullmatch(r"[A-Z][A-Z0-9_]{1,63}", key):
+                    credentials[key] = value
+            merge_env(proj_dir / ".env.local", credentials)
+            ignore = proj_dir / ".gitignore"
+            existing = ignore.read_text(encoding="utf-8") if ignore.exists() else ""
+            if ".env*" not in existing:
+                ignore.write_text(existing + "\n.env*\n!.env.example\n", encoding="utf-8")
 
         base = f"/projects/{srs_id}"
 
@@ -62,18 +81,25 @@ def adopt_srs(srs_id: str, proj_dir: Path) -> bool:
                                                encoding="utf-8")
             (dest / "handoff.txt").write_text(body.get("prompt") or "",
                                               encoding="utf-8")
+        agent_files = _srs_get(f"{base}/agent-handoff")
+        if agent_files is None:
+            raise RuntimeError("The SRS agent handoffs are unavailable")
+        if agent_files is not None:
+            target = proj_dir / ".agentforge" / "handoff"
+            target.mkdir(parents=True, exist_ok=True)
+            for filename, content in agent_files.json().get("files", {}).items():
+                if filename in ("app.md", "sitemap.md", "prototype.md", "builder.md"):
+                    (target / filename).write_text(content, encoding="utf-8")
 
         interview = _srs_get(f"{base}/interview")
         if interview is not None:
             (dest / "interview.json").write_text(
                 json.dumps(interview.json(), indent=2), encoding="utf-8")
 
-        if not (dest / "srs_latest.json").exists():
-            document = _srs_get(f"{base}/srs-json")
-            if document is not None:
-                (dest / "srs_latest.json").write_text(
-                    json.dumps(document.json(), indent=2), encoding="utf-8")
-                elog("INFO", "   📄 SRS document fetched (staging had none)")
+        document = _srs_get(f"{base}/srs-json")
+        if document is not None:
+            (dest / "srs_latest.json").write_text(
+                json.dumps(document.json(), indent=2), encoding="utf-8")
 
         d_dir = dest / "diagrams"
         have_diagrams = d_dir.is_dir() and any(d_dir.glob("*.mmd"))

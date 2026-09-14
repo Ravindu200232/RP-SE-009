@@ -3,6 +3,7 @@
 import { create } from 'zustand'
 import { api, setAuthToken, getAuthToken, whenSignedOut } from './api'
 import { connect, disconnect } from './ws'
+import { useStore } from './store'
 
 export const useAuthStore = create((set, get) => ({
   user: null,
@@ -75,6 +76,7 @@ export const useAuthStore = create((set, get) => ({
     } finally {
       setAuthToken('')
       disconnect()
+      useStore.getState().clearAccount()
       set({ user: null, token: '', error: '' })
     }
   },
@@ -88,5 +90,6 @@ whenSignedOut(() => {
   if (!useAuthStore.getState().user && !getAuthToken()) return
   setAuthToken('')
   disconnect()
+  useStore.getState().clearAccount()
   useAuthStore.setState({ user: null, token: '', loading: false })
 })

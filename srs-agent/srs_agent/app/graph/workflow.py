@@ -78,14 +78,27 @@ async def run_analysis(state: AgentState) -> AgentState:
 
 
 async def run_generation(state: AgentState) -> AgentState:
-    global _generation
-    if _generation is None:
-        _generation = _build_generation()
-    return await _generation.ainvoke(state)
+    return await _checkpointed("generation", state, [audit_node, english_plan_node, generate_srs_node, diagram_node])
 
 
 async def run_customization(state: AgentState) -> AgentState:
-    global _customization
-    if _customization is None:
-        _customization = _build_customization()
-    return await _customization.ainvoke(state)
+    return await _checkpointed("customization", state, [customize_node, diagram_node])
+
+
+async def _checkpointed(kind: str, state: AgentState, steps) -> AgentState:
+    import hashlib
+    import json
+    from ..services import storage
+    from ...jobs import CURRENT_JOB
+    fingerprint = CURRENT_JOB.get() or hashlib.sha256(json.dumps(state, sort_keys=True, default=str).encode()).hexdigest()
+    path = storage.project_dir(state["project_id"]) / f"{kind}-checkpoint.json"
+    saved = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+    index = 0
+    if saved.get("input") == fingerprint:
+        state = saved["state"]
+        index = saved["next"]
+    for number in range(index, len(steps)):
+        result = await steps[number](state)
+        state = {**state, **result}
+        storage.write_json(path, {"input": fingerprint, "next": number + 1, "state": state})
+    return state

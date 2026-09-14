@@ -291,7 +291,7 @@ class Memory:
     # -- persistence -----------------------------------------------------
     def serialize(self) -> dict:
         return {
-            "messages": self.messages,
+            "messages": [*self.messages, *(self._pending or [])],
             "compactions": self.compactions,
             "archive": self.archive,
             "evidence": self.evidence.serialize(),

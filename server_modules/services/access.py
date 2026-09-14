@@ -21,11 +21,11 @@ USER_POST = {"/logo-prompt", "/tune", "/build-attach", "/upload-project", "/jobs
 RUN_GET = {"/decisions"}
 RUN_POST = {"/decision"}
 # One project, named in the path.
-PROJECT_GET = ("/runtime/", "/files/", "/stream/", "/session/", "/qa-screenshot/",
+PROJECT_GET = ("/workflow/", "/runtime/", "/files/", "/stream/", "/session/", "/qa-screenshot/",
                "/prototype/", "/qa/", "/srs-results/", "/qa-pdf/", "/srs-pdf/",
                "/deploy-results/")
 # One project, named in the body.
-PROJECT_POST = {"/resume", "/delete-project", "/save-file", "/element-edit", "/feature",
+PROJECT_POST = {"/sync/retry", "/resume", "/delete-project", "/save-file", "/element-edit", "/feature",
                 "/agent-update", "/stream", "/shot", "/undo", "/deploy-start",
                 "/projects/assign", "/preview-link"}
 # One project if the body names one, otherwise nobody's in particular.
@@ -69,6 +69,8 @@ def rule(method: str, path: str, body: dict | None = None) -> tuple:
     if path in SRS_POST:
         return ("srs", str(body.get("srs_id") or "").strip())
     if path == "/agent-build":
+        if body.get("project"):
+            return ("project", str(body["project"]).strip())
         srs = str(body.get("srs_id") or "").strip()
         return ("srs", srs) if srs else ("user", "")
     if path in RUN_POST:

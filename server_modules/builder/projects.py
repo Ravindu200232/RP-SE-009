@@ -139,6 +139,14 @@ def _prototype_only(proj_dir: Path) -> bool:
     return not any(_iter_source(proj_dir))
 
 
+def build_available(proj_dir: Path) -> bool:
+    if not (proj_dir / ".agentforge" / "srs").is_dir():
+        return True
+    designer = ProjectState(proj_dir).read().get("agents", {}).get("designer", {})
+    return ((designer.get("status") == "completed" or bool(designer.get("completed_at"))) and
+            (proj_dir / ".agentforge" / "prototype" / "index.html").is_file())
+
+
 def delete_project(proj_name: str) -> dict:
     """Remove a fenced project, then its generated database, in background."""
     name, resolved, error = _owned_dir(
@@ -271,11 +279,22 @@ def read_prototype(proj_name: str, rel: str) -> tuple:
             if fallback.is_file():
                 return fallback.read_bytes(), kind
         # Fallback check in prototype folder if root was dist or vice versa
-        proto_alt = (proj_dir / ".agentforge" / "prototype" / rel).resolve()
+        prototype_root = (proj_dir / ".agentforge" / "prototype").resolve()
+        proto_alt = (prototype_root / rel).resolve()
+        if not proto_alt.is_relative_to(prototype_root):
+            raise ValueError(f"{rel} is outside the drawing")
         if proto_alt.is_file():
-            return proto_alt.read_bytes(), kind
+            content = proto_alt.read_bytes()
+            if proto_alt.suffix.lower() == ".html":
+                from server_modules.services.prototype_storage import isolate_storage
+                content = isolate_storage(content, name)
+            return content, kind
         raise FileNotFoundError(f"no {rel} in this drawing")
-    return target.read_bytes(), kind
+    content = target.read_bytes()
+    if target.suffix.lower() == ".html":
+        from server_modules.services.prototype_storage import isolate_storage
+        content = isolate_storage(content, name)
+    return content, kind
 
 
 def list_projects() -> list:
@@ -306,6 +325,7 @@ def list_projects() -> list:
 
             "spec_only": _spec_only(d),
             "prototype_only": _prototype_only(d),
+            "build_available": build_available(d),
 
             "has_html": html_info["has_html"],
             "html_url": html_info["html_url"],
@@ -382,13 +402,15 @@ def save_project_file(proj_name: str, rel: str, content: str) -> dict:
     return {"ok": True, "path": rel, "size": size}
 
 
-def get_project_files(proj_name: str) -> dict:
+def get_project_files(proj_name: str, role: str = "developer") -> dict:
     """Read all source files from a project directory, return as {path: content}."""
-    proj_dir = PROD_DIR / proj_name
-    if not proj_dir.exists():
+    _, proj_dir, error = _owned_dir(PROD_DIR, proj_name, "project name", "project")
+    if error:
         return {}
 
     def add(files: dict, rel: str, fp: Path):
+        if fp.name.startswith(".env") and fp.name != ".env.example":
+            return
         try:
             if fp.stat().st_size > MAX_FILE_BYTES:
                 return
@@ -400,6 +422,12 @@ def get_project_files(proj_name: str) -> dict:
         files[rel] = {"content": content, "size": sz}
 
     files = {}
+    if role == "designer":
+        sandbox = Sandbox(proj_dir, role="designer")
+        for fp in sandbox.walk(proj_dir / ".agentforge" / "prototype", limit=MAX_LISTED_FILES):
+            if fp.suffix in SRC_EXT:
+                add(files, fp.relative_to(proj_dir).as_posix(), fp)
+        return files
     for rel in FILE_PRIORITY:
         fp = proj_dir / rel
         if fp.exists() and rel not in files:
@@ -484,6 +512,7 @@ def _message_job(msg: dict):
     think = _think_flag(msg)
 
     if kind == "agent_build" and (prompt or project):
+        model = msg.get("design_model") or model if msg.get("prototype_only") else msg.get("builder_model") or model
         args = (
             prompt, model, think, qa_model, project,
             str(msg.get("logo") or "").strip(),
@@ -497,12 +526,14 @@ def _message_job(msg: dict):
             args += (True,)
         return run_agent_pipeline, args
     if kind == "agent_resume" and project:
+        if msg.get("agent") == "designer":
+            return run_agent_pipeline, ("", msg.get("design_model") or model, think, qa_model, project, "", "", "", "", True)
         return run_agent_pipeline, (
             "", model, think, qa_model, project)
     if kind in ("chat", "agent_update") and project and prompt:
         return run_chat, (
             project, prompt, model, route, think, qa_model,
-            _browser_console(msg))
+            _browser_console(msg)) + ((str(msg["agent"]),) if msg.get("agent") else ())
     if kind == "element_edit" and project and prompt:
         return run_element_edit, (
             project, prompt, msg.get("elements") or msg.get("element") or {},

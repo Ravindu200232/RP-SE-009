@@ -14,6 +14,7 @@ import { useAttachments } from '@/lib/use-attachments'
 import { AttachButtons, AttachList } from './srs/Attachments'
 import LogoPanel from './LogoPanel'
 import BuildSetup from './BuildSetup'
+import DesignCustomize from './DesignCustomize'
 import Interview from './srs/Interview'
 import PlanReview from './srs/PlanReview'
 import SrsReview from './srs/SrsReview'
@@ -81,12 +82,49 @@ export default function Home({
   const [languageOptions, setLanguageOptions] = useState(SRS_LANGUAGES)
   const box = useRef(null)
   const langRef = useRef(null)
+  const planning = useRef(false)
   const attach = useAttachments()
   const builderModel = models.builder || models.agent || TIERS.medium.model
   const plannerModel = models.planner || models.agent || builderModel
   const designModel = models.design || models.agent || builderModel
 
   useEffect(() => { setLanguageOptions(displaySrsLanguages()) }, [])
+  useEffect(() => {
+    if (!user || srsPhase !== 'planning' || planning.current) return
+    planning.current = true
+    const epoch = useStore.getState().accountEpoch
+    const resume = async () => {
+      try {
+        let id = srsId
+        if (!id) {
+          const pending = await api.resumeSrs('/projects')
+          id = pending.result?.project?.id
+          if (!id) throw new Error('The project was not saved yet. Submit your idea again.')
+          if (useStore.getState().accountEpoch !== epoch) return
+          s.setSrs({ srsId: id, srsBusy: 'Resuming the interview…' })
+        }
+        await api.srs(`/projects/${id}/analyze`, {})
+        const current = useStore.getState()
+        if (current.accountEpoch === epoch && current.srsId === id && current.srsPhase === 'planning')
+          s.setSrs({ srsPhase: 'interview', srsBusy: '' })
+      } catch (error) {
+        if (useStore.getState().accountEpoch === epoch) {
+          setSrsError(error.message)
+          s.setSrs({ srsPhase: srsId ? 'interview' : 'idle', srsBusy: '' })
+        }
+      } finally { planning.current = false }
+    }
+    resume()
+  }, [user, srsPhase, srsId])
+  useEffect(() => {
+    if (!srsId) return
+    let live = true
+    api.srs(`/projects/${srsId}`).then(result => {
+      if (live && result?.project?.stack) setStack(result.project.stack)
+    }).catch(() => {})
+    return () => { live = false }
+  }, [srsId])
+
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -137,16 +175,17 @@ export default function Home({
   }
 
   function submit() {
-    begin(prompt.trim(), '', false)
+    planFirst()
   }
 
   function submitPrototype() {
-    begin(prompt.trim(), '', true)
+    planFirst()
   }
 
   async function startBuild(p, logo, srs = '', uploads = null, config = null, prototypeOnly = false) {
     setLogoFor(null)
     s.reset(null)
+    s.switchAgent(prototypeOnly ? 'designer' : 'developer')
     s.setBusy(true)
 
     let token = ''
@@ -187,6 +226,7 @@ export default function Home({
       attachments: token || undefined,
       uploads: uploads && Object.keys(uploads).length ? uploads : undefined,
       prototype_only: Boolean(prototypeOnly),
+      agent: prototypeOnly ? 'designer' : 'developer',
     })
   }
 
@@ -194,14 +234,20 @@ export default function Home({
     const idea = prompt.trim()
     const files = attach.items.length
     if (!idea && !files) return box.current?.focus()
+    if (planning.current) return
+    planning.current = true
+    const epoch = useStore.getState().accountEpoch
     setSrsError('')
-    s.setSrs({ srsPhase: 'planning', srsBusy: 'Reading your idea…' })
+    s.setSrs({ srsId: null, srsPhase: 'planning', srsBusy: 'Reading your idea…' })
     try {
       const created = await api.srs('/projects', {
         idea: idea || 'See the attached files.',
         language: languageOptions.find(item => item.code === srsLanguage)?.name || srsLanguage,
+        stack: stack || 'nextjs-mongo',
       })
       const id = created.project.id
+      if (useStore.getState().accountEpoch !== epoch || useStore.getState().srsPhase !== 'planning') return
+      s.setSrs({ srsId: id })
 
       if (files) {
         s.setSrs({ srsId: id, srsBusy: `Reading your ${files === 1 ? 'attachment' : `${files} attachments`}…` })
@@ -217,24 +263,42 @@ export default function Home({
         }
       }
 
+      if (useStore.getState().accountEpoch !== epoch || useStore.getState().srsId !== id) return
       s.setSrs({ srsId: id, srsBusy: 'Working out what to ask you…' })
       await api.srs(`/projects/${id}/analyze`, {})
+      if (useStore.getState().accountEpoch !== epoch || useStore.getState().srsId !== id) return
       s.setSrs({ srsPhase: 'interview', srsBusy: '' })
     } catch (e) {
+      if (useStore.getState().accountEpoch !== epoch) return
       setSrsError(e.message)
-      s.resetSrs()
-    }
+      const id = useStore.getState().srsId
+      s.setSrs({ srsPhase: id ? 'interview' : 'idle', srsBusy: '' })
+    } finally { planning.current = false }
   }
 
   function acceptSrs(handoffPrompt, id) {
-    s.setSrs({ srsPhase: 'idle', srsBusy: '' })
+    s.setSrs({ srsId: id, srsPhase: 'design', srsBusy: '' })
     setPrompt(handoffPrompt)
-    setTimeout(() => begin(handoffPrompt, id, false), 900)
   }
+
+  if (srsPhase === 'design' && srsId) return <DesignCustomize key={srsId} projectId={srsId}
+    onBack={() => s.setSrs({ srsPhase: 'review' })}
+    onContinue={async direction => {
+      // Keep the operation ID across transport retries and reloads.
+      const key = `agentforge-design-change-${srsId}`
+      let saved
+      try { saved = JSON.parse(localStorage.getItem(key) || 'null') } catch { }
+      if (saved?.summary !== direction) saved = { change_id: `design-${crypto.randomUUID()}`, summary: direction }
+      localStorage.setItem(key, JSON.stringify(saved))
+      await api.srs(`/projects/${srsId}/changes`, { ...saved, source: 'design-customizer' })
+      localStorage.removeItem(key)
+      s.setSrs({ srsPhase: 'idle', srsBusy: '' })
+      startBuild(direction, '', srsId, null, { model: designModel, stack, think }, true)
+    }} />
 
   if (srsPhase === 'review' && srsId) {
     return (
-      <SrsReview projectId={srsId}
+      <SrsReview key={srsId} projectId={srsId}
                  onApproved={acceptSrs}
                  onKept={(project) => { s.resetSrs(); setPrompt(''); onKept?.(project) }}
                  onBack={() => s.setSrs({ srsPhase: 'plan' })} />
@@ -243,7 +307,7 @@ export default function Home({
 
   if (srsPhase === 'interview' && srsId) {
     return (
-      <Interview projectId={srsId}
+      <Interview key={srsId} projectId={srsId}
                  onDone={() => s.setSrs({ srsPhase: 'plan' })}
                  onCancel={() => s.resetSrs()} />
     )
@@ -302,7 +366,7 @@ export default function Home({
 
         {srsPhase === 'plan' && srsId && (
           <div className="mt-6">
-            <PlanReview projectId={srsId}
+            <PlanReview key={srsId} projectId={srsId}
                         onGenerated={() => s.setSrs({ srsPhase: 'review' })}
                         onCancel={() => s.setSrs({ srsPhase: 'interview' })} />
           </div>

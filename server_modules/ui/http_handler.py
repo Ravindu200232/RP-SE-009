@@ -277,7 +277,11 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
         elif path == "/mongo":
             self._json(MONGO.status())
         elif path.startswith("/files/"):
-            self._json(get_project_files(path[7:].strip("/")))
+            role = parse_qs(urlsplit(self.path).query).get("agent", ["developer"])[0]
+            self._json(get_project_files(path[7:].strip("/"), role))
+        elif path.startswith("/workflow/"):
+            _, project_dir, error = _owned_dir(PROD_DIR, path[10:].strip("/"), "project name", "project")
+            self._json({"error": error}, 404) if error else self._json({**ProjectState(project_dir).snapshot(), "build_available": build_available(project_dir)})
         elif path.startswith("/stream/"):
             self._json({"stream": read_stream(path[8:].strip("/"))})
         elif path.startswith("/session/"):
@@ -507,17 +511,20 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
             return self._json(out, 404 if out.get("error") else 200)
         if path == "/build/cancel":
             # Their own run, or their place in the line - never someone else's build.
-            return self._json(*cancel_mine())
-        if path == "/resume":
             body = self._body()
-            run_thread(
-                target=run_agent_pipeline,
-                args=("", body.get("model") or default_agent_model(),
-                      _think_flag(body),
-                      (body.get("qa_model") or "").strip(),
-                      body.get("project", "").strip()),
-                daemon=True
-            ).start()
+            return self._json(*cancel_mine(str(body.get("project") or ""), str(body.get("agent") or "")))
+        if path == "/sync/retry":
+            result = retry_project_sync(str(self._body().get("project") or ""))
+            return self._json(result, 400 if result.get("error") else 200)
+        if path == "/resume":
+            body = {**self._body(), "type": "agent_resume"}
+            job = _message_job(body)
+            if not job:
+                return self._json({"error": "A valid project and request are required"}, 400)
+            denied = job_denied(body, acting())
+            if denied:
+                return self._json({"error": denied}, 403)
+            start_run(job[0], job[1])
             self._json({"ok": True})
         elif path == "/delete-project":
             body = self._body()
@@ -609,18 +616,14 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
                         "data_uri": preview_uri(out),
                         "url": (f"/generated/{name}.png" if proj else "")})
         elif path == "/agent-build":
-            body = self._body()
-            run_thread(
-                target=run_agent_pipeline,
-                args=(body.get("prompt", ""),
-                      body.get("model") or default_agent_model(),
-                      _think_flag(body),
-                      (body.get("qa_model") or "").strip(),
-                      "", str(body.get("logo", "")).strip(),
-                      str(body.get("srs_id", "")).strip(),
-                      str(body.get("stack", "")).strip()),
-                daemon=True
-            ).start()
+            body = {**self._body(), "type": "agent_build"}
+            job = _message_job(body)
+            if not job:
+                return self._json({"error": "A valid project and request are required"}, 400)
+            denied = job_denied(body, acting())
+            if denied:
+                return self._json({"error": denied}, 403)
+            start_run(job[0], job[1])
             self._json({"ok": True})
         elif path == "/element-edit":
             body = self._body()
@@ -706,16 +709,14 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
             ).start()
             self._json({"ok": True})
         elif path == "/agent-update":
-            body = self._body()
-            run_thread(
-                target=run_chat,
-                args=(body.get("project", ""), body.get("prompt", ""),
-                      body.get("model") or default_agent_model(),
-                      (body.get("route") or "").strip(), _think_flag(body),
-                      (body.get("qa_model") or "").strip(),
-                      _browser_console(body)),
-                daemon=True
-            ).start()
+            body = {**self._body(), "type": "agent_update"}
+            job = _message_job(body)
+            if not job:
+                return self._json({"error": "A valid project and request are required"}, 400)
+            denied = job_denied(body, acting())
+            if denied:
+                return self._json({"error": denied}, 403)
+            start_run(job[0], job[1])
             self._json({"ok": True})
         elif path == "/preview-link":
             # Give this project's app an address of its own, for a studio that
