@@ -12,12 +12,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Monitor, Tablet, Smartphone, MousePointerClick, Pencil, RotateCw,
   ExternalLink, Globe, Layers, Eraser, Undo2, ChevronLeft, ChevronRight,
-  Sparkles, Rocket, FlaskConical, Loader2,
+  Sparkles, Rocket, FlaskConical, Loader2, SlidersHorizontal,
 } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { api, API } from '@/lib/api'
 import { watchFrame } from '@/lib/console-log'
-import { attachPicker, pickedFrom, pickLabel } from '@/lib/picker'
+import { attachPicker, pickedFrom, pickLabel, frameDoc } from '@/lib/picker'
+import VisualInspector from './VisualInspector'
 import { Tip } from './ui'
 import { cn } from '@/lib/utils'
 
@@ -52,6 +53,10 @@ export default function PrototypePane({ project, hidden, onBuild }) {
   const [vp, setVp] = useState('desktop')
   const [pickOn, setPickOn] = useState(false)
   const [pencilOn, setPencilOn] = useState(false)
+  const [visualEditOn, setVisualEditOn] = useState(false)
+  const [inspectedElement, setInspectedElement] = useState(null)
+  const [inspectedDoc, setInspectedDoc] = useState(null)
+  const visualDetachRef = useRef(null)
   const [currentFile, setCurrentFile] = useState('index.html')
   const [protoReady, setProtoReady] = useState(false)
   const [iframeLoading, setIframeLoading] = useState(true)
@@ -198,6 +203,83 @@ export default function PrototypePane({ project, hidden, onBuild }) {
     return () => { detachRef.current?.(); detachRef.current = null }
   }, [pickOn, attach])
 
+  const attachVisualInspector = useCallback(() => {
+    visualDetachRef.current?.()
+    visualDetachRef.current = null
+    const f = frameRef.current
+    if (!f) return
+    const d = frameDoc(f)
+    if (!d) return
+
+    const STYLE_ID = '__vf_style'
+    if (!d.getElementById(STYLE_ID)) {
+      const st = d.createElement('style')
+      st.id = STYLE_ID
+      st.textContent = `
+        .__vf_hi {
+          outline: 2px dashed #10b981 !important;
+          outline-offset: -2px !important;
+          cursor: pointer !important;
+        }
+        .__vf_selected {
+          outline: 2px solid #10b981 !important;
+          outline-offset: -1px !important;
+        }
+      `
+      d.head.appendChild(st)
+    }
+
+    const hover = (e) => {
+      if (e.target && e.target.classList) {
+        e.target.classList.add('__vf_hi')
+      }
+    }
+    const leave = (e) => {
+      if (e.target && e.target.classList) {
+        e.target.classList.remove('__vf_hi')
+      }
+    }
+    const click = (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      e.stopImmediatePropagation()
+      const prev = d.querySelector('.__vf_selected')
+      if (prev) prev.classList.remove('__vf_selected')
+      if (e.target && e.target.classList) {
+        e.target.classList.add('__vf_selected')
+      }
+      setInspectedElement(e.target)
+      setInspectedDoc(d)
+    }
+
+    d.addEventListener('mouseover', hover, true)
+    d.addEventListener('mouseout', leave, true)
+    d.addEventListener('click', click, true)
+
+    visualDetachRef.current = () => {
+      d.removeEventListener('mouseover', hover, true)
+      d.removeEventListener('mouseout', leave, true)
+      d.removeEventListener('click', click, true)
+      const hi = d.querySelectorAll('.__vf_hi, .__vf_selected')
+      hi.forEach(el => el.classList.remove('__vf_hi', '__vf_selected'))
+      const st = d.getElementById(STYLE_ID)
+      if (st) st.remove()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (visualEditOn) attachVisualInspector()
+    else {
+      visualDetachRef.current?.()
+      visualDetachRef.current = null
+      setInspectedElement(null)
+    }
+    return () => {
+      visualDetachRef.current?.()
+      visualDetachRef.current = null
+    }
+  }, [visualEditOn, attachVisualInspector])
+
   useEffect(() => {
     const f = frameRef.current
     if (!f) return
@@ -205,10 +287,11 @@ export default function PrototypePane({ project, hidden, onBuild }) {
       watchFrame(f, project, 'designer')
       syncPath()
       if (pickOn) attach()
+      if (visualEditOn) attachVisualInspector()
     }
     f.addEventListener('load', onLoad)
     return () => f.removeEventListener('load', onLoad)
-  }, [pickOn, attach, syncPath])
+  }, [pickOn, attach, visualEditOn, attachVisualInspector, syncPath])
 
   useEffect(() => {
     const id = setInterval(syncPath, 500)
@@ -315,14 +398,33 @@ export default function PrototypePane({ project, hidden, onBuild }) {
 
   function togglePick() {
     if (!project) return addLog('WARN', 'Open a project first')
-    if (!pickOn) setPencilOn(false)
+    if (!pickOn) {
+      setPencilOn(false)
+      setVisualEditOn(false)
+      setInspectedElement(null)
+    }
     setPickOn(v => !v)
   }
 
   function togglePencil() {
     if (!project) return addLog('WARN', 'Open a project first')
-    if (!pencilOn) setPickOn(false)
+    if (!pencilOn) {
+      setPickOn(false)
+      setVisualEditOn(false)
+      setInspectedElement(null)
+    }
     setPencilOn(v => { if (v) clearStrokes(); return !v })
+  }
+
+  function toggleVisualEdit() {
+    if (!project) return addLog('WARN', 'Open a project first')
+    if (!visualEditOn) {
+      setPickOn(false)
+      setPencilOn(false)
+    } else {
+      setInspectedElement(null)
+    }
+    setVisualEditOn(v => !v)
   }
 
   async function undoLast() {
@@ -446,6 +548,14 @@ export default function PrototypePane({ project, hidden, onBuild }) {
             <Undo2 className="size-3.5" />
           </Cell>
         </div>
+
+        {/* Visual Quick Inspector (Zero-LLM Direct Editor) */}
+        <div className="flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/[.08] p-1 shadow-sm">
+          <Cell tip="Visual Inspector: click any element to live-edit text, colors, layout & move without LLM"
+                side="left" on={visualEditOn} onClick={toggleVisualEdit} className={cn("rounded-full", visualEditOn && "!bg-emerald-600 !text-white shadow-sm")}>
+            <SlidersHorizontal className={cn("size-3.5", visualEditOn ? "text-white" : "text-emerald-600 dark:text-emerald-400")} />
+          </Cell>
+        </div>
       </div>
 
       {/* Frame Container */}
@@ -460,6 +570,27 @@ export default function PrototypePane({ project, hidden, onBuild }) {
             {pencilOn ? 'Draw around what you mean — it attaches to the chat'
                       : 'Click anything on the prototype — it attaches to the chat'}
           </p>
+        )}
+
+        {visualEditOn && !inspectedElement && (
+          <p className="pointer-events-none absolute inset-x-0 bottom-7 z-[9] mx-auto w-fit rounded-full bg-emerald-700/90 px-3.5 py-1.5 text-[11px] font-medium text-white shadow-lg backdrop-blur-md">
+            Visual Inspector active: click any element to live-edit text, colors, layout and move without LLM
+          </p>
+        )}
+
+        {visualEditOn && inspectedElement && inspectedDoc && (
+          <VisualInspector
+            element={inspectedElement}
+            doc={inspectedDoc}
+            project={project}
+            currentFile={currentFile}
+            onClose={() => {
+              const prev = inspectedDoc?.querySelector('.__vf_selected')
+              if (prev) prev.classList.remove('__vf_selected')
+              setInspectedElement(null)
+            }}
+            onLog={(lvl, msg) => addLog(lvl, msg)}
+          />
         )}
 
 

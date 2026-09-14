@@ -78,7 +78,8 @@ def _assert(page, step: dict) -> tuple[bool, str]:
         critical = [d for d in page.diagnostics
                     if (d["kind"] in ("page error", "console error", "request failed")
                         or d["kind"].startswith("HTTP 5"))
-                    and not _asserted_http_diagnostic(page, d)]
+                    and not _asserted_http_diagnostic(page, d)
+                    and not _is_ignorable_diagnostic(d)]
         if not critical:
             return True, "no critical browser diagnostics"
         detail = "; ".join(f"{d['kind']}: {_clip(d['text'], 160)}" for d in critical[:5])
@@ -87,8 +88,21 @@ def _assert(page, step: dict) -> tuple[bool, str]:
                     "visible, count, httpStatus or noDiagnostics.")
 
 
+def _is_ignorable_diagnostic(diagnostic):
+    text = diagnostic.get("text", "")
+    url = diagnostic.get("url", "")
+    # Ignore benign external asset or ORB/connectivity diagnostics in headless browser
+    if any(ign in text for ign in ("ERR_BLOCKED_BY_ORB", "ERR_NAME_NOT_RESOLVED", "ERR_INTERNET_DISCONNECTED")):
+        return True
+    if "favicon.ico" in url or "favicon.ico" in text:
+        return True
+    return False
+
+
 def _asserted_http_diagnostic(page, diagnostic):
     """Only a browser network message for an already asserted 4xx is expected."""
+    if _is_ignorable_diagnostic(diagnostic):
+        return True
     if diagnostic.get("source") != "network" or diagnostic.get("kind") != "console error":
         return False
     match = re.search(r"Failed to load resource:.*?status of (4\d\d)\b", diagnostic.get("text", ""))

@@ -123,9 +123,10 @@ def _brief(proj_dir: Path, prompt: str) -> str:
     # The per-project database keeps generated apps out of each other's
     # collections, and the URI reaches the app through its environment so
     # nothing has to be hard-coded into the source.
-    parts += ["", f"This project's database is "
-                  f"`{db_name_for(proj_dir.name)}`. Read the connection string from "
-                  "MONGODB_URI in the environment; never hard-code one."]
+    if getattr(RUN, "agent", "") != "designer" and not _prototype_only(proj_dir):
+        parts += ["", f"This project's database is "
+                      f"`{db_name_for(proj_dir.name)}`. Read the connection string from "
+                      "MONGODB_URI in the environment; never hard-code one."]
     return "\n".join(parts)
 
 
@@ -390,6 +391,25 @@ def save_conversation(proj_dir: Path, agent) -> None:
             pass
 
 
+def _prune_designer_memory(memory) -> None:
+    """Evict zombie large file reads from previous designer sessions to save tokens and eliminate delay."""
+    try:
+        memory.strip_written_bodies()
+        memory.evict_superseded()
+        total = len(memory.messages)
+        cutoff = max(0, total - 10)
+        for msg in memory.messages[:cutoff]:
+            meta = msg.get("meta", {})
+            if meta.get("kind") == "tool-result" and meta.get("tool") in ("readFile", "grepSearch"):
+                body = msg.get("content") or ""
+                if len(body) > 300:
+                    target = (meta.get("args") or {}).get("filePath", "file")
+                    msg["content"] = (f"[{len(body)} chars of earlier {meta.get('tool')} on {target} omitted. "
+                                      "Read file again if current content needed.]")
+    except Exception:
+        pass
+
+
 def restore_conversation(proj_dir: Path, agent) -> bool:
     """Resume this project's saved context when its live agent is gone."""
     role = agent.config.extra.get("agent_role", "developer")
@@ -407,6 +427,8 @@ def restore_conversation(proj_dir: Path, agent) -> bool:
         memory = Memory(budget_tokens=agent.config.context_tokens)
         memory.restore(body["memory"])
         memory.close_pending_tools("The earlier session ended before this tool returned.")
+        if role == "designer":
+            _prune_designer_memory(memory)
         agent.memory = memory
         agent.plan_text = body.get("plan") or ""
         agent.design = body.get("design")

@@ -607,16 +607,29 @@ class BuilderAgent:
         reference or an inspiration: it is the settled appearance of the
         product, and it outranks whatever the model would otherwise reach for.
         """
+        dev_notes = ""
         if self.config.extra.get("agent_role") == "developer":
-            return ("Read the current SRS handoffs and prototype before implementation. Match the "
-                    "prototype while applying any new feature or revision explicitly requested in this turn. "
-                    "Report a concise summary of completed changes for the parent SRS.\n\n" + instruction)
+            dev_notes = (
+                "MATCH THE APPROVED PROTOTYPE 100%. Directly translate the HTML files in "
+                "`.agentforge/prototype/` into your application components and pages. "
+                "Preserve the exact visual layouts, typography, CSS tokens/classes, and EVERY photograph/image URL. "
+                "Do not replace real photos with placeholder SVGs. "
+                "Batch operations (write models, API routes, and pages in multi-tool turns) to build fast. "
+                "SECURITY: In seed scripts and auth routes, always hash passwords using bcrypt.hashSync(password, 10). "
+                "Never use dangerouslySetInnerHTML. "
+                "E2E: Add distinct labels or data-testid attributes to interactive controls to prevent ambiguous selectors.\n\n"
+            )
+
+        root = Path(self.sandbox.root) / ".agentforge" / "prototype"
+        if (not self.prototype_dir or not self.prototype_dir.is_dir()) and root.is_dir():
+            self.prototype_dir = root
+
         if not self.prototype_dir or not self.prototype_dir.is_dir():
-            return instruction
+            return (dev_notes + instruction) if dev_notes else instruction
         pages = sorted(path.name for path in self.prototype_dir.glob("*.html"))
         if not pages:
-            return instruction
-        return "\n".join([
+            return (dev_notes + instruction) if dev_notes else instruction
+        return "\n".join(([dev_notes.strip()] if dev_notes else []) + [
             "THE WHOLE APPLICATION, NOT HALF OF IT. Every screen in the drawing, built, "
             "and every route it links to answering. No stub, no placeholder, nothing "
             "left for later.",

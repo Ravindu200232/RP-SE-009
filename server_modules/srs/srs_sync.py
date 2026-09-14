@@ -191,8 +191,8 @@ def sync_from_prototype_async(proj_dir: Path, drawn_pages: list[str]) -> None:
                 "verified": flow_audit.get("valid", True),
                 "screens": [
                     {
-                        "screen_name": Path(p).stem.replace("_", " ").title(),
-                        "file": p,
+                        "screen_name": Path(p.get("file") or p.get("name") or "").stem.replace("_", " ").title() if isinstance(p, dict) else Path(str(p)).stem.replace("_", " ").title(),
+                        "file": (p.get("file") or p.get("name") or "") if isinstance(p, dict) else str(p),
                         "actions": flow_audit.get("buttons_detected", [])[:6],
                     }
                     for p in drawn_pages

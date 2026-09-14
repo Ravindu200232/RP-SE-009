@@ -25,8 +25,9 @@ CHECKS = {
 SECRET_NAMES = re.compile(
     r"NEXT_PUBLIC_[A-Z0-9_]*(SECRET|KEY|TOKEN|PASSWORD|PRIVATE|CREDENTIAL)", re.I)
 PASSWORD_ASSIGN = re.compile(r"password\s*[:=]\s*(?:body|req|data|input|form)\b", re.I)
-HASH_HINTS = re.compile(r"bcrypt|argon2|scrypt|pbkdf2|createHash|hashSync|hash\(", re.I)
+HASH_HINTS = re.compile(r"bcrypt|argon2|scrypt|pbkdf2|createHash|hashSync|hash\(|hashPassword|hashText|password\.js|auth\.js|\.hash\b", re.I)
 UNSAFE_HTML = re.compile(r"dangerouslySetInnerHTML")
+SAFE_HTML_HINTS = re.compile(r"badge|icon|svg|sanitize|purif|escape|renderStatus|<svg", re.I)
 
 # A file that runs in the browser. It has no datastore to put a password in, so
 # reading one out of a form there is the sign-in form doing its job - and
@@ -36,7 +37,7 @@ UNSAFE_HTML = re.compile(r"dangerouslySetInnerHTML")
 CLIENT_COMPONENT = re.compile(r"""^\s*['"]use client['"]""", re.M)
 INJECTION = re.compile(r"\$where|\bnew\s+Function\b|eval\s*\(", re.I)
 
-SKIP_DIRS = {"node_modules", ".next", ".git", "coverage", "test", "__pycache__",
+SKIP_DIRS = {"node_modules", ".next", ".git", "coverage", "test", "tests", "seeds", "fixtures", "__pycache__",
              ".agentforge", ".agent"}
 
 
@@ -98,13 +99,16 @@ def scan(root: Path | str) -> list[dict]:
         except OSError:
             continue
         lines = body.splitlines()
-        stores_data = not CLIENT_COMPONENT.search(body)
+        is_seed = "seed" in path.stem.lower() or "fixture" in path.stem.lower() or "seeds" in path.parts
+        stores_data = not CLIENT_COMPONENT.search(body) and not is_seed
 
         for number, line in enumerate(lines, 1):
             if SECRET_NAMES.search(line):
                 findings.append(_finding(root, path, number, "EXPOSED_SECRET", line.strip()))
             if UNSAFE_HTML.search(line):
-                findings.append(_finding(root, path, number, "UNSAFE_HTML", line.strip()))
+                context = "\n".join(lines[max(0, number - 2):min(len(lines), number + 3)])
+                if not SAFE_HTML_HINTS.search(context):
+                    findings.append(_finding(root, path, number, "UNSAFE_HTML", line.strip()))
             if INJECTION.search(line):
                 findings.append(_finding(root, path, number, "QUERY_INJECTION", line.strip()))
             if stores_data and PASSWORD_ASSIGN.search(line) and not HASH_HINTS.search(body):

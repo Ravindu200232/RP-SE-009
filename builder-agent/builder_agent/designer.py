@@ -23,7 +23,10 @@ class DesignerAgent(BuilderAgent):
             "Read the shared .agentforge/handoff/app.md, sitemap.md, prototype.md and builder.md. "
             "Continue the existing prototype if there is one. Write only inside .agentforge/prototype/. "
             "Use HTML, CSS and JavaScript to implement the specified interface and interactions. "
-            "Apply the requested design changes and preserve unrelated screens.\n\n" + task)
+            "Batch operations to write or update multiple files in one turn where possible. "
+            "When rewriting or updating a page, use writeFile with overwrite: true directly. "
+            "For localized edits, use editFile or patchFile with exact matches. "
+            "Finish promptly and summarize what changed.\n\n" + task)
         if outcome.status == "completed" and not (root / "index.html").is_file():
             outcome = Outcome(status="incomplete", result="The designer did not produce index.html. Continue this design to finish it.")
         if outcome.status == "completed":
