@@ -29,6 +29,7 @@ _PERSISTED_ACTIVE_STATES = {
     RunState.CI_RUNNING.value,
     RunState.DEPLOYING.value,
     RunState.VALIDATING.value,
+    RunState.REPAIRING.value,
 }
 
 

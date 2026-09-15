@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  ArrowRight, Check, ChevronDown, FileText, FlaskConical, Languages, Layers,
+  ArrowRight, Check, ChevronDown, CloudUpload, FileText, FlaskConical, Languages, Layers,
   PencilLine, Rocket, Search, Sparkles,
 } from 'lucide-react'
 import { useStore, KEYS } from '@/lib/store'
@@ -72,7 +72,6 @@ export default function Home({
   const s = useStore()
   const { images, think, models, srsId, srsPhase } = s
   const [prompt, setPrompt] = useState('')
-  const [activeMode, setActiveMode] = useState('app')
   const [logoFor, setLogoFor] = useState(null)
   const [srsError, setSrsError] = useState('')
   const [srsLanguage, setSrsLanguage] = useState('en')
@@ -183,6 +182,7 @@ export default function Home({
   }
 
   async function startBuild(p, logo, srs = '', uploads = null, config = null, prototypeOnly = false) {
+    onStarted?.()
     setLogoFor(null)
     s.reset(null)
     s.switchAgent(prototypeOnly ? 'designer' : 'developer')
@@ -204,7 +204,6 @@ export default function Home({
     }
 
     s.setProgress('Starting…', 0)
-    onStarted?.()
     const selected = config?.model || builderModel
     s.addLog('INFO', `Build mode — ${tierDisplayName(selected)} · Thinking — ${(config?.think ?? think) ? 'on' : 'off'}`)
     if (prototypeOnly) s.addLog('INFO', '🎨 Prototype Build mode — generating interactive HTML prototype first')
@@ -278,7 +277,6 @@ export default function Home({
 
   function acceptSrs(handoffPrompt, id) {
     s.setSrs({ srsId: id, srsPhase: 'design', srsBusy: '' })
-    setPrompt(handoffPrompt)
   }
 
   if (srsPhase === 'design' && srsId) return <DesignCustomize key={srsId} projectId={srsId}
@@ -292,8 +290,9 @@ export default function Home({
       localStorage.setItem(key, JSON.stringify(saved))
       await api.srs(`/projects/${srsId}/changes`, { ...saved, source: 'design-customizer' })
       localStorage.removeItem(key)
-      s.setSrs({ srsPhase: 'idle', srsBusy: '' })
+      onStarted?.()
       startBuild(direction, '', srsId, null, { model: designModel, stack, think }, true)
+      s.setSrs({ srsPhase: 'idle', srsBusy: '' })
     }} />
 
   if (srsPhase === 'review' && srsId) {
@@ -310,6 +309,16 @@ export default function Home({
       <Interview key={srsId} projectId={srsId}
                  onDone={() => s.setSrs({ srsPhase: 'plan' })}
                  onCancel={() => s.resetSrs()} />
+    )
+  }
+
+  if (srsPhase === 'plan' && srsId) {
+    return (
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-[radial-gradient(circle_at_50%_15%,#152e68_0%,#0c152a_38%,#080c16_100%)] px-3.5 sm:px-6 py-6 sm:py-10 text-white">
+        <PlanReview key={srsId} projectId={srsId}
+                    onGenerated={() => s.setSrs({ srsPhase: 'review' })}
+                    onCancel={() => s.setSrs({ srsPhase: 'interview' })} />
+      </div>
     )
   }
 
@@ -364,13 +373,6 @@ export default function Home({
           </p>
         </div>
 
-        {srsPhase === 'plan' && srsId && (
-          <div className="mt-6">
-            <PlanReview key={srsId} projectId={srsId}
-                        onGenerated={() => s.setSrs({ srsPhase: 'review' })}
-                        onCancel={() => s.setSrs({ srsPhase: 'interview' })} />
-          </div>
-        )}
         {srsPhase === 'planning' && (
           <div className="mt-6">
             <SrsActivity phase="planning" message={s.srsBusy || 'Reading your idea…'} />
@@ -387,13 +389,7 @@ export default function Home({
                 rows={4}
                 ref={box}
                 aria-label="Describe your app"
-                placeholder={
-                  activeMode === 'srs'
-                    ? 'Describe your project for SRS interview & specification generation...'
-                    : activeMode === 'prototype'
-                    ? 'Describe the prototype you want to generate (interactive HTML preview)...'
-                    : 'How can AgentForge help you today? Describe an app, prototype, or SRS...'
-                }
+                placeholder="How can AgentForge help you today? Describe an app, prototype, or SRS..."
                 onChange={e => {
                   setPrompt(e.target.value)
                   if (!user && onRequireAuth && e.target.value.length > 0) {
@@ -406,9 +402,7 @@ export default function Home({
                     return
                   }
                   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                    if (activeMode === 'srs') planFirst()
-                    else if (activeMode === 'prototype') submitPrototype()
-                    else submit()
+                    submit()
                   }
                 }}
                 className="min-h-[130px] w-full resize-none rounded-t-[26px] bg-transparent p-5 text-[15px] leading-[1.6] text-white caret-blue-400 outline-none placeholder:text-white/40"
@@ -520,22 +514,12 @@ export default function Home({
                       onRequireAuth()
                       return
                     }
-                    if (activeMode === 'srs') planFirst()
-                    else if (activeMode === 'prototype') submitPrototype()
-                    else submit()
+                    submit()
                   }}
-                  title={
-                    activeMode === 'srs'
-                      ? 'SRS Generate: answer interview questions and get a complete software specification'
-                      : activeMode === 'prototype'
-                      ? 'Prototype Build: generate an interactive HTML prototype'
-                      : 'App Build: generate full stack application with planner, design, builder, and testing'
-                  }
+                  title="Start SRS planning and specification"
                   className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 font-display text-[12px] font-medium text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-500 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
                 >
-                  <span>
-                    {activeMode === 'srs' ? 'Generate SRS' : activeMode === 'prototype' ? 'Build Prototype' : 'Build App'}
-                  </span>
+                  <span>Start</span>
                   <ArrowRight className="size-3 shrink-0" />
                 </button>
               </div>
@@ -547,105 +531,67 @@ export default function Home({
               </p>
             )}
 
-            {/* Quick-Start Mode Cards: SRS Generate | Prototype Build | App Build */}
-            <div className="mt-7 grid grid-cols-3 gap-2 sm:gap-4 max-w-[480px] w-full mx-auto">
+            {/* Visual Workflow Pipeline Stages: SRS Generate | Prototype Build | App Build | Deployment */}
+            <div className="mt-7 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 max-w-[660px] w-full mx-auto">
               {[
                 {
                   id: 'srs',
                   label: 'SRS Generate',
                   desc: 'Interview & Spec',
                   Icon: FileText,
-                  badge: 'Planning',
                   iconColor: 'text-amber-400',
                   iconBg: 'bg-amber-500/15 ring-1 ring-amber-500/25',
-                  activeBorder: 'border-amber-500/50 bg-[#141a26] shadow-amber-500/10 ring-1 ring-amber-500/30',
-                  onClick: () => {
-                    setActiveMode('srs')
-                    if (!user && onRequireAuth) {
-                      onRequireAuth()
-                      return
-                    }
-                    if (!prompt.trim() && !attach.items.length) {
-                      box.current?.focus()
-                      return
-                    }
-                    chooseModel(builderModel)
-                    planFirst()
-                  },
+                  border: 'border-white/10 bg-[#121622]/70',
                 },
                 {
                   id: 'prototype',
                   label: 'Prototype Build',
                   desc: 'Fast UI Preview',
                   Icon: FlaskConical,
-                  badge: 'Preview',
                   iconColor: 'text-purple-400',
                   iconBg: 'bg-purple-500/15 ring-1 ring-purple-500/25',
-                  activeBorder: 'border-purple-500/50 bg-[#141a26] shadow-purple-500/10 ring-1 ring-purple-500/30',
-                  onClick: () => {
-                    setActiveMode('prototype')
-                    if (!user && onRequireAuth) {
-                      onRequireAuth()
-                      return
-                    }
-                    if (!prompt.trim()) {
-                      box.current?.focus()
-                      return
-                    }
-                    submitPrototype()
-                  },
+                  border: 'border-white/10 bg-[#121622]/70',
                 },
                 {
                   id: 'app',
                   label: 'App Build',
                   desc: 'Full-Stack Code',
                   Icon: Rocket,
-                  badge: 'Full Stack',
                   iconColor: 'text-blue-400',
                   iconBg: 'bg-blue-500/15 ring-1 ring-blue-500/25',
-                  activeBorder: 'border-blue-500/50 bg-[#141a26] shadow-blue-500/10 ring-1 ring-blue-500/30',
-                  onClick: () => {
-                    setActiveMode('app')
-                    if (!user && onRequireAuth) {
-                      onRequireAuth()
-                      return
-                    }
-                    if (!prompt.trim()) {
-                      box.current?.focus()
-                      return
-                    }
-                    submit()
-                  },
+                  border: 'border-white/10 bg-[#121622]/70',
                 },
-              ].map(card => {
-                const isSelected = activeMode === card.id
-                return (
-                  <button
-                    key={card.id}
-                    type="button"
-                    onClick={card.onClick}
-                    className={cn(
-                      "group relative flex flex-col items-center justify-center rounded-2xl border p-2 sm:p-3 transition-all duration-200 hover:-translate-y-0.5 w-full h-[88px] sm:h-[96px] shadow-lg",
-                      isSelected
-                        ? card.activeBorder
-                        : "border-white/10 bg-[#121622]/70 hover:border-white/20 hover:bg-[#121622] hover:shadow-xl"
-                    )}
-                  >
-                    <div className={cn(
-                      "flex size-7 sm:size-8 items-center justify-center rounded-xl transition-transform group-hover:scale-110",
-                      card.iconBg
-                    )}>
-                      <card.Icon className={cn("size-3.5 sm:size-4", card.iconColor)} />
-                    </div>
-                    <span className="mt-1 sm:mt-1.5 text-[10.5px] sm:text-[11.5px] font-semibold text-white/90 group-hover:text-white truncate max-w-full">
-                      {card.label}
-                    </span>
-                    <span className="text-[9px] sm:text-[10px] text-white/45 group-hover:text-white/70 truncate max-w-full">
-                      {card.desc}
-                    </span>
-                  </button>
-                )
-              })}
+                {
+                  id: 'deploy',
+                  label: 'Deployment',
+                  desc: 'Cloud & CI/CD',
+                  Icon: CloudUpload,
+                  iconColor: 'text-emerald-400',
+                  iconBg: 'bg-emerald-500/15 ring-1 ring-emerald-500/25',
+                  border: 'border-white/10 bg-[#121622]/70',
+                },
+              ].map(card => (
+                <div
+                  key={card.id}
+                  className={cn(
+                    "relative flex flex-col items-center justify-center rounded-2xl border p-2.5 sm:p-3 w-full h-[88px] sm:h-[94px] shadow-md select-none",
+                    card.border
+                  )}
+                >
+                  <div className={cn(
+                    "flex size-7 sm:size-8 items-center justify-center rounded-xl",
+                    card.iconBg
+                  )}>
+                    <card.Icon className={cn("size-3.5 sm:size-4", card.iconColor)} />
+                  </div>
+                  <span className="mt-1.5 text-[10.5px] sm:text-[11.5px] font-semibold text-white/90 truncate max-w-full">
+                    {card.label}
+                  </span>
+                  <span className="text-[9px] sm:text-[10px] text-white/45 truncate max-w-full">
+                    {card.desc}
+                  </span>
+                </div>
+              ))}
             </div>
 
             {/* Starter Briefs / Inspirations */}

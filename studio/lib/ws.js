@@ -274,6 +274,7 @@ function meantForMe(m) {
 
 function handle(m) {
   const s = useStore.getState()
+  // Contracts: approval?.id === m.id | browser_frame
   if (m.type === 'runtime_state') { s.setRuntime(m); return }
   if (m.type === 'project') {
     // Only the unnamed new run can adopt its server-assigned project.

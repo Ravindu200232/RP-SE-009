@@ -35,7 +35,11 @@ _KNOWN_CLOUD = {m.lower() for m in FALLBACK_CLOUD}
 _KNOWN_CLOUD |= {m[: -len(":latest")] for m in _KNOWN_CLOUD
                  if m.endswith(":latest")}
 
-LOCAL_DEFAULT_CTX = 16384
+LOCAL_DEFAULT_CTX = 32768
+
+
+class ResponseBudgetError(RuntimeError):
+    """One provider response exceeded AgentForge's bounded turn budget."""
 
 _ICONS = [
     ("coder", "⚛"), ("code", "⚛"), ("qwen", "⚛"), ("kimi", "🌙"),
@@ -204,12 +208,14 @@ class OllamaClient:
 
         deadline = time.time() + timeout
         chunks = 0
+        budget_spent = False
         try:
             for line in r.iter_lines():
                 if time.time() > deadline:
                     log.warning(f"{model}: stopping the stream after {timeout}s "
                                 f"and {chunks} chunk(s) — the total budget is "
                                 f"spent")
+                    budget_spent = True
                     break
                 if not line:
                     continue
@@ -220,16 +226,18 @@ class OllamaClient:
                 chunks += 1
                 yield chunk
         except requests.exceptions.ReadTimeout:
-
             log.warning(f"{model}: no output for {stall}s after {chunks} "
                         f"chunk(s) — giving up on this call")
-            raise RuntimeError(
+            raise ResponseBudgetError(
                 f"{model} sent nothing for {stall}s. The model may be "
                 f"overloaded or the prompt too large for it."
             ) from None
         finally:
-
             r.close()
+        if budget_spent:
+            raise ResponseBudgetError(
+                f"{model}: stream exceeded time budget of {timeout}s"
+            )
 
     def chat(self, model: str, messages: list, tools: list = None,
              options: dict = None, keep_alive=None, timeout: int = 600,
@@ -618,15 +626,23 @@ class Router:
         options = {"temperature": self.config.temperature if temperature is None and self.config
                    else (temperature if temperature is not None else 0.2)}
         think = self.config.think if think is None and self.config else think
+        configured_output = int(getattr(self.config, "max_response_tokens", 16_384))
+        context_tokens = int(getattr(self.config, "context_tokens", 65_536))
+        options["num_predict"] = max(512, min(configured_output, context_tokens // 4))
+        effective_timeout = max(
+            15, min(int(timeout), int(getattr(self.config, "response_timeout", timeout))))
+        stall_timeout = max(
+            10, min(effective_timeout, int(getattr(
+                self.config, "stream_stall_timeout", effective_timeout))))
         if not stream:
             data = self.client.chat(self.model, messages, tools=tools or None,
-                                    options=options, think=think or None, timeout=min(timeout, 900))
+                                    options=options, think=think, timeout=effective_timeout)
             return self._reply(data.get("message") or {}, data)
 
         content, thinking, calls, final = [], [], [], {}
         for chunk in self.client.chat_stream(self.model, messages, tools=tools or None,
-                                             options=options, think=think or None,
-                                             timeout=timeout):
+                                             options=options, think=think,
+                                             timeout=effective_timeout, stall=stall_timeout):
             message = chunk.get("message") or {}
             token = message.get("content") or ""
             if token:

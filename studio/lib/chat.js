@@ -123,10 +123,15 @@ function classify(row) {
   }
   // Completed file events already carry a path. Keep that information for
   // the clickable file cards instead of inferring success from row order.
-  const changed = /^(written|created|patched|edited|updated)\s+(.+?)(?:\s+\(\d+ lines\))?$/i.exec(line)
+  const changed = /^(written|created|patched|edited|updated|removed|deleted)\s+(.+?)(?:\s+\(\d+ lines\))?$/i.exec(line)
   if (changed) {
     const path = changed[2].replace(/^[`'"]|[`'"]$/g, '').replace(/\\/g, '/')
     return { kind: 'write', title: line, detail: '', file: path, action: changed[1].toLowerCase() }
+  }
+  const starting = /^(writing|editing|removing)\s+(.+?)$/i.exec(line)
+  if (starting) {
+    const path = starting[2].replace(/^[`'"]|[`'"]$/g, '').replace(/\\/g, '/')
+    return { kind: 'write', title: line, detail: '', file: path, action: starting[1].toLowerCase(), inProgress: true }
   }
   const readMatched = /^(?:read|reading)\s+(.+?)(?:\s+\(\d+ lines\))?$/i.exec(line)
   if (readMatched && !/^(?:the|a|from|into|about)\s+/i.test(readMatched[1])) {
@@ -173,12 +178,37 @@ function turnFor(row) {
 export function chatTurns(logs = [], chat = []) {
   const turns = []
   let previous = ''
+  // Track in-progress file operations so that when the completed event arrives,
+  // it supersedes the in-progress card rather than rendering a duplicate row.
+  const pendingFileTurns = new Map()
+
   for (const row of logs) {
     const turn = row && typeof row === 'object' ? turnFor(row) : null
     if (!turn) continue
     // The engine echoes a command as both "Ran x" and "$ x"; one row, not two.
     if (turn.title === previous) continue
     previous = turn.title
+
+    if (turn.kind === 'write' && turn.file) {
+      const fileKey = turn.file.replace(/\\/g, '/').replace(/^\.\//, '')
+      if (turn.inProgress) {
+        if (pendingFileTurns.has(fileKey)) {
+          const targetIndex = pendingFileTurns.get(fileKey)
+          turns[targetIndex] = { ...turn, id: turns[targetIndex].id }
+        } else {
+          pendingFileTurns.set(fileKey, turns.length)
+          turns.push(turn)
+        }
+      } else if (pendingFileTurns.has(fileKey)) {
+        const targetIndex = pendingFileTurns.get(fileKey)
+        turns[targetIndex] = { ...turn, id: turns[targetIndex].id }
+        pendingFileTurns.delete(fileKey)
+      } else {
+        turns.push(turn)
+      }
+      continue
+    }
+
     turns.push(turn)
   }
 

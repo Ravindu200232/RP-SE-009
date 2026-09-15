@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import time
+import re
 from pathlib import Path
 
 from ..errors import ToolError
@@ -76,9 +77,22 @@ def run_tests(args, ctx):
     kind = str(args["kind"]).lower()
     suite = str(args["suite"])
     command = str(args["command"]).strip()
+    if re.fullmatch(r"(?:echo|printf|Write-Output)\s+[^;&|]+|true|exit\s+0", command, re.I):
+        raise ToolError("A success message is not test evidence. Run a real test command or browserRunJourneys.")
     risk, reason = classify(command)
     if risk == BLOCKED:
         raise ToolError(f"That test command is refused by the security policy ({reason}).")
+
+    covered = ctx.memory.evidence.validate_covers(kind, args.get("covers") or [])
+    cached = next((r for r in ctx.memory.evidence.suites
+                   if r["kind"] == kind and r["suite"] == suite
+                   and r.get("command") == command and r.get("status") == "passed"
+                   and kind != "runtime"
+                   and r.get("revision") == ctx.memory.evidence.revision
+                   and set(r.get("covers") or []) == set(covered)), None)
+    if cached:
+        return {"ok": True, "content": f"{kind} / {suite}: passed (reused at unchanged revision). "
+                "Do not rerun this suite until code or runtime inputs change. Continue remaining checks."}
 
     record = ctx.memory.evidence.start(
         kind=kind, suite=suite, command=command,
@@ -133,7 +147,7 @@ def record_external(args, ctx):
 def testing_status(args, ctx):
     evidence = ctx.memory.evidence
     state = evidence.summary()
-    body = evidence.report()
+    body = evidence.recovery_report() + "\n\n" + evidence.report()
     if state["ready"]:
         body += "\n\nEvery required layer has current evidence at this revision."
     else:

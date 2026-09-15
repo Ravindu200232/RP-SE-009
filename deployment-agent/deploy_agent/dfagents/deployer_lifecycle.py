@@ -19,6 +19,8 @@ class DeploymentLifecycleMixin:
             )
         workflow = self._cancel_workflow_run(run)
         self.store.transition_run(run_id, RunState.CANCELLED, error="")
+        from deployment_agent.repair import wake_question
+        wake_question(run_id)
         self.emit(
             run_id, "step", "cancel", "complete", 100,
             "Deployment cancelled"
@@ -35,7 +37,7 @@ class DeploymentLifecycleMixin:
         try:
             listed = run_command(
                 ["gh", "run", "list", "--repo", repository, "--limit", "10",
-                 "--json", "databaseId,status"],
+                 "--workflow", "deploy.yml", "--json", "databaseId,status,headSha"],
                 timeout=30,
             )
             if listed.returncode != 0:
@@ -44,6 +46,8 @@ class DeploymentLifecycleMixin:
                 item for item in json.loads(listed.stdout or "[]")
                 if str(item.get("status", "")) in
                 {"queued", "in_progress", "waiting", "requested", "pending"}
+                and bool(((run.get("repo") or {}).get("push") or {}).get("head_sha"))
+                and item.get("headSha") == ((run.get("repo") or {}).get("push") or {}).get("head_sha")
             ]
             if not live:
                 return ""
@@ -91,11 +95,32 @@ class DeploymentLifecycleMixin:
                 args=(run_id, slug, repo), daemon=True
             ).start()
             return {"accepted": True, "slug": slug}
+        if target_of(run) in {DeploymentTarget.NETLIFY, DeploymentTarget.AZURE}:
+            threading.Thread(target=owner_credentials.carry(self._teardown_hosted, owner),
+                             args=(run_id, target_of(run), repo), daemon=True).start()
+            return {"accepted": True, "slug": slug}
         threading.Thread(
             target=owner_credentials.carry(self._teardown_worker, owner),
             args=(run_id, slug, repo, credential_reference), daemon=True
         ).start()
         return {"accepted": True, "slug": slug}
+    def _teardown_hosted(self, run_id, target, repo):
+        from deployment_agent.hosted import azure_command, netlify_api
+        try:
+            if target is DeploymentTarget.NETLIFY:
+                if not repo.get("netlify_site_created"):
+                    raise ValueError("This run uses an existing site; its cloud resources are preserved")
+                netlify_api("DELETE", f"sites/{repo['netlify_site_id']}")
+            else:
+                if not repo.get("azure_app_created"):
+                    raise ValueError("No Azure app created by this project is recorded")
+                azure_command(["webapp", "delete", "--name", repo["azure_app_name"],
+                               "--resource-group", repo["azure_resource_group"]], authenticate=True)
+            self.store.transition_run(run_id, RunState.DESTROYED, error="")
+            self.emit(run_id, "step", "teardown", "complete", 100, "Project application deleted; shared accounts, resource groups and plans were preserved")
+        except Exception as exc:
+            self.emit(run_id, "error", "teardown", "failed", 100, redact_text(str(exc)))
+
     def _teardown_vercel(self, run_id: str, slug: str, repo: dict[str, Any]) -> None:
         from deployment_agent import vercel_api
         from deployment_agent.vercel_auth import require_vercel_token
@@ -279,6 +304,8 @@ class DeploymentLifecycleMixin:
         repo = run["repo"]
         if target_of(run) is DeploymentTarget.VERCEL:
             return self._rollback_vercel(run_id, repo)
+        if target_of(run) in {DeploymentTarget.NETLIFY, DeploymentTarget.AZURE, DeploymentTarget.AWS_ECS}:
+            raise ValueError("Restore the desired build revision and use Redeploy for this provider")
         session = self._aws_session(repo.get("aws_profile", ""), repo.get("region", "ap-south-1"))
         instance_id = repo.get("instance_id")
         if not instance_id:

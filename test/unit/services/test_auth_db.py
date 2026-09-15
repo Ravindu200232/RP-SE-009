@@ -201,6 +201,16 @@ class OwnershipTests(AuthStoreTestCase):
 
 
 class DeploymentAccountTests(AuthStoreTestCase):
+    def test_netlify_and_azure_credentials_are_sealed_and_owner_scoped(self):
+        mine, theirs = self.signup()['user'], self.signup('other-user')['user']
+        values = {'netlify_token': 'netlify-private-value', 'azure_credentials': '{"clientSecret":"azure-private-value"}'}
+        auth_db.save_user_settings(mine['id'], values)
+        stored = str(self.db.user_credentials.find_one({'user_id': mine['id']}))
+        for key, value in values.items():
+            self.assertEqual(auth_db.deploy_secrets(mine['id'])[key], value)
+            self.assertNotIn(value, stored)
+            self.assertNotIn(key, auth_db.deploy_secrets(theirs['id']))
+
     def test_a_token_comes_back_but_is_unreadable_in_the_database(self):
         me = self.signup()["user"]
         auth_db.save_user_settings(me["id"], {"github_token": "ghp_secret_value",

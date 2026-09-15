@@ -9,6 +9,8 @@ export function useRunData(runId) {
   const [error, setError] = useState('')
   const inFlight = useRef(false)
   const alive = useRef(true)
+  const currentRun = useRef(runId)
+  currentRun.current = runId
 
   useEffect(() => {
     alive.current = true
@@ -16,17 +18,18 @@ export function useRunData(runId) {
   }, [])
 
   const load = useCallback(async () => {
-    if (!runId || inFlight.current) return
-    inFlight.current = true
+    if (!runId || inFlight.current === runId) return
+    inFlight.current = runId
     setBusy(true)
     setError('')
 
-    const [events, artifacts, evidence] = await Promise.allSettled([
-      api.deploy(`/runs/${runId}/events`),
+    const [events, artifacts, evidence, details] = await Promise.allSettled([
+      api.deploy(`/runs/${runId}/events?recent=1000`),
       api.deploy(`/runs/${runId}/artifacts`),
       api.deploy(`/runs/${runId}/evidence`),
+      api.deploy(`/runs/${runId}`),
     ])
-    if (!alive.current) { inFlight.current = false; return }
+    if (!alive.current || currentRun.current !== runId) { if (inFlight.current === runId) inFlight.current = false; return }
     const value = (r, key) => (r.status === 'fulfilled' && Array.isArray(r.value?.[key]))
       ? r.value[key] : []
     setData({
@@ -34,6 +37,7 @@ export function useRunData(runId) {
       events: value(events, 'events'),
       artifacts: value(artifacts, 'artifacts'),
       evidence: value(evidence, 'evidence'),
+      question: details.status === 'fulfilled' ? details.value.pending_question : null,
     })
 
     const failed = [events, artifacts].find(r => r.status === 'rejected')
@@ -44,6 +48,7 @@ export function useRunData(runId) {
 
   useEffect(() => {
     setData({ events: [], artifacts: [], evidence: [] })
+    setBusy(false); setError('')
     load()
   }, [load])
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { AlertTriangle, Check, Loader2, Rocket } from 'lucide-react'
-import { PIPELINE, STATE_TEXT, progressOf } from '@/lib/deploy-constants'
+import { PIPELINE, STATE_TEXT, TARGETS, progressOf } from '@/lib/deploy-constants'
 import { SectionLabel, Tag } from '../ui'
 import { cn } from '@/lib/utils'
 
@@ -18,7 +18,7 @@ export default function DeployProgress({ run }) {
                                         run: 'accent' }[tone] || 'mute'}>
                       {label}
                     </Tag>}>
-        Deploying to {run.target === 'vercel' ? 'Vercel' : 'AWS EC2'}
+        Deploying to {TARGETS.find(target => target.id === run.target)?.label || run.target}
       </SectionLabel>
 
       <div className="mt-4 flex h-2 overflow-hidden rounded-full bg-white/10">

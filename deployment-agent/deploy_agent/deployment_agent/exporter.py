@@ -4,11 +4,11 @@ import base64
 import io
 import json
 import re
+import html
 import zipfile
 from pathlib import Path
 from typing import Any
 
-from .config import HTTP_HOST, HTTP_PORT
 from .security import redact_data, redact_text
 from .state import StateStore
 
@@ -96,7 +96,7 @@ class EvidenceExporter:
         for service in services:
             story.append(
                 Paragraph(
-                    f"{service.get('name')} — Next.js {service.get('version')} — root {service.get('root') or '.'} — port {service.get('port')}",
+                    f"{service.get('name')} — {service.get('framework') or 'Node.js'} {service.get('version') or ''} — root {service.get('root') or '.'} — port {service.get('port')}",
                     styles["BodyText"],
                 )
             )
@@ -123,7 +123,7 @@ class EvidenceExporter:
         return buffer.getvalue()
 
     def capture_dashboard(self, run_id: str) -> list[str]:
-        """Best-effort local dashboard capture."""
+        """Capture a masked report without the removed standalone dashboard UI."""
         run = self._run(run_id)
         evidence_dir = Path(run["staged_path"]).parent / "evidence"
         evidence_dir.mkdir(parents=True, exist_ok=True)
@@ -134,36 +134,10 @@ class EvidenceExporter:
             with sync_playwright() as playwright:
                 browser = playwright.chromium.launch(headless=True)
                 page = browser.new_page(viewport={"width": 1440, "height": 980}, device_scale_factor=1)
-                page.goto(
-                    f"http://{HTTP_HOST}:{HTTP_PORT}/?run={run_id}&capture=1",
-                    wait_until="domcontentloaded",
-                    timeout=30000,
-                )
-                page.wait_for_function(
-                    "() => document.body.dataset.captureReady === 'true'",
-                    timeout=30000,
-                )
-                page.wait_for_timeout(750)
-                if run["state"] == "REVIEW_READY":
-                    path = evidence_dir / "auto-review.png"
-                    page.screenshot(path=str(path), full_page=True)
-                    captured.append(str(path))
-                else:
-                    target = ((run.get("plan") or {}).get("target")) or "aws_ec2"
-                    tabs = (
-                        ("overview", "pipeline", "vercel", "ecr", "logs", "api")
-                        if target == "vercel"
-                        else ("overview", "pipeline", "aws", "ecr", "security", "logs", "api")
-                    )
-                    for tab in tabs:
-                        button = page.locator(f'[data-tab="{tab}"]')
-                        if button.count() == 0 or not button.is_visible():
-                            continue
-                        button.click()
-                        page.wait_for_timeout(250)
-                        path = evidence_dir / f"auto-{tab}.png"
-                        page.screenshot(path=str(path), full_page=True)
-                        captured.append(str(path))
+                page.set_content(self._report_html(run_id, run), wait_until='domcontentloaded', timeout=5000)
+                path = evidence_dir / "auto-deployment-report.png"
+                page.screenshot(path=str(path), full_page=True, timeout=5000)
+                captured.append(str(path))
                 browser.close()
         except Exception as exc:                                # noqa: BLE001
             self.last_capture_error = str(exc)[:300]
@@ -175,6 +149,29 @@ class EvidenceExporter:
             if path.resolve() not in existing:
                 self.store.add_evidence(run_id, path.stem, str(path))
         return captured
+
+    def _report_html(self, run_id: str, run: dict) -> str:
+        from dfagents.monitor import MonitorAgent
+        safe = MonitorAgent._mask_identifiers(redact_data(run))
+        def escape(value): return html.escape(str(value if value is not None else ''))
+        services = (safe.get('spec') or {}).get('services') or []
+        rows = ''.join(f"<tr><td>{escape(s.get('name'))}</td><td>{escape(s.get('framework') or 'Node.js')}</td>"
+                       f"<td>{escape(s.get('root') or '.')}</td><td>{escape(s.get('port'))}</td></tr>" for s in services)
+        events = MonitorAgent._mask_identifiers(redact_data(self.store.get_events(run_id)[-15:]))
+        messages = ''.join(f"<li><small>{escape(e.get('stage'))}</small> {escape(e.get('message'))}</li>" for e in events)
+        plan, repo = safe.get('plan') or {}, safe.get('repo') or {}
+        score = (safe.get('readiness') or {}).get('score',0)
+        return ("<!doctype html><html><head><meta charset='utf-8'>"
+                "<meta http-equiv='Content-Security-Policy' content=\"default-src 'none'; style-src 'unsafe-inline'\">"
+                "<title>Deployment evidence</title><style>body{margin:0;background:#0d111b;color:#e5eaf3;font:16px system-ui;padding:48px}"
+                "h1{font-size:32px}h2{font-size:20px;margin-top:32px}p,small{color:#a7b5cd}table{width:100%;border-collapse:collapse}"
+                "td,th{padding:12px;border-bottom:1px solid #283246;text-align:left}li{padding:8px;overflow-wrap:anywhere}"
+                "section{background:#151c2a;padding:24px;border:1px solid #283246;border-radius:16px}</style></head><body>"
+                f"<h1>{escape(safe.get('project_name'))}</h1><p>AgentForge deployment evidence · {escape(run_id)}</p><section>"
+                f"<h2>{escape(safe.get('state'))} · {escape(plan.get('target'))}</h2><p>Readiness: {escape(score)}/100</p>"
+                f"<p>Application: {escape(repo.get('application_url'))}</p><p>Repository: {escape(repo.get('repository'))}</p>"
+                f"<h2>Detected services</h2><table><tr><th>Service</th><th>Framework</th><th>Root</th><th>Port</th></tr>{rows}</table>"
+                f"<h2>Recorded pipeline events</h2><ol>{messages}</ol></section></body></html>")
 
     def save_evidence(self, run_id: str, name: str, data_url: str) -> dict[str, Any]:
         run = self._run(run_id)

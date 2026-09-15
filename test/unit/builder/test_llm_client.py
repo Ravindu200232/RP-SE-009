@@ -1,12 +1,62 @@
 from __future__ import annotations
 
 import unittest
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 from test import _support
 from test._support import FakeDaemon, cloud_entry, fake_ollama, local_entry
 from builder_agent.llm import (CLOUD_DEFAULT_CTX, FALLBACK_CLOUD,
-                                       LOCAL_DEFAULT_CTX, is_cloud_model,
-                                       max_context)
+                               LOCAL_DEFAULT_CTX, Router, is_cloud_model,
+                               max_context)
+
+
+class RouterBudgetTests(unittest.TestCase):
+    def test_router_forwards_hard_output_time_stall_and_false_thinking_budgets(self):
+        client = Mock()
+        client.chat_stream.return_value = iter([
+            {"done": True, "message": {"content": "done"},
+             "prompt_eval_count": 10, "eval_count": 1}
+        ])
+        config = SimpleNamespace(
+            temperature=0.1,
+            think=False,
+            context_tokens=65_536,
+            max_response_tokens=12_345,
+            response_timeout=45,
+            stream_stall_timeout=12,
+        )
+
+        reply = Router(client, "test-model", config).ask(
+            [{"role": "user", "content": "test"}], think=False, timeout=1_800)
+
+        self.assertEqual(reply.content, "done")
+        kwargs = client.chat_stream.call_args.kwargs
+        self.assertEqual(kwargs["options"]["num_predict"], 12_345)
+        self.assertIs(kwargs["think"], False)
+        self.assertEqual(kwargs["timeout"], 45)
+        self.assertEqual(kwargs["stall"], 12)
+
+    def test_non_stream_compaction_also_disables_thinking_and_obeys_budget(self):
+        client = Mock()
+        client.chat.return_value = {"message": {"content": "summary"}}
+        config = SimpleNamespace(
+            temperature=0.2,
+            think=True,
+            context_tokens=8_192,
+            max_response_tokens=16_384,
+            response_timeout=40,
+            stream_stall_timeout=10,
+        )
+
+        reply = Router(client, "test-model", config).ask(
+            [{"role": "user", "content": "test"}], stream=False, think=False)
+
+        self.assertEqual(reply.content, "summary")
+        kwargs = client.chat.call_args.kwargs
+        self.assertEqual(kwargs["options"]["num_predict"], 2_048)
+        self.assertIs(kwargs["think"], False)
+        self.assertEqual(kwargs["timeout"], 40)
 
 
 class CloudModelRoutingTests(unittest.TestCase):

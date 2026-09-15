@@ -58,7 +58,7 @@ class SemanticValidator:
                 "AWS artifacts are validated by the CloudFormation checks",
             )
         try:
-            SemanticValidator._validate_vercel_environment(contract, staged_root)
+            SemanticValidator._validate_vercel_environment(contract, staged_root, target.value)
         except Exception as exc:
             return gate("provider_artifacts", GateStatus.FAILED, str(exc))
         return gate(
@@ -68,8 +68,8 @@ class SemanticValidator:
         )
 
     @staticmethod
-    def _validate_vercel_environment(contract: EnvironmentContract, staged_root: Path) -> None:
-        path = staged_root / "deploy" / "vercel-environment.json"
+    def _validate_vercel_environment(contract: EnvironmentContract, staged_root: Path, provider="vercel") -> None:
+        path = staged_root / "deploy" / f"{provider}-environment.json"
         if not path.is_file():
             raise ValueError("Vercel environment mapping artifact is required")
         rendered = json.loads(path.read_text(encoding="utf-8"))

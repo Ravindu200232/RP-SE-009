@@ -60,6 +60,12 @@ export default function DeployAccounts({ deploy, onSaved }) {
           <Aws deploy={deploy} onSave={save} probe={probe}
                onRecheck={() => setProbe(null)} />
           <Vercel deploy={deploy} onSave={save} />
+          <HostedCredential title="Netlify" setting="netlify_token" saved={deploy?.netlify_token_set} onSave={save}
+            label="Personal access token" href="https://app.netlify.com/user/applications#personal-access-tokens"
+            hint="Create a token in your Netlify account. The deployment uses it to provision your site and as an encrypted GitHub Actions secret." />
+          <HostedCredential title="Azure" setting="azure_credentials" saved={deploy?.azure_credentials_set} onSave={save}
+            label="Service principal credentials (JSON)" href="https://learn.microsoft.com/en-us/azure/app-service/deploy-github-actions"
+            hint="Enter JSON containing clientId, clientSecret, tenantId and subscriptionId for your deployment service principal. Give it access to the selected resource group." />
           <Mongo deploy={deploy} onSave={save} />
         </div>
       )}
@@ -68,12 +74,14 @@ export default function DeployAccounts({ deploy, onSaved }) {
 }
 
 function summarise(d) {
-  if (!d) return 'GitHub, AWS, Vercel and the production database.'
+  if (!d) return 'GitHub, AWS, Vercel, Netlify, Azure and the production database.'
   const bits = []
   bits.push(d.github_token_set
     ? `GitHub ${d.github_login || 'connected'}` : 'GitHub not connected')
   bits.push(d.aws_profile ? `AWS ${d.aws_profile}` : 'AWS not connected')
   bits.push(d.vercel_token_set ? 'Vercel connected' : 'Vercel not connected')
+  bits.push(d.netlify_token_set ? 'Netlify connected' : 'Netlify not connected')
+  bits.push(d.azure_credentials_set ? 'Azure connected' : 'Azure not connected')
   bits.push(d.mongodb_uri_set ? 'database set' : 'no database')
   return bits.join(' · ')
 }
@@ -468,6 +476,27 @@ function Vercel({ deploy, onSave }) {
   )
 }
 
+
+function HostedCredential({ title, setting, saved, label, hint, href, onSave }) {
+  const [value, setValue] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  async function save() {
+    setBusy(true); setError('')
+    try { await onSave({ [setting]: value.trim() }); setValue('') }
+    catch (e) { setError(e.message) }
+    finally { setBusy(false) }
+  }
+  return <Row title={title} ok={Boolean(saved)} unknown={false} detail={saved ? 'credentials saved' : 'connect your account'}>
+    <div className="mt-2 w-full space-y-2">
+      <Field label={label} hint={<>{hint} Stored encrypted with your account. Type a single - to clear it. <a href={href} target="_blank" rel="noreferrer" className="text-accent hover:underline">Setup guide</a></>}>
+        <Input type="password" autoComplete="off" value={value} onChange={e => setValue(e.target.value)} placeholder={saved ? 'saved — enter a replacement' : label} />
+      </Field>
+      <Button size="sm" variant="outline" disabled={busy || !value.trim()} onClick={save}>{busy && <Loader2 className="size-3 animate-spin" />}Save credentials</Button>
+      {error && <p className="text-[10.5px] text-bad">{error}</p>}
+    </div>
+  </Row>
+}
 
 function Mongo({ deploy, onSave }) {
   const [uri, setUri] = useState('')

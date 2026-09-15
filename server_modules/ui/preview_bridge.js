@@ -50,8 +50,7 @@ if (!window.__agentforgeBridge) {
   }
   window.addEventListener('popstate', state);
   window.addEventListener('hashchange', state);
-  observeConsole((kind, text) => send('console', { level: kind, text }));
-  watchFrame(frame());
+  captureFrameConsole(frame(), (kind, text) => send('console', { level: kind, text }));
   window.addEventListener('message', event => {
     const message = event.data;
     if (event.source !== window.parent || !config.parents.includes(event.origin) ||

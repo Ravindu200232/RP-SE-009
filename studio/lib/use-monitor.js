@@ -5,7 +5,7 @@ import { api } from '@/lib/api'
 import { TERMINAL } from '@/lib/deploy-constants'
 
 
-const CADENCE = { vercel: 20000, aws_ec2: 35000, aws_ecs: 40000 }
+const CADENCE = { vercel: 20000, netlify: 20000, azure: 35000, aws_ec2: 35000, aws_ecs: 40000 }
 const REQUEST_DEADLINE = 90000
 
 export function useMonitor(runId, { target, state, active, frozen } = {}) {
@@ -16,6 +16,8 @@ export function useMonitor(runId, { target, state, active, frozen } = {}) {
   const inFlight = useRef(false)
   const abort = useRef(null)
   const alive = useRef(true)
+  const currentRun = useRef(runId)
+  currentRun.current = runId
 
   useEffect(() => {
     alive.current = true
@@ -26,8 +28,8 @@ export function useMonitor(runId, { target, state, active, frozen } = {}) {
   }, [])
 
   const refresh = useCallback(async () => {
-    if (!runId || inFlight.current) return
-    inFlight.current = true
+    if (!runId || inFlight.current === runId) return
+    inFlight.current = runId
     setBusy(true)
     setError('')
     const ctl = new AbortController()
@@ -35,18 +37,19 @@ export function useMonitor(runId, { target, state, active, frozen } = {}) {
     const bell = setTimeout(() => ctl.abort(), REQUEST_DEADLINE)
     try {
       const d = await api.deployRead(`/runs/${runId}/monitor`, { signal: ctl.signal })
-      if (alive.current) { setSnap(d); setAt(Date.now()) }
+      if (alive.current && currentRun.current === runId) { setSnap({ runId, value: d }); setAt(Date.now()) }
     } catch (e) {
-      if (alive.current && e.message !== 'cancelled') setError(e.message)
+      if (alive.current && currentRun.current === runId && e.message !== 'cancelled') setError(e.message)
     } finally {
       clearTimeout(bell)
-      inFlight.current = false
-      if (alive.current) setBusy(false)
+      if (inFlight.current === runId) inFlight.current = false
+      if (alive.current && currentRun.current === runId) setBusy(false)
     }
   }, [runId])
 
   // A snapshot belongs to the run it was fetched for.
   useEffect(() => {
+    abort.current?.abort()
     setSnap(null)
     setError('')
     setAt(null)
@@ -67,8 +70,8 @@ export function useMonitor(runId, { target, state, active, frozen } = {}) {
   }, [watching, target, refresh])
 
   return {
-    snap: snap || frozen || null,
-    live: Boolean(snap),
+    snap: (snap?.runId === runId ? snap.value : null) || frozen || null,
+    live: snap?.runId === runId,
     busy, error, at,
     refresh,
     canRefresh: Boolean(runId),

@@ -224,6 +224,12 @@ class Config:
     context_tokens: int = DEFAULT_CONTEXT_TOKENS
     max_iterations: int = 0            # 0 = no fixed cap; checkpoints renew room
     temperature: float = 0.2
+    # One model turn must stay bounded even when the selected model exposes a
+    # very large context window.  Large windows are for useful input, not a
+    # licence for a single verification decision to run for half an hour.
+    max_response_tokens: int = 16_384
+    response_timeout: int = 240
+    stream_stall_timeout: int = 60
     command_timeout: int = 1_800
     unit_tests: bool = True
     e2e_tests: bool = True

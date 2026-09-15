@@ -16,6 +16,7 @@ an approval prompt is a convenience; skipping verification would be a lie.
 """
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import uuid
@@ -125,6 +126,12 @@ def _title_of(name: str) -> str:
 
 class BuilderAgent:
     """The builder agent: plans, designs, builds and proves one application."""
+
+    # A validation repair is a surgical follow-up, not a second build.  Keep
+    # its model turns bounded so an unrepairable drawing cannot consume the
+    # remaining run indefinitely.
+    MAX_PROTOTYPE_REPAIR_ITERATIONS = int(
+        os.environ.get("AGENTFORGE_MAX_PROTOTYPE_REPAIR", "12"))
 
     def __init__(self, config: Config, *, client=None, events: Events | None = None,
                  cancel=None, memory: Memory | None = None) -> None:
@@ -333,7 +340,7 @@ class BuilderAgent:
     # The tools a drawing needs: read the project, read the skill, write files.
     # Nothing that installs, serves, tests or drives a browser - a prototype is
     # HTML on disk, and a pass that can run npm will find a reason to.
-    PROTOTYPE_TOOLS = ("readFile", "writeFile", "patchFile", "editFile", "listDir",
+    PROTOTYPE_TOOLS = ("readFile", "readFiles", "writeFile", "patchFile", "editFile", "listDir",
                        "globFiles", "grepSearch", "readSkill", "listSkills",
                        "inspectProject")
 
@@ -612,6 +619,7 @@ class BuilderAgent:
             dev_notes = (
                 "MATCH THE APPROVED PROTOTYPE 100%. Directly translate the HTML files in "
                 "`.agentforge/prototype/` into your application components and pages. "
+                "Use `readFiles` to batch-read related prototype HTML pages together when implementing matching views. "
                 "Preserve the exact visual layouts, typography, CSS tokens/classes, and EVERY photograph/image URL. "
                 "Do not replace real photos with placeholder SVGs. "
                 "Batch operations (write models, API routes, and pages in multi-tool turns) to build fast. "
@@ -629,18 +637,49 @@ class BuilderAgent:
         pages = sorted(path.name for path in self.prototype_dir.glob("*.html"))
         if not pages:
             return (dev_notes + instruction) if dev_notes else instruction
-        return "\n".join(([dev_notes.strip()] if dev_notes else []) + [
+
+        css_tokens = ""
+        styles_path = self.prototype_dir / "styles.css"
+        if styles_path.is_file():
+            try:
+                css_text = styles_path.read_text(encoding="utf-8", errors="replace")
+                m = re.search(r":root\s*\{([^}]+)\}", css_text)
+                if m:
+                    css_tokens = f":root {{\n{m.group(1).strip()}\n}}"
+            except Exception:
+                pass
+
+        token_section = []
+        if css_tokens:
+            token_section = [
+                "",
+                "=== PROTOTYPE DESIGN TOKENS (from styles.css) ===",
+                css_tokens,
+                "The core design tokens (palette, font, radius, shadow) are already extracted above. "
+                "Do NOT spend tool turns reading styles.css repeatedly; use the pre-extracted tokens directly.",
+                "=== END DESIGN TOKENS ===",
+                "",
+            ]
+
+        example_pages = f"readFiles(filePaths=['.agentforge/prototype/{pages[0]}'])" if pages else "readFiles"
+        if len(pages) > 1:
+            example_pages = f"readFiles(filePaths=['.agentforge/prototype/{pages[0]}', '.agentforge/prototype/{pages[1]}'])"
+
+        return "\n".join(([dev_notes.strip()] if dev_notes else []) + token_section + [
             "THE WHOLE APPLICATION, NOT HALF OF IT. Every screen in the drawing, built, "
             "and every route it links to answering. No stub, no placeholder, nothing "
             "left for later.",
             "THE APPROVED PROTOTYPE - this is what the product looks like.",
             f"`.agentforge/prototype/` holds the HTML the user approved: "
-            f"{', '.join(pages)} and `styles.css`.",
-            "Read them before writing the first component, and build the real "
-            "application to match: the same layout, the same structure, the same shell "
-            "and navigation, the same words, the same tokens. Where the prototype and "
-            "your own taste disagree the prototype wins - they have already seen it "
-            "and agreed to it.",
+            f"{', '.join(pages)}.",
+            f"Use `readFiles` to batch-read prototype HTML files together (e.g. {example_pages}) "
+            "when implementing their matching components and routes. "
+            "Do not read all prototype screens all at once before writing anything: "
+            "read each prototype page (or related pair) as you build each feature.",
+            "Build the real application to match what you read: the same layout, the "
+            "same structure, the same shell and navigation, the same words, the same "
+            "tokens. Where the prototype and your own taste disagree, "
+            "the prototype wins - they have already seen it and agreed to it.",
             "ONE DRAWN PAGE IS ONE SCREEN'S CHECKLIST. Open the drawn page for the "
             "screen you are about to write, at the moment you write it, and work down "
             "it section by section: every section it has below the header, the built "
@@ -707,23 +746,22 @@ class BuilderAgent:
 
     # -- plumbing --------------------------------------------------------
     def _loop(self, registry, *, plan_only: bool = False, review: bool = False,
-              prototype: bool = False, verification_kinds=None) -> Loop:
+              prototype: bool = False, verification_kinds=None,
+              max_iterations: int = 0) -> Loop:
         config = self.config
-        if plan_only or review or prototype:
+        if plan_only or review or prototype or max_iterations:
             from dataclasses import replace
-            # A drawing writes files and proves nothing, so the verification
-            # contract is off for it. It is not a review either: it changes the
-            # workspace, and the file tools have to be on the table.
-            #
-            # It is also the one pass where the safest next word is the wrong
-            # one. A build wants 0.2 - the same function, spelled the same way,
-            # every time - but a drawing asked at 0.2 returns the same page
-            # anyone else would have got, and "the design is flat" is what came
-            # back. Nothing here has to compile, so it is allowed to reach.
-            config = replace(config, plan_only=plan_only, review=review,
-                             temperature=DRAWING_TEMPERATURE if prototype else config.temperature,
-                             unit_tests=config.unit_tests and not prototype,
-                             e2e_tests=config.e2e_tests and not prototype)
+            overrides = {}
+            if plan_only or review or prototype:
+                overrides.update(
+                    plan_only=plan_only, review=review,
+                    temperature=DRAWING_TEMPERATURE if prototype else config.temperature,
+                    unit_tests=config.unit_tests and not prototype,
+                    e2e_tests=config.e2e_tests and not prototype,
+                )
+            if max_iterations:
+                overrides["max_iterations"] = max_iterations
+            config = replace(config, **overrides)
         return Loop(config=config, registry=registry, router=self.router, memory=self.memory,
                     sandbox=self.sandbox, events=self.events, processes=self.processes,
                     browser=self.browser, cancel=self.cancel, approvals=self.approvals,

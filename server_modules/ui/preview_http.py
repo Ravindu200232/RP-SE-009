@@ -65,7 +65,7 @@ class PreviewHTTPMixin:
         pieces = ["(() => {", "const config = " + json.dumps(config) + ";"]
         # Share the existing picker and console implementations with the
         # injected frame code, rather than maintaining two serializers.
-        for relative in ("studio/lib/picker.js", "studio/lib/console-log.js",
+        for relative in ("studio/lib/picker.js", "studio/lib/console-capture.js",
                          "server_modules/ui/preview_bridge.js"):
             source = (BASE_DIR / relative).read_text("utf-8")
             pieces.append(source.replace("export function ", "function "))

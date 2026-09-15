@@ -1,7 +1,7 @@
 'use client'
 
 import { ExternalLink, GitBranch, Rocket } from 'lucide-react'
-import { STATE_TEXT } from '@/lib/deploy-constants'
+import { STATE_TEXT, TARGETS } from '@/lib/deploy-constants'
 import { SectionLabel, Tag } from '../ui'
 
 export default function DeployResult({ data }) {
@@ -27,7 +27,7 @@ export default function DeployResult({ data }) {
 
       <dl className="mt-1 text-[11.5px]">
         <Row label="Target">
-          {last.target === 'vercel' ? 'Vercel' : 'AWS EC2'}
+          {TARGETS.find(target => target.id === last.target)?.label || last.target}
         </Row>
         {url && (
           <Row label="Live at">

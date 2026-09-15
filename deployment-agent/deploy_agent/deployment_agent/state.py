@@ -32,12 +32,14 @@ class StateStore:
             RunState.CANCELLED.value,
         },
         RunState.BOOTSTRAPPING.value: {
+            RunState.REPAIRING.value,
             RunState.CI_RUNNING.value,
             RunState.FAILED.value,
             RunState.ROLLED_BACK.value,
             RunState.CANCELLED.value,
         },
         RunState.CI_RUNNING.value: {
+            RunState.REPAIRING.value,
             RunState.DEPLOYING.value,
             RunState.VALIDATING.value,
             RunState.FAILED.value,
@@ -45,12 +47,14 @@ class StateStore:
             RunState.CANCELLED.value,
         },
         RunState.DEPLOYING.value: {
+            RunState.REPAIRING.value,
             RunState.VALIDATING.value,
             RunState.FAILED.value,
             RunState.ROLLED_BACK.value,
             RunState.CANCELLED.value,
         },
         RunState.VALIDATING.value: {
+            RunState.REPAIRING.value,
             RunState.LIVE.value,
             RunState.FAILED.value,
             RunState.ROLLED_BACK.value,
@@ -63,6 +67,7 @@ class StateStore:
             RunState.DESTROYED.value,
         },
         RunState.FAILED.value: {
+            RunState.REPAIRING.value,
             RunState.ANALYZING.value,
             RunState.BOOTSTRAPPING.value,
             RunState.ROLLED_BACK.value,
@@ -76,6 +81,7 @@ class StateStore:
         },
 
         RunState.DESTROYED.value: set(),
+        RunState.REPAIRING.value: {RunState.BOOTSTRAPPING.value, RunState.FAILED.value, RunState.CANCELLED.value},
     }
 
     def __init__(self, db_path: Path | str = DB_PATH):
@@ -136,6 +142,11 @@ class StateStore:
                     path TEXT NOT NULL,
                     verified INTEGER NOT NULL DEFAULT 0,
                     created_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS questions (
+                    run_id TEXT PRIMARY KEY,
+                    question_json TEXT NOT NULL,
+                    answer TEXT
                 );
                 """
             )
@@ -219,13 +230,16 @@ class StateStore:
                 (run_id, json_dumps_safe(event), utc_now()),
             )
 
-    def get_events(self, run_id: str, after_id: int = 0, limit: int = 1000) -> list[dict[str, Any]]:
+    def get_events(self, run_id: str, after_id: int = 0, limit: int = 1000, latest: bool = False) -> list[dict[str, Any]]:
+        order = "DESC" if latest else "ASC"
         with self._connection() as conn:
             rows = conn.execute(
-                "SELECT id, event_json FROM events WHERE run_id = ? AND id > ? ORDER BY id LIMIT ?",
+                f"SELECT id, event_json FROM events WHERE run_id = ? AND id > ? ORDER BY id {order} LIMIT ?",
                 (run_id, after_id, limit),
             ).fetchall()
         result = []
+        if latest:
+            rows.reverse()
         for row in rows:
             event = json.loads(row["event_json"])
             event["event_id"] = row["id"]
@@ -246,6 +260,36 @@ class StateStore:
                 "SELECT record_json FROM artifacts WHERE run_id = ? ORDER BY path", (run_id,)
             ).fetchall()
         return [json.loads(row["record_json"]) for row in rows]
+
+    def ask_question(self, run_id: str, question: dict) -> None:
+        with self._lock, self._connection() as conn:
+            conn.execute("INSERT OR REPLACE INTO questions VALUES (?, ?, NULL)",
+                         (run_id, json_dumps_safe(question)))
+
+    def get_question(self, run_id: str) -> dict | None:
+        with self._connection() as conn:
+            row = conn.execute("SELECT question_json, answer FROM questions WHERE run_id = ?", (run_id,)).fetchone()
+        return {**json.loads(row["question_json"]), "answer": row["answer"]} if row else None
+
+    def answer_question(self, run_id: str, question_id: str, answer: str) -> None:
+        question = self.get_question(run_id)
+        if not question or question.get("id") != question_id or question.get("answer") is not None:
+            raise ValueError("This deployment question is no longer pending")
+        if not answer.strip() or len(answer) > 20000:
+            raise ValueError("Provide a deployment answer under 20,000 characters")
+        from .security import redact_text
+        import re
+        if redact_text(answer) != answer or re.search(r'(?i)(?:clientSecret|password|api[_-]?key|access[_-]?token)["\s]*[:=]', answer):
+            raise ValueError("Save secret values in Deployment accounts or the selected provider; answer here with choices or confirmation only")
+        with self._lock, self._connection() as conn:
+            cursor = conn.execute("UPDATE questions SET answer = ? WHERE run_id = ? AND question_json = ? AND answer IS NULL",
+                                  (answer.strip(), run_id, json_dumps_safe({key: value for key, value in question.items() if key != 'answer'})))
+            if cursor.rowcount != 1:
+                raise ValueError("This deployment question is no longer pending")
+
+    def clear_question(self, run_id: str) -> None:
+        with self._lock, self._connection() as conn:
+            conn.execute("DELETE FROM questions WHERE run_id = ?", (run_id,))
 
     def add_evidence(self, run_id: str, name: str, path: str) -> None:
         with self._lock, self._connection() as conn:

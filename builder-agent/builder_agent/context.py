@@ -84,7 +84,9 @@ class ContextBudget:
             reserve=self.reserve,
             used_percent=min(100, round(prompt_tokens * 100 / input_limit)),
             near_limit=prompt_tokens >= input_limit,
-            should_compact=prompt_tokens >= input_limit,
+            # Large model windows are capacity, not a reason to resend a
+            # million-token transcript on every testing turn.
+            should_compact=prompt_tokens >= min(input_limit, 64_000),
         )
 
     def observe(self, prompt_tokens: int, estimate: int) -> None:

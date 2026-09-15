@@ -82,7 +82,10 @@ async def main():
 def shutdown_all():
     global SERVER_STOPPING
     SERVER_STOPPING = True
-    print("\n🛑 Shutting down AgentForge backend...")
+    try:
+        print("\n🛑 Shutting down AgentForge backend...")
+    except UnicodeEncodeError:
+        print("\n[!] Shutting down AgentForge backend...")
 
     RUNTIMES.close()
     with _SESSIONS_LOCK:

@@ -355,4 +355,6 @@ class GeneratorEc2Mixin:
         ).lstrip()
         # A workspace starts its gateway where a standalone Next.js build has server.js.
         entry = "server.js" if service.framework == "nextjs" else generator_class()._node_command(service)[-1]
+        if instance_type.startswith('t4g'):
+            template = template.replace('al2023-ami-kernel-default-x86_64', 'al2023-ami-kernel-default-arm64')
         return template.replace("__INSTANCE_TYPE__", instance_type).replace("__APP_ENTRY__", entry)

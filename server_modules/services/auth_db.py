@@ -50,7 +50,7 @@ UNREACHABLE = "The account database is not reachable - try again in a moment"
 
 # The deployment accounts each person keeps for themselves. The secret ones
 # are sealed before they are stored.
-SECRET_KEYS = ("github_token", "vercel_token", "deploy_mongodb_uri")
+SECRET_KEYS = ("github_token", "vercel_token", "netlify_token", "azure_credentials", "deploy_mongodb_uri")
 PLAIN_KEYS = ("aws_profile", "aws_region", "aws_start_url", "aws_sso_region", "github_login")
 
 # What can be owned, and where its owner is written down.
@@ -408,5 +408,6 @@ def deploy_secrets(user_id: str) -> Dict[str, str]:
     if not user_id:
         return {}
     settings = user_settings(user_id)
-    return {"github_token": settings.get("github_token", ""),
-            "vercel_token": settings.get("vercel_token", "")}
+    values = {key: settings.get(key, "") for key in ("github_token", "vercel_token")}
+    values.update({key: settings[key] for key in SECRET_KEYS if settings.get(key)})
+    return values

@@ -12,6 +12,8 @@ import { Button, Empty, SectionLabel, SubTab, SubTabs } from '../ui'
 import { cn } from '@/lib/utils'
 import DeployProgress from './DeployProgress'
 import DeployResult from './DeployResult'
+import DeployInterview from './DeployInterview'
+import DeployActivity, { DeploymentQuestion } from './DeployActivity'
 import { Infrastructure, Logs, Overview, StatusBar, ago } from './MonitorViews'
 import { Pipeline } from './MonitorPipeline'
 import { CiCd, Repository } from './MonitorRepo'
@@ -23,21 +25,24 @@ import { useRunData } from '@/lib/use-run-data'
 import { projectUnitTestStatus } from '@/lib/test-counts'
 
 
-export default function DeployPanel({ onSettings }) {
+export default function DeployPanel({ onSettings, accountsRevision = 0 }) {
   const project = useStore(s => s.project)
   const qa = useStore(s => s.qaReport)
   const setQa = useStore(s => s.setQaReport)
-  const addLog = useStore(s => s.addLog)
 
   const [data, setData] = useState(null)
   const [probe, setProbe] = useState(null)
   const [target, setTarget] = useState('vercel')
-  const [validateBuild, setValidateBuild] = useState(true)
+  const [answers, setAnswers] = useState({})
   const [override, setOverride] = useState(false)
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState('')
   const [view, setView] = useState('deploy')
   const alive = useRef(true)
+  const currentProject = useRef(project)
+  currentProject.current = project
+  const currentAccountsRevision = useRef(accountsRevision)
+  currentAccountsRevision.current = accountsRevision
 
   const mine = data?.project === project ? data : null
   const live = mine?.live
@@ -57,17 +62,24 @@ export default function DeployPanel({ onSettings }) {
     if (!project) return
     try {
       const d = await api.deployResults(project)
-      if (alive.current) setData(d)
+      if (alive.current && currentProject.current === project && currentAccountsRevision.current === accountsRevision) setData(d)
     } catch (e) {
-      if (alive.current) setError(e.message)
+      if (alive.current && currentProject.current === project && currentAccountsRevision.current === accountsRevision) setError(e.message)
     }
-  }, [project])
+  }, [project, accountsRevision])
 
   useEffect(() => {
     alive.current = true
     refresh()
     return () => { alive.current = false }
   }, [refresh])
+
+  useEffect(() => {
+    setData(null); setAnswers({}); setError(''); setOverride(false); setView('deploy')
+  }, [project])
+  useEffect(() => {
+    if (mine) { setAnswers(mine.customization || {}); setTarget(mine.last?.target || mine.live?.target || 'vercel') }
+  }, [mine?.project])
 
       // Refresh the deployment state read on mount.
   const FINISHED = ['DESTROYED', 'CANCELLED', 'FAILED', 'ROLLED_BACK']
@@ -106,6 +118,7 @@ export default function DeployPanel({ onSettings }) {
 
   useEffect(() => {
     let ok = true
+    setProbe(null)
     Promise.all([
       api.deployRead('/onboarding/status').catch(() => ({ error: true })),
       api.deploy('/aws/vercel/status', { token: '' }).catch(() => ({})),
@@ -118,12 +131,12 @@ export default function DeployPanel({ onSettings }) {
       })
     })
     return () => { ok = false }
-  }, [])
+  }, [accountsRevision])
 
   // Vercel runs a Next.js app. A workspace of services goes to AWS, and EC2 is
   // where it starts, because it is the one that stays inside the free tier.
   const targets = mine?.stack === 'mern-microservices'
-    ? TARGETS.filter(t => t.id !== 'vercel') : TARGETS
+    ? TARGETS.filter(t => t.id.startsWith('aws_')) : TARGETS
   useEffect(() => {
     if (!targets.some(t => t.id === target)) setTarget('aws_ec2')
   }, [targets, target])
@@ -151,6 +164,10 @@ export default function DeployPanel({ onSettings }) {
               + (probe.vercel_source ? ` (${probe.vercel_source})` : '')
             : s.vercel_token_set ? `token saved (${s.vercel_token_hint})`
                                  : 'add a token in Settings' }
+      : target === 'netlify' || target === 'azure'
+        ? { id: target, label: target === 'netlify' ? 'Netlify' : 'Azure',
+            ok: Boolean(s[target === 'netlify' ? 'netlify_token_set' : 'azure_credentials_set']), unknown: false,
+            hint: s[target === 'netlify' ? 'netlify_token_set' : 'azure_credentials_set'] ? 'credentials saved' : 'add credentials in Settings' }
       : { id: 'aws', label:'AWS',
           ok: Boolean(probe?.aws_identities?.[s.aws_profile]),
           unknown: !probe,
@@ -159,21 +176,21 @@ export default function DeployPanel({ onSettings }) {
             : s.aws_profile
               ? `profile ${s.aws_profile} needs sign-in or has expired`
               : 'sign in to AWS from Settings' },
-    { id: 'mongo', label:'MongoDB',
+    ...(mine?.database_required ? [{ id: 'mongo', label:'MongoDB',
       ok: Boolean(s.mongodb_uri_set),
       unknown: false,
       hint: s.mongodb_uri_set ? `saved (${s.mongodb_uri_hint})`
                               : 'the deployed app needs a database it can reach'
-                                + 'from the internet — set one in Settings' },
+                                + 'from the internet — set one in Settings' }] : []),
   ]
   const ready = needs.every(n => n.ok) && (green || override)
+  const redeploy = Boolean(mine?.last?.run_id && !mine?.deleted && mine.last.target === target)
 
   async function deploy() {
     setStarting(true)
     setError('')
     try {
-      await api.deployStart({ project, target, validate_container: validateBuild })
-      addLog('INFO', `Deploying ${project} to ${where}`)
+      await api.deployStart({ project, target, validate_container: true, customization: answers })
       await refresh()
     } catch (e) {
       setError(e.message)
@@ -246,6 +263,7 @@ export default function DeployPanel({ onSettings }) {
       )}
 
       {running || live ? <DeployProgress run={live} /> : null}
+      <DeploymentQuestion question={run.question} runId={runId} onAnswered={run.reload} />
 
       {!running && (
         <div className="rounded-2xl border border-white/10 bg-[#121622]/90 p-6 shadow-xl backdrop-blur-xl">
@@ -322,25 +340,15 @@ export default function DeployPanel({ onSettings }) {
             </p>
           )}
 
-          <label className="mt-3.5 flex cursor-pointer items-start gap-2.5 text-[12px] text-white/60">
-            <input type="checkbox" checked={validateBuild} className="mt-0.5 accent-blue-500"
-                   onChange={e => setValidateBuild(e.target.checked)} />
-            <span>
-              Run a production build first.
-              <span className="ml-1 text-white/40">
-                Slower, and it catches what only fails in a real build.
-                {' '}Turning it off also stops the agent from ever scoring the
-                deployment as healthy.
-              </span>
-            </span>
-          </label>
+          <DeployInterview project={project} target={target} value={answers} onChange={setAnswers} redeploy={redeploy} />
+          <p className="mt-3 text-[11px] text-white/50">The agent validates the production build and repairs deployment failures before delivery.</p>
 
           <footer className="mt-6 flex items-center gap-3 border-t border-white/10 pt-4">
             <Button variant="solid" size="lg" className="h-11 rounded-xl bg-blue-600 px-6 font-display text-[13px] font-bold text-white shadow-lg shadow-blue-500/30 hover:bg-blue-500" disabled={!ready || starting}
                     onClick={deploy}>
               {starting ? <Loader2 className="size-3.5 animate-spin" />
                         : <Rocket className="size-3.5" />}
-              Deploy to {where}
+              {redeploy ? 'Redeploy' : 'Deploy'} to {where}
             </Button>
             {!ready && !starting && (
               <span className="text-[11.5px] text-white/50">
@@ -363,9 +371,10 @@ export default function DeployPanel({ onSettings }) {
       </>)}
       </div>
 
-      {run.events.length > 0 && (
-        <MonitorConsole events={run.events} snapErrors={monitor.snap?.errors} />
-      )}
+      <div className="sticky bottom-0 z-10 bg-panel">
+        <MonitorConsole key={`console-${runId}`} events={run.events} snapErrors={monitor.snap?.errors} />
+        <DeployActivity key={`activity-${runId}`} events={run.events} running={running} />
+      </div>
     </div>
   )
 }

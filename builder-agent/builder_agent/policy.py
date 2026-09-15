@@ -12,8 +12,8 @@ hallucinated cleanup step and the user's disk. Two jobs:
    than stalling.
 
 This is defence in depth, not a security boundary. Shell quoting is endlessly
-creative and a determined injection can evade any regex; the real boundary is
-a container.
+creative and a determined injection can evade any regex; use OS isolation for
+untrusted projects. Local Docker execution is prohibited.
 """
 from __future__ import annotations
 
@@ -40,7 +40,6 @@ READ_ONLY_SUBCOMMANDS = {
             "root", "prefix", "bin", "ping", "search", "doctor", "version"},
     "yarn": {"list", "info", "why", "outdated", "versions"},
     "pnpm": {"list", "ls", "why", "outdated", "root", "bin"},
-    "docker": {"ps", "images", "logs", "inspect", "version", "info", "stats"},
     "pip": {"list", "show", "freeze"},
     "pip3": {"list", "show", "freeze"},
 }
@@ -50,6 +49,8 @@ _WRITE_FLAGS = tuple(re.compile(p) for p in (
     r"\s-e\s", r"\s-c\s", r"\s--eval\b", r"\s-i\b", r"\s--in-place\b"))
 
 _BLOCKED = [
+    (re.compile(r"\bdocker(?:-compose)?(?:\.(?:exe|cmd|bat))?(?=[\s\"';&|]|$)|\bdocker\s*desktop(?:\.exe)?\b", re.I),
+     "Docker is prohibited on the local PC; use Node checks and cloud CI"),
     (re.compile(r"\b(?:format\.com|format)\s+[a-z]:(?:\s|$)", re.I), "disk formatting"),
     (re.compile(r"\bdiskpart(?:\.exe)?\b", re.I), "raw disk management"),
     (re.compile(r"\bRemove-Item\b[^;&|\n]*(?:\$env:USERPROFILE|\$HOME|%USERPROFILE%)", re.I),
@@ -84,7 +85,6 @@ _DANGEROUS = [
     (re.compile(r"\bgit\s+(rebase|filter-branch|reflog\s+expire)\b"), "rewrites git history"),
     (re.compile(r"\bsudo\b"), "runs with elevated privileges"),
     (re.compile(r"\b(npm|yarn|pnpm)\s+publish\b"), "publishes a package to a registry"),
-    (re.compile(r"\bdocker\s+(rm|rmi|system\s+prune|volume\s+rm)\b"), "removes containers or volumes"),
     (re.compile(r"\b(terraform|tofu)\s+(apply|destroy)\b"), "mutates real infrastructure"),
     (re.compile(r"\b(nc|ncat|ssh|scp|rsync|ftp|telnet)\b"), "network access to a remote host"),
     (re.compile(r"\b(kill|killall|pkill)\s+-9\b"), "force-kills processes"),

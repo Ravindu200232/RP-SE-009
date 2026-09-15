@@ -3,6 +3,7 @@ import http.client
 import json
 import tempfile
 import threading
+import subprocess
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -131,3 +132,11 @@ class PreviewHTTPTests(unittest.TestCase):
     def test_generated_origin_cannot_access_management_api_or_old_bridge(self):
         self.assertEqual(self.request('/__agentforge/api/projects')[0], 404)
         self.assertEqual(self.request(server.PREVIEW_PATH + '/bridge.js?runtimeId=old')[0], 410)
+
+    def test_injected_bridge_is_a_standalone_classic_script(self):
+        status, _, body = self.request(server.PREVIEW_PATH + '/bridge.js?runtimeId=' + self.runtime.runtime_id)
+        self.assertEqual(status, 200)
+        target = self.root / 'bridge.js'; target.write_bytes(body)
+        result = subprocess.run(['node','--check',str(target)],capture_output=True,text=True,timeout=10)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn('useStore', body.decode())

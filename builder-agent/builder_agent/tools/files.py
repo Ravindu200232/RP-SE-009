@@ -75,6 +75,60 @@ def read_file(args, ctx):
                         f"{len(lines)} lines)\n{body}{tail}")}
 
 
+def read_files(args, ctx):
+    """Read multiple files in a single turn with line numbers and revisions."""
+    raw_paths = args.get("filePaths") or []
+    if isinstance(raw_paths, str):
+        raw_paths = [raw_paths]
+    if not isinstance(raw_paths, list) or not raw_paths:
+        raise ToolError("Pass a list of file paths in 'filePaths'.")
+
+    max_lines = int(args.get("maxLinesPerFile") or 0)
+    blocks = []
+
+    for raw in raw_paths[:20]:
+        raw_str = str(raw).strip()
+        if not raw_str:
+            continue
+        try:
+            path = ctx.sandbox.resolve(raw_str, must_exist=True)
+        except Exception as error:
+            blocks.append(f"=== {raw_str} ===\nError: {error}")
+            continue
+
+        if path.is_dir():
+            blocks.append(f"=== {ctx.sandbox.relative(path)} ===\n(Directory, not a file. Use listDir.)")
+            continue
+        if looks_binary(path):
+            blocks.append(f"=== {ctx.sandbox.relative(path)} ===\n(Binary file omitted)")
+            continue
+
+        try:
+            text = _read(path)
+        except Exception as error:
+            blocks.append(f"=== {ctx.sandbox.relative(path)} ===\nError reading: {error}")
+            continue
+
+        lines = text.splitlines()
+        rel = ctx.sandbox.relative(path)
+        ctx.events.emit("read", name=str(rel), size=len(text), content=text)
+
+        if max_lines and len(lines) > max_lines:
+            shown = lines[:max_lines]
+            tail = f"\n[showing first {max_lines} of {len(lines)} lines]"
+        else:
+            shown = lines
+            tail = ""
+
+        body = "\n".join(f"{i + 1:>5} | {line}" for i, line in enumerate(shown))
+        if len(body) > MAX_READ_CHARS // 2:
+            body = body[:MAX_READ_CHARS // 2] + "\n[content truncated at character limit]"
+
+        blocks.append(f"=== {rel} (revision {revision_of(text)}, {len(lines)} lines) ===\n{body}{tail}")
+
+    return {"ok": True, "content": "\n\n".join(blocks) if blocks else "No files read."}
+
+
 # A page somebody will look at, as opposed to a config, a helper or a test.
 # The reminder below rides back on these writes and nothing else.
 _PAGE_FILE = re.compile(
@@ -280,6 +334,18 @@ def register(registry):
             "limit": {"type": "integer", "description": "How many lines to show."},
         }},
         summarize=lambda a: a.get("filePath", "")))
+
+    registry.add(Tool(
+        name="readFiles", risk=SAFE, review_safe=True, handler=read_files,
+        description="Fast multi-file reader: read multiple files from the workspace in a single turn. "
+                    "Preferred when inspecting multiple related files or verifying several pages.",
+        parameters={"type": "object", "required": ["filePaths"], "properties": {
+            "filePaths": {"type": "array", "items": {"type": "string"},
+                          "description": "List of workspace-relative file paths."},
+            "maxLinesPerFile": {"type": "integer",
+                                "description": "Optional maximum lines to show per file."},
+        }},
+        summarize=lambda a: ", ".join(str(p) for p in (a.get("filePaths") or [])[:4])))
 
     registry.add(Tool(
         name="writeFile", risk=MODERATE, mutates=True, handler=write_file,

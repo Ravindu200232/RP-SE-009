@@ -57,6 +57,8 @@ MAX_SAME_FAILURE = 3
 # and a model that cannot find what it expects will happily read the same file
 # sixteen times in ninety seconds and write nothing.
 MAX_SAME_READ = 3
+MAX_TERMINAL_BATCH = 4
+MAX_BATCH_CALLS = 8
 # How many times a run may claim completion with the evidence still missing.
 # The gate exists to send it back to work, not to trap it: a model that cannot
 # produce the evidence will not produce it on the twentieth attempt either, and
@@ -160,7 +162,11 @@ class Loop:
                 "using HTML, CSS and JavaScript. Your context is independent from the developer's conversation. "
                 "The shared Markdown handoffs describe the product and its selected technology. "
                 "Read them before work. Only .agentforge/prototype/ is writable. "
-                "Use responsive layouts, accessible controls and working navigation. Batch tool calls to work quickly. "
+                "Use responsive layouts, accessible controls and working navigation. "
+                "Ensure all navigation links carry their necessary query parameters (e.g. href=\"detail.html?id=${item.id}\"). "
+                "In detail, booking, or sub-pages that read URL query parameters, always gracefully fallback to the first seed item "
+                "(e.g. const id = params.get('id') || (data.items && data.items[0]?.id)) so direct opens or previews never show an empty 'not found' state. "
+                "Batch tool calls to work quickly. "
                 "When rewriting or updating full pages, use writeFile with overwrite: true directly. "
                 "For surgical edits, use editFile or patchFile. No server, package installation, "
                 "product replanning, app-specific template or approval gate is needed. Read before editing, "
@@ -428,10 +434,44 @@ class Loop:
         self.memory.add_assistant_calls(reply.content, reply.calls)
         self.memory.begin_batch()
         final: Outcome | None = None
+        terminal_count = 0
+        executed_count = 0
         try:
             for call in reply.calls:
                 if self.cancel():
                     raise AbortError()
+
+                is_terminal = call.tool == "executeTerminal"
+                if is_terminal and terminal_count >= MAX_TERMINAL_BATCH:
+                    self.memory.add_tool_result(
+                        call.tool,
+                        f"Skipped: bounded tool batch limit reached for {call.tool} "
+                        f"(maximum {MAX_TERMINAL_BATCH} commands per turn). "
+                        "Proceed with the results above or execute remaining in the next turn.",
+                        call.call_id,
+                        args=call.args if isinstance(call.args, dict) else {},
+                        meta={"kind": "tool-batch-budget"},
+                        ok=False,
+                    )
+                    continue
+
+                if executed_count >= MAX_BATCH_CALLS:
+                    self.memory.add_tool_result(
+                        call.tool,
+                        f"Skipped: bounded tool batch limit reached "
+                        f"(maximum {MAX_BATCH_CALLS} tool calls per turn to prevent context overflow). "
+                        "Proceed with the results above or make remaining calls in the next turn.",
+                        call.call_id,
+                        args=call.args if isinstance(call.args, dict) else {},
+                        meta={"kind": "tool-batch-budget"},
+                        ok=False,
+                    )
+                    continue
+
+                if is_terminal:
+                    terminal_count += 1
+                executed_count += 1
+
                 result = self._run_one(call)
                 if result and result.get("final"):
                     # submitPlan ends a planning pass on a deliberate act.
@@ -504,11 +544,18 @@ class Loop:
             seen, times = self.repeated_reads.get(signature, ("", 0))
             times = times + 1 if seen == digest else 1
             self.repeated_reads[signature] = (digest, times)
-            if times >= MAX_SAME_READ:
+            if times == MAX_SAME_READ:
                 body = (f"This is the {times}th time {call.tool} has returned exactly this "
                         f"answer, with nothing changed in between. Reading it again will "
                         f"return it again. What you are looking for is not here: act on "
                         f"what you already have, or look somewhere else.\n\n{body}")
+            elif times > MAX_SAME_READ:
+                body = (f"[Content already in saved memory: This is the {times}th time {call.tool} "
+                        f"has returned this exact answer with nothing changed in between. "
+                        f"The content is already in your conversation context. Do not read it again; "
+                        f"proceed to write or modify project code.]")
+                if times >= 6:
+                    ok = False
 
         if not ok:
             self.failed_actions[guard_key] = self.failed_actions.get(guard_key, 0) + 1

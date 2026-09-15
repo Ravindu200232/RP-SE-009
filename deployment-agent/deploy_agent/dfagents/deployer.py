@@ -7,10 +7,11 @@ from .deployer_prepare import DeploymentPrepareMixin
 from .deployer_aws import DeploymentAwsMixin
 from .deployer_git import DeploymentGitMixin
 from .deployer_lifecycle import DeploymentLifecycleMixin
+from .deployer_hosted import DeploymentHostedMixin
 from deployment_agent import owner_credentials
 
 
-class DeploymentAgent(DeploymentCoreMixin, DeploymentPrepareMixin, DeploymentAwsMixin, DeploymentGitMixin, DeploymentLifecycleMixin):
+class DeploymentAgent(DeploymentCoreMixin, DeploymentPrepareMixin, DeploymentAwsMixin, DeploymentGitMixin, DeploymentLifecycleMixin, DeploymentHostedMixin):
     def __init__(self, store: StateStore, emit: Callable[..., object]):
         self.store = store
         self.emit = emit

@@ -365,9 +365,10 @@ FILE_PRIORITY = [
 ]
 MAX_LISTED_FILES = 500
 MAX_FILE_BYTES = 256_000
+MAX_PROTOTYPE_CHARACTERS = 4_000_000
 
 
-def save_project_file(proj_name: str, rel: str, content: str) -> dict:
+def save_project_file(proj_name: str, rel: str, content: str, *, change_summary: str = "") -> dict:
     """Write one manually edited file, fenced inside its project."""
     proj_dir = PROD_DIR / _safe_stem(proj_name, "")
     if not proj_dir.is_dir():
@@ -384,9 +385,11 @@ def save_project_file(proj_name: str, rel: str, content: str) -> dict:
 
     if target.suffix not in SRC_EXT | {".json", ".md", ".mjs", ".cjs", ".txt"}:
         return {"error": f"{target.suffix or 'that kind of file'} is not editable here"}
-    if len(content) > MAX_FILE_BYTES:
+    prototype_edit = rel.startswith('.agentforge/prototype/') and target.suffix == '.html'
+    limit = MAX_PROTOTYPE_CHARACTERS if prototype_edit else MAX_FILE_BYTES
+    if len(content) > limit:
         return {"error": f"{len(content):,} characters is past the "
-                         f"{MAX_FILE_BYTES:,} limit"}
+                         f"{limit:,} limit"}
 
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -398,7 +401,12 @@ def save_project_file(proj_name: str, rel: str, content: str) -> dict:
             else f"{len(content)}B")
     elog("INFO", f"   💾 {rel} saved by hand ({size})")
 
-    efile(rel, size, content)
+    emit({'type': 'file', 'project': proj_name, 'agent': 'designer' if prototype_edit else 'developer',
+          'name': rel, 'size': size, 'content': content, 'note': 'written'})
+    if change_summary and rel.startswith('.agentforge/prototype/') and target.suffix == '.html':
+        summary = re.sub(r"(?:mongodb(?:\+srv)?://|https?://[^/\s:@]+:[^/\s@]+@)[^\s'\"<>]+",
+                         '[redacted connection]', str(change_summary))[:6000]
+        start_run(run_manual_prototype_change, (proj_name, summary), project=proj_name)
     return {"ok": True, "path": rel, "size": size}
 
 

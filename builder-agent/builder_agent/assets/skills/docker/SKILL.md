@@ -1,12 +1,13 @@
 ---
 name: docker
 description: Generate and audit production-oriented Dockerfiles and Docker Compose for AgentX applications while keeping MERN local development and E2E independent of Docker.
-compatibility: AgentX deployment artifacts; required for MERN microservices output, optional for Next.js when requested.
 ---
 
 # Docker and Compose
 
-Docker is a deployment artifact in AgentX MERN mode. Never require Docker to run local development, unit tests, runtime smoke, or browser E2E.
+Generate deployment artifacts for MERN microservices, or for Next.js when requested.
+
+Never use Docker on the local PC, even if installed: no Docker CLI probes, Docker Desktop, daemon, containers, Docker Compose or local Docker builds. Dockerfiles and Compose files are deployment artifacts; generate and inspect them statically. Image builds and pushes run only on a configured cloud CI runner. Local development, unit tests, page/console checks and runtime verification use plain Node/package manager tools.
 
 ## Dockerfile rules
 - Use multi-stage builds where they materially reduce runtime size or dev dependencies.
@@ -24,7 +25,7 @@ Docker is a deployment artifact in AgentX MERN mode. Never require Docker to run
 - Keep environment names aligned with the Docker-free runtime contract.
 - Expose the public gateway port; avoid publishing every internal service port by default.
 
-If Docker is unavailable, validate files statically and verify the same app contract with the Docker-free runner.
+Always validate these files statically and verify the app with the Docker-free runner on the local PC.
 
 Official reference:
 - https://docs.docker.com/compose/how-tos/startup-order/

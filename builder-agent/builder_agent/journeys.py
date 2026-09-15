@@ -11,6 +11,7 @@ not passed, and that is the failure a screenshot would have missed.
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 import time
 from pathlib import Path
@@ -20,6 +21,9 @@ from .errors import ToolError
 
 MAX_STEPS = 80
 STEP_TIMEOUT = 15.0
+MAX_SUITES = 12
+ACTION_READY_TIMEOUT = 2.0
+NAVIGATION_TIMEOUT = 8.0
 
 
 def _clip(value, limit: int = 400) -> str:
@@ -149,13 +153,25 @@ def run_journey(browser, sandbox, evidence, *, suite: str, covers, steps,
         raise ToolError(f"Provide 1-{MAX_STEPS} journey steps.")
 
     covered = evidence.validate_covers("e2e", covers or [])
+    fingerprint = hashlib.sha256(json.dumps(
+        {"steps": steps, "startUrl": start_url, "freshSession": fresh_session, "covers": sorted(covered)},
+        sort_keys=True, default=str).encode()).hexdigest()
+    previous = next((r for r in evidence.suites if r["kind"] == "e2e" and r["suite"] == suite), {})
+    if (previous.get("status") == "passed" and previous.get("revision") == evidence.revision
+            and previous.get("journeyFingerprint") == fingerprint):
+        return {"ok": True, "content": f"{suite}: passed (reused at unchanged revision)."}
     page = browser.page(tab_id)
     if fresh_session:
         browser.fresh_session()
     page.reset_diagnostics()
 
     if start_url:
-        page.navigate(start_url)
+        try:
+            page.navigate(start_url, timeout=NAVIGATION_TIMEOUT)
+        except ToolError as error:
+            evidence.record_external(kind="e2e", suite=suite, source="direct-CDP journey",
+                                     covers=covered, status="failed", reason=str(error), output=str(error))
+            raise
 
     if events:
         events.emit("e2e", state="journey_start", suite=suite, title=suite,
@@ -173,12 +189,12 @@ def run_journey(browser, sandbox, evidence, *, suite: str, covers, steps,
                                   step.get("expected") or ""))
         try:
             if action == "navigate":
-                page.navigate(str(step["url"]))
+                page.navigate(str(step["url"]), timeout=NAVIGATION_TIMEOUT)
                 trace.append(f"{label} -> {page.url}")
             elif action == "click":
                 page.click(page.locate(step.get("role"), step.get("name"),
                                        step.get("selector"), step.get("index")))
-                page.wait_ready(6)
+                page.wait_ready(ACTION_READY_TIMEOUT)
                 trace.append(f"{label} {step.get('name') or step.get('selector')}")
             elif action in ("type", "fill"):
                 page.fill(page.locate(step.get("role", "textbox"), step.get("name"),
@@ -187,7 +203,7 @@ def run_journey(browser, sandbox, evidence, *, suite: str, covers, steps,
                 trace.append(f"{label} {step.get('name') or step.get('selector')}")
             elif action == "press":
                 page.press(str(step.get("key", "Enter")))
-                page.wait_ready(6)
+                page.wait_ready(ACTION_READY_TIMEOUT)
                 trace.append(f"{label} {step.get('key')}")
             elif action == "wait":
                 time.sleep(min(10.0, float(step.get("ms", 500)) / 1000))
@@ -199,7 +215,9 @@ def run_journey(browser, sandbox, evidence, *, suite: str, covers, steps,
                 page.screenshot(target, width=width, height=int(step.get("height") or 800))
                 record = evidence.capture_visual({
                     "view": view, "width": width, "height": int(step.get("height") or 800),
-                    "filePath": sandbox.relative(target), "covers": step.get("covers") or covered})
+                    "filePath": sandbox.relative(target), "covers": step.get("covers") if "covers" in step else
+                    [r["id"] for r in (evidence.scope or {}).get("requirements", [])
+                     if r["id"] in covered and "visual" in r.get("evidence", [])]})
                 trace.append(f"{label} {record['filePath']}")
             else:
                 passed, detail = _retry_assert(page, step)
@@ -238,11 +256,60 @@ def run_journey(browser, sandbox, evidence, *, suite: str, covers, steps,
             "Recorded as a failed E2E suite. Repair the owner named in the failure, "
             "then rerun only this suite. Do not take another snapshot of an unchanged page.")
 
-    evidence.record_external(kind="e2e", suite=suite, source="direct-CDP journey",
-                             covers=covered, status="passed", output=body)
+    record = evidence.record_external(kind="e2e", suite=suite, source="direct-CDP journey",
+                                      covers=covered, status="passed", output=body)
+    record["journeyFingerprint"] = fingerprint
     return {"ok": True,
             "content": (f"E2E journey passed.\nSuite: {suite}\n"
                         f"Covered: {', '.join(covered) or 'no scoped ids'}\n{body}")}
+
+
+def run_journeys(browser, sandbox, evidence, *, suites, events=None) -> dict:
+    """Run several independent journeys in one deterministic browser pass.
+
+    The journeys remain isolated (each suite controls ``freshSession``), but
+    the model pays for one tool turn instead of a turn between every suite.
+    A failure is recorded and the batch continues so one broken flow cannot
+    hide failures in the other critical flows.
+    """
+    if not isinstance(suites, list) or not suites or len(suites) > MAX_SUITES:
+        raise ToolError(f"Provide 1-{MAX_SUITES} journey suites.")
+
+    results = []
+    for index, spec in enumerate(suites, 1):
+        if not isinstance(spec, dict):
+            results.append({"suite": f"suite-{index}", "status": "failed",
+                            "detail": "Each suite must be an object."})
+            continue
+        suite = str(spec.get("suite") or f"suite-{index}")
+        try:
+            result = run_journey(
+                browser, sandbox, evidence,
+                suite=suite,
+                covers=spec.get("covers") or [],
+                steps=spec.get("steps"),
+                start_url=spec.get("startUrl"),
+                fresh_session=bool(spec.get("freshSession", True)),
+                tab_id=spec.get("tabId"),
+                events=events,
+            )
+            results.append({"suite": suite, "status": "passed",
+                            "detail": result.get("content", "")})
+        except ToolError as error:
+            # run_journey already persisted the detailed failure evidence.
+            # Keep the batch alive and return a compact combined report to the
+            # model so it can repair all owners in one pass.
+            results.append({"suite": suite, "status": "failed",
+                            "detail": str(error)[:1200]})
+
+    failed = [row for row in results if row["status"] == "failed"]
+    summary = [f"E2E batch completed: {len(results) - len(failed)} passed, "
+               f"{len(failed)} failed."]
+    for row in results:
+        summary.append(f"- {row['suite']}: {row['status']}")
+        if row["status"] == "failed":
+            summary.append(f"  {row['detail']}")
+    return {"ok": not failed, "content": "\n".join(summary)}
 
 
 _VERBS = {"navigate": "GOTO", "click": "CLICK", "type": "FILL", "fill": "FILL",

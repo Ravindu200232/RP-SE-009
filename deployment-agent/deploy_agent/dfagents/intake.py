@@ -359,6 +359,7 @@ class IntakeAgent:
                 ["npm", "install", "--package-lock-only", "--ignore-scripts", "--no-audit", "--no-fund"],
                 cwd=root,
                 timeout=600,
+                authenticated=False,
             )
             if result.returncode or not (root / "package-lock.json").is_file():
                 warnings.append("package-lock.json generation failed; the package lock gate will block deployment.")

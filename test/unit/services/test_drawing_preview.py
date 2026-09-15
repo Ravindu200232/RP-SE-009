@@ -88,3 +88,11 @@ class TheDrawingMayServeItsScriptTests(unittest.TestCase):
         text = self.SOURCE.read_text(encoding="utf-8")
         self.assertIn("target.relative_to(root)", text)
         self.assertIn("is outside the drawing", text)
+
+    def test_isolate_storage_wraps_safely_and_injects_script(self):
+        from server_modules.services.prototype_storage import isolate_storage
+        html = b"<!DOCTYPE html><html><head><title>Test</title></head><body><h1>Hello</h1></body></html>"
+        injected = isolate_storage(html, "demo-hotel")
+        self.assertIn(b"data-agentforge-storage", injected)
+        self.assertIn(b"agentforge:prototype:demo-hotel:", injected)
+        self.assertIn(b"try {", injected)

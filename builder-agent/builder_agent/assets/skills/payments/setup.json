@@ -3,6 +3,11 @@
   "question": "How should this app take money?",
   "choices": [
     {
+      "id": "none",
+      "label": "No payments — free app or internal tool",
+      "hint": "The app does not process online payments or take cards."
+    },
+    {
       "id": "stripe-test",
       "label": "Stripe — test mode",
       "hint": "No real money. Card 4242 4242 4242 4242 always succeeds.",

@@ -95,6 +95,7 @@ def _mern_workspace(root: Path) -> None:
         "const config = loadConfig();\n"
         "createApp(config).listen(config.port, '127.0.0.1');\n"
     ))
+    _write(root, "packages/auth-service/src/app.js", "app.get('/health', (req, res) => res.json({ok:true}));\n")
     # Not a service: it has no start script.
     _write(root, "packages/testing/package.json", {"name": "testing", "dependencies": {"mongoose": "^8.9.5"}})
     _write(root, "client/package.json", {
@@ -159,6 +160,7 @@ class MernWorkspaceTests(unittest.TestCase):
         # Rollback restarts nextjs only; PartOf carries the restart to the companions.
         self.assertIn("PartOf=nextjs.service", release)
         self.assertIn("systemctl restart app-auth-service nextjs", release)
+        self.assertIn('http://127.0.0.1:4101/health', release)
         self.assertIn("ExecStart=/usr/bin/node /opt/app/current/packages/gateway/src/server.js",
                       self.read("infra/bootstrap.yml"))
         deploy = self.read(".github/workflows/deploy.yml")

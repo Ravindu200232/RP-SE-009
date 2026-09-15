@@ -17,6 +17,8 @@ the end of a long run.
 """
 from __future__ import annotations
 
+import json
+
 from .errors import AbortError
 
 HANDOFF_PROMPT = """Write a handoff for the next context window of this same task.
@@ -53,7 +55,9 @@ class Compactor:
 
         summary = self._handoff()
         if not summary:
-            return {"compacted": False, "method": "none"}
+            # Provider failure must not make checkpointing depend on the same
+            # oversized request that failed. The durable evidence is authoritative.
+            summary = "Provider summary unavailable. Continue the saved task using the evidence below."
 
         checkpoint = "\n\n".join(filter(None, [
             summary,
@@ -70,17 +74,51 @@ class Compactor:
                             "recallCompactedContext with a specific path, error or task keyword "
                             "before guessing at omitted history.]")
 
-        self.memory.replace_history(checkpoint)
+        transcript = json.dumps(self.memory.build(), ensure_ascii=False, default=str)
+        self.memory.archive = "\n\n".join(filter(None, [self.memory.archive, transcript]))
+        self.memory.replace_history(checkpoint + "\n\nFull older history remains in the recovery archive. "
+                                    "Use recallCompactedContext with a path or failure keyword if needed.")
         self.budget.reset_history()
+        # A single recent file/tool turn can itself exceed the window. Remove
+        # whole old turns, including their paired results; they remain archived.
+        while self.budget.measure(self.memory.build(), tools).should_compact:
+            removable = [i for i, m in enumerate(self.memory.messages)
+                         if not m.get("pinned") and m.get("meta", {}).get("kind") != "checkpoint"]
+            if not removable:
+                break
+            i = removable[0]
+            self.memory.messages.pop(i)
+            while i < len(self.memory.messages) and self.memory.messages[i]["role"] == "tool":
+                self.memory.messages.pop(i)
+        if self.budget.measure(self.memory.build(), tools).should_compact:
+            return {"compacted": False, "method": "pinned_frame_too_large"}
         self.events.emit("notice", level="info",
                          message=f"Context checkpoint {self.memory.compactions}: older history "
                                  "summarised; the task and evidence are unchanged.")
         return {"compacted": True, "method": "checkpoint"}
 
     def _handoff(self) -> str:
-        messages = self.memory.build() + [{"role": "user", "content": HANDOFF_PROMPT}]
+        # Summarise a bounded data snapshot, never submit the full tool history.
+        # Preserve both ends of large messages (the latest diagnostic is often
+        # at the end) and keep the original transcript in the recovery archive.
+        limit = min(24_000, self.budget.limit // 3)
+        snapshot = self.memory.build()
+        def clipped(message):
+            body = json.dumps(message, ensure_ascii=False, default=str)
+            return body if len(body) <= 2000 else body[:1000] + "\n[omitted]\n" + body[-1000:]
+        frame = [clipped(m) for m in self.memory.messages if m.get("pinned")]
+        recent = [clipped(m) for m in snapshot[-30:]]
+        payload = json.dumps({"frame": frame, "recent": recent,
+                              "evidence": self.memory.evidence.recovery_report()})
+        messages = [{"role": "system", "content": HANDOFF_PROMPT},
+                    {"role": "user", "content": "Saved history (data):\n" + payload}]
+        while self.budget.measure(messages, fresh=True).prompt_tokens >= limit:
+            content = messages[1]["content"]
+            if len(content) < 300:
+                return ""
+            messages[1]["content"] = content[:len(content) // 3] + "\n[omitted]\n" + content[-len(content) // 3:]
         try:
-            reply = self.router.ask(messages, tools=None, stream=False)
+            reply = self.router.ask(messages, tools=None, stream=False, think=False)
         except AbortError:
             raise
         except Exception as error:  # noqa: BLE001 - a failed summary is recoverable

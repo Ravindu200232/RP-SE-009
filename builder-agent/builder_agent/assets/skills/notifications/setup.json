@@ -3,6 +3,11 @@
   "question": "How should the app send messages?",
   "choices": [
     {
+      "id": "none",
+      "label": "No notifications — app does not send messages",
+      "hint": "No email or SMS messages are sent."
+    },
+    {
       "id": "log-only",
       "label": "Test — write them down, send nothing",
       "hint": "The whole flow runs and every message is recorded, so nothing reaches a real person while you build."

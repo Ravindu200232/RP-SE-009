@@ -45,7 +45,8 @@ class DeploymentCoreMixin:
             path = (staged_root / record["path"]).resolve()
             if staged_root not in path.parents or not path.is_file() or sha256_file(path) != record.get("sha256"):
                 raise ValueError(f"Reviewed artifact changed after validation; re-run analysis: {record['path']}")
-        self._validate_mongodb_uri(mongodb_uri)
+        if mongodb_uri or any(service.get("has_mongodb") for service in run.get("spec", {}).get("services", [])):
+            self._validate_mongodb_uri(mongodb_uri)
         project_key = str(Path(run["project_path"]).resolve()).lower()
         return run, project_key
     @staticmethod
@@ -82,7 +83,48 @@ class DeploymentCoreMixin:
         vercel_token: str = "",
     ) -> None:
         try:
-            self._deploy(run_id, aws_profile, region, mongodb_uri, credential_reference, vercel_token)
+            initial = self.store.get_run(run_id) or {}
+            self.store.update_run(run_id, repo_json={**(initial.get("repo") or {}), "repair_worker_active": True})
+            for attempt in range(3):
+                try:
+                    self._deploy(run_id, aws_profile, region, mongodb_uri, credential_reference, vercel_token)
+                    return
+                except Exception as failure:
+                    current_run = self.store.get_run(run_id) or {}
+                    if current_run.get("state") in {RunState.CANCELLED.value, RunState.DESTROYED.value} or attempt == 2:
+                        raise
+                    self.store.transition_run(run_id, RunState.REPAIRING, error="")
+                    from deployment_agent.repair import DeploymentRepairAgent
+                    from deployment_agent.repair_records import record_repairs
+                    from deployment_agent.orchestrator import Orchestrator
+                    from deployment_agent.models import ArtifactRecord, DeploymentPlan, ProjectSpec
+                    from deployment_agent.dependency_audit import repair_diagnostics, security_passed
+                    agent = DeploymentRepairAgent(self.store, self.emit)
+                    diagnostics = str(failure)
+                    if (current_run.get("repo") or {}).get("push"):
+                        try:
+                            diagnostics += "\n" + agent._cli(Path(current_run["staged_path"]), current_run, "github_logs")["output"]
+                        except Exception as exc:
+                            diagnostics += "\nDiagnostic read: " + redact_text(str(exc))
+                    self.emit(run_id, "agent", "repair", "running", 88, "Reading deployment errors and preparing a bundled repair")
+                    agent.repair(run_id, Path(current_run["staged_path"]), diagnostics)
+                    if agent.changed:
+                        records = record_repairs(self.store, run_id, agent, applied=bool((current_run.get("repo") or {}).get("push")))
+                        events = type("RepairEvents", (), {"emit": staticmethod(self.emit)})()
+                        # Delivery already used one repair round; allow one more for
+                        # security/build findings before retrying the same project.
+                        fresh_run = self.store.get_run(run_id)
+                        _, _, validation, result = Orchestrator(self.store, events)._validate_and_repair(
+                            run_id, ProjectSpec.from_dict(fresh_run["spec"]),
+                            DeploymentPlan(**fresh_run["plan"]), Path(fresh_run["staged_path"]),
+                            target_of(fresh_run), [ArtifactRecord(**record) for record in records],
+                            True, max_repairs=1,
+                        )
+                        if not security_passed(validation, result):
+                            raise RuntimeError("Deployment repair still has security findings: " + repair_diagnostics(validation, result))
+                        if not result.get("passed"):
+                            raise RuntimeError("Deployment repair build still fails: " + result.get("output", ""))
+                    self.emit(run_id, "agent", "repair", "complete", 90, "Repair validated; retrying delivery to the recorded project")
         except Exception as exc:
 
             current = (self.store.get_run(run_id) or {}).get("state", "")
@@ -93,8 +135,13 @@ class DeploymentCoreMixin:
                 self.store.transition_run(run_id, RunState.FAILED, error=str(exc))
                 self.emit(run_id, "error", "deploy", "failed", 100, str(exc))
         finally:
+            current_run = self.store.get_run(run_id) or {}
+            self.store.update_run(run_id, repo_json={**(current_run.get("repo") or {}), "repair_worker_active": False})
             with _ACTIVE_LOCK:
                 _ACTIVE_PROJECTS.discard(project_key)
+    def _check_cancelled(self, run_id):
+        if (self.store.get_run(run_id) or {}).get("state") in {RunState.CANCELLED.value, RunState.DESTROYED.value}:
+            raise RuntimeError("Deployment cancelled")
     def _deploy(
         self,
         run_id: str,
@@ -114,17 +161,26 @@ class DeploymentCoreMixin:
         branch = spec.get("repository", {}).get("branch") or "main"
 
         target_profile = profile_for(target_of(run))
+        self._check_cancelled(run_id)
         self._require_tools(target_profile)
         self.store.transition_run(run_id, RunState.BOOTSTRAPPING, error="")
         self.emit(run_id, "step", "bootstrap", "running", 5, "Validating provider identity and GitHub repository")
 
-        repo = self._ensure_github_repository(source, slug)
+        answers = plan.get("customization") or {}
+        repo = self._ensure_github_repository(source, answers.get("repository_name") or slug,
+                                              answers.get("repository_visibility", "private"))
+        self.store.update_run(run_id, repo_json={**(run.get("repo") or {}), "repository": repo, "owner": getattr(self, "_owners", {}).get(run_id, "")})
+        run = self.store.get_run(run_id)
         github_identity = self._github_repository_identity(repo)
         branch = str(github_identity.get("default_branch") or self._github_default_branch(repo, branch))
         oidc_subjects = self._github_oidc_subjects(repo, branch, github_identity)
 
         if target_profile.target is DeploymentTarget.VERCEL:
             prep = self._prepare_vercel(run_id, run, spec, plan, staged, mongodb_uri, vercel_token)
+        elif target_profile.target is DeploymentTarget.NETLIFY:
+            prep = self._prepare_netlify(run_id, run, plan, mongodb_uri)
+        elif target_profile.target is DeploymentTarget.AZURE:
+            prep = self._prepare_azure(run_id, run, spec, plan, mongodb_uri)
         elif target_profile.target is DeploymentTarget.AWS_ECS:
             prep = self._prepare_ecs(
                 run_id, run, spec, plan, staged, profile, region, mongodb_uri, credential_reference, oidc_subjects
@@ -134,9 +190,11 @@ class DeploymentCoreMixin:
                 run_id, run, spec, plan, staged, profile, region, mongodb_uri, credential_reference, oidc_subjects
             )
 
+        self._check_cancelled(run_id)
         self._set_github_variables(repo, prep.github_variables)
         self._set_github_secrets(repo, prep.github_secrets)
         applied = self._apply_reviewed_artifacts(run_id, source, staged)
+        self._check_cancelled(run_id)
         push = self._commit_and_push(run_id, source, repo, branch, applied, target_profile)
         repo_state = {
             # Kept with the run, so its monitoring, domains and teardown sign in
@@ -148,6 +206,7 @@ class DeploymentCoreMixin:
             "oidc_subjects": oidc_subjects,
             "deployed_at": datetime.now(timezone.utc).isoformat(),
             **prep.repo_state,
+            "repair_worker_active": True,
         }
         self.store.transition_run(run_id, RunState.CI_RUNNING, repo_json=repo_state)
         if push.get("mode") == "pull_request":
@@ -176,6 +235,17 @@ class DeploymentCoreMixin:
             self.emit(run_id, "step", "github", "complete", 92,
                       "GitHub Actions workflow completed")
             self.emit(run_id, "step", "deploy", "complete", 93, "GitHub Actions completed; validating the live service")
+            from dfagents.monitor import MonitorAgent
+            monitor = MonitorAgent(self.store, self.emit)
+            snapshot = {}
+            for _ in range(24):
+                self._check_cancelled(run_id)
+                snapshot = monitor.snapshot(run_id)
+                if (self.store.get_run(run_id) or {}).get("state") == RunState.LIVE.value:
+                    return
+                time.sleep(5)
+            raise RuntimeError("Live validation failed: " + redact_text(json.dumps({
+                "api": snapshot.get("api"), "errors": snapshot.get("errors"), "readiness": snapshot.get("readiness")})))
         elif conclusion in {"failure", "cancelled", "timed_out", "action_required"}:
             raise RuntimeError(f"GitHub deployment workflow concluded with {conclusion}")
         else:

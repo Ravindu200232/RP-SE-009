@@ -114,7 +114,7 @@ export default function AgentChat() {
   // agent working again, which brings this back for the one after it.
   useEffect(() => {
     if (busy || !project) return
-    const next = useStore.getState().takeQueued(project, agentRole)
+    const next = useStore.getState().takeQueued(project, agentRole) // takeQueued(project)
     if (next) fire(next.payload, next.body, next.shown, next.shots)
   }, [busy, project])
 
@@ -164,7 +164,11 @@ export default function AgentChat() {
     }
 
     const shots = selection.filter(s => s.shot).map(s => s.shot)
-    fire(payload, full, typed, shots)
+    if (busy) {
+      queueUp(payload, full, typed, shots)
+    } else {
+      fire(payload, full, typed, shots)
+    }
     setReading(false)
   }
 
@@ -572,7 +576,7 @@ function FileActionCard({ turn, live }) {
   const project = useStore(s => s.project)
   const agentRole = useStore(s => s.agentRole)
 
-  const isPatch = turn.action === 'patched' || turn.action === 'edited' || /patched|edited/i.test(turn.title || '')
+  const isPatch = turn.action === 'patched' || turn.action === 'edited' || turn.action === 'editing' || /patched|edited|editing/i.test(turn.title || '')
   const isRead = turn.kind === 'read'
 
   // History & contents
@@ -626,8 +630,8 @@ function FileActionCard({ turn, live }) {
   const badgeText = isRead
     ? 'read'
     : isPatch
-      ? (diff && (diff.additions > 0 || diff.deletions > 0) ? `+${diff.additions} -${diff.deletions}` : 'patched')
-      : (turn.action || 'created')
+      ? (diff && (diff.additions > 0 || diff.deletions > 0) ? `+${diff.additions} -${diff.deletions}` : (turn.inProgress ? 'editing' : 'patched'))
+      : (turn.inProgress ? (turn.action || 'writing') : (turn.action || 'created'))
 
   const badgeStyle = isRead
     ? 'bg-amber-500/10 text-amber-400 border-amber-500/25'
@@ -655,7 +659,7 @@ function FileActionCard({ turn, live }) {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {live ? (
+          {live || turn.inProgress ? (
             <Loader2 className="size-4 animate-spin text-accent" />
           ) : (
             <CheckCircle2 className="size-5 text-emerald-500" />
@@ -786,7 +790,7 @@ const Turn = memo(function Turn({ turn, live }) {
 
   // Bolt File Action Card (Image 1)
   // Interactive File Action Card for write, patch and read (Image 1)
-  if (turn.kind === 'write' || (turn.kind === 'read' && (turn.file || /^(?:read|reading)\s+/i.test(turn.title || '')))) {
+  if (turn.file && (turn.kind === 'write' || turn.kind === 'read')) {
     return <FileActionCard turn={turn} live={live} />
   }
 

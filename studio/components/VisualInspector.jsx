@@ -1,478 +1,161 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import {
-  X, MoveUp, MoveDown, Trash2, Eye, EyeOff, Save, Check,
-  Palette, Type, AlignLeft, AlignCenter, AlignRight,
-  Maximize2, Minimize2, Sliders, ChevronDown, ChevronUp,
-  Sparkles, CornerUpLeft, Plus, Minus
-} from 'lucide-react'
-import { api } from '@/lib/api'
-import { cn } from '@/lib/utils'
+import {useEffect, useState} from 'react'
+import {X, ChevronDown, ChevronUp, Undo2, Redo2, Copy, MoveUp, MoveDown, Trash2, Save, Check} from 'lucide-react'
+import {api, API} from '@/lib/api'
+import {editorFor, serializePrototype} from '@/lib/visual-editor'
+import {STYLE_GROUPS, ATTRIBUTES, MEDIA_ATTRIBUTES, FORM_ATTRIBUTES} from '@/lib/visual-controls'
 
-const THEME_SWATCHES = [
-  { name: 'Cream', hex: '#F4EFE5' },
-  { name: 'Sand', hex: '#EAE1D0' },
-  { name: 'Ink', hex: '#16241B' },
-  { name: 'Pine', hex: '#22352A' },
-  { name: 'Moss', hex: '#5C6B5E' },
-  { name: 'Brass', hex: '#A97B3F' },
-  { name: 'Gold', hex: '#C39A5E' },
-  { name: 'White', hex: '#FFFFFF' },
-  { name: 'Black', hex: '#000000' },
-  { name: 'Indigo', hex: '#4F46E5' },
-  { name: 'Blue', hex: '#2563EB' },
-  { name: 'Red', hex: '#EF4444' },
-  { name: 'Green', hex: '#10B981' },
-]
+const inputClass = 'w-full min-w-0 rounded-lg border border-line bg-panel px-2 py-1.5 text-[11px] text-ink outline-none focus:border-accent dark:border-white/10 dark:bg-black/20 dark:text-white'
+const buttonClass = 'rounded-lg border border-line px-2 py-1.5 text-[11px] text-ink hover:bg-accent/10 disabled:opacity-30 dark:border-white/10 dark:text-white'
 
-const FONT_SIZES = ['12px', '14px', '16px', '18px', '22px', '28px', '36px', '48px']
-const RADII = [
-  { label: '0', val: '0px' },
-  { label: 'sm', val: '4px' },
-  { label: 'md', val: '8px' },
-  { label: 'lg', val: '16px' },
-  { label: 'pill', val: '9999px' },
-]
-
-export default function VisualInspector({
-  element,
-  doc,
-  project,
-  currentFile,
-  onClose,
-  onLog
-}) {
-  if (!element || !doc) return null
-
+export default function VisualInspector({element, doc, project, currentFile, onClose, onLog, onSelect}) {
   const [minimized, setMinimized] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-
-  // Local state for inspector fields
-  const [text, setText] = useState('')
-  const [textColor, setTextColor] = useState('#000000')
-  const [bgColor, setBgColor] = useState('')
-  const [fontSize, setFontSize] = useState('')
-  const [fontWeight, setFontWeight] = useState('normal')
-  const [textAlign, setTextAlign] = useState('left')
-  const [borderRadius, setBorderRadius] = useState('')
-  const [isHidden, setIsHidden] = useState(false)
-  const [padding, setPadding] = useState(0)
-  const [margin, setMargin] = useState(0)
-
-  // Read initial computed styles of the element
-  useEffect(() => {
-    if (!element) return
+  const [error, setError] = useState('')
+  const [search, setSearch] = useState('')
+  const [version, setVersion] = useState(0)
+  const [breakpoint, setBreakpoint] = useState('all')
+  const [pseudo, setPseudo] = useState('')
+  const [insertTag, setInsertTag] = useState('p')
+  const [attributeName, setAttributeName] = useState('data-testid')
+  const [attributeValue, setAttributeValue] = useState('')
+  const [customProperty, setCustomProperty] = useState('')
+  const [customValue, setCustomValue] = useState('')
+  useEffect(() => { setError(''); setSaved(false); setVersion(v => v + 1) }, [element, doc, project, currentFile])
+  if (!element || !doc) return null
+  const editor = editorFor(doc)
+  const computed = doc.defaultView.getComputedStyle(element)
+  const tag = element.tagName.toLowerCase()
+  const isForm = ['input', 'textarea', 'select', 'button'].includes(tag)
+  const isMedia = ['img', 'video', 'audio', 'source'].includes(tag)
+  const run = action => {
+    try { action(); setError(''); setSaved(false); setVersion(v => v + 1) }
+    catch (e) { setError(e.message) }
+  }
+  const style = (property, value) => run(() => breakpoint === 'all' && !pseudo
+    ? editor.style(element, property, value.trim()) : editor.responsive(element, breakpoint, property, value.trim(), pseudo))
+  const attr = (name, value) => run(() => editor.attribute(element, name, value))
+  const selectNode = node => { if (node) onSelect?.(node, doc) }
+  const field = ({property, label, options}) => {
+    const value = computed.getPropertyValue(property).trim()
+    return <label key={property + version} className="flex min-w-0 flex-col gap-1">
+      <span className="text-[10px] text-muted">{label}</span><div className="flex gap-1">
+        {options ? <select aria-label={label} defaultValue={value} className={inputClass} onChange={e => style(property, e.target.value)}>
+          {!options.includes(value) && <option value={value}>{value || 'Inherited'}</option>}
+          {options.map(option => <option key={option}>{option}</option>)}
+        </select> : <input aria-label={label} className={inputClass} defaultValue={value} placeholder="CSS value"
+          onBlur={e => { if (e.target.value !== e.target.defaultValue) style(property, e.target.value) }}
+          onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }} />}
+        <button type="button" title={`Reset ${label}`} aria-label={`Reset ${label}`} className="px-1 text-muted hover:text-accent"
+          onClick={e => { e.preventDefault(); style(property, '') }}>×</button>
+      </div></label>
+  }
+  const attributeField = name => <label key={name + version} className="flex min-w-0 flex-col gap-1">
+    <span className="text-[10px] text-muted">{name}</span><input aria-label={name} className={inputClass}
+      defaultValue={name === 'class' ? [...element.classList].filter(c => !/^__(vf|lc)_/.test(c)).join(' ') : element.getAttribute(name) || ''}
+      onBlur={e => { if (e.target.value !== e.target.defaultValue) attr(name, e.target.value || null) }}
+      onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }} /></label>
+  async function save() {
+    if (!project || saving) return
+    const expected = new URL(`${API}/prototype/${encodeURIComponent(project)}/${currentFile || 'index.html'}`, window.location.href)
+    const actual = new URL(doc.URL)
+    if (!doc.defaultView?.frameElement || doc.defaultView.frameElement.contentDocument !== doc ||
+        actual.origin !== expected.origin || actual.pathname !== expected.pathname) {
+      setError('This page has changed. Select an element in the current preview.'); return
+    }
+    const selectedProject = project, selectedFile = currentFile || 'index.html'
+    const changeSequence = editor.sequence
+    setSaving(true); setError('')
     try {
-      const win = doc.defaultView || window
-      const cs = win.getComputedStyle(element)
-
-      // Text
-      const isInput = ['INPUT', 'TEXTAREA'].includes(element.tagName)
-      setText(isInput ? element.value || '' : element.innerText || '')
-
-      // Color
-      setTextColor(rgbToHex(cs.color) || '#000000')
-      setBgColor(cs.backgroundColor === 'rgba(0, 0, 0, 0)' ? 'transparent' : rgbToHex(cs.backgroundColor) || '')
-
-      // Typography
-      setFontSize(cs.fontSize || '16px')
-      setFontWeight(cs.fontWeight || '400')
-      setTextAlign(cs.textAlign || 'left')
-      setBorderRadius(cs.borderRadius || '0px')
-      setIsHidden(cs.display === 'none')
-      setPadding(parseInt(cs.paddingTop || '0', 10) || 0)
-      setMargin(parseInt(cs.marginTop || '0', 10) || 0)
-    } catch { }
-  }, [element, doc])
-
-  function rgbToHex(rgb) {
-    if (!rgb || rgb === 'transparent') return 'transparent'
-    const m = rgb.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/)
-    if (!m) return rgb
-    return '#' + [m[1], m[2], m[3]].map(x => parseInt(x, 10).toString(16).padStart(2, '0')).join('')
+      await api.saveFile(selectedProject, `.agentforge/prototype/${selectedFile}`, serializePrototype(doc),
+        `Direct HTML customization in ${selectedFile}: ${editor.summary() || 'Updated the prototype interface'}`)
+      editor.markSaved(changeSequence)
+      setSaved(true); onLog?.('SUCCESS', `Saved ${selectedFile} directly to HTML`)
+    } catch (e) { setError(e.message); onLog?.('WARN', `Could not save HTML: ${e.message}`) }
+    finally { setSaving(false) }
   }
-
-  // Live text changes
-  const handleTextChange = (newVal) => {
-    setText(newVal)
-    if (!element) return
-    if (['INPUT', 'TEXTAREA'].includes(element.tagName)) {
-      element.value = newVal
-    } else {
-      element.innerText = newVal
+  function upload(file) {
+    if (!file) return
+    if (!/^image\/(png|jpeg|gif|webp|avif)$/.test(file.type) || file.size > 2 * 1024 * 1024) {
+      setError('Choose a PNG, JPEG, GIF, WebP or AVIF image under 2 MB'); return
     }
+    const reader = new FileReader()
+    reader.onload = () => attr('src', String(reader.result))
+    reader.onerror = () => setError('Could not read the image')
+    reader.readAsDataURL(file)
   }
-
-  // Live style changes
-  const applyStyle = (prop, val) => {
-    if (!element) return
-    element.style[prop] = val
-  }
-
-  const handleTextColor = (hex) => {
-    setTextColor(hex)
-    applyStyle('color', hex)
-  }
-
-  const handleBgColor = (hex) => {
-    setBgColor(hex)
-    applyStyle('backgroundColor', hex === 'transparent' ? '' : hex)
-  }
-
-  const handleFontSize = (size) => {
-    setFontSize(size)
-    applyStyle('fontSize', size)
-  }
-
-  const handleFontWeight = (w) => {
-    setFontWeight(w)
-    applyStyle('fontWeight', w)
-  }
-
-  const handleTextAlign = (align) => {
-    setTextAlign(align)
-    applyStyle('textAlign', align)
-  }
-
-  const handleBorderRadius = (radius) => {
-    setBorderRadius(radius)
-    applyStyle('borderRadius', radius)
-  }
-
-  const handlePadding = (delta) => {
-    const next = Math.max(0, padding + delta)
-    setPadding(next)
-    applyStyle('padding', `${next}px`)
-  }
-
-  const handleMargin = (delta) => {
-    const next = Math.max(0, margin + delta)
-    setMargin(next)
-    applyStyle('margin', `${next}px`)
-  }
-
-  // DOM Movement
-  const handleMoveUp = () => {
-    if (!element || !element.parentElement) return
-    const prev = element.previousElementSibling
-    if (prev) {
-      element.parentElement.insertBefore(element, prev)
-      element.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-    }
-  }
-
-  const handleMoveDown = () => {
-    if (!element || !element.parentElement) return
-    const next = element.nextElementSibling
-    if (next) {
-      element.parentElement.insertBefore(next, element)
-      element.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-    }
-  }
-
-  const handleToggleHide = () => {
-    if (!element) return
-    const next = !isHidden
-    setIsHidden(next)
-    element.style.display = next ? 'none' : ''
-  }
-
-  const handleDelete = () => {
-    if (!element) return
-    if (confirm(`Remove this <${element.tagName.toLowerCase()}> element?`)) {
-      element.remove()
-      onClose?.()
-    }
-  }
-
-  // Instant Save to HTML File without LLM
-  const handleSave = async () => {
-    if (!project || !doc) return
-    setSaving(true)
-    try {
-      // Temporarily remove inspector highlighting classes
-      const highlighted = doc.querySelectorAll('.__vf_hi, .__lc_hi')
-      highlighted.forEach(el => el.classList.remove('__vf_hi', '__lc_hi'))
-      const styleTag = doc.getElementById('__vf_style')
-      if (styleTag) styleTag.remove()
-
-      const fullHtml = '<!DOCTYPE html>\n' + doc.documentElement.outerHTML
-
-      const relPath = `.agentforge/prototype/${currentFile || 'index.html'}`
-      await api.saveFile(project, relPath, fullHtml)
-      setSaved(true)
-      onLog?.('SUCCESS', `Saved ${relPath} directly via Visual Inspector (0 LLM cost)`)
-      setTimeout(() => setSaved(false), 2500)
-    } catch (e) {
-      onLog?.('WARN', `Could not save HTML — ${e.message}`)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const tagName = element.tagName.toLowerCase()
-  const classPreview = (element.className || '').trim().slice(0, 30)
-
-  return (
-    <div className="absolute right-4 top-16 z-50 w-80 rounded-2xl border border-line/80 bg-panel/95 p-4 shadow-2xl backdrop-blur-xl transition-all dark:border-white/10 dark:bg-[#12161f]/95">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-line/60 pb-3 dark:border-white/10">
-        <div className="flex items-center gap-2 overflow-hidden">
-          <span className="rounded-lg bg-emerald-500/15 px-2 py-0.5 font-mono text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-            &lt;{tagName}&gt;
-          </span>
-          {classPreview && (
-            <span className="truncate font-mono text-[10px] text-muted" title={element.className}>
-              .{classPreview}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setMinimized(!minimized)}
-            className="rounded-lg p-1 text-muted hover:bg-ink/[.06] hover:text-ink"
-            title={minimized ? 'Expand' : 'Minimize'}
-          >
-            {minimized ? <ChevronDown className="size-3.5" /> : <ChevronUp className="size-3.5" />}
-          </button>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-1 text-muted hover:bg-red-500/10 hover:text-red-500"
-            title="Close Inspector"
-          >
-            <X className="size-3.5" />
-          </button>
-        </div>
+  return <aside aria-label="HTML visual editor" className="absolute right-4 top-16 z-50 flex max-h-[calc(100%-5rem)] w-[min(390px,calc(100%-2rem))] flex-col overflow-hidden rounded-2xl border border-line bg-panel p-3 shadow-2xl dark:border-white/10 dark:bg-[#12161f]">
+    <div className="flex items-center justify-between gap-2 border-b border-line pb-2 dark:border-white/10">
+      <div className="min-w-0"><span className="text-sm font-semibold text-ink dark:text-white">HTML editor</span>
+        <div className="truncate text-[10px] text-muted">&lt;{tag}&gt; · {currentFile || 'index.html'}</div></div>
+      <div className="flex gap-1">
+        <button className={buttonClass} title="Undo" aria-label="Undo" disabled={!editor.canUndo} onClick={() => run(() => editor.undo())}><Undo2 size={13}/></button>
+        <button className={buttonClass} title="Redo" aria-label="Redo" disabled={!editor.canRedo} onClick={() => run(() => editor.redo())}><Redo2 size={13}/></button>
+        <button className={buttonClass} aria-label={minimized ? 'Expand editor' : 'Minimize editor'} onClick={() => setMinimized(!minimized)}>{minimized ? <ChevronDown size={13}/> : <ChevronUp size={13}/>}</button>
+        <button className={buttonClass} aria-label="Close editor" onClick={onClose}><X size={13}/></button>
+      </div></div>
+    {!minimized && <div className="min-h-0 overflow-y-auto overscroll-contain py-3">
+      <div className="mb-3 flex flex-wrap gap-1">
+        <button className={buttonClass} onClick={() => run(() => editor.move(element, 'up'))}><MoveUp size={12}/> Up</button>
+        <button className={buttonClass} onClick={() => run(() => editor.move(element, 'down'))}><MoveDown size={12}/> Down</button>
+        <button className={buttonClass} onClick={() => run(() => selectNode(editor.duplicate(element)))}><Copy size={12}/> Duplicate</button>
+        <button className={buttonClass} onClick={() => style('display', computed.display === 'none' ? '' : 'none')}>Hide / show</button>
+        <button className={buttonClass} onClick={() => run(() => editor.remove(element))} aria-label="Delete selected element"><Trash2 size={12}/></button>
+        <button className={buttonClass} onClick={() => selectNode(element.parentElement)}>Select parent</button>
       </div>
-
-      {!minimized && (
-        <div className="mt-3 flex flex-col gap-3.5 text-[11.5px]">
-          {/* Quick Actions (Move & Visibility) */}
-          <div className="flex items-center justify-between gap-1 rounded-xl bg-ink/[.03] p-1 dark:bg-white/[.04]">
-            <button
-              onClick={handleMoveUp}
-              title="Move element up before previous sibling"
-              className="flex flex-1 items-center justify-center gap-1 rounded-lg py-1.5 text-ink hover:bg-panel hover:shadow-xs active:scale-95 dark:text-white"
-            >
-              <MoveUp className="size-3 text-emerald-600 dark:text-emerald-400" />
-              <span className="text-[11px] font-medium">Up</span>
-            </button>
-            <button
-              onClick={handleMoveDown}
-              title="Move element down after next sibling"
-              className="flex flex-1 items-center justify-center gap-1 rounded-lg py-1.5 text-ink hover:bg-panel hover:shadow-xs active:scale-95 dark:text-white"
-            >
-              <MoveDown className="size-3 text-emerald-600 dark:text-emerald-400" />
-              <span className="text-[11px] font-medium">Down</span>
-            </button>
-            <button
-              onClick={handleToggleHide}
-              title={isHidden ? 'Show element' : 'Hide element'}
-              className="flex flex-1 items-center justify-center gap-1 rounded-lg py-1.5 text-ink hover:bg-panel hover:shadow-xs active:scale-95 dark:text-white"
-            >
-              {isHidden ? <EyeOff className="size-3 text-amber-500" /> : <Eye className="size-3 text-blue-500" />}
-              <span className="text-[11px] font-medium">{isHidden ? 'Show' : 'Hide'}</span>
-            </button>
-            <button
-              onClick={handleDelete}
-              title="Remove element"
-              className="flex items-center justify-center rounded-lg p-1.5 text-red-500 hover:bg-red-500/10 active:scale-95"
-            >
-              <Trash2 className="size-3.5" />
-            </button>
-          </div>
-
-          {/* Live Text Editing */}
-          {['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BUTTON', 'A', 'SPAN', 'LABEL', 'LI', 'INPUT', 'TEXTAREA'].includes(element.tagName) && (
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-muted">
-                Text Content
-              </label>
-              <textarea
-                value={text}
-                onChange={(e) => handleTextChange(e.target.value)}
-                rows={2}
-                className="w-full resize-none rounded-xl border border-line/70 bg-panel px-2.5 py-1.5 font-sans text-[12px] text-ink outline-none ring-accent/30 focus:ring-2 dark:border-white/10 dark:bg-black/20 dark:text-white"
-                placeholder="Type new text..."
-              />
-            </div>
-          )}
-
-          {/* Color Palette */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">Colors</span>
-              <div className="flex items-center gap-3">
-                {/* Text Color */}
-                <label className="flex cursor-pointer items-center gap-1" title="Text Color">
-                  <span className="text-[10.5px] font-medium text-ink dark:text-white">Text</span>
-                  <input
-                    type="color"
-                    value={textColor.startsWith('#') ? textColor : '#000000'}
-                    onChange={(e) => handleTextColor(e.target.value)}
-                    className="size-4 cursor-pointer rounded-full border-0 p-0"
-                  />
-                </label>
-                {/* Bg Color */}
-                <label className="flex cursor-pointer items-center gap-1" title="Background Color">
-                  <span className="text-[10.5px] font-medium text-ink dark:text-white">Bg</span>
-                  <input
-                    type="color"
-                    value={bgColor.startsWith('#') ? bgColor : '#ffffff'}
-                    onChange={(e) => handleBgColor(e.target.value)}
-                    className="size-4 cursor-pointer rounded-full border-0 p-0"
-                  />
-                </label>
-              </div>
-            </div>
-
-            {/* Quick Swatches */}
-            <div className="flex flex-wrap gap-1.5">
-              {THEME_SWATCHES.slice(0, 10).map(({ name, hex }) => (
-                <button
-                  key={name}
-                  onClick={() => handleBgColor(hex)}
-                  title={`Set bg to ${name} (${hex})`}
-                  style={{ backgroundColor: hex }}
-                  className="size-4.5 rounded-full border border-black/15 shadow-xs transition-transform hover:scale-125 dark:border-white/20"
-                />
-              ))}
-              <button
-                onClick={() => handleBgColor('transparent')}
-                title="Transparent background"
-                className="rounded-full border border-line px-1.5 py-0.5 text-[9px] font-mono text-muted hover:text-ink"
-              >
-                None
-              </button>
-            </div>
-          </div>
-
-          {/* Typography & Layout */}
-          <div className="grid grid-cols-2 gap-2 border-t border-line/60 pt-2.5 dark:border-white/10">
-            {/* Font Size */}
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">Size</span>
-              <div className="flex items-center gap-1">
-                <select
-                  value={fontSize}
-                  onChange={(e) => handleFontSize(e.target.value)}
-                  className="w-full rounded-lg border border-line/70 bg-panel px-1.5 py-1 text-[11px] text-ink outline-none dark:border-white/10 dark:bg-black/20 dark:text-white"
-                >
-                  {FONT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-            </div>
-
-            {/* Font Weight */}
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">Weight</span>
-              <div className="flex items-center rounded-lg border border-line/70 bg-panel p-0.5 dark:border-white/10 dark:bg-black/20">
-                {['400', '600', '700'].map(w => (
-                  <button
-                    key={w}
-                    onClick={() => handleFontWeight(w)}
-                    className={cn(
-                      'flex-1 rounded py-0.5 text-[10px] font-medium transition-colors',
-                      fontWeight === w ? 'bg-accent text-white font-bold' : 'text-muted hover:text-ink'
-                    )}
-                  >
-                    {w === '400' ? 'Reg' : w === '600' ? 'Med' : 'Bold'}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Alignment & Radius */}
-          <div className="grid grid-cols-2 gap-2">
-            {/* Text Align */}
-            <div className="flex items-center rounded-lg border border-line/70 bg-panel p-0.5 dark:border-white/10 dark:bg-black/20">
-              <button
-                onClick={() => handleTextAlign('left')}
-                className={cn('flex-1 rounded py-1 flex justify-center text-muted hover:text-ink', textAlign === 'left' && 'bg-accent/10 text-accent font-bold')}
-                title="Align Left"
-              >
-                <AlignLeft className="size-3" />
-              </button>
-              <button
-                onClick={() => handleTextAlign('center')}
-                className={cn('flex-1 rounded py-1 flex justify-center text-muted hover:text-ink', textAlign === 'center' && 'bg-accent/10 text-accent font-bold')}
-                title="Align Center"
-              >
-                <AlignCenter className="size-3" />
-              </button>
-              <button
-                onClick={() => handleTextAlign('right')}
-                className={cn('flex-1 rounded py-1 flex justify-center text-muted hover:text-ink', textAlign === 'right' && 'bg-accent/10 text-accent font-bold')}
-                title="Align Right"
-              >
-                <AlignRight className="size-3" />
-              </button>
-            </div>
-
-            {/* Corner Radius */}
-            <div className="flex items-center rounded-lg border border-line/70 bg-panel p-0.5 dark:border-white/10 dark:bg-black/20">
-              {RADII.map(r => (
-                <button
-                  key={r.label}
-                  onClick={() => handleBorderRadius(r.val)}
-                  className={cn(
-                    'flex-1 rounded py-0.5 text-[9.5px] font-medium transition-colors',
-                    borderRadius === r.val ? 'bg-accent text-white' : 'text-muted hover:text-ink'
-                  )}
-                  title={`Radius ${r.val}`}
-                >
-                  {r.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Spacing adjustments */}
-          <div className="flex items-center justify-between border-t border-line/60 pt-2 text-[10.5px] text-muted dark:border-white/10">
-            <div className="flex items-center gap-1.5">
-              <span>Padding:</span>
-              <button onClick={() => handlePadding(-2)} className="rounded bg-ink/[.05] px-1.5 py-0.5 hover:bg-ink/[.1] dark:bg-white/[.08]"><Minus className="size-2.5" /></button>
-              <span className="font-mono text-ink dark:text-white">{padding}px</span>
-              <button onClick={() => handlePadding(2)} className="rounded bg-ink/[.05] px-1.5 py-0.5 hover:bg-ink/[.1] dark:bg-white/[.08]"><Plus className="size-2.5" /></button>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span>Margin:</span>
-              <button onClick={() => handleMargin(-2)} className="rounded bg-ink/[.05] px-1.5 py-0.5 hover:bg-ink/[.1] dark:bg-white/[.08]"><Minus className="size-2.5" /></button>
-              <span className="font-mono text-ink dark:text-white">{margin}px</span>
-              <button onClick={() => handleMargin(2)} className="rounded bg-ink/[.05] px-1.5 py-0.5 hover:bg-ink/[.1] dark:bg-white/[.08]"><Plus className="size-2.5" /></button>
-            </div>
-          </div>
-
-          {/* Instant Save to HTML button */}
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className={cn(
-              'mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl py-2 font-semibold text-white shadow-md transition-all active:scale-95 disabled:opacity-50',
-              saved
-                ? 'bg-emerald-600 shadow-emerald-500/20'
-                : 'bg-accent hover:bg-accent/90 shadow-accent/20'
-            )}
-          >
-            {saving ? (
-              <span className="text-[11.5px]">Saving...</span>
-            ) : saved ? (
-              <>
-                <Check className="size-3.5" />
-                <span className="text-[11.5px]">Saved to HTML!</span>
-              </>
-            ) : (
-              <>
-                <Save className="size-3.5" />
-                <span className="text-[11.5px]">Save to HTML (Instant)</span>
-              </>
-            )}
-          </button>
-        </div>
-      )}
-    </div>
-  )
+      <input aria-label="Find customization tools" placeholder="Find a tool or CSS property…" className={inputClass} value={search} onChange={e => setSearch(e.target.value)}/>
+      {!search && <div className="mt-3 flex items-center gap-3">{['color', 'background-color', 'border-color'].map(property => {
+        const rgb = computed.getPropertyValue(property).match(/\d+/g)
+        const hex = rgb?.length >= 3 ? '#' + rgb.slice(0,3).map(n => Number(n).toString(16).padStart(2,'0')).join('') : '#000000'
+        return <label key={property} className="flex items-center gap-1 text-[10px] text-muted">{property === 'color' ? 'Text' : property === 'background-color' ? 'Background' : 'Border'}
+          <input aria-label={`${property} picker`} type="color" value={hex} onChange={e => style(property,e.target.value)} className="size-5 cursor-pointer rounded border-0 p-0"/></label>
+      })}</div>}
+      <div className="my-3 grid grid-cols-2 gap-2">
+        <label className="text-[10px] text-muted">Apply styles to<select aria-label="Style breakpoint" className={inputClass} value={breakpoint} onChange={e => setBreakpoint(e.target.value)}>
+          <option value="all">All sizes</option><option value="1024">Tablet ≤1024px</option><option value="640">Mobile ≤640px</option></select></label>
+        <label className="text-[10px] text-muted">State<select aria-label="Style state" className={inputClass} value={pseudo} onChange={e => setPseudo(e.target.value)}>
+          <option value="">Default</option><option value="hover">Hover</option><option value="focus-visible">Keyboard focus</option><option value="active">Pressed</option><option value="disabled">Disabled</option></select></label>
+      </div>
+      <p className="mb-2 text-[10px] text-muted">Press Enter or leave a field to apply. Size and state rules preview when they match.</p>
+      {!search && <details open className="border-t border-line py-2 dark:border-white/10"><summary className="cursor-pointer text-xs font-medium text-ink dark:text-white">Content & structure</summary>
+        <label className="mt-2 flex flex-col gap-1 text-[10px] text-muted">Text (select inner text to keep nested elements)
+          <textarea key={'text' + version} aria-label="Text content" className={inputClass} rows={3}
+            defaultValue={['INPUT', 'TEXTAREA'].includes(element.tagName) ? element.defaultValue : [...element.childNodes].find(n => n.nodeType === 3 && n.textContent.trim())?.textContent || ''}
+            onBlur={e => { if (e.target.value !== e.target.defaultValue) run(() => editor.text(element, e.target.value)) }}/></label>
+        <div className="mt-2 flex gap-2"><select aria-label="New element type" className={inputClass} value={insertTag} onChange={e => setInsertTag(e.target.value)}>
+          {['div','section','p','h2','span','a','button','img','input','ul','li','hr'].map(t => <option key={t}>{t}</option>)}</select>
+          <button className={buttonClass} onClick={() => run(() => selectNode(editor.insert(element, insertTag)))}>Insert child</button></div>
+      </details>}
+      {STYLE_GROUPS.map(group => {
+        const matching = group.fields.filter(f => !search || `${group.name} ${f.label} ${f.property}`.toLowerCase().includes(search.toLowerCase()))
+        if (!matching.length) return null
+        return <details key={group.name + !!search} open={search ? true : undefined} className="border-t border-line py-2 dark:border-white/10">
+          <summary className="cursor-pointer text-xs font-medium text-ink dark:text-white">{group.name}<span className="ml-2 text-[10px] text-muted">{matching.length}</span></summary>
+          <div className="mt-2 grid grid-cols-2 gap-2">{matching.map(field)}</div></details>
+      })}
+      {!search && <><details className="border-t border-line py-2 dark:border-white/10"><summary className="cursor-pointer text-xs font-medium text-ink dark:text-white">HTML attributes & accessibility</summary>
+        <div className="mt-2 grid grid-cols-2 gap-2">{ATTRIBUTES.map(attributeField)}
+          {tag === 'a' && ['href','target','rel'].map(attributeField)}
+          {isMedia && MEDIA_ATTRIBUTES.map(attributeField)}
+          {isForm && FORM_ATTRIBUTES.map(attributeField)}</div>
+        <div className="mt-3 flex gap-2"><input aria-label="Attribute name" className={inputClass} value={attributeName} onChange={e => setAttributeName(e.target.value)}/>
+          <input aria-label="Attribute value" className={inputClass} value={attributeValue} onChange={e => setAttributeValue(e.target.value)}/>
+          <button className={buttonClass} onClick={() => attr(attributeName, attributeValue || null)}>Set</button></div>
+        {isForm && <div className="mt-2 flex flex-wrap gap-2">{['disabled','required','checked'].map(name => <label key={name} className="text-[11px] text-muted">
+          <input type="checkbox" checked={element.hasAttribute(name)} onChange={e => attr(name, e.target.checked ? '' : null)}/> {name}</label>)}</div>}
+        {tag === 'img' && <label className="mt-3 flex flex-col gap-1 text-[10px] text-muted">Upload image (saved inside HTML)<input aria-label="Upload image" type="file" accept="image/png,image/jpeg,image/gif,image/webp,image/avif" onChange={e => upload(e.target.files[0])}/></label>}
+      </details><details className="border-t border-line py-2 dark:border-white/10"><summary className="cursor-pointer text-xs font-medium text-ink dark:text-white">Any CSS property</summary>
+        <p className="my-2 text-[10px] text-muted">Any property or CSS variable supported by this browser.</p>
+        <div className="flex gap-2"><input aria-label="CSS property" className={inputClass} placeholder="Property / --variable" value={customProperty} onChange={e => setCustomProperty(e.target.value)}/>
+          <input aria-label="CSS value" className={inputClass} placeholder="Value" value={customValue} onChange={e => setCustomValue(e.target.value)}/>
+          <button className={buttonClass} onClick={() => style(customProperty, customValue)}>Apply</button></div>
+      </details></>}
+    </div>}
+    {error && <p role="alert" className="py-2 text-[11px] text-red-500">{error}</p>}
+    <button onClick={save} disabled={saving} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-xs font-semibold text-white disabled:opacity-50">
+      {saved ? <Check size={14}/> : <Save size={14}/>} {saving ? 'Saving…' : saved ? 'Saved to HTML' : 'Save to HTML (Instant)'}
+    </button>
+  </aside>
 }

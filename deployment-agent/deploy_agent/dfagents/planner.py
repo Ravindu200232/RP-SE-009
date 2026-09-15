@@ -261,31 +261,8 @@ class PlannerAgent:
             "generation": GENERATION_SCHEMA,
         },
     }
-    BUILD_REPAIR_SCHEMA = {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "type": "object",
-        "additionalProperties": False,
-        "required": ["summary", "actions"],
-        "properties": {
-            "summary": {"type": "string", "maxLength": 500},
-            "actions": {
-                "type": "array",
-                "maxItems": 4,
-                "uniqueItems": True,
-                "items": {
-                    "enum": [
-                        "ensure-standalone-output",
-                        "ensure-type-safe-health-route",
-                        "same-origin-auth",
-                        "normalize-alert-variant",
-                        "none",
-                    ]
-                },
-            },
-        },
-    }
     SYSTEM_PROMPT = """
-You are a conservative DevOps deployment planner. Analyze a redacted Next.js project specification.
+You are a conservative DevOps deployment planner. Analyze the detected application's redacted specification.
 Return one JSON object with exactly these top-level fields:
 risks (array of short strings), recommendations (array of short strings), source_patches,
 and generation. generation must restate the detected service root, package manager, install/build/start
@@ -293,7 +270,10 @@ commands, port, health route, environment names without values, the nextjs-stand
 required GitHub jobs, a conservative EC2 instance type, and required deployment compatibility patches.
 source_patches is an array of objects containing path, reason, and change. Plan for one Next.js process managed by
 systemd on a single EC2 instance behind nginx, released from S3 through SSM Run Command, with
-MongoDB Atlas via AWS Secrets Manager, GitHub OIDC, CloudWatch, and CloudFormation. Never request,
+MongoDB Atlas via AWS Secrets Manager, GitHub OIDC, CloudWatch, and CloudFormation. When the specification
+describes a Node.js workspace, retain its detected gateway and all companion services, their start commands,
+internal ports, health endpoints, and compiled client. Do not substitute a Next.js server for that workspace.
+Verify service connectivity and cookie forwarding through the public gateway. Never request,
 repeat, infer, or output credential values. Do not split a monolith into microservices. Source patches must
 be limited to deployment compatibility. JSON only.
 """.strip()
@@ -346,38 +326,6 @@ be limited to deployment compatibility. JSON only.
             plan.recommendations.append("Use same-origin Better Auth client configuration behind the ALB.")
         self.emit(run_id, "step", "planner", "complete", 29, "Deployment plan ready")
         return plan
-
-    def repair_build(self, run_id: str, spec: ProjectSpec, plan: DeploymentPlan, build_error: str) -> list[str]:
-        self.emit(run_id, "step", "repair", "running", 91, "Requesting a bounded Ollama compatibility repair")
-        result = self.client.chat_json(
-            """
-You are diagnosing a failed Next.js production build for a reviewed deployment. Select only safe,
-predefined compatibility actions from the supplied schema. A TypeScript error saying an Alert
-variant such as `info` is not assignable to the project's Alert variant union may use
-`normalize-alert-variant`; this action only normalizes that exact unsupported variant to the
-component's default variant in the isolated staging copy. Never output source code, commands,
-credentials, environment values, or arbitrary file changes. Use none when no listed action applies.
-""".strip(),
-            {
-                "project": spec.to_dict(),
-                "generation": plan.to_dict(),
-                "redacted_build_error": build_error[-8000:],
-            },
-            schema=self.BUILD_REPAIR_SCHEMA,
-            attempts=2,
-            progress=lambda message: self.emit(run_id, "log", "repair", "running", 92, message),
-        )
-        actions = [str(item) for item in result.get("actions", []) if str(item) != "none"][:4]
-        plan.repair_actions.extend(action for action in actions if action not in plan.repair_actions)
-        summary = str(result.get("summary", "Compatibility repair analyzed"))[:500]
-
-        message = (
-            f"Compatibility repair selected: {', '.join(actions)}"
-            if actions
-            else "No safe predefined compatibility repair applies"
-        )
-        self.emit(run_id, "step", "repair", "complete", 93, message, {"actions": actions, "summary": summary})
-        return actions
 
     @staticmethod
     def _apply_generation(plan: DeploymentPlan, service, value: Any) -> None:

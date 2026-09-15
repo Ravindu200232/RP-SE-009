@@ -12,7 +12,8 @@ import re
 from pathlib import Path
 
 from ..errors import ToolError
-from ..journeys import diagnostics_report, run_journey
+from ..journeys import (ACTION_READY_TIMEOUT, diagnostics_report, run_journey,
+                        run_journeys)
 from ..policy import MODERATE, SAFE
 from .base import Tool
 
@@ -36,7 +37,7 @@ def browser_action(args, ctx):
         page.navigate(str(args["url"]))
     elif action == "click":
         page.click(page.locate(args.get("role", "button"), args.get("name"), args.get("selector")))
-        page.wait_ready(6)
+        page.wait_ready(ACTION_READY_TIMEOUT)
     elif action in ("type", "fill"):
         page.fill(page.locate(args.get("role", "textbox"), args.get("name"), args.get("selector")),
                   str(args.get("text", "")))
@@ -54,6 +55,12 @@ def browser_run_journey(args, ctx):
         steps=args["steps"], start_url=args.get("startUrl"),
         fresh_session=bool(args.get("freshSession", True)),
         tab_id=args.get("tabId"), events=ctx.events)
+
+
+def browser_run_journeys(args, ctx):
+    return run_journeys(
+        ctx.browser, ctx.sandbox, ctx.memory.evidence,
+        suites=args["suites"], events=ctx.events)
 
 
 def browser_screenshot(args, ctx):
@@ -117,6 +124,28 @@ def register(registry):
                       'searches every role.'},
         }},
         summarize=lambda a: a.get("suite", "journey")))
+
+    registry.add(Tool(
+        name="browserRunJourneys", risk=MODERATE, handler=browser_run_journeys,
+        description="Run several bounded browser journeys in one isolated browser pass and "
+                    "record each suite separately. Use this once for all critical journeys "
+                    "so the model does not loop between suites. A failed suite is reported "
+                    "while the remaining suites continue.",
+        parameters={"type": "object", "required": ["suites"], "properties": {
+            "suites": {"type": "array", "description":
+                       'Each item is one independent suite. Steps use the same actions and '
+                       'assertions as browserRunJourney.',
+                       "items": {"type": "object", "required": ["suite", "steps"],
+                                 "properties": {
+                                     "suite": {"type": "string"},
+                                     "covers": {"type": "array"},
+                                     "startUrl": {"type": "string"},
+                                     "freshSession": {"type": "boolean", "default": True},
+                                     "tabId": {"type": "string"},
+                                     "steps": {"type": "array"},
+                                 }}},
+        }},
+        summarize=lambda a: f"{len(a.get('suites') or [])} journeys"))
 
     registry.add(Tool(
         name="browserOpen", risk=MODERATE, handler=browser_open,

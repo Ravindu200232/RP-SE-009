@@ -1,5 +1,32 @@
 """A durable, one-way change transaction: source -> SRS -> sibling -> SRS."""
 
+def run_manual_prototype_change(project, summary):
+    """Verify direct HTML edits before their existing durable SRS transaction."""
+    from builder_agent.prototype_check import validate_all, repair_prompt
+    from builder_agent.browser import Browser
+    from builder_agent.events import Events
+    directory = PROD_DIR / project
+    state = ProjectState(directory)
+    state.agent('designer', status='running')
+    browser = Browser(events=Events())
+    try:
+        findings = validate_all(directory, browser=browser)
+        if any(row.get('kind') == 'browser unavailable' for row in findings):
+            raise RuntimeError('Prototype browser validation was unavailable. The saved HTML remains available for retry.')
+        errors = [row for row in findings if row.get('kind') != 'browser unavailable']
+        if errors:
+            _, result = _run_agent(directory, repair_prompt(errors), default_agent_model(), False,
+                                phases=('prototype',), kind='edit', plan=False, prototype_only=True)
+            if result.status != 'completed':
+                raise RuntimeError('Direct HTML validation failed: ' + result.result[:500])
+        state.agent('designer', status='completed', summary=summary, completed_at=time.time(), error='')
+        emit({'type':'run_state','project':project,'agent':'designer','status':'completed'})
+    except Exception as error:
+        state.agent('designer', status='error', error=str(error))
+        raise
+    finally:
+        browser.close()
+
 def _sync_parent_documents(directory, request_path, request, label, role, summary):
     link = json.loads((directory / ".agentforge" / "srs" / "link.json").read_text(encoding="utf-8"))
     sid = link["srs_id"]

@@ -534,7 +534,8 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
             body = self._body()
             out = save_project_file(str(body.get("project", "")),
                                     str(body.get("path", "")),
-                                    str(body.get("content", "")))
+                                    str(body.get("content", "")),
+                                    change_summary=str(body.get("change_summary", "")))
             self._json(out, 400 if out.get("error") else 200)
         elif path == "/image-start":
 
@@ -900,9 +901,16 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
             answer = visible_srs_list(answer, user)
         elif method == "POST":
             body = self._body()
-            srs_job_started(str((answer or {}).get("job_id") or ""), user,
-                            create=access_rule("POST", "/srs/jobs", body)[0] == "srs-create",
-                            listing=str(body.get("path") or "").split("?")[0] == "/projects")
+            # A POST to /projects creates a specification; only a GET to that
+            # path is a listing.  Keeping these flags exclusive matters because
+            # srs_job_answered handles listings before it claims newly-created
+            # specifications for their owner.
+            inner_path = str(body.get("path") or "").split("?")[0]
+            inner_method = str(body.get("method") or "POST").upper()
+            srs_job_started(
+                str((answer or {}).get("job_id") or ""), user,
+                create=access_rule("POST", "/srs/jobs", body)[0] == "srs-create",
+                listing=inner_method == "GET" and inner_path == "/projects")
         else:
             answer = srs_job_answered(path[len("/jobs/"):].strip("/"), answer, user)
         return self._json(answer, r.status_code)

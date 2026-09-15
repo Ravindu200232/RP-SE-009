@@ -30,6 +30,7 @@ PHASE_BAND = {
 TOOL_WORDS = {
     "writeFile": "Writing", "patchFile": "Editing", "editFile": "Editing",
     "patchJson": "Editing", "deleteFile": "Removing", "readFile": "Reading",
+    "readFiles": "Reading",
     "search": "Searching", "grepSearch": "Searching", "globFiles": "Searching",
     "executeTerminal": "Running", "runTests": "Testing",
     "browserRunJourney": "Checking in the browser", "browserOpen": "Opening",

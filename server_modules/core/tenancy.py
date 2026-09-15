@@ -170,7 +170,7 @@ def _project_of(target, args) -> str:
 
 
 _REQUEST_LOCK = threading.RLock()
-_DURABLE_TARGETS = {"run_agent_pipeline", "run_chat", "run_feature", "run_element_edit"}
+_DURABLE_TARGETS = {"run_agent_pipeline", "run_chat", "run_feature", "run_element_edit", "run_manual_prototype_change"}
 SERVER_STOPPING = False
 
 
@@ -188,7 +188,7 @@ def start_run(target, args, *, project=None, user=None, replay_path=None) -> Non
         nonlocal project, args
         act_as(user)
         kind = getattr(target, "__name__", "")
-        role = "designer" if ((kind == "run_agent_pipeline" and len(args) > 9 and args[9]) or
+        role = "designer" if (kind == "run_manual_prototype_change" or (kind == "run_agent_pipeline" and len(args) > 9 and args[9]) or
               (kind == "run_chat" and len(args) > 7 and args[7] == "designer") or
               (kind == "run_element_edit" and len(args) > 7 and str(args[7]).startswith("/prototype"))) else "developer"
         RUN.agent = role
@@ -219,7 +219,7 @@ def start_run(target, args, *, project=None, user=None, replay_path=None) -> Non
                         state.agent(role, status="queued")
                         emit({"type": "run_state", "project": project, "agent": role, "status": "queued"})
                     if not replay_path:
-                        prompt = args[0] if kind == "run_agent_pipeline" else args[1]
+                        prompt = '' if kind == 'run_manual_prototype_change' else args[0] if kind == "run_agent_pipeline" else args[1]
                         if prompt:
                             emit({"type": "user_msg", "project": project, "agent": role, "text": prompt})
 

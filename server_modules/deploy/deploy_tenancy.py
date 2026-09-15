@@ -61,6 +61,8 @@ def deploy_summary_for(user) -> dict:
         "mongodb_uri_hint": _redact_uri(mongo),
         "github_token_set": bool(saved.get("github_token")),
         "github_login": saved.get("github_login", ""),
+        "netlify_token_set": bool(saved.get("netlify_token")),
+        "azure_credentials_set": bool(saved.get("azure_credentials")),
     }
 
 
@@ -85,9 +87,12 @@ def save_deploy_settings(user, body: dict) -> dict:
     if "aws_profile" in body:
         name = str(body["aws_profile"]).strip()
         patch["aws_profile"] = aws_profile_for(user, name) if name else ""
-    for key in ("vercel_token", "deploy_mongodb_uri"):
+    for key in ("vercel_token", "netlify_token", "azure_credentials", "deploy_mongodb_uri"):
         if key in body:
             value = str(body[key]).strip()
+            if key == "azure_credentials" and value and value != "-":
+                from deployment_agent.hosted import validate_azure_credentials
+                validate_azure_credentials(value)
             patch[key] = "" if value == "-" else value
     if "github_token" in body:
         value = str(body["github_token"]).strip()

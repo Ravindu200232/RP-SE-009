@@ -32,87 +32,6 @@ class GeneratorCommonMixin:
     def _node_command(service: ServiceSpec) -> list[str]:
         """A workspace service's start command, `node <entry>`, as arguments."""
         return shlex.split(service.start_command or "")
-    def repair_compatibility(
-        self,
-        spec: ProjectSpec,
-        plan: DeploymentPlan,
-        staged_root: Path,
-        records: list[ArtifactRecord],
-        actions: list[str],
-        build_error: str,
-    ) -> tuple[list[ArtifactRecord], bool]:
-        """Apply bounded compatibility repairs in the review copy."""
-        if not actions:
-            return records, False
-        service = self._render_service(spec.services[0], plan)
-        record_map = {record.path: record for record in records}
-        before = {path: record.sha256 for path, record in record_map.items()}
-        service_root = staged_root / service.root if service.root else staged_root
-        if "ensure-type-safe-health-route" in actions and (service_root / "tsconfig.json").exists():
-            for app_root in (service_root / "app", service_root / "src" / "app"):
-                legacy = app_root / "api" / "health" / "route.js"
-                relative = legacy.relative_to(staged_root).as_posix()
-                record = record_map.get(relative)
-                if legacy.exists() and record and record.kind == "source-patch" and not record.original_exists:
-                    legacy.unlink()
-                    record_map.pop(relative, None)
-
-        patch_records, applied = self._apply_compatibility_patches(
-            spec, staged_root, service, DeploymentTarget(plan.target)
-        )
-        for record in patch_records:
-            record_map[record.path] = record
-        if "normalize-alert-variant" in actions:
-
-            alert_pattern = re.compile(r"(<Alert\b[^>]*\bvariant\s*=\s*[\"'])info([\"'])")
-            scanned = 0
-            for candidate in service_root.rglob("*"):
-
-                if scanned >= 2000:
-                    break
-                if not candidate.is_file() or candidate.suffix.lower() not in {".ts", ".tsx", ".js", ".jsx"}:
-                    continue
-                try:
-                    if candidate.stat().st_size > 512_000:
-                        continue
-                    content = candidate.read_text(encoding="utf-8")
-                except (OSError, UnicodeDecodeError):
-                    continue
-                scanned += 1
-                updated, count = alert_pattern.subn(r"\1default\2", content)
-                if not count or updated == content:
-                    continue
-                relative = candidate.relative_to(staged_root).as_posix()
-                record_map[relative] = self._write(spec, staged_root, relative, updated, "source-patch")
-                applied_patch = {
-                    "path": relative,
-                    "reason": "Type-safe Alert variant compatibility",
-                    "change": "Normalize unsupported Alert variant info to default",
-                }
-                if applied_patch not in applied:
-                    applied.append(applied_patch)
-        if applied:
-            plan.source_patches.extend(item for item in applied if item not in plan.source_patches)
-        changed = set(record_map) != set(before) or any(
-            record.sha256 != before.get(path) for path, record in record_map.items()
-        )
-        if changed:
-            manifest_path = staged_root / "deployment-manifest.json"
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-            manifest["generation"]["repair_actions"] = list(plan.repair_actions)
-            owned = sorted(set(record_map) | {"deployment-manifest.json"})
-            manifest["artifacts"] = owned
-            manifest["agent_owned_files"] = owned
-            record_map["deployment-manifest.json"] = self._write(
-                spec,
-                staged_root,
-                "deployment-manifest.json",
-                json.dumps(manifest, indent=2) + "\n",
-                "manifest",
-            )
-        if not changed and "route.js" in build_error and "allowJs" in build_error:
-            plan.risks.append("The bounded type-safe health repair made no change; manual application code review is required.")
-        return list(record_map.values()), changed
     @staticmethod
     def diff(spec: ProjectSpec, staged_root: Path, records: list[dict]) -> str:
         source_root = Path(spec.source_path)
@@ -174,7 +93,7 @@ class GeneratorCommonMixin:
             None,
         )
 
-        wants_standalone = target in (DeploymentTarget.AWS_EC2, DeploymentTarget.AWS_ECS)
+        wants_standalone = target in (DeploymentTarget.AWS_EC2, DeploymentTarget.AWS_ECS, DeploymentTarget.AZURE)
         if not wants_standalone:
             pass
         elif config:

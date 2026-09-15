@@ -17,6 +17,7 @@ class DeploymentGitMixin:
         source_root = source.resolve()
         staged_root = staged.resolve()
         applied: list[str] = []
+        pending = []
         for record in records:
             relative = record["path"]
             target = source / relative
@@ -27,6 +28,8 @@ class DeploymentGitMixin:
                 raise RuntimeError(f"Reviewed artifact path escapes the project workspace: {relative}")
             if not staged_file.exists():
                 raise RuntimeError(f"Reviewed artifact disappeared: {relative}")
+            if sha256_file(staged_file) != record["sha256"]:
+                raise RuntimeError(f"Reviewed artifact changed after validation: {relative}")
 
             if target.exists() and sha256_file(target) == record["sha256"]:
                 applied.append(relative)
@@ -34,14 +37,34 @@ class DeploymentGitMixin:
             if record.get("original_exists"):
                 if not target.exists() or sha256_file(target) != record.get("original_sha256"):
                     raise RuntimeError(f"Source file changed after review; re-run analysis: {relative}")
-                backup = backup_root / relative
-                backup.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(target, backup)
             elif target.exists() and sha256_file(target) != record["sha256"]:
                 raise RuntimeError(f"A new conflicting file appeared after review: {relative}")
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(staged_file, target)
-            applied.append(relative)
+            pending.append((relative, target, staged_file, sha256_file(target)))
+        written = []
+        try:
+            for relative, target, staged_file, expected in pending:
+                if sha256_file(target) != expected:
+                    raise RuntimeError(f"Source file changed during delivery: {relative}")
+                if target.exists():
+                    backup = backup_root / relative
+                    backup.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(target, backup)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                temporary = target.with_name(target.name + ".deploy-apply.tmp")
+                try:
+                    shutil.copy2(staged_file, temporary)
+                    temporary.replace(target)
+                finally:
+                    temporary.unlink(missing_ok=True)
+                written.append((relative, target, bool(expected)))
+                applied.append(relative)
+        except Exception:
+            for relative, target, existed in reversed(written):
+                if existed:
+                    shutil.copy2(backup_root / relative, target)
+                else:
+                    target.unlink(missing_ok=True)
+            raise
         self.emit(run_id, "step", "apply", "complete", 58, f"Applied {len(applied)} reviewed files to the source repository")
         return applied
     @staticmethod
@@ -68,6 +91,8 @@ class DeploymentGitMixin:
                 ":(exclude,glob)**/.env", ":(exclude,glob)**/.env.*",
                 ":(exclude,glob)**/node_modules/**", ":(exclude,glob)**/.next/**",
                 ":(exclude,glob)**/.vercel/**",
+                ":(exclude,glob)**/.netlify/**", ":(exclude,glob)**/.agentforge/**",
+                ":(exclude,glob)**/.agents/**", ":(exclude,glob)**/*.pem",
             ],
             cwd=source,
             timeout=GIT_TIMEOUT_SECONDS,
@@ -81,7 +106,7 @@ class DeploymentGitMixin:
             if relative.endswith(".env.example"):
                 run_command(["git", "add", "-f", "--", relative], cwd=source, timeout=GIT_TIMEOUT_SECONDS, check=True)
         names = staged()
-        secret_files = env_values(names)
+        secret_files = env_values(names) + [name for name in names if name.endswith(".pem")]
         if secret_files:
             raise RuntimeError("Refusing to commit environment value files: " + ", ".join(secret_files[:10]))
         return names
@@ -100,8 +125,14 @@ class DeploymentGitMixin:
         staged_names = self._stage_reviewed_tree(source, applied)
 
         if staged_names:
+            answers = (self.store.get_run(run_id).get("plan") or {}).get("customization") or {}
+            author_args = []
+            if not run_command(["git", "var", "GIT_AUTHOR_IDENT"], cwd=source).returncode == 0:
+                identity = json.loads(run_command(["gh", "api", "user"], check=True).stdout)
+                login, account_id = identity["login"], identity["id"]
+                author_args = ["-c", f"user.name={login}", "-c", f"user.email={account_id}+{login}@users.noreply.github.com"]
             commit = run_command(
-                ["git", "commit", "-m", profile.commit_subject.format(run=run_id[:8])],
+                ["git", *author_args, "commit", "-m", answers.get("commit_message") or profile.commit_subject.format(run=run_id[:8])],
                 cwd=source,
                 timeout=GIT_TIMEOUT_SECONDS,
             )
@@ -193,6 +224,8 @@ class DeploymentGitMixin:
         seen = False
         last_reported = ""
         while time.time() < deadline:
+            if (self.store.get_run(run_id) or {}).get("state") in {RunState.CANCELLED.value, RunState.DESTROYED.value}:
+                raise RuntimeError("Deployment cancelled")
             result = run_command(
                 [
                     "gh",

@@ -35,11 +35,18 @@ function currentPath(frame) {
   try {
     const loc = frame?.contentWindow?.location
     if (!loc) return 'index.html'
-    const name = (loc.pathname || '').split('/').filter(Boolean).pop()
-    return name && name.endsWith('.html') ? name : 'index.html'
+    const name = (loc.pathname || '').split('/').filter(Boolean).pop() || 'index.html'
+    const cleanName = name.endsWith('.html') ? name : 'index.html'
+    const search = loc.search || ''
+    const hash = loc.hash || ''
+    return cleanName + search + hash
   } catch {
     return 'index.html'
   }
+}
+
+function baseFileName(path) {
+  return (path || '').split('?')[0].split('#')[0] || 'index.html'
 }
 
 export default function PrototypePane({ project, hidden, onBuild }) {
@@ -78,7 +85,8 @@ export default function PrototypePane({ project, hidden, onBuild }) {
   const checkPrototypeReady = useCallback(async () => {
     if (!project) return false
     try {
-      const url = `${API}/prototype/${encodeURIComponent(project)}/${currentFile || 'index.html'}?check=${Date.now()}`
+      const base = baseFileName(currentFile)
+      const url = `${API}/prototype/${encodeURIComponent(project)}/${base || 'index.html'}?check=${Date.now()}`
       const res = await fetch(url)
       if (res.ok) {
         const text = await res.text()
@@ -139,7 +147,8 @@ export default function PrototypePane({ project, hidden, onBuild }) {
       const page = currentPath(f)
       setIframeLoading(true)
       checkPrototypeReady()
-      f.src = `${API}/prototype/${encodeURIComponent(project || '')}/${page}?t=${Date.now()}`
+      const sep = page.includes('?') ? '&' : '?'
+      f.src = `${API}/prototype/${encodeURIComponent(project || '')}/${page}${sep}t=${Date.now()}`
     }
   }
 
@@ -583,7 +592,7 @@ export default function PrototypePane({ project, hidden, onBuild }) {
             element={inspectedElement}
             doc={inspectedDoc}
             project={project}
-            currentFile={currentFile}
+            currentFile={baseFileName(currentFile)}
             onClose={() => {
               const prev = inspectedDoc?.querySelector('.__vf_selected')
               if (prev) prev.classList.remove('__vf_selected')

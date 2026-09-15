@@ -156,7 +156,7 @@ export default function SettingsModal({ onClose, onSaved }) {
                   : activeTab === 'appearance'
                   ? 'Studio visual theme.'
                   : activeTab === 'integrations'
-                  ? 'Connect GitHub, AWS, Vercel and production database for deployments.'
+                  ? 'Connect GitHub, AWS, Vercel, Netlify, Azure and your production database.'
                   : 'Key bindings active in AgentForge Studio.'}
               </p>
             </div>

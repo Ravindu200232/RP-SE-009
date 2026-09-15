@@ -53,16 +53,24 @@ def observation_key(tool: str, args: dict) -> str | None:
     args = args or {}
     if tool == "readFile":
         return f"file:{args['filePath']}" if args.get("filePath") else None
+    if tool == "readFiles":
+        paths = sorted(str(p) for p in (args.get("filePaths") or []))
+        return f"files:{','.join(paths)}" if paths else None
     if tool == "readSkill":
         return f"skill:{args.get('name')}/{args.get('resourcePath') or ''}" if args.get("name") else None
-    if tool in {"browserOpen", "browserSnapshot", "browserAction", "browserRunJourney"}:
+    if tool == "testingStatus":
+        return "verification:status"
+    if tool in {"browserOpen", "browserSnapshot", "browserAction", "browserRunJourney",
+                "browserRunJourneys"}:
         return f"browser:{args.get('tabId') or 'active'}"
     return None
 
 
 def _superseded_note(tool: str, args: dict, chars: int) -> str:
     what = (args.get("filePath") if tool == "readFile"
+            else f"files {', '.join(str(p) for p in (args.get('filePaths') or []))}" if tool == "readFiles"
             else f"skill {args.get('name')}" if tool == "readSkill"
+            else "the verification ledger" if tool == "testingStatus"
             else "this browser tab")
     return (f"[{chars} characters omitted: a later observation of {what} in this "
             "conversation supersedes it. Read it again if the earlier state matters.]")
@@ -132,11 +140,12 @@ class Memory:
 
     def add_tool_result(self, tool: str, content: str, call_id: str,
                         args: dict | None = None, ok: bool = True,
-                        max_chars: int = 6000) -> None:
+                        max_chars: int = 6000, meta: dict | None = None) -> None:
         self.messages.append({
             "role": "tool", "tool_call_id": call_id, "name": tool,
             "content": truncate(content, max_chars),
-            "meta": {"kind": "tool-result", "tool": tool, "ok": ok, "args": args or {}},
+            "meta": {"kind": "tool-result", "tool": tool, "ok": ok, "args": args or {},
+                     **(meta or {})},
         })
         if not ok:
             self.digest["failures"] = (self.digest["failures"] + [f"{tool}: {truncate(content, 200)}"])[-12:]

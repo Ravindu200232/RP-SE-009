@@ -3,6 +3,11 @@
   "question": "Where should uploaded pictures be kept and served from?",
   "choices": [
     {
+      "id": "none",
+      "label": "No picture or file uploads — text-only app",
+      "hint": "The app does not handle or store file uploads."
+    },
+    {
       "id": "local",
       "label": "This machine — no account needed",
       "hint": "Files are written under the project and served from it. Fine while building; they do not survive a redeploy."

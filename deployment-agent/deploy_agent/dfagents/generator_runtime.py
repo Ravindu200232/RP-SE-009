@@ -244,12 +244,16 @@ class GeneratorRuntimeMixin:
         units = [*(f"app-{companion.name}" for companion in companions), "nextjs"]
         restart = " ".join(units)
         journal = " ".join(f"-u {unit}" for unit in units)
+        companion_checks = "\n".join(
+            f'  curl -fsS --max-time 3 "http://127.0.0.1:{c.port}{c.health_path}" >/dev/null || return 1'
+            for c in companions)
         return textwrap.dedent(
             f"""
             #!/usr/bin/env bash
             # Deployment Agent release script. Runs on the EC2 instance via SSM.
             # Usage: BUCKET=... SHA=... SECRET_ID=... release.sh
             set -euo pipefail
+            umask 077
 
             : "${{BUCKET:?BUCKET is required}}"
             : "${{SHA:?SHA is required}}"
@@ -297,8 +301,13 @@ class GeneratorRuntimeMixin:
             systemctl restart {restart}
 
             echo "==> Waiting for health check"
+            all_services_healthy() {{
+              curl -fsS --max-time 5 "http://127.0.0.1:$PORT$HEALTH_PATH" >/dev/null || return 1
+            __COMPANION_CHECKS__
+              return 0
+            }}
             for attempt in $(seq 1 30); do
-              if curl -fsS --max-time 5 "http://127.0.0.1:$PORT$HEALTH_PATH" >/dev/null 2>&1; then
+              if all_services_healthy; then
                 echo "Health check passed on attempt $attempt"
                 # Keep the five most recent releases so rollback has somewhere to go.
                 ls -1dt "$RELEASES"/*/ 2>/dev/null | tail -n +6 | xargs -r rm -rf
@@ -312,7 +321,7 @@ class GeneratorRuntimeMixin:
             journalctl {journal} -n 50 --no-pager >&2 || true
             exit 1
             """
-        ).lstrip().replace("__COMPANION_UNITS__\n", generator_class()._companion_units(companions))
+        ).lstrip().replace("__COMPANION_UNITS__\n", generator_class()._companion_units(companions)).replace("__COMPANION_CHECKS__", companion_checks)
     @staticmethod
     def _companion_units(companions: list[ServiceSpec] | tuple) -> str:
         """systemd units for the services that run beside the gateway.
@@ -328,6 +337,11 @@ class GeneratorRuntimeMixin:
             entry = generator_class()._node_command(companion)[-1]
             blocks.append(textwrap.dedent(
                 f"""
+                # Override the gateway port only for this internal service.
+                grep -vE '^(PORT|SERVICE_PORT|HOSTNAME)=' /opt/app/shared/.env > /opt/app/shared/{companion.name}.env || true
+                printf 'PORT={companion.port}\\nSERVICE_PORT={companion.port}\\nHOSTNAME=127.0.0.1\\n' >> /opt/app/shared/{companion.name}.env
+                chown root:nextjs /opt/app/shared/{companion.name}.env
+                chmod 0640 /opt/app/shared/{companion.name}.env
                 cat > /etc/systemd/system/app-{companion.name}.service <<'UNIT'
                 [Unit]
                 Description={companion.name}
@@ -340,9 +354,7 @@ class GeneratorRuntimeMixin:
                 User=nextjs
                 Group=nextjs
                 WorkingDirectory={directory}
-                EnvironmentFile=/opt/app/shared/.env
-                # The one public port belongs to the gateway.
-                UnsetEnvironment=PORT HOSTNAME
+                EnvironmentFile=/opt/app/shared/{companion.name}.env
                 ExecStart=/usr/bin/node {directory}/{entry}
                 Restart=always
                 RestartSec=5

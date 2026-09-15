@@ -593,7 +593,7 @@ export default function PreviewPane({ hidden, onBuild }) {
                 </h3>
                 <p className="mt-1.5 max-w-xs text-center text-xs text-slate-400 leading-relaxed">
                   {runtime?.status === 'starting'
-                    ? 'Booting the Next.js runtime environment and mounting live routes.'
+                    ? 'Starting the project runtime and loading its pages.'
                     : 'Rendering live application components and compiling assets.'}
                 </p>
 

@@ -16,7 +16,7 @@ class DeploymentAwsMixin:
         from deployment_agent.aws_onboarding import session_for_profile
 
         return session_for_profile(profile, region, credential_reference)
-    def _ensure_github_repository(self, source: Path, slug: str) -> str:
+    def _ensure_github_repository(self, source: Path, slug: str, visibility: str = "private") -> str:
         if not (source / ".git").exists():
             run_command(["git", "init"], cwd=source, timeout=GIT_TIMEOUT_SECONDS, check=True)
             run_command(["git", "branch", "-M", "main"], cwd=source, timeout=GIT_TIMEOUT_SECONDS, check=True)
@@ -28,11 +28,9 @@ class DeploymentAwsMixin:
             return parsed
         user = run_command(["gh", "api", "user", "--jq", ".login"], check=True).stdout.strip()
         repo = f"{user}/{slug}"
-        create = run_command(["gh", "repo", "create", repo, "--private"], cwd=source)
+        create = run_command(["gh", "repo", "create", repo, f"--{visibility}"], cwd=source)
         if create.returncode != 0:
-            suffix = datetime.now(timezone.utc).strftime("%Y%m%d%H%M")
-            repo = f"{user}/{slug}-{suffix}"
-            run_command(["gh", "repo", "create", repo, "--private"], cwd=source, check=True)
+            raise RuntimeError(create.stderr or create.stdout or "GitHub repository creation failed; choose another name or check permissions")
         run_command(["git", "remote", "add", "origin", f"https://github.com/{repo}.git"], cwd=source, check=True)
         return repo
     @staticmethod

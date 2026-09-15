@@ -294,6 +294,17 @@ class ToolRegistryTests(unittest.TestCase):
         manifest = json.loads((self.root / "package.json").read_text())
         self.assertEqual(manifest["scripts"]["test"], "vitest run")
 
+    def test_read_files_reads_multiple_files_in_one_call(self):
+        self.call("writeFile", filePath="first.txt", content="line one\nline two")
+        self.call("writeFile", filePath="second.txt", content="alpha\nbeta\ngamma")
+        res = self.call("readFiles", filePaths=["first.txt", "second.txt", "nonexistent.txt"])
+        self.assertTrue(res["ok"])
+        self.assertIn("=== first.txt", res["content"])
+        self.assertIn("line one", res["content"])
+        self.assertIn("=== second.txt", res["content"])
+        self.assertIn("gamma", res["content"])
+        self.assertIn("nonexistent.txt", res["content"])
+
     def test_a_review_pass_is_offered_no_tool_that_can_change_anything(self):
         review = review_registry(self.registry)
         for name in ("writeFile", "patchFile", "editFile", "deleteFile",

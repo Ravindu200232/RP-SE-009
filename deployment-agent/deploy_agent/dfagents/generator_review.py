@@ -93,6 +93,17 @@ class GeneratorReviewMixin:
                 "- Provider credentials are kept only in the in-memory credential vault.\n"
                 "- The instance security group exposes port 80 only; the application listens on loopback."
             )
+        elif target in {DeploymentTarget.NETLIFY, DeploymentTarget.AZURE}:
+            provider = profile_for(target).label
+            database_note = f"Runtime database settings written directly to {provider}"
+            security_notes = (
+                f"- Provider credentials are encrypted in the owner's account and stored as GitHub Actions secrets for {provider}.\n"
+                "- Application environment values stay on the selected cloud application; generated artifacts contain names only.\n"
+                "- Repairs operate in an isolated copy and preserve the recorded project resources."
+            )
+        elif target == DeploymentTarget.AWS_ECS:
+            database_note = "MongoDB Atlas URI written directly to AWS Secrets Manager"
+            security_notes = "- GitHub Actions uses OIDC; application secrets come from Secrets Manager.\n- Fargate runs the project's services in its recorded task."
         else:
             database_note = "MongoDB Atlas URI set as a Vercel production environment variable"
             security_notes = (
@@ -111,7 +122,7 @@ class GeneratorReviewMixin:
             - Primary service: `{service.name}`
             - Detected root: `{service.root or '.'}`
             - Framework: {framework}
-            - Target: {f"AWS EC2 ({(plan.aws_sizing or {}).get('instance_type', 't3.micro')}) behind nginx, released from S3 via SSM" if target == DeploymentTarget.AWS_EC2 else "Vercel production deployment"}
+            - Target: {profile_for(target).label} production deployment
             - Database: {database_note}
             - Readiness: **{readiness['score']}/100** (review phase)
             - Required environment variables: {env_names}

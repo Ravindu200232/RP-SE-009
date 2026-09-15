@@ -17,6 +17,7 @@ Inspect package/build manifests, lockfiles, scripts, environment examples, servi
 
 ## Run safely
 
+- Never use Docker on the local PC, even for version/health probes. Do not install or launch Docker Desktop, Docker/Compose commands, a daemon, containers or local image builds. Run local previews and checks with Node/package manager tools; Docker build/push belongs only in cloud CI.
 - Reuse the application's already running public preview origin for an edit. Inspect its launch command and readiness before starting another server. If a service requires restart after a source change, restart its owned supervisor once, keep it alive through E2E, and hand the running preview back after verification. Stopping it before the last journey creates a connection failure rather than useful evidence.
 - For portable HTTP probes, use a small Node script with `fetch`, explicit expected status checks, and a nonzero exit for mismatches. Windows `curl -o /dev/null` fails writing its output; `NUL` is the Windows sink. A local output-write error does not mean the API request failed, so inspect existing results before repeating a state-changing request.
 

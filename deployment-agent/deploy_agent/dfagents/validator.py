@@ -30,6 +30,7 @@ class SecurityValidatorAgent:
         self.emit(run_id, "step", "security", "running", 78, "Validating generated artifacts and secret boundaries")
         errors: list[str] = []
         warnings: list[str] = []
+        repairable_warnings: list[str] = []
         checks: list[dict] = []
         for record in records:
             path = staged_root / record["path"]
@@ -131,7 +132,7 @@ class SecurityValidatorAgent:
                 errors.append("GitHub OIDC subject restriction is missing")
 
             if "SourceSecurityGroupId" not in bootstrap:
-                warnings.append(
+                repairable_warnings.append(
                     "The task security group does not restrict ingress to the load balancer; "
                     "the container may be reachable directly from the internet."
                 )
@@ -145,7 +146,7 @@ class SecurityValidatorAgent:
                 break
             if dockerfile:
                 if "USER " not in dockerfile:
-                    warnings.append("The container image runs as root; add a non-root USER.")
+                    repairable_warnings.append("The container image runs as root; add a non-root USER.")
                 if ".next/standalone" in dockerfile and ".next/static" not in dockerfile:
                     errors.append(
                         "The image does not copy .next/static into the standalone tree; "
@@ -162,13 +163,14 @@ class SecurityValidatorAgent:
             if gate.status == GateStatus.FAILED:
                 errors.append(gate.message)
             warnings.append(
-                "A Vercel deploy token will be stored in this repository's GitHub Actions secrets; "
+                f"A {profile.label} deploy credential will be stored in this repository's GitHub Actions secrets; "
                 "anyone who can push a workflow there can use it."
             )
         result = {
             "passed": not errors,
             "errors": [redact_text(item) for item in errors],
-            "warnings": [redact_text(item) for item in warnings],
+            "warnings": [redact_text(item) for item in warnings + repairable_warnings],
+            "repairable_warnings": [redact_text(item) for item in repairable_warnings],
             "checks": checks,
         }
         status = "complete" if not errors else "failed"

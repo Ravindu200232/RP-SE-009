@@ -70,7 +70,7 @@ export const api = {
   imageCheck: () => req('/image-check'),
   imageStart: () => post('/image-start', {}),
   files: (project, agent = 'developer') => req(`/files/${encodeURIComponent(project)}?agent=${agent}`),
-  saveFile: (project, path, content) => post('/save-file', { project, path, content }),
+  saveFile: (project, path, content, changeSummary = '') => post('/save-file', { project, path, content, change_summary: changeSummary }),
   open: (project) => post(`/open/${encodeURIComponent(project)}`, {}),
   runtime: (project) => req(`/runtime/${encodeURIComponent(project)}`),
 

@@ -15,6 +15,7 @@ The owner is kept per thread, because a run is one: `acting_for` sets it, and
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import tempfile
 import threading
 from pathlib import Path
@@ -79,12 +80,18 @@ def command_env() -> dict:
     """What a command run for this thread's owner carries in its environment."""
     if not active():
         return {}
-    env = {}
-    github = str(current().get("github_token") or "")
+    saved = current()
+    env = {"VERCEL_TOKEN": "", "NETLIFY_AUTH_TOKEN": ""}
+    github = str(saved.get("github_token") or "")
     if github:
         env["GH_TOKEN"] = github
         env["GITHUB_TOKEN"] = github
     # Never the machine's own `gh` login, whether or not they have a token.
     _NO_MACHINE_GH.mkdir(parents=True, exist_ok=True)
     env["GH_CONFIG_DIR"] = str(_NO_MACHINE_GH)
+    env["VERCEL_TOKEN"] = str(saved.get("vercel_token") or "")
+    env["NETLIFY_AUTH_TOKEN"] = str(saved.get("netlify_token") or "")
+    azure_home = Path(tempfile.gettempdir()) / "agentforge-azure" / hashlib.sha256(owner().encode()).hexdigest()[:24]
+    azure_home.mkdir(parents=True, exist_ok=True)
+    env["AZURE_CONFIG_DIR"] = str(azure_home)
     return env
