@@ -49,50 +49,7 @@
   --tk-key: #73BAFB;
 }
 
-[data-theme="light"] {
-  /* Material Kit React Light Theme Tokens */
-  --bg: #F9FAFB;           /* grey[100] */
-  --bg2: #FFFFFF;          /* Paper */
-  --bg3: #F4F6F8;          /* grey[200] Neutral */
-  --bg4: #DFE3E8;          /* grey[300] */
-  --line: rgba(145, 158, 171, 0.2);
-  --line2: rgba(145, 158, 171, 0.32);
-  --ink: #1C252E;          /* grey[800] Primary text */
-  --muted: #637381;        /* grey[600] */
-  --muted2: #919EAB;       /* grey[500] */
-  --faint: #C4CDD5;        /* grey[400] */
-  --label: #637381;
-  --shadow: rgba(145, 158, 171, 0.16);
-  --code-bg: #F4F6F8;
-  --canvas: #F9FAFB;
 
-  --accent: #1877F2;
-  --press: #0C44AE;
-  --deep: #042174;
-  --tint: rgba(24, 119, 242, 0.08);
-
-  --secondary: #8E33FF;
-  --green: #22C55E;
-  --ok-tint: rgba(34, 197, 94, 0.14);
-  --red: #FF5630;
-  --bad-tint: rgba(255, 86, 48, 0.14);
-  --yellow: #FFAB00;
-  --warn-tint: rgba(255, 171, 0, 0.14);
-  --info: #00B8D9;
-  --info-tint: rgba(0, 184, 217, 0.14);
-
-  --tk-plain: #1C252E;
-  --tk-cmt: #919EAB;
-  --tk-str: #118D57;
-  --tk-kw: #5119B7;
-  --tk-lit: #B76E00;
-  --tk-num: #B76E00;
-  --tk-fn: #006C9C;
-  --tk-type: #0C44AE;
-  --tk-tag: #B71D18;
-  --tk-prop: #006C9C;
-  --tk-key: #0C44AE;
-}
 
 :root {
   --accent2: var(--accent);

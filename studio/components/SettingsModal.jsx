@@ -327,18 +327,10 @@ export default function SettingsModal({ onClose, onSaved }) {
               <div className="space-y-4 max-w-[700px]">
                 <div className="rounded-2xl border border-line bg-panel p-5 shadow-sm">
                   <div className="text-[13px] font-semibold text-ink mb-1">Color Theme</div>
-                  <p className="text-[11.5px] text-muted mb-4">Choose between Material Kit Dark and Light modes. Changes take effect immediately.</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    {/* Material Kit Dark */}
-                    <button
-                      type="button"
-                      onClick={() => setTheme('dark')}
-                      className={cn(
-                        "relative rounded-xl border-2 p-4 text-left transition-all cursor-pointer",
-                        theme === 'dark'
-                          ? "border-[#1877F2] bg-[#141A21] shadow-[0_0_20px_rgba(24,119,242,0.18)] ring-1 ring-[#1877F2]/40"
-                          : "border-line bg-[#141A21]/70 hover:border-line2 opacity-80 hover:opacity-100"
-                      )}
+                  <p className="text-[11.5px] text-muted mb-4">Material Kit Dark is the default design system for AgentForge Studio.</p>
+                  <div className="max-w-[340px]">
+                    <div
+                      className="relative rounded-xl border-2 border-[#1877F2] bg-[#141A21] p-4 text-left shadow-[0_0_20px_rgba(24,119,242,0.18)] ring-1 ring-[#1877F2]/40"
                     >
                       <div className="flex gap-1.5 mb-3">
                         <span className="size-2.5 rounded-full bg-[#1877F2]" />
@@ -347,41 +339,12 @@ export default function SettingsModal({ onClose, onSaved }) {
                       </div>
                       <div className="text-[12.5px] font-semibold text-white">Material Kit Dark</div>
                       <div className="text-[11px] text-[#919EAB] mt-0.5">
-                        {theme === 'dark' ? 'Active theme' : 'Click to activate'}
+                        Active theme (Default)
                       </div>
-                      {theme === 'dark' && (
-                        <div className="absolute top-3 right-3 size-5 rounded-full bg-[#1877F2] flex items-center justify-center text-white shadow-sm">
-                          <Check className="size-3" />
-                        </div>
-                      )}
-                    </button>
-
-                    {/* Material Kit Light */}
-                    <button
-                      type="button"
-                      onClick={() => setTheme('light')}
-                      className={cn(
-                        "relative rounded-xl border-2 p-4 text-left transition-all cursor-pointer",
-                        theme === 'light'
-                          ? "border-[#1877F2] bg-[#FFFFFF] shadow-[0_0_20px_rgba(24,119,242,0.18)] ring-1 ring-[#1877F2]/40"
-                          : "border-line bg-[#F9FAFB] hover:border-line2 opacity-80 hover:opacity-100"
-                      )}
-                    >
-                      <div className="flex gap-1.5 mb-3">
-                        <span className="size-2.5 rounded-full bg-[#1877F2]" />
-                        <span className="size-2.5 rounded-full bg-[#8E33FF]" />
-                        <span className="size-2.5 rounded-full bg-[#22C55E]" />
+                      <div className="absolute top-3 right-3 size-5 rounded-full bg-[#1877F2] flex items-center justify-center text-white shadow-sm">
+                        <Check className="size-3" />
                       </div>
-                      <div className="text-[12.5px] font-semibold text-[#1C252E]">Material Kit Light</div>
-                      <div className="text-[11px] text-[#637381] mt-0.5">
-                        {theme === 'light' ? 'Active theme' : 'Click to activate'}
-                      </div>
-                      {theme === 'light' && (
-                        <div className="absolute top-3 right-3 size-5 rounded-full bg-[#1877F2] flex items-center justify-center text-white shadow-sm">
-                          <Check className="size-3" />
-                        </div>
-                      )}
-                    </button>
+                    </div>
                   </div>
                 </div>
               </div>

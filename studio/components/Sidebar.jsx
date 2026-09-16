@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import { useStore, KEYS } from '@/lib/store'
 import { api } from '@/lib/api'
-import { Badge, Button, Input, SectionLabel, Tag, Tip, ThemeToggle } from './ui'
+import { Badge, Button, Input, SectionLabel, Tag, Tip } from './ui'
 import { cn } from '@/lib/utils'
 
 export default function Sidebar({
@@ -359,7 +359,6 @@ export default function Sidebar({
             </span>
           </div>
           <div className="flex items-center gap-1.5">
-            <ThemeToggle size="xs" />
             <button
               onClick={onMobileClose}
               className="grid size-7 place-items-center rounded-lg border border-line bg-panel2/80 text-muted hover:bg-raised hover:text-ink"
@@ -384,7 +383,6 @@ export default function Sidebar({
               <PanelLeftOpen className="size-4" />
             </button>
           </Tip>
-          <ThemeToggle size="xs" />
           <span className={cn('size-2 shrink-0 rounded-full', dot)} title={statusText} />
           <span className="my-1 h-px w-6 bg-line" />
 
@@ -513,7 +511,6 @@ export default function Sidebar({
           </div>
 
           <div className="flex justify-end items-center gap-1.5 col-span-2">
-            <ThemeToggle size="xs" />
             <Tip text="Hide the sidebar">
               <button
                 className="grid size-[26px] place-items-center rounded-lg border border-line bg-panel2/80 text-muted transition-colors hover:bg-raised hover:text-ink"

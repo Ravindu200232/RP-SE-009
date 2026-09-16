@@ -23,7 +23,7 @@ import AgentChat from '@/components/AgentChat'
 import AgentDecision from '@/components/AgentDecision'
 import { useAuthStore } from '@/lib/auth'
 import AuthModal from '@/components/AuthModal'
-import { Badge, Button, ThemeToggle } from '@/components/ui'
+import { Badge, Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { projectUnitTestStatus } from '@/lib/test-counts'
 
@@ -450,7 +450,6 @@ export default function Studio() {
               <span className="font-display text-[14px] font-bold text-ink">agentforge</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <ThemeToggle size="sm" />
               <button
                 onClick={() => setScreen('home')}
                 className="flex items-center justify-center size-8 rounded-lg border border-line bg-panel2/80 text-muted hover:text-ink"
@@ -552,8 +551,6 @@ export default function Studio() {
                 working
               </span>
             )}
-
-            <ThemeToggle size="sm" />
 
             <button onClick={() => {
                       useStore.getState().resetSrs()

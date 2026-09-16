@@ -300,22 +300,17 @@ export const useStore = create((set, get) => ({
 
   hydrate: () => {
     if (!LS) return
-    const theme = read(KEYS.theme, DEFAULTS.theme)
     // Migrate the former single Agent choice into each explicit role. Once a
     // role is picked it has its own key and no longer follows the legacy one.
     const legacyAgent = read(KEYS.agent, DEFAULTS.models.agent)
 
     try {
-      document.documentElement.setAttribute('data-theme', theme)
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark')
-      } else {
-        document.documentElement.classList.remove('dark')
-      }
-      LS?.setItem(KEYS.theme, theme)
+      document.documentElement.setAttribute('data-theme', 'dark')
+      document.documentElement.classList.add('dark')
+      LS?.setItem(KEYS.theme, 'dark')
     } catch { }
     set({
-      theme,
+      theme: 'dark',
       models: {
         planner: read(KEYS.planner, legacyAgent),
         design: read(KEYS.design, legacyAgent),
@@ -341,23 +336,15 @@ export const useStore = create((set, get) => ({
     }
   },
 
-  setTheme: (theme) => {
-    set({ theme })
+  setTheme: () => {
+    set({ theme: 'dark' })
     try {
-      document.documentElement.setAttribute('data-theme', theme)
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark')
-      } else {
-        document.documentElement.classList.remove('dark')
-      }
-      LS?.setItem(KEYS.theme, theme)
+      document.documentElement.setAttribute('data-theme', 'dark')
+      document.documentElement.classList.add('dark')
+      LS?.setItem(KEYS.theme, 'dark')
     } catch { }
   },
-  toggleTheme: () => {
-    const current = get().theme || 'dark'
-    const next = current === 'dark' ? 'light' : 'dark'
-    get().setTheme(next)
-  },
+  toggleTheme: () => {},
   persist: (key, value) => { try { LS?.setItem(key, value) } catch { } },
 
   /**

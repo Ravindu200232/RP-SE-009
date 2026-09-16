@@ -1,8 +1,6 @@
 'use client'
 
 import { forwardRef, useEffect, useRef } from 'react'
-import { Sun, Moon } from 'lucide-react'
-import { useStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
 
 
@@ -232,29 +230,6 @@ export const TD = ({ className, children }) => (
   <td className={cn('px-3 py-2.5 align-middle', className)}>{children}</td>
 )
 
-/** Material Kit React Dark / Light Theme Toggle Button */
-export function ThemeToggle({ className, size = 'sm' }) {
-  const theme = useStore(s => s.theme)
-  const toggleTheme = useStore(s => s.toggleTheme)
-  const isDark = theme === 'dark'
-
-  return (
-    <button
-      type="button"
-      onClick={toggleTheme}
-      title={isDark ? 'Switch to Light theme' : 'Switch to Dark theme'}
-      aria-label={isDark ? 'Switch to Light theme' : 'Switch to Dark theme'}
-      className={cn(
-        'inline-flex shrink-0 items-center justify-center rounded-xl border border-line bg-panel2/80 text-muted transition-all duration-200 hover:bg-raised hover:text-ink cursor-pointer shadow-sm',
-        size === 'sm' ? 'size-[30px]' : size === 'md' ? 'size-[34px]' : 'size-[26px]',
-        className
-      )}
-    >
-      {isDark ? (
-        <Sun className="size-4 text-amber-400 transition-transform duration-200 hover:rotate-45" />
-      ) : (
-        <Moon className="size-4 text-[#1C252E] transition-transform duration-200 hover:-rotate-12" />
-      )}
-    </button>
-  )
+export function ThemeToggle() {
+  return null
 }
