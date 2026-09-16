@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import { useStore, KEYS } from '@/lib/store'
 import { api } from '@/lib/api'
-import { Badge, Button, Input, SectionLabel, Tag, Tip } from './ui'
+import { Badge, Button, Input, SectionLabel, Tag, Tip, ThemeToggle } from './ui'
 import { cn } from '@/lib/utils'
 
 export default function Sidebar({
@@ -120,10 +120,10 @@ export default function Sidebar({
             'flex items-center gap-3 rounded-xl px-3 py-2 font-medium transition-all text-left',
             screen === 'home'
               ? 'bg-[#1877F2]/10 text-[#1877F2] font-semibold shadow-sm'
-              : 'text-white/70 hover:bg-white/[.04] hover:text-white'
+              : 'text-muted hover:bg-ink/[.05] hover:text-ink'
           )}
         >
-          <Home className="size-4 shrink-0" />
+          <Home className="size-4 shrink-0 text-muted2" />
           <span>Home</span>
         </button>
 
@@ -136,16 +136,16 @@ export default function Sidebar({
             'flex items-center justify-between rounded-xl px-3 py-2 font-medium transition-all text-left',
             screen === 'projects'
               ? 'bg-[#1877F2]/10 text-[#1877F2] font-semibold shadow-sm'
-              : 'text-white/70 hover:bg-white/[.04] hover:text-white'
+              : 'text-muted hover:bg-ink/[.05] hover:text-ink'
           )}
         >
           <div className="flex items-center gap-3">
-            <LayoutGrid className="size-4 shrink-0" />
+            <LayoutGrid className="size-4 shrink-0 text-muted2" />
             <span>Projects</span>
           </div>
           <span className={cn(
             "rounded-full px-2 py-0.5 font-mono text-[10px]",
-            screen === 'projects' ? "bg-[#1877F2]/20 text-[#1877F2] font-bold" : "bg-white/10 text-white/70"
+            screen === 'projects' ? "bg-[#1877F2]/20 text-[#1877F2] font-bold" : "bg-panel2 text-muted"
           )}>
             {projects.length}
           </span>
@@ -156,46 +156,46 @@ export default function Sidebar({
             onSettings?.()
             if (isMobile) onMobileClose?.()
           }}
-          className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-white/60 hover:bg-white/[.05] hover:text-white text-left"
+          className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-muted hover:bg-ink/[.05] hover:text-ink text-left"
         >
-          <Settings className="size-4 shrink-0 text-white/40" />
+          <Settings className="size-4 shrink-0 text-muted2" />
           <span>Settings</span>
         </button>
 
-        <button className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-white/60 hover:bg-white/[.05] hover:text-white">
-          <Star className="size-4 shrink-0 text-white/40" />
+        <button className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-muted hover:bg-ink/[.05] hover:text-ink">
+          <Star className="size-4 shrink-0 text-muted2" />
           <span>Starred</span>
         </button>
 
-        <button className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-white/60 hover:bg-white/[.05] hover:text-white">
-          <Clock className="size-4 shrink-0 text-white/40" />
+        <button className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-muted hover:bg-ink/[.05] hover:text-ink">
+          <Clock className="size-4 shrink-0 text-muted2" />
           <span>Recently viewed</span>
         </button>
 
-        <button className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-white/60 hover:bg-white/[.05] hover:text-white">
-          <Folder className="size-4 shrink-0 text-white/40" />
+        <button className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-muted hover:bg-ink/[.05] hover:text-ink">
+          <Folder className="size-4 shrink-0 text-muted2" />
           <span>Shared with you</span>
         </button>
       </nav>
 
       {/* Secondary Resources & Status */}
       <div className="flex flex-col gap-0.5 p-2 border-b border-line text-[12px]">
-        <button className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-white/60 hover:bg-white/[.05] hover:text-white">
-          <BookOpen className="size-3.5 shrink-0 text-white/40" />
+        <button className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-muted hover:bg-ink/[.05] hover:text-ink">
+          <BookOpen className="size-3.5 shrink-0 text-muted2" />
           <span>Help Center</span>
         </button>
-        <button className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-white/60 hover:bg-white/[.05] hover:text-white">
-          <FileText className="size-3.5 shrink-0 text-white/40" />
+        <button className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-muted hover:bg-ink/[.05] hover:text-ink">
+          <FileText className="size-3.5 shrink-0 text-muted2" />
           <span>Release notes</span>
         </button>
-        <div className="flex items-center justify-between rounded-xl px-3 py-1.5 text-white/60">
+        <div className="flex items-center justify-between rounded-xl px-3 py-1.5 text-muted">
           <div className="flex items-center gap-3">
-            <Activity className="size-3.5 shrink-0 text-white/40" />
+            <Activity className="size-3.5 shrink-0 text-muted2" />
             <span>Status</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className={cn('size-2 rounded-full', dot)} />
-            <span className="font-mono text-[10px] text-white/50">{status}</span>
+            <span className="font-mono text-[10px] text-muted">{status}</span>
           </div>
         </div>
       </div>
@@ -206,12 +206,12 @@ export default function Sidebar({
         const working = busyProject === name
         return (
           <div className="p-3 border-b border-line">
-            <div className="mb-1.5 px-1 text-[10px] font-bold uppercase tracking-wider text-white/40">
+            <div className="mb-1.5 px-1 text-[10px] font-bold uppercase tracking-wider text-muted2">
               Active Workspace
             </div>
-            <div className="flex items-center justify-between gap-2 rounded-xl border border-line bg-[#1C252E] p-2.5 shadow-sm">
+            <div className="flex items-center justify-between gap-2 rounded-xl border border-line bg-panel2 p-2.5 shadow-sm">
               <div className="min-w-0 flex-1">
-                <div className="truncate text-[12.5px] font-semibold text-white/90">{name}</div>
+                <div className="truncate text-[12.5px] font-semibold text-ink">{name}</div>
               </div>
               {working ? (
                 <span className="flex items-center gap-1.5 rounded-full bg-[#1877F2]/15 px-2 py-0.5 text-[10px] font-semibold text-[#1877F2]">
@@ -281,25 +281,25 @@ export default function Sidebar({
             <button
               onClick={() => { setAccountOpen(false); onResume?.(); if (isMobile) onMobileClose?.() }}
               disabled={!project || status === 'busy'}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/[.06] hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-ink hover:bg-ink/[.06] disabled:opacity-40 disabled:pointer-events-none transition-colors"
             >
-              <Play className="size-4 text-white/80" />
+              <Play className="size-4 text-muted2" />
               <span>Resume build</span>
             </button>
             <button
               onClick={() => { setAccountOpen(false); onZip?.(); if (isMobile) onMobileClose?.() }}
               disabled={!project}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/[.06] hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-ink hover:bg-ink/[.06] disabled:opacity-40 disabled:pointer-events-none transition-colors"
             >
-              <Download className="size-4 text-white/80" />
+              <Download className="size-4 text-muted2" />
               <span>Download project as zip</span>
             </button>
             <button
               onClick={() => { setAccountOpen(false); openInNewTab(); if (isMobile) onMobileClose?.() }}
               disabled={!project}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/[.06] hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-ink hover:bg-ink/[.06] disabled:opacity-40 disabled:pointer-events-none transition-colors"
             >
-              <ExternalLink className="size-4 text-white/80" />
+              <ExternalLink className="size-4 text-muted2" />
               <span>Open in new tab</span>
             </button>
             {onLogout && (
@@ -319,18 +319,18 @@ export default function Sidebar({
 
         <button
           onClick={() => setAccountOpen(v => !v)}
-          className="flex w-full items-center justify-between gap-2.5 rounded-xl p-1.5 hover:bg-white/[.06] transition-colors group"
+          className="flex w-full items-center justify-between gap-2.5 rounded-xl p-1.5 hover:bg-ink/[.06] transition-colors group"
         >
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#1877F2] font-bold text-[13px] text-white shadow-sm transition-transform group-hover:scale-105">
               {initial}
             </div>
             <div className="min-w-0 text-left">
-              <div className="truncate text-[12.5px] font-semibold text-white/90">{displayName}</div>
-              <div className="truncate text-[10.5px] text-white/40">{displaySubtitle}</div>
+              <div className="truncate text-[12.5px] font-semibold text-ink">{displayName}</div>
+              <div className="truncate text-[10.5px] text-muted2">{displaySubtitle}</div>
             </div>
           </div>
-          <ChevronDown className={cn("size-3.5 text-white/40 transition-transform", accountOpen && "rotate-180")} />
+          <ChevronDown className={cn("size-3.5 text-muted2 transition-transform", accountOpen && "rotate-180")} />
         </button>
       </div>
     </>
@@ -346,7 +346,7 @@ export default function Sidebar({
         onClick={onMobileClose}
       />
       <aside className={cn(
-        "absolute top-0 bottom-0 left-0 w-[280px] max-w-[85vw] flex flex-col bg-[#141A21] border-r border-line shadow-2xl transition-transform duration-300 ease-out z-10",
+        "absolute top-0 bottom-0 left-0 w-[280px] max-w-[85vw] flex flex-col bg-panel border-r border-line shadow-2xl transition-transform duration-300 ease-out z-10",
         mobileOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <header className="flex items-center justify-between border-b border-line px-4 py-3">
@@ -354,16 +354,19 @@ export default function Sidebar({
             <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#1877F2]/10 ring-1 ring-[#1877F2]/20 shadow-sm overflow-hidden">
               <img src="/__agentforge/agentforge-mark.png" alt="AgentForge" width={22} height={22} className="size-5 object-contain" />
             </div>
-            <span className="font-display text-[14.5px] font-bold tracking-tight text-white">
+            <span className="font-display text-[14.5px] font-bold tracking-tight text-ink">
               agentforge<span className="text-accent text-[12px] font-normal ml-0.5">.ai</span>
             </span>
           </div>
-          <button
-            onClick={onMobileClose}
-            className="grid size-7 place-items-center rounded-lg border border-white/10 bg-white/[.04] text-white/70 hover:bg-white/[.08] hover:text-white"
-          >
-            <X className="size-3.5" />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <ThemeToggle size="xs" />
+            <button
+              onClick={onMobileClose}
+              className="grid size-7 place-items-center rounded-lg border border-line bg-panel2/80 text-muted hover:bg-raised hover:text-ink"
+            >
+              <X className="size-3.5" />
+            </button>
+          </div>
         </header>
         {renderBody(true)}
       </aside>
@@ -374,20 +377,21 @@ export default function Sidebar({
     return (
       <>
         {renderMobileDrawer()}
-        <aside className="hidden md:flex w-[52px] shrink-0 flex-col items-center gap-2 overflow-hidden h-full border-r border-line bg-[#141A21] py-3">
+        <aside className="hidden md:flex w-[52px] shrink-0 flex-col items-center gap-2 overflow-hidden h-full border-r border-line bg-panel py-3">
           <Tip text="Show the sidebar" side="right">
             <button onClick={() => setCollapsed(false)}
-                    className="grid size-9 place-items-center rounded-xl text-white/70 transition-colors hover:bg-white/[.08] hover:text-white">
+                    className="grid size-9 place-items-center rounded-xl text-muted transition-colors hover:bg-raised hover:text-ink">
               <PanelLeftOpen className="size-4" />
             </button>
           </Tip>
+          <ThemeToggle size="xs" />
           <span className={cn('size-2 shrink-0 rounded-full', dot)} title={statusText} />
-          <span className="my-1 h-px w-6 bg-white/10" />
+          <span className="my-1 h-px w-6 bg-line" />
 
           <Tip text="Home" side="right">
             <button onClick={() => onScreenChange?.('home')}
                     className={cn('grid size-9 place-items-center rounded-xl transition-colors',
-                      screen === 'home' ? 'bg-[#1877F2]/15 text-[#1877F2] font-semibold' : 'text-white/60 hover:bg-white/[.06] hover:text-white')}>
+                      screen === 'home' ? 'bg-[#1877F2]/15 text-[#1877F2] font-semibold' : 'text-muted hover:bg-raised hover:text-ink')}>
               <Home className="size-4" />
             </button>
           </Tip>
@@ -395,26 +399,26 @@ export default function Sidebar({
           <Tip text="All Projects" side="right">
             <button onClick={() => onScreenChange?.('projects')}
                     className={cn('grid size-9 place-items-center rounded-xl transition-colors',
-                      screen === 'projects' ? 'bg-[#1877F2]/15 text-[#1877F2] font-semibold' : 'text-white/60 hover:bg-white/[.06] hover:text-white')}>
+                      screen === 'projects' ? 'bg-[#1877F2]/15 text-[#1877F2] font-semibold' : 'text-muted hover:bg-raised hover:text-ink')}>
               <LayoutGrid className="size-4" />
             </button>
           </Tip>
 
           <Tip text="Settings" side="right">
             <button onClick={onSettings}
-                    className="grid size-9 place-items-center rounded-xl text-white/60 transition-colors hover:bg-white/[.06] hover:text-white">
+                    className="grid size-9 place-items-center rounded-xl text-muted transition-colors hover:bg-raised hover:text-ink">
               <Settings className="size-3.5" />
             </button>
           </Tip>
           <Tip text="Resume this build where it stopped" side="right">
             <button onClick={onResume} disabled={!project || status === 'busy'}
-                    className="grid size-9 place-items-center rounded-xl text-white/60 transition-colors hover:bg-white/[.06] hover:text-white disabled:pointer-events-none disabled:text-white/20">
+                    className="grid size-9 place-items-center rounded-xl text-muted transition-colors hover:bg-raised hover:text-ink disabled:pointer-events-none disabled:opacity-30">
               <Play className="size-3.5" />
             </button>
           </Tip>
           <span className="flex-1" />
           {project && (
-            <span className="max-h-[220px] [writing-mode:vertical-rl] truncate text-[10px] font-semibold text-white/40"
+            <span className="max-h-[220px] [writing-mode:vertical-rl] truncate text-[10px] font-semibold text-muted2"
                   title={project}>
               {project}
             </span>
@@ -424,28 +428,28 @@ export default function Sidebar({
           <div className="relative mt-auto" ref={accountMenuRef}>
             {accountOpen && (
               <div
-                className="absolute bottom-0 left-full ml-3 w-56 rounded-2xl border border-line bg-[#1C252E] p-1.5 shadow-[0_20px_40px_-4px_rgba(0,0,0,0.48)] backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95"
+                className="absolute bottom-0 left-full ml-3 w-56 rounded-2xl border border-line bg-panel p-1.5 shadow-[0_20px_40px_-4px_rgba(0,0,0,0.48)] backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95"
               >
                 <button
                   onClick={() => { setAccountOpen(false); onSettings?.() }}
-                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/[.06] hover:text-white transition-colors"
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-ink hover:bg-ink/[.06] transition-colors"
                 >
-                  <Settings className="size-4 text-white/80" />
+                  <Settings className="size-4 text-muted2" />
                   <span>Settings</span>
                 </button>
                 <button
                   onClick={() => { setAccountOpen(false); folderRef.current?.click() }}
-                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/[.06] hover:text-white transition-colors"
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-ink hover:bg-ink/[.06] transition-colors"
                 >
-                  <FolderUp className="size-4 text-white/80" />
+                  <FolderUp className="size-4 text-muted2" />
                   <span>Import project folder</span>
                 </button>
                 <button
                   onClick={() => { setAccountOpen(false); onResume?.() }}
                   disabled={!project || status === 'busy'}
-                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/[.06] hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-ink hover:bg-ink/[.06] disabled:opacity-40 disabled:pointer-events-none transition-colors"
                 >
-                  <Play className="size-4 text-white/80" />
+                  <Play className="size-4 text-muted2" />
                   <span>Resume build</span>
                 </button>
                 <button
@@ -494,7 +498,7 @@ export default function Sidebar({
   return (
     <>
       {renderMobileDrawer()}
-      <aside className="hidden md:flex w-[var(--sidebar-w)] shrink-0 flex-col overflow-hidden h-full border-r border-line bg-[#141A21]">
+      <aside className="hidden md:flex w-[var(--sidebar-w)] shrink-0 flex-col overflow-hidden h-full border-r border-line bg-panel">
         {/* Top Header: Brand and Controls */}
         <header className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-line px-4 py-3">
           <div className="flex items-center gap-2.5">
@@ -503,15 +507,16 @@ export default function Sidebar({
                    width={22} height={22}
                    className="size-5 object-contain" />
             </div>
-            <span className="font-display text-[14.5px] font-bold tracking-tight text-white">
+            <span className="font-display text-[14.5px] font-bold tracking-tight text-ink">
               agentforge<span className="text-accent text-[12px] font-normal ml-0.5">.ai</span>
             </span>
           </div>
 
-          <div className="flex justify-end items-center gap-1 col-span-2">
+          <div className="flex justify-end items-center gap-1.5 col-span-2">
+            <ThemeToggle size="xs" />
             <Tip text="Hide the sidebar">
               <button
-                className="grid size-[26px] place-items-center rounded-lg border border-white/10 bg-white/[.04] text-white/70 transition-colors hover:bg-white/[.08] hover:text-white"
+                className="grid size-[26px] place-items-center rounded-lg border border-line bg-panel2/80 text-muted transition-colors hover:bg-raised hover:text-ink"
                 onClick={() => setCollapsed(true)}
               >
                 <PanelLeftClose className="size-3" />

@@ -23,7 +23,7 @@ import AgentChat from '@/components/AgentChat'
 import AgentDecision from '@/components/AgentDecision'
 import { useAuthStore } from '@/lib/auth'
 import AuthModal from '@/components/AuthModal'
-import { Badge, Button } from '@/components/ui'
+import { Badge, Button, ThemeToggle } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { projectUnitTestStatus } from '@/lib/test-counts'
 
@@ -449,13 +449,16 @@ export default function Studio() {
               </div>
               <span className="font-display text-[14px] font-bold text-ink">agentforge</span>
             </div>
-            <button
-              onClick={() => setScreen('home')}
-              className="flex items-center justify-center size-8 rounded-lg border border-line bg-panel2/80 text-muted hover:text-ink"
-              title="New project"
-            >
-              <Plus className="size-4" />
-            </button>
+            <div className="flex items-center gap-1.5">
+              <ThemeToggle size="sm" />
+              <button
+                onClick={() => setScreen('home')}
+                className="flex items-center justify-center size-8 rounded-lg border border-line bg-panel2/80 text-muted hover:text-ink"
+                title="New project"
+              >
+                <Plus className="size-4" />
+              </button>
+            </div>
           </div>
         )}
 
@@ -550,11 +553,13 @@ export default function Studio() {
               </span>
             )}
 
+            <ThemeToggle size="sm" />
+
             <button onClick={() => {
                       useStore.getState().resetSrs()
                       setScreen('home')
                     }}
-                    className="inline-flex h-9 items-center gap-2 rounded-full bg-white/72 px-3.5 text-[11px] font-semibold text-ink shadow-sm ring-1 ring-line/70 transition-all hover:bg-white dark:bg-white/5 dark:hover:bg-white/10">
+                    className="inline-flex h-9 items-center gap-2 rounded-full bg-panel px-3.5 text-[11px] font-semibold text-ink shadow-sm ring-1 ring-line/70 transition-all hover:bg-raised">
               <Plus className="size-[13px]" /> New
             </button>
           </div>

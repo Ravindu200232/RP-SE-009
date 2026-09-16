@@ -124,15 +124,15 @@ export default function SrsReview({ projectId, onApproved, onKept, onBack }) {
   const approved = srs?.status === 'approved'
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,.12),transparent_35%)] text-white">
+    <div className="flex min-h-0 flex-1 flex-col bg-[radial-gradient(circle_at_top_right,rgba(24,119,242,.1),transparent_35%)] text-ink">
 
-      <div className="flex shrink-0 items-center gap-3 border-b border-white/10 px-6 py-3.5 backdrop-blur-md">
+      <div className="flex shrink-0 items-center gap-3 border-b border-line px-6 py-3.5 backdrop-blur-md">
         <button onClick={onBack}
-                className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[.04] px-2.5 py-1 text-[11.5px] font-medium text-white/70 hover:bg-white/[.08] hover:text-white transition">
+                className="flex items-center gap-1.5 rounded-lg border border-line bg-panel2/60 px-2.5 py-1 text-[11.5px] font-medium text-muted hover:bg-raised hover:text-ink transition cursor-pointer">
           <ArrowLeft className="size-3" /> Plan
         </button>
         <div className="min-w-0">
-          <p className="truncate font-display text-[14px] font-bold text-white">
+          <p className="truncate font-display text-[14px] font-bold text-ink">
             {srs?.document?.project_name || srs?.document?.document_title || 'Specification'}
           </p>
         </div>
@@ -142,21 +142,21 @@ export default function SrsReview({ projectId, onApproved, onKept, onBack }) {
         {viewing ? (
           <span title="The PDF is only produced for the current version"
                 className="flex h-[32px] cursor-not-allowed items-center gap-1.5
-                           rounded-xl border border-white/10 px-3 font-display text-[11.5px]
-                           font-semibold text-white/40 opacity-50">
+                           rounded-xl border border-line px-3 font-display text-[11.5px]
+                           font-semibold text-muted2 opacity-50">
             <FileDown className="size-3.5" /> PDF
           </span>
         ) : (
           <a href={`${API}/srs/projects/${encodeURIComponent(projectId)}/download/pdf`}
              target="_blank" rel="noreferrer"
-             className="flex h-[32px] items-center gap-1.5 rounded-xl border border-white/10 bg-white/[.04] px-3.5
-                        text-[11.5px] font-semibold text-white/90 shadow-sm
-                        transition hover:bg-white/[.08] hover:text-white">
-            <FileDown className="size-3.5 text-blue-400" /> PDF
+             className="flex h-[32px] items-center gap-1.5 rounded-xl border border-line bg-panel2/60 px-3.5
+                        text-[11.5px] font-semibold text-ink shadow-sm
+                        transition hover:bg-raised">
+            <FileDown className="size-3.5 text-accent" /> PDF
           </a>
         )}
 
-        <Button variant="solid" className="h-[32px] rounded-xl bg-blue-600 px-4 text-[12px] font-semibold text-white shadow-md shadow-blue-500/25 hover:bg-blue-500"
+        <Button variant="solid" className="h-[32px] rounded-xl bg-accent px-4 text-[12px] font-semibold text-white shadow-sm hover:bg-press cursor-pointer"
                 disabled={Boolean(busy) || Boolean(viewing)}
                 title={viewing ? 'Go back to the latest revision to approve it.'
                                : 'Approve specification and customize the design.'}
@@ -168,47 +168,47 @@ export default function SrsReview({ projectId, onApproved, onKept, onBack }) {
 
         {asking ? (
           <span className="flex items-center gap-1.5">
-            <span className="text-[11px] text-white/60">Discard it?</span>
+            <span className="text-[11px] text-muted">Discard it?</span>
             <Button variant="solid" className="h-[32px] rounded-xl bg-bad px-3.5 hover:brightness-110"
                     disabled={busy === 'discarding'} onClick={discard}>
               {busy === 'discarding'
                 ? <><Loader2 className="size-3.5 animate-spin" /> Discarding…</>
                 : 'Yes'}
             </Button>
-            <Button variant="outline" className="h-[32px] rounded-xl border-white/10 bg-white/[.04] px-3 text-white/80 hover:bg-white/[.08]"
+            <Button variant="outline" className="h-[32px] rounded-xl border-line bg-panel2/60 px-3 text-ink hover:bg-raised"
                     disabled={busy === 'discarding'} onClick={() => setAsking(false)}>
               Keep it
             </Button>
           </span>
         ) : (
-          <Button variant="outline" className="h-[32px] rounded-xl border-white/10 bg-white/[.04] px-3 text-white/80 hover:bg-white/[.08] hover:text-white"
-                  disabled={Boolean(busy)} onClick={() => setAsking(true)}
-                  title="Throw this specification away and start over">
-            <Square className="size-3 text-red-400" /> Cancel
-          </Button>
+          <button onClick={() => setAsking(true)}
+                  title="Throw this specification away and start fresh"
+                  className="grid size-[32px] place-items-center rounded-xl border border-line text-muted2 transition hover:bg-bad/10 hover:border-bad/30 hover:text-bad cursor-pointer">
+            <Trash2 className="size-3.5" />
+          </button>
         )}
 
         <button onClick={() => setSpecOpen(v => !v)}
                 title="The specification at a glance"
-                className={cn('flex h-[32px] items-center gap-1.5 rounded-xl px-3.5 text-[11.5px] font-semibold transition',
-                  specOpen ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
-                           : 'border border-white/10 bg-white/[.04] text-white/80 hover:bg-white/[.08] hover:text-white')}>
+                className={cn('flex h-[32px] items-center gap-1.5 rounded-xl px-3.5 text-[11.5px] font-semibold transition cursor-pointer',
+                  specOpen ? 'bg-accent text-white shadow-sm'
+                           : 'border border-line bg-panel2/60 text-ink hover:bg-raised')}>
           <ListTree className="size-3.5" /> Specification
         </button>
       </div>
 
-      <div className="border-b border-white/10 px-6 py-3">
-        <p className="mb-2 text-xs text-white/60">Generated by the SRS agent - review the handoffs before approval</p>
-        <div className="flex flex-wrap gap-2">{Object.keys(handoffs).map(name => <button key={name} onClick={() => setHandoffOpen(handoffOpen === name ? '' : name)} className="rounded-lg border border-white/15 px-3 py-1 text-xs text-white/80">{name}</button>)}</div>
-        {handoffOpen && <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg bg-black/20 p-4 text-xs text-white/80">{handoffs[handoffOpen]}</pre>}
+      <div className="border-b border-line px-6 py-3">
+        <p className="mb-2 text-xs text-muted">Generated by the SRS agent - review the handoffs before approval</p>
+        <div className="flex flex-wrap gap-2">{Object.keys(handoffs).map(name => <button key={name} onClick={() => setHandoffOpen(handoffOpen === name ? '' : name)} className="rounded-lg border border-line bg-panel2/60 px-3 py-1 text-xs text-ink hover:bg-raised cursor-pointer">{name}</button>)}</div>
+        {handoffOpen && <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg bg-panel2/80 p-4 text-xs text-ink border border-line">{handoffs[handoffOpen]}</pre>}
       </div>
       <div className="flex min-h-0 flex-1 gap-4 p-5">
-        <aside className="flex w-[270px] shrink-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#121622]/90 shadow-xl backdrop-blur-xl">
-          <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
-            <History className="size-3.5 text-blue-400" />
-            <span className="font-display text-[12px] font-bold text-white uppercase tracking-wider">Revisions</span>
+        <aside className="flex w-[270px] shrink-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-xl backdrop-blur-xl">
+          <div className="flex items-center gap-2 border-b border-line px-4 py-3">
+            <History className="size-3.5 text-accent" />
+            <span className="font-display text-[12px] font-bold text-ink uppercase tracking-wider">Revisions</span>
             <span className="flex-1" />
-            <span className="rounded-full bg-white/10 px-2 py-0.5 font-mono text-[10px] text-white/60">{versions.length}</span>
+            <span className="rounded-full bg-panel2 px-2 py-0.5 font-mono text-[10px] text-muted">{versions.length}</span>
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto p-2">

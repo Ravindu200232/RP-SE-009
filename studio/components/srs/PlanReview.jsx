@@ -117,58 +117,58 @@ export default function PlanReview({ projectId, onGenerated, onCancel }) {
         <button onClick={onCancel} className="grid size-9 place-items-center rounded-xl border border-white/10 bg-white/[.04] text-white/70 transition hover:bg-white/[.08] hover:text-white"><ArrowLeft className="size-4" /></button>
         <div>
           <p className="font-display text-[11px] font-bold uppercase tracking-[.18em] text-[#1877F2]">Plan review</p>
-          <p className="mt-0.5 text-[13px] text-white/60">Check the structure before the specification is written.</p>
+          <p className="mt-0.5 text-[13px] text-muted">Check the structure before the specification is written.</p>
         </div>
         <span className="flex-1" />
-        {state?.version != null && <span className="rounded-full border border-line bg-white/[.05] px-3 py-1 text-[11px] font-medium text-white/70">Version {state.version}{(state.versions || []).length > 1 ? ` of ${state.versions.length}` : ''}</span>}
+        {state?.version != null && <span className="rounded-full border border-line bg-panel2 px-3 py-1 text-[11px] font-medium text-muted">Version {state.version}{(state.versions || []).length > 1 ? ` of ${state.versions.length}` : ''}</span>}
       </div>
 
-      <section className="overflow-hidden rounded-2xl border border-line bg-[linear-gradient(135deg,#141A21_0%,#1C252E_50%,#28323D_100%)] p-7 text-white shadow-2xl">
+      <section className="overflow-hidden rounded-2xl border border-line bg-panel p-7 text-ink shadow-sm">
         <div className="flex flex-wrap items-start gap-6">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.18em] text-[#1877F2]"><Sparkles className="size-3.5" /> Product blueprint</div>
-            <h2 className="mt-3 font-display text-[30px] font-bold tracking-tight text-white">{body.app_name || 'Your app'}</h2>
-            <p className="mt-2 max-w-[680px] text-[13.5px] leading-relaxed text-white/70">{body.product_intent || 'Your interview has been turned into an implementation plan.'}</p>
-            {body.customer_notes && <p className="mt-3 max-w-[680px] text-[12px] italic leading-relaxed text-white/50">“{body.customer_notes}”</p>}
+            <h2 className="mt-3 font-display text-[30px] font-bold tracking-tight text-ink">{body.app_name || 'Your app'}</h2>
+            <p className="mt-2 max-w-[680px] text-[13.5px] leading-relaxed text-muted">{body.product_intent || 'Your interview has been turned into an implementation plan.'}</p>
+            {body.customer_notes && <p className="mt-3 max-w-[680px] text-[12px] italic leading-relaxed text-muted2">“{body.customer_notes}”</p>}
           </div>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-3 rounded-xl border border-line bg-white/[.04] px-5 py-4 backdrop-blur-xl">
-            {stat.map(x => <div key={x.label}><div className="font-display text-[22px] font-bold tabular-nums text-white">{x.value}</div><div className="text-[10px] font-semibold uppercase tracking-[.14em] text-white/40">{x.label}</div></div>)}
+          <div className="grid grid-cols-2 gap-x-6 gap-y-3 rounded-xl border border-line bg-panel2 px-5 py-4">
+            {stat.map(x => <div key={x.label}><div className="font-display text-[22px] font-bold tabular-nums text-ink">{x.value}</div><div className="text-[10px] font-semibold uppercase tracking-[.14em] text-muted2">{x.label}</div></div>)}
           </div>
         </div>
       </section>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
         {users.length > 0 && <Section icon={UsersRound} title="Who uses it" subtitle="Roles and what each person can do">
-          <div className="space-y-2.5">{users.map((u, i) => <div key={i} className="rounded-xl border border-white/5 bg-white/[.03] px-4 py-3"><p className="text-[12.5px] font-semibold text-white">{u.role || u.name || String(u)}</p>{(u.can_do || []).length > 0 && <p className="mt-1 text-[11px] leading-relaxed text-white/60">{u.can_do.join(' · ')}</p>}</div>)}</div>
+          <div className="space-y-2.5">{users.map((u, i) => <div key={i} className="rounded-xl border border-line bg-panel2/60 px-4 py-3"><p className="text-[12.5px] font-semibold text-ink">{u.role || u.name || String(u)}</p>{(u.can_do || []).length > 0 && <p className="mt-1 text-[11px] leading-relaxed text-muted">{u.can_do.join(' · ')}</p>}</div>)}</div>
         </Section>}
 
         {screens.length > 0 && <Section icon={Route} title="App spaces" subtitle="Pages and who can reach them">
-          <div className="space-y-2">{screens.map((sc, i) => <div key={i} className="flex items-start gap-3 rounded-xl border border-white/5 bg-white/[.02] px-3 py-2.5 transition hover:bg-white/[.05]"><span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg bg-[#1877F2]/15 border border-[#1877F2]/20 text-[11px] font-bold text-[#1877F2]">{i + 1}</span><div className="min-w-0"><p className="text-[12.5px] font-semibold text-white">{sc.name}</p><p className="mt-0.5 text-[11px] leading-relaxed text-white/60">{sc.purpose || 'App page'}{(sc.who || []).length ? ` · ${(sc.who || []).join(', ')}` : ''}</p></div></div>)}</div>
+          <div className="space-y-2">{screens.map((sc, i) => <div key={i} className="flex items-start gap-3 rounded-xl border border-line bg-panel2/40 px-3 py-2.5 transition hover:bg-raised"><span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg bg-accent/15 border border-accent/20 text-[11px] font-bold text-accent">{i + 1}</span><div className="min-w-0"><p className="text-[12.5px] font-semibold text-ink">{sc.name}</p><p className="mt-0.5 text-[11px] leading-relaxed text-muted">{sc.purpose || 'App page'}{(sc.who || []).length ? ` · ${(sc.who || []).join(', ')}` : ''}</p></div></div>)}</div>
         </Section>}
 
         {workflows.length > 0 && <Section icon={Workflow} title="User journeys" subtitle="How the important work moves through the app">
-          <div className="space-y-3">{workflows.map((w, i) => <div key={i} className="rounded-xl border border-white/5 bg-white/[.03] px-4 py-3"><p className="text-[12.5px] font-semibold text-white">{w.name}</p><ol className="mt-2 space-y-1.5 text-[11px] leading-relaxed text-white/60">{(w.steps || []).map((step, j) => <li key={j} className="flex gap-2"><span className="font-semibold text-[#1877F2]">{j + 1}.</span><span>{step}</span></li>)}</ol></div>)}</div>
+          <div className="space-y-3">{workflows.map((w, i) => <div key={i} className="rounded-xl border border-line bg-panel2/60 px-4 py-3"><p className="text-[12.5px] font-semibold text-ink">{w.name}</p><ol className="mt-2 space-y-1.5 text-[11px] leading-relaxed text-muted">{(w.steps || []).map((step, j) => <li key={j} className="flex gap-2"><span className="font-semibold text-accent">{j + 1}.</span><span>{step}</span></li>)}</ol></div>)}</div>
         </Section>}
 
         {features.length > 0 && <Section icon={ShieldCheck} title="Feature promise" subtitle="Everything the finished app must actually do">
-          <div className="space-y-2">{features.map((f, i) => <div key={i} className="flex gap-3 rounded-xl border border-white/5 bg-white/[.02] px-3 py-2.5"><span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-md bg-[#22C55E]/15 border border-[#22C55E]/25 text-[#22C55E]"><Check className="size-3" /></span><p className="text-[12px] leading-relaxed text-white/80">{f}</p></div>)}</div>
+          <div className="space-y-2">{features.map((f, i) => <div key={i} className="flex gap-3 rounded-xl border border-line bg-panel2/40 px-3 py-2.5"><span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-md bg-[#22C55E]/15 border border-[#22C55E]/25 text-[#22C55E]"><Check className="size-3" /></span><p className="text-[12px] leading-relaxed text-ink">{f}</p></div>)}</div>
         </Section>}
       </div>
 
       {(records.length > 0 || body.look_and_feel || assumptions.length > 0) && (
-        <section className="mt-4 rounded-2xl border border-line bg-[#1C252E] p-5 shadow-xl backdrop-blur-xl">
+        <section className="mt-4 rounded-2xl border border-line bg-panel p-5 shadow-sm">
           <div className="grid gap-5 md:grid-cols-3">
-            {records.length > 0 && <Mini title="Data"><p className="space-y-1 text-[11.5px] leading-relaxed text-white/60">{records.map((r, i) => <span key={i} className="block"><b className="font-semibold text-white">{r.name}</b>{(r.keeps || []).length ? ` — ${r.keeps.join(', ')}` : ''}</span>)}</p></Mini>}
-            {body.look_and_feel && <Mini title="Look & feel"><p className="text-[11.5px] leading-relaxed text-white/60">{body.look_and_feel}</p></Mini>}
-            {assumptions.length > 0 && <Mini title="Assumptions"><ul className="space-y-1 text-[11.5px] leading-relaxed text-white/60">{assumptions.map((a, i) => <li key={i}>• {a}</li>)}</ul></Mini>}
+            {records.length > 0 && <Mini title="Data"><p className="space-y-1 text-[11.5px] leading-relaxed text-muted">{records.map((r, i) => <span key={i} className="block"><b className="font-semibold text-ink">{r.name}</b>{(r.keeps || []).length ? ` — ${r.keeps.join(', ')}` : ''}</span>)}</p></Mini>}
+            {body.look_and_feel && <Mini title="Look & feel"><p className="text-[11.5px] leading-relaxed text-muted">{body.look_and_feel}</p></Mini>}
+            {assumptions.length > 0 && <Mini title="Assumptions"><ul className="space-y-1 text-[11.5px] leading-relaxed text-muted">{assumptions.map((a, i) => <li key={i}>• {a}</li>)}</ul></Mini>}
           </div>
         </section>
       )}
 
       {state?.markdown && (
-        <div className="mt-4 rounded-2xl border border-line bg-[#1C252E] p-1">
-          <button onClick={() => setFull(v => !v)} className="flex w-full items-center gap-2 rounded-xl px-4 py-3 text-[11.5px] font-semibold text-white/60 transition hover:bg-white/[.05] hover:text-white"><ChevronDown className={cn('size-3.5 transition-transform', !full && '-rotate-90')} /> Full technical plan</button>
-          {full && <pre className="max-h-[380px] overflow-auto whitespace-pre-wrap break-words px-4 pb-4 font-mono text-[11px] leading-[1.7] text-white/80">{state.markdown}</pre>}
+        <div className="mt-4 rounded-2xl border border-line bg-panel p-1">
+          <button onClick={() => setFull(v => !v)} className="flex w-full items-center gap-2 rounded-xl px-4 py-3 text-[11.5px] font-semibold text-muted transition hover:bg-ink/[.05] hover:text-ink cursor-pointer"><ChevronDown className={cn('size-3.5 transition-transform', !full && '-rotate-90')} /> Full technical plan</button>
+          {full && <pre className="max-h-[380px] overflow-auto whitespace-pre-wrap break-words px-4 pb-4 font-mono text-[11px] leading-[1.7] text-ink">{state.markdown}</pre>}
         </div>
       )}
 

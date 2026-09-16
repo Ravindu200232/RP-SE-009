@@ -365,10 +365,10 @@ export default function Home({
       <div className={cn("relative mx-auto my-auto w-full max-w-[940px]", !user && "pt-12")}>
         {/* Bolt.new Style Hero */}
         <div className="text-center px-2">
-          <h1 className="font-display text-[28px] sm:text-[44px] md:text-[56px] font-bold tracking-tight text-white leading-[1.12]">
+          <h1 className="font-display text-[28px] sm:text-[44px] md:text-[56px] font-bold tracking-tight text-ink leading-[1.12]">
             What will you build today?
           </h1>
-          <p className="mt-2 sm:mt-3 text-[14px] sm:text-[16px] text-white/65">
+          <p className="mt-2 sm:mt-3 text-[14px] sm:text-[16px] text-muted">
             Create stunning apps & websites by chatting with AI.
           </p>
         </div>
@@ -382,7 +382,7 @@ export default function Home({
         {srsPhase === 'idle' && (
           <>
             {/* Main Central Prompt Box */}
-            <div className="mt-8 relative rounded-[26px] border border-white/15 bg-[#121622]/90 shadow-2xl backdrop-blur-2xl transition-all focus-within:border-blue-500/60 focus-within:shadow-[0_20px_60px_rgba(37,99,235,.2)]">
+            <div className="mt-8 relative rounded-[26px] border border-line bg-panel shadow-2xl backdrop-blur-2xl transition-all focus-within:border-accent/60 focus-within:shadow-[0_20px_60px_rgba(24,119,242,.2)]">
               <TextArea
                 value={prompt}
                 autoFocus
@@ -405,11 +405,11 @@ export default function Home({
                     submit()
                   }
                 }}
-                className="min-h-[130px] w-full resize-none rounded-t-[26px] bg-transparent p-5 text-[15px] leading-[1.6] text-white caret-blue-400 outline-none placeholder:text-white/40"
+                className="min-h-[130px] w-full resize-none rounded-t-[26px] bg-transparent p-5 text-[15px] leading-[1.6] text-ink caret-accent outline-none placeholder:text-muted2"
               />
 
               {/* Build Setup Configurations */}
-              <div className="relative z-30 border-t border-white/10 px-5 pt-3 pb-2">
+              <div className="relative z-30 border-t border-line px-5 pt-3 pb-2">
                 <BuildSetup
                   model={builderModel}
                   stack={stack}
@@ -424,7 +424,7 @@ export default function Home({
               <AttachList attach={attach} className="mx-5 mb-2" />
 
               {/* Bottom Action Row with Attachments, Prettified Language Selector & Submit */}
-              <div className="relative z-20 flex flex-wrap items-center justify-between gap-2 rounded-b-[26px] border-t border-white/10 bg-white/[.02] p-2.5">
+              <div className="relative z-20 flex flex-wrap items-center justify-between gap-2 rounded-b-[26px] border-t border-line bg-panel2/40 p-2.5">
                 <div className="flex flex-wrap items-center gap-2">
                   <AttachButtons attach={attach} cell />
 
@@ -433,12 +433,12 @@ export default function Home({
                     <button
                       type="button"
                       onClick={() => setLangOpen(!langOpen)}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-white/10 bg-white/[.05] px-2.5 text-[11px] font-medium text-white/80 shadow-sm transition-all hover:bg-white/[.10] hover:border-white/20 hover:text-white"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-line bg-panel2 px-2.5 text-[11px] font-medium text-muted shadow-sm transition-all hover:bg-raised hover:border-line2 hover:text-ink"
                       title="Interview language. SRS and builder handoff stay in English."
                     >
-                      <Languages className="size-2.5 shrink-0 text-blue-400" aria-hidden="true" />
+                      <Languages className="size-2.5 shrink-0 text-accent" aria-hidden="true" />
                       <span>{currentLangLabel}</span>
-                      <ChevronDown className={cn("size-2.5 shrink-0 text-white/40 transition-transform duration-200", langOpen && "rotate-180 text-white")} />
+                      <ChevronDown className={cn("size-2.5 shrink-0 text-muted2 transition-transform duration-200", langOpen && "rotate-180 text-ink")} />
                     </button>
 
                     {/* Hidden contract select */}
@@ -458,17 +458,17 @@ export default function Home({
                     </select>
 
                     {langOpen && (
-                      <div className="absolute bottom-full mb-2 left-0 w-64 rounded-2xl border border-white/15 bg-[#121622]/95 p-2 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
+                      <div className="absolute bottom-full mb-2 left-0 w-64 rounded-2xl border border-line bg-panel p-2 shadow-2xl backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
                         {/* Search Input */}
                         <div className="relative mb-2">
-                          <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 size-2.5 text-white/40" />
+                          <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 size-2.5 text-muted2" />
                           <input
                             type="text"
                             value={langSearch}
                             onChange={e => setLangSearch(e.target.value)}
                             placeholder="Search language..."
                             autoFocus
-                            className="w-full rounded-xl border border-white/10 bg-white/[.04] py-1.5 pl-7 pr-2.5 text-[11px] text-white outline-none placeholder:text-white/35 focus:border-blue-500/50"
+                            className="w-full rounded-xl border border-line bg-panel2/60 py-1.5 pl-7 pr-2.5 text-[11px] text-ink outline-none placeholder:text-muted2 focus:border-accent"
                           />
                         </div>
 
@@ -488,12 +488,12 @@ export default function Home({
                                 className={cn(
                                   "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-[11.5px] transition-colors",
                                   isSelected
-                                    ? "bg-blue-600/20 text-blue-300 font-semibold border border-blue-500/30"
-                                    : "text-white/70 hover:bg-white/[.08] hover:text-white border border-transparent"
+                                    ? "bg-accent/15 text-accent font-semibold border border-accent/30"
+                                    : "text-muted hover:bg-ink/[.06] hover:text-ink border border-transparent"
                                 )}
                               >
                                 <span className="truncate">{language.name}</span>
-                                {isSelected && <Check className="size-2.5 shrink-0 text-blue-400 ml-2" />}
+                                {isSelected && <Check className="size-2.5 shrink-0 text-accent ml-2" />}
                               </button>
                             )
                           })}
@@ -541,7 +541,7 @@ export default function Home({
                   Icon: FileText,
                   iconColor: 'text-amber-400',
                   iconBg: 'bg-amber-500/15 ring-1 ring-amber-500/25',
-                  border: 'border-white/10 bg-[#121622]/70',
+                  border: 'border-line bg-panel',
                 },
                 {
                   id: 'prototype',
@@ -550,16 +550,16 @@ export default function Home({
                   Icon: FlaskConical,
                   iconColor: 'text-purple-400',
                   iconBg: 'bg-purple-500/15 ring-1 ring-purple-500/25',
-                  border: 'border-white/10 bg-[#121622]/70',
+                  border: 'border-line bg-panel',
                 },
                 {
                   id: 'app',
                   label: 'App Build',
                   desc: 'Full-Stack Code',
                   Icon: Rocket,
-                  iconColor: 'text-blue-400',
-                  iconBg: 'bg-blue-500/15 ring-1 ring-blue-500/25',
-                  border: 'border-white/10 bg-[#121622]/70',
+                  iconColor: 'text-accent',
+                  iconBg: 'bg-accent/15 ring-1 ring-accent/25',
+                  border: 'border-line bg-panel',
                 },
                 {
                   id: 'deploy',
@@ -568,13 +568,13 @@ export default function Home({
                   Icon: CloudUpload,
                   iconColor: 'text-emerald-400',
                   iconBg: 'bg-emerald-500/15 ring-1 ring-emerald-500/25',
-                  border: 'border-white/10 bg-[#121622]/70',
+                  border: 'border-line bg-panel',
                 },
               ].map(card => (
                 <div
                   key={card.id}
                   className={cn(
-                    "relative flex flex-col items-center justify-center rounded-2xl border p-2.5 sm:p-3 w-full h-[88px] sm:h-[94px] shadow-md select-none",
+                    "relative flex flex-col items-center justify-center rounded-2xl border p-2.5 sm:p-3 w-full h-[88px] sm:h-[94px] shadow-sm select-none",
                     card.border
                   )}
                 >
@@ -584,10 +584,10 @@ export default function Home({
                   )}>
                     <card.Icon className={cn("size-3.5 sm:size-4", card.iconColor)} />
                   </div>
-                  <span className="mt-1.5 text-[10.5px] sm:text-[11.5px] font-semibold text-white/90 truncate max-w-full">
+                  <span className="mt-1.5 text-[10.5px] sm:text-[11.5px] font-semibold text-ink truncate max-w-full">
                     {card.label}
                   </span>
-                  <span className="text-[9px] sm:text-[10px] text-white/45 truncate max-w-full">
+                  <span className="text-[9px] sm:text-[10px] text-muted2 truncate max-w-full">
                     {card.desc}
                   </span>
                 </div>
@@ -596,7 +596,7 @@ export default function Home({
 
             {/* Starter Briefs / Inspirations */}
             <div className="mt-8">
-              <div className="text-center text-[12px] font-semibold text-white/50 mb-3">
+              <div className="text-center text-[12px] font-semibold text-muted mb-3">
                 or start from one of these
               </div>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -604,12 +604,12 @@ export default function Home({
                   <button
                     key={e.label}
                     onClick={() => setPrompt(e.text)}
-                    className="rounded-2xl border border-white/10 bg-[#121622]/50 p-4 text-left shadow-sm transition-all hover:border-white/20 hover:bg-[#121622]/90 hover:shadow-md"
+                    className="rounded-2xl border border-line bg-panel p-4 text-left shadow-sm transition-all hover:border-line2 hover:bg-raised hover:shadow-md cursor-pointer"
                   >
-                    <div className="font-display text-[13.5px] font-bold text-white">
+                    <div className="font-display text-[13.5px] font-bold text-ink">
                       {e.label}
                     </div>
-                    <div className="mt-1 text-[11px] leading-[1.5] text-white/50">
+                    <div className="mt-1 text-[11px] leading-[1.5] text-muted">
                       {e.blurb}
                     </div>
                   </button>

@@ -416,18 +416,18 @@ export default function Interview({ projectId, onDone, onCancel }) {
           {q && (
             <div className="mb-5">
               <Message side="left" label="AgentForge" current>
-                <span className="block text-[16px] font-bold leading-[1.45] text-white">{q.question}</span>
-                {q.why_needed && <span className="mt-2.5 block text-[12px] leading-relaxed text-white/60">{q.why_needed}</span>}
+                <span className="block text-[16px] font-bold leading-[1.45] text-ink">{q.question}</span>
+                {q.why_needed && <span className="mt-2.5 block text-[12px] leading-relaxed text-muted">{q.why_needed}</span>}
                 {q.hint && !q.why_needed?.includes(q.hint) && <span className="mt-2 block text-[11.5px] font-medium text-amber-300/85">{q.hint}</span>}
-                {q.prefill_note && <span className="mt-2 block text-[11.5px] font-medium text-blue-400">You previously said “{q.prefill_note}”.</span>}
+                {q.prefill_note && <span className="mt-2 block text-[11.5px] font-medium text-accent">You previously said “{q.prefill_note}”.</span>}
               </Message>
             </div>
           )}
 
           {isInteg && q?.isField ? (
-            <div className="ml-auto mt-4 max-w-[690px] rounded-2xl border border-line bg-[#1C252E] p-4 shadow-2xl backdrop-blur-2xl transition-all focus-within:border-[#1877F2]/50 focus-within:shadow-[0_15px_40px_rgba(24,119,242,.15)]">
-              <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[.04] px-3.5 py-3">
-                {q.isSecret ? <Lock className="size-4 shrink-0 text-[#FFAB00]" /> : <KeyRound className="size-4 shrink-0 text-[#1877F2]" />}
+            <div className="ml-auto mt-4 max-w-[690px] rounded-2xl border border-line bg-panel p-4 shadow-2xl backdrop-blur-2xl transition-all focus-within:border-accent/50 focus-within:shadow-[0_15px_40px_rgba(24,119,242,.15)]">
+              <div className="flex items-center gap-2.5 rounded-xl border border-line bg-panel2/60 px-3.5 py-3">
+                {q.isSecret ? <Lock className="size-4 shrink-0 text-[#FFAB00]" /> : <KeyRound className="size-4 shrink-0 text-accent" />}
                 <input
                   ref={composer}
                   type={q.isSecret && !showSecret ? 'password' : 'text'}
@@ -439,7 +439,7 @@ export default function Interview({ projectId, onDone, onCancel }) {
                   onKeyDown={e => {
                     if (e.key === 'Enter') handleIntegAnswer(text.trim())
                   }}
-                  className="flex-1 bg-transparent text-[13px] font-mono text-white placeholder:text-white/30 outline-none"
+                  className="flex-1 bg-transparent text-[13px] font-mono text-ink placeholder:text-muted2 outline-none"
                 />
                 {q.isSecret && (
                   <button
@@ -569,11 +569,11 @@ export default function Interview({ projectId, onDone, onCancel }) {
         </div>
       </div>
 
-      <footer className="shrink-0 border-t border-line bg-[#141A21]/90 px-6 py-3 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[820px] items-center gap-2 text-[11px] text-white/60">
-          <Sparkles className="size-3.5 text-[#1877F2]" /> Your answers become the implementation contract. You can review the full plan before anything is built.
+      <footer className="shrink-0 border-t border-line bg-panel/90 px-6 py-3 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-[820px] items-center gap-2 text-[11px] text-muted">
+          <Sparkles className="size-3.5 text-accent" /> Your answers become the implementation contract. You can review the full plan before anything is built.
           <span className="flex-1" />
-          <button disabled={answered === 0 && !integHistory.length} onClick={draftPlanNow} className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-white/[.06] px-3.5 py-1.5 font-medium text-white/90 transition hover:bg-white/[.12] disabled:opacity-40">
+          <button disabled={answered === 0 && !integHistory.length} onClick={draftPlanNow} className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-panel2/80 px-3.5 py-1.5 font-medium text-ink transition hover:bg-raised disabled:opacity-40 cursor-pointer">
             <FileText className="size-3 text-[#FFAB00]" /> Review plan
           </button>
         </div>
@@ -592,13 +592,13 @@ function Message({ side, label, current, children }) {
         </span>
       )}
       <div className={cn('max-w-[75%]', right && 'text-right')}>
-        <div className="mb-1.5 px-1 text-[9.5px] font-bold uppercase tracking-[.14em] text-white/40">{label}</div>
-        <div className={cn('inline-block rounded-2xl px-4 py-3.5 text-left text-[13px] leading-relaxed shadow-lg',
+        <div className="mb-1.5 px-1 text-[9.5px] font-bold uppercase tracking-[.14em] text-muted2">{label}</div>
+        <div className={cn('inline-block rounded-2xl px-4 py-3.5 text-left text-[13px] leading-relaxed shadow-sm',
           right
-            ? 'rounded-tr-sm bg-accent/20 border border-accent/30 text-white font-medium'
+            ? 'rounded-tr-sm bg-accent/15 border border-accent/30 text-ink font-medium'
             : current
-              ? 'rounded-tl-sm bg-[#1C252E] border border-[#1877F2]/30 ring-1 ring-[#1877F2]/20 text-white'
-              : 'rounded-tl-sm bg-[#1C252E] border border-line text-white/90'
+              ? 'rounded-tl-sm bg-panel border border-accent/40 ring-1 ring-accent/20 text-ink'
+              : 'rounded-tl-sm bg-panel border border-line text-ink'
         )}>
           {children}
         </div>
@@ -615,9 +615,9 @@ function said(a) {
 
 export function Waiting({ children, sub }) {
   return (
-    <div className="flex items-center gap-3.5 rounded-2xl border border-line bg-[#1C252E] px-7 py-6 shadow-2xl backdrop-blur-2xl">
-      <Loader2 className="size-5 shrink-0 animate-spin text-[#1877F2]" />
-      <div><p className="text-[13.5px] font-semibold text-white">{children}</p>{sub && <p className="mt-1 text-[11px] text-white/50">{sub}</p>}</div>
+    <div className="flex items-center gap-3.5 rounded-2xl border border-line bg-panel px-7 py-6 shadow-2xl backdrop-blur-2xl">
+      <Loader2 className="size-5 shrink-0 animate-spin text-accent" />
+      <div><p className="text-[13.5px] font-semibold text-ink">{children}</p>{sub && <p className="mt-1 text-[11px] text-muted">{sub}</p>}</div>
     </div>
   )
 }
