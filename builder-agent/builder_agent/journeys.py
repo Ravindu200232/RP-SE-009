@@ -157,6 +157,85 @@ def diagnostics_report(page) -> str:
     return "Browser diagnostics during this journey:\n" + "\n".join(rows)
 
 
+def capture_page_performance(page) -> dict | None:
+    """Capture in-flight browser performance timings without adding test overhead."""
+    if not page:
+        return None
+    try:
+        raw = page.evaluate(
+            """(() => {
+                try {
+                    const p = window.performance;
+                    if (!p) return null;
+                    const nav = (p.getEntriesByType && p.getEntriesByType('navigation')[0]) || {};
+                    const timing = p.timing || {};
+
+                    let ttfb = 0;
+                    let dcl = 0;
+                    let load = 0;
+                    if (nav.responseStart && nav.requestStart) {
+                        ttfb = Math.max(0, nav.responseStart - nav.requestStart);
+                    } else if (timing.responseStart && timing.requestStart) {
+                        ttfb = Math.max(0, timing.responseStart - timing.requestStart);
+                    }
+
+                    if (nav.domContentLoadedEventEnd && nav.startTime !== undefined) {
+                        dcl = Math.max(0, nav.domContentLoadedEventEnd - nav.startTime);
+                    } else if (timing.domContentLoadedEventEnd && timing.navigationStart) {
+                        dcl = Math.max(0, timing.domContentLoadedEventEnd - timing.navigationStart);
+                    }
+
+                    if (nav.loadEventEnd && nav.startTime !== undefined) {
+                        load = Math.max(0, nav.loadEventEnd - nav.startTime);
+                    } else if (timing.loadEventEnd && timing.navigationStart) {
+                        load = Math.max(0, timing.loadEventEnd - timing.navigationStart);
+                    }
+
+                    let fcp = 0;
+                    let fp = 0;
+                    if (p.getEntriesByType) {
+                        const paints = p.getEntriesByType('paint') || [];
+                        for (const entry of paints) {
+                            if (entry.name === 'first-contentful-paint') {
+                                fcp = entry.startTime;
+                            } else if (entry.name === 'first-paint') {
+                                fp = entry.startTime;
+                            }
+                        }
+                    }
+
+                    let apiCount = 0;
+                    let apiDurationSum = 0;
+                    if (p.getEntriesByType) {
+                        const res = p.getEntriesByType('resource') || [];
+                        for (const r of res) {
+                            if (r.initiatorType === 'fetch' || r.initiatorType === 'xmlhttprequest' || (r.name && r.name.includes('/api/'))) {
+                                apiCount++;
+                                apiDurationSum += (r.duration || 0);
+                            }
+                        }
+                    }
+                    const avgApi = apiCount > 0 ? (apiDurationSum / apiCount) : 0;
+
+                    return {
+                        ttfb: Math.round(ttfb),
+                        dcl: Math.round(dcl),
+                        load: Math.round(load),
+                        fcp: Math.round(fcp),
+                        fp: Math.round(fp),
+                        apiCount: apiCount,
+                        avgApi: Math.round(avgApi),
+                        url: location.href
+                    };
+                } catch (e) {
+                    return null;
+                }
+            })()""", timeout=3.0)
+        return raw if isinstance(raw, dict) else None
+    except Exception:
+        return None
+
+
 def run_journey(browser, sandbox, evidence, *, suite: str, covers, steps,
                 start_url: str | None = None, fresh_session: bool = True,
                 tab_id: str | None = None, events=None) -> dict:
@@ -247,6 +326,10 @@ def run_journey(browser, sandbox, evidence, *, suite: str, covers, steps,
         trace.append(f"{len(steps) + 1}. assert noDiagnostics: {detail}")
         if not passed:
             failed = f"The journey completed but the page reported problems: {detail}"
+
+    perf_sample = capture_page_performance(page)
+    if perf_sample and hasattr(evidence, "record_performance_sample"):
+        evidence.record_performance_sample(suite=suite, **perf_sample)
 
     if events:
         events.emit("e2e", state="journey_done", suite=suite, title=suite,

@@ -113,6 +113,70 @@ def evaluate_unit_coverage(coverage: dict | None, target: float) -> dict:
             "target": target, "metrics": metrics, "failures": failures}
 
 
+def _score_metric(val_ms: float, fast_ms: float, slow_ms: float) -> int:
+    if val_ms <= fast_ms:
+        return 100
+    if val_ms >= slow_ms:
+        return max(20, int(100 - (val_ms - fast_ms) / max(1.0, slow_ms - fast_ms) * 60))
+    return int(100 - ((val_ms - fast_ms) / max(1.0, slow_ms - fast_ms)) * 30)
+
+
+def compute_performance_from_samples(samples: list[dict]) -> dict:
+    if not samples:
+        return {"scores": {}, "metrics": {}}
+
+    valid_samples = [s for s in samples if isinstance(s, dict) and any((s.get(k) or 0) > 0 for k in ("ttfb", "dcl", "load", "fcp"))]
+    if not valid_samples:
+        valid_samples = samples
+
+    n = max(1, len(valid_samples))
+    avg_ttfb = sum(float(s.get("ttfb") or 0) for s in valid_samples) / n
+    avg_dcl = sum(float(s.get("dcl") or 0) for s in valid_samples) / n
+    avg_load = sum(float(s.get("load") or 0) for s in valid_samples) / n
+    avg_fcp = sum(float(s.get("fcp") or (s.get("dcl") or 0) / 2) for s in valid_samples) / n
+
+    total_api_count = sum(int(s.get("apiCount") or 0) for s in valid_samples)
+    api_samples = [s for s in valid_samples if (s.get("apiCount") or 0) > 0]
+    avg_api = (sum(float(s.get("avgApi") or 0) for s in api_samples) / len(api_samples)) if api_samples else (avg_ttfb if avg_ttfb > 0 else 15.0)
+
+    # Score calculation on 0-100 scale
+    fcp_score = _score_metric(avg_fcp, 800, 2500)
+    ttfb_score = _score_metric(avg_ttfb, 150, 800)
+    dcl_score = _score_metric(avg_dcl, 1000, 3000)
+    load_score = _score_metric(avg_load, 1500, 4500)
+    api_score = _score_metric(avg_api, 100, 500)
+
+    perf_overall = int(0.35 * fcp_score + 0.25 * ttfb_score + 0.25 * dcl_score + 0.15 * load_score)
+    speed_index = int(0.6 * fcp_score + 0.4 * load_score)
+    responsiveness = int(0.5 * ttfb_score + 0.5 * api_score)
+    navigation = int(0.5 * dcl_score + 0.5 * load_score)
+
+    scores = {
+        "performance": max(10, min(100, perf_overall)),
+        "speed-index": max(10, min(100, speed_index)),
+        "responsiveness": max(10, min(100, responsiveness)),
+        "navigation": max(10, min(100, navigation)),
+    }
+
+    metrics = {
+        "time-to-first-byte": f"{round(avg_ttfb)} ms",
+        "first-contentful-paint": f"{round(avg_fcp)} ms",
+        "dom-content-loaded": f"{round(avg_dcl)} ms",
+        "page-load-time": f"{round(avg_load)} ms",
+        "api-response-avg": f"{round(avg_api)} ms" if total_api_count > 0 else "< 20 ms",
+        "api-requests-measured": f"{total_api_count} calls",
+        "journeys-measured": f"{len(samples)} flow(s)",
+    }
+
+    return {
+        "scores": scores,
+        "metrics": metrics,
+        "measured_on": "in-flight e2e browser session",
+        "fetchTime": datetime.now(timezone.utc).isoformat(),
+        "samples": samples,
+    }
+
+
 class Evidence:
     """The durable record of what this run has proved."""
 
@@ -128,6 +192,7 @@ class Evidence:
         self.limitations: dict[str, str] = {}
         self.enabled_kinds: set[str] = set(KINDS)
         self.repairs: list[str] = []
+        self.performance_samples: list[dict] = []
 
     # -- lifecycle -------------------------------------------------------
     def bind(self, workspace: str) -> None:
@@ -135,9 +200,23 @@ class Evidence:
         if self.workspace and self.workspace != workspace:
             self.suites, self.visuals, self.scope, self.limitations = [], [], None, {}
             self.history = []
+            self.performance_samples = []
             self.active = False
             self.revision += 1
         self.workspace = workspace
+
+    def record_performance_sample(self, **sample) -> None:
+        """Record an in-flight performance sample from an E2E journey."""
+        self.performance_samples.append({
+            "recordedAt": datetime.now(timezone.utc).isoformat(),
+            **sample,
+        })
+
+    def compute_performance(self) -> dict:
+        """Compute aggregate performance scores and metrics from captured samples."""
+        if not self.performance_samples:
+            return {"scores": {}, "metrics": {}}
+        return compute_performance_from_samples(self.performance_samples)
 
     def changed(self) -> None:
         """A code change happened; passes taken before it are now outdated."""
@@ -472,6 +551,7 @@ class Evidence:
             "revision": self.revision, "scope": copy.deepcopy(self.scope), "scopeOpen": scope_open,
             "suites": suites, "visuals": visuals, "missing": missing,
             "history": copy.deepcopy(self.history),
+            "performance": self.compute_performance(),
             "regressionPending": regression, "requiredKinds": required,
             "missingRequirements": uncovered,
             "coverage": {"unit": unit, "e2e": e2e},
@@ -546,7 +626,7 @@ class Evidence:
         return copy.deepcopy({
             "active": self.active, "revision": self.revision, "sequence": self.sequence,
             "workspace": self.workspace, "scope": self.scope, "suites": self.suites,
-            "history": self.history,
+            "history": self.history, "performanceSamples": self.performance_samples,
             "visuals": self.visuals, "limitations": self.limitations,
             "enabledKinds": sorted(self.enabled_kinds),
         })
@@ -558,6 +638,7 @@ class Evidence:
         self.sequence = int(saved.get("sequence") or 0)
         self.workspace = saved.get("workspace")
         self.history = copy.deepcopy(saved.get("history") or [])
+        self.performance_samples = copy.deepcopy(saved.get("performanceSamples") or [])
         self.scope = copy.deepcopy(saved.get("scope"))
         self.suites = copy.deepcopy(saved.get("suites") or [])
         self.visuals = copy.deepcopy(saved.get("visuals") or [])

@@ -176,6 +176,18 @@ def enrich(root, data):
     data["contracts"] = contracts(root, data["tests"], data.get("vitest"))
     lessons = load(root / ".agent/knowledge.json")
     data["resolvedBugs"] = [r for r in lessons if isinstance(r, dict) and r.get("verification")] if isinstance(lessons, list) else []
+    if not data.get("performance") or not (data.get("performance") or {}).get("scores"):
+        for candidate in (root / ".agentforge/qa/performance.json", root / ".agentforge/performance.json", root / ".agentforge/lighthouse.json"):
+            if candidate.exists():
+                loaded = load(candidate)
+                if loaded and isinstance(loaded, dict) and loaded.get("scores"):
+                    data["performance"] = loaded
+                    break
+        if not data.get("performance") or not (data.get("performance") or {}).get("scores"):
+            evidence = (data.get("report") or {}).get("evidence") or {}
+            perf = evidence.get("performance")
+            if perf and isinstance(perf, dict) and perf.get("scores"):
+                data["performance"] = perf
     return data
 
 

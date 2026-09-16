@@ -269,10 +269,11 @@ def from_evidence(*, project: str, project_dir: Path, evidence: dict,
     stages = tuple(kind for kind in ("unit", "e2e", "runtime") if kind in proved)
     if security is not None:
         stages += ("security",)
+    perf = evidence.get("performance") if (evidence.get("performance") and evidence.get("performance", {}).get("scores")) else saved.get("performance")
     data = assemble(project=project, project_dir=project_dir, unit=unit, e2e=e2e,
                     security=security, evidence=evidence, runtime=runtime,
                     manifest={}, tests=harness.collect_test_sources(project_dir),
-                    history=[], stages=stages, complete=complete)
+                    history=[], performance=perf, stages=stages, complete=complete)
     data["timeline"] = evidence.get("history", [])
     data["unitEvidenceStatus"] = latest.get("status")
     # Older results remain inspectable, but never become current test status.

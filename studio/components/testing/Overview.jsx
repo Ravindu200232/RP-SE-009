@@ -200,17 +200,17 @@ export default function Overview({ qa, live }) {
           ) : <Empty>The security stage has no record here.</Empty>}
         </Card>
 
-        <Card title="Performance" hint="Lighthouse, against the dev server" icon={Gauge}>
+        <Card title="Performance" hint={qa?.performance?.measured_on || "E2E in-flight metrics & audits"} icon={Gauge}>
           {Object.keys(perf).length ? (
             <div className="grid grid-cols-2 gap-3">
               {Object.entries(perf).map(([k, n]) => (
-                <div key={k} className="rounded-xl border border-white/5 bg-white/[0.02] p-2.5">
+                <div key={k} className="rounded-xl border border-line bg-panel2/50 p-2.5">
                   <Stat n={n} label={k.replace(/-/g, ' ')}
                         tone={n >= 90 ? 'text-emerald-400' : n >= 50 ? 'text-amber-400' : 'text-rose-400'} />
                 </div>
               ))}
             </div>
-          ) : <Empty>Lighthouse has not run.</Empty>}
+          ) : <Empty>Performance has not run.</Empty>}
         </Card>
 
         <Card title="Runtime" hint="what the browser probe saw" icon={Terminal}>

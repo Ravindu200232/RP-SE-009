@@ -147,14 +147,18 @@ class QAAgent:
                 so what was proved survives whatever happens next.
                 """
                 nonlocal record, path
+                evidence_summary = self.agent.memory.evidence.summary()
+                perf_data = evidence_summary.get("performance")
+                if not (perf_data and perf_data.get("scores")):
+                    perf_data = existing.get("performance")
                 record = report.assemble(
                     project=self.project, project_dir=self.project_dir,
                     unit=unit_result, e2e=e2e_result, security=findings,
-                    evidence=self.agent.memory.evidence.summary(),
+                    evidence=evidence_summary,
                     runtime=self._runtime_notes(), manifest=self._manifest(),
                     tests=harness.collect_test_sources(self.project_dir),
                     history=report.append_history(existing, unit_result.rounds),
-                    performance=existing.get("performance"),
+                    performance=perf_data,
                     stages=tuple(done), complete=complete)
                 path = report.write(self.project_dir, record)
                 self.events.emit("test", state="report", project=self.project,
