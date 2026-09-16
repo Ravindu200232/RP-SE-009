@@ -61,14 +61,21 @@ export default function Security({ qa }) {
           <Panel key={i} className="border-l-2 border-l-bad p-3.5">
             <div className="mb-1.5 flex items-center gap-2">
               <Tag tone={f.severity === 'blocker' ? 'bad'
-                       : f.severity === 'major' ? 'warn' : 'mute'}>
-                {f.severity}
+                       : f.severity === 'major' ? 'warn' : 'bad'}>
+                {f.severity || 'security'}
               </Tag>
               <b className="text-[12px] text-ink">{f.code}</b>
             </div>
-            <p className="mb-1 font-mono text-[10.5px] text-muted">{f.path}</p>
-            <p className="text-[11.5px] text-ink">{f.message}</p>
-            {f.fix && <p className="mt-1 text-[10.5px] text-muted2">Fix: {f.fix}</p>}
+            <p className="mb-1 font-mono text-[10.5px] text-muted">
+              {f.file || f.path}{f.line ? `:${f.line}` : ''}
+            </p>
+            <p className="text-[11.5px] text-ink">{f.what || f.message}</p>
+            {f.detail && f.detail !== f.what && (
+              <code className="mt-1 block font-mono text-[10.5px] text-muted rounded bg-panel2/60 px-2 py-1 overflow-x-auto">
+                {f.detail}
+              </code>
+            )}
+            {f.fix && <p className="mt-1 text-[10.5px] text-muted">Fix: {f.fix}</p>}
           </Panel>
         ))}
       </div>
