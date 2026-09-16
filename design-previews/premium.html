@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pulse — Analytics that feel effortless</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest">
+    </script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#8B5CF6',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                        surface: '#FFFFFF',
+                        text: '#111827',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="font-sans text-gray-900 bg-white antialiased">
+
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="#" class="flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary rounded-lg">
+                    <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                        <i data-lucide="activity" class="w-4 h-4 text-white"></i>
+                    </div>
+                    <span class="text-lg font-bold tracking-tight">Pulse</span>
+                </a>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="text-sm text-gray-600 hover:text-gray-900 transition-colors focus-visible:ring-2 focus-visible:ring-primary rounded">Features</a>
+                    <a href="#process" class="text-sm text-gray-600 hover:text-gray-900 transition-colors focus-visible:ring-2 focus-visible:ring-primary rounded">Process</a>
+                    <a href="#pricing" class="text-sm text-gray-600 hover:text-gray-900 transition-colors focus-visible:ring-2 focus-visible:ring-primary rounded">Pricing</a>
+                    <a href="#faq" class="text-sm text-gray-600 hover:text-gray-900 transition-colors focus-visible:ring-2 focus-visible:ring-primary rounded">FAQ</a>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="#" class="text-sm text-gray-600 hover:text-gray-900 transition-colors hidden sm:block focus-visible:ring-2 focus-visible:ring-primary rounded">Sign in</a>
+                    <a href="#" class="inline-flex items-center gap-2 bg-primary text-white text-sm font-medium px-4 py-2 rounded-full hover:bg-blue-600 transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+                        Get Started
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-b from-blue-50 via-white to-white"></div>
+        <div class="absolute top-24 left-10 w-64 h-64 bg-blue-200/30 rounded-full blur-3xl"></div>
+        <div class="absolute top-40 right-10 w-80 h-80 bg-purple-200/30 rounded-full blur-3xl"></div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 text-center">
+            <div class="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-full px-4 py-1.5 mb-8">
+                <span class="w-2 h-2 bg-success rounded-full"></span>
+                <span class="text-xs font-medium text-gray-700">New · Real-time insights</span>
+            </div>
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight max-w-3xl mx-auto">
+                Analytics that feel <span class="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">effortless</span>
+            </h1>
+            <p class="mt-6 text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
+                Pulse transforms raw data into clear, actionable insights — so your team can move faster and decide with confidence.
+            </p>
+            <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="#" class="inline-flex items-center gap-2 bg-primary text-white text-sm font-medium px-6 py-3 rounded-full hover:bg-blue-600 transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+                    Start free trial
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </a>
+                <a href="#" class="inline-flex items-center gap-2 bg-white text-gray-700 text-sm font-medium px-6 py-3 rounded-full border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2">
+                    <i data-lucide="play" class="w-4 h-4"></i>
+                    Watch demo
+                </a>
+            </div>
+        </div>
+
+        <!-- Dashboard mockup -->
+        <div class="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+            <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50">
+                    <div class="w-3 h-3 rounded-full bg-red-400"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-400"></div>
+                    <div class="ml-4 flex-1 max-w-xs bg-white rounded-md px-3 py-1 text-xs text-gray-400 font-mono border border-gray-200">app.pulse.dev/dashboard</div>
+                </div>
+                <div class="p-6 sm:p-8">
+                    <div class="grid grid-cols-3 gap-4 mb-6">
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <p class="text-xs text-gray-500 font-medium">Revenue</p>
+                            <p class="text-xl sm:text-2xl font-bold mt-1">$48,290</p>
+                            <p class="text-xs text-success font-medium mt-1">+12.5%</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <p class="text-xs text-gray-500 font-medium">Users</p>
+                            <p class="text-xl sm:text-2xl font-bold mt-1">12,847</p>
+                            <p class="text-xs text-success font-medium mt-1">+8.2%</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <p class="text-xs text-gray-500 font-medium">Conversion</p>
+                            <p class="text-xl sm:text-2xl font-bold mt-1">3.42%</p>
+                            <p class="text-xs text-warning font-medium mt-1">+0.4%</p>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl p-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <p class="text-xs text-gray-500 font-medium">Monthly Revenue</p>
+                            <span class="text-xs text-gray-400 font-mono">Jan — Jun</span>
+                        </div>
+                        <svg viewBox="0 0 400 160" fill="none" class="w-full h-32 sm:h-40">
+                            <line x1="0" y1="40" x2="400" y2="40" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="4 4"/>
+                            <line x1="0" y1="80" x2="400" y2="80" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="4 4"/>
+                            <line x1="0" y1="120" x2="400" y2="120" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="4 4"/>
+                            <path d="M0,130 C40,120 60,100 100,105 C140,110 160,70 200,75 C240,80 260,50 300,55 C340,60 380,30 400,35 L400,160 L0,160 Z" fill="url(#heroGradient)"/>
+                            <path d="M0,130 C40,120 60,100 100,105 C140,110 160,70 200,75 C240,80 260,50 300,55 C340,60 380,30 400,35" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+                            <circle cx="100" cy="105" r="3" fill="#3B82F6"/>
+                            <circle cx="200" cy="75" r="3" fill="#3B82F6"/>
+                            <circle cx="300" cy="55" r="3" fill="#3B82F6"/>
+                            <circle cx="400" cy="35" r="3" fill="#3B82F6"/>
+                            <defs>
+                                <linearGradient id="heroGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.25"/>
+                                    <stop offset="100%" stop-color="#3B82F6" stop-opacity="0"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="border-y border-gray-100 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <p class="text-3xl sm:text-4xl font-bold font-mono text-gray-900">99.99%</p>
+                    <p class="mt-2 text-sm text-gray-500">Uptime SLA</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-3xl sm:text-4xl font-bold font-mono text-gray-900">10k+</p>
+                    <p class="mt-2 text-sm text-gray-500">Teams worldwide</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-3xl sm:text-4xl font-bold font-mono text-gray-900">2.5B</p>
+                    <p class="mt-2 text-sm text-gray-500">Events / day</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-3xl sm:text-4xl font-bold font-mono text-gray-900">40ms</p>
+                    <p class="mt-2 text-sm text-gray-500">Median latency</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="py-24 scroll-mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <p class="text-sm font-mono text-primary font-medium mb-4">Features</p>
+                <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">Everything you need, nothing you don't</h2>
+                <p class="mt-4 text-gray-500 leading-relaxed">Powerful analytics tools that are intuitive enough for everyone on your team.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-md transition-shadow">
+                    <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="activity" class="w-5 h-5 text-primary"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold">Real-time dashboards</h3>
+                    <p class="mt-2 text-sm text-gray-500 leading-relaxed">Live dashboards that update instantly as data flows in. No refresh needed.</p>
+                </div>
+                <div class="bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-md transition-shadow">
+                    <div class="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="file-text" class="w-5 h-5 text-secondary"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold">Automated reports</h3>
+                    <p class="mt-2 text-sm text-gray-500 leading-relaxed">Schedule daily, weekly, or monthly reports delivered straight to your inbox.</p>
+                </div>
+                <div class="bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-md transition-shadow">
+                    <div class="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="users" class="w-5 h-5 text-success"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold">Team collaboration</h3>
+                    <p class="mt-2 text-sm text-gray-500 leading-relaxed">Share dashboards, leave comments, and work together in real time.</p>
+                </div>
+                <div class="bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-md transition-shadow">
+                    <div class="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="shield" class="w-5 h-5 text-warning"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold">Advanced security</h3>
+                    <p class="mt-2 text-sm text-gray-500 leading-relaxed">SOC 2 Type II compliant with SSO, RBAC, and end-to-end encryption.</p>
+                </div>
+                <div class="bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-md transition-shadow">
+                    <div class="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="bell" class="w-5 h-5 text-danger"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold">Custom alerts</h3>
+                    <p class="mt-2 text-sm text-gray-500 leading-relaxed">Get notified when metrics cross thresholds. Set it once, forget it.</p>
+                </div>
+                <div class="bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-md transition-shadow">
+                    <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="code" class="w-5 h-5 text-primary"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold">API access</h3>
+                    <p class="mt-2 text-sm text-gray-500 leading-relaxed">RESTful API with SDKs for JavaScript, Python, Ruby, and Go.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Process -->
+    <section id="process" class="py-24 bg-gray-50 scroll-mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <p class="text-sm font-mono text-primary font-medium mb-4">Process</p>
+                <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">Up and running in minutes</h2>
+                <p class="mt-4 text-gray-500 leading-relaxed">A simple four-step process to get your team started with Pulse.</p>
+            </div>
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-semibold text-sm">1</div>
+                        <div class="flex-1 h-px bg-gray-200 ml-4 hidden md:block"></div>
+                    </div>
+                    <h3 class="text-lg font-semibold">Connect</h3>
+                    <p class="mt-2 text-sm text-gray-500 leading-relaxed">Connect your data sources in minutes with 50+ integrations.</p>
+                </div>
+                <div>
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-semibold text-sm">2</div>
+                        <div class="flex-1 h-px bg-gray-200 ml-4 hidden md:block"></div>
+                    </div>
+                    <h3 class="text-lg font-semibold">Configure</h3>
+                    <p class="mt-2 text-sm text-gray-500 leading-relaxed">Set up metrics and dashboards that matter to your team.</p>
+                </div>
+                <div>
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-semibold text-sm">3</div>
+                        <div class="flex-1 h-px bg-gray-200 ml-4 hidden md:block"></div>
+                    </div>
+                    <h3 class="text-lg font-semibold">Collaborate</h3>
+                    <p class="mt-2 text-sm text-gray-500 leading-relaxed">Invite your team and share insights in real time.</p>
+                </div>
+                <div>
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-semibold text-sm">4</div>
+                    </div>
+                    <h3 class="text-lg font-semibold">Launch</h3>
+                    <p class="mt-2 text-sm text-gray-500 leading-relaxed">Go live and start making data-driven decisions.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits -->
+    <section class="py-24">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <p class="text-sm font-mono text-primary font-medium mb-4">Benefits</p>
+                <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">Why teams choose Pulse</h2>
+            </div>
+            <div class="space-y-20">
+                <!-- Benefit 1 -->
+                <div class="grid lg:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6">
+                            <i data-lucide="clock" class="w-6 h-6 text-primary"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold tracking-tight">Save hours every week</h3>
+                        <p class="mt-4 text-gray-500 leading-relaxed">Automated reports and alerts mean your team spends less time in spreadsheets and more time on strategy. Stop copy-pasting data and let Pulse do the heavy lifting.</p>
+                        <ul class="mt-6 space-y-3">
+                            <li class="flex items-center gap-3 text-sm text-gray-600">
+                                <i data-lucide="check" class="w-4 h-4 text-success"></i>Automated weekly reports
+                            </li>
+                            <li class="flex items-center gap-3 text-sm text-gray-600">
+                                <i data-lucide="check" class="w-4 h-4 text-success"></i>Real-time alerting
+                            </li>
+                            <li class="flex items-center gap-3 text-sm text-gray-600">
+                                <i data-lucide="check" class="w-4 h-4 text-success"></i>One-click exports
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="bg-gray-50 rounded-2xl p-8 border border-gray-100">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                                <i data-lucide="clock" class="w-4 h-4 text-white"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold">Time saved</p>
+                                <p class="text-xs text-gray-500">per week, per analyst</p>
+                            </div>
+                        </div>
+                        <p class="text-5xl font-bold font-mono text-primary">8.5h</p>
+                        <div class="mt-4 h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div class="h-full bg-primary rounded-full" style="width: 85%"></div>
+                        </div>
+                        <p class="mt-2 text-xs text-gray-500">85% reduction in reporting time</p>
+                    </div>
+                </div>
+                <!-- Benefit 2 -->
+                <div class="grid lg:grid-cols-2 gap-12 items-center">
+                    <div class="order-2 lg:order-1 bg-gray-50 rounded-2xl p-8 border border-gray-100">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-8 h-8 bg-secondary rounded-lg flex items-center justify-center">
+                                <i data-lucide="trending-up" class="w-4 h-4 text-white"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold">Decision speed</p>
+                                <p class="text-xs text-gray-500">from data to action</p>
+                            </div>
+                        </div>
+                        <p class="text-5xl font-bold font-mono text-secondary">3.2x</p>
+                        <div class="mt-4 flex items-end gap-1 h-16">
+                            <div class="flex-1 bg-gray-200 rounded-t" style="height: 30%"></div>
+                            <div class="flex-1 bg-gray-200 rounded-t" style="height: 45%"></div>
+                            <div class="flex-1 bg-gray-200 rounded-t" style="height: 35%"></div>
+                            <div class="flex-1 bg-gray-200 rounded-t" style="height: 60%"></div>
+                            <div class="flex-1 bg-secondary rounded-t" style="height: 50%"></div>
+                            <div class="flex-1 bg-secondary rounded-t" style="height: 75%"></div>
+                            <div class="flex-1 bg-secondary rounded-t" style="height: 65%"></div>
+                            <div class="flex-1 bg-secondary rounded-t" style="height: 90%"></div>
+                        </div>
+                        <p class="mt-2 text-xs text-gray-500">Faster decision-making with real-time data</p>
+                    </div>
+                    <div class="order-1 lg:order-2">
+                        <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center mb-6">
+                            <i data-lucide="trending-up" class="w-6 h-6 text-secondary"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold tracking-tight">Decide with confidence</h3>
+                        <p class="mt-4 text-gray-500 leading-relaxed">Real-time data and predictive insights help you spot trends before they happen. Make decisions based on facts, not gut feelings.</p>
+                        <ul class="mt-6 space-y-3">
+                            <li class="flex items-center gap-3 text-sm text-gray-600">
+                                <i data-lucide="check" class="w-4 h-4 text-success"></i>Predictive analytics
+                            </li>
+                            <li class="flex items-center gap-3 text-sm text-gray-600">
+                                <i data-lucide="check" class="w-4 h-4 text-success"></i>Anomaly detection
+                            </li>
+                            <li class="flex items-center gap-3 text-sm text-gray-600">
+                                <i data-lucide="check" class="w-4 h-4 text-success"></i>Trend forecasting
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- Benefit 3 -->
+                <div class="grid lg:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <div class="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center mb-6">
+                            <i data-lucide="rocket" class="w-6 h-6 text-success"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold tracking-tight">Scale without limits</h3>
+                        <p class="mt-4 text-gray-500 leading-relaxed">From startup to enterprise, Pulse grows with you. No painful migrations, no downtime, no surprises.</p>
+                        <ul class="mt-6 space-y-3">
+                            <li class="flex items-center gap-3 text-sm text-gray-600">
+                                <i data-lucide="check" class="w-4 h-4 text-success"></i>Elastic infrastructure
+                            </li>
+                            <li class="flex items-center gap-3 text-sm text-gray-600">
+                                <i data-lucide="check" class="w-4 h-4 text-success"></i>99.99% uptime SLA
+                            </li>
+                            <li class="flex items-center gap-3 text-sm text-gray-600">
+                                <i data-lucide="check" class="w-4 h-4 text-success"></i>Dedicated support
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="bg-gray-50 rounded-2xl p-8 border border-gray-100">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-8 h-8 bg-success rounded-lg flex items-center justify-center">
+                                <i data-lucide="rocket" class="w-4 h-4 text-white"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold">Growth</p>
+                                <p class="text-xs text-gray-500">events processed</p>
+                            </div>
+                        </div>
+                        <p class="text-5xl font-bold font-mono text-success">2.5B</p>
+                        <div class="mt-4 flex items-end gap-1 h-16">
+                            <div class="flex-1 bg-gray-200 rounded-t" style="height: 20%"></div>
+                            <div class="flex-1 bg-gray-200 rounded-t" style="height: 30%"></div>
+                            <div class="flex-1 bg-gray-200 rounded-t" style="height: 25%"></div>
+                            <div class="flex-1 bg-gray-200 rounded-t" style="height: 40%"></div>
+                            <div class="flex-1 bg-success rounded-t" style="height: 55%"></div>
+                            <div class="flex-1 bg-success rounded-t" style="height: 70%"></div>
+                            <div class="flex-1 bg-success rounded-t" style="height: 85%"></div>
+                            <div class="flex-1 bg-success rounded-t" style="height: 100%"></div>
+                        </div>
+                        <p class="mt-2 text-xs text-gray-500">Daily events processed</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="py-24 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <p class="text-sm font-mono text-primary font-medium mb-4">Testimonials</p>
+                <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">Loved by teams everywhere</h2>
+            </div>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="bg-white rounded-2xl border border-gray-100 p-6">
+                    <div class="flex items-center gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-sm text-gray-600 leading-relaxed">"Pulse has completely transformed how our team works. We went from weekly manual reports to real-time insights."</p>
+                    <div class="mt-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm">SC</div>
+                        <div>
+                            <p class="text-sm font-semibold">Sarah Chen</p>
+                            <p class="text-xs text-gray-500">VP Product, Acme</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl border border-gray-100 p-6">
+                    <div class="flex items-center gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-sm text-gray-600 leading-relaxed">"The cleanest analytics tool I've ever used. It just works. No training needed, no documentation required."</p>
+                    <div class="mt-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-semibold text-sm">MJ</div>
+                        <div>
+                            <p class="text-sm font-semibold">Marcus Johnson</p>
+                            <p class="text-xs text-gray-500">CTO, TechFlow</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl border border-gray-100 p-6">
+                    <div class="flex items-center gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-sm text-gray-600 leading-relaxed">"We cut our reporting time by 80% within the first month. Pulse pays for itself ten times over."</p>
+                    <div class="mt-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-semibold text-sm">ER</div>
+                        <div>
+                            <p class="text-sm font-semibold">Emily Rodriguez</p>
+                            <p class="text-xs text-gray-500">Data Lead, Northwind</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section id="pricing" class="py-24 scroll-mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <p class="text-sm font-mono text-primary font-medium mb-4">Pricing</p>
+                <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">Simple, transparent pricing</h2>
+                <p class="mt-4 text-gray-500 leading-relaxed">Start free, upgrade when you're ready. No hidden fees.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                <!-- Starter -->
+                <div class="bg-white rounded-2xl border border-gray-200 p-8 flex flex-col">
+                    <h3 class="text-lg font-semibold">Starter</h3>
+                    <p class="text-sm text-gray-500 mt-1">For small teams</p>
+                    <p class="mt-6 text-4xl font-bold">$29<span class="text-sm font-normal text-gray-500">/mo</span></p>
+                    <ul class="mt-6 space-y-3 flex-1">
+                        <li class="flex items-center gap-3 text-sm text-gray-600">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>5 team members
+                        </li>
+                        <li class="flex items-center gap-3 text-sm text-gray-600">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>10k events / mo
+                        </li>
+                        <li class="flex items-center gap-3 text-sm text-gray-600">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>Basic dashboards
+                        </li>
+                        <li class="flex items-center gap-3 text-sm text-gray-600">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>Email support
+                        </li>
+                    </ul>
+                    <a href="#" class="mt-8 inline-flex items-center justify-center gap-2 bg-white text-gray-700 text-sm font-medium px-6 py-3 rounded-full border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2">
+                        Start free trial
+                    </a>
+                </div>
+                <!-- Pro -->
+                <div class="bg-gray-900 rounded-2xl p-8 flex flex-col relative shadow-xl">
+                    <div class="absolute top-0 right-8 -translate-y-1/2">
+                        <span class="bg-primary text-white text-xs font-semibold px-3 py-1 rounded-full">Most popular</span>
+                    </div>
+                    <h3 class="text-lg font-semibold text-white">Pro</h3>
+                    <p class="text-sm text-gray-400 mt-1">For growing teams</p>
+                    <p class="mt-6 text-4xl font-bold text-white">$79<span class="text-sm font-normal text-gray-400">/mo</span></p>
+                    <ul class="mt-6 space-y-3 flex-1">
+                        <li class="flex items-center gap-3 text-sm text-gray-300">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>20 team members
+                        </li>
+                        <li class="flex items-center gap-3 text-sm text-gray-300">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>100k events / mo
+                        </li>
+                        <li class="flex items-center gap-3 text-sm text-gray-300">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>Advanced analytics
+                        </li>
+                        <li class="flex items-center gap-3 text-sm text-gray-300">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>Priority support
+                        </li>
+                    </ul>
+                    <a href="#" class="mt-8 inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-medium px-6 py-3 rounded-full hover:bg-blue-600 transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900">
+                        Get started
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+                <!-- Enterprise -->
+                <div class="bg-white rounded-2xl border border-gray-200 p-8 flex flex-col">
+                    <h3 class="text-lg font-semibold">Enterprise</h3>
+                    <p class="text-sm text-gray-500 mt-1">For large orgs</p>
+                    <p class="mt-6 text-4xl font-bold">Custom</p>
+                    <ul class="mt-6 space-y-3 flex-1">
+                        <li class="flex items-center gap-3 text-sm text-gray-600">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>Unlimited team
+                        </li>
+                        <li class="flex items-center gap-3 text-sm text-gray-600">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>Unlimited events
+                        </li>
+                        <li class="flex items-center gap-3 text-sm text-gray-600">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>Dedicated support
+                        </li>
+                        <li class="flex items-center gap-3 text-sm text-gray-600">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>SSO &amp; compliance
+                        </li>
+                    </ul>
+                    <a href="#" class="mt-8 inline-flex items-center justify-center gap-2 bg-white text-gray-700 text-sm font-medium px-6 py-3 rounded-full border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2">
+                        Contact sales
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="py-24 bg-gray-50 scroll-mt-16">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <p class="text-sm font-mono text-primary font-medium mb-4">FAQ</p>
+                <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">Frequently asked questions</h2>
+            </div>
+            <div class="space-y-4">
+                <details class="bg-white rounded-2xl border border-gray-100 p-6 group">
+                    <summary class="flex items-center justify-between cursor-pointer list-none">
+                        <span class="text-sm font-semibold">How does the free trial work?</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <p class="mt-4 text-sm text-gray-500 leading-relaxed">Start a 14-day free trial on any plan. No credit card required. You'll get full access to all features, and you can cancel anytime.</p>
+                </details>
+                <details class="bg-white rounded-2xl border border-gray-100 p-6 group">
+                    <summary class="flex items-center justify-between cursor-pointer list-none">
+                        <span class="text-sm font-semibold">Can I change plans later?</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <p class="mt-4 text-sm text-gray-500 leading-relaxed">Yes, you can upgrade or downgrade at any time. Changes are prorated automatically, and you'll see the difference on your next invoice.</p>
+                </details>
+                <details class="bg-white rounded-2xl border border-gray-100 p-6 group">
+                    <summary class="flex items-center justify-between cursor-pointer list-none">
+                        <span class="text-sm font-semibold">How secure is my data?</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <p class="mt-4 text-sm text-gray-500 leading-relaxed">We're SOC 2 Type II compliant. All data is encrypted at rest and in transit, and we offer SSO, RBAC, and audit logs on enterprise plans.</p>
+                </details>
+                <details class="bg-white rounded-2xl border border-gray-100 p-6 group">
+                    <summary class="flex items-center justify-between cursor-pointer list-none">
+                        <span class="text-sm font-semibold">Do you offer discounts for startups?</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <p class="mt-4 text-sm text-gray-500 leading-relaxed">Yes! We offer 50% off for early-stage startups through our accelerator program. Reach out to us to learn more.</p>
+                </details>
+                <details class="bg-white rounded-2xl border border-gray-100 p-6 group">
+                    <summary class="flex items-center justify-between cursor-pointer list-none">
+                        <span class="text-sm font-semibold">What happens if I exceed my event limit?</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <p class="mt-4 text-sm text-gray-500 leading-relaxed">We'll notify you when you reach 80% of your limit. If you exceed it, we'll automatically upgrade you to the next tier and prorate the difference.</p>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="py-24">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">Ready to get started?</h2>
+            <p class="mt-4 text-gray-500 leading-relaxed max-w-2xl mx-auto">Join 10,000+ teams already using Pulse to make better decisions, faster.</p>
+            <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="#" class="inline-flex items-center gap-2 bg-primary text-white text-sm font-medium px-6 py-3 rounded-full hover:bg-blue-600 transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+                    Start free trial
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </a>
+                <a href="#" class="inline-flex items-center gap-2 bg-white text-gray-700 text-sm font-medium px-6 py-3 rounded-full border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2">
+                    Talk to sales
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-100 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                            <i data-lucide="activity" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <span class="text-lg font-bold tracking-tight">Pulse</span>
+                    </div>
+                    <p class="text-sm text-gray-500 leading-relaxed">Analytics that feel effortless. Built for teams who want clarity.</p>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold mb-4">Product</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-gray-500 hover:text-gray-900 transition-colors">Features</a></li>
+                        <li><a href="#" class="text-sm text-gray-500 hover:text-gray-900 transition-colors">Pricing</a></li>
+                        <li><a href="#" class="text-sm text-gray-500 hover:text-gray-900 transition-colors">Integrations</a></li>
+                        <li><a href="#" class="text-sm text-gray-500 hover:text-gray-900 transition-colors">Changelog</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold mb-4">Company</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-gray-500 hover:text-gray-900 transition-colors">About</a></li>
+                        <li><a href="#" class="text-sm text-gray-500 hover:text-gray-900 transition-colors">Blog</a></li>
+                        <li><a href="#" class="text-sm text-gray-500 hover:text-gray-900 transition-colors">Careers</a></li>
+                        <li><a href="#" class="text-sm text-gray-500 hover:text-gray-900 transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold mb-4">Legal</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-gray-500 hover:text-gray-900 transition-colors">Privacy</a></li>
+                        <li><a href="#" class="text-sm text-gray-500 hover:text-gray-900 transition-colors">Terms</a></li>
+                        <li><a href="#" class="text-sm text-gray-500 hover:text-gray-900 transition-colors">Security</a></li>
+                        <li><a href="#" class="text-sm text-gray-500 hover:text-gray-900 transition-colors">DPA</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-12 pt-8 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="text-xs text-gray-400">© 2024 Pulse Analytics, Inc. All rights reserved.</p>
+                <div class="flex items-center gap-4">
+                    <a href="#" class="text-gray-400 hover:text-gray-600 transition-colors" aria-label="Twitter">
+                        <i data-lucide="twitter" class="w-4 h-4"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-gray-600 transition-colors" aria-label="GitHub">
+                        <i data-lucide="github" class="w-4 h-4"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-gray-600 transition-colors" aria-label="LinkedIn">
+                        <i data-lucide="linkedin" class="w-4 h-4"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

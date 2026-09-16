@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gradient — Modern Design System</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Montserrat (primary), Space Grotesk (display), JetBrains Mono (mono) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Design system tokens */
+        :root {
+            --color-primary: #990FFA;
+            --color-secondary: #E60076;
+            --color-success: #16A34A;
+            --color-warning: #D97706;
+            --color-danger: #DC2626;
+            --color-surface: #FFFFFF;
+            --color-text: #111827;
+            --font-primary: 'Montserrat', sans-serif;
+            --font-display: 'Space Grotesk', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --spacing-base: 8px;
+        }
+        
+        body {
+            font-family: var(--font-primary);
+            color: var(--color-text);
+            background-color: var(--color-surface);
+        }
+        
+        .font-display {
+            font-family: var(--font-display);
+        }
+        
+        .font-mono {
+            font-family: var(--font-mono);
+        }
+        
+        /* Gradient utilities */
+        .bg-gradient-brand {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+        }
+        
+        .text-gradient-brand {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        /* Focus states */
+        .focus-ring:focus-visible {
+            outline: 3px solid var(--color-primary);
+            outline-offset: 2px;
+        }
+        
+        /* Touch targets */
+        .touch-target {
+            min-height: 44px;
+            min-width: 44px;
+        }
+        
+        /* Smooth scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Custom shapes */
+        .blob {
+            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+        }
+        
+        .blob-2 {
+            border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+        }
+        
+        /* Marquee animation */
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        
+        .animate-marquee {
+            animation: marquee 30s linear infinite;
+        }
+        
+        /* Float animation */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        /* Pulse glow */
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+        
+        .animate-pulse-glow {
+            animation: pulse-glow 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-white antialiased">
+
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <a href="#" class="flex items-center gap-2 touch-target focus-ring rounded-lg px-2" aria-label="Gradient home">
+                    <div class="w-8 h-8 bg-gradient-brand rounded-lg flex items-center justify-center">
+                        <span class="text-white font-display font-bold text-sm">G</span>
+                    </div>
+                    <span class="font-display font-bold text-xl text-gray-900">Gradient</span>
+                </a>
+                
+                <!-- Desktop menu -->
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#features" class="text-sm font-medium text-gray-700 hover:text-gray-900 focus-ring rounded-lg px-3 py-2 touch-target transition-colors">Features</a>
+                    <a href="#process" class="text-sm font-medium text-gray-700 hover:text-gray-900 focus-ring rounded-lg px-3 py-2 touch-target transition-colors">Process</a>
+                    <a href="#benefits" class="text-sm font-medium text-gray-700 hover:text-gray-900 focus-ring rounded-lg px-3 py-2 touch-target transition-colors">Benefits</a>
+                    <a href="#pricing" class="text-sm font-medium text-gray-700 hover:text-gray-900 focus-ring rounded-lg px-3 py-2 touch-target transition-colors">Pricing</a>
+                    <a href="#faq" class="text-sm font-medium text-gray-700 hover:text-gray-900 focus-ring rounded-lg px-3 py-2 touch-target transition-colors">FAQ</a>
+                </div>
+                
+                <!-- CTA + Mobile toggle -->
+                <div class="flex items-center gap-3">
+                    <a href="#pricing" class="hidden md:inline-flex items-center justify-center px-4 py-2 bg-gradient-brand text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-opacity focus-ring touch-target">
+                        Get Started
+                    </a>
+                    <button class="md:hidden p-2 rounded-lg hover:bg-gray-100 focus-ring touch-target" aria-label="Open menu" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                        <i data-lucide="menu" class="w-6 h-6 text-gray-700"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile menu -->
+        <div id="mobile-menu" class="hidden md:hidden border-t border-gray-200 bg-white">
+            <div class="px-4 py-3 space-y-1">
+                <a href="#features" class="block px-3 py-3 rounded-lg text-base font-medium text-gray-700 hover:bg-gray-50 focus-ring">Features</a>
+                <a href="#process" class="block px-3 py-3 rounded-lg text-base font-medium text-gray-700 hover:bg-gray-50 focus-ring">Process</a>
+                <a href="#benefits" class="block px-3 py-3 rounded-lg text-base font-medium text-gray-700 hover:bg-gray-50 focus-ring">Benefits</a>
+                <a href="#pricing" class="block px-3 py-3 rounded-lg text-base font-medium text-gray-700 hover:bg-gray-50 focus-ring">Pricing</a>
+                <a href="#faq" class="block px-3 py-3 rounded-lg text-base font-medium text-gray-700 hover:bg-gray-50 focus-ring">FAQ</a>
+                <a href="#pricing" class="block px-3 py-3 mt-2 bg-gradient-brand text-white text-base font-semibold rounded-lg text-center">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative overflow-hidden bg-white">
+        <!-- Background shapes -->
+        <div class="absolute top-0 right-0 w-96 h-96 bg-gradient-brand opacity-10 blob animate-float" aria-hidden="true"></div>
+        <div class="absolute bottom-0 left-0 w-72 h-72 bg-gradient-brand opacity-10 blob-2 animate-float" style="animation-delay: 2s" aria-hidden="true"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-brand opacity-5 rounded-full blur-3xl" aria-hidden="true"></div>
+        
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <!-- Left content -->
+                <div>
+                    <div class="inline-flex items-center gap-2 px-4 py-2 bg-purple-50 border border-purple-200 rounded-full mb-6">
+                        <span class="w-2 h-2 bg-gradient-brand rounded-full animate-pulse-glow"></span>
+                        <span class="text-sm font-medium text-purple-700">Version 2.0 — Now available</span>
+                    </div>
+                    <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
+                        Build interfaces that<br>
+                        <span class="text-gradient-brand">flow with color</span>
+                    </h1>
+                    <p class="text-lg text-gray-600 mb-8 max-w-lg">
+                        A modern design system with vibrant gradients, playful interactions, and accessible components. Perfect for teams who want to ship beautiful products faster.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="#pricing" class="inline-flex items-center justify-center px-6 py-3 bg-gradient-brand text-white font-semibold rounded-lg hover:opacity-90 transition-opacity focus-ring touch-target">
+                            Start building free
+                            <i data-lucide="arrow-right" class="w-5 h-5 ml-2"></i>
+                        </a>
+                        <a href="#features" class="inline-flex items-center justify-center px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors focus-ring touch-target">
+                            <i data-lucide="play" class="w-5 h-5 mr-2"></i>
+                            Watch demo
+                        </a>
+                    </div>
+                    <div class="mt-8 flex items-center gap-6">
+                        <div class="flex -space-x-2">
+                            <div class="w-10 h-10 rounded-full bg-gradient-brand flex items-center justify-center border-2 border-white">
+                                <span class="text-white text-xs font-bold">A</span>
+                            </div>
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center border-2 border-white">
+                                <span class="text-white text-xs font-bold">B</span>
+                            </div>
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center border-2 border-white">
+                                <span class="text-white text-xs font-bold">C</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-1">
+                                <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i>
+                                <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i>
+                                <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i>
+                                <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i>
+                                <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i>
+                            </div>
+                            <p class="text-sm text-gray-600 mt-1">Trusted by 12,000+ designers</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right visual -->
+                <div class="relative hidden lg:block">
+                    <div class="relative w-full aspect-square max-w-md mx-auto">
+                        <!-- Main gradient card -->
+                        <div class="absolute inset-0 bg-gradient-brand rounded-3xl shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-500"></div>
+                        <!-- Floating cards -->
+                        <div class="absolute -top-6 -right-6 w-40 h-40 bg-white rounded-2xl shadow-xl p-4 animate-float">
+                            <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mb-2">
+                                <i data-lucide="check" class="w-4 h-4 text-green-600"></i>
+                            </div>
+                            <p class="text-xs font-semibold text-gray-800">Design tokens</p>
+                            <p class="text-xs text-gray-500 mt-1">All synced</p>
+                        </div>
+                        <div class="absolute -bottom-6 -left-6 w-44 h-44 bg-white rounded-2xl shadow-xl p-4 animate-float" style="animation-delay: 1.5s">
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                                    <i data-lucide="zap" class="w-4 h-4 text-purple-600"></i>
+                                </div>
+                                <p class="text-xs font-semibold text-gray-800">Performance</p>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full w-4/5 bg-gradient-brand rounded-full"></div>
+                                </div>
+                                <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full w-3/5 bg-gradient-brand rounded-full"></div>
+                                </div>
+                                <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full w-2/5 bg-gradient-brand rounded-full"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Center icon -->
+                        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-white rounded-2xl shadow-xl flex items-center justify-center">
+                            <i data-lucide="palette" class="w-10 h-10 text-purple-600"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="bg-gradient-brand py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <p class="font-display text-4xl font-bold text-white">99%</p>
+                    <p class="text-sm text-white/80 mt-2">Accessibility score</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-display text-4xl font-bold text-white">120+</p>
+                    <p class="text-sm text-white/80 mt-2">Components</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-display text-4xl font-bold text-white">12k</p>
+                    <p class="text-sm text-white/80 mt-2">Active users</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-display text-4xl font-bold text-white">4.9</p>
+                    <p class="text-sm text-white/80 mt-2">Average rating</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Everything you need to ship faster</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">Powerful features that keep your design system consistent, accessible, and delightful to use.</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="palette" class="w-6 h-6 text-purple-600"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-semibold text-gray-900 mb-2">Design tokens</h3>
+                    <p class="text-gray-600 text-sm">Centralized color, typography, and spacing tokens that keep your entire team in sync.</p>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-pink-100 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="accessibility" class="w-6 h-6 text-pink-600"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-semibold text-gray-900 mb-2">WCAG 2.2 AA</h3>
+                    <p class="text-gray-600 text-sm">Every component is built with accessibility in mind, from contrast to keyboard navigation.</p>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="zap" class="w-6 h-6 text-green-600"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-semibold text-gray-900 mb-2">Lightning fast</h3>
+                    <p class="text-gray-600 text-sm">Optimized for performance with zero runtime dependencies and tree-shaking support.</p>
+                </div>
+                
+                <!-- Feature 4 -->
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="layers" class="w-6 h-6 text-blue-600"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-semibold text-gray-900 mb-2">120+ components</h3>
+                    <p class="text-gray-600 text-sm">From buttons to complex data tables, everything you need is ready to use.</p>
+                </div>
+                
+                <!-- Feature 5 -->
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="smartphone" class="w-6 h-6 text-yellow-600"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-semibold text-gray-900 mb-2">Fully responsive</h3>
+                    <p class="text-gray-600 text-sm">Every component adapts seamlessly from mobile to desktop with consistent spacing.</p>
+                </div>
+                
+                <!-- Feature 6 -->
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-cyan-100 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="code-2" class="w-6 h-6 text-cyan-600"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-semibold text-gray-900 mb-2">Developer friendly</h3>
+                    <p class="text-gray-600 text-sm">Clean TypeScript APIs with full autocomplete and comprehensive documentation.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Process Section -->
+    <section id="process" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-4">How it works</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">Get up and running in minutes with our streamlined process.</p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Step 1 -->
+                <div class="relative">
+                    <div class="bg-gradient-brand text-white font-display text-2xl font-bold w-16 h-16 rounded-2xl flex items-center justify-center mb-4">01</div>
+                    <h3 class="font-display text-xl font-semibold text-gray-900 mb-2">Install</h3>
+                    <p class="text-gray-600">Add the package to your project with a single command. No complex setup required.</p>
+                    <div class="mt-4 bg-gray-50 rounded-lg p-4 font-mono text-sm text-gray-700">npm install gradient-ui</div>
+                </div>
+                
+                <!-- Step 2 -->
+                <div class="relative">
+                    <div class="bg-gradient-brand text-white font-display text-2xl font-bold w-16 h-16 rounded-2xl flex items-center justify-center mb-4">02</div>
+                    <h3 class="font-display text-xl font-semibold text-gray-900 mb-2">Configure</h3>
+                    <p class="text-gray-600">Customize tokens to match your brand. Everything is themeable and extensible.</p>
+                    <div class="mt-4 bg-gray-50 rounded-lg p-4 font-mono text-sm text-gray-700">// theme.ts</div>
+                </div>
+                
+                <!-- Step 3 -->
+                <div class="relative">
+                    <div class="bg-gradient-brand text-white font-display text-2xl font-bold w-16 h-16 rounded-2xl flex items-center justify-center mb-4">03</div>
+                    <h3 class="font-display text-xl font-semibold text-gray-900 mb-2">Deploy</h3>
+                    <p class="text-gray-600">Ship your product with confidence. Components are production-ready from day one.</p>
+                    <div class="mt-4 bg-gray-50 rounded-lg p-4 font-mono text-sm text-gray-700">npm run build</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section id="benefits" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <!-- Left visual -->
+                <div class="relative">
+                    <div class="bg-gradient-brand rounded-3xl p-8 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-2xl" aria-hidden="true"></div>
+                        <div class="relative">
+                            <div class="flex items-center gap-4 mb-6">
+                                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                                    <i data-lucide="trending-up" class="w-6 h-6 text-white"></i>
+                                </div>
+                                <div>
+                                    <p class="text-white font-semibold">Productivity boost</p>
+                                    <p class="text-white/70 text-sm">+47% faster delivery</p>
+                                </div>
+                            </div>
+                            <div class="space-y-4">
+                                <div class="bg-white/10 rounded-xl p-4">
+                                    <div class="flex justify-between text-sm text-white mb-2">
+                                        <span>Design consistency</span>
+                                        <span>94%</span>
+                                    </div>
+                                    <div class="h-2 bg-white/20 rounded-full overflow-hidden">
+                                        <div class="h-full w-[94%] bg-white rounded-full"></div>
+                                    </div>
+                                </div>
+                                <div class="bg-white/10 rounded-xl p-4">
+                                    <div class="flex justify-between text-sm text-white mb-2">
+                                        <span>Team adoption</span>
+                                        <span>87%</span>
+                                    </div>
+                                    <div class="h-2 bg-white/20 rounded-full overflow-hidden">
+                                        <div class="h-full w-[87%] bg-white rounded-full"></div>
+                                    </div>
+                                </div>
+                                <div class="bg-white/10 rounded-xl p-4">
+                                    <div class="flex justify-between text-sm text-white mb-2">
+                                        <span>Accessibility</span>
+                                        <span>99%</span>
+                                    </div>
+                                    <div class="h-2 bg-white/20 rounded-full overflow-hidden">
+                                        <div class="h-full w-[99%] bg-white rounded-full"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right content -->
+                <div>
+                    <h2 class="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-6">Why teams choose Gradient</h2>
+                    <div class="space-y-6">
+                        <div class="flex gap-4">
+                            <div class="flex-shrink-0 w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
+                                <i data-lucide="check-circle" class="w-5 h-5 text-green-600"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-900 mb-1">Consistent by default</h3>
+                                <p class="text-gray-600 text-sm">Every component follows the same design language, so your product looks cohesive everywhere.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                                <i data-lucide="shield-check" class="w-5 h-5 text-blue-600"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-900 mb-1">Accessible out of the box</h3>
+                                <p class="text-gray-600 text-sm">WCAG 2.2 AA compliance built into every component. No extra work needed.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                                <i data-lucide="users" class="w-5 h-5 text-purple-600"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-900 mb-1">Team friendly</h3>
+                                <p class="text-gray-600 text-sm">Designed for collaboration with clear documentation and predictable APIs.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="flex-shrink-0 w-10 h-10 bg-yellow-100 rounded-xl flex items-center justify-center">
+                                <i data-lucide="clock" class="w-5 h-5 text-yellow-600"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-900 mb-1">Future-proof</h3>
+                                <p class="text-gray-600 text-sm">Regular updates with new components and improvements based on community feedback.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Loved by teams worldwide</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">See what our community says about building with Gradient.</p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Testimonial 1 -->
+                <div class="bg-gray-50 p-6 rounded-2xl border border-gray-200">
+                    <div class="flex items-center gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i>
+                    </div>
+                    <p class="text-gray-700 mb-6">"Gradient transformed how our team builds interfaces. The components are beautiful, accessible, and incredibly easy to use."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gradient-brand rounded-full flex items-center justify-center">
+                            <span class="text-white text-sm font-bold">SR</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900 text-sm">Sarah Johnson</p>
+                            <p class="text-gray-500 text-xs">Product Lead, TechFlow</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Testimonial 2 -->
+                <div class="bg-gray-50 p-6 rounded-2xl border border-gray-200">
+                    <div class="flex items-center gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i>
+                    </div>
+                    <p class="text-gray-700 mb-6">"The accessibility features are a game-changer. We passed our audit with flying colors thanks to Gradient's built-in compliance."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-pink-500 to-rose-500 rounded-full flex items-center justify-center">
+                            <span class="text-white text-sm font-bold">MC</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900 text-sm">Marcus Chen</p>
+                            <p class="text-gray-500 text-xs">Engineering Manager, DataCore</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Testimonial 3 -->
+                <div class="bg-gray-50 p-6 rounded-2xl border border-gray-200">
+                    <div class="flex items-center gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-yellow-400 text-yellow-400"></i>
+                    </div>
+                    <p class="text-gray-700 mb-6">"We shipped our redesign in half the time. The gradient system is stunning and the developer experience is top-notch."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
+                            <span class="text-white text-sm font-bold">EL</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900 text-sm">Emily Lopez</p>
+                            <p class="text-gray-500 text-xs">Design Director, PixelPerfect</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Simple, transparent pricing</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">Start free and scale as you grow. No hidden fees, cancel anytime.</p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <!-- Free plan -->
+                <div class="bg-white p-8 rounded-2xl border border-gray-200 flex flex-col">
+                    <h3 class="font-display text-xl font-semibold text-gray-900 mb-2">Starter</h3>
+                    <p class="text-gray-500 text-sm mb-6">For personal projects</p>
+                    <div class="mb-6">
+                        <span class="font-display text-4xl font-bold text-gray-900">$0</span>
+                        <span class="text-gray-500">/month</span>
+                    </div>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <i data-lucide="check" class="w-4 h-4 text-green-500"></i>
+                            50 components
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <i data-lucide="check" class="w-4 h-4 text-green-500"></i>
+                            Community support
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <i data-lucide="check" class="w-4 h-4 text-green-500"></i>
+                            Basic tokens
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <i data-lucide="check" class="w-4 h-4 text-green-500"></i>
+                            MIT license
+                        </li>
+                    </ul>
+                    <a href="#" class="inline-flex items-center justify-center px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors focus-ring touch-target">
+                        Get started
+                    </a>
+                </div>
+                
+                <!-- Pro plan (featured) -->
+                <div class="bg-gradient-brand p-8 rounded-2xl text-white flex flex-col relative transform scale-105 shadow-xl">
+                    <div class="absolute top-4 right-4 bg-white/20 rounded-full px-3 py-1 text-xs font-semibold">Popular</div>
+                    <h3 class="font-display text-xl font-semibold mb-2">Pro</h3>
+                    <p class="text-white/80 text-sm mb-6">For growing teams</p>
+                    <div class="mb-6">
+                        <span class="font-display text-4xl font-bold">$49</span>
+                        <span class="text-white/80">/month</span>
+                    </div>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4"></i>
+                            All 120+ components
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4"></i>
+                            Priority support
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4"></i>
+                            Custom tokens
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4"></i>
+                            Figma library
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4"></i>
+                            Team collaboration
+                        </li>
+                    </ul>
+                    <a href="#" class="inline-flex items-center justify-center px-6 py-3 bg-white text-purple-700 font-semibold rounded-lg hover:bg-gray-100 transition-colors focus-ring touch-target">
+                        Start free trial
+                    </a>
+                </div>
+                
+                <!-- Enterprise plan -->
+                <div class="bg-white p-8 rounded-2xl border border-gray-200 flex flex-col">
+                    <h3 class="font-display text-xl font-semibold text-gray-900 mb-2">Enterprise</h3>
+                    <p class="text-gray-500 text-sm mb-6">For large organizations</p>
+                    <div class="mb-6">
+                        <span class="font-display text-4xl font-bold text-gray-900">Custom</span>
+                    </div>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <i data-lucide="check" class="w-4 h-4 text-green-500"></i>
+                            Everything in Pro
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <i data-lucide="check" class="w-4 h-4 text-green-500"></i>
+                            Dedicated support
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <i data-lucide="check" class="w-4 h-4 text-green-500"></i>
+                            SSO & SAML
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <i data-lucide="check" class="w-4 h-4 text-green-500"></i>
+                            Custom SLAs
+                        </li>
+                    </ul>
+                    <a href="#" class="inline-flex items-center justify-center px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors focus-ring touch-target">
+                        Contact sales
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="py-20 bg-white">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Frequently asked questions</h2>
+                <p class="text-lg text-gray-600">Everything you need to know about Gradient.</p>
+            </div>
+            
+            <div class="space-y-4">
+                <!-- FAQ 1 -->
+                <details class="group bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden">
+                    <summary class="flex items-center justify-between p-6 cursor-pointer focus-ring">
+                        <span class="font-semibold text-gray-900">Is Gradient free to use?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <div class="px-6 pb-6 text-gray-600">
+                        Yes! The Starter plan is completely free with an MIT license. You can use it in personal and commercial projects without any restrictions.
+                    </div>
+                </details>
+                
+                <!-- FAQ 2 -->
+                <details class="group bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden">
+                    <summary class="flex items-center justify-between p-6 cursor-pointer focus-ring">
+                        <span class="font-semibold text-gray-900">Can I customize the design tokens?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <div class="px-6 pb-6 text-gray-600">
+                        Absolutely! All design tokens are fully customizable. You can override colors, typography, spacing, and more to match your brand perfectly.
+                    </div>
+                </details>
+                
+                <!-- FAQ 3 -->
+                <details class="group bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden">
+                    <summary class="flex items-center justify-between p-6 cursor-pointer focus-ring">
+                        <span class="font-semibold text-gray-900">Is the design system accessible?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <div class="px-6 pb-6 text-gray-600">
+                        Yes, every component is built to WCAG 2.2 AA standards. We test for keyboard navigation, screen reader compatibility, and color contrast.
+                    </div>
+                </details>
+                
+                <!-- FAQ 4 -->
+                <details class="group bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden">
+                    <summary class="flex items-center justify-between p-6 cursor-pointer focus-ring">
+                        <span class="font-semibold text-gray-900">Do you offer a Figma library?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <div class="px-6 pb-6 text-gray-600">
+                        Yes! Pro and Enterprise plans include access to our complete Figma library with all components, tokens, and design assets.
+                    </div>
+                </details>
+                
+                <!-- FAQ 5 -->
+                <details class="group bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden">
+                    <summary class="flex items-center justify-between p-6 cursor-pointer focus-ring">
+                        <span class="font-semibold text-gray-900">What frameworks are supported?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <div class="px-6 pb-6 text-gray-600">
+                        Gradient works with React, Vue, Svelte, and vanilla JavaScript. We also provide framework-specific wrappers for the best developer experience.
+                    </div>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 bg-gradient-brand">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="font-display text-3xl sm:text-4xl font-bold text-white mb-4">Ready to build something amazing?</h2>
+            <p class="text-white/80 text-lg mb-8">Join thousands of developers who ship faster with Gradient.</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#" class="inline-flex items-center justify-center px-8 py-3 bg-white text-purple-700 font-semibold rounded-lg hover:bg-gray-100 transition-colors focus-ring touch-target">
+                    Start building free
+                    <i data-lucide="arrow-right" class="w-5 h-5 ml-2"></i>
+                </a>
+                <a href="#" class="inline-flex items-center justify-center px-8 py-3 border-2 border-white text-white font-semibold rounded-lg hover:bg-white/10 transition-colors focus-ring touch-target">
+                    View documentation
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-300 py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8 mb-12">
+                <!-- Brand -->
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-gradient-brand rounded-lg flex items-center justify-center">
+                            <span class="text-white font-display font-bold text-sm">G</span>
+                        </div>
+                        <span class="font-display font-bold text-xl text-white">Gradient</span>
+                    </div>
+                    <p class="text-sm text-gray-400">A modern design system for building beautiful, accessible interfaces.</p>
+                </div>
+                
+                <!-- Product -->
+                <div>
+                    <h4 class="font-semibold text-white mb-4">Product</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#features" class="hover:text-white transition-colors focus-ring rounded px-2 py-1 inline-block">Features</a></li>
+                        <li><a href="#pricing" class="hover:text-white transition-colors focus-ring rounded px-2 py-1 inline-block">Pricing</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded px-2 py-1 inline-block">Changelog</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded px-2 py-1 inline-block">Roadmap</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Resources -->
+                <div>
+                    <h4 class="font-semibold text-white mb-4">Resources</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded px-2 py-1 inline-block">Documentation</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded px-2 py-1 inline-block">Components</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded px-2 py-1 inline-block">Design tokens</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded px-2 py-1 inline-block">Figma library</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Company -->
+                <div>
+                    <h4 class="font-semibold text-white mb-4">Company</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded px-2 py-1 inline-block">About</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded px-2 py-1 inline-block">Blog</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded px-2 py-1 inline-block">Careers</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-ring rounded px-2 py-1 inline-block">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+                <p class="text-sm text-gray-400">© 2024 Gradient. All rights reserved.</p>
+                <div class="flex items-center gap-4">
+                    <a href="#" class="p-2 hover:text-white transition-colors focus-ring rounded-lg touch-target" aria-label="Twitter">
+                        <i data-lucide="twitter" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="p-2 hover:text-white transition-colors focus-ring rounded-lg touch-target" aria-label="GitHub">
+                        <i data-lucide="github" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="p-2 hover:text-white transition-colors focus-ring rounded-lg touch-target" aria-label="LinkedIn">
+                        <i data-lucide="linkedin" class="w-5 h-5"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Initialize Lucide icons -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

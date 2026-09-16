@@ -9,16 +9,54 @@ def start_http():
         print(f"HTTP server failed: {e}")
 
 
-def resume_interrupted_projects():
-    """Resume only crash-interrupted work once; failed and explicitly paused work waits."""
+def _runs_the_last_server_left() -> dict:
+    """{(project, agent): status} as the last server wrote it, read before anything else writes.
+
+    Stored status, not the read one: a read turns `running` and `queued` alike
+    into `interrupted`, and the difference is the whole question here. It has to
+    be taken in one pass up front, because saving any agent rewrites its whole
+    project file and settles that difference away.
+    """
+    from server_modules.services.project_state import SERVER_ID, read_json
+    stored = {}
+    for path in PROD_DIR.glob("*/.agentforge/workflow.json"):
+        for role, agent in (read_json(path).get("agents") or {}).items():
+            if agent.get("server_id") != SERVER_ID:
+                stored[(path.parent.parent.name, role)] = str(agent.get("status") or "")
+    return stored
+
+
+def _settle(project: str, role: str, status: str, error: str = "") -> None:
+    """Write down where a run stopped, so the studio can offer it rather than run it."""
+    try:
+        ProjectState(PROD_DIR / project).agent(role, status=status, error=error)
+    except (OSError, ValueError) as problem:
+        log.warning("Cannot settle %s %s: %s", project, role, problem)
+
+
+def settle_interrupted_runs():
+    """Settle what the last server left behind. Only an unfinished change transaction runs on its own.
+
+    A build that was interrupted comes back as something to press Resume on,
+    not as a build that takes the machine before anyone asks for it. Starting
+    them here spent the one machine there is on work nobody had just asked for:
+    every restart handed the queue to an old build, and whatever the person at
+    the studio asked for next sat behind it. A change transaction part-way
+    through is the exception - until it finishes, a project's documents
+    disagree with its code.
+    """
     if not PROD_DIR.is_dir():
         return
-    recovered = set()
-    pending = sorted(PROD_DIR.glob("*/.agentforge/requests/*.json"), key=lambda item: item.name)
-    if pending and not wait_for_srs_startup():
-        log.warning("Saved requests remain available; the SRS service could not start")
-        return
-    for path in pending:
+    stored = _runs_the_last_server_left()
+    for (project, role), status in stored.items():
+        if status in ("running", "finishing"):
+            _settle(project, role, "interrupted",
+                    "The server stopped during this run. Resume it when you want it.")
+        elif status == "queued":
+            _settle(project, role, "paused",
+                    "The server restarted before this run started. Start it again when you want it.")
+    transactions = []
+    for path in sorted(PROD_DIR.glob("*/.agentforge/requests/*.json"), key=lambda item: item.name):
         try:
             request = json.loads(path.read_text(encoding="utf-8"))
             if request.get("sync_error"):
@@ -26,29 +64,21 @@ def resume_interrupted_projects():
             project, owner, kind = request["project"], request["owner"], request["target"]
             if kind not in _DURABLE_TARGETS or not owner or auth_db.owner_of("project", project) != owner:
                 continue
-            recovered.add((project, request["agent"]))
-            start_run(globals()[kind], tuple(request["args"]), project=project, user={"id": owner}, replay_path=path)
+            if request.get("stage"):
+                transactions.append((path, request, project, owner, kind))
+                continue
+            # Where its run stopped is written down above; the studio offers it
+            # from there, so nothing is left to replay.
+            log.info("%s %s: saved for Resume, not restarted", project, request["agent"])
+            path.unlink(missing_ok=True)
         except (OSError, ValueError, KeyError) as error:
-            log.warning("Cannot recover request %s: %s", path.name, error)
-    for directory in PROD_DIR.iterdir():
-        if not directory.is_dir() or directory.name.startswith("."):
-            continue
-        try:
-            state = ProjectState(directory).read()
-            for role, agent in state.get("agents", {}).items():
-                if (directory.name, role) in recovered:
-                    continue
-                if agent.get("status") != "interrupted":
-                    continue
-                request = agent.get("request", {})
-                owner = agent.get("owner")
-                if not request or not owner or auth_db.owner_of("project", directory.name) != owner:
-                    continue
-                start_run(run_agent_pipeline, ("", request.get("model", ""), request.get("think"), "",
-                    directory.name, "", "", request.get("stack", ""), "", role == "designer"),
-                    project=directory.name, user={"id": owner})
-        except (OSError, ValueError) as error:
-            log.warning("Cannot recover %s: %s", directory.name, error)
+            log.warning("Cannot settle request %s: %s", path.name, error)
+    if transactions and not wait_for_srs_startup():
+        log.warning("Saved changes remain available; the SRS service could not start")
+        return
+    for path, request, project, owner, kind in transactions:
+        start_run(globals()[kind], tuple(request["args"]), project=project,
+                  user={"id": owner}, replay_path=path)
 
 
 async def main():
@@ -60,7 +90,7 @@ async def main():
     threading.Thread(target=start_srs_api, daemon=True).start()
     threading.Thread(target=start_deploy_api, daemon=True).start()
     threading.Thread(target=start_http, daemon=True).start()
-    threading.Thread(target=resume_interrupted_projects, daemon=True).start()
+    threading.Thread(target=settle_interrupted_runs, daemon=True).start()
     print(f"\n{'━'*46}")
     print(f"  ⚡ AgentForge v1.0.0 Starting...")
     print(f"  ⚡ UI Server   →  http://127.0.0.1:{UI_PORT}")

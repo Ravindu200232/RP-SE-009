@@ -21,7 +21,7 @@ export default function EndToEnd({ qa }) {
     <div className="space-y-4">
       <div className="grid gap-3 lg:grid-cols-[240px_1fr]">
         <ScoreCard score={score} />
-        <div className="rounded-2xl border border-white/10 bg-[#121622]/80 p-5 shadow-xl backdrop-blur-xl">
+        <div className="rounded-2xl border border-line bg-[#1C252E] p-5 shadow-xl backdrop-blur-xl">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[.16em] text-slate-400">Final browser proof</p>
@@ -46,13 +46,13 @@ export default function EndToEnd({ qa }) {
       </div>
 
       {!e2e.ran && (
-        <div className="rounded-2xl border border-white/10 bg-[#121622]/80 p-5 text-[12px] text-slate-400 backdrop-blur-xl">
+        <div className="rounded-2xl border border-line bg-[#1C252E] p-5 text-[12px] text-slate-400 backdrop-blur-xl">
           No complete browser-stage trace was saved for this project.
         </div>
       )}
 
       {(e2e.recordedOutcomes || []).map((row, index) => (
-        <div key={index} className="rounded-2xl border border-white/10 bg-[#121622]/80 p-5 shadow-xl backdrop-blur-xl">
+        <div key={index} className="rounded-2xl border border-line bg-[#1C252E] p-5 shadow-xl backdrop-blur-xl">
           <div className="flex flex-wrap items-center gap-2.5">
             <Badge tone="mute">historical outcome</Badge>
             <b className="text-[13px] font-semibold text-white">{row.suite}</b>
@@ -69,7 +69,7 @@ export default function EndToEnd({ qa }) {
       )}
 
       {e2e.global_integrity?.ran && (
-        <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#121622]/80 p-4 shadow-xl backdrop-blur-xl">
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-[#1C252E] p-4 shadow-xl backdrop-blur-xl">
           <div>
             <p className="text-[13px] font-semibold text-white">Global route & role integrity</p>
             <p className="mt-0.5 text-[11.5px] text-slate-400">One final proof after the user journeys: route health, auth boundaries and role separation.</p>
@@ -122,7 +122,7 @@ function DiagnosticEvidence({ suite, suites }) {
 
 function ScoreCard({ score }) {
   if (!score.total) return (
-    <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-[#121622]/80 p-5 shadow-xl backdrop-blur-xl">
+    <div className="flex items-center gap-4 rounded-2xl border border-line bg-[#1C252E] p-5 shadow-xl backdrop-blur-xl">
       <div className="grid size-20 shrink-0 place-items-center rounded-full border-4 border-white/10 text-slate-500">
         <CircleDashed className="size-8" />
       </div>
@@ -135,14 +135,14 @@ function ScoreCard({ score }) {
   )
   const deg = Math.max(0, Math.min(360, score.rate * 3.6))
   return (
-    <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-[#121622]/80 p-5 shadow-xl backdrop-blur-xl">
+    <div className="flex items-center gap-4 rounded-2xl border border-line bg-[#1C252E] p-5 shadow-xl backdrop-blur-xl">
       <div 
         className="relative grid size-24 shrink-0 place-items-center rounded-full p-[6px] shadow-[0_0_25px_rgba(0,0,0,0.45)]"
-        style={{ background: `conic-gradient(#10b981 0deg ${deg}deg, rgba(255,255,255,0.08) ${deg}deg 360deg)` }}
+        style={{ background: `conic-gradient(#22C55E 0deg ${deg}deg, rgba(255,255,255,0.08) ${deg}deg 360deg)` }}
       >
-        <div className="grid size-full place-items-center rounded-full bg-[#0c0f17]">
+        <div className="grid size-full place-items-center rounded-full bg-[#141A21]">
           <div className="text-center">
-            <div className={cn('font-display text-[24px] font-black leading-none', score.rate === 100 ? 'text-emerald-400' : score.rate >= 80 ? 'text-amber-400' : 'text-rose-400')}>
+            <div className={cn('font-display text-[24px] font-black leading-none', score.rate === 100 ? 'text-[#22C55E]' : score.rate >= 80 ? 'text-[#FFAB00]' : 'text-[#FF5630]')}>
               {score.rate}%
             </div>
             <div className="mt-1 text-[9px] font-bold uppercase tracking-[.14em] text-slate-400">E2E</div>
@@ -153,8 +153,8 @@ function ScoreCard({ score }) {
         <div className="font-display text-[22px] font-extrabold tracking-tight text-white">{score.passed}/{score.total}</div>
         <div className="text-[11.5px] text-slate-400">all final E2E stages</div>
         <div className="mt-2.5 flex gap-3 text-[11px] font-semibold">
-          <span className="text-emerald-400">{score.passed} pass</span>
-          <span className="text-rose-400">{score.failed} fail</span>
+          <span className="text-[#22C55E]">{score.passed} pass</span>
+          <span className="text-[#FF5630]">{score.failed} fail</span>
         </div>
       </div>
     </div>
@@ -166,7 +166,7 @@ function Journey({ flow }) {
   const score = journeyStageSummary(flow)
   const stages = flow.stages || []
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#121622]/80 shadow-xl backdrop-blur-xl transition-all duration-200 hover:border-white/20">
+    <div className="overflow-hidden rounded-2xl border border-line bg-[#1C252E] shadow-xl backdrop-blur-xl transition-all duration-200 hover:border-white/20">
       <button onClick={() => setOpen(v => !v)} className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-white/[0.03]">
         {open ? <ChevronDown className="size-4 text-slate-400" /> : <ChevronRight className="size-4 text-slate-400" />}
         <div className="min-w-0 flex-1">
@@ -186,7 +186,7 @@ function Journey({ flow }) {
               <span className="font-semibold text-slate-200">{score.rate}%</span>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-              <div className="h-full rounded-full bg-emerald-400 transition-all duration-500" style={{ width: `${score.rate}%` }} />
+              <div className="h-full rounded-full bg-[#22C55E] transition-all duration-500" style={{ width: `${score.rate}%` }} />
             </div>
           </div>
         )}
@@ -210,10 +210,10 @@ function Stage({ stage }) {
   const Icon = stage.status === 'pass' ? CircleCheck : stage.status === 'fail' ? CircleX : CircleDashed
   return (
     <li className="flex items-center gap-3 py-2 text-[11.5px]">
-      <Icon className={cn('size-4 shrink-0', stage.status === 'pass' ? 'text-emerald-400' : stage.status === 'fail' ? 'text-rose-400' : 'text-slate-500')} />
+      <Icon className={cn('size-4 shrink-0', stage.status === 'pass' ? 'text-[#22C55E]' : stage.status === 'fail' ? 'text-[#FF5630]' : 'text-slate-500')} />
       <span className="w-5 shrink-0 font-mono text-slate-500">{String(stage.index || '').padStart(2, '0')}</span>
       <code className={cn('break-all font-mono', stage.status === 'not_reached' ? 'text-slate-500' : 'text-slate-200')}>{stage.label}</code>
-      <span className={cn('ml-auto shrink-0 text-[10px] font-bold uppercase tracking-wider', stage.status === 'pass' ? 'text-emerald-400' : stage.status === 'fail' ? 'text-rose-400' : 'text-slate-500')}>{String(stage.status || '').replace('_', ' ')}</span>
+      <span className={cn('ml-auto shrink-0 text-[10px] font-bold uppercase tracking-wider', stage.status === 'pass' ? 'text-[#22C55E]' : stage.status === 'fail' ? 'text-[#FF5630]' : 'text-slate-500')}>{String(stage.status || '').replace('_', ' ')}</span>
     </li>
   )
 }

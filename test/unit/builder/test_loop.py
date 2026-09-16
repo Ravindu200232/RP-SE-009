@@ -264,7 +264,7 @@ class LoopTests(unittest.TestCase):
         self.assertIn("project-layout", kinds)
         self.assertIn("skill-catalog", kinds)
         self.assertIn("task", kinds)
-        self.assertTrue((self.root / ".agents" / "skills" / "full-app-builder").is_dir())
+        self.assertTrue((self.root / ".agents" / "skills" / "stack-nextjs").is_dir())
 
     def test_an_empty_workspace_is_scaffolded_from_the_verified_template(self):
         loop = self.build([turn(content="ok")])
@@ -339,23 +339,54 @@ class RepeatedReadTests(unittest.TestCase):
                     memory=Memory(budget_tokens=64_000), sandbox=Sandbox(root),
                     events=Events(), processes=None, browser=None)
 
-    def read(self, loop, name="notes.md"):
+    def read(self, loop, name="notes.md", **window):
         from builder_agent.llm import ToolCall
-        loop._run_one(ToolCall("c", "readFile", {"filePath": name}))
+        loop._run_one(ToolCall("c", "readFile", {"filePath": name, **window}))
         return loop.memory.messages[-1].get("content") or ""
 
-    def test_the_same_answer_three_times_is_called_out(self):
+    def test_the_same_answer_three_times_is_noticed_but_never_refused(self):
         loop = self.loop()
         first = self.read(loop)
         second = self.read(loop)
         third = self.read(loop)
 
-        self.assertNotIn("time readFile has returned", first)
-        self.assertNotIn("time readFile has returned", second)
-        self.assertIn("3th time readFile has returned exactly this answer", third)
+        self.assertNotIn("Read 2 times", first)
+        self.assertNotIn("Read 2 times", second)
+        self.assertIn("Read 3 times in this run", third)
         # The answer itself is still there — this is an observation, not a
         # refusal, and the model may well still need what it read.
         self.assertIn("the same answer every time", third)
+
+    def test_reading_the_same_file_many_times_is_still_allowed(self):
+        """Nothing refuses a repeat. The model decides whether it needs it.
+
+        The guard this replaces turned the sixth read into a failure, which is
+        a gate: it answers a question only the model can answer, and it answers
+        it wrong whenever the file is genuinely needed again.
+        """
+        loop = self.loop()
+        for _ in range(8):
+            body = self.read(loop)
+        self.assertIs(loop.memory.messages[-1]["meta"]["ok"], True)
+        self.assertIn("the same answer every time", body)
+
+    def test_a_window_of_a_file_already_read_is_still_that_file(self):
+        """Paging must not buy a fresh count for every offset.
+
+        `_signature` hashes offset and limit with the path, so nine slices of
+        one stylesheet looked like nine unrelated calls: a build read
+        styles.css forty-nine times, wrote nothing, and ran twelve minutes.
+        """
+        loop = self.loop()
+        long = "\n".join(f"line {n}" for n in range(1, 40))
+        (Path(loop.sandbox.root) / "long.md").write_text(long, encoding="utf-8")
+
+        self.read(loop, "long.md", offset=0, limit=10)
+        self.read(loop, "long.md", offset=10, limit=10)
+        third = self.read(loop, "long.md", offset=11, limit=10)
+
+        self.assertIn("Read 3 times in this run", third)
+        self.assertIn("long.md", third)
 
     def test_a_different_file_starts_its_own_count(self):
         loop = self.loop()
@@ -363,7 +394,7 @@ class RepeatedReadTests(unittest.TestCase):
         for _ in range(3):
             self.read(loop)
         other = self.read(loop, "other.md")
-        self.assertNotIn("time readFile has returned", other)
+        self.assertNotIn("Read 2 times", other)
 
     def test_changing_the_project_clears_the_count(self):
         """After an edit the same read is a new question, not a repeat."""
@@ -371,4 +402,36 @@ class RepeatedReadTests(unittest.TestCase):
         for _ in range(3):
             self.read(loop)
         loop.repeated_reads.clear()          # what a mutating tool does
-        self.assertNotIn("time readFile has returned", self.read(loop))
+        self.assertNotIn("Read 2 times", self.read(loop))
+
+    def edit(self, loop, name, old, new):
+        from builder_agent.llm import ToolCall
+        loop._run_one(ToolCall("e", "editFile",
+                               {"filePath": name, "oldString": old, "newString": new}))
+        return loop.memory.messages[-1]
+
+    def test_editing_one_file_many_times_is_never_refused(self):
+        """An edit fails when it is wrong, never because it is the fourth.
+
+        A count that refuses the next edit is a gate: it decides for the model
+        how many changes a file is allowed to need. What makes edits rare is
+        the model keeping the file in its window, not the engine saying no.
+        """
+        loop = self.loop()
+        page = "page.html"
+        (Path(loop.sandbox.root) / page).write_text("a\nb\nc\nd\ne\nf\n", encoding="utf-8")
+
+        for old, new in (("a", "A"), ("b", "B"), ("c", "C"), ("d", "D"), ("e", "E")):
+            result = self.edit(loop, page, old, new)
+            self.assertIs(result["meta"]["ok"], True, f"edit {old}->{new} was refused")
+
+        self.assertEqual((Path(loop.sandbox.root) / page).read_text(encoding="utf-8"),
+                         "A\nB\nC\nD\nE\nf\n")
+
+    def test_an_edit_still_fails_when_it_is_actually_wrong(self):
+        """The only refusals left are correctness ones."""
+        loop = self.loop()
+        page = "page.html"
+        (Path(loop.sandbox.root) / page).write_text("one\ntwo\n", encoding="utf-8")
+        missing = self.edit(loop, page, "nowhere-in-the-file", "x")
+        self.assertIs(missing["meta"]["ok"], False)

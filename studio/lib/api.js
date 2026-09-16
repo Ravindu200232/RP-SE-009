@@ -68,6 +68,9 @@ export const api = {
   settings: () => req('/settings'),
   saveSettings: (s) => post('/settings', s),
   imageCheck: () => req('/image-check'),
+  // Draws one design theme's own page. Kept afterwards, so the second
+  // person to open that theme waits for a file read, not for a model.
+  drawThemePreview: (slug, model) => post('/design-theme-preview', { slug, model }),
   imageStart: () => post('/image-start', {}),
   files: (project, agent = 'developer') => req(`/files/${encodeURIComponent(project)}?agent=${agent}`),
   saveFile: (project, path, content, changeSummary = '') => post('/save-file', { project, path, content, change_summary: changeSummary }),

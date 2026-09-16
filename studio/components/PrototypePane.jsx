@@ -508,7 +508,7 @@ export default function PrototypePane({ project, hidden, onBuild }) {
             onClick={handleBuildAppNow}
             disabled={isBusy || !buildAllowed}
             title="Build full application from this prototype"
-            className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3.5 py-1.5 text-[11.5px] font-semibold text-white shadow-md shadow-blue-500/20 transition-all hover:bg-blue-500 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-full bg-[#1877F2] px-3.5 py-1.5 text-[11.5px] font-semibold text-white shadow-[0_8px_16px_0_rgba(24,119,242,0.24)] transition-all hover:bg-[#0C44AE] active:scale-95 disabled:pointer-events-none disabled:opacity-50"
           >
             <Rocket className="size-3" /> {isBusy ? 'Building…' : 'Build App Now'}
           </button>

@@ -501,12 +501,12 @@ export default function PreviewPane({ hidden, onBuild }) {
         </div>
 
         {!drawing && (runtime?.status === 'running' && !iframeLoading ? (
-          <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.15)]">
-            <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+          <div className="flex items-center gap-1.5 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/10 px-3 py-1 text-[11px] font-semibold text-[#22C55E] shadow-[0_0_12px_rgba(34,197,94,0.15)]">
+            <span className="size-1.5 rounded-full bg-[#22C55E]" />
             <span>Running</span>
           </div>
         ) : (runtime?.status === 'starting' || iframeLoading) ? (
-          <div className="flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-[11px] font-semibold text-blue-400">
+          <div className="flex items-center gap-1.5 rounded-full border border-[#1877F2]/30 bg-[#1877F2]/10 px-3 py-1 text-[11px] font-semibold text-[#1877F2]">
             <Loader2 className="size-3 animate-spin" />
             <span>Starting</span>
           </div>
@@ -516,7 +516,7 @@ export default function PreviewPane({ hidden, onBuild }) {
             accepted. Sending it back is typed in the chat like anything else. */}
         {drawing && (
           <button onClick={approveDrawing}
-                  className="shrink-0 rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-semibold text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500 active:scale-95">
+                  className="shrink-0 rounded-xl bg-[#1877F2] px-4 py-2 text-[12px] font-semibold text-white shadow-[0_8px_16px_0_rgba(24,119,242,0.24)] transition-all hover:bg-[#0C44AE] active:scale-95">
             Build this
           </button>
         )}

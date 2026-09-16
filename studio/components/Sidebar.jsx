@@ -104,8 +104,8 @@ export default function Sidebar({
       String(p.name || '').toLowerCase().includes(needle))
   }, [projects, q])
 
-  const dot = { live: 'bg-emerald-500', busy: 'bg-amber-400', connecting: 'bg-blue-400' }[status]
-    || 'bg-rose-500'
+  const dot = { live: 'bg-[#22C55E]', busy: 'bg-[#FFAB00]', connecting: 'bg-[#1877F2]' }[status]
+    || 'bg-[#FF5630]'
 
   const renderBody = (isMobile = false) => (
     <>
@@ -117,10 +117,10 @@ export default function Sidebar({
             if (isMobile) onMobileClose?.()
           }}
           className={cn(
-            'flex items-center gap-3 rounded-xl px-3 py-2 font-medium transition-colors text-left',
+            'flex items-center gap-3 rounded-xl px-3 py-2 font-medium transition-all text-left',
             screen === 'home'
-              ? 'bg-accent/15 text-accent border border-accent/25 font-semibold shadow-sm'
-              : 'text-white/70 hover:bg-white/[.05] hover:text-white'
+              ? 'bg-[#1877F2]/10 text-[#1877F2] font-semibold shadow-sm'
+              : 'text-white/70 hover:bg-white/[.04] hover:text-white'
           )}
         >
           <Home className="size-4 shrink-0" />
@@ -133,17 +133,20 @@ export default function Sidebar({
             if (isMobile) onMobileClose?.()
           }}
           className={cn(
-            'flex items-center justify-between rounded-xl px-3 py-2 font-medium transition-colors text-left',
+            'flex items-center justify-between rounded-xl px-3 py-2 font-medium transition-all text-left',
             screen === 'projects'
-              ? 'bg-accent/15 text-accent border border-accent/25 font-semibold shadow-sm'
-              : 'text-white/70 hover:bg-white/[.05] hover:text-white'
+              ? 'bg-[#1877F2]/10 text-[#1877F2] font-semibold shadow-sm'
+              : 'text-white/70 hover:bg-white/[.04] hover:text-white'
           )}
         >
           <div className="flex items-center gap-3">
             <LayoutGrid className="size-4 shrink-0" />
             <span>Projects</span>
           </div>
-          <span className="rounded-full bg-white/10 px-2 py-0.5 font-mono text-[10px] text-white/70">
+          <span className={cn(
+            "rounded-full px-2 py-0.5 font-mono text-[10px]",
+            screen === 'projects' ? "bg-[#1877F2]/20 text-[#1877F2] font-bold" : "bg-white/10 text-white/70"
+          )}>
             {projects.length}
           </span>
         </button>
@@ -206,13 +209,13 @@ export default function Sidebar({
             <div className="mb-1.5 px-1 text-[10px] font-bold uppercase tracking-wider text-white/40">
               Active Workspace
             </div>
-            <div className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[.03] p-2.5 shadow-sm">
+            <div className="flex items-center justify-between gap-2 rounded-xl border border-line bg-[#1C252E] p-2.5 shadow-sm">
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[12.5px] font-semibold text-white/90">{name}</div>
               </div>
               {working ? (
-                <span className="flex items-center gap-1.5 rounded-full bg-accent/20 px-2 py-0.5 text-[10px] font-semibold text-accent">
-                  <span className="size-1.5 rounded-full bg-accent animate-pulse" />
+                <span className="flex items-center gap-1.5 rounded-full bg-[#1877F2]/15 px-2 py-0.5 text-[10px] font-semibold text-[#1877F2]">
+                  <span className="size-1.5 rounded-full bg-[#1877F2] animate-pulse" />
                   working
                 </span>
               ) : (
@@ -221,7 +224,7 @@ export default function Sidebar({
                     onScreenChange?.('projects')
                     if (isMobile) onMobileClose?.()
                   }}
-                  className="text-[11px] font-medium text-accent hover:underline"
+                  className="text-[11px] font-medium text-[#1877F2] hover:underline"
                 >
                   Change
                 </button>
@@ -236,12 +239,12 @@ export default function Sidebar({
 
       {/* Earn $50 referral banner */}
       <div className="border-t border-line p-2">
-        <div className="flex items-center justify-between rounded-xl bg-accent/15 border border-accent/25 px-3 py-2 text-[12px] text-accent">
+        <div className="flex items-center justify-between rounded-xl bg-[#1877F2]/10 border border-[#1877F2]/20 px-3 py-2 text-[12px] text-[#1877F2]">
           <div className="flex items-center gap-2">
             <Gift className="size-3.5" />
             <span className="font-semibold">Earn $50</span>
           </div>
-          <span className="size-2 rounded-full bg-accent animate-pulse" />
+          <span className="size-2 rounded-full bg-[#1877F2] animate-pulse" />
         </div>
       </div>
 
@@ -259,18 +262,18 @@ export default function Sidebar({
         {/* Account Menu Popover */}
         {accountOpen && (
           <div
-            className="absolute bottom-full left-3 mb-2 w-56 rounded-2xl border border-white/15 bg-[#0c101a]/95 p-1.5 shadow-2xl backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95"
+            className="absolute bottom-full left-3 mb-2 w-56 rounded-2xl border border-line bg-[#1C252E] p-1.5 shadow-[0_20px_40px_-4px_rgba(0,0,0,0.48)] backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95"
           >
             <button
               onClick={() => { setAccountOpen(false); onSettings?.(); if (isMobile) onMobileClose?.() }}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors"
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/[.06] hover:text-white transition-colors"
             >
               <Settings className="size-4 text-white/80" />
               <span>Settings</span>
             </button>
             <button
               onClick={() => { setAccountOpen(false); folderRef.current?.click(); if (isMobile) onMobileClose?.() }}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors"
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/[.06] hover:text-white transition-colors"
             >
               <FolderUp className="size-4 text-white/80" />
               <span>Import project folder</span>
@@ -278,7 +281,7 @@ export default function Sidebar({
             <button
               onClick={() => { setAccountOpen(false); onResume?.(); if (isMobile) onMobileClose?.() }}
               disabled={!project || status === 'busy'}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/[.06] hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
             >
               <Play className="size-4 text-white/80" />
               <span>Resume build</span>
@@ -286,7 +289,7 @@ export default function Sidebar({
             <button
               onClick={() => { setAccountOpen(false); onZip?.(); if (isMobile) onMobileClose?.() }}
               disabled={!project}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/[.06] hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
             >
               <Download className="size-4 text-white/80" />
               <span>Download project as zip</span>
@@ -294,17 +297,17 @@ export default function Sidebar({
             <button
               onClick={() => { setAccountOpen(false); openInNewTab(); if (isMobile) onMobileClose?.() }}
               disabled={!project}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/[.06] hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
             >
               <ExternalLink className="size-4 text-white/80" />
               <span>Open in new tab</span>
             </button>
             {onLogout && (
               <>
-                <div className="my-1 border-t border-white/10" />
+                <div className="my-1 border-t border-line" />
                 <button
                   onClick={() => { setAccountOpen(false); onLogout?.(); if (isMobile) onMobileClose?.() }}
-                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors"
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-[#FF5630] hover:bg-[#FF5630]/10 hover:text-[#FF5630] transition-colors"
                 >
                   <LogOut className="size-4" />
                   <span>Sign out</span>
@@ -319,7 +322,7 @@ export default function Sidebar({
           className="flex w-full items-center justify-between gap-2.5 rounded-xl p-1.5 hover:bg-white/[.06] transition-colors group"
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#ec4899] font-bold text-[13px] text-white shadow-sm transition-transform group-hover:scale-105">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#1877F2] font-bold text-[13px] text-white shadow-sm transition-transform group-hover:scale-105">
               {initial}
             </div>
             <div className="min-w-0 text-left">
@@ -343,12 +346,12 @@ export default function Sidebar({
         onClick={onMobileClose}
       />
       <aside className={cn(
-        "absolute top-0 bottom-0 left-0 w-[280px] max-w-[85vw] flex flex-col bg-[#0c0f17] border-r border-line shadow-2xl transition-transform duration-300 ease-out z-10",
+        "absolute top-0 bottom-0 left-0 w-[280px] max-w-[85vw] flex flex-col bg-[#141A21] border-r border-line shadow-2xl transition-transform duration-300 ease-out z-10",
         mobileOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <header className="flex items-center justify-between border-b border-line px-4 py-3">
           <div className="flex items-center gap-2.5">
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-accent/15 ring-1 ring-accent/25 shadow-sm overflow-hidden">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#1877F2]/10 ring-1 ring-[#1877F2]/20 shadow-sm overflow-hidden">
               <img src="/__agentforge/agentforge-mark.png" alt="AgentForge" width={22} height={22} className="size-5 object-contain" />
             </div>
             <span className="font-display text-[14.5px] font-bold tracking-tight text-white">
@@ -371,7 +374,7 @@ export default function Sidebar({
     return (
       <>
         {renderMobileDrawer()}
-        <aside className="hidden md:flex w-[52px] shrink-0 flex-col items-center gap-2 overflow-hidden h-full border-r border-line bg-[#0c0f17] py-3">
+        <aside className="hidden md:flex w-[52px] shrink-0 flex-col items-center gap-2 overflow-hidden h-full border-r border-line bg-[#141A21] py-3">
           <Tip text="Show the sidebar" side="right">
             <button onClick={() => setCollapsed(false)}
                     className="grid size-9 place-items-center rounded-xl text-white/70 transition-colors hover:bg-white/[.08] hover:text-white">
@@ -384,7 +387,7 @@ export default function Sidebar({
           <Tip text="Home" side="right">
             <button onClick={() => onScreenChange?.('home')}
                     className={cn('grid size-9 place-items-center rounded-xl transition-colors',
-                      screen === 'home' ? 'bg-accent/20 text-accent font-semibold' : 'text-white/60 hover:bg-white/[.06] hover:text-white')}>
+                      screen === 'home' ? 'bg-[#1877F2]/15 text-[#1877F2] font-semibold' : 'text-white/60 hover:bg-white/[.06] hover:text-white')}>
               <Home className="size-4" />
             </button>
           </Tip>
@@ -392,7 +395,7 @@ export default function Sidebar({
           <Tip text="All Projects" side="right">
             <button onClick={() => onScreenChange?.('projects')}
                     className={cn('grid size-9 place-items-center rounded-xl transition-colors',
-                      screen === 'projects' ? 'bg-accent/20 text-accent font-semibold' : 'text-white/60 hover:bg-white/[.06] hover:text-white')}>
+                      screen === 'projects' ? 'bg-[#1877F2]/15 text-[#1877F2] font-semibold' : 'text-white/60 hover:bg-white/[.06] hover:text-white')}>
               <LayoutGrid className="size-4" />
             </button>
           </Tip>
@@ -421,18 +424,18 @@ export default function Sidebar({
           <div className="relative mt-auto" ref={accountMenuRef}>
             {accountOpen && (
               <div
-                className="absolute bottom-0 left-full ml-3 w-56 rounded-2xl border border-white/15 bg-[#0c101a]/95 p-1.5 shadow-2xl backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95"
+                className="absolute bottom-0 left-full ml-3 w-56 rounded-2xl border border-line bg-[#1C252E] p-1.5 shadow-[0_20px_40px_-4px_rgba(0,0,0,0.48)] backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95"
               >
                 <button
                   onClick={() => { setAccountOpen(false); onSettings?.() }}
-                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors"
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/[.06] hover:text-white transition-colors"
                 >
                   <Settings className="size-4 text-white/80" />
                   <span>Settings</span>
                 </button>
                 <button
                   onClick={() => { setAccountOpen(false); folderRef.current?.click() }}
-                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors"
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/[.06] hover:text-white transition-colors"
                 >
                   <FolderUp className="size-4 text-white/80" />
                   <span>Import project folder</span>
@@ -440,7 +443,7 @@ export default function Sidebar({
                 <button
                   onClick={() => { setAccountOpen(false); onResume?.() }}
                   disabled={!project || status === 'busy'}
-                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/[.06] hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
                 >
                   <Play className="size-4 text-white/80" />
                   <span>Resume build</span>
@@ -448,7 +451,7 @@ export default function Sidebar({
                 <button
                   onClick={() => { setAccountOpen(false); onZip?.() }}
                   disabled={!project}
-                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/[.06] hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
                 >
                   <Download className="size-4 text-white/80" />
                   <span>Download project as zip</span>
@@ -456,17 +459,17 @@ export default function Sidebar({
                 <button
                   onClick={() => { setAccountOpen(false); openInNewTab() }}
                   disabled={!project}
-                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/90 hover:bg-white/[.06] hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors"
                 >
                   <ExternalLink className="size-4 text-white/80" />
                   <span>Open in new tab</span>
                 </button>
                 {onLogout && (
                   <>
-                    <div className="my-1 border-t border-white/10" />
+                    <div className="my-1 border-t border-line" />
                     <button
                       onClick={() => { setAccountOpen(false); onLogout?.() }}
-                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors"
+                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-[#FF5630] hover:bg-[#FF5630]/10 hover:text-[#FF5630] transition-colors"
                     >
                       <LogOut className="size-4" />
                       <span>Sign out</span>
@@ -478,7 +481,7 @@ export default function Sidebar({
             <button
               onClick={() => setAccountOpen(v => !v)}
               title={`Account: ${displayName}`}
-              className="flex size-8 items-center justify-center rounded-lg bg-[#ec4899] font-bold text-[13px] text-white shadow-sm transition-transform hover:scale-105 active:scale-95"
+              className="flex size-8 items-center justify-center rounded-lg bg-[#1877F2] font-bold text-[13px] text-white shadow-sm transition-transform hover:scale-105 active:scale-95"
             >
               {initial}
             </button>
@@ -491,11 +494,11 @@ export default function Sidebar({
   return (
     <>
       {renderMobileDrawer()}
-      <aside className="hidden md:flex w-[var(--sidebar-w)] shrink-0 flex-col overflow-hidden h-full border-r border-line bg-[#0c0f17]">
+      <aside className="hidden md:flex w-[var(--sidebar-w)] shrink-0 flex-col overflow-hidden h-full border-r border-line bg-[#141A21]">
         {/* Top Header: Brand and Controls */}
         <header className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-line px-4 py-3">
           <div className="flex items-center gap-2.5">
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-accent/15 ring-1 ring-accent/25 shadow-sm overflow-hidden">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#1877F2]/10 ring-1 ring-[#1877F2]/20 shadow-sm overflow-hidden">
               <img src="/__agentforge/agentforge-mark.png" alt="AgentForge"
                    width={22} height={22}
                    className="size-5 object-contain" />

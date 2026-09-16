@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clean · design system</title>
+    <!-- Tailwind via CDN (v3) + lucide + fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- fonts: Poppins (display), Roboto (primary), Inconsolata (mono) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Roboto:wght@300;400;500;700&family=Inconsolata:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* design tokens — clean, minimal, 8pt grid */
+        :root {
+            --primary: #3B82F6;
+            --secondary: #8B5CF6;
+            --success: #16A34A;
+            --warning: #D97706;
+            --danger: #DC2626;
+            --surface: #FFFFFF;
+            --text: #111827;
+            --spacing-1: 8px;
+            --spacing-2: 16px;
+            --spacing-3: 24px;
+            --spacing-4: 32px;
+            --spacing-5: 40px;
+            --spacing-6: 48px;
+            --spacing-8: 64px;
+            --spacing-10: 80px;
+            --radius: 0px;   /* sharp corners — mandatory */
+            --font-display: 'Poppins', sans-serif;
+            --font-body: 'Roboto', sans-serif;
+            --font-mono: 'Inconsolata', monospace;
+        }
+        body {
+            font-family: var(--font-body);
+            background-color: var(--surface);
+            color: var(--text);
+            font-weight: 400;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+        /* sharp corners everywhere */
+        * { border-radius: 0 !important; }
+        .display { font-family: var(--font-display); }
+        .mono { font-family: var(--font-mono); }
+        /* consistent focus state (accessibility) */
+        :focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+        /* reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation: none !important; transition: none !important; }
+        }
+        /* custom minimal container */
+        .container-clean { max-width: 1200px; margin: 0 auto; padding-left: 24px; padding-right: 24px; }
+        /* subtle grid background for hero (pure CSS) */
+        .bg-grid {
+            background-image: linear-gradient(to right, rgba(59,130,246,0.04) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(59,130,246,0.04) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+        /* stat card number */
+        .stat-number { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.02em; }
+        /* testimonial quote mark */
+        .quote-mark { font-family: var(--font-display); font-size: 4rem; line-height: 1; color: var(--primary); opacity: 0.15; }
+        /* button base */
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 500; padding: 12px 24px; transition: background 0.15s, transform 0.1s; cursor: pointer; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-outline { border: 1px solid #d1d5db; color: var(--text); background: transparent; }
+        .btn-outline:hover { background: #f9fafb; }
+        /* card */
+        .card { background: white; border: 1px solid #e5e7eb; padding: 24px; }
+        /* feature icon */
+        .feature-icon { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: #eff6ff; color: var(--primary); }
+        /* footer link */
+        .footer-link { color: #4b5563; text-decoration: none; }
+        .footer-link:hover { color: var(--primary); }
+        /* list check */
+        .check-item { display: flex; gap: 12px; align-items: flex-start; }
+        .check-item svg { color: var(--success); flex-shrink: 0; margin-top: 4px; }
+        /* accordion (FAQ) */
+        .faq-item { border-bottom: 1px solid #e5e7eb; }
+        .faq-question { width: 100%; text-align: left; padding: 20px 0; display: flex; justify-content: space-between; align-items: center; font-weight: 500; }
+        .faq-answer { padding-bottom: 20px; color: #4b5563; }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- ======= NAVIGATION ======= -->
+    <header class="border-b border-gray-200 bg-white sticky top-0 z-50">
+        <div class="container-clean flex items-center justify-between py-4">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 bg-primary" style="background: var(--primary);"></span>
+                <span class="display font-semibold text-xl tracking-tight">clean</span>
+            </div>
+            <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
+                <a href="#features" class="hover:text-gray-900">Features</a>
+                <a href="#process" class="hover:text-gray-900">Process</a>
+                <a href="#testimonials" class="hover:text-gray-900">Stories</a>
+                <a href="#pricing" class="hover:text-gray-900">Pricing</a>
+                <a href="#faq" class="hover:text-gray-900">FAQ</a>
+            </nav>
+            <div class="flex items-center gap-3">
+                <a href="#" class="btn btn-outline text-sm hidden sm:inline-flex">Log in</a>
+                <a href="#" class="btn btn-primary text-sm">Get started</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- ======= HERO ======= -->
+    <section class="bg-grid border-b border-gray-100">
+        <div class="container-clean py-20 md:py-28">
+            <div class="max-w-3xl">
+                <p class="mono text-sm text-primary mb-4" style="color: var(--primary);">— simplicity first</p>
+                <h1 class="display font-bold text-4xl md:text-5xl lg:text-6xl leading-tight tracking-tight" style="font-weight: 700;">
+                    Design that breathes. <br>Nothing more.
+                </h1>
+                <p class="mt-6 text-lg text-gray-600 max-w-2xl">
+                    Clean is a design system built on 8pt rhythm, sharp edges, and meaningful whitespace. 
+                    No clutter, no noise — just clear interfaces that respect your content.
+                </p>
+                <div class="mt-8 flex flex-wrap gap-4">
+                    <a href="#" class="btn btn-primary">Start building — it's free</a>
+                    <a href="#" class="btn btn-outline">View on GitHub</a>
+                </div>
+                <p class="mt-6 text-sm text-gray-500 flex items-center gap-2">
+                    <i data-lucide="check-circle" class="w-4 h-4" style="color: var(--success);"></i>
+                    WCAG 2.2 AA · keyboard-first · 44px targets
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= STATS ======= -->
+    <section class="border-b border-gray-100 bg-white">
+        <div class="container-clean py-12">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div>
+                    <p class="stat-number text-4xl" style="color: var(--primary);">99.9%</p>
+                    <p class="mt-2 text-sm text-gray-500">uptime</p>
+                </div>
+                <div>
+                    <p class="stat-number text-4xl" style="color: var(--primary);">12k+</p>
+                    <p class="mt-2 text-sm text-gray-500">teams</p>
+                </div>
+                <div>
+                    <p class="stat-number text-4xl" style="color: var(--primary);">4.9</p>
+                    <p class="mt-2 text-sm text-gray-500">rating</p>
+                </div>
+                <div>
+                    <p class="stat-number text-4xl" style="color: var(--primary);">0</p>
+                    <p class="mt-2 text-sm text-gray-500">round corners</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= FEATURES ======= -->
+    <section id="features" class="py-20 bg-gray-50">
+        <div class="container-clean">
+            <div class="max-w-2xl mb-14">
+                <h2 class="display font-semibold text-3xl md:text-4xl tracking-tight">Everything essential, nothing extra</h2>
+                <p class="mt-4 text-gray-600">Each feature is a deliberate choice — built on tokens, tested for accessibility.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-6">
+                <!-- feature 1 -->
+                <div class="card">
+                    <div class="feature-icon">
+                        <i data-lucide="type" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="display font-semibold text-xl mt-5">Typography</h3>
+                    <p class="mt-2 text-gray-600">Poppins for display, Roboto for body, Inconsolata for code. 12–32px scale, 8pt baseline.</p>
+                </div>
+                <!-- feature 2 -->
+                <div class="card">
+                    <div class="feature-icon">
+                        <i data-lucide="grid-3x3" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="display font-semibold text-xl mt-5">8pt grid</h3>
+                    <p class="mt-2 text-gray-600">Spacing is always a multiple of 8. Rhythm you can feel — no half steps.</p>
+                </div>
+                <!-- feature 3 -->
+                <div class="card">
+                    <div class="feature-icon">
+                        <i data-lucide="contrast" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="display font-semibold text-xl mt-5">AA contrast</h3>
+                    <p class="mt-2 text-gray-600">Every text/background pair meets WCAG 2.2 AA. No exceptions.</p>
+                </div>
+                <!-- feature 4 -->
+                <div class="card">
+                    <div class="feature-icon">
+                        <i data-lucide="keyboard" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="display font-semibold text-xl mt-5">Keyboard-first</h3>
+                    <p class="mt-2 text-gray-600">Fully operable with tab, enter, space. Visible focus at all times.</p>
+                </div>
+                <!-- feature 5 -->
+                <div class="card">
+                    <div class="feature-icon">
+                        <i data-lucide="palette" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="display font-semibold text-xl mt-5">Limited palette</h3>
+                    <p class="mt-2 text-gray-600">6 semantic colors. No decorative gradients, no visual noise.</p>
+                </div>
+                <!-- feature 6 -->
+                <div class="card">
+                    <div class="feature-icon">
+                        <i data-lucide="move" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="display font-semibold text-xl mt-5">Sharp edges</h3>
+                    <p class="mt-2 text-gray-600">Radius is always 0. Clean, honest, unambiguous geometry.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= PROCESS ======= -->
+    <section id="process" class="py-20 bg-white border-b border-gray-100">
+        <div class="container-clean">
+            <div class="max-w-2xl mb-14">
+                <h2 class="display font-semibold text-3xl md:text-4xl tracking-tight">From token to interface</h2>
+                <p class="mt-4 text-gray-600">A transparent process — no hidden steps.</p>
+            </div>
+            <div class="grid md:grid-cols-4 gap-8">
+                <div class="relative">
+                    <p class="mono text-sm text-primary">01</p>
+                    <h3 class="display font-semibold text-lg mt-3">Define tokens</h3>
+                    <p class="mt-2 text-gray-600 text-sm">Color, type, spacing — all set as CSS variables.</p>
+                </div>
+                <div class="relative">
+                    <p class="mono text-sm text-primary">02</p>
+                    <h3 class="display font-semibold text-lg mt-3">Build components</h3>
+                    <p class="mt-2 text-gray-600 text-sm">Atomic, stateless, accessible by default.</p>
+                </div>
+                <div class="relative">
+                    <p class="mono text-sm text-primary">03</p>
+                    <h3 class="display font-semibold text-lg mt-3">Test with real users</h3>
+                    <p class="mt-2 text-gray-600 text-sm">Keyboard, screen reader, zoom to 200%.</p>
+                </div>
+                <div class="relative">
+                    <p class="mono text-sm text-primary">04</p>
+                    <h3 class="display font-semibold text-lg mt-3">Ship & iterate</h3>
+                    <p class="mt-2 text-gray-600 text-sm">Versioned, documented, no breaking changes.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= BENEFITS ======= -->
+    <section class="py-20 bg-gray-50 border-b border-gray-100">
+        <div class="container-clean grid md:grid-cols-2 gap-12 items-center">
+            <div>
+                <h2 class="display font-semibold text-3xl md:text-4xl tracking-tight">Why teams switch to clean</h2>
+                <p class="mt-4 text-gray-600 mb-8">We remove the friction between design and code.</p>
+                <ul class="space-y-4">
+                    <li class="check-item">
+                        <i data-lucide="check" class="w-5 h-5"></i>
+                        <span><strong>50% faster</strong> design-to-dev handoff</span>
+                    </li>
+                    <li class="check-item">
+                        <i data-lucide="check" class="w-5 h-5"></i>
+                        <span><strong>Zero</strong> undocumented variants</span>
+                    </li>
+                    <li class="check-item">
+                        <i data-lucide="check" class="w-5 h-5"></i>
+                        <span><strong>AA compliance</strong> built into every component</span>
+                    </li>
+                    <li class="check-item">
+                        <i data-lucide="check" class="w-5 h-5"></i>
+                        <span><strong>8pt grid</strong> — no more guessing spacing</span>
+                    </li>
+                </ul>
+            </div>
+            <!-- abstract visual: pure CSS shapes -->
+            <div class="bg-grid p-8 border border-gray-200 bg-white">
+                <div class="flex gap-4 items-end">
+                    <div class="w-16 h-16" style="background: var(--primary);"></div>
+                    <div class="w-12 h-12" style="background: var(--secondary);"></div>
+                    <div class="w-20 h-20 border-2 border-gray-300"></div>
+                </div>
+                <div class="mt-6 flex gap-2">
+                    <div class="h-2 flex-1" style="background: var(--success);"></div>
+                    <div class="h-2 flex-1" style="background: var(--warning);"></div>
+                    <div class="h-2 flex-1" style="background: var(--danger);"></div>
+                </div>
+                <p class="mono text-xs mt-6 text-gray-500">tokens → components → interfaces</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= TESTIMONIALS ======= -->
+    <section id="testimonials" class="py-20 bg-white border-b border-gray-100">
+        <div class="container-clean">
+            <h2 class="display font-semibold text-3xl md:text-4xl tracking-tight mb-12">Loved by design engineers</h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="card">
+                    <div class="quote-mark">“</div>
+                    <p class="text-gray-700">“Finally a system that respects my content. The sharp corners feel honest and the spacing is flawless.”</p>
+                    <div class="mt-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gray-200 flex items-center justify-center display font-semibold">MK</div>
+                        <div>
+                            <p class="font-medium text-sm">Maya K.</p>
+                            <p class="text-xs text-gray-500">Product Designer</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="quote-mark">“</div>
+                    <p class="text-gray-700">“Accessibility is not an afterthought — it's in the DNA. Keyboard navigation just works.”</p>
+                    <div class="mt-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gray-200 flex items-center justify-center display font-semibold">JT</div>
+                        <div>
+                            <p class="font-medium text-sm">James T.</p>
+                            <p class="text-xs text-gray-500">Frontend Engineer</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="quote-mark">“</div>
+                    <p class="text-gray-700">“We redesigned our entire dashboard in 3 days. The 8pt grid made every decision obvious.”</p>
+                    <div class="mt-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gray-200 flex items-center justify-center display font-semibold">AL</div>
+                        <div>
+                            <p class="font-medium text-sm">Ana L.</p>
+                            <p class="text-xs text-gray-500">Design Systems Lead</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= PRICING ======= -->
+    <section id="pricing" class="py-20 bg-gray-50 border-b border-gray-100">
+        <div class="container-clean">
+            <h2 class="display font-semibold text-3xl md:text-4xl tracking-tight text-center mb-12">Simple, honest pricing</h2>
+            <div class="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                <!-- free -->
+                <div class="card bg-white">
+                    <h3 class="display font-semibold text-lg">Starter</h3>
+                    <p class="mt-2 text-4xl font-light">$0</p>
+                    <p class="text-sm text-gray-500 mt-1">forever free</p>
+                    <ul class="mt-6 space-y-2 text-sm">
+                        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Core components</li>
+                        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Community support</li>
+                        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> 1 project</li>
+                    </ul>
+                    <a href="#" class="btn btn-outline w-full mt-8">Start free</a>
+                </div>
+                <!-- pro -->
+                <div class="card bg-white border-2" style="border-color: var(--primary);">
+                    <h3 class="display font-semibold text-lg">Pro</h3>
+                    <p class="mt-2 text-4xl font-light">$24</p>
+                    <p class="text-sm text-gray-500 mt-1">per editor / month</p>
+                    <ul class="mt-6 space-y-2 text-sm">
+                        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> All components + dark mode</li>
+                        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Priority support</li>
+                        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Unlimited projects</li>
+                    </ul>
+                    <a href="#" class="btn btn-primary w-full mt-8">Choose Pro</a>
+                </div>
+                <!-- enterprise -->
+                <div class="card bg-white">
+                    <h3 class="display font-semibold text-lg">Enterprise</h3>
+                    <p class="mt-2 text-4xl font-light">Custom</p>
+                    <p class="text-sm text-gray-500 mt-1">volume pricing</p>
+                    <ul class="mt-6 space-y-2 text-sm">
+                        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> SSO/SAML</li>
+                        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Dedicated support</li>
+                        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Custom contracts</li>
+                    </ul>
+                    <a href="#" class="btn btn-outline w-full mt-8">Contact us</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= FAQ ======= -->
+    <section id="faq" class="py-20 bg-white border-b border-gray-100">
+        <div class="container-clean max-w-3xl">
+            <h2 class="display font-semibold text-3xl md:text-4xl tracking-tight mb-8">Frequently asked</h2>
+            <div class="faq-item">
+                <button class="faq-question display font-medium text-lg">Why sharp corners? <i data-lucide="chevron-down" class="w-5 h-5"></i></button>
+                <div class="faq-answer text-gray-600">Clean design avoids visual noise. Sharp corners are honest, fast to render, and align with the 8pt grid.</div>
+            </div>
+            <div class="faq-item">
+                <button class="faq-question display font-medium text-lg">Is the system accessible? <i data-lucide="chevron-down" class="w-5 h-5"></i></button>
+                <div class="faq-answer text-gray-600">Yes — every component meets WCAG 2.2 AA, including contrast, focus, and touch targets.</div>
+            </div>
+            <div class="faq-item">
+                <button class="faq-question display font-medium text-lg">Can I use it with React? <i data-lucide="chevron-down" class="w-5 h-5"></i></button>
+                <div class="faq-answer text-gray-600">Absolutely. The tokens are framework-agnostic; we provide vanilla CSS and React components.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= FOOTER ======= -->
+    <footer class="bg-gray-50 py-12">
+        <div class="container-clean">
+            <div class="flex flex-col md:flex-row justify-between gap-8">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6" style="background: var(--primary);"></span>
+                        <span class="display font-semibold text-lg">clean</span>
+                    </div>
+                    <p class="mt-3 text-sm text-gray-500 max-w-xs">A design system for people who value clarity.</p>
+                </div>
+                <div class="grid grid-cols-2 gap-8 text-sm">
+                    <div>
+                        <p class="font-medium mb-3">Product</p>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="footer-link">Features</a></li>
+                            <li><a href="#" class="footer-link">Pricing</a></li>
+                            <li><a href="#" class="footer-link">Changelog</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <p class="font-medium mb-3">Resources</p>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="footer-link">Documentation</a></li>
+                            <li><a href="#" class="footer-link">GitHub</a></li>
+                            <li><a href="#" class="footer-link">Contact</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-200 mt-10 pt-6 flex flex-col sm:flex-row justify-between text-xs text-gray-500">
+                <p>© 2025 Clean Design System. All rights reserved.</p>
+                <p class="mono">v2.4.0 · 8pt grid · sharp edges</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- lucide icons init -->
+    <script>
+        lucide.createIcons();
+        // simple FAQ toggle (accessible)
+        document.querySelectorAll('.faq-question').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const answer = btn.nextElementSibling;
+                const icon = btn.querySelector('i');
+                if (answer.style.display === 'none' || !answer.style.display) {
+                    answer.style.display = 'block';
+                    icon.setAttribute('data-lucide', 'chevron-up');
+                } else {
+                    answer.style.display = 'none';
+                    icon.setAttribute('data-lucide', 'chevron-down');
+                }
+                lucide.createIcons();
+            });
+            // hide answers initially
+            btn.nextElementSibling.style.display = 'none';
+        });
+    </script>
+</body>
+</html>

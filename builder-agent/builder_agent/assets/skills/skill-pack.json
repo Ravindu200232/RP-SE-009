@@ -2,529 +2,87 @@
   "version": 1,
   "skills": [
     {
-      "name": "full-app-builder",
+      "name": "html-prototype",
       "match": [
-        "application",
-        "app",
-        "website",
-        "build an app",
-        "create an app",
-        "generate an app",
-        "full app",
-        "complete app",
-        "feature",
-        "fix"
+        "prototype",
+        "drawing",
+        "mockup",
+        "wireframe",
+        "html prototype"
       ],
-      "requires": [
-        "mongoose",
-        "vitest",
-        "browser-e2e",
-        "runtime"
-      ]
+      "verificationPhases": []
     },
     {
-      "name": "nextjs",
+      "name": "stack-nextjs",
       "match": [
-        "next",
-        "next.js",
-        "nextjs"
-      ],
-      "requires": [
-        "react",
-        "node",
-        "runtime"
-      ],
-      "stacks": [
-        "nextjs-mongo"
-      ]
-    },
-    {
-      "name": "nextjs-sketch",
-      "match": [
-        "next",
         "next.js",
         "nextjs",
         "app router",
-        "react",
-        "scaffold",
-        "skeleton",
-        "boilerplate",
-        "new project",
-        "server component",
-        "route handler"
+        "mongodb",
+        "mongoose"
       ],
-      "requires": [
-        "nextjs"
-      ],
-      "verificationPhases": [],
       "stacks": [
         "nextjs-mongo"
-      ]
-    },
-    {
-      "name": "node",
-      "match": [
-        "node",
-        "node.js",
-        "nodejs"
       ],
-      "requires": [
+      "verificationPhases": [
         "runtime"
       ]
     },
     {
-      "name": "mongoose",
+      "name": "stack-mern",
       "match": [
-        "mongoose",
-        "mongodb",
-        "mongo",
-        "database",
-        "persistence",
-        "application",
-        "app"
+        "mern",
+        "express",
+        "microservice",
+        "microservices",
+        "api gateway"
       ],
-      "requires": [
-        "node",
+      "stacks": [
+        "mern-microservices"
+      ],
+      "verificationPhases": [
         "runtime"
       ]
     },
     {
-      "name": "authentication",
+      "name": "stack-testing",
       "match": [
-        "authentication",
-        "auth",
-        "login",
-        "signin",
-        "signup",
-        "oauth",
-        "session",
-        "jwt"
-      ],
-      "requires": [
-        "runtime"
-      ]
-    },
-    {
-      "name": "runtime",
-      "match": [
-        "runtime",
-        "production runtime",
-        "readiness",
-        "healthcheck",
-        "health check",
-        "application",
-        "app"
-      ],
-      "requires": []
-    },
-    {
-      "name": "vitest",
-      "match": [
-        "vitest",
-        "unit test",
-        "integration test",
+        "test",
+        "tests",
         "testing",
-        "application",
-        "app"
-      ],
-      "requires": [
-        "node",
-        "runtime"
-      ],
-      "verificationPhases": [
-        "unit"
-      ]
-    },
-    {
-      "name": "browser-e2e",
-      "match": [
+        "vitest",
+        "playwright",
         "e2e",
-        "end to end",
-        "end-to-end",
-        "browser test",
-        "browser testing",
-        "ui journey",
-        "agentx browser",
-        "cdp",
-        "application",
-        "app"
-      ],
-      "requires": [
-        "runtime"
+        "coverage"
       ],
       "verificationPhases": [
+        "unit",
         "e2e"
       ]
     },
     {
-      "name": "react",
+      "name": "stack-debug",
       "match": [
-        "react",
-        "react.js",
-        "reactjs",
-        "next",
-        "next.js",
-        "nextjs",
-        "application",
-        "app"
-      ],
-      "requires": [
-        "node",
-        "runtime"
-      ]
-    },
-    {
-      "name": "debugging",
-      "match": [
-        "bug",
-        "debug",
-        "debugging",
-        "fix bug",
+        "build error",
         "fix",
-        "test failure",
-        "failing test",
-        "crash",
-        "regression",
-        "repair"
+        "failing",
+        "debug",
+        "error",
+        "stack trace"
       ],
-      "requires": []
+      "verificationPhases": []
     },
     {
-      "name": "mern-microservices",
-      "match": [
-        "mern",
-        "microservice",
-        "microservices",
-        "express",
-        "vite",
-        "gateway",
-        "service",
-        "api gateway"
-      ],
-      "requires": [
-        "react",
-        "node",
-        "mongoose",
-        "runtime"
-      ],
-      "verificationPhases": [
-        "unit"
-      ],
-      "stacks": [
-        "mern-microservices"
-      ]
-    },
-    {
-      "name": "mern-microservices-sketch",
-      "match": [
-        "mern",
-        "microservice",
-        "microservices",
-        "express",
-        "vite",
-        "gateway",
-        "service",
-        "api gateway",
-        "scaffold",
-        "skeleton",
-        "boilerplate",
-        "new project"
-      ],
-      "requires": [
-        "mern-microservices"
-      ],
-      "verificationPhases": [],
-      "stacks": [
-        "mern-microservices"
-      ]
-    },
-    {
-      "name": "api-contracts",
-      "match": [
-        "api",
-        "route handler",
-        "endpoint",
-        "contract",
-        "request",
-        "response",
-        "service contract"
-      ],
-      "requires": []
-    },
-    {
-      "name": "accessibility",
-      "match": [
-        "accessibility",
-        "a11y",
-        "aria",
-        "keyboard",
-        "screen reader",
-        "wcag"
-      ],
-      "requires": []
-    },
-    {
-      "name": "express",
-      "match": [
-        "express",
-        "express.js",
-        "expressjs",
-        "api server",
-        "microservice"
-      ],
-      "requires": [
-        "node",
-        "runtime",
-        "api-contracts"
-      ],
-      "stacks": [
-        "mern-microservices"
-      ]
-    },
-    {
-      "name": "api-gateway",
-      "match": [
-        "api gateway",
-        "gateway",
-        "single public port",
-        "single origin",
-        "reverse proxy"
-      ],
-      "requires": [
-        "express",
-        "api-contracts",
-        "runtime"
-      ],
-      "stacks": [
-        "mern-microservices"
-      ]
-    },
-    {
-      "name": "local-multiservice-runtime",
-      "match": [
-        "dev-all",
-        "local services",
-        "docker-free",
-        "without docker",
-        "single port",
-        "service supervisor"
-      ],
-      "requires": [
-        "node",
-        "runtime"
-      ],
-      "verificationPhases": [
-        "runtime"
-      ],
-      "stacks": [
-        "mern-microservices"
-      ]
-    },
-    {
-      "name": "docker",
-      "match": [
-        "docker",
-        "dockerfile",
-        "docker compose",
-        "compose",
-        "container",
-        "containerization"
-      ],
-      "requires": [],
-      "stacks": [
-        "mern-microservices"
-      ]
-    },
-    {
-      "name": "frontend-design",
-      "match": [
-        "article",
-        "beautiful",
-        "brand",
-        "catalog",
-        "component",
-        "components",
-        "content",
-        "dashboard",
-        "design",
-        "hero",
-        "landing page",
-        "layout",
-        "list",
-        "listing",
-        "look",
-        "page",
-        "pages",
-        "polish",
-        "premium",
-        "responsive",
-        "screen",
-        "screens",
-        "spacing",
-        "styling",
-        "table",
-        "tables",
-        "theme",
-        "typography",
-        "ui",
-        "ux",
-        "visual"
-      ],
-      "requires": [
-        "react",
-        "accessibility"
-      ]
-    },
-    {
-      "name": "page-composition",
-      "match": [
-        "page",
-        "pages",
-        "screen",
-        "screens",
-        "landing page",
-        "home page",
-        "site",
-        "website",
-        "dashboard",
-        "catalog",
-        "catalogue",
-        "listing",
-        "list",
-        "detail",
-        "layout",
-        "section",
-        "sections",
-        "hero",
-        "ui",
-        "ux",
-        "design",
-        "responsive",
-        "content",
-        "app",
-        "application"
-      ],
-      "requires": [
-        "frontend-design"
-      ]
-    },
-    {
-      "name": "security-review",
+      "name": "stack-security",
       "match": [
         "security",
-        "auth",
-        "authorization",
-        "authorisation",
-        "role",
-        "admin",
-        "permission",
-        "vulnerability",
-        "injection",
-        "session",
-        "owasp"
+        "hardening",
+        "owasp",
+        "audit",
+        "authentication",
+        "authorisation"
       ],
-      "requires": [
-        "api-contracts"
-      ]
-    },
-    {
-      "name": "payments",
-      "match": [
-        "payment",
-        "payments",
-        "pay",
-        "paying",
-        "checkout",
-        "card",
-        "stripe",
-        "payhere",
-        "billing",
-        "invoice",
-        "subscription",
-        "subscriptions",
-        "donation",
-        "deposit",
-        "refund",
-        "refunds",
-        "payment gateway",
-        "online payment",
-        "gewuma",
-        "gevima"
-      ],
-      "requires": [
-        "runtime"
-      ]
-    },
-    {
-      "name": "image-uploads",
-      "match": [
-        "image upload",
-        "image uploads",
-        "upload image",
-        "upload images",
-        "photo upload",
-        "upload photo",
-        "upload photos",
-        "picture upload",
-        "file upload",
-        "uploads",
-        "cloudinary",
-        "gallery",
-        "profile photo",
-        "avatar",
-        "attachment",
-        "attachments"
-      ],
-      "requires": [
-        "mongoose",
-        "runtime"
-      ]
-    },
-    {
-      "name": "notifications",
-      "match": [
-        "email",
-        "emails",
-        "e mail",
-        "mail",
-        "notification",
-        "notifications",
-        "notify",
-        "sms",
-        "text message",
-        "otp",
-        "resend",
-        "twilio",
-        "reminder",
-        "reminders",
-        "confirmation email",
-        "alert",
-        "alerts"
-      ],
-      "requires": [
-        "runtime"
-      ]
-    },
-    {
-      "name": "planning",
-      "match": [
-        "plan",
-        "planning",
-        "requirements"
-      ],
-      "requires": []
-    },
-    {
-      "name": "html-prototype",
-      "match": [
-        "prototype",
-        "mockup",
-        "wireframe",
-        "html",
-        "demo",
-        "mock"
-      ],
-      "requires": []
+      "verificationPhases": []
     }
   ]
 }

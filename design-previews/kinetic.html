@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PULSE — Build at the Speed of Thought</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Space Grotesk', 'Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        background: '#09090B',
+                        foreground: '#FAFAFA',
+                        muted: '#27272A',
+                        'muted-foreground': '#A1A1AA',
+                        accent: '#DFE104',
+                        'accent-foreground': '#000000',
+                        border: '#3F3F46',
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        ::selection {
+            background: #DFE104;
+            color: #000000;
+        }
+        :focus-visible {
+            outline: 2px solid #DFE104;
+            outline-offset: 2px;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            background: #09090B;
+            color: #FAFAFA;
+        }
+
+        /* Marquee */
+        .marquee-track {
+            width: max-content;
+            animation: marquee 18s linear infinite;
+        }
+        .marquee-track.slow {
+            animation-duration: 40s;
+        }
+        @keyframes marquee {
+            0% {
+                transform: translateX(-50%);
+            }
+            100% {
+                transform: translateX(0);
+            }
+        }
+
+        /* Hero grid background */
+        .hero-grid {
+            background-image:
+                linear-gradient(to right, rgba(39, 39, 42, 0.4) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(39, 39, 42, 0.4) 1px, transparent 1px);
+            background-size: 48px 48px;
+        }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            .marquee-track {
+                animation: none !important;
+            }
+            .hero-content {
+                transform: none !important;
+                opacity: 1 !important;
+            }
+            * {
+                transition-duration: 0.01ms !important;
+                animation-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-background text-foreground antialiased">
+
+    <!-- Noise Texture Overlay -->
+    <svg class="fixed inset-0 w-full h-full pointer-events-none z-[100] opacity-[0.03] mix-blend-overlay" aria-hidden="true">
+        <title>Noise Texture</title>
+        <filter id="noise">
+            <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/>
+        </filter>
+        <rect width="100%" height="100%" filter="url(#noise)"/>
+    </svg>
+
+    <!-- ===== NAVIGATION ===== -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-background border-b-2 border-border">
+        <div class="max-w-[95vw] mx-auto flex items-center justify-between h-16 md:h-20 px-4 md:px-0">
+            <a href="#" class="text-xl md:text-2xl font-bold uppercase tracking-tighter text-foreground">PULSE</a>
+            <div class="hidden md:flex items-center gap-8">
+                <a href="#features" class="text-sm uppercase tracking-wide text-foreground hover:text-accent transition-colors duration-300">Features</a>
+                <a href="#process" class="text-sm uppercase tracking-wide text-foreground hover:text-accent transition-colors duration-300">Process</a>
+                <a href="#pricing" class="text-sm uppercase tracking-wide text-foreground hover:text-accent transition-colors duration-300">Pricing</a>
+                <a href="#faq" class="text-sm uppercase tracking-wide text-foreground hover:text-accent transition-colors duration-300">FAQ</a>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="#pricing" class="hidden md:inline-flex items-center justify-center h-10 px-6 bg-accent text-accent-foreground text-sm font-bold uppercase tracking-tighter hover:scale-105 active:scale-95 transition-all">
+                    Get Started
+                </a>
+                <button class="md:hidden text-foreground p-2" id="menu-toggle" aria-label="Toggle menu">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+        <!-- Mobile menu -->
+        <div class="md:hidden hidden border-t-2 border-border bg-background px-6 py-6" id="mobile-menu">
+            <div class="flex flex-col gap-4">
+                <a href="#features" class="text-base uppercase tracking-wide text-foreground hover:text-accent transition-colors">Features</a>
+                <a href="#process" class="text-base uppercase tracking-wide text-foreground hover:text-accent transition-colors">Process</a>
+                <a href="#pricing" class="text-base uppercase tracking-wide text-foreground hover:text-accent transition-colors">Pricing</a>
+                <a href="#faq" class="text-base uppercase tracking-wide text-foreground hover:text-accent transition-colors">FAQ</a>
+                <a href="#pricing" class="inline-flex items-center justify-center h-12 bg-accent text-accent-foreground text-sm font-bold uppercase tracking-tighter hover:scale-105 active:scale-95 transition-all mt-2">
+                    Get Started
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== HERO ===== -->
+    <section class="relative min-h-screen flex items-center overflow-hidden hero-grid pt-24 md:pt-0">
+        <div class="hero-content max-w-[95vw] mx-auto px-4 md:px-0 w-full relative z-10">
+            <span class="text-xs md:text-sm lg:text-lg uppercase tracking-widest text-accent font-medium">The Future of Work</span>
+            <h1 class="text-[clamp(3rem,12vw,14rem)] font-bold uppercase tracking-tighter leading-[0.8] mt-4">
+                BUILD AT<br>
+                THE SPEED<br>
+                OF <span class="text-accent">THOUGHT</span>
+            </h1>
+            <div class="mt-8 md:mt-12 flex flex-col md:flex-row md:items-end gap-8 md:gap-16">
+                <p class="text-lg md:text-xl lg:text-2xl text-muted-foreground max-w-2xl leading-tight">
+                    PULSE is the workflow automation platform that transforms how teams build, ship, and scale. Real-time. Relentless. Radical.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 shrink-0">
+                    <a href="#pricing" class="inline-flex items-center justify-center h-14 px-8 bg-accent text-accent-foreground font-bold uppercase tracking-tighter hover:scale-105 active:scale-95 transition-all">
+                        Get Started
+                    </a>
+                    <a href="#features" class="inline-flex items-center justify-center h-14 px-8 border-2 border-border text-foreground font-bold uppercase tracking-tighter hover:bg-foreground hover:text-background transition-colors duration-300">
+                        See It In Action
+                    </a>
+                </div>
+            </div>
+        </div>
+        <!-- Massive background number -->
+        <span class="absolute right-4 md:right-12 bottom-4 md:bottom-8 text-[8rem] md:text-[12rem] font-bold text-muted leading-none select-none pointer-events-none" aria-hidden="true">01</span>
+        <!-- Scroll indicator -->
+        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-muted-foreground">
+            <span class="text-xs uppercase tracking-widest">Scroll</span>
+            <i data-lucide="arrow-down" class="w-4 h-4"></i>
+        </div>
+    </section>
+
+    <!-- ===== STATS MARQUEE ===== -->
+    <section class="border-y-2 border-border bg-accent py-6 md:py-8 overflow-hidden" aria-label="Key statistics">
+        <div class="marquee-track flex items-center">
+            <div class="flex items-center gap-12 md:gap-16 pr-12 md:pr-16">
+                <span class="text-3xl md:text-5xl font-bold text-accent-foreground tracking-tighter">99.9%</span>
+                <span class="text-sm md:text-lg font-medium text-accent-foreground uppercase tracking-widest">Uptime</span>
+                <span class="text-2xl md:text-3xl text-accent-foreground" aria-hidden="true">✦</span>
+                <span class="text-3xl md:text-5xl font-bold text-accent-foreground tracking-tighter">10M+</span>
+                <span class="text-sm md:text-lg font-medium text-accent-foreground uppercase tracking-widest">Users</span>
+                <span class="text-2xl md:text-3xl text-accent-foreground" aria-hidden="true">✦</span>
+                <span class="text-3xl md:text-5xl font-bold text-accent-foreground tracking-tighter">250+</span>
+                <span class="text-sm md:text-lg font-medium text-accent-foreground uppercase tracking-widest">Features</span>
+                <span class="text-2xl md:text-3xl text-accent-foreground" aria-hidden="true">✦</span>
+                <span class="text-3xl md:text-5xl font-bold text-accent-foreground tracking-tighter">40%</span>
+                <span class="text-sm md:text-lg font-medium text-accent-foreground uppercase tracking-widest">Faster</span>
+                <span class="text-2xl md:text-3xl text-accent-foreground" aria-hidden="true">✦</span>
+            </div>
+            <div class="flex items-center gap-12 md:gap-16 pr-12 md:pr-16" aria-hidden="true">
+                <span class="text-3xl md:text-5xl font-bold text-accent-foreground tracking-tighter">99.9%</span>
+                <span class="text-sm md:text-lg font-medium text-accent-foreground uppercase tracking-widest">Uptime</span>
+                <span class="text-2xl md:text-3xl text-accent-foreground" aria-hidden="true">✦</span>
+                <span class="text-3xl md:text-5xl font-bold text-accent-foreground tracking-tighter">10M+</span>
+                <span class="text-sm md:text-lg font-medium text-accent-foreground uppercase tracking-widest">Users</span>
+                <span class="text-2xl md:text-3xl text-accent-foreground" aria-hidden="true">✦</span>
+                <span class="text-3xl md:text-5xl font-bold text-accent-foreground tracking-tighter">250+</span>
+                <span class="text-sm md:text-lg font-medium text-accent-foreground uppercase tracking-widest">Features</span>
+                <span class="text-2xl md:text-3xl text-accent-foreground" aria-hidden="true">✦</span>
+                <span class="text-3xl md:text-5xl font-bold text-accent-foreground tracking-tighter">40%</span>
+                <span class="text-sm md:text-lg font-medium text-accent-foreground uppercase tracking-widest">Faster</span>
+                <span class="text-2xl md:text-3xl text-accent-foreground" aria-hidden="true">✦</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FEATURES ===== -->
+    <section id="features" class="py-20 md:py-32">
+        <div class="max-w-[95vw] mx-auto px-4 md:px-0">
+            <div class="mb-16 md:mb-24">
+                <span class="text-xs md:text-sm lg:text-lg uppercase tracking-widest text-accent font-medium">What we offer</span>
+                <h2 class="text-5xl md:text-7xl lg:text-8xl font-bold uppercase tracking-tighter leading-[0.9] mt-4">
+                    Features<br>That <span class="text-accent">Hit</span>
+                </h2>
+            </div>
+            <div class="space-y-8">
+                <!-- Feature Card 1 -->
+                <div class="sticky top-20 md:top-32 border-2 border-border bg-background p-8 md:p-12 group hover:bg-accent transition-colors duration-300">
+                    <div class="flex flex-col md:flex-row md:items-start gap-6 md:gap-12">
+                        <span class="text-[5rem] md:text-[8rem] font-bold text-muted group-hover:text-accent-foreground transition-colors duration-300 leading-none shrink-0" aria-hidden="true">01</span>
+                        <div>
+                            <div class="flex items-center gap-4 mb-4">
+                                <i data-lucide="zap" class="w-8 h-8 text-accent group-hover:text-accent-foreground transition-colors duration-300"></i>
+                                <h3 class="text-3xl md:text-5xl font-bold uppercase tracking-tighter text-foreground group-hover:text-accent-foreground transition-colors duration-300">Real-Time Sync</h3>
+                            </div>
+                            <p class="text-lg md:text-xl text-muted-foreground group-hover:text-accent-foreground/80 transition-colors duration-300 max-w-2xl leading-tight">
+                                Every change propagates instantly across all devices and team members. No more stale data. No more refresh buttons. Just pure, live collaboration.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Feature Card 2 -->
+                <div class="sticky top-20 md:top-32 border-2 border-border bg-background p-8 md:p-12 group hover:bg-accent transition-colors duration-300">
+                    <div class="flex flex-col md:flex-row md:items-start gap-6 md:gap-12">
+                        <span class="text-[5rem] md:text-[8rem] font-bold text-muted group-hover:text-accent-foreground transition-colors duration-300 leading-none shrink-0" aria-hidden="true">02</span>
+                        <div>
+                            <div class="flex items-center gap-4 mb-4">
+                                <i data-lucide="workflow" class="w-8 h-8 text-accent group-hover:text-accent-foreground transition-colors duration-300"></i>
+                                <h3 class="text-3xl md:text-5xl font-bold uppercase tracking-tighter text-foreground group-hover:text-accent-foreground transition-colors duration-300">Automated Workflows</h3>
+                            </div>
+                            <p class="text-lg md:text-xl text-muted-foreground group-hover:text-accent-foreground/80 transition-colors duration-300 max-w-2xl leading-tight">
+                                Design complex automation chains with a visual builder that feels like magic. Trigger actions, set conditions, and let PULSE handle the heavy lifting.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Feature Card 3 -->
+                <div class="sticky top-20 md:top-32 border-2 border-border bg-background p-8 md:p-12 group hover:bg-accent transition-colors duration-300">
+                    <div class="flex flex-col md:flex-row md:items-start gap-6 md:gap-12">
+                        <span class="text-[5rem] md:text-[8rem] font-bold text-muted group-hover:text-accent-foreground transition-colors duration-300 leading-none shrink-0" aria-hidden="true">03</span>
+                        <div>
+                            <div class="flex items-center gap-4 mb-4">
+                                <i data-lucide="bar-chart-3" class="w-8 h-8 text-accent group-hover:text-accent-foreground transition-colors duration-300"></i>
+                                <h3 class="text-3xl md:text-5xl font-bold uppercase tracking-tighter text-foreground group-hover:text-accent-foreground transition-colors duration-300">Advanced Analytics</h3>
+                            </div>
+                            <p class="text-lg md:text-xl text-muted-foreground group-hover:text-accent-foreground/80 transition-colors duration-300 max-w-2xl leading-tight">
+                                Get deep insights into your team's performance with real-time dashboards. Track metrics that matter and make data-driven decisions instantly.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PROCESS ===== -->
+    <section id="process" class="py-20 md:py-32 border-t-2 border-border">
+        <div class="max-w-[95vw] mx-auto px-4 md:px-0">
+            <div class="mb-16 md:mb-24">
+                <span class="text-xs md:text-sm lg:text-lg uppercase tracking-widest text-accent font-medium">How we work</span>
+                <h2 class="text-5xl md:text-7xl lg:text-8xl font-bold uppercase tracking-tighter leading-[0.9] mt-4">
+                    The Process
+                </h2>
+            </div>
+            <div class="grid md:grid-cols-3 gap-px bg-border border-2 border-border">
+                <div class="bg-background p-8 md:p-12 group hover:bg-accent transition-colors duration-300">
+                    <span class="text-[5rem] md:text-[7rem] font-bold text-muted group-hover:text-accent-foreground transition-colors duration-300 leading-none block" aria-hidden="true">01</span>
+                    <h3 class="text-2xl md:text-3xl font-bold uppercase tracking-tighter text-foreground group-hover:text-accent-foreground transition-colors duration-300 mt-8">Discover</h3>
+                    <p class="text-base md:text-lg text-muted-foreground group-hover:text-accent-foreground/80 transition-colors duration-300 mt-4 leading-tight">
+                        We dive deep into your workflow to identify bottlenecks and opportunities for automation.
+                    </p>
+                </div>
+                <div class="bg-background p-8 md:p-12 group hover:bg-accent transition-colors duration-300">
+                    <span class="text-[5rem] md:text-[7rem] font-bold text-muted group-hover:text-accent-foreground transition-colors duration-300 leading-none block" aria-hidden="true">02</span>
+                    <h3 class="text-2xl md:text-3xl font-bold uppercase tracking-tighter text-foreground group-hover:text-accent-foreground transition-colors duration-300 mt-8">Build</h3>
+                    <p class="text-base md:text-lg text-muted-foreground group-hover:text-accent-foreground/80 transition-colors duration-300 mt-4 leading-tight">
+                        Our team designs and builds custom automation tailored to your specific needs and goals.
+                    </p>
+                </div>
+                <div class="bg-background p-8 md:p-12 group hover:bg-accent transition-colors duration-300">
+                    <span class="text-[5rem] md:text-[7rem] font-bold text-muted group-hover:text-accent-foreground transition-colors duration-300 leading-none block" aria-hidden="true">03</span>
+                    <h3 class="text-2xl md:text-3xl font-bold uppercase tracking-tighter text-foreground group-hover:text-accent-foreground transition-colors duration-300 mt-8">Scale</h3>
+                    <p class="text-base md:text-lg text-muted-foreground group-hover:text-accent-foreground/80 transition-colors duration-300 mt-4 leading-tight">
+                        Deploy at scale with enterprise-grade security and reliability. Grow without limits.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== BENEFITS ===== -->
+    <section class="py-20 md:py-32 border-t-2 border-border">
+        <div class="max-w-[95vw] mx-auto px-4 md:px-0">
+            <div class="mb-16 md:mb-24">
+                <span class="text-xs md:text-sm lg:text-lg uppercase tracking-widest text-accent font-medium">Why PULSE</span>
+                <h2 class="text-5xl md:text-7xl lg:text-8xl font-bold uppercase tracking-tighter leading-[0.9] mt-4">
+                    The Benefits
+                </h2>
+            </div>
+            <div>
+                <!-- Benefit 1 -->
+                <div class="group border-b-2 border-border py-10 md:py-14">
+                    <div class="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
+                        <span class="text-[4rem] md:text-[7rem] font-bold text-muted group-hover:text-accent transition-colors duration-300 leading-none shrink-0" aria-hidden="true">01</span>
+                        <h3 class="text-3xl md:text-5xl font-bold uppercase tracking-tighter text-foreground group-hover:translate-x-8 transition-transform duration-300">Save 40% Time</h3>
+                    </div>
+                    <p class="text-lg md:text-xl text-muted-foreground max-w-2xl mt-4 md:mt-2 md:ml-[calc(7rem+2rem)] opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300 leading-tight">
+                        Automate repetitive tasks and focus on what matters most. Your team will thank you.
+                    </p>
+                </div>
+                <!-- Benefit 2 -->
+                <div class="group border-b-2 border-border py-10 md:py-14">
+                    <div class="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
+                        <span class="text-[4rem] md:text-[7rem] font-bold text-muted group-hover:text-accent transition-colors duration-300 leading-none shrink-0" aria-hidden="true">02</span>
+                        <h3 class="text-3xl md:text-5xl font-bold uppercase tracking-tighter text-foreground group-hover:translate-x-8 transition-transform duration-300">Reduce Errors</h3>
+                    </div>
+                    <p class="text-lg md:text-xl text-muted-foreground max-w-2xl mt-4 md:mt-2 md:ml-[calc(7rem+2rem)] opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300 leading-tight">
+                        Eliminate manual data entry and human error with automated workflows that just work.
+                    </p>
+                </div>
+                <!-- Benefit 3 -->
+                <div class="group border-b-2 border-border py-10 md:py-14">
+                    <div class="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
+                        <span class="text-[4rem] md:text-[7rem] font-bold text-muted group-hover:text-accent transition-colors duration-300 leading-none shrink-0" aria-hidden="true">03</span>
+                        <h3 class="text-3xl md:text-5xl font-bold uppercase tracking-tighter text-foreground group-hover:translate-x-8 transition-transform duration-300">Scale Seamlessly</h3>
+                    </div>
+                    <p class="text-lg md:text-xl text-muted-foreground max-w-2xl mt-4 md:mt-2 md:ml-[calc(7rem+2rem)] opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300 leading-tight">
+                        Grow from 10 to 10,000 users without breaking a sweat. PULSE scales with you.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== TESTIMONIALS MARQUEE ===== -->
+    <section class="py-20 md:py-32 border-t-2 border-border overflow-hidden" aria-label="Testimonials">
+        <div class="max-w-[95vw] mx-auto px-4 md:px-0 mb-12 md:mb-16">
+            <span class="text-xs md:text-sm lg:text-lg uppercase tracking-widest text-accent font-medium">What they say</span>
+            <h2 class="text-5xl md:text-7xl lg:text-8xl font-bold uppercase tracking-tighter leading-[0.9] mt-4">
+                Loved By Teams
+            </h2>
+        </div>
+        <div class="overflow-hidden">
+            <div class="marquee-track slow flex items-stretch gap-8 pr-8">
+                <div class="flex items-stretch gap-8 pr-8">
+                    <div class="border-2 border-border bg-background p-8 md:p-12 w-[320px] md:w-[480px] shrink-0">
+                        <p class="text-xl md:text-2xl font-medium text-foreground leading-tight">"PULSE transformed our workflow completely. We ship faster than ever."</p>
+                        <div class="mt-8 flex items-center gap-4">
+                            <div class="w-12 h-12 bg-accent flex items-center justify-center shrink-0">
+                                <span class="text-accent-foreground font-bold text-lg">SC</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold uppercase tracking-wide text-foreground">Sarah Chen</p>
+                                <p class="text-xs text-muted-foreground uppercase tracking-wide">CTO at Nexus</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-2 border-border bg-background p-8 md:p-12 w-[320px] md:w-[480px] shrink-0">
+                        <p class="text-xl md:text-2xl font-medium text-foreground leading-tight">"The fastest tool we've ever adopted. Nothing else comes close."</p>
+                        <div class="mt-8 flex items-center gap-4">
+                            <div class="w-12 h-12 bg-accent flex items-center justify-center shrink-0">
+                                <span class="text-accent-foreground font-bold text-lg">MJ</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold uppercase tracking-wide text-foreground">Marcus Johnson</p>
+                                <p class="text-xs text-muted-foreground uppercase tracking-wide">VP Engineering</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-2 border-border bg-background p-8 md:p-12 w-[320px] md:w-[480px] shrink-0">
+                        <p class="text-xl md:text-2xl font-medium text-foreground leading-tight">"Our team shipped 3x faster with PULSE. It's not even close."</p>
+                        <div class="mt-8 flex items-center gap-4">
+                            <div class="w-12 h-12 bg-accent flex items-center justify-center shrink-0">
+                                <span class="text-accent-foreground font-bold text-lg">ER</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold uppercase tracking-wide text-foreground">Elena Rodriguez</p>
+                                <p class="text-xs text-muted-foreground uppercase tracking-wide">Product Lead</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-stretch gap-8 pr-8" aria-hidden="true">
+                    <div class="border-2 border-border bg-background p-8 md:p-12 w-[320px] md:w-[480px] shrink-0">
+                        <p class="text-xl md:text-2xl font-medium text-foreground leading-tight">"PULSE transformed our workflow completely. We ship faster than ever."</p>
+                        <div class="mt-8 flex items-center gap-4">
+                            <div class="w-12 h-12 bg-accent flex items-center justify-center shrink-0">
+                                <span class="text-accent-foreground font-bold text-lg">SC</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold uppercase tracking-wide text-foreground">Sarah Chen</p>
+                                <p class="text-xs text-muted-foreground uppercase tracking-wide">CTO at Nexus</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-2 border-border bg-background p-8 md:p-12 w-[320px] md:w-[480px] shrink-0">
+                        <p class="text-xl md:text-2xl font-medium text-foreground leading-tight">"The fastest tool we've ever adopted. Nothing else comes close."</p>
+                        <div class="mt-8 flex items-center gap-4">
+                            <div class="w-12 h-12 bg-accent flex items-center justify-center shrink-0">
+                                <span class="text-accent-foreground font-bold text-lg">MJ</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold uppercase tracking-wide text-foreground">Marcus Johnson</p>
+                                <p class="text-xs text-muted-foreground uppercase tracking-wide">VP Engineering</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-2 border-border bg-background p-8 md:p-12 w-[320px] md:w-[480px] shrink-0">
+                        <p class="text-xl md:text-2xl font-medium text-foreground leading-tight">"Our team shipped 3x faster with PULSE. It's not even close."</p>
+                        <div class="mt-8 flex items-center gap-4">
+                            <div class="w-12 h-12 bg-accent flex items-center justify-center shrink-0">
+                                <span class="text-accent-foreground font-bold text-lg">ER</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold uppercase tracking-wide text-foreground">Elena Rodriguez</p>
+                                <p class="text-xs text-muted-foreground uppercase tracking-wide">Product Lead</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PRICING ===== -->
+    <section id="pricing" class="py-20 md:py-32 border-t-2 border-border">
+        <div class="max-w-[95vw] mx-auto px-4 md:px-0">
+            <div class="mb-16 md:mb-24">
+                <span class="text-xs md:text-sm lg:text-lg uppercase tracking-widest text-accent font-medium">Pricing</span>
+                <h2 class="text-5xl md:text-7xl lg:text-8xl font-bold uppercase tracking-tighter leading-[0.9] mt-4">
+                    Pick Your Plan
+                </h2>
+            </div>
+            <div class="grid lg:grid-cols-3 gap-8">
+                <!-- Starter -->
+                <div class="border-2 border-border bg-background p-8 md:p-12 group hover:bg-accent transition-colors duration-300 flex flex-col">
+                    <h3 class="text-2xl md:text-3xl font-bold uppercase tracking-tighter text-foreground group-hover:text-accent-foreground transition-colors duration-300">Starter</h3>
+                    <p class="text-[4rem] md:text-[5rem] font-bold text-foreground group-hover:text-accent-foreground transition-colors duration-300 leading-none mt-8">$19<span class="text-lg text-muted-foreground group-hover:text-accent-foreground/70 transition-colors duration-300">/mo</span></p>
+                    <ul class="mt-8 space-y-4 flex-1">
+                        <li class="flex items-center gap-3 text-base md:text-lg text-muted-foreground group-hover:text-accent-foreground/80 transition-colors duration-300">
+                            <i data-lucide="check" class="w-5 h-5 text-accent group-hover:text-accent-foreground transition-colors duration-300 shrink-0"></i>
+                            5 Projects
+                        </li>
+                        <li class="flex items-center gap-3 text-base md:text-lg text-muted-foreground group-hover:text-accent-foreground/80 transition-colors duration-300">
+                            <i data-lucide="check" class="w-5 h-5 text-accent group-hover:text-accent-foreground transition-colors duration-300 shrink-0"></i>
+                            10GB Storage
+                        </li>
+                        <li class="flex items-center gap-3 text-base md:text-lg text-muted-foreground group-hover:text-accent-foreground/80 transition-colors duration-300">
+                            <i data-lucide="check" class="w-5 h-5 text-accent group-hover:text-accent-foreground transition-colors duration-300 shrink-0"></i>
+                            Basic Automation
+                        </li>
+                        <li class="flex items-center gap-3 text-base md:text-lg text-muted-foreground group-hover:text-accent-foreground/80 transition-colors duration-300">
+                            <i data-lucide="check" class="w-5 h-5 text-accent group-hover:text-accent-foreground transition-colors duration-300 shrink-0"></i>
+                            Email Support
+                        </li>
+                    </ul>
+                    <a href="#" class="inline-flex items-center justify-center h-14 px-8 border-2 border-border text-foreground font-bold uppercase tracking-tighter mt-10 group-hover:border-accent-foreground group-hover:text-accent-foreground hover:bg-foreground hover:text-background transition-colors duration-300">
+                        Get Started
+                    </a>
+                </div>
+                <!-- Pro (Highlighted) -->
+                <div class="border-2 border-border bg-accent p-8 md:p-12 flex flex-col relative">
+                    <span class="absolute top-0 right-0 bg-accent-foreground text-accent text-xs font-bold uppercase tracking-widest px-4 py-2">Popular</span>
+                    <h3 class="text-2xl md:text-3xl font-bold uppercase tracking-tighter text-accent-foreground">Pro</h3>
+                    <p class="text-[4rem] md:text-[5rem] font-bold text-accent-foreground leading-none mt-8">$49<span class="text-lg text-accent-foreground/70">/mo</span></p>
+                    <ul class="mt-8 space-y-4 flex-1">
+                        <li class="flex items-center gap-3 text-base md:text-lg text-accent-foreground">
+                            <i data-lucide="check" class="w-5 h-5 text-accent-foreground shrink-0"></i>
+                            Unlimited Projects
+                        </li>
+                        <li class="flex items-center gap-3 text-base md:text-lg text-accent-foreground">
+                            <i data-lucide="check" class="w-5 h-5 text-accent-foreground shrink-0"></i>
+                            100GB Storage
+                        </li>
+                        <li class="flex items-center gap-3 text-base md:text-lg text-accent-foreground">
+                            <i data-lucide="check" class="w-5 h-5 text-accent-foreground shrink-0"></i>
+                            Advanced Automation
+                        </li>
+                        <li class="flex items-center gap-3 text-base md:text-lg text-accent-foreground">
+                            <i data-lucide="check" class="w-5 h-5 text-accent-foreground shrink-0"></i>
+                            Priority Support
+                        </li>
+                    </ul>
+                    <a href="#" class="inline-flex items-center justify-center h-14 px-8 bg-accent-foreground text-accent font-bold uppercase tracking-tighter mt-10 hover:scale-105 active:scale-95 transition-all">
+                        Get Started
+                    </a>
+                </div>
+                <!-- Enterprise -->
+                <div class="border-2 border-border bg-background p-8 md:p-12 group hover:bg-accent transition-colors duration-300 flex flex-col">
+                    <h3 class="text-2xl md:text-3xl font-bold uppercase tracking-tighter text-foreground group-hover:text-accent-foreground transition-colors duration-300">Enterprise</h3>
+                    <p class="text-[4rem] md:text-[5rem] font-bold text-foreground group-hover:text-accent-foreground transition-colors duration-300 leading-none mt-8">Custom</p>
+                    <ul class="mt-8 space-y-4 flex-1">
+                        <li class="flex items-center gap-3 text-base md:text-lg text-muted-foreground group-hover:text-accent-foreground/80 transition-colors duration-300">
+                            <i data-lucide="check" class="w-5 h-5 text-accent group-hover:text-accent-foreground transition-colors duration-300 shrink-0"></i>
+                            Unlimited Everything
+                        </li>
+                        <li class="flex items-center gap-3 text-base md:text-lg text-muted-foreground group-hover:text-accent-foreground/80 transition-colors duration-300">
+                            <i data-lucide="check" class="w-5 h-5 text-accent group-hover:text-accent-foreground transition-colors duration-300 shrink-0"></i>
+                            Dedicated Support
+                        </li>
+                        <li class="flex items-center gap-3 text-base md:text-lg text-muted-foreground group-hover:text-accent-foreground/80 transition-colors duration-300">
+                            <i data-lucide="check" class="w-5 h-5 text-accent group-hover:text-accent-foreground transition-colors duration-300 shrink-0"></i>
+                            SSO &amp; SAML
+                        </li>
+                        <li class="flex items-center gap-3 text-base md:text-lg text-muted-foreground group-hover:text-accent-foreground/80 transition-colors duration-300">
+                            <i data-lucide="check" class="w-5 h-5 text-accent group-hover:text-accent-foreground transition-colors duration-300 shrink-0"></i>
+                            Custom SLAs
+                        </li>
+                    </ul>
+                    <a href="#" class="inline-flex items-center justify-center h-14 px-8 border-2 border-border text-foreground font-bold uppercase tracking-tighter mt-10 group-hover:border-accent-foreground group-hover:text-accent-foreground hover:bg-foreground hover:text-background transition-colors duration-300">
+                        Contact Us
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section id="faq" class="py-20 md:py-32 border-t-2 border-border">
+        <div class="max-w-[95vw] mx-auto px-4 md:px-0">
+            <div class="mb-16 md:mb-24">
+                <span class="text-xs md:text-sm lg:text-lg uppercase tracking-widest text-accent font-medium">Questions</span>
+                <h2 class="text-5xl md:text-7xl lg:text-8xl font-bold uppercase tracking-tighter leading-[0.9] mt-4">
+                    FAQ
+                </h2>
+            </div>
+            <div class="max-w-4xl">
+                <!-- FAQ Item 1 -->
+                <div class="faq-item border-b-2 border-border">
+                    <button class="faq-question w-full flex items-center justify-between py-8 text-left" aria-expanded="false">
+                        <span class="text-xl md:text-3xl font-bold uppercase tracking-tighter text-foreground pr-4">How does the free trial work?</span>
+                        <span class="faq-icon text-accent text-2xl md:text-3xl shrink-0">+</span>
+                    </button>
+                    <div class="faq-answer max-h-0 overflow-hidden transition-all duration-300 ease-in-out">
+                        <p class="text-lg md:text-xl text-muted-foreground pb-8 max-w-2xl leading-tight">
+                            Get 14 days of full access to all Pro features. No credit card required. Cancel anytime during the trial.
+                        </p>
+                    </div>
+                </div>
+                <!-- FAQ Item 2 -->
+                <div class="faq-item border-b-2 border-border">
+                    <button class="faq-question w-full flex items-center justify-between py-8 text-left" aria-expanded="false">
+                        <span class="text-xl md:text-3xl font-bold uppercase tracking-tighter text-foreground pr-4">Can I migrate from other tools?</span>
+                        <span class="faq-icon text-accent text-2xl md:text-3xl shrink-0">+</span>
+                    </button>
+                    <div class="faq-answer max-h-0 overflow-hidden transition-all duration-300 ease-in-out">
+                        <p class="text-lg md:text-xl text-muted-foreground pb-8 max-w-2xl leading-tight">
+                            Yes, we offer free migration assistance from any major platform. Our team will handle the entire process for you.
+                        </p>
+                    </div>
+                </div>
+                <!-- FAQ Item 3 -->
+                <div class="faq-item border-b-2 border-border">
+                    <button class="faq-question w-full flex items-center justify-between py-8 text-left" aria-expanded="false">
+                        <span class="text-xl md:text-3xl font-bold uppercase tracking-tighter text-foreground pr-4">What kind of support do you offer?</span>
+                        <span class="faq-icon text-accent text-2xl md:text-3xl shrink-0">+</span>
+                    </button>
+                    <div class="faq-answer max-h-0 overflow-hidden transition-all duration-300 ease-in-out">
+                        <p class="text-lg md:text-xl text-muted-foreground pb-8 max-w-2xl leading-tight">
+                            All plans include email support. Pro and Enterprise plans get priority support with faster response times.
+                        </p>
+                    </div>
+                </div>
+                <!-- FAQ Item 4 -->
+                <div class="faq-item border-b-2 border-border">
+                    <button class="faq-question w-full flex items-center justify-between py-8 text-left" aria-expanded="false">
+                        <span class="text-xl md:text-3xl font-bold uppercase tracking-tighter text-foreground pr-4">Is my data secure?</span>
+                        <span class="faq-icon text-accent text-2xl md:text-3xl shrink-0">+</span>
+                    </button>
+                    <div class="faq-answer max-h-0 overflow-hidden transition-all duration-300 ease-in-out">
+                        <p class="text-lg md:text-xl text-muted-foreground pb-8 max-w-2xl leading-tight">
+                            We use enterprise-grade encryption and comply with SOC 2 and GDPR. Your data is always protected.
+                        </p>
+                    </div>
+                </div>
+                <!-- FAQ Item 5 -->
+                <div class="faq-item border-b-2 border-border">
+                    <button class="faq-question w-full flex items-center justify-between py-8 text-left" aria-expanded="false">
+                        <span class="text-xl md:text-3xl font-bold uppercase tracking-tighter text-foreground pr-4">Can I cancel anytime?</span>
+                        <span class="faq-icon text-accent text-2xl md:text-3xl shrink-0">+</span>
+                    </button>
+                    <div class="faq-answer max-h-0 overflow-hidden transition-all duration-300 ease-in-out">
+                        <p class="text-lg md:text-xl text-muted-foreground pb-8 max-w-2xl leading-tight">
+                            Yes, you can cancel or change your plan at any time. No questions asked. Your data is yours.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="bg-accent text-accent-foreground py-16 md:py-20 border-t-2 border-border">
+        <div class="max-w-[95vw] mx-auto px-4 md:px-0">
+            <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-12">
+                <div>
+                    <a href="#" class="text-2xl md:text-3xl font-bold uppercase tracking-tighter text-accent-foreground">PULSE</a>
+                    <p class="text-base md:text-lg text-accent-foreground/70 max-w-sm mt-4 leading-tight">
+                        Build at the speed of thought. The workflow automation platform for modern teams.
+                    </p>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-12">
+                    <div>
+                        <h4 class="text-xs font-bold uppercase tracking-widest text-accent-foreground/60 mb-4">Product</h4>
+                        <ul class="space-y-2">
+                            <li><a href="#features" class="text-sm md:text-base font-medium uppercase tracking-wide text-accent-foreground hover:underline">Features</a></li>
+                            <li><a href="#process" class="text-sm md:text-base font-medium uppercase tracking-wide text-accent-foreground hover:underline">Process</a></li>
+                            <li><a href="#pricing" class="text-sm md:text-base font-medium uppercase tracking-wide text-accent-foreground hover:underline">Pricing</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold uppercase tracking-widest text-accent-foreground/60 mb-4">Company</h4>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="text-sm md:text-base font-medium uppercase tracking-wide text-accent-foreground hover:underline">About</a></li>
+                            <li><a href="#" class="text-sm md:text-base font-medium uppercase tracking-wide text-accent-foreground hover:underline">Blog</a></li>
+                            <li><a href="#" class="text-sm md:text-base font-medium uppercase tracking-wide text-accent-foreground hover:underline">Careers</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold uppercase tracking-widest text-accent-foreground/60 mb-4">Legal</h4>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="text-sm md:text-base font-medium uppercase tracking-wide text-accent-foreground hover:underline">Privacy</a></li>
+                            <li><a href="#" class="text-sm md:text-base font-medium uppercase tracking-wide text-accent-foreground hover:underline">Terms</a></li>
+                            <li><a href="#" class="text-sm md:text-base font-medium uppercase tracking-wide text-accent-foreground hover:underline">Security</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t-2 border-accent-foreground/20 mt-12 pt-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <p class="text-xs md:text-sm text-accent-foreground/60 uppercase tracking-wide">© 2024 PULSE. All rights reserved.</p>
+                <div class="flex items-center gap-4">
+                    <a href="#" class="text-accent-foreground hover:opacity-70 transition-opacity" aria-label="Twitter">
+                        <i data-lucide="twitter" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="text-accent-foreground hover:opacity-70 transition-opacity" aria-label="GitHub">
+                        <i data-lucide="github" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="text-accent-foreground hover:opacity-70 transition-opacity" aria-label="LinkedIn">
+                        <i data-lucide="linkedin" class="w-5 h-5"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Mobile menu toggle
+        const menuToggle = document.getElementById('menu-toggle');
+        const mobileMenu = document.getElementById('mobile-menu');
+        menuToggle.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+            const icon = menuToggle.querySelector('i');
+            if (mobileMenu.classList.contains('hidden')) {
+                icon.setAttribute('data-lucide', 'menu');
+            } else {
+                icon.setAttribute('data-lucide', 'x');
+            }
+            lucide.createIcons();
+        });
+
+        // Close mobile menu on link click
+        mobileMenu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+                const icon = menuToggle.querySelector('i');
+                icon.setAttribute('data-lucide', 'menu');
+                lucide.createIcons();
+            });
+        });
+
+        // Hero parallax
+        const heroContent = document.querySelector('.hero-content');
+        let ticking = false;
+
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    const scrolled = window.scrollY;
+                    const maxScroll = window.innerHeight * 0.5;
+                    const progress = Math.min(scrolled / maxScroll, 1);
+                    const scale = 1 + progress * 0.2;
+                    const opacity = 1 - progress;
+                    heroContent.style.transform = `scale(${scale})`;
+                    heroContent.style.opacity = opacity;
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        });
+
+        // FAQ Accordion
+        document.querySelectorAll('.faq-question').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const item = btn.parentElement;
+                const answer = item.querySelector('.faq-answer');
+                const icon = item.querySelector('.faq-icon');
+                const isOpen = btn.getAttribute('aria-expanded') === 'true';
+
+                // Close all
+                document.querySelectorAll('.faq-item').forEach(other => {
+                    other.querySelector('.faq-question').setAttribute('aria-expanded', 'false');
+                    other.querySelector('.faq-answer').style.maxHeight = '0';
+                    other.querySelector('.faq-answer').style.opacity = '0';
+                    other.querySelector('.faq-icon').textContent = '+';
+                });
+
+                // Toggle this one
+                if (!isOpen) {
+                    btn.setAttribute('aria-expanded', 'true');
+                    answer.style.maxHeight = answer.scrollHeight + 'px';
+                    answer.style.opacity = '1';
+                    icon.textContent = '−';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

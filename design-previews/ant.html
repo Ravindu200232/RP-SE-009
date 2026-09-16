@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AntDesk — Enterprise Data Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1677ff',
+                        secondary: '#8B5CF6',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                        surface: '#FFFFFF',
+                        text: '#111827',
+                    },
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        details[open] summary i {
+            transform: rotate(180deg);
+        }
+        details summary i {
+            transition: transform 0.2s ease;
+        }
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+    </style>
+</head>
+<body class="font-sans bg-surface text-text antialiased">
+
+    <!-- ===== Navigation ===== -->
+    <nav class="sticky top-0 z-50 bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-primary rounded-sm flex items-center justify-center">
+                        <i data-lucide="database" class="w-4 h-4 text-white"></i>
+                    </div>
+                    <span class="text-xl font-bold tracking-tight">AntDesk</span>
+                </div>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="text-sm font-medium text-gray-600 hover:text-primary transition-colors">Features</a>
+                    <a href="#process" class="text-sm font-medium text-gray-600 hover:text-primary transition-colors">Process</a>
+                    <a href="#pricing" class="text-sm font-medium text-gray-600 hover:text-primary transition-colors">Pricing</a>
+                    <a href="#faq" class="text-sm font-medium text-gray-600 hover:text-primary transition-colors">FAQ</a>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="#" class="text-sm font-medium text-gray-600 hover:text-primary transition-colors hidden sm:block">Sign in</a>
+                    <a href="#" class="bg-primary text-white text-sm font-semibold px-4 py-2 rounded-sm hover:bg-blue-600 transition-colors">Get Started</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== Hero ===== -->
+    <section class="bg-gradient-to-b from-blue-50 via-white to-white py-20 lg:py-28">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                <div>
+                    <div class="inline-flex items-center gap-2 bg-blue-100 text-primary px-3 py-1 rounded-sm text-xs font-semibold mb-6">
+                        <i data-lucide="sparkles" class="w-3 h-3"></i>
+                        New: AI-powered insights
+                    </div>
+                    <h1 class="text-4xl sm:text-5xl font-bold leading-tight mb-4">
+                        Data infrastructure for teams that <span class="text-primary">ship</span>
+                    </h1>
+                    <p class="text-lg text-gray-600 mb-8 max-w-lg">
+                        AntDesk unifies your data pipelines, analytics, and dashboards into one enterprise-grade platform.
+                    </p>
+                    <div class="flex flex-wrap gap-4 mb-8">
+                        <a href="#" class="bg-primary text-white font-semibold px-6 py-3 rounded-sm hover:bg-blue-600 transition-colors">Start Free Trial</a>
+                        <a href="#" class="border border-gray-300 text-gray-700 font-semibold px-6 py-3 rounded-sm hover:border-primary hover:text-primary transition-colors">Book a Demo</a>
+                    </div>
+                    <div class="flex items-center gap-3 text-sm text-gray-500">
+                        <div class="flex -space-x-2">
+                            <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold border-2 border-white">JD</div>
+                            <div class="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-white text-xs font-bold border-2 border-white">AK</div>
+                            <div class="w-8 h-8 rounded-full bg-success flex items-center justify-center text-white text-xs font-bold border-2 border-white">SM</div>
+                        </div>
+                        <span>Trusted by 1,200+ enterprises</span>
+                    </div>
+                </div>
+                <div>
+                    <!-- Dashboard mockup -->
+                    <div class="bg-white rounded-sm border border-gray-200 shadow-xl overflow-hidden">
+                        <div class="flex items-center gap-2 px-4 py-3 bg-gray-50 border-b border-gray-200">
+                            <div class="w-3 h-3 rounded-full bg-danger"></div>
+                            <div class="w-3 h-3 rounded-full bg-warning"></div>
+                            <div class="w-3 h-3 rounded-full bg-success"></div>
+                            <div class="ml-4 font-mono text-xs text-gray-500">app.antdesk.io/dashboard</div>
+                        </div>
+                        <div class="p-6">
+                            <div class="grid grid-cols-3 gap-4 mb-6">
+                                <div class="bg-gray-50 p-4 rounded-sm">
+                                    <div class="text-xs text-gray-500">Revenue</div>
+                                    <div class="text-2xl font-bold mt-1">$128K</div>
+                                    <div class="text-xs text-success mt-1">+12.5%</div>
+                                </div>
+                                <div class="bg-gray-50 p-4 rounded-sm">
+                                    <div class="text-xs text-gray-500">Users</div>
+                                    <div class="text-2xl font-bold mt-1">2,847</div>
+                                    <div class="text-xs text-success mt-1">+8.2%</div>
+                                </div>
+                                <div class="bg-gray-50 p-4 rounded-sm">
+                                    <div class="text-xs text-gray-500">Orders</div>
+                                    <div class="text-2xl font-bold mt-1">1,203</div>
+                                    <div class="text-xs text-warning mt-1">+3.1%</div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="bg-gray-50 p-4 rounded-sm">
+                                    <div class="text-xs font-semibold mb-3">Weekly Sales</div>
+                                    <div class="flex items-end gap-2 h-32">
+                                        <div class="bg-primary w-full rounded-sm" style="height: 40%"></div>
+                                        <div class="bg-primary w-full rounded-sm" style="height: 65%"></div>
+                                        <div class="bg-primary w-full rounded-sm" style="height: 50%"></div>
+                                        <div class="bg-primary w-full rounded-sm" style="height: 80%"></div>
+                                        <div class="bg-primary w-full rounded-sm" style="height: 60%"></div>
+                                        <div class="bg-primary w-full rounded-sm" style="height: 95%"></div>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 p-4 rounded-sm">
+                                    <div class="text-xs font-semibold mb-3">User Growth</div>
+                                    <svg viewBox="0 0 200 100" class="w-full h-32" preserveAspectRatio="none">
+                                        <path d="M0,80 L30,70 L60,75 L90,50 L120,55 L150,30 L180,20 L200,10 L200,100 L0,100 Z" fill="rgba(22,119,255,0.1)" stroke="none"/>
+                                        <polyline points="0,80 30,70 60,75 90,50 120,55 150,30 180,20 200,10" fill="none" stroke="#1677ff" stroke-width="2"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Stats ===== -->
+    <section class="bg-gray-50 py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-primary">99.99%</div>
+                    <div class="text-sm text-gray-500 mt-2">Uptime SLA</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-primary">2.5x</div>
+                    <div class="text-sm text-gray-500 mt-2">Faster insights</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-primary">1,200+</div>
+                    <div class="text-sm text-gray-500 mt-2">Enterprise customers</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-primary">40%</div>
+                    <div class="text-sm text-gray-500 mt-2">Lower data costs</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Features ===== -->
+    <section id="features" class="py-20 scroll-mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold mb-4">Everything you need to ship data</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">A complete platform for building, deploying, and monitoring data pipelines at scale.</p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="border border-gray-200 rounded-sm p-6 hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-blue-100 rounded-sm flex items-center justify-center mb-4">
+                        <i data-lucide="zap" class="w-6 h-6 text-primary"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Real-time Pipelines</h3>
+                    <p class="text-gray-600 text-sm">Stream data from any source with sub-second latency and automatic retries.</p>
+                </div>
+                <div class="border border-gray-200 rounded-sm p-6 hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-purple-100 rounded-sm flex items-center justify-center mb-4">
+                        <i data-lucide="bar-chart-3" class="w-6 h-6 text-secondary"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Unified Analytics</h3>
+                    <p class="text-gray-600 text-sm">Query all your data with SQL — no need to move data between systems.</p>
+                </div>
+                <div class="border border-gray-200 rounded-sm p-6 hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-green-100 rounded-sm flex items-center justify-center mb-4">
+                        <i data-lucide="shield" class="w-6 h-6 text-success"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Role-based Access</h3>
+                    <p class="text-gray-600 text-sm">Fine-grained permissions with SSO, SCIM, and audit logs built in.</p>
+                </div>
+                <div class="border border-gray-200 rounded-sm p-6 hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-orange-100 rounded-sm flex items-center justify-center mb-4">
+                        <i data-lucide="bell" class="w-6 h-6 text-warning"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Automated Alerts</h3>
+                    <p class="text-gray-600 text-sm">Get notified via Slack, email, or PagerDuty when anomalies are detected.</p>
+                </div>
+                <div class="border border-gray-200 rounded-sm p-6 hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-blue-100 rounded-sm flex items-center justify-center mb-4">
+                        <i data-lucide="database" class="w-6 h-6 text-primary"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Data Governance</h3>
+                    <p class="text-gray-600 text-sm">Automatic data lineage, cataloging, and compliance reporting.</p>
+                </div>
+                <div class="border border-gray-200 rounded-sm p-6 hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-purple-100 rounded-sm flex items-center justify-center mb-4">
+                        <i data-lucide="code" class="w-6 h-6 text-secondary"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">API-first Design</h3>
+                    <p class="text-gray-600 text-sm">REST and GraphQL APIs for every resource. SDKs for all major languages.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Process ===== -->
+    <section id="process" class="bg-gray-50 py-20 scroll-mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold mb-4">Get started in four steps</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">From zero to production in under an hour.</p>
+            </div>
+            <div class="grid md:grid-cols-4 gap-8">
+                <div class="text-center relative">
+                    <div class="w-12 h-12 bg-primary text-white rounded-sm flex items-center justify-center text-lg font-bold mx-auto mb-4">1</div>
+                    <h3 class="font-semibold mb-2">Connect</h3>
+                    <p class="text-sm text-gray-600">Connect your data sources in minutes with 200+ native connectors.</p>
+                </div>
+                <div class="text-center relative">
+                    <div class="w-12 h-12 bg-primary text-white rounded-sm flex items-center justify-center text-lg font-bold mx-auto mb-4">2</div>
+                    <h3 class="font-semibold mb-2">Build</h3>
+                    <p class="text-sm text-gray-600">Design pipelines visually or with code. Transform data with SQL.</p>
+                </div>
+                <div class="text-center relative">
+                    <div class="w-12 h-12 bg-primary text-white rounded-sm flex items-center justify-center text-lg font-bold mx-auto mb-4">3</div>
+                    <h3 class="font-semibold mb-2">Deploy</h3>
+                    <p class="text-sm text-gray-600">Deploy with one click. Automatic retries and error handling built in.</p>
+                </div>
+                <div class="text-center relative">
+                    <div class="w-12 h-12 bg-primary text-white rounded-sm flex items-center justify-center text-lg font-bold mx-auto mb-4">4</div>
+                    <h3 class="font-semibold mb-2">Monitor</h3>
+                    <p class="text-sm text-gray-600">Track performance, set alerts, and optimize with real-time metrics.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Benefits ===== -->
+    <section class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold mb-4">Why teams choose AntDesk</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">Real outcomes for real teams.</p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="flex gap-4 p-6 border border-gray-200 rounded-sm hover:shadow-md transition-shadow">
+                    <div class="w-12 h-12 bg-green-100 rounded-sm flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="trending-down" class="w-6 h-6 text-success"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold mb-2">Reduce infrastructure costs by 40%</h3>
+                        <p class="text-sm text-gray-600">Our optimised query engine and auto-scaling mean you pay for what you use, not idle capacity.</p>
+                    </div>
+                </div>
+                <div class="flex gap-4 p-6 border border-gray-200 rounded-sm hover:shadow-md transition-shadow">
+                    <div class="w-12 h-12 bg-blue-100 rounded-sm flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="rocket" class="w-6 h-6 text-primary"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold mb-2">Ship features 2x faster</h3>
+                        <p class="text-sm text-gray-600">Self-serve analytics and pre-built components let your team move without bottlenecks.</p>
+                    </div>
+                </div>
+                <div class="flex gap-4 p-6 border border-gray-200 rounded-sm hover:shadow-md transition-shadow">
+                    <div class="w-12 h-12 bg-purple-100 rounded-sm flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="lock" class="w-6 h-6 text-secondary"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold mb-2">Enterprise-grade security</h3>
+                        <p class="text-sm text-gray-600">SOC 2 Type II, GDPR, and HIPAA compliance. Encryption at rest and in transit.</p>
+                    </div>
+                </div>
+                <div class="flex gap-4 p-6 border border-gray-200 rounded-sm hover:shadow-md transition-shadow">
+                    <div class="w-12 h-12 bg-orange-100 rounded-sm flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="users" class="w-6 h-6 text-warning"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold mb-2">Self-serve analytics</h3>
+                        <p class="text-sm text-gray-600">Let every team member explore data with drag-and-drop dashboards and natural language queries.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Testimonials ===== -->
+    <section class="bg-gray-50 py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold mb-4">Loved by data teams</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">See what our customers say.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="bg-white border border-gray-200 rounded-sm p-6">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-sm text-gray-700 mb-6">"AntDesk replaced our entire data stack. We went from 5 tools to 1, and our team ships dashboards in days instead of weeks."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold">JD</div>
+                        <div>
+                            <div class="text-sm font-semibold">Jane Doe</div>
+                            <div class="text-xs text-gray-500">VP of Data, Acme Corp</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white border border-gray-200 rounded-sm p-6">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-sm text-gray-700 mb-6">"The real-time pipelines are incredible. We process millions of events per second with zero data loss. It just works."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-white text-sm font-bold">AK</div>
+                        <div>
+                            <div class="text-sm font-semibold">Alex Kim</div>
+                            <div class="text-xs text-gray-500">CTO, TechFlow</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white border border-gray-200 rounded-sm p-6">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-sm text-gray-700 mb-6">"The governance features alone are worth it. Our auditors love the automatic data lineage and compliance reports."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-success flex items-center justify-center text-white text-sm font-bold">SM</div>
+                        <div>
+                            <div class="text-sm font-semibold">Sarah Miller</div>
+                            <div class="text-xs text-gray-500">Data Governance Lead, FinCorp</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Pricing ===== -->
+    <section id="pricing" class="py-20 scroll-mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold mb-4">Simple, transparent pricing</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">Start free. Scale as you grow. No hidden fees.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-6 items-stretch">
+                <!-- Starter -->
+                <div class="border border-gray-200 rounded-sm p-8 flex flex-col">
+                    <h3 class="text-lg font-semibold mb-2">Starter</h3>
+                    <p class="text-sm text-gray-500 mb-4">For individuals and small projects</p>
+                    <div class="text-4xl font-bold mb-6">$0<span class="text-base font-normal text-gray-500">/mo</span></div>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i> 1 GB data</li>
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i> 5 pipelines</li>
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i> Community support</li>
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i> 30-day history</li>
+                    </ul>
+                    <a href="#" class="block text-center border border-gray-300 text-gray-700 font-semibold px-4 py-2 rounded-sm hover:border-primary hover:text-primary transition-colors">Get Started</a>
+                </div>
+                <!-- Pro -->
+                <div class="border-2 border-primary rounded-sm p-8 relative flex flex-col">
+                    <div class="absolute top-0 right-0 bg-primary text-white text-xs font-semibold px-3 py-1 rounded-bl-sm">Most Popular</div>
+                    <h3 class="text-lg font-semibold mb-2">Pro</h3>
+                    <p class="text-sm text-gray-500 mb-4">For growing teams</p>
+                    <div class="text-4xl font-bold mb-6">$49<span class="text-base font-normal text-gray-500">/user/mo</span></div>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i> 100 GB data</li>
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i> Unlimited pipelines</li>
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i> SSO &amp; SCIM</li>
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i> 1-year history</li>
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i> Priority support</li>
+                    </ul>
+                    <a href="#" class="block text-center bg-primary text-white font-semibold px-4 py-2 rounded-sm hover:bg-blue-600 transition-colors">Start Free Trial</a>
+                </div>
+                <!-- Enterprise -->
+                <div class="border border-gray-200 rounded-sm p-8 flex flex-col">
+                    <h3 class="text-lg font-semibold mb-2">Enterprise</h3>
+                    <p class="text-sm text-gray-500 mb-4">For large organizations</p>
+                    <div class="text-4xl font-bold mb-6">Custom</div>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i> Unlimited data</li>
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i> Dedicated infrastructure</li>
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i> 99.99% SLA</li>
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i> 7-year history</li>
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i> Dedicated support</li>
+                    </ul>
+                    <a href="#" class="block text-center border border-gray-300 text-gray-700 font-semibold px-4 py-2 rounded-sm hover:border-primary hover:text-primary transition-colors">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section id="faq" class="bg-gray-50 py-20 scroll-mt-16">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold mb-4">Frequently asked questions</h2>
+                <p class="text-gray-600">Everything you need to know about AntDesk.</p>
+            </div>
+            <div class="space-y-4">
+                <details class="bg-white border border-gray-200 rounded-sm p-6 group">
+                    <summary class="flex items-center justify-between cursor-pointer font-semibold list-none">
+                        How long does it take to set up?
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
+                    </summary>
+                    <p class="text-sm text-gray-600 mt-4">Most teams are up and running in under an hour. Our 200+ connectors make it easy to connect your data sources quickly.</p>
+                </details>
+                <details class="bg-white border border-gray-200 rounded-sm p-6 group">
+                    <summary class="flex items-center justify-between cursor-pointer font-semibold list-none">
+                        Can I migrate from my current data stack?
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
+                    </summary>
+                    <p class="text-sm text-gray-600 mt-4">Yes! We provide migration tools and a dedicated migration team for enterprise customers. Most migrations take less than a week.</p>
+                </details>
+                <details class="bg-white border border-gray-200 rounded-sm p-6 group">
+                    <summary class="flex items-center justify-between cursor-pointer font-semibold list-none">
+                        What security certifications do you have?
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
+                    </summary>
+                    <p class="text-sm text-gray-600 mt-4">We are SOC 2 Type II certified, GDPR compliant, and HIPAA compliant. All data is encrypted at rest and in transit.</p>
+                </details>
+                <details class="bg-white border border-gray-200 rounded-sm p-6 group">
+                    <summary class="flex items-center justify-between cursor-pointer font-semibold list-none">
+                        Do you offer a free trial?
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
+                    </summary>
+                    <p class="text-sm text-gray-600 mt-4">Yes! The Pro plan comes with a 14-day free trial. No credit card required. You can upgrade, downgrade, or cancel at any time.</p>
+                </details>
+                <details class="bg-white border border-gray-200 rounded-sm p-6 group">
+                    <summary class="flex items-center justify-between cursor-pointer font-semibold list-none">
+                        Can I use AntDesk with my existing BI tools?
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
+                    </summary>
+                    <p class="text-sm text-gray-600 mt-4">Absolutely. AntDesk integrates with Tableau, Power BI, Looker, and all major BI tools. We also offer a REST API and JDBC driver.</p>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== CTA ===== -->
+    <section class="bg-primary py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl font-bold text-white mb-4">Ready to ship data faster?</h2>
+            <p class="text-blue-100 mb-8 max-w-xl mx-auto">Join 1,200+ enterprises already using AntDesk to power their data infrastructure.</p>
+            <div class="flex flex-wrap gap-4 justify-center">
+                <a href="#" class="bg-white text-primary font-semibold px-6 py-3 rounded-sm hover:bg-blue-50 transition-colors">Start Free Trial</a>
+                <a href="#" class="border border-white/40 text-white font-semibold px-6 py-3 rounded-sm hover:bg-white/10 transition-colors">Book a Demo</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Footer ===== -->
+    <footer class="bg-gray-900 text-gray-300 py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-5 gap-8 mb-12">
+                <div class="md:col-span-2">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-primary rounded-sm flex items-center justify-center">
+                            <i data-lucide="database" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <span class="text-xl font-bold text-white">AntDesk</span>
+                    </div>
+                    <p class="text-sm text-gray-400">The enterprise data platform for teams that ship.</p>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold text-white mb-4">Product</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="hover:text-white transition-colors">Features</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Pricing</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Integrations</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Changelog</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold text-white mb-4">Company</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="hover:text-white transition-colors">About</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Blog</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Careers</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold text-white mb-4">Resources</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="hover:text-white transition-colors">Documentation</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">API Reference</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Community</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Status</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="text-xs text-gray-500">© 2024 AntDesk. All rights reserved.</p>
+                <div class="flex gap-6 text-xs text-gray-500">
+                    <a href="#" class="hover:text-white transition-colors">Privacy</a>
+                    <a href="#" class="hover:text-white transition-colors">Terms</a>
+                    <a href="#" class="hover:text-white transition-colors">Security</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

@@ -42,6 +42,8 @@ Interview standard:
 - Never ask whether the customer has or wants a logo. Logo generation is handled only when they explicitly request logo artwork.
 - Do not ask about navbar/sidebar placement, fonts, themes, colours or layout unless the current topic explicitly exists to capture a customer-owned visual requirement.
 - Never ask the customer about the technology stack, programming language, database engine, hosting, or deployment architecture (e.g. Next.js, MERN, React, Node.js, MongoDB, etc.). The technology stack is already selected by the customer in the project setup.
+- This platform builds responsive full-stack WEB applications only. It does NOT build native mobile apps (no Android APKs, no iOS apps, no app store deployment). NEVER ask questions about building native mobile apps, Android apps, iOS apps, APK packaging, or mobile app stores. All applications are delivered as web applications running in modern web browsers.
+- Never ask fake, rhetorical, redundant, or clarification filler questions (e.g. asking "You wrote X. Which of these did you mean?", asking if the system should be fast, or asking questions whose answer does not change web application code).
 - Keep the question natural and specific. It should sound like an experienced engineer who has read everything the customer already said.
 """
 
@@ -360,7 +362,6 @@ def _why_needed(topic: topics.Topic, item: dict) -> str:
         "table_entities": f"These details define what one {subject or 'record'} contains and what forms and validation need.",
         "images": "This tells the builder whether artwork is part of the requested scope.",
         "image_kinds": "This names the exact artwork assets the builder must create.",
-        "responsive_pwa": "This sets the device and installation expectations the finished product must meet.",
         "extra_notes": "This is the final chance to capture a rule, exception or expectation not covered earlier.",
     }
     return reasons.get(topic.key, topic.intent)
@@ -411,7 +412,6 @@ def _fallback_question(topic: topics.Topic, item: dict) -> str:
         "image_kinds": "Which original image assets should be produced as part of the build?",
         "theme_type": "Light or dark?",
         "color_palette": "Which colours suit your brand?",
-        "responsive_pwa": "Which devices and install modes must the finished product support?",
         "extra_notes": "Before I write the specification, is there any rule, exception, must-have behaviour or failure case that would make the finished product unacceptable if we missed it?",
     }
     return base.get(topic.key, f"Tell us about {topic.label.lower()}.")

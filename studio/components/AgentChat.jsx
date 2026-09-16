@@ -620,10 +620,10 @@ function FileActionCard({ turn, live }) {
   }
 
   const iconBg = isRead
-    ? 'bg-amber-500/10 text-amber-400'
+    ? 'bg-[#FFAB00]/15 text-[#FFAB00]'
     : isPatch
-      ? 'bg-purple-500/10 text-purple-400'
-      : 'bg-blue-500/10 text-blue-400'
+      ? 'bg-[#8E33FF]/15 text-[#8E33FF]'
+      : 'bg-[#1877F2]/15 text-[#1877F2]'
 
   const IconComponent = isRead ? Eye : Pencil
 
@@ -634,10 +634,10 @@ function FileActionCard({ turn, live }) {
       : (turn.inProgress ? (turn.action || 'writing') : (turn.action || 'created'))
 
   const badgeStyle = isRead
-    ? 'bg-amber-500/10 text-amber-400 border-amber-500/25'
+    ? 'bg-[#FFAB00]/15 text-[#FFAB00] border-[#FFAB00]/30'
     : isPatch
-      ? 'bg-purple-500/10 text-purple-400 border-purple-500/25'
-      : 'bg-blue-500/10 text-blue-400 border-blue-500/25'
+      ? 'bg-[#8E33FF]/15 text-[#8E33FF] border-[#8E33FF]/30'
+      : 'bg-[#1877F2]/15 text-[#1877F2] border-[#1877F2]/30'
 
   return (
     <div className="my-1.5 overflow-hidden rounded-2xl border border-line bg-panel2/60 shadow-sm transition-all hover:border-accent/40">
@@ -752,7 +752,7 @@ const Turn = memo(function Turn({ turn, live }) {
             ))}
           </div>
         )}
-        <p className="max-w-[88%] rounded-2xl rounded-tr-sm bg-accent/15 border border-accent/25 px-4 py-2.5 text-[13px] leading-relaxed text-ink shadow-sm dark:bg-[#342f66]/50 dark:border-accent/35 dark:text-purple-100">
+        <p className="max-w-[88%] rounded-2xl rounded-tr-sm bg-accent/15 border border-accent/25 px-4 py-2.5 text-[13px] leading-relaxed text-ink shadow-sm dark:bg-[#1877F2]/15 dark:border-[#1877F2]/30 dark:text-white">
           {turn.text}
         </p>
       </div>

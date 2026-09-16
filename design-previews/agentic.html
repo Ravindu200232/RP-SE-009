@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic — Delegate the work. Own the outcome.</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <script src="https://unpkg.com/lucide@latest">
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#FF5701',
+                        secondary: '#F6F6F1',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                        surface: '#FFFFFF',
+                        ink: '#111827',
+                    },
+                    fontFamily: {
+                        display: ['Playfair Display', 'serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            border-radius: 0 !important;
+        }
+        :focus-visible {
+            outline: 3px solid #FF5701;
+            outline-offset: 2px;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            html {
+                scroll-behavior: auto;
+            }
+            * {
+                transition: none !important;
+                animation: none !important;
+            }
+        }
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+        details[open] summary .faq-chevron {
+            transform: rotate(180deg);
+        }
+        .faq-chevron {
+            transition: transform 0.2s ease;
+        }
+    </style>
+</head>
+<body class="bg-surface text-ink font-sans antialiased">
+
+    <!-- ===== NAVIGATION ===== -->
+    <header class="sticky top-0 z-50 bg-surface/95 backdrop-blur border-b border-ink/10">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between" aria-label="Main navigation">
+            <a href="#" class="flex items-center gap-3 min-h-[44px]">
+                <span class="w-8 h-8 bg-primary flex items-center justify-center">
+                    <i data-lucide="bot" class="w-4 h-4 text-white" aria-hidden="true"></i>
+                </span>
+                <span class="font-display font-800 text-xl tracking-tight">Agentic</span>
+            </a>
+            <div class="hidden md:flex items-center gap-8">
+                <a href="#features" class="text-sm font-medium hover:text-primary transition-colors py-2">Features</a>
+                <a href="#process" class="text-sm font-medium hover:text-primary transition-colors py-2">Process</a>
+                <a href="#pricing" class="text-sm font-medium hover:text-primary transition-colors py-2">Pricing</a>
+                <a href="#faq" class="text-sm font-medium hover:text-primary transition-colors py-2">FAQ</a>
+            </div>
+            <div class="hidden md:flex items-center gap-4">
+                <a href="#" class="text-sm font-medium hover:text-primary transition-colors py-2">Sign in</a>
+                <a href="#" class="bg-primary text-white px-6 py-2.5 text-sm font-semibold hover:bg-primary/90 transition-colors min-h-[44px] flex items-center">
+                    Get Started
+                </a>
+            </div>
+            <details class="md:hidden relative">
+                <summary class="p-2 cursor-pointer list-none min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="Toggle menu">
+                    <i data-lucide="menu" class="w-5 h-5" aria-hidden="true"></i>
+                </summary>
+                <div class="absolute top-full right-0 w-64 bg-surface border border-ink/10 shadow-lg p-6 flex flex-col gap-4">
+                    <a href="#features" class="text-sm font-medium hover:text-primary py-2">Features</a>
+                    <a href="#process" class="text-sm font-medium hover:text-primary py-2">Process</a>
+                    <a href="#pricing" class="text-sm font-medium hover:text-primary py-2">Pricing</a>
+                    <a href="#faq" class="text-sm font-medium hover:text-primary py-2">FAQ</a>
+                    <hr class="border-ink/10">
+                    <a href="#" class="text-sm font-medium hover:text-primary py-2">Sign in</a>
+                    <a href="#" class="bg-primary text-white px-6 py-3 text-sm font-semibold text-center">Get Started</a>
+                </div>
+            </details>
+        </nav>
+    </header>
+
+    <main>
+
+        <!-- ===== HERO ===== -->
+        <section class="bg-secondary relative overflow-hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32 grid lg:grid-cols-2 gap-16 items-center">
+                <div>
+                    <p class="font-mono text-xs font-semibold text-primary uppercase tracking-widest mb-6">AI-Powered Workflows</p>
+                    <h1 class="font-display font-800 text-[40px] leading-[1.1] tracking-tight mb-6">
+                        Delegate the work.<br>
+                        <span class="text-primary">Own the outcome.</span>
+                    </h1>
+                    <p class="text-lg text-ink/70 leading-relaxed mb-10 max-w-lg">
+                        Agentic gives you autonomous AI agents that plan, execute, and deliver — so you can focus on what actually matters.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="#" class="bg-primary text-white px-8 py-4 text-base font-semibold hover:bg-primary/90 transition-colors inline-flex items-center justify-center gap-2 min-h-[48px]">
+                            Start Free
+                            <i data-lucide="arrow-right" class="w-4 h-4" aria-hidden="true"></i>
+                        </a>
+                        <a href="#process" class="border-2 border-ink/20 text-ink px-8 py-4 text-base font-semibold hover:border-ink/40 transition-colors inline-flex items-center justify-center min-h-[48px]">
+                            See How It Works
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Hero Visual -->
+                <div class="relative">
+                    <div class="absolute -top-6 -right-6 w-32 h-32 bg-primary/10" aria-hidden="true"></div>
+                    <div class="absolute -bottom-6 -left-6 w-24 h-24 bg-primary/20" aria-hidden="true"></div>
+                    <div class="relative bg-surface border border-ink/10 shadow-2xl">
+                        <!-- Card header -->
+                        <div class="border-b border-ink/10 px-6 py-4 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 bg-primary flex items-center justify-center">
+                                    <i data-lucide="bot" class="w-4 h-4 text-white" aria-hidden="true"></i>
+                                </div>
+                                <div>
+                                    <p class="font-mono text-sm font-semibold">Agent-42</p>
+                                    <p class="text-xs text-ink/50">Autonomous worker</p>
+                                </div>
+                            </div>
+                            <span class="bg-success/10 text-success px-3 py-1 font-mono text-xs font-semibold flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 bg-success inline-block" aria-hidden="true"></span>
+                                Running
+                            </span>
+                        </div>
+                        <!-- Chat area -->
+                        <div class="px-6 py-6 space-y-4">
+                            <div class="flex justify-end">
+                                <div class="bg-primary text-white px-5 py-3 max-w-[85%] text-sm leading-relaxed">
+                                    Draft a Q3 marketing plan for our product launch.
+                                </div>
+                            </div>
+                            <div class="flex justify-start">
+                                <div class="bg-secondary px-5 py-3 max-w-[85%] text-sm leading-relaxed">
+                                    I've analyzed your campaign data and drafted a plan. Here are the key highlights…
+                                </div>
+                            </div>
+                            <div class="flex justify-start">
+                                <div class="bg-secondary px-5 py-3 max-w-[85%] text-sm leading-relaxed">
+                                    <div class="flex items-center gap-2 font-mono text-xs font-semibold text-success mb-2">
+                                        <i data-lucide="check-circle" class="w-3 h-3" aria-hidden="true"></i>
+                                        Task completed in 2m 14s
+                                    </div>
+                                    <p class="text-ink/80">Created 12 deliverables, scheduled 8 posts, and sent for review.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Input area -->
+                        <div class="border-t border-ink/10 px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="flex-1 bg-secondary px-4 py-3 text-sm text-ink/40 font-mono">Ask your agent…</div>
+                                <button class="bg-primary text-white p-3 min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="Send message">
+                                    <i data-lucide="arrow-up" class="w-4 h-4" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== STATS ===== -->
+        <section class="bg-ink text-white py-16" aria-label="Key metrics">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="text-center lg:text-left">
+                        <p class="font-mono text-[32px] font-bold text-primary mb-2">50K+</p>
+                        <p class="text-sm text-white/60">Active agents deployed</p>
+                    </div>
+                    <div class="text-center lg:text-left">
+                        <p class="font-mono text-[32px] font-bold text-primary mb-2">12M+</p>
+                        <p class="text-sm text-white/60">Tasks completed monthly</p>
+                    </div>
+                    <div class="text-center lg:text-left">
+                        <p class="font-mono text-[32px] font-bold text-primary mb-2">99.9%</p>
+                        <p class="text-sm text-white/60">Uptime SLA</p>
+                    </div>
+                    <div class="text-center lg:text-left">
+                        <p class="font-mono text-[32px] font-bold text-primary mb-2">4.9/5</p>
+                        <p class="text-sm text-white/60">Customer rating</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== FEATURES ===== -->
+        <section id="features" class="py-20 lg:py-28">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="max-w-2xl mb-16">
+                    <p class="font-mono text-xs font-semibold text-primary uppercase tracking-widest mb-4">Features</p>
+                    <h2 class="font-display font-800 text-[32px] leading-tight tracking-tight mb-4">Everything you need to delegate with confidence</h2>
+                    <p class="text-lg text-ink/70">Built for real work, not demos. Each agent is a complete worker — not a chatbot.</p>
+                </div>
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <article class="border border-ink/10 p-8 hover:border-primary/40 transition-colors">
+                        <div class="w-12 h-12 bg-primary/10 flex items-center justify-center mb-6">
+                            <i data-lucide="zap" class="w-5 h-5 text-primary" aria-hidden="true"></i>
+                        </div>
+                        <h3 class="font-display font-700 text-xl mb-3">Autonomous Execution</h3>
+                        <p class="text-sm text-ink/70 leading-relaxed">Agents plan and execute multi-step tasks without hand-holding. Set the goal, and let the agent figure out the path.</p>
+                    </article>
+                    <article class="border border-ink/10 p-8 hover:border-primary/40 transition-colors">
+                        <div class="w-12 h-12 bg-primary/10 flex items-center justify-center mb-6">
+                            <i data-lucide="user-check" class="w-5 h-5 text-primary" aria-hidden="true"></i>
+                        </div>
+                        <h3 class="font-display font-700 text-xl mb-3">Human-in-the-Loop</h3>
+                        <p class="text-sm text-ink/70 leading-relaxed">Approve critical decisions at key checkpoints. You stay in control without being in the weeds.</p>
+                    </article>
+                    <article class="border border-ink/10 p-8 hover:border-primary/40 transition-colors">
+                        <div class="w-12 h-12 bg-primary/10 flex items-center justify-center mb-6">
+                            <i data-lucide="activity" class="w-5 h-5 text-primary" aria-hidden="true"></i>
+                        </div>
+                        <h3 class="font-display font-700 text-xl mb-3">Real-Time Monitoring</h3>
+                        <p class="text-sm text-ink/70 leading-relaxed">Watch agent activity stream live as work progresses. Full transparency into every action taken.</p>
+                    </article>
+                    <article class="border border-ink/10 p-8 hover:border-primary/40 transition-colors">
+                        <div class="w-12 h-12 bg-primary/10 flex items-center justify-center mb-6">
+                            <i data-lucide="book-open" class="w-5 h-5 text-primary" aria-hidden="true"></i>
+                        </div>
+                        <h3 class="font-display font-700 text-xl mb-3">Custom Knowledge Base</h3>
+                        <p class="text-sm text-ink/70 leading-relaxed">Connect your docs, data, and tools. Agents draw from your context, not generic answers.</p>
+                    </article>
+                    <article class="border border-ink/10 p-8 hover:border-primary/40 transition-colors">
+                        <div class="w-12 h-12 bg-primary/10 flex items-center justify-center mb-6">
+                            <i data-lucide="plug" class="w-5 h-5 text-primary" aria-hidden="true"></i>
+                        </div>
+                        <h3 class="font-display font-700 text-xl mb-3">Seamless Integrations</h3>
+                        <p class="text-sm text-ink/70 leading-relaxed">Works with Slack, GitHub, Notion, Salesforce, and 200+ tools out of the box.</p>
+                    </article>
+                    <article class="border border-ink/10 p-8 hover:border-primary/40 transition-colors">
+                        <div class="w-12 h-12 bg-primary/10 flex items-center justify-center mb-6">
+                            <i data-lucide="shield" class="w-5 h-5 text-primary" aria-hidden="true"></i>
+                        </div>
+                        <h3 class="font-display font-700 text-xl mb-3">Enterprise-Grade Security</h3>
+                        <p class="text-sm text-ink/70 leading-relaxed">SOC 2 Type II, GDPR, and end-to-end encryption. Your data stays yours.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== PROCESS ===== -->
+        <section id="process" class="bg-secondary py-20 lg:py-28">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="max-w-2xl mb-16">
+                    <p class="font-mono text-xs font-semibold text-primary uppercase tracking-widest mb-4">Process</p>
+                    <h2 class="font-display font-800 text-[32px] leading-tight tracking-tight mb-4">From idea to done in four steps</h2>
+                    <p class="text-lg text-ink/70">No complex setup. No training required. Just describe what you need.</p>
+                </div>
+                <div class="grid md:grid-cols-4 gap-8">
+                    <div class="relative">
+                        <div class="font-mono text-[40px] font-bold text-primary/30 mb-4">01</div>
+                        <h3 class="font-display font-700 text-lg mb-3">Define</h3>
+                        <p class="text-sm text-ink/70 leading-relaxed">Tell your agent what you need in plain language. No prompts engineering required.</p>
+                    </div>
+                    <div class="relative">
+                        <div class="font-mono text-[40px] font-bold text-primary/30 mb-4">02</div>
+                        <h3 class="font-display font-700 text-lg mb-3">Delegate</h3>
+                        <p class="text-sm text-ink/70 leading-relaxed">Assign the task and set guardrails. Your agent takes it from there.</p>
+                    </div>
+                    <div class="relative">
+                        <div class="font-mono text-[40px] font-bold text-primary/30 mb-4">03</div>
+                        <h3 class="font-display font-700 text-lg mb-3">Monitor</h3>
+                        <p class="text-sm text-ink/70 leading-relaxed">Watch progress in real-time. Intervene only when you want to.</p>
+                    </div>
+                    <div class="relative">
+                        <div class="font-mono text-[40px] font-bold text-primary/30 mb-4">04</div>
+                        <h3 class="font-display font-700 text-lg mb-3">Refine</h3>
+                        <p class="text-sm text-ink/70 leading-relaxed">Review results, give feedback, and watch your agent get better every time.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== BENEFITS ===== -->
+        <section id="benefits" class="py-20 lg:py-28">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="max-w-2xl mb-16">
+                    <p class="font-mono text-xs font-semibold text-primary uppercase tracking-widest mb-4">Benefits</p>
+                    <h2 class="font-display font-800 text-[32px] leading-tight tracking-tight mb-4">Why teams switch to Agentic</h2>
+                </div>
+                <div class="grid lg:grid-cols-3 gap-8">
+                    <article class="border border-ink/10 p-8 bg-surface">
+                        <div class="w-12 h-12 bg-primary/10 flex items-center justify-center mb-6">
+                            <i data-lucide="clock" class="w-5 h-5 text-primary" aria-hidden="true"></i>
+                        </div>
+                        <h3 class="font-display font-700 text-xl mb-3">Save 10+ hours per week</h3>
+                        <p class="text-sm text-ink/70 leading-relaxed mb-4">Every team member gets their own agent that handles repetitive work, research, and follow-ups.</p>
+                        <ul class="space-y-2">
+                            <li class="flex items-start gap-2 text-sm text-ink/80">
+                                <i data-lucide="check" class="w-4 h-4 text-success mt-0.5 shrink-0" aria-hidden="true"></i>
+                                Automate email triage and responses
+                            </li>
+                            <li class="flex items-start gap-2 text-sm text-ink/80">
+                                <i data-lucide="check" class="w-4 h-4 text-success mt-0.5 shrink-0" aria-hidden="true"></i>
+                                Generate reports in seconds
+                            </li>
+                            <li class="flex items-start gap-2 text-sm text-ink/80">
+                                <i data-lucide="check" class="w-4 h-4 text-success mt-0.5 shrink-0" aria-hidden="true"></i>
+                                Schedule meetings automatically
+                            </li>
+                        </ul>
+                    </article>
+                    <article class="border border-ink/10 p-8 bg-surface">
+                        <div class="w-12 h-12 bg-primary/10 flex items-center justify-center mb-6">
+                            <i data-lucide="trending-up" class="w-5 h-5 text-primary" aria-hidden="true"></i>
+                        </div>
+                        <h3 class="font-display font-700 text-xl mb-3">Scale without headcount</h3>
+                        <p class="text-sm text-ink/70 leading-relaxed mb-4">Your agents don't sleep, take vacations, or get distracted. Scale output instantly.</p>
+                        <ul class="space-y-2">
+                            <li class="flex items-start gap-2 text-sm text-ink/80">
+                                <i data-lucide="check" class="w-4 h-4 text-success mt-0.5 shrink-0" aria-hidden="true"></i>
+                                Handle 10x more requests
+                            </li>
+                            <li class="flex items-start gap-2 text-sm text-ink/80">
+                                <i data-lucide="check" class="w-4 h-4 text-success mt-0.5 shrink-0" aria-hidden="true"></i>
+                                Respond 24/7, globally
+                            </li>
+                            <li class="flex items-start gap-2 text-sm text-ink/80">
+                                <i data-lucide="check" class="w-4 h-4 text-success mt-0.5 shrink-0" aria-hidden="true"></i>
+                                Onboard new agents in minutes
+                            </li>
+                        </ul>
+                    </article>
+                    <article class="border border-ink/10 p-8 bg-surface">
+                        <div class="w-12 h-12 bg-primary/10 flex items-center justify-center mb-6">
+                            <i data-lucide="award" class="w-5 h-5 text-primary" aria-hidden="true"></i>
+                        </div>
+                        <h3 class="font-display font-700 text-xl mb-3">Consistent quality</h3>
+                        <p class="text-sm text-ink/70 leading-relaxed mb-4">Every task follows the same standards. No more variance between team members.</p>
+                        <ul class="space-y-2">
+                            <li class="flex items-start gap-2 text-sm text-ink/80">
+                                <i data-lucide="check" class="w-4 h-4 text-success mt-0.5 shrink-0" aria-hidden="true"></i>
+                                Standardized outputs every time
+                            </li>
+                            <li class="flex items-start gap-2 text-sm text-ink/80">
+                                <i data-lucide="check" class="w-4 h-4 text-success mt-0.5 shrink-0" aria-hidden="true"></i>
+                                Built-in quality checks
+                            </li>
+                            <li class="flex items-start gap-2 text-sm text-ink/80">
+                                <i data-lucide="check" class="w-4 h-4 text-success mt-0.5 shrink-0" aria-hidden="true"></i>
+                                Audit trail for every action
+                            </li>
+                        </ul>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== TESTIMONIALS ===== -->
+        <section id="testimonials" class="bg-secondary py-20 lg:py-28">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="max-w-2xl mb-16">
+                    <p class="font-mono text-xs font-semibold text-primary uppercase tracking-widest mb-4">Testimonials</p>
+                    <h2 class="font-display font-800 text-[32px] leading-tight tracking-tight mb-4">Loved by teams who ship</h2>
+                </div>
+                <div class="grid md:grid-cols-3 gap-8">
+                    <figure class="border border-ink/10 bg-surface p-8 flex flex-col">
+                        <div class="flex gap-1 mb-6" aria-label="5 out of 5 stars">
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning" aria-hidden="true"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning" aria-hidden="true"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning" aria-hidden="true"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning" aria-hidden="true"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning" aria-hidden="true"></i>
+                        </div>
+                        <blockquote class="text-base leading-relaxed text-ink/80 flex-1">
+                            "Agentic cut our ops workload by 60%. It's like hiring a team of assistants overnight — without the hiring process."
+                        </blockquote>
+                        <figcaption class="mt-6 pt-6 border-t border-ink/10">
+                            <p class="font-display font-700 text-base">Sarah Chen</p>
+                            <p class="font-mono text-xs text-ink/50 mt-1">COO at Lumen</p>
+                        </figcaption>
+                    </figure>
+                    <figure class="border border-ink/10 bg-surface p-8 flex flex-col">
+                        <div class="flex gap-1 mb-6" aria-label="5 out of 5 stars">
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning" aria-hidden="true"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning" aria-hidden="true"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning" aria-hidden="true"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning" aria-hidden="true"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning" aria-hidden="true"></i>
+                        </div>
+                        <blockquote class="text-base leading-relaxed text-ink/80 flex-1">
+                            "The agents just work. We set them up on Monday and they've been running ever since. Zero maintenance."
+                        </blockquote>
+                        <figcaption class="mt-6 pt-6 border-t border-ink/10">
+                            <p class="font-display font-700 text-base">Marcus Reid</p>
+                            <p class="font-mono text-xs text-ink/50 mt-1">Head of Growth at Northwind</p>
+                        </figcaption>
+                    </figure>
+                    <figure class="border border-ink/10 bg-surface p-8 flex flex-col">
+                        <div class="flex gap-1 mb-6" aria-label="5 out of 5 stars">
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning" aria-hidden="true"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning" aria-hidden="true"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning" aria-hidden="true"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning" aria-hidden="true"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning" aria-hidden="true"></i>
+                        </div>
+                        <blockquote class="text-base leading-relaxed text-ink/80 flex-1">
+                            "Finally, AI that actually does the work instead of just suggesting it. Our velocity has doubled."
+                        </blockquote>
+                        <figcaption class="mt-6 pt-6 border-t border-ink/10">
+                            <p class="font-display font-700 text-base">Priya Patel</p>
+                            <p class="font-mono text-xs text-ink/50 mt-1">VP Engineering at Datastream</p>
+                        </figcaption>
+                    </figure>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== PRICING ===== -->
+        <section id="pricing" class="py-20 lg:py-28">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="max-w-2xl mb-16">
+                    <p class="font-mono text-xs font-semibold text-primary uppercase tracking-widest mb-4">Pricing</p>
+                    <h2 class="font-display font-800 text-[32px] leading-tight tracking-tight mb-4">Simple pricing that scales with you</h2>
+                    <p class="text-lg text-ink/70">Start free. Upgrade when you're ready. No hidden fees.</p>
+                </div>
+                <div class="grid md:grid-cols-3 gap-8">
+                    <!-- Starter -->
+                    <article class="border border-ink/10 p-8 flex flex-col">
+                        <h3 class="font-display font-700 text-xl mb-2">Starter</h3>
+                        <p class="text-sm text-ink/50 mb-6">For individuals getting started</p>
+                        <p class="mb-8">
+                            <span class="font-mono text-[40px] font-bold">$29</span>
+                            <span class="text-sm text-ink/50">/mo</span>
+                        </p>
+                        <ul class="space-y-3 mb-8 flex-1">
+                            <li class="flex items-start gap-2 text-sm text-ink/80">
+                                <i data-lucide="check" class="w-4 h-4 text-success mt-0.5 shrink-0" aria-hidden="true"></i>
+                                3 active agents
+                            </li>
+                            <li class="flex items-start gap-2 text-sm text-ink/80">
+                                <i data-lucide="check" class="w-4 h-4 text-success mt-0.5 shrink-0" aria-hidden="true"></i>
+                                1,000 tasks / month
+                            </li>
+                            <li class="flex items-start gap-2 text-sm text-ink/80">
+                                <i data-lucide="check" class="w-4 h-4 text-success mt-0.5 shrink-0" aria-hidden="true"></i>
+                                Basic integrations
+                            </li>
+                            <li class="flex items-start gap-2 text-sm text-ink/80">
+                                <i data-lucide="check" class="w-4 h-4 text-success mt-0.5 shrink-0" aria-hidden="true"></i>
+                                Community support
+                            </li>
+                        </ul>
+                        <a href="#" class="border-2 border-ink/20 text-ink px-6 py-3 text-sm font-semibold text-center hover:border-ink/40 transition-colors min-h-[44px] flex items-center justify-center">
+                            Start Free Trial
+                        </a>
+                    </article>
+                    <!-- Pro -->
+                    <article class="border-2 border-primary p-8 flex flex-col relative bg-surface">
+                        <span class="absolute top-0 right-0 bg-primary text-white font-mono text-xs font-semibold px-4 py-2">Most Popular</span>
+                        <h3 class="font-display font-700 text-xl mb-2">Pro</h3>
+                        <p class="text-sm text-ink/50 mb-6">For growing teams</p>
+                        <p class="mb-8">
+                            <span class="font-mono text-[40px] font-bold">$79</span>
+                            <span class="text-sm text-ink/50">/mo</span>
+                        </p>
+                        <ul class="space-y-3 mb-8 flex-1">
+                            <li class="flex items-start gap-2 text-sm text-ink/80">
+                                <i data-lucide="check" class="w-4 h-4 text-success mt-0.5 shrink-0" aria-hidden="true"></i>
+                                15 active agents
+                            </li>
+                            <li class="flex items-start gap-2 text-sm text-ink/80">
+                                <i data-lucide="check" class="w-4 h-4 text-success mt-0.5 shrink-0" aria-hidden="true"></i>
+                                10,000 tasks / month
+                            </li>
+                            <li class="flex items-start gap-2 text-sm text-ink/80">
+                                <i data-lucide="check" class="w-4 h-4 text-success mt-0.5 shrink-0" aria-hidden="true"></i>
+                                All integrations
+                            </li>
+                            <li class="flex items-start gap-2 text-sm text-ink/80">
+                                <i data-lucide="check" class="w-4 h-4 text-success mt-0.5 shrink-0" aria-hidden="true"></i>
+                                Human-in-the-loop
+                            </li>
+                            <li class="flex items-start gap-2 text-sm text-ink/80">
+                                <i data-lucide="check" class="w-4 h-4 text-success mt-0.5 shrink-0" aria-hidden="true"></i>
+                                Priority support
+                            </li>
+                        </ul>
+                        <a href="#" class="bg-primary text-white px-6 py-3 text-sm font-semibold text-center hover:bg-primary/90 transition-colors min-h-[44px] flex items-center justify-center">
+                            Get Started
+                        </a>
+                    </article>
+                    <!-- Enterprise -->
+                    <article class="border border-ink/10 p-8 flex flex-col">
+                        <h3 class="font-display font-700 text-xl mb-2">Enterprise</h3>
+                        <p class="text-sm text-ink/50 mb-6">For organizations at scale</p>
+                        <p class="mb-8">
+                            <span class="font-mono text-[40px] font-bold">Custom</span>
+                        </p>
+                        <ul class="space-y-3 mb-8 flex-1">
+                            <li class="flex items-start gap-2 text-sm text-ink/80">
+                                <i data-lucide="check" class="w-4 h-4 text-success mt-0.5 shrink-0" aria-hidden="true"></i>
+                                Unlimited agents
+                            </li>
+                            <li class="flex items-start gap-2 text-sm text-ink/80">
+                                <i data-lucide="check" class="w-4 h-4 text-success mt-0.5 shrink-0" aria-hidden="true"></i>
+                                Unlimited tasks
+                            </li>
+                            <li class="flex items-start gap-2 text-sm text-ink/80">
+                                <i data-lucide="check" class="w-4 h-4 text-success mt-0.5 shrink-0" aria-hidden="true"></i>
+                                SSO &amp; audit logs
+                            </li>
+                            <li class="flex items-start gap-2 text-sm text-ink/80">
+                                <i data-lucide="check" class="w-4 h-4 text-success mt-0.5 shrink-0" aria-hidden="true"></i>
+                                Custom SLAs
+                            </li>
+                            <li class="flex items-start gap-2 text-sm text-ink/80">
+                                <i data-lucide="check" class="w-4 h-4 text-success mt-0.5 shrink-0" aria-hidden="true"></i>
+                                Dedicated support
+                            </li>
+                        </ul>
+                        <a href="#" class="border-2 border-ink/20 text-ink px-6 py-3 text-sm font-semibold text-center hover:border-ink/40 transition-colors min-h-[44px] flex items-center justify-center">
+                            Contact Sales
+                        </a>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== FAQ ===== -->
+        <section id="faq" class="bg-secondary py-20 lg:py-28">
+            <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <p class="font-mono text-xs font-semibold text-primary uppercase tracking-widest mb-4">FAQ</p>
+                    <h2 class="font-display font-800 text-[32px] leading-tight tracking-tight mb-4">Frequently asked questions</h2>
+                </div>
+                <div class="space-y-4">
+                    <details class="bg-surface border border-ink/10">
+                        <summary class="flex items-center justify-between px-6 py-5 cursor-pointer min-h-[44px] list-none">
+                            <span class="font-display font-700 text-base">How does Agentic differ from chatbots?</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-ink/50 faq-chevron shrink-0" aria-hidden="true"></i>
+                        </summary>
+                        <div class="px-6 pb-6">
+                            <p class="text-sm text-ink/70 leading-relaxed">Chatbots respond to prompts. Agentic agents execute tasks end-to-end — they plan, use tools, make decisions, and deliver complete work products. You delegate outcomes, not conversations.</p>
+                        </div>
+                    </details>
+                    <details class="bg-surface border border-ink/10">
+                        <summary class="flex items-center justify-between px-6 py-5 cursor-pointer min-h-[44px] list-none">
+                            <span class="font-display font-700 text-base">What tasks can agents perform?</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-ink/50 faq-chevron shrink-0" aria-hidden="true"></i>
+                        </summary>
+                        <div class="px-6 pb-6">
+                            <p class="text-sm text-ink/70 leading-relaxed">Agents can handle research, report generation, email drafting, data entry, scheduling, social media management, code review, customer follow-ups, and hundreds of other workflows. If it involves digital tools, your agent can likely do it.</p>
+                        </div>
+                    </details>
+                    <details class="bg-surface border border-ink/10">
+                        <summary class="flex items-center justify-between px-6 py-5 cursor-pointer min-h-[44px] list-none">
+                            <span class="font-display font-700 text-base">How long does it take to set up?</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-ink/50 faq-chevron shrink-0" aria-hidden="true"></i>
+                        </summary>
+                        <div class="px-6 pb-6">
+                            <p class="text-sm text-ink/70 leading-relaxed">Most users have their first agent running in under 10 minutes. Connect your tools, describe your workflow, and you're live. No code required.</p>
+                        </div>
+                    </details>
+                    <details class="bg-surface border border-ink/10">
+                        <summary class="flex items-center justify-between px-6 py-5 cursor-pointer min-h-[44px] list-none">
+                            <span class="font-display font-700 text-base">Is my data secure?</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-ink/50 faq-chevron shrink-0" aria-hidden="true"></i>
+                        </summary>
+                        <div class="px-6 pb-6">
+                            <p class="text-sm text-ink/70 leading-relaxed">Yes. We're SOC 2 Type II certified and GDPR compliant. All data is encrypted in transit and at rest. Your data is never used to train models for other customers.</p>
+                        </div>
+                    </details>
+                    <details class="bg-surface border border-ink/10">
+                        <summary class="flex items-center justify-between px-6 py-5 cursor-pointer min-h-[44px] list-none">
+                            <span class="font-display font-700 text-base">Can agents work with my existing tools?</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-ink/50 faq-chevron shrink-0" aria-hidden="true"></i>
+                        </summary>
+                        <div class="px-6 pb-6">
+                            <p class="text-sm text-ink/70 leading-relaxed">Absolutely. We integrate with Slack, GitHub, Notion, Google Workspace, Salesforce, HubSpot, and 200+ other tools. If there's an API, we can connect to it.</p>
+                        </div>
+                    </details>
+                    <details class="bg-surface border border-ink/10">
+                        <summary class="flex items-center justify-between px-6 py-5 cursor-pointer min-h-[44px] list-none">
+                            <span class="font-display font-700 text-base">What happens if an agent gets stuck?</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-ink/50 faq-chevron shrink-0" aria-hidden="true"></i>
+                        </summary>
+                        <div class="px-6 pb-6">
+                            <p class="text-sm text-ink/70 leading-relaxed">Agents are designed to recognize when they need help. They'll pause and ask for guidance, or escalate to a human. You're always in control.</p>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== CTA BAND ===== -->
+        <section class="bg-ink text-white py-20">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h2 class="font-display font-800 text-[32px] leading-tight tracking-tight mb-4">Ready to delegate the work?</h2>
+                <p class="text-lg text-white/60 mb-10">Join 50,000+ teams who've stopped doing busywork and started owning outcomes.</p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="#" class="bg-primary text-white px-8 py-4 text-base font-semibold hover:bg-primary/90 transition-colors inline-flex items-center justify-center gap-2 min-h-[48px]">
+                        Start Free Today
+                        <i data-lucide="arrow-right" class="w-4 h-4" aria-hidden="true"></i>
+                    </a>
+                    <a href="#" class="border-2 border-white/20 text-white px-8 py-4 text-base font-semibold hover:border-white/40 transition-colors inline-flex items-center justify-center min-h-[48px]">
+                        Book a Demo
+                    </a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="bg-ink text-white pt-16 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16">
+                <div class="col-span-2 md:col-span-1">
+                    <a href="#" class="flex items-center gap-3 mb-4">
+                        <span class="w-8 h-8 bg-primary flex items-center justify-center">
+                            <i data-lucide="bot" class="w-4 h-4 text-white" aria-hidden="true"></i>
+                        </span>
+                        <span class="font-display font-800 text-xl">Agentic</span>
+                    </a>
+                    <p class="text-sm text-white/50 leading-relaxed">Autonomous AI agents for teams who ship.</p>
+                </div>
+                <div>
+                    <h3 class="font-mono text-xs font-semibold text-white/40 uppercase tracking-widest mb-4">Product</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#features" class="text-sm text-white/70 hover:text-white py-1 inline-block">Features</a></li>
+                        <li><a href="#pricing" class="text-sm text-white/70 hover:text-white py-1 inline-block">Pricing</a></li>
+                        <li><a href="#" class="text-sm text-white/70 hover:text-white py-1 inline-block">Integrations</a></li>
+                        <li><a href="#" class="text-sm text-white/70 hover:text-white py-1 inline-block">Changelog</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-mono text-xs font-semibold text-white/40 uppercase tracking-widest mb-4">Company</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-white/70 hover:text-white py-1 inline-block">About</a></li>
+                        <li><a href="#" class="text-sm text-white/70 hover:text-white py-1 inline-block">Blog</a></li>
+                        <li><a href="#" class="text-sm text-white/70 hover:text-white py-1 inline-block">Careers</a></li>
+                        <li><a href="#" class="text-sm text-white/70 hover:text-white py-1 inline-block">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-mono text-xs font-semibold text-white/40 uppercase tracking-widest mb-4">Legal</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-white/70 hover:text-white py-1 inline-block">Privacy</a></li>
+                        <li><a href="#" class="text-sm text-white/70 hover:text-white py-1 inline-block">Terms</a></li>
+                        <li><a href="#" class="text-sm text-white/70 hover:text-white py-1 inline-block">Security</a></li>
+                        <li><a href="#" class="text-sm text-white/70 hover:text-white py-1 inline-block">GDPR</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+                <p class="text-xs text-white/40 font-mono">© 2025 Agentic. All rights reserved.</p>
+                <div class="flex items-center gap-4">
+                    <a href="#" class="text-white/50 hover:text-white p-2 min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="Twitter">
+                        <i data-lucide="twitter" class="w-4 h-4" aria-hidden="true"></i>
+                    </a>
+                    <a href="#" class="text-white/50 hover:text-white p-2 min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="LinkedIn">
+                        <i data-lucide="linkedin" class="w-4 h-4" aria-hidden="true"></i>
+                    </a>
+                    <a href="#" class="text-white/50 hover:text-white p-2 min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="GitHub">
+                        <i data-lucide="github" class="w-4 h-4" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

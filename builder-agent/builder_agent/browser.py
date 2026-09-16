@@ -386,10 +386,33 @@ class Page:
         while time.time() < deadline:
             state = self.evaluate("document.readyState")
             if state in ("interactive", "complete"):
-                # Give client-side rendering a moment to paint before asserting.
-                time.sleep(0.35)
+                # Client-side rendering still has to paint before anything is
+                # worth asserting against; wait for the frame, not for 350ms.
+                self.settle(cap=0.35)
                 return
-            time.sleep(0.1)
+            time.sleep(0.05)
+
+    def settle(self, cap: float = 0.25, frames: int = 2) -> None:
+        """Wait until the page has painted, instead of for a fixed delay.
+
+        Every caller below used to sleep 100-400ms on the chance the browser had
+        caught up: a click cost 0.25s, a screenshot 0.4s, a page load 0.35s, and
+        a journey of eighty steps paid all of it whether or not anything was
+        still happening. A frame callback answers the same question in the time
+        it actually takes - usually one or two frames - and `cap` keeps this no
+        slower than the sleep it replaces when the page cannot answer at all.
+        """
+        try:
+            self.evaluate(
+                "new Promise(done => {"
+                f"  let left = {max(1, int(frames))};"
+                "  const tick = () => (--left <= 0 ? done(1) : requestAnimationFrame(tick));"
+                "  requestAnimationFrame(tick);"
+                "})", timeout=cap)
+        except Exception:                                            # noqa: BLE001
+            # A page too busy or too broken to paint is not a reason to fail the
+            # step; fall back to the delay this replaced.
+            time.sleep(cap)
 
     def evaluate(self, expression: str, timeout: float = CALL_TIMEOUT):
         result = self.cdp.send("Runtime.evaluate",
@@ -535,7 +558,7 @@ class Page:
             self.cdp.send("Input.dispatchMouseEvent",
                           {"type": kind, "x": x, "y": y, "button": "left", "clickCount": 1},
                           self.session)
-        time.sleep(0.25)
+        self.settle(cap=0.25)
 
     def fill(self, backend_id: int, text: str) -> None:
         self.click(backend_id)
@@ -546,7 +569,7 @@ class Page:
                       {"type": "keyUp", "key": "a", "code": "KeyA",
                        "modifiers": 8 if os.sys.platform == "darwin" else 2}, self.session)
         self.cdp.send("Input.insertText", {"text": str(text)}, self.session)
-        time.sleep(0.1)
+        self.settle(cap=0.1, frames=1)
 
     def press(self, key: str) -> None:
         table = {"Enter": (13, "Enter"), "Tab": (9, "Tab"), "Escape": (27, "Escape"),
@@ -558,13 +581,14 @@ class Page:
                           {"type": kind, "key": name, "code": name,
                            "windowsVirtualKeyCode": code, "nativeVirtualKeyCode": code},
                           self.session)
-        time.sleep(0.2)
+        self.settle(cap=0.2)
 
     def screenshot(self, path: Path, width: int = 1280, height: int = 800) -> Path:
         self.cdp.send("Emulation.setDeviceMetricsOverride",
                       {"width": width, "height": height, "deviceScaleFactor": 1,
                        "mobile": width <= 600}, self.session)
-        time.sleep(0.4)
+        # The resize has to reflow and paint before the capture is of anything.
+        self.settle(cap=0.4)
         data = self.cdp.send("Page.captureScreenshot", {"format": "png"}, self.session,
                              timeout=45).get("data", "")
         path.parent.mkdir(parents=True, exist_ok=True)

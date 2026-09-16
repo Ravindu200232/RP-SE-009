@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riso — Two-Color Risograph Printing</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Overpass+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest">
+    </script>
+    <script>
+        tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            paper: '#FBF7EF',
+                            primary: '#F237A1',
+                            secondary: '#2C40A7',
+                            ink: '#111827',
+                        },
+                        fontFamily: {
+                            display: ['Space Grotesk', 'sans-serif'],
+                            body: ['Space Grotesk', 'sans-serif'],
+                            mono: ['Overpass Mono', 'monospace'],
+                        },
+                        boxShadow: {
+                            'print': '6px 6px 0 0 #2C40A7',
+                            'print-pink': '6px 6px 0 0 #F237A1',
+                            'print-sm': '3px 3px 0 0 #2C40A7',
+                            'print-sm-pink': '3px 3px 0 0 #F237A1',
+                        },
+                    }
+                }
+            }
+    </script>
+    <style>
+        * {
+            border-radius: 0 !important;
+        }
+        .text-print-shadow {
+            text-shadow: 3px 3px 0 rgba(44, 64, 167, 0.3);
+        }
+        .text-print-shadow-pink {
+            text-shadow: 3px 3px 0 rgba(242, 55, 161, 0.25);
+        }
+        .halftone {
+            background-image: radial-gradient(circle, rgba(44, 64, 167, 0.08) 1px, transparent 1px);
+            background-size: 14px 14px;
+        }
+        .halftone-pink {
+            background-image: radial-gradient(circle, rgba(242, 55, 161, 0.08) 1px, transparent 1px);
+            background-size: 14px 14px;
+        }
+        *:focus-visible {
+            outline: 3px solid #F237A1;
+            outline-offset: 2px;
+        }
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+        details[open] summary .faq-icon {
+            transform: rotate(45deg);
+        }
+        .faq-icon {
+            transition: transform 0.2s ease;
+        }
+        .btn-press {
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .btn-press:hover {
+            transform: translate(3px, 3px);
+            box-shadow: 0 0 0 0 transparent !important;
+        }
+        .nav-link {
+            position: relative;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #F237A1;
+            transition: width 0.2s ease;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body class="bg-paper font-body text-ink antialiased">
+
+    <!-- ===== NAVIGATION ===== -->
+    <nav class="sticky top-0 z-50 bg-paper border-b-2 border-secondary">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="#" class="flex items-center gap-1" aria-label="Riso home">
+                    <span class="font-display text-2xl font-bold text-secondary">Riso</span>
+                    <span class="w-2 h-2 bg-primary inline-block"></span>
+                </a>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="nav-link font-mono text-sm font-medium text-secondary hover:text-primary transition-colors">Features</a>
+                    <a href="#process" class="nav-link font-mono text-sm font-medium text-secondary hover:text-primary transition-colors">Process</a>
+                    <a href="#pricing" class="nav-link font-mono text-sm font-medium text-secondary hover:text-primary transition-colors">Pricing</a>
+                    <a href="#faq" class="nav-link font-mono text-sm font-medium text-secondary hover:text-primary transition-colors">FAQ</a>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="#" class="hidden sm:inline-block bg-primary text-white font-display font-bold text-sm px-5 py-2.5 shadow-print btn-press">
+                        Get Started
+                    </a>
+                    <button class="md:hidden text-secondary p-2" aria-label="Open menu" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile menu -->
+        <div id="mobile-menu" class="hidden md:hidden border-t-2 border-secondary bg-paper">
+            <div class="px-4 py-4 flex flex-col gap-4">
+                <a href="#features" class="font-mono text-sm font-medium text-secondary hover:text-primary">Features</a>
+                <a href="#process" class="font-mono text-sm font-medium text-secondary hover:text-primary">Process</a>
+                <a href="#pricing" class="font-mono text-sm font-medium text-secondary hover:text-primary">Pricing</a>
+                <a href="#faq" class="font-mono text-sm font-medium text-secondary hover:text-primary">FAQ</a>
+                <a href="#" class="bg-primary text-white font-display font-bold text-sm px-5 py-2.5 text-center shadow-print btn-press">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== HERO ===== -->
+    <section class="relative overflow-hidden border-b-2 border-secondary">
+        <div class="absolute inset-0 halftone pointer-events-none"></div>
+        <div class="absolute top-20 right-10 w-40 h-40 bg-secondary opacity-5 pointer-events-none"></div>
+        <div class="absolute bottom-10 left-5 w-24 h-24 bg-primary opacity-5 pointer-events-none"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+            <div class="grid lg:grid-cols-2 gap-16 items-center">
+                <div>
+                    <p class="font-mono text-sm text-primary mb-4 tracking-widest uppercase">Two-color risograph printing</p>
+                    <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-secondary leading-tight text-print-shadow">
+                        Print that <span class="text-primary text-print-shadow-pink">pops</span> off the page.
+                    </h1>
+                    <p class="mt-6 text-lg text-ink/80 max-w-md leading-relaxed">
+                        We blend fluorescent pink and federal blue on warm paper to create prints that demand attention. Bold, tactile, unforgettable.
+                    </p>
+                    <div class="mt-8 flex flex-wrap gap-4">
+                        <a href="#" class="bg-primary text-white font-display font-bold text-base px-8 py-3.5 shadow-print btn-press">
+                            Start a project
+                        </a>
+                        <a href="#features" class="border-2 border-secondary text-secondary font-display font-bold text-base px-8 py-3.5 hover:bg-secondary hover:text-paper transition-colors">
+                            See our work
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Hero visual: mock print card -->
+                <div class="relative hidden lg:block">
+                    <div class="absolute -top-6 -left-6 w-32 h-32 bg-primary opacity-20 pointer-events-none"></div>
+                    <div class="absolute -bottom-4 -right-4 w-24 h-24 bg-secondary opacity-10 pointer-events-none"></div>
+                    <div class="relative bg-paper border-2 border-secondary shadow-print p-8 max-w-md mx-auto">
+                        <div class="flex items-center justify-between mb-6">
+                            <span class="font-mono text-xs text-secondary">RISO-001</span>
+                            <span class="w-3 h-3 bg-primary inline-block"></span>
+                        </div>
+                        <div class="border-2 border-secondary p-6 mb-6">
+                            <p class="font-display text-4xl font-bold text-secondary text-print-shadow">RISO</p>
+                            <p class="font-mono text-xs text-ink/60 mt-2">Two-color print</p>
+                        </div>
+                        <div class="flex gap-4 items-center">
+                            <div class="w-16 h-16 bg-primary rounded-full"></div>
+                            <div class="flex-1">
+                                <div class="h-3 bg-secondary mb-2"></div>
+                                <div class="h-3 bg-secondary opacity-40 w-3/4"></div>
+                            </div>
+                        </div>
+                        <div class="mt-6 flex gap-2">
+                            <div class="w-8 h-8 bg-secondary"></div>
+                            <div class="w-8 h-8 bg-primary"></div>
+                            <div class="w-8 h-8 border-2 border-secondary"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== STATS ===== -->
+    <section class="border-b-2 border-secondary bg-paper">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <p class="font-display text-4xl lg:text-5xl font-bold text-secondary text-print-shadow">10K+</p>
+                    <p class="font-mono text-sm text-primary mt-2">Prints delivered</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-display text-4xl lg:text-5xl font-bold text-secondary text-print-shadow">99.9%</p>
+                    <p class="font-mono text-sm text-primary mt-2">On-time rate</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-display text-4xl lg:text-5xl font-bold text-secondary text-print-shadow">50+</p>
+                    <p class="font-mono text-sm text-primary mt-2">Paper stocks</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-display text-4xl lg:text-5xl font-bold text-secondary text-print-shadow">4.9★</p>
+                    <p class="font-mono text-sm text-primary mt-2">Average rating</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FEATURES ===== -->
+    <section id="features" class="border-b-2 border-secondary bg-paper">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            <div class="text-center mb-16">
+                <p class="font-mono text-sm text-primary mb-2 tracking-widest uppercase">Features</p>
+                <h2 class="font-display text-3xl sm:text-4xl font-bold text-secondary text-print-shadow">Everything you need to print bold</h2>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="border-2 border-secondary shadow-print p-6 bg-paper hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-4">
+                        <i data-lucide="palette" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-xl font-bold text-secondary mb-2">Bold Two-Color Design</h3>
+                    <p class="text-sm text-ink/70 leading-relaxed">Every project is crafted with a precise two-color palette that maximizes impact.</p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="border-2 border-secondary shadow-print p-6 bg-paper hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-4">
+                        <i data-lucide="clock" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-xl font-bold text-secondary mb-2">Fast Turnaround</h3>
+                    <p class="text-sm text-ink/70 leading-relaxed">Most orders ship within 48 hours. Rush printing available for tight deadlines.</p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="border-2 border-secondary shadow-print p-6 bg-paper hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-4">
+                        <i data-lucide="leaf" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-xl font-bold text-secondary mb-2">Eco-Friendly Inks</h3>
+                    <p class="text-sm text-ink/70 leading-relaxed">Soy-based inks and recycled paper options that are kind to the planet.</p>
+                </div>
+                <!-- Feature 4 -->
+                <div class="border-2 border-secondary shadow-print p-6 bg-paper hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-4">
+                        <i data-lucide="layers" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-xl font-bold text-secondary mb-2">Custom Paper Stocks</h3>
+                    <p class="text-sm text-ink/70 leading-relaxed">From smooth to textured, choose from 50+ paper stocks for the perfect feel.</p>
+                </div>
+                <!-- Feature 5 -->
+                <div class="border-2 border-secondary shadow-print p-6 bg-paper hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-4">
+                        <i data-lucide="align-center" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-xl font-bold text-secondary mb-2">Offset Registration</h3>
+                    <p class="text-sm text-ink/70 leading-relaxed">Our signature misregistration effect gives every print a hand-made feel.</p>
+                </div>
+                <!-- Feature 6 -->
+                <div class="border-2 border-secondary shadow-print p-6 bg-paper hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-4">
+                        <i data-lucide="pen-tool" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-xl font-bold text-secondary mb-2">Design Support</h3>
+                    <p class="text-sm text-ink/70 leading-relaxed">Our in-house designers help you prepare files or design from scratch.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PROCESS ===== -->
+    <section id="process" class="border-b-2 border-secondary bg-paper">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            <div class="text-center mb-16">
+                <p class="font-mono text-sm text-primary mb-2 tracking-widest uppercase">Process</p>
+                <h2 class="font-display text-3xl sm:text-4xl font-bold text-secondary text-print-shadow">From idea to printed piece</h2>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Step 1 -->
+                <div class="relative border-2 border-secondary p-6 bg-paper">
+                    <div class="absolute -top-4 -left-2 w-8 h-8 bg-primary flex items-center justify-center">
+                        <span class="font-display text-sm font-bold text-white">01</span>
+                    </div>
+                    <h3 class="font-display text-lg font-bold text-secondary mt-4 mb-2">Share your idea</h3>
+                    <p class="text-sm text-ink/70 leading-relaxed">Tell us about your project, goals, and vision. We'll schedule a quick call.</p>
+                </div>
+                <!-- Step 2 -->
+                <div class="relative border-2 border-secondary p-6 bg-paper">
+                    <div class="absolute -top-4 -left-2 w-8 h-8 bg-primary flex items-center justify-center">
+                        <span class="font-display text-sm font-bold text-white">02</span>
+                    </div>
+                    <h3 class="font-display text-lg font-bold text-secondary mt-4 mb-2">We design</h3>
+                    <p class="text-sm text-ink/70 leading-relaxed">Our designers craft a two-color concept tailored to your brand.</p>
+                </div>
+                <!-- Step 3 -->
+                <div class="relative border-2 border-secondary p-6 bg-paper">
+                    <div class="absolute -top-4 -left-2 w-8 h-8 bg-primary flex items-center justify-center">
+                        <span class="font-display text-sm font-bold text-white">03</span>
+                    </div>
+                    <h3 class="font-display text-lg font-bold text-secondary mt-4 mb-2">We print</h3>
+                    <p class="text-sm text-ink/70 leading-relaxed">Your design comes to life on our risograph machines with vibrant ink.</p>
+                </div>
+                <!-- Step 4 -->
+                <div class="relative border-2 border-secondary p-6 bg-paper">
+                    <div class="absolute -top-4 -left-2 w-8 h-8 bg-primary flex items-center justify-center">
+                        <span class="font-display text-sm font-bold text-white">04</span>
+                    </div>
+                    <h3 class="font-display text-lg font-bold text-secondary mt-4 mb-2">We deliver</h3>
+                    <p class="text-sm text-ink/70 leading-relaxed">Your prints arrive carefully packaged, ready to share with the world.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== BENEFITS ===== -->
+    <section class="border-b-2 border-secondary bg-paper">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            <div class="text-center mb-16">
+                <p class="font-mono text-sm text-primary mb-2 tracking-widest uppercase">Benefits</p>
+                <h2 class="font-display text-3xl sm:text-4xl font-bold text-secondary text-print-shadow">Why choose risograph?</h2>
+            </div>
+
+            <!-- Benefit 1 -->
+            <div class="grid lg:grid-cols-2 gap-12 items-center mb-20">
+                <div>
+                    <h3 class="font-display text-2xl font-bold text-secondary mb-4 text-print-shadow">Stand out from digital noise</h3>
+                    <p class="text-ink/70 leading-relaxed mb-4">In a world of pixels and screens, a physical print demands attention. The tactile feel of paper and the vibrant two-color ink create a lasting impression that digital simply can't match.</p>
+                    <p class="text-ink/70 leading-relaxed">Our prints are conversation starters. They get pinned to walls, passed around, and remembered.</p>
+                </div>
+                <div class="relative">
+                    <div class="border-2 border-secondary shadow-print p-8 bg-paper">
+                        <div class="halftone p-8">
+                            <p class="font-display text-3xl font-bold text-secondary text-print-shadow">Make it<br>physical.</p>
+                            <div class="mt-4 flex gap-3">
+                                <div class="w-10 h-10 bg-primary"></div>
+                                <div class="w-10 h-10 bg-secondary"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Benefit 2 -->
+            <div class="grid lg:grid-cols-2 gap-12 items-center mb-20">
+                <div class="relative order-2 lg:order-1">
+                    <div class="border-2 border-secondary shadow-print p-8 bg-paper">
+                        <div class="halftone-pink p-8">
+                            <p class="font-display text-3xl font-bold text-secondary text-print-shadow">Feel the<br>difference.</p>
+                            <div class="mt-4 flex gap-3">
+                                <div class="w-10 h-10 border-2 border-secondary"></div>
+                                <div class="w-10 h-10 bg-primary"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="order-1 lg:order-2">
+                    <h3 class="font-display text-2xl font-bold text-secondary mb-4 text-print-shadow">Tactile brand experiences</h3>
+                    <p class="text-ink/70 leading-relaxed mb-4">Paper has texture. Ink has weight. The subtle misregistration of risograph printing gives each piece a unique, hand-made quality that builds a deeper connection with your audience.</p>
+                    <p class="text-ink/70 leading-relaxed">Your brand deserves more than a screen. Give it something people can hold.</p>
+                </div>
+            </div>
+
+            <!-- Benefit 3 -->
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h3 class="font-display text-2xl font-bold text-secondary mb-4 text-print-shadow">Sustainable printing</h3>
+                    <p class="text-ink/70 leading-relaxed mb-4">Risograph printing uses soy-based inks and produces minimal waste. Our paper is sourced from sustainable forests, and we recycle our masters.</p>
+                    <p class="text-ink/70 leading-relaxed">Print bold, print responsibly.</p>
+                </div>
+                <div class="relative">
+                    <div class="border-2 border-secondary shadow-print p-8 bg-paper">
+                        <div class="halftone p-8">
+                            <p class="font-display text-3xl font-bold text-secondary text-print-shadow">Print<br>green.</p>
+                            <div class="mt-4 flex gap-3">
+                                <div class="w-10 h-10 bg-secondary"></div>
+                                <div class="w-10 h-10 bg-primary"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== TESTIMONIALS ===== -->
+    <section class="border-b-2 border-secondary bg-paper">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            <div class="text-center mb-16">
+                <p class="font-mono text-sm text-primary mb-2 tracking-widest uppercase">Testimonials</p>
+                <h2 class="font-display text-3xl sm:text-4xl font-bold text-secondary text-print-shadow">Loved by bold brands</h2>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Testimonial 1 -->
+                <div class="border-2 border-secondary shadow-print p-6 bg-paper">
+                    <div class="flex gap-1 text-primary mb-4">
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                    </div>
+                    <p class="text-sm text-ink/80 leading-relaxed mb-6">"Riso transformed our brand identity. The two-color prints are absolutely stunning — we get compliments on them constantly."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-secondary flex items-center justify-center">
+                            <span class="font-display text-sm font-bold text-white">MK</span>
+                        </div>
+                        <div>
+                            <p class="font-display text-sm font-bold text-secondary">Maya Kim</p>
+                            <p class="font-mono text-xs text-ink/60">Creative Director, Studio Nova</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 2 -->
+                <div class="border-2 border-secondary shadow-print p-6 bg-paper">
+                    <div class="flex gap-1 text-primary mb-4">
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                    </div>
+                    <p class="text-sm text-ink/80 leading-relaxed mb-6">"The offset registration effect is genius. Every print feels like a unique piece of art. Our customers love the handmade quality."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-primary flex items-center justify-center">
+                            <span class="font-display text-sm font-bold text-white">JT</span>
+                        </div>
+                        <div>
+                            <p class="font-display text-sm font-bold text-secondary">James Torres</p>
+                            <p class="font-mono text-xs text-ink/60">Founder, Paper & Co.</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 3 -->
+                <div class="border-2 border-secondary shadow-print p-6 bg-paper">
+                    <div class="flex gap-1 text-primary mb-4">
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                    </div>
+                    <p class="text-sm text-ink/80 leading-relaxed mb-6">"Fast turnaround, beautiful results, and the team is incredibly helpful. Riso is now our go-to for all print projects."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-secondary flex items-center justify-center">
+                            <span class="font-display text-sm font-bold text-white">AL</span>
+                        </div>
+                        <div>
+                            <p class="font-display text-sm font-bold text-secondary">Ava Lewis</p>
+                            <p class="font-mono text-xs text-ink/60">Marketing Lead, Brightside</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PRICING ===== -->
+    <section id="pricing" class="border-b-2 border-secondary bg-paper">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            <div class="text-center mb-16">
+                <p class="font-mono text-sm text-primary mb-2 tracking-widest uppercase">Pricing</p>
+                <h2 class="font-display text-3xl sm:text-4xl font-bold text-secondary text-print-shadow">Simple, transparent pricing</h2>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <!-- Starter -->
+                <div class="border-2 border-secondary p-8 bg-paper flex flex-col">
+                    <h3 class="font-display text-xl font-bold text-secondary mb-2">Starter</h3>
+                    <p class="font-mono text-sm text-ink/60 mb-4">For small projects</p>
+                    <p class="font-display text-4xl font-bold text-secondary mb-6">$99</p>
+                    <ul class="flex-1 space-y-3 mb-8">
+                        <li class="flex items-start gap-2 text-sm text-ink/70">
+                            <i data-lucide="check" class="w-4 h-4 text-primary shrink-0 mt-0.5"></i>
+                            100 prints
+                        </li>
+                        <li class="flex items-start gap-2 text-sm text-ink/70">
+                            <i data-lucide="check" class="w-4 h-4 text-primary shrink-0 mt-0.5"></i>
+                            One-color design
+                        </li>
+                        <li class="flex items-start gap-2 text-sm text-ink/70">
+                            <i data-lucide="check" class="w-4 h-4 text-primary shrink-0 mt-0.5"></i>
+                            Standard paper
+                        </li>
+                        <li class="flex items-start gap-2 text-sm text-ink/70">
+                            <i data-lucide="check" class="w-4 h-4 text-primary shrink-0 mt-0.5"></i>
+                            5-day turnaround
+                        </li>
+                    </ul>
+                    <a href="#" class="border-2 border-secondary text-secondary font-display font-bold text-base px-6 py-3 text-center hover:bg-secondary hover:text-paper transition-colors">
+                        Choose Starter
+                    </a>
+                </div>
+                <!-- Pro (Featured) -->
+                <div class="border-2 border-secondary shadow-print p-8 bg-paper flex flex-col relative">
+                    <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary px-4 py-1">
+                        <span class="font-mono text-xs font-bold text-white tracking-widest">POPULAR</span>
+                    </div>
+                    <h3 class="font-display text-xl font-bold text-secondary mb-2">Pro</h3>
+                    <p class="font-mono text-sm text-ink/60 mb-4">For growing brands</p>
+                    <p class="font-display text-4xl font-bold text-secondary mb-6">$249</p>
+                    <ul class="flex-1 space-y-3 mb-8">
+                        <li class="flex items-start gap-2 text-sm text-ink/70">
+                            <i data-lucide="check" class="w-4 h-4 text-primary shrink-0 mt-0.5"></i>
+                            500 prints
+                        </li>
+                        <li class="flex items-start gap-2 text-sm text-ink/70">
+                            <i data-lucide="check" class="w-4 h-4 text-primary shrink-0 mt-0.5"></i>
+                            Two-color design
+                        </li>
+                        <li class="flex items-start gap-2 text-sm text-ink/70">
+                            <i data-lucide="check" class="w-4 h-4 text-primary shrink-0 mt-0.5"></i>
+                            Premium paper options
+                        </li>
+                        <li class="flex items-start gap-2 text-sm text-ink/70">
+                            <i data-lucide="check" class="w-4 h-4 text-primary shrink-0 mt-0.5"></i>
+                            48-hour turnaround
+                        </li>
+                        <li class="flex items-start gap-2 text-sm text-ink/70">
+                            <i data-lucide="check" class="w-4 h-4 text-primary shrink-0 mt-0.5"></i>
+                            Design support
+                        </li>
+                    </ul>
+                    <a href="#" class="bg-primary text-white font-display font-bold text-base px-6 py-3 text-center shadow-print btn-press">
+                        Choose Pro
+                    </a>
+                </div>
+                <!-- Studio -->
+                <div class="border-2 border-secondary p-8 bg-paper flex flex-col">
+                    <h3 class="font-display text-xl font-bold text-secondary mb-2">Studio</h3>
+                    <p class="font-mono text-sm text-ink/60 mb-4">For large campaigns</p>
+                    <p class="font-display text-4xl font-bold text-secondary mb-6">$499</p>
+                    <ul class="flex-1 space-y-3 mb-8">
+                        <li class="flex items-start gap-2 text-sm text-ink/70">
+                            <i data-lucide="check" class="w-4 h-4 text-primary shrink-0 mt-0.5"></i>
+                            2,000 prints
+                        </li>
+                        <li class="flex items-start gap-2 text-sm text-ink/70">
+                            <i data-lucide="check" class="w-4 h-4 text-primary shrink-0 mt-0.5"></i>
+                            Custom two-color design
+                        </li>
+                        <li class="flex items-start gap-2 text-sm text-ink/70">
+                            <i data-lucide="check" class="w-4 h-4 text-primary shrink-0 mt-0.5"></i>
+                            All paper stocks
+                        </li>
+                        <li class="flex items-start gap-2 text-sm text-ink/70">
+                            <i data-lucide="check" class="w-4 h-4 text-primary shrink-0 mt-0.5"></i>
+                            24-hour rush available
+                        </li>
+                        <li class="flex items-start gap-2 text-sm text-ink/70">
+                            <i data-lucide="check" class="w-4 h-4 text-primary shrink-0 mt-0.5"></i>
+                            Dedicated designer
+                        </li>
+                    </ul>
+                    <a href="#" class="border-2 border-secondary text-secondary font-display font-bold text-base px-6 py-3 text-center hover:bg-secondary hover:text-paper transition-colors">
+                        Choose Studio
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section id="faq" class="border-b-2 border-secondary bg-paper">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            <div class="text-center mb-16">
+                <p class="font-mono text-sm text-primary mb-2 tracking-widest uppercase">FAQ</p>
+                <h2 class="font-display text-3xl sm:text-4xl font-bold text-secondary text-print-shadow">Frequently asked questions</h2>
+            </div>
+            <div class="space-y-4">
+                <!-- FAQ 1 -->
+                <details class="border-2 border-secondary bg-paper">
+                    <summary class="flex items-center justify-between p-5 cursor-pointer list-none">
+                        <span class="font-display text-base font-bold text-secondary">What is risograph printing?</span>
+                        <span class="faq-icon text-primary shrink-0 ml-4">
+                            <i data-lucide="plus" class="w-5 h-5"></i>
+                        </span>
+                    </summary>
+                    <div class="px-5 pb-5">
+                        <p class="text-sm text-ink/70 leading-relaxed">Risograph printing is a high-speed digital printing method that uses soy-based inks and master stencils. It's known for its vibrant colors, textured finish, and unique misregistration effects that give each print a hand-made quality.</p>
+                    </div>
+                </details>
+                <!-- FAQ 2 -->
+                <details class="border-2 border-secondary bg-paper">
+                    <summary class="flex items-center justify-between p-5 cursor-pointer list-none">
+                        <span class="font-display text-base font-bold text-secondary">How long does printing take?</span>
+                        <span class="faq-icon text-primary shrink-0 ml-4">
+                            <i data-lucide="plus" class="w-5 h-5"></i>
+                        </span>
+                    </summary>
+                    <div class="px-5 pb-5">
+                        <p class="text-sm text-ink/70 leading-relaxed">Standard turnaround is 5 business days. Pro plans get 48-hour turnaround, and Studio plans can request 24-hour rush printing for urgent projects.</p>
+                    </div>
+                </details>
+                <!-- FAQ 3 -->
+                <details class="border-2 border-secondary bg-paper">
+                    <summary class="flex items-center justify-between p-5 cursor-pointer list-none">
+                        <span class="font-display text-base font-bold text-secondary">Can I use my own design files?</span>
+                        <span class="faq-icon text-primary shrink-0 ml-4">
+                            <i data-lucide="plus" class="w-5 h-5"></i>
+                        </span>
+                    </summary>
+                    <div class="px-5 pb-5">
+                        <p class="text-sm text-ink/70 leading-relaxed">Absolutely! We accept PDF, AI, and PSD files. If you need help preparing your files or want us to design from scratch, our design support team is here to help.</p>
+                    </div>
+                </details>
+                <!-- FAQ 4 -->
+                <details class="border-2 border-secondary bg-paper">
+                    <summary class="flex items-center justify-between p-5 cursor-pointer list-none">
+                        <span class="font-display text-base font-bold text-secondary">What paper stocks do you offer?</span>
+                        <span class="faq-icon text-primary shrink-0 ml-4">
+                            <i data-lucide="plus" class="w-5 h-5"></i>
+                        </span>
+                    </summary>
+                    <div class="px-5 pb-5">
+                        <p class="text-sm text-ink/70 leading-relaxed">We offer over 50 paper stocks, ranging from smooth coated papers to textured cotton papers. Popular choices include kraft, newsprint, and recycled cardstock.</p>
+                    </div>
+                </details>
+                <!-- FAQ 5 -->
+                <details class="border-2 border-secondary bg-paper">
+                    <summary class="flex items-center justify-between p-5 cursor-pointer list-none">
+                        <span class="font-display text-base font-bold text-secondary">Do you offer bulk discounts?</span>
+                        <span class="faq-icon text-primary shrink-0 ml-4">
+                            <i data-lucide="plus" class="w-5 h-5"></i>
+                        </span>
+                    </summary>
+                    <div class="px-5 pb-5">
+                        <p class="text-sm text-ink/70 leading-relaxed">Yes! Orders over 5,000 prints qualify for volume pricing. Contact us for a custom quote and we'll work out the best rate for your project.</p>
+                    </div>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== CTA BANNER ===== -->
+    <section class="border-b-2 border-secondary bg-secondary">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+            <h2 class="font-display text-3xl sm:text-4xl font-bold text-paper text-print-shadow-pink mb-4">Ready to print something bold?</h2>
+            <p class="text-paper/80 text-lg mb-8 max-w-xl mx-auto">Start your project today and see the risograph difference for yourself.</p>
+            <a href="#" class="inline-block bg-primary text-white font-display font-bold text-base px-10 py-4 shadow-print-pink btn-press">
+                Get Started Now
+            </a>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="bg-secondary text-paper">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-12">
+                <!-- Brand -->
+                <div>
+                    <a href="#" class="flex items-center gap-1 mb-4">
+                        <span class="font-display text-2xl font-bold text-paper">Riso</span>
+                        <span class="w-2 h-2 bg-primary inline-block"></span>
+                    </a>
+                    <p class="text-sm text-paper/70 leading-relaxed">Two-color risograph printing for bold brands. Print that pops off the page.</p>
+                </div>
+                <!-- Links -->
+                <div>
+                    <h3 class="font-display text-sm font-bold text-primary mb-4 tracking-widest uppercase">Company</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-paper/70 hover:text-primary transition-colors">About</a></li>
+                        <li><a href="#" class="text-sm text-paper/70 hover:text-primary transition-colors">Careers</a></li>
+                        <li><a href="#" class="text-sm text-paper/70 hover:text-primary transition-colors">Blog</a></li>
+                        <li><a href="#" class="text-sm text-paper/70 hover:text-primary transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+                <!-- Resources -->
+                <div>
+                    <h3 class="font-display text-sm font-bold text-primary mb-4 tracking-widest uppercase">Resources</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-paper/70 hover:text-primary transition-colors">Design Guide</a></li>
+                        <li><a href="#" class="text-sm text-paper/70 hover:text-primary transition-colors">Paper Samples</a></li>
+                        <li><a href="#" class="text-sm text-paper/70 hover:text-primary transition-colors">File Prep</a></li>
+                        <li><a href="#" class="text-sm text-paper/70 hover:text-primary transition-colors">Shipping Info</a></li>
+                    </ul>
+                </div>
+                <!-- Social -->
+                <div>
+                    <h3 class="font-display text-sm font-bold text-primary mb-4 tracking-widest uppercase">Follow</h3>
+                    <div class="flex gap-3">
+                        <a href="#" class="w-10 h-10 border-2 border-paper/30 flex items-center justify-center hover:border-primary hover:text-primary transition-colors" aria-label="Instagram">
+                            <i data-lucide="instagram" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 border-2 border-paper/30 flex items-center justify-center hover:border-primary hover:text-primary transition-colors" aria-label="Twitter">
+                            <i data-lucide="twitter" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 border-2 border-paper/30 flex items-center justify-center hover:border-primary hover:text-primary transition-colors" aria-label="Pinterest">
+                            <i data-lucide="pinterest" class="w-5 h-5"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t-2 border-paper/20 mt-12 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="font-mono text-xs text-paper/50">© 2024 Riso Print Co. All rights reserved.</p>
+                <p class="font-mono text-xs text-paper/50">Printed with ♥ in two colors</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

@@ -531,18 +531,6 @@ TOPICS: list[Topic] = [
     ),
 
     Topic(
-        key="responsive_pwa", kind="multi", label="Devices",
-        intent="Which devices matter and whether it should install as an app.",
-        fallback_options=[
-            {"label": "Works on mobile", "value": "responsive"},
-            {"label": "Installable (PWA)", "value": "pwa"},
-            {"label": "Desktop only", "value": "desktop"},
-        ],
-        srs_fields=("ui_ux_requirements",),
-        coverage=("devices_mobile",),
-    ),
-
-    Topic(
         key="real_details", kind="text", label="Real details",
         intent="The customer's actual name, contact details and links, so the "
                "build seeds the real business rather than placeholder copy. "

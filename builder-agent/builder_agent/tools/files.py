@@ -64,10 +64,22 @@ def read_file(args, ctx):
     truncated = len(body) > MAX_READ_CHARS
     if truncated:
         body = body[:MAX_READ_CHARS]
+    # Naming one call that finishes the file, rather than inviting "again with
+    # a larger offset": a build paged one 607-line stylesheet under nine
+    # different windows - two of them a single line apart - and never wrote
+    # anything.
     tail = ""
-    if offset + len(window) < len(lines) or truncated:
-        tail = (f"\n[showing lines {offset + 1}-{offset + len(window)} of {len(lines)}. "
-                "Call readFile again with a larger offset for the rest.]")
+    shown_to = offset + len(window)
+    if truncated:
+        tail = (f"\n[lines {offset + 1}-{shown_to} of {len(lines)}, cut at "
+                f"{MAX_READ_CHARS} characters. Ask for fewer lines with limit, "
+                f"or read the file whole once rather than in windows.]")
+    elif shown_to < len(lines):
+        rest = len(lines) - shown_to
+        tail = (f"\n[showing lines {offset + 1}-{shown_to} of {len(lines)}. "
+                f"readFile with offset={shown_to} and limit={rest} returns the "
+                f"remaining {rest} in one call. Reading several files? readFiles "
+                f"takes them all in a single call, whole.]")
     relative = ctx.sandbox.relative(path)
     ctx.events.emit("read", name=str(relative), size=len(text), content=text)
     return {"ok": True,

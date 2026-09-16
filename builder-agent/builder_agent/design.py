@@ -16,12 +16,47 @@ the engine has to keep, not just tell the model to keep.
 from __future__ import annotations
 
 import hashlib
-import json
 import re
 from pathlib import Path
 
 
 SKILL_NAME = "design-system"
+# The design themes imported from the registry: one directory per theme, each
+# holding the theme's own design-system prompt and its token front matter.
+THEME_NAME = "design-theme"
+THEME_ROOT = Path(__file__).parent / "assets" / "design-themes"
+# What the studio's customizer writes into the design direction, so the run can
+# find the theme the user actually clicked without sending its whole prompt
+# through a chat message.
+THEME_MARKER = re.compile(r"design-theme:([a-z0-9][a-z0-9-]{0,63})")
+
+
+def install_theme(workspace, text: str) -> dict:
+    """Put the chosen theme's own design system where the agents will read it.
+
+    Returns the installed theme, or an empty mapping when the direction names
+    no theme or names one that is not on disk. A missing theme is not an error:
+    the direction still carries the colours and fonts the user chose.
+    """
+    match = THEME_MARKER.search(str(text or ""))
+    if not match:
+        return {}
+    slug = match.group(1)
+    source = THEME_ROOT / slug
+    skill = source / "SKILL.md"
+    if not skill.is_file():
+        return {}
+    target = Path(workspace) / ".agents" / "skills" / THEME_NAME
+    target.mkdir(parents=True, exist_ok=True)
+    (target / "SKILL.md").write_text(skill.read_text(encoding="utf-8", errors="replace"),
+                                     encoding="utf-8")
+    tokens = source / "DESIGN.md"
+    if tokens.is_file():
+        (target / "DESIGN.md").write_text(tokens.read_text(encoding="utf-8", errors="replace"),
+                                          encoding="utf-8")
+    return {"slug": slug, "skill": THEME_NAME,
+            "path": f".agents/skills/{THEME_NAME}/SKILL.md"}
+
 
 NEUTRALS = {
     "slate": {"name": "Slate",

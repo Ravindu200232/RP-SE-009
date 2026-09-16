@@ -26,14 +26,16 @@ import time
 from dataclasses import dataclass, field
 
 from .compactor import Compactor
+from .design import install_theme
 from .context import ContextBudget, is_context_error
 from .errors import AbortError, ToolError
 from .evidence import failure_packet
 from .knowledge import Knowledge
 from .layout import format_layout, inspect_layout
+from .memory import observation_key
 from .prompts import (blueprint_task, completion_block, format_reminder,
                       system_prompt, task_message)
-from .skills import catalog, install_skill_pack
+from .skills import catalog, install_skill_pack, skill_index
 from .templates import install_template, template_notice
 from .tools import ToolContext
 
@@ -57,6 +59,15 @@ MAX_SAME_FAILURE = 3
 # and a model that cannot find what it expects will happily read the same file
 # sixteen times in ninety seconds and write nothing.
 MAX_SAME_READ = 3
+# Which skill pack a stack's build reads from. A pack is one skill directory
+# holding an index and one file per entry, so the build opens the index and then
+# only the entries it needs, rather than sorting a flat catalogue of thirty.
+STACK_PACKS = {"nextjs-mongo": "stack-nextjs", "mern-microservices": "stack-mern"}
+# The packs whose index every build needs whatever the stack: how to test, and
+# where the rule behind a failure is written down. Their indexes go into the
+# prompt rather than being discovered, so turn one already knows the entry
+# names and spends its calls on the entries themselves.
+SHARED_PACKS = ("stack-testing", "stack-debug")
 MAX_TERMINAL_BATCH = 4
 MAX_BATCH_CALLS = 8
 # How many times a run may claim completion with the evidence still missing.
@@ -85,6 +96,29 @@ def _transient(error: BaseException) -> bool:
 def _signature(tool: str, args: dict) -> str:
     return hashlib.sha256(
         f"{tool}\0{json.dumps(args, sort_keys=True, default=str)}".encode()).hexdigest()[:16]
+
+
+# A window of a file is still that file. `_signature` hashes the whole argument
+# dict, offset and limit included, so nine slices of one stylesheet looked like
+# nine unrelated calls and the repeat counter never moved: one build read
+# `styles.css` forty-nine times, wrote nothing, and ran twelve minutes. These
+# are counted by what was looked at instead of by how it was sliced.
+PAGED_READS = frozenset({"readFile", "readFiles", "readSkill"})
+
+
+def _read_target(tool: str, args: dict) -> str | None:
+    """What a read looked at, ignoring the window it asked for."""
+    return observation_key(tool, args) if tool in PAGED_READS else None
+
+
+def _read_label(tool: str, args: dict) -> str:
+    args = args or {}
+    if tool == "readSkill":
+        return f"the {args.get('name')} skill"
+    if tool == "readFiles":
+        paths = [str(p) for p in (args.get("filePaths") or [])]
+        return paths[0] if len(paths) == 1 else f"those {len(paths)} files"
+    return str(args.get("filePath") or "that file")
 
 
 @dataclass
@@ -151,13 +185,36 @@ class Loop:
         self.verification_kinds = verification_kinds
         if verification_kinds is not None:
             memory.evidence.enabled_kinds = set(verification_kinds)
+        # Set before any _refresh_system call: the prompt names the theme file
+        # only once one has been installed.
+        self.theme: dict = {}
         self.testing_enabled = (not config.review and registry.has("runTests")
                                 and bool(memory.evidence.enabled_kinds))
 
     # -- context frame ---------------------------------------------------
+    def _preloaded_indexes(self, pack: str) -> str:
+        """The pack indexes, in the prompt, so turn one needs no call to get them."""
+        parts = []
+        for name in ((pack,) if pack else ()) + SHARED_PACKS:
+            body = skill_index(self.sandbox.root, name)
+            if body:
+                parts.append(f"\n\n### {name}\n{body}")
+        if not parts:
+            return ""
+        return ("\n\n---\n"
+                "PRELOADED SKILL INDEXES. These are read already - they are the contents "
+                "pages of the packs you have, not files to fetch. Read an entry with "
+                "readSkill(name=\"<pack>\", resourcePath=\"<entry>.md\") at the moment "
+                "the work needs it." + "".join(parts))
+
     def _refresh_system(self) -> None:
         if self.config.extra.get("agent_role") == "designer":
+            note = (f"The approved design theme is installed at {self.theme['path']}. Read it "
+                    "before any visual work and follow its tokens, type scale and component "
+                    "rules; the direction in the brief overrides it where the two disagree. "
+                    if self.theme else "")
             self.memory.set_system(
+                note +
                 "You are the Designer, a UI/UX engineer. Build and refine the specified complete interface "
                 "using HTML, CSS and JavaScript. Your context is independent from the developer's conversation. "
                 "The shared Markdown handoffs describe the product and its selected technology. "
@@ -166,25 +223,75 @@ class Loop:
                 "Ensure all navigation links carry their necessary query parameters (e.g. href=\"detail.html?id=${item.id}\"). "
                 "In detail, booking, or sub-pages that read URL query parameters, always gracefully fallback to the first seed item "
                 "(e.g. const id = params.get('id') || (data.items && data.items[0]?.id)) so direct opens or previews never show an empty 'not found' state. "
-                "Batch tool calls to work quickly. "
+                "Read with readFiles, which takes every file you name in one call and returns each "
+                "of them whole - the drawing's pages and the handoff documents are a known list, so "
+                "ask for them together rather than one readFile at a time, and never a window at a "
+                "time. Batch tool calls to work quickly. "
                 "When rewriting or updating full pages, use writeFile with overwrite: true directly. "
                 "For surgical edits, use editFile or patchFile. No server, package installation, "
                 "product replanning, app-specific template or approval gate is needed. Read before editing, "
                 "avoid repeated failed actions, and finish promptly with an accurate account of what changed.")
             return
         if self.config.extra.get("agent_role") == "developer":
+            # One pack per stack, rather than a flat catalogue the build has to
+            # sort through: the index names what is inside, and each entry is
+            # read on its own with a resourcePath when the work reaches it.
+            pack = STACK_PACKS.get(self.config.stack, "")
+            pack_note = (
+                f"Your stack's skills are the `{pack}` pack. Its index is already below, read - "
+                f"do not list or re-read it. Open an entry when the work reaches it, with "
+                f"readSkill(name=\"{pack}\", resourcePath=\"<entry>.md\"). Hardening and review are "
+                f"in `stack-security`. "
+                if pack else "")
+            # The framework's own documentation, so a build error that names a
+            # framework rule is answered by the page that defines it rather than
+            # by another guess at the same file. The trigger has to be countable:
+            # a run that reads one file eleven times is not short of the file.
+            docs_note = (
+                "When a build, a dev server or a test run fails, `stack-debug` holds the page that "
+                "defines the rule the error names - the official Next.js and Vitest documentation. "
+                "Read that page before you open the same source file a second time: a file you have "
+                "already read says nothing new on the second read, and the error names a rule, not a "
+                "line. The complete references are `nextjs-official-docs` and `vitest-official-docs`. ")
             self.memory.set_system(
+                (f"The approved design theme is installed at {self.theme['path']}. Read it before "
+                 "matching the prototype's look, and follow its tokens and component rules. "
+                 if self.theme else "") +
                 "You are the Developer and QA engineer for this project. Your conversation is independent "
-                "from the Designer's. Read .agentforge/handoff/app.md, sitemap.md and builder.md, and the "
+                "from the Designer's. " + pack_note + docs_note +
+                "Read .agentforge/handoff/app.md, sitemap.md and builder.md, and the "
                 "generated .agentforge/prototype/ files. Match the approved prototype 100% in layout, typography, "
                 "styling, and exact image URLs - translate prototype HTML directly into your application components. "
+                "Use `readFiles` to batch-read related prototype HTML pages together when implementing matching views "
+                "(e.g. readFiles(filePaths=['.agentforge/prototype/index.html', '.agentforge/prototype/rooms.html'])). "
+                "Core design tokens from styles.css are already pre-extracted in your prompt; do NOT spend turns reading styles.css repeatedly. "
                 "Do not replace real photos with placeholders. Batch related file operations (models, API routes, "
                 "components) in single multi-tool turns to build fast. For security, always hash passwords using "
                 "bcrypt.hashSync in all seed scripts and auth routes, and never use dangerouslySetInnerHTML. "
                 "Ensure interactive buttons and links have distinct labels or data-testid attributes to avoid "
                 "selector ambiguities during E2E journeys. Implement the approved specification using the selected stack. "
+                "The browser journeys are the E2E layer: no install, no second server, no framework to "
+                "add. Before them, check the routes directly with executeTerminal and curl - an "
+                "unauthenticated read of a collection, then the same read as each role. A browser only "
+                "issues the requests the UI issues, and nothing on screen asks for another person's "
+                "records, so no journey ever exercises the route that would hand them over. "
+                "Run the suite once and read it from its report, not from its console. "
+                "`npx vitest run --reporter=json --outputFile=test-report.json`, then "
+                "runTests(kind=\"unit\", suite=\"unit\", command=<that command>, "
+                "reportPath=\"test-report.json\"). The report names every case and carries every failure "
+                "message, and reportPath puts it in the evidence ledger - so when something breaks later, "
+                "the failing case and its message are already recorded and you fix from them. Do not re-run "
+                "one spec to grep its output: measured, a build ran the same file eight times with eight "
+                "different greps to read what one report already held. "
+                "Unit-test every module that decides something or accepts input: validation, authentication "
+                "and permission checks, pricing and totals, date and availability logic, and every route "
+                "handler that reads a request body or a query parameter. One test file beside each, covering "
+                "the accepted case, the rejected case, and the boundary between them. Modules that only "
+                "render markup or re-export need none. Measured, builds were writing two to four test files "
+                "for eighty of source, which tests the scaffold and nothing the build decided. "
                 "Continue existing work without generating a second product plan. Write code and tests only in "
-                "application folders. Define verification scope, run checks, and report completion accurately.")
+                "application folders. Define verification scope, run checks, and report completion accurately."
+                + self._preloaded_indexes(pack))
             return
         self.memory.set_system(system_prompt(
             workspace=self.sandbox.root, model=self.router.label,
@@ -224,6 +331,16 @@ class Loop:
         elif scaffold.reason and "already contains a project" not in scaffold.reason:
             self.events.emit("notice", level="warn",
                              message=f"Stack template not applied: {scaffold.reason}")
+
+        # The customizer sends the theme by name, not by prompt - a design system
+        # runs to thousands of words, which is a file to read, not a message to
+        # carry. Both roles get it: the drawing sets the look, the build matches it.
+        self.theme = install_theme(self.sandbox.root, task)
+        if self.theme:
+            self.events.emit("notice", level="info",
+                             message=f"Design theme {self.theme['slug']} installed at "
+                                     f"{self.theme['path']}.")
+            self._refresh_system()
 
         if self.config.extra.get("agent_role") == "developer":
             # The SRS owns the product instructions. Do not install category-specific
@@ -541,21 +658,22 @@ class Loop:
         # notice. Say so plainly and let the model move; do not refuse the call.
         if ok and not tool.mutates:
             digest = hashlib.sha256(body.encode("utf-8", "replace")).hexdigest()
-            seen, times = self.repeated_reads.get(signature, ("", 0))
-            times = times + 1 if seen == digest else 1
-            self.repeated_reads[signature] = (digest, times)
-            if times == MAX_SAME_READ:
-                body = (f"This is the {times}th time {call.tool} has returned exactly this "
-                        f"answer, with nothing changed in between. Reading it again will "
-                        f"return it again. What you are looking for is not here: act on "
-                        f"what you already have, or look somewhere else.\n\n{body}")
-            elif times > MAX_SAME_READ:
-                body = (f"[Content already in saved memory: This is the {times}th time {call.tool} "
-                        f"has returned this exact answer with nothing changed in between. "
-                        f"The content is already in your conversation context. Do not read it again; "
-                        f"proceed to write or modify project code.]")
-                if times >= 6:
-                    ok = False
+            target = _read_target(call.tool, args)
+            key = target or signature
+            seen, times = self.repeated_reads.get(key, ("", 0))
+            # A read of something already read counts however it was windowed;
+            # everything else counts only when the answer comes back identical.
+            times = times + 1 if (target or seen == digest) else 1
+            self.repeated_reads[key] = (digest, times)
+            # Said once, and only as an observation. A repeat is never refused:
+            # the model is the one that knows whether it still needs the file,
+            # and a read it genuinely needs is cheaper than a wrong guess about
+            # what it remembers. The answer itself always comes back in full.
+            if times >= MAX_SAME_READ:
+                what = _read_label(call.tool, args)
+                body = (f"[Read {times} times in this run, with nothing changed in between - "
+                        f"{what} is already in this conversation. After a write or an edit "
+                        f"succeeds there is nothing to verify by reading it back.]\n\n{body}")
 
         if not ok:
             self.failed_actions[guard_key] = self.failed_actions.get(guard_key, 0) + 1

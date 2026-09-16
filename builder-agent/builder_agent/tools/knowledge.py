@@ -65,14 +65,16 @@ def register(registry):
 
     registry.add(Tool(
         name="readSkill", risk=SAFE, review_safe=True, handler=read_skill_tool,
-        description="Read a skill in full. Read every task-matched skill before planning, and "
-                    "re-read the testing or runtime skill when you enter that phase.",
+        description="Read a skill, or one entry inside a pack. The pack indexes are already "
+                    "in your prompt, so name the entry you need with resourcePath rather "
+                    "than opening a pack to find out what is in it.",
         parameters={"type": "object", "required": ["name"], "properties": {
             "name": {"type": "string"},
             "resourcePath": {"type": "string",
                              "description": "A file the skill references, relative to it."},
         }},
-        summarize=lambda a: a.get("name", "")))
+        summarize=lambda a: (f"{a.get('name', '')}/{a['resourcePath']}"
+                             if a.get("resourcePath") else a.get("name", ""))))
 
     registry.add(Tool(
         name="recallKnowledge", risk=SAFE, review_safe=True, handler=recall_knowledge,

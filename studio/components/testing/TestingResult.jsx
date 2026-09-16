@@ -117,37 +117,37 @@ export default function TestingResult() {
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col text-white" aria-busy={building || undefined}>
-      <div className={cn('flex shrink-0 items-center gap-1.5 border-b border-white/10 bg-[#121622]/95 px-4 py-2.5 backdrop-blur-md overflow-x-auto',
+      <div className={cn('flex shrink-0 items-center gap-1.5 border-b border-line bg-[#1C252E] px-4 py-2.5 backdrop-blur-md overflow-x-auto',
                          building && 'pointer-events-none select-none blur-sm')}>
         {VIEWS.map(v => (
           <button key={v.id} onClick={() => setSub(v.id)}
                   className={cn('flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5',
                     'font-display text-[11.5px] transition-all',
-                    sub === v.id ? 'bg-blue-600 text-white font-semibold shadow-md shadow-blue-500/25'
-                                 : 'text-white/60 hover:bg-white/[.05] hover:text-white')}>
+                    sub === v.id ? 'bg-[#1877F2] text-white font-semibold shadow-[0_8px_16px_0_rgba(24,119,242,0.24)]'
+                                 : 'text-white/70 hover:bg-white/[.05] hover:text-white')}>
             {v.label}
             {counts[v.id] != null && (
               <span className={cn('rounded-full px-1.5 py-0.2 font-mono text-[9.5px]',
                 sub === v.id ? 'bg-white/20 text-white'
-                  : counts[v.id].bad ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300')}>
+                  : counts[v.id].bad ? 'bg-[#FF5630]/20 text-[#FF5630]' : 'bg-[#22C55E]/20 text-[#22C55E]')}>
                 {counts[v.id].n}
               </span>
             )}
           </button>
         ))}
         <span className="flex-1 min-w-4" />
-        <Button variant="outline" size="sm" className="shrink-0 rounded-xl border-white/10 bg-white/[.04] text-white/80 hover:bg-white/[.08] hover:text-white"
+        <Button variant="outline" size="sm" className="shrink-0 rounded-xl border-line bg-white/[.04] text-white/80 hover:bg-white/[.08] hover:text-white"
                 disabled={!project || state !== 'ready' || pdf}
                 onClick={downloadPdf}
                 title="Download the saved testing report as a PDF">
-          {pdf ? <Loader2 className="size-3 animate-spin text-blue-400" />
-               : <Download className="size-3 text-blue-400" />} PDF
+          {pdf ? <Loader2 className="size-3 animate-spin text-[#1877F2]" />
+               : <Download className="size-3 text-[#1877F2]" />} PDF
         </Button>
         {live.running
-          ? <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 font-mono text-[10.5px] font-semibold text-emerald-400">
-              <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" /> running
+          ? <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/10 px-2.5 py-1 font-mono text-[10.5px] font-semibold text-[#22C55E]">
+              <span className="size-1.5 animate-pulse rounded-full bg-[#22C55E]" /> running
             </span>
-          : <Button variant="outline" size="sm" className="shrink-0 rounded-xl border-white/10 bg-white/[.04] text-white/80 hover:bg-white/[.08] hover:text-white" onClick={load}>
+          : <Button variant="outline" size="sm" className="shrink-0 rounded-xl border-line bg-white/[.04] text-white/80 hover:bg-white/[.08] hover:text-white" onClick={load}>
               <RefreshCw className="size-3" /> Refresh
             </Button>}
       </div>

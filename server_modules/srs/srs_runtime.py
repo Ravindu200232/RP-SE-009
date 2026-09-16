@@ -205,7 +205,7 @@ def _srs_name_line(proj_dir: Path) -> str:
             f"`package.json`. Do not invent another one.\n\n")
 
 
-def _srs_brief(proj_dir: Path, model: str) -> str:
+def _srs_brief(proj_dir: Path, model: str = "") -> str:
     """
     What the SRS knows that its handoff prompt had to leave out.
 
@@ -224,6 +224,22 @@ def _srs_brief(proj_dir: Path, model: str) -> str:
 
     Sized against the model's real context window, and says what it dropped.
     """
+    if not model:
+        try:
+            from server_modules.services.project_state import ProjectState
+            state = ProjectState(proj_dir).read()
+            agents = state.get("agents", {})
+            for role in ("developer", "designer", "qa"):
+                req = agents.get(role, {}).get("request", {})
+                if req.get("model"):
+                    model = str(req["model"]).strip()
+                    break
+            if not model:
+                from builder_agent.llm import load_settings
+                model = str(load_settings().get("default_agent_model", "")).strip()
+        except Exception:
+            pass
+
     srs_dir = proj_dir / ".agentforge" / "srs"
     try:
         doc = json.loads((srs_dir / "srs_latest.json").read_text(encoding="utf-8"))
@@ -576,7 +592,8 @@ def _srs_brief(proj_dir: Path, model: str) -> str:
     # characters: the same brief is comfortable on a 256K model and fatal on
     # an 8K one.
     SPEC_SHARE, CHARS_PER_TOKEN = 0.35, 3
-    budget = int(max_context(model) * SPEC_SHARE * CHARS_PER_TOKEN / 6)
+    ctx = max_context(model)
+    budget = int(ctx * SPEC_SHARE * CHARS_PER_TOKEN)
     if len(text) > budget:
         cut = text.rfind("\n", 0, budget)
         dropped = text[cut:].count("\n- ") if cut > 0 else text.count("\n- ")
@@ -601,7 +618,8 @@ def _srs_brief(proj_dir: Path, model: str) -> str:
             kept = bullets(text, t)
             if kept < full.get(t, kept):
                 partial.append(f"{t} ({kept} of {full[t]})")
-        elog("WARN", f"   ✂ SRS brief trimmed to {budget:,} chars for {model} — "
+        model_label = model or "the selected model"
+        elog("WARN", f"   ✂ SRS brief trimmed to {budget:,} chars for {model_label} — "
                      f"{dropped} line(s) left out (they are all in the SRS tab)"
                      + (f"; sections lost: {', '.join(lost)}" if lost else "")
                      + (f"; cut short: {', '.join(partial)}" if partial else ""))

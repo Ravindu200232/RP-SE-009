@@ -310,7 +310,7 @@ function AskDecision({ question, left, sending, onAnswer }) {
         </button>
         <button disabled={Boolean(sending) || !reply.trim()}
                 onClick={() => onAnswer({ decision: 'answer', reply: reply.trim() })}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-5 py-2 text-xs font-bold text-white shadow-lg shadow-indigo-500/25 hover:bg-indigo-500 transition-all disabled:opacity-40">
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#1877F2] px-5 py-2 text-xs font-bold text-white shadow-[0_8px_16px_0_rgba(24,119,242,0.24)] hover:bg-[#0C44AE] transition-all disabled:opacity-40">
           {sending === 'answer' ? <Loader2 className="size-3.5 animate-spin" />
                                 : <Check className="size-3.5" />}
           Send
@@ -329,7 +329,7 @@ function PlanDecision({ question, left, sending, onAnswer }) {
   return (
     <Modal onClose={() => { }} className="max-w-[820px]">
       <header className="flex items-center gap-3">
-        <span className="grid size-9 place-items-center rounded-2xl border border-blue-500/25 bg-blue-500/10 text-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.18)]">
+        <span className="grid size-9 place-items-center rounded-2xl border border-[#1877F2]/25 bg-[#1877F2]/10 text-[#1877F2] shadow-[0_0_20px_rgba(24,119,242,0.18)]">
           <Search className="size-4" />
         </span>
         <div className="min-w-0 flex-1">
@@ -341,7 +341,7 @@ function PlanDecision({ question, left, sending, onAnswer }) {
         <Countdown left={left} />
       </header>
 
-      <div className="mt-5 max-h-[55vh] overflow-auto rounded-2xl border border-white/10 bg-[#080b12] p-5 shadow-2xl">
+      <div className="mt-5 max-h-[55vh] overflow-auto rounded-2xl border border-line bg-[#1C252E] p-5 shadow-2xl">
         <PlanReading plan={question.plan} />
       </div>
 
@@ -349,10 +349,10 @@ function PlanDecision({ question, left, sending, onAnswer }) {
         <textarea value={feedback} autoFocus rows={3}
                   placeholder="What should it do differently? Leave empty to let it reconsider on its own."
                   onChange={e => setFeedback(e.target.value)}
-                  className="mt-4 w-full resize-y rounded-xl border border-white/10 bg-[#080b12] px-4 py-3 text-xs leading-relaxed text-white outline-none placeholder:text-slate-500 focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/50 shadow-inner" />
+                  className="mt-4 w-full resize-y rounded-xl border border-line bg-[#1C252E] px-4 py-3 text-xs leading-relaxed text-white outline-none placeholder:text-slate-500 focus:border-[#1877F2]/60 focus:ring-1 focus:ring-[#1877F2]/50 shadow-inner" />
       )}
 
-      <footer className="mt-5 flex items-center gap-3 border-t border-white/10 pt-4">
+      <footer className="mt-5 flex items-center gap-3 border-t border-line pt-4">
         <span className="flex-1 font-mono text-xs text-slate-400">
           {round >= rounds
             ? 'Last round — the build starts after this.'
@@ -370,7 +370,7 @@ function PlanDecision({ question, left, sending, onAnswer }) {
         )}
         <button disabled={Boolean(sending)}
                 onClick={() => onAnswer({ decision: 'accept' })}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-blue-500/25 hover:bg-blue-500 transition-all disabled:opacity-40">
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#1877F2] px-6 py-2.5 text-xs font-bold text-white shadow-[0_8px_16px_0_rgba(24,119,242,0.24)] hover:bg-[#0C44AE] transition-all disabled:opacity-40">
           {sending === 'accept' ? <Loader2 className="size-3.5 animate-spin" />
                                 : <Check className="size-3.5" />}
           Build this
@@ -425,7 +425,7 @@ function DesignDecision({ question, left, sending, onAnswer }) {
                         title={option.mood}
                         className={cn('flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all',
                           pick.palette === option.id
-                            ? 'border-blue-500 bg-blue-500/15 shadow-[0_0_20px_rgba(59,130,246,0.15)] ring-1 ring-blue-500/40'
+                            ? 'border-[#1877F2] bg-[#1877F2]/15 shadow-[0_0_20px_rgba(24,119,242,0.15)] ring-1 ring-[#1877F2]/40'
                             : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.06] hover:border-white/20')}>
                   <span className="flex shrink-0 gap-1">
                     {['primary', 'accent', 'background'].map(role => (
@@ -441,7 +441,7 @@ function DesignDecision({ question, left, sending, onAnswer }) {
             </div>
           </Field>
 
-          <div className="rounded-2xl border border-white/10 bg-[#080b12] p-4 shadow-inner">
+          <div className="rounded-2xl border border-line bg-[#1C252E] p-4 shadow-inner">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Typography">
                 <Choices options={(question.fonts || []).map(f => ({
@@ -509,17 +509,17 @@ function DesignDecision({ question, left, sending, onAnswer }) {
                   <button key={page.id} onClick={() => togglePage(page.id)}
                           aria-pressed={on}
                           className={cn('flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-all',
-                            on ? 'border-blue-500/50 bg-blue-500/10'
+                            on ? 'border-[#1877F2]/50 bg-[#1877F2]/10'
                                : 'border-white/10 bg-white/[0.02] opacity-60 hover:opacity-100')}>
                     <span className={cn('mt-0.5 grid size-4 shrink-0 place-items-center rounded-md border transition-all',
-                      on ? 'border-blue-500 bg-blue-600 text-white' : 'border-white/20 bg-white/[0.04]')}>
+                      on ? 'border-[#1877F2] bg-[#1877F2] text-white' : 'border-white/20 bg-white/[0.04]')}>
                       {on && <Check className="size-3" />}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex items-baseline gap-2">
                         <span className="text-xs font-bold text-white">{page.label}</span>
                         {page.route && (
-                          <code className="font-mono text-[10px] text-blue-400">{page.route}</code>
+                          <code className="font-mono text-[10px] text-[#1877F2]">{page.route}</code>
                         )}
                       </span>
                       {page.what && (
@@ -540,18 +540,18 @@ function DesignDecision({ question, left, sending, onAnswer }) {
             <p className="text-[11px] font-bold uppercase tracking-[.15em] text-slate-400">
               Live Application Preview
             </p>
-            <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-emerald-400 shadow-sm">
-              <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="flex items-center gap-1.5 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/10 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-[#22C55E] shadow-sm">
+              <span className="size-1.5 rounded-full bg-[#22C55E] animate-pulse" />
               Live Preview
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-white/15 bg-[#080b12] shadow-2xl">
+          <div className="overflow-hidden rounded-2xl border border-line bg-[#1C252E] shadow-2xl">
             <div className="flex items-center gap-2 border-b border-white/10 bg-white/[0.03] px-3.5 py-2">
               <div className="flex items-center gap-1.5">
-                <span className="size-2 rounded-full bg-rose-500/80" />
-                <span className="size-2 rounded-full bg-amber-500/80" />
-                <span className="size-2 rounded-full bg-emerald-500/80" />
+                <span className="size-2 rounded-full bg-[#FF5630]" />
+                <span className="size-2 rounded-full bg-[#FFAB00]" />
+                <span className="size-2 rounded-full bg-[#22C55E]" />
               </div>
               <div className="mx-auto flex h-4 max-w-[180px] flex-1 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-2 font-mono text-[9px] text-slate-400 truncate">
                 {question.goal || 'scaffold-preview'}
@@ -569,7 +569,7 @@ function DesignDecision({ question, left, sending, onAnswer }) {
         </div>
       </div>
 
-      <footer className="mt-5 flex items-center gap-3 border-t border-white/10 pt-4">
+      <footer className="mt-5 flex items-center gap-3 border-t border-line pt-4">
         <span className="flex-1 text-xs text-slate-400 italic truncate">{palette?.mood}</span>
         <button disabled={Boolean(sending)}
                 onClick={() => onAnswer({ decision: 'skip' })}
@@ -578,7 +578,7 @@ function DesignDecision({ question, left, sending, onAnswer }) {
         </button>
         <button disabled={Boolean(sending)}
                 onClick={() => onAnswer({ decision: 'apply', selection: pick })}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-blue-500/25 hover:bg-blue-500 transition-all disabled:opacity-40">
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#1877F2] px-6 py-2.5 text-xs font-bold text-white shadow-[0_8px_16px_0_rgba(24,119,242,0.24)] hover:bg-[#0C44AE] transition-all disabled:opacity-40">
           {sending === 'apply' ? <Loader2 className="size-3.5 animate-spin" />
                                : <Check className="size-3.5" />}
           Use this
@@ -605,7 +605,7 @@ const Choices = ({ options, value, onChange }) => (
       <button key={option.id} onClick={() => onChange(option.id)} title={option.hint || ''}
               className={cn('rounded-xl border px-2.5 py-1.5 text-[11px] font-medium capitalize transition-all',
                 value === option.id
-                  ? 'border-blue-500 bg-blue-500/20 text-white shadow-sm ring-1 ring-blue-500/40'
+                  ? 'border-[#1877F2] bg-[#1877F2]/20 text-white shadow-sm ring-1 ring-[#1877F2]/40'
                   : 'border-white/10 bg-white/[0.03] text-slate-400 hover:text-white hover:bg-white/[0.07]')}>
         {option.label}
       </button>

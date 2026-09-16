@@ -24,11 +24,11 @@ export default function Evidence({ qa }) {
   const evidence = qa?.report?.evidence
   if (qa?.recovered) return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-white/10 bg-[#121622]/80 p-5 shadow-xl backdrop-blur-xl">
+      <div className="rounded-2xl border border-line bg-[#1C252E] p-5 shadow-xl backdrop-blur-xl">
         <Badge tone="mute">Saved artifacts · partial evidence</Badge>
         <p className="mt-3 text-[12px] text-slate-300">{qa.provenance}</p>
       </div>
-      <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#121622]/80 shadow-xl backdrop-blur-xl">
+      <div className="overflow-hidden rounded-2xl border border-line bg-[#1C252E] shadow-xl backdrop-blur-xl">
         <Table>
           <thead><TR><TH>Evidence</TH><TH>Source</TH><TH>What was saved</TH></TR></thead>
           <tbody>
@@ -39,7 +39,7 @@ export default function Evidence({ qa }) {
         </Table>
       </div>
       {qa.report?.unit?.coverage && (
-        <div className="rounded-2xl border border-white/10 bg-[#121622]/80 p-5 shadow-xl backdrop-blur-xl">
+        <div className="rounded-2xl border border-line bg-[#1C252E] p-5 shadow-xl backdrop-blur-xl">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Saved source coverage · informational, no percentage requirement</p>
           <p className="mt-2 text-[13px] font-medium text-white">{Object.entries(qa.report.unit.coverage).filter(([, v]) => typeof v?.pct === 'number').map(([k, v]) => `${k}: ${v.pct}%`).join(' · ')}</p>
         </div>
@@ -59,7 +59,7 @@ export default function Evidence({ qa }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3.5 rounded-2xl border border-white/10 bg-[#121622]/80 p-5 shadow-xl backdrop-blur-xl">
+      <div className="flex flex-wrap items-center gap-3.5 rounded-2xl border border-line bg-[#1C252E] p-5 shadow-xl backdrop-blur-xl">
         <Badge tone={evidence.ready ? 'ok' : 'bad'}>
           {evidence.ready ? 'every required layer proved' : 'evidence incomplete'}
         </Badge>
@@ -72,7 +72,7 @@ export default function Evidence({ qa }) {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl border border-white/10 bg-[#121622]/80 p-5 shadow-xl backdrop-blur-xl">
+        <div className="rounded-2xl border border-line bg-[#1C252E] p-5 shadow-xl backdrop-blur-xl">
           <p className="text-[11px] font-semibold uppercase tracking-[.16em] text-slate-400">
             Unit source coverage
           </p>
@@ -94,7 +94,7 @@ export default function Evidence({ qa }) {
           ) : <Empty>Not measured.</Empty>}
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-[#121622]/80 p-5 shadow-xl backdrop-blur-xl">
+        <div className="rounded-2xl border border-line bg-[#1C252E] p-5 shadow-xl backdrop-blur-xl">
           <p className="text-[11px] font-semibold uppercase tracking-[.16em] text-slate-400">
             Requirement coverage (E2E)
           </p>
@@ -113,7 +113,7 @@ export default function Evidence({ qa }) {
       </div>
 
       {scope?.requirements?.length > 0 && (
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#121622]/80 p-5 shadow-xl backdrop-blur-xl">
+        <div className="overflow-hidden rounded-2xl border border-line bg-[#1C252E] p-5 shadow-xl backdrop-blur-xl">
           <h3 className="mb-1 text-[13px] font-bold tracking-wide text-white">
             What this run promised to prove
           </h3>
@@ -150,7 +150,7 @@ export default function Evidence({ qa }) {
       )}
 
       {suites.length > 0 && (
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#121622]/80 p-5 shadow-xl backdrop-blur-xl">
+        <div className="overflow-hidden rounded-2xl border border-line bg-[#1C252E] p-5 shadow-xl backdrop-blur-xl">
           <h3 className="mb-1 text-[13px] font-bold tracking-wide text-white">What actually ran</h3>
           <p className="mb-3 text-[11px] text-slate-400">
             Command exit status and browser journey outcomes. A pass recorded
@@ -196,7 +196,7 @@ export default function Evidence({ qa }) {
       )}
 
       {(evidence.visuals || []).length > 0 && (
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#121622]/80 p-5 shadow-xl backdrop-blur-xl">
+        <div className="overflow-hidden rounded-2xl border border-line bg-[#1C252E] p-5 shadow-xl backdrop-blur-xl">
           <h3 className="mb-2 text-[13px] font-bold tracking-wide text-white">Screens reviewed</h3>
           <div className="overflow-x-auto rounded-xl border border-white/5 bg-black/20">
             <Table>
@@ -217,7 +217,7 @@ export default function Evidence({ qa }) {
       )}
 
       {limitations.length > 0 && (
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#121622]/80 p-5 shadow-xl backdrop-blur-xl">
+        <div className="overflow-hidden rounded-2xl border border-line bg-[#1C252E] p-5 shadow-xl backdrop-blur-xl">
           <h3 className="mb-1 text-[13px] font-bold tracking-wide text-white">Recorded as unverified</h3>
           <p className="mb-3 text-[11px] text-slate-400">
             Not passes. These are the things the run could not prove here, with

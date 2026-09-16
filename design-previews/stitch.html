@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stitch · data & AI workflow automation</title>
+  <!-- Google fonts: Ubuntu (primary), Oswald (display), Ubuntu Mono (mono) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Ubuntu+Mono:wght@400;700&family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* design system core */
+    :root {
+      --primary: #072C2C;
+      --secondary: #FF5F03;
+      --success: #16A34A;
+      --warning: #D97706;
+      --danger: #DC2626;
+      --surface: #EDEADE;
+      --text: #111827;
+      --white: #FFFFFF;
+    }
+    * {
+      font-family: 'Ubuntu', sans-serif;
+      font-weight: 400;
+      color: var(--text);
+    }
+    /* display headings – Oswald */
+    h1, h2, h3, .display {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+    /* mono for data / numbers */
+    .mono, code, .stat-number, .price-tag {
+      font-family: 'Ubuntu Mono', monospace;
+      font-weight: 400;
+    }
+    /* sharp corners everywhere – no rounded corners */
+    * {
+      border-radius: 0 !important;
+    }
+    /* keyboard focus visible – high contrast */
+    :focus-visible {
+      outline: 3px solid var(--secondary);
+      outline-offset: 2px;
+    }
+    /* consistent hit area */
+    button, a, .clickable {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    /* background patterns – pure CSS */
+    .bg-grid {
+      background-image: linear-gradient(var(--primary) 1px, transparent 1px),
+                        linear-gradient(90deg, var(--primary) 1px, transparent 1px);
+      background-size: 24px 24px;
+      opacity: 0.06;
+    }
+    .bg-dots {
+      background-image: radial-gradient(var(--primary) 1.2px, transparent 1.2px);
+      background-size: 16px 16px;
+      opacity: 0.08;
+    }
+    /* accessible skip link */
+    .skip-link {
+      position: absolute;
+      left: -999px;
+      top: 0;
+      background: var(--primary);
+      color: white;
+      padding: 0.5rem 1rem;
+      z-index: 100;
+    }
+    .skip-link:focus {
+      left: 0;
+    }
+    /* custom scrollbar (optional) */
+    ::selection {
+      background: var(--secondary);
+      color: white;
+    }
+  </style>
+</head>
+<body class="bg-[#EDEADE] antialiased">
+
+  <!-- skip link for keyboard users -->
+  <a href="#main" class="skip-link">Skip to main content</a>
+
+  <!-- ========== NAVIGATION ========== -->
+  <header class="bg-[#072C2C] text-white sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+      <!-- logo -->
+      <div class="flex items-center gap-2">
+        <span class="h-8 w-8 bg-[#FF5F03] flex items-center justify-center">
+          <i data-lucide="workflow" class="w-5 h-5 text-white"></i>
+        </span>
+        <span class="font-bold text-xl tracking-tight text-white">stitch</span>
+      </div>
+      <!-- desktop nav -->
+      <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-white/90">
+        <a href="#features" class="hover:text-white transition">Features</a>
+        <a href="#process" class="hover:text-white transition">Process</a>
+        <a href="#benefits" class="hover:text-white transition">Benefits</a>
+        <a href="#pricing" class="hover:text-white transition">Pricing</a>
+        <a href="#faq" class="hover:text-white transition">FAQ</a>
+      </nav>
+      <!-- cta -->
+      <div class="flex items-center gap-3">
+        <a href="#" class="hidden sm:inline-flex text-white/80 hover:text-white text-sm font-medium">Sign in</a>
+        <a href="#" class="bg-[#FF5F03] text-white px-4 py-2 text-sm font-bold hover:bg-[#e05500] transition">Get started</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <!-- ========== HERO ========== -->
+    <section class="relative bg-[#072C2C] text-white overflow-hidden">
+      <div class="absolute inset-0 bg-grid"></div>
+      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
+        <div class="grid md:grid-cols-2 gap-12 items-center">
+          <div>
+            <p class="mono text-[#FF5F03] text-sm font-bold uppercase tracking-widest mb-4">Data · Apps · AI</p>
+            <h1 class="text-4xl md:text-6xl font-bold leading-tight text-white">Automate your workflows<br/>with drag & drop</h1>
+            <p class="mt-6 text-lg text-white/80 max-w-xl">Stitch connects your data, apps, and AI models in an intuitive visual builder. Build powerful automations in minutes, not weeks.</p>
+            <div class="mt-8 flex flex-wrap gap-4">
+              <a href="#" class="bg-[#FF5F03] text-white px-6 py-3 font-bold text-base hover:bg-[#e05500] transition inline-flex items-center gap-2">
+                <i data-lucide="play" class="w-5 h-5"></i> Start free
+              </a>
+              <a href="#" class="border border-white/30 text-white px-6 py-3 font-bold text-base hover:bg-white/10 transition inline-flex items-center gap-2">
+                <i data-lucide="git-branch" class="w-5 h-5"></i> View demo
+              </a>
+            </div>
+            <p class="mt-6 text-sm text-white/60 mono">No credit card required · SOC2 Type II</p>
+          </div>
+          <!-- abstract visual – pure CSS shapes -->
+          <div class="relative h-64 md:h-80 bg-[#0b3b3b] border border-white/10 p-6 flex items-center justify-center">
+            <div class="absolute inset-0 bg-dots"></div>
+            <!-- workflow nodes -->
+            <div class="relative flex items-center gap-4">
+              <div class="w-16 h-16 bg-[#FF5F03] flex items-center justify-center shadow-lg">
+                <i data-lucide="database" class="w-8 h-8 text-white"></i>
+              </div>
+              <div class="w-8 h-1 bg-white/40"></div>
+              <div class="w-16 h-16 bg-white flex items-center justify-center shadow-lg">
+                <i data-lucide="cpu" class="w-8 h-8 text-[#072C2C]"></i>
+              </div>
+              <div class="w-8 h-1 bg-white/40"></div>
+              <div class="w-16 h-16 bg-[#16A34A] flex items-center justify-center shadow-lg">
+                <i data-lucide="send" class="w-8 h-8 text-white"></i>
+              </div>
+            </div>
+            <!-- floating badge -->
+            <span class="absolute top-4 right-4 bg-[#072C2C] border border-white/20 px-3 py-1 text-xs mono text-white/80 flex items-center gap-1">
+              <i data-lucide="zap" class="w-3 h-3 text-[#FF5F03]"></i> 2.4k runs/hr
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== STATS ========== -->
+    <section class="bg-[#FFFFFF] py-12 border-b border-[#072C2C]/10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div class="text-center">
+          <p class="stat-number text-4xl font-bold text-[#072C2C]">99.9%</p>
+          <p class="mt-1 text-sm text-gray-600">uptime SLA</p>
+        </div>
+        <div class="text-center">
+          <p class="stat-number text-4xl font-bold text-[#072C2C]">12M+</p>
+          <p class="mt-1 text-sm text-gray-600">automations run</p>
+        </div>
+        <div class="text-center">
+          <p class="stat-number text-4xl font-bold text-[#072C2C]">150+</p>
+          <p class="mt-1 text-sm text-gray-600">integrations</p>
+        </div>
+        <div class="text-center">
+          <p class="stat-number text-4xl font-bold text-[#072C2C]">4.9/5</p>
+          <p class="mt-1 text-sm text-gray-600">customer rating</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== FEATURES ========== -->
+    <section id="features" class="py-20 bg-[#EDEADE]">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-3xl md:text-4xl font-bold text-[#072C2C] text-center">Everything you need to automate</h2>
+        <p class="mt-4 text-lg text-gray-600 text-center max-w-2xl mx-auto">Powerful building blocks that work the way you think.</p>
+        <div class="mt-14 grid md:grid-cols-3 gap-8">
+          <!-- feature 1 -->
+          <div class="bg-white p-6 border-l-4 border-[#FF5F03] shadow-sm">
+            <div class="w-12 h-12 bg-[#072C2C] flex items-center justify-center mb-4">
+              <i data-lucide="mouse-pointer-click" class="w-6 h-6 text-white"></i>
+            </div>
+            <h3 class="text-xl font-bold text-[#072C2C]">Drag & drop builder</h3>
+            <p class="mt-2 text-gray-600">Visual workflow editor with live testing. No code required.</p>
+          </div>
+          <!-- feature 2 -->
+          <div class="bg-white p-6 border-l-4 border-[#16A34A] shadow-sm">
+            <div class="w-12 h-12 bg-[#072C2C] flex items-center justify-center mb-4">
+              <i data-lucide="brain" class="w-6 h-6 text-white"></i>
+            </div>
+            <h3 class="text-xl font-bold text-[#072C2C]">AI-native</h3>
+            <p class="mt-2 text-gray-600">Embed GPT, Claude, or custom models in any step.</p>
+          </div>
+          <!-- feature 3 -->
+          <div class="bg-white p-6 border-l-4 border-[#D97706] shadow-sm">
+            <div class="w-12 h-12 bg-[#072C2C] flex items-center justify-center mb-4">
+              <i data-lucide="shield-check" class="w-6 h-6 text-white"></i>
+            </div>
+            <h3 class="text-xl font-bold text-[#072C2C]">Enterprise security</h3>
+            <p class="mt-2 text-gray-600">SSO, audit logs, and granular permissions built-in.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== PROCESS ========== -->
+    <section id="process" class="py-20 bg-[#072C2C] text-white">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-3xl md:text-4xl font-bold text-white text-center">From idea to automation in 3 steps</h2>
+        <div class="mt-14 grid md:grid-cols-3 gap-10">
+          <div class="text-center">
+            <div class="w-16 h-16 bg-[#FF5F03] flex items-center justify-center mx-auto">
+              <span class="text-2xl font-bold text-white mono">01</span>
+            </div>
+            <h3 class="mt-4 text-xl font-bold">Connect</h3>
+            <p class="mt-2 text-white/70">Link your apps and data sources in one click.</p>
+          </div>
+          <div class="text-center">
+            <div class="w-16 h-16 bg-[#FF5F03] flex items-center justify-center mx-auto">
+              <span class="text-2xl font-bold text-white mono">02</span>
+            </div>
+            <h3 class="mt-4 text-xl font-bold">Design</h3>
+            <p class="mt-2 text-white/70">Drag triggers, actions, and AI steps onto canvas.</p>
+          </div>
+          <div class="text-center">
+            <div class="w-16 h-16 bg-[#FF5F03] flex items-center justify-center mx-auto">
+              <span class="text-2xl font-bold text-white mono">03</span>
+            </div>
+            <h3 class="mt-4 text-xl font-bold">Automate</h3>
+            <p class="mt-2 text-white/70">Deploy with monitoring and version control.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== BENEFITS ========== -->
+    <section id="benefits" class="py-20 bg-white">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
+        <div>
+          <h2 class="text-3xl md:text-4xl font-bold text-[#072C2C]">Why teams switch to Stitch</h2>
+          <ul class="mt-8 space-y-4">
+            <li class="flex gap-3">
+              <i data-lucide="check-circle" class="w-6 h-6 text-[#16A34A] flex-shrink-0"></i>
+              <span><strong>80% faster</strong> workflow creation vs code</span>
+            </li>
+            <li class="flex gap-3">
+              <i data-lucide="check-circle" class="w-6 h-6 text-[#16A34A] flex-shrink-0"></i>
+              <span><strong>Reduce errors</strong> with built-in validation</span>
+            </li>
+            <li class="flex gap-3">
+              <i data-lucide="check-circle" class="w-6 h-6 text-[#16A34A] flex-shrink-0"></i>
+              <span><strong>Scale instantly</strong> – no infrastructure to manage</span>
+            </li>
+            <li class="flex gap-3">
+              <i data-lucide="check-circle" class="w-6 h-6 text-[#16A34A] flex-shrink-0"></i>
+              <span><strong>Collaborate</strong> with shared workspaces</span>
+            </li>
+          </ul>
+        </div>
+        <!-- abstract visual: layered shapes -->
+        <div class="relative h-72 bg-[#EDEADE] border border-[#072C2C]/10 p-8 flex items-center justify-center">
+          <div class="absolute top-6 left-6 w-20 h-20 bg-[#072C2C] opacity-20"></div>
+          <div class="absolute bottom-6 right-6 w-24 h-24 bg-[#FF5F03] opacity-20"></div>
+          <div class="relative w-40 h-40 bg-[#072C2C] flex items-center justify-center">
+            <i data-lucide="trending-up" class="w-16 h-16 text-white"></i>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== TESTIMONIALS ========== -->
+    <section class="py-20 bg-[#EDEADE]">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-3xl md:text-4xl font-bold text-[#072C2C] text-center">Loved by data teams</h2>
+        <div class="mt-12 grid md:grid-cols-3 gap-8">
+          <div class="bg-white p-6 shadow-sm">
+            <div class="flex gap-1 text-[#D97706]">
+              <i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i>
+            </div>
+            <p class="mt-4 text-gray-700">"Stitch replaced our entire Zapier + custom scripts stack. The AI integration is seamless."</p>
+            <p class="mt-4 font-bold text-[#072C2C]">Maya Chen</p>
+            <p class="text-sm text-gray-500">Head of Data, Northwind</p>
+          </div>
+          <div class="bg-white p-6 shadow-sm">
+            <div class="flex gap-1 text-[#D97706]">
+              <i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i>
+            </div>
+            <p class="mt-4 text-gray-700">"Drag and drop that actually works for complex pipelines. Game changer."</p>
+            <p class="mt-4 font-bold text-[#072C2C]">James Okafor</p>
+            <p class="text-sm text-gray-500">CTO, Relay</p>
+          </div>
+          <div class="bg-white p-6 shadow-sm">
+            <div class="flex gap-1 text-[#D97706]">
+              <i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i>
+            </div>
+            <p class="mt-4 text-gray-700">"Setup took 10 minutes. We automated our entire reporting flow."</p>
+            <p class="mt-4 font-bold text-[#072C2C]">Sofia Reyes</p>
+            <p class="text-sm text-gray-500">Ops Lead, Vantage</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== PRICING ========== -->
+    <section id="pricing" class="py-20 bg-white">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-3xl md:text-4xl font-bold text-[#072C2C] text-center">Simple, transparent pricing</h2>
+        <div class="mt-12 grid md:grid-cols-3 gap-8">
+          <!-- starter -->
+          <div class="border-2 border-[#072C2C]/20 p-6 flex flex-col">
+            <h3 class="text-lg font-bold text-[#072C2C]">Starter</h3>
+            <p class="mt-2 text-4xl font-bold mono">$0</p>
+            <p class="text-sm text-gray-500">free forever</p>
+            <ul class="mt-6 space-y-2 text-sm">
+              <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-[#16A34A]"></i> 100 runs/mo</li>
+              <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-[#16A34A]"></i> 5 workflows</li>
+              <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-[#16A34A]"></i> Community support</li>
+            </ul>
+            <a href="#" class="mt-8 bg-[#072C2C] text-white text-center py-3 font-bold hover:bg-[#0b3b3b] transition">Start free</a>
+          </div>
+          <!-- pro (highlighted) -->
+          <div class="border-4 border-[#FF5F03] p-6 flex flex-col relative">
+            <span class="absolute -top-3 right-4 bg-[#FF5F03] text-white px-3 py-1 text-xs font-bold">POPULAR</span>
+            <h3 class="text-lg font-bold text-[#072C2C]">Pro</h3>
+            <p class="mt-2 text-4xl font-bold mono">$49</p>
+            <p class="text-sm text-gray-500">per month</p>
+            <ul class="mt-6 space-y-2 text-sm">
+              <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-[#16A34A]"></i> 10k runs/mo</li>
+              <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-[#16A34A]"></i> Unlimited workflows</li>
+              <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-[#16A34A]"></i> AI steps included</li>
+              <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-[#16A34A]"></i> Priority support</li>
+            </ul>
+            <a href="#" class="mt-8 bg-[#FF5F03] text-white text-center py-3 font-bold hover:bg-[#e05500] transition">Start 14-day trial</a>
+          </div>
+          <!-- enterprise -->
+          <div class="border-2 border-[#072C2C]/20 p-6 flex flex-col">
+            <h3 class="text-lg font-bold text-[#072C2C]">Enterprise</h3>
+            <p class="mt-2 text-4xl font-bold mono">Custom</p>
+            <p class="text-sm text-gray-500">tailored to you</p>
+            <ul class="mt-6 space-y-2 text-sm">
+              <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-[#16A34A]"></i> Unlimited runs</li>
+              <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-[#16A34A]"></i> SSO & audit logs</li>
+              <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-[#16A34A]"></i> Dedicated support</li>
+            </ul>
+            <a href="#" class="mt-8 bg-[#072C2C] text-white text-center py-3 font-bold hover:bg-[#0b3b3b] transition">Contact sales</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== FAQ ========== -->
+    <section id="faq" class="py-20 bg-[#EDEADE]">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-3xl md:text-4xl font-bold text-[#072C2C] text-center">Frequently asked questions</h2>
+        <div class="mt-10 space-y-4">
+          <details class="bg-white p-6 border-l-4 border-[#072C2C]">
+            <summary class="font-bold text-lg cursor-pointer">Can I try Stitch for free?</summary>
+            <p class="mt-2 text-gray-600">Yes! The Starter plan is free forever, and Pro includes a 14-day trial with full features.</p>
+          </details>
+          <details class="bg-white p-6 border-l-4 border-[#072C2C]">
+            <summary class="font-bold text-lg cursor-pointer">Do I need to know how to code?</summary>
+            <p class="mt-2 text-gray-600">No. Stitch's visual builder is designed for non-technical users, but developers love it too.</p>
+          </details>
+          <details class="bg-white p-6 border-l-4 border-[#072C2C]">
+            <summary class="font-bold text-lg cursor-pointer">Which AI models are supported?</summary>
+            <p class="mt-2 text-gray-600">We support OpenAI, Anthropic, Google Gemini, and any custom endpoint via API.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="bg-[#072C2C] text-white py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid md:grid-cols-4 gap-8">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="h-8 w-8 bg-[#FF5F03] flex items-center justify-center">
+              <i data-lucide="workflow" class="w-5 h-5 text-white"></i>
+            </span>
+            <span class="font-bold text-xl text-white">stitch</span>
+          </div>
+          <p class="mt-4 text-sm text-white/60">Automate everything. Build anything.</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-white">Product</h4>
+          <ul class="mt-3 space-y-2 text-sm text-white/70">
+            <li><a href="#" class="hover:text-white">Features</a></li>
+            <li><a href="#" class="hover:text-white">Pricing</a></li>
+            <li><a href="#" class="hover:text-white">Integrations</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-bold text-white">Company</h4>
+          <ul class="mt-3 space-y-2 text-sm text-white/70">
+            <li><a href="#" class="hover:text-white">About</a></li>
+            <li><a href="#" class="hover:text-white">Blog</a></li>
+            <li><a href="#" class="hover:text-white">Careers</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-bold text-white">Legal</h4>
+          <ul class="mt-3 space-y-2 text-sm text-white/70">
+            <li><a href="#" class="hover:text-white">Privacy</a></li>
+            <li><a href="#" class="hover:text-white">Terms</a></li>
+            <li><a href="#" class="hover:text-white">Security</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="mt-10 pt-6 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center text-sm text-white/50">
+        <p>© 2025 Stitch Automation, Inc.</p>
+        <div class="flex gap-4 mt-4 sm:mt-0">
+          <a href="#" aria-label="Twitter" class="hover:text-white"><i data-lucide="twitter" class="w-5 h-5"></i></a>
+          <a href="#" aria-label="GitHub" class="hover:text-white"><i data-lucide="github" class="w-5 h-5"></i></a>
+          <a href="#" aria-label="LinkedIn" class="hover:text-white"><i data-lucide="linkedin" class="w-5 h-5"></i></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- lucide icons -->
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

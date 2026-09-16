@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tetris Design System — Stack Your Success</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        display: ['Bangers', 'cursive'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        primary: '#1C202B',
+                        secondary: '#7107E7',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                        surface: '#DFE7FF',
+                        ink: '#1C398E',
+                    },
+                },
+            },
+        };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest">
+    </script>
+</head>
+<body class="font-mono bg-white text-ink antialiased">
+
+    <!-- ===== NAVIGATION ===== -->
+    <nav class="bg-primary text-white sticky top-0 z-50 border-b-4 border-secondary">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="#" class="font-display text-2xl tracking-wider text-white hover:text-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface">
+                    TETRIS<span class="text-secondary">.</span>
+                </a>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="font-mono text-sm text-white/80 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface">Features</a>
+                    <a href="#process" class="font-mono text-sm text-white/80 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface">Process</a>
+                    <a href="#pricing" class="font-mono text-sm text-white/80 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface">Pricing</a>
+                    <a href="#faq" class="font-mono text-sm text-white/80 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface">FAQ</a>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="#" class="hidden sm:inline-block bg-secondary text-white font-mono font-bold text-sm px-5 py-2 hover:bg-secondary/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary">
+                        Get Started
+                    </a>
+                    <button id="mobile-menu-btn" class="md:hidden text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface" aria-label="Toggle navigation menu">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-primary border-t border-white/10 px-4 pb-4">
+            <a href="#features" class="block font-mono text-sm text-white/80 hover:text-white py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface">Features</a>
+            <a href="#process" class="block font-mono text-sm text-white/80 hover:text-white py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface">Process</a>
+            <a href="#pricing" class="block font-mono text-sm text-white/80 hover:text-white py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface">Pricing</a>
+            <a href="#faq" class="block font-mono text-sm text-white/80 hover:text-white py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface">FAQ</a>
+            <a href="#" class="block bg-secondary text-white font-mono font-bold text-sm px-5 py-2 mt-2 text-center hover:bg-secondary/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary">Get Started</a>
+        </div>
+    </nav>
+
+    <!-- ===== HERO ===== -->
+    <section class="bg-surface relative overflow-hidden">
+        <div class="absolute inset-0" style="background-image: linear-gradient(rgba(28,32,43,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(28,32,43,0.06) 1px, transparent 1px); background-size: 20px 20px;"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28 relative">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <span class="inline-block bg-primary text-white font-mono text-xs font-bold px-3 py-1 mb-6 tracking-widest">TETRIS DESIGN SYSTEM v2.0</span>
+                    <h1 class="font-display text-5xl sm:text-6xl lg:text-7xl text-ink leading-none mb-6">STACK YOUR<br>SUCCESS</h1>
+                    <p class="font-mono text-base sm:text-lg text-ink/80 mb-8 max-w-md">Build beautiful, accessible interfaces with the most iconic design system in gaming history.</p>
+                    <div class="flex flex-wrap gap-4">
+                        <a href="#" class="bg-secondary text-white font-mono font-bold text-sm px-6 py-3 hover:bg-secondary/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary">Start Building</a>
+                        <a href="#" class="border-2 border-primary text-primary font-mono font-bold text-sm px-6 py-3 hover:bg-primary hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">View Docs</a>
+                    </div>
+                </div>
+                <div class="hidden lg:flex justify-center items-center">
+                    <!-- Tetris block decoration -->
+                    <div class="flex flex-col items-center gap-2">
+                        <!-- T piece -->
+                        <div class="flex gap-1">
+                            <div class="w-10 h-10 bg-secondary border-2 border-primary"></div>
+                            <div class="w-10 h-10 bg-secondary border-2 border-primary"></div>
+                            <div class="w-10 h-10 bg-secondary border-2 border-primary"></div>
+                        </div>
+                        <div class="flex justify-center">
+                            <div class="w-10 h-10 bg-secondary border-2 border-primary"></div>
+                        </div>
+                        <!-- O piece -->
+                        <div class="flex gap-1 mt-4">
+                            <div class="w-10 h-10 bg-success border-2 border-primary"></div>
+                            <div class="w-10 h-10 bg-success border-2 border-primary"></div>
+                        </div>
+                        <div class="flex gap-1">
+                            <div class="w-10 h-10 bg-success border-2 border-primary"></div>
+                            <div class="w-10 h-10 bg-success border-2 border-primary"></div>
+                        </div>
+                        <!-- L piece -->
+                        <div class="flex gap-1 mt-4">
+                            <div class="w-10 h-10 bg-warning border-2 border-primary"></div>
+                            <div class="w-10 h-10 bg-warning border-2 border-primary"></div>
+                            <div class="w-10 h-10 bg-warning border-2 border-primary"></div>
+                        </div>
+                        <div class="flex gap-1">
+                            <div class="w-10 h-10 bg-warning border-2 border-primary"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== STATS ===== -->
+    <section class="bg-primary text-white py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <p class="font-display text-5xl text-secondary">40M+</p>
+                    <p class="font-mono text-sm text-white/70 mt-2">Downloads</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-display text-5xl text-success">150+</p>
+                    <p class="font-mono text-sm text-white/70 mt-2">Components</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-display text-5xl text-warning">99.9%</p>
+                    <p class="font-mono text-sm text-white/70 mt-2">Uptime</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-display text-5xl text-danger">4.9/5</p>
+                    <p class="font-mono text-sm text-white/70 mt-2">Rating</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FEATURES ===== -->
+    <section id="features" class="bg-white py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-4xl sm:text-5xl text-ink mb-4">FEATURES</h2>
+                <p class="font-mono text-base text-ink/70 max-w-xl mx-auto">Everything you need to build world-class interfaces.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Feature 1 -->
+                <div class="bg-surface p-6 border-2 border-primary hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-secondary flex items-center justify-center mb-4">
+                        <i data-lucide="blocks" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-2xl text-ink mb-2">BLOCK COMPONENTS</h3>
+                    <p class="font-mono text-sm text-ink/70">Pre-built components inspired by Tetris pieces. Drop them in and watch your UI stack up.</p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="bg-surface p-6 border-2 border-primary hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-success flex items-center justify-center mb-4">
+                        <i data-lucide="grid" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-2xl text-ink mb-2">GRID SYSTEM</h3>
+                    <p class="font-mono text-sm text-ink/70">Perfect layouts with our 10x20 grid. Align everything to the block.</p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="bg-surface p-6 border-2 border-primary hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-warning flex items-center justify-center mb-4">
+                        <i data-lucide="palette" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-2xl text-ink mb-2">COLOR TOKENS</h3>
+                    <p class="font-mono text-sm text-ink/70">Semantic colors that just work. High contrast, playful, and accessible by default.</p>
+                </div>
+                <!-- Feature 4 -->
+                <div class="bg-surface p-6 border-2 border-primary hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-danger flex items-center justify-center mb-4">
+                        <i data-lucide="type" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-2xl text-ink mb-2">TYPOGRAPHY</h3>
+                    <p class="font-mono text-sm text-ink/70">Bangers for display, JetBrains Mono for code. A pairing that commands attention.</p>
+                </div>
+                <!-- Feature 5 -->
+                <div class="bg-surface p-6 border-2 border-primary hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-secondary flex items-center justify-center mb-4">
+                        <i data-lucide="keyboard" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-2xl text-ink mb-2">KEYBOARD FIRST</h3>
+                    <p class="font-mono text-sm text-ink/70">Full keyboard navigation. Every component is accessible without a mouse.</p>
+                </div>
+                <!-- Feature 6 -->
+                <div class="bg-surface p-6 border-2 border-primary hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-success flex items-center justify-center mb-4">
+                        <i data-lucide="shield-check" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-2xl text-ink mb-2">WCAG 2.2 AA</h3>
+                    <p class="font-mono text-sm text-ink/70">Accessible by default. Tested against the latest WCAG 2.2 AA standards.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PROCESS ===== -->
+    <section id="process" class="bg-surface py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-4xl sm:text-5xl text-ink mb-4">HOW IT WORKS</h2>
+                <p class="font-mono text-base text-ink/70 max-w-xl mx-auto">Four simple steps from idea to launch.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Step 1 -->
+                <div class="bg-white p-6 border-2 border-primary relative">
+                    <span class="font-display text-5xl text-secondary absolute top-4 right-4">01</span>
+                    <h3 class="font-display text-2xl text-ink mb-2">PLAN</h3>
+                    <p class="font-mono text-sm text-ink/70">Map your layout on the board. Define your components and structure.</p>
+                </div>
+                <!-- Step 2 -->
+                <div class="bg-white p-6 border-2 border-primary relative">
+                    <span class="font-display text-5xl text-success absolute top-4 right-4">02</span>
+                    <h3 class="font-display text-2xl text-ink mb-2">BUILD</h3>
+                    <p class="font-mono text-sm text-ink/70">Stack your components. Compose pages with our pre-built blocks.</p>
+                </div>
+                <!-- Step 3 -->
+                <div class="bg-white p-6 border-2 border-primary relative">
+                    <span class="font-display text-5xl text-warning absolute top-4 right-4">03</span>
+                    <h3 class="font-display text-2xl text-ink mb-2">TEST</h3>
+                    <p class="font-mono text-sm text-ink/70">Clear your lines. Run accessibility and visual regression tests.</p>
+                </div>
+                <!-- Step 4 -->
+                <div class="bg-white p-6 border-2 border-primary relative">
+                    <span class="font-display text-5xl text-danger absolute top-4 right-4">04</span>
+                    <h3 class="font-display text-2xl text-ink mb-2">SHIP</h3>
+                    <p class="font-mono text-sm text-ink/70">Launch to production. Deploy with confidence and speed.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== BENEFITS ===== -->
+    <section class="bg-white py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h2 class="font-display text-4xl sm:text-5xl text-ink mb-6">WHY TETRIS DS?</h2>
+                    <p class="font-mono text-base text-ink/70 mb-8">The design system that stacks up. Here's what you get:</p>
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-3">
+                            <span class="w-6 h-6 bg-success flex items-center justify-center flex-shrink-0"><i data-lucide="check" class="w-4 h-4 text-white"></i></span>
+                            <div>
+                                <h3 class="font-display text-xl text-ink">BUILD 2X FASTER</h3>
+                                <p class="font-mono text-sm text-ink/70">Pre-built components and a consistent design language mean less time styling.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <span class="w-6 h-6 bg-success flex items-center justify-center flex-shrink-0"><i data-lucide="check" class="w-4 h-4 text-white"></i></span>
+                            <div>
+                                <h3 class="font-display text-xl text-ink">ONE DESIGN LANGUAGE</h3>
+                                <p class="font-mono text-sm text-ink/70">Consistency across every product. No more design drift.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <span class="w-6 h-6 bg-success flex items-center justify-center flex-shrink-0"><i data-lucide="check" class="w-4 h-4 text-white"></i></span>
+                            <div>
+                                <h3 class="font-display text-xl text-ink">INCLUSIVE BY DEFAULT</h3>
+                                <p class="font-mono text-sm text-ink/70">Accessibility is baked in. WCAG 2.2 AA compliance out of the box.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <span class="w-6 h-6 bg-success flex items-center justify-center flex-shrink-0"><i data-lucide="check" class="w-4 h-4 text-white"></i></span>
+                            <div>
+                                <h3 class="font-display text-xl text-ink">FUN TO USE</h3>
+                                <p class="font-mono text-sm text-ink/70">Playful, engaging design that makes your product memorable.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="hidden lg:flex justify-center">
+                    <!-- Tetris block decoration -->
+                    <div class="grid grid-cols-4 gap-1">
+                        <div class="w-12 h-12 bg-secondary border-2 border-primary"></div>
+                        <div class="w-12 h-12 bg-secondary border-2 border-primary"></div>
+                        <div class="w-12 h-12 bg-success border-2 border-primary"></div>
+                        <div class="w-12 h-12 bg-success border-2 border-primary"></div>
+                        <div class="w-12 h-12 bg-secondary border-2 border-primary"></div>
+                        <div class="w-12 h-12 bg-secondary border-2 border-primary"></div>
+                        <div class="w-12 h-12 bg-warning border-2 border-primary"></div>
+                        <div class="w-12 h-12 bg-warning border-2 border-primary"></div>
+                        <div class="w-12 h-12 bg-danger border-2 border-primary"></div>
+                        <div class="w-12 h-12 bg-danger border-2 border-primary"></div>
+                        <div class="w-12 h-12 bg-danger border-2 border-primary"></div>
+                        <div class="w-12 h-12 bg-danger border-2 border-primary"></div>
+                        <div class="w-12 h-12 bg-warning border-2 border-primary"></div>
+                        <div class="w-12 h-12 bg-warning border-2 border-primary"></div>
+                        <div class="w-12 h-12 bg-secondary border-2 border-primary"></div>
+                        <div class="w-12 h-12 bg-secondary border-2 border-primary"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== TESTIMONIALS ===== -->
+    <section class="bg-primary text-white py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-4xl sm:text-5xl text-white mb-4">LOVE FROM THE COMMUNITY</h2>
+                <p class="font-mono text-base text-white/70 max-w-xl mx-auto">Teams around the world stack with Tetris DS.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Testimonial 1 -->
+                <div class="bg-white/10 p-6 border-2 border-white/20">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="font-mono text-sm text-white/80 mb-6">"Tetris DS transformed our workflow. We shipped our product in half the time."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-secondary flex items-center justify-center font-display text-lg text-white">SK</div>
+                        <div>
+                            <p class="font-mono text-sm font-bold text-white">Sarah K.</p>
+                            <p class="font-mono text-xs text-white/60">Product Lead, Blockify</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 2 -->
+                <div class="bg-white/10 p-6 border-2 border-white/20">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="font-mono text-sm text-white/80 mb-6">"The best design system we've used. The keyboard-first approach is a game changer."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-success flex items-center justify-center font-display text-lg text-white">MR</div>
+                        <div>
+                            <p class="font-mono text-sm font-bold text-white">Mike R.</p>
+                            <p class="font-mono text-xs text-white/60">Engineer, Stackline</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 3 -->
+                <div class="bg-white/10 p-6 border-2 border-white/20">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="font-mono text-sm text-white/80 mb-6">"Our users love the new look. It's playful, premium, and incredibly accessible."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-warning flex items-center justify-center font-display text-lg text-white">JD</div>
+                        <div>
+                            <p class="font-mono text-sm font-bold text-white">Jane D.</p>
+                            <p class="font-mono text-xs text-white/60">Designer, Pixel Perfect</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PRICING ===== -->
+    <section id="pricing" class="bg-surface py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-4xl sm:text-5xl text-ink mb-4">PRICING</h2>
+                <p class="font-mono text-base text-ink/70 max-w-xl mx-auto">Start free. Scale when you're ready.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Starter -->
+                <div class="bg-white p-8 border-2 border-primary flex flex-col">
+                    <h3 class="font-display text-2xl text-ink mb-2">STARTER</h3>
+                    <p class="font-mono text-sm text-ink/70 mb-4">For side projects</p>
+                    <p class="font-display text-5xl text-ink mb-6">$0</p>
+                    <ul class="font-mono text-sm text-ink/80 space-y-2 mb-8 flex-grow">
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Basic components</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Community support</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> MIT license</li>
+                    </ul>
+                    <a href="#" class="border-2 border-primary text-primary font-mono font-bold text-sm px-6 py-3 text-center hover:bg-primary hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Get Started</a>
+                </div>
+                <!-- Pro -->
+                <div class="bg-primary p-8 border-2 border-primary flex flex-col relative">
+                    <span class="absolute top-0 right-0 bg-secondary text-white font-mono text-xs font-bold px-3 py-1">MOST POPULAR</span>
+                    <h3 class="font-display text-2xl text-white mb-2">PRO</h3>
+                    <p class="font-mono text-sm text-white/70 mb-4">For growing teams</p>
+                    <p class="font-display text-5xl text-secondary mb-6">$19<span class="font-mono text-sm text-white/60">/mo</span></p>
+                    <ul class="font-mono text-sm text-white/80 space-y-2 mb-8 flex-grow">
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> All components</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Priority support</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Figma design kit</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Custom themes</li>
+                    </ul>
+                    <a href="#" class="bg-secondary text-white font-mono font-bold text-sm px-6 py-3 text-center hover:bg-secondary/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary">Start Pro</a>
+                </div>
+                <!-- Enterprise -->
+                <div class="bg-white p-8 border-2 border-primary flex flex-col">
+                    <h3 class="font-display text-2xl text-ink mb-2">ENTERPRISE</h3>
+                    <p class="font-mono text-sm text-ink/70 mb-4">For large orgs</p>
+                    <p class="font-display text-5xl text-ink mb-6">Custom</p>
+                    <ul class="font-mono text-sm text-ink/80 space-y-2 mb-8 flex-grow">
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Custom tokens</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> SLA guarantee</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Dedicated support</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> On-site training</li>
+                    </ul>
+                    <a href="#" class="border-2 border-primary text-primary font-mono font-bold text-sm px-6 py-3 text-center hover:bg-primary hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section id="faq" class="bg-white py-20">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-4xl sm:text-5xl text-ink mb-4">FAQ</h2>
+                <p class="font-mono text-base text-ink/70 max-w-xl mx-auto">Answers to common questions.</p>
+            </div>
+            <div class="space-y-4">
+                <!-- FAQ 1 -->
+                <details class="bg-surface border-2 border-primary">
+                    <summary class="font-display text-xl text-ink px-6 py-4 cursor-pointer hover:bg-surface/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">What is Tetris DS?</summary>
+                    <p class="font-mono text-sm text-ink/70 px-6 pb-4">Tetris DS is a comprehensive design system inspired by the iconic game. It includes components, tokens, and guidelines for building accessible, playful, and premium interfaces.</p>
+                </details>
+                <!-- FAQ 2 -->
+                <details class="bg-surface border-2 border-primary">
+                    <summary class="font-display text-xl text-ink px-6 py-4 cursor-pointer hover:bg-surface/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">How do I install it?</summary>
+                    <p class="font-mono text-sm text-ink/70 px-6 pb-4">Install via npm: <code class="bg-primary text-white px-2 py-0.5 text-xs">npm install tetris-ds</code>. Then import the CSS and components in your project.</p>
+                </details>
+                <!-- FAQ 3 -->
+                <details class="bg-surface border-2 border-primary">
+                    <summary class="font-display text-xl text-ink px-6 py-4 cursor-pointer hover:bg-surface/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Is it accessible?</summary>
+                    <p class="font-mono text-sm text-ink/70 px-6 pb-4">Yes. Tetris DS is tested against WCAG 2.2 AA standards. Every component is keyboard-navigable and screen-reader friendly.</p>
+                </details>
+                <!-- FAQ 4 -->
+                <details class="bg-surface border-2 border-primary">
+                    <summary class="font-display text-xl text-ink px-6 py-4 cursor-pointer hover:bg-surface/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Can I customize it?</summary>
+                    <p class="font-mono text-sm text-ink/70 px-6 pb-4">Absolutely. Use CSS variables to override colors, fonts, and spacing. Pro and Enterprise plans include custom theme support.</p>
+                </details>
+                <!-- FAQ 5 -->
+                <details class="bg-surface border-2 border-primary">
+                    <summary class="font-display text-xl text-ink px-6 py-4 cursor-pointer hover:bg-surface/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">What's the license?</summary>
+                    <p class="font-mono text-sm text-ink/70 px-6 pb-4">Tetris DS is MIT licensed. Use it in personal and commercial projects freely. Attribution is appreciated but not required.</p>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="bg-primary text-white py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+                <div>
+                    <a href="#" class="font-display text-2xl tracking-wider text-white hover:text-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface">TETRIS<span class="text-secondary">.</span></a>
+                    <p class="font-mono text-sm text-white/60 mt-2">The design system that stacks up.</p>
+                </div>
+                <div>
+                    <h3 class="font-display text-lg text-white mb-4">PRODUCT</h3>
+                    <ul class="font-mono text-sm text-white/60 space-y-2">
+                        <li><a href="#features" class="hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface">Features</a></li>
+                        <li><a href="#pricing" class="hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface">Pricing</a></li>
+                        <li><a href="#" class="hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface">Changelog</a></li>
+                        <li><a href="#" class="hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface">Roadmap</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-display text-lg text-white mb-4">COMPANY</h3>
+                    <ul class="font-mono text-sm text-white/60 space-y-2">
+                        <li><a href="#" class="hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface">About</a></li>
+                        <li><a href="#" class="hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface">Blog</a></li>
+                        <li><a href="#" class="hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface">Careers</a></li>
+                        <li><a href="#" class="hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-display text-lg text-white mb-4">RESOURCES</h3>
+                    <ul class="font-mono text-sm text-white/60 space-y-2">
+                        <li><a href="#" class="hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface">Documentation</a></li>
+                        <li><a href="#" class="hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface">GitHub</a></li>
+                        <li><a href="#" class="hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface">Figma Kit</a></li>
+                        <li><a href="#" class="hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface">Community</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-white/10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="font-mono text-xs text-white/50">© 2024 Tetris DS. All rights reserved.</p>
+                <div class="flex gap-4">
+                    <a href="#" aria-label="Twitter" class="text-white/60 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface"><i data-lucide="twitter" class="w-5 h-5"></i></a>
+                    <a href="#" aria-label="GitHub" class="text-white/60 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface"><i data-lucide="github" class="w-5 h-5"></i></a>
+                    <a href="#" aria-label="Discord" class="text-white/60 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-surface"><i data-lucide="message-circle" class="w-5 h-5"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Lucide icons init -->
+    <script>
+        lucide.createIcons();
+
+        // Mobile menu toggle
+        const btn = document.getElementById('mobile-menu-btn');
+        const menu = document.getElementById('mobile-menu');
+        btn.addEventListener('click', () => {
+            menu.classList.toggle('hidden');
+            const icon = btn.querySelector('i');
+            if (menu.classList.contains('hidden')) {
+                icon.setAttribute('data-lucide', 'menu');
+            } else {
+                icon.setAttribute('data-lucide', 'x');
+            }
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>

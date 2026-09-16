@@ -52,9 +52,16 @@ class RunQueue:
             else:
                 self._active = entry
         if ahead:
-            if on_wait:
-                on_wait(ahead)
-            entry["turn"].wait()
+            try:
+                if on_wait:
+                    on_wait(ahead)
+                entry["turn"].wait()
+            except BaseException:
+                # Whatever went wrong, this run is not going to start - and a
+                # place in the line with nobody standing in it is never given
+                # up again, so everything behind it would wait for a restart.
+                self._abandon(entry)
+                raise
             if entry["left"]:
                 return None
         try:
@@ -84,6 +91,14 @@ class RunQueue:
                 entry["left"] = True
                 entry["turn"].set()
         return len(leaving)
+
+    def _abandon(self, entry: dict) -> None:
+        """Give up a run's place, whether it is still waiting for one or already has it."""
+        with self._lock:
+            if entry in self._waiting:
+                self._waiting.remove(entry)
+                return
+        self._finish(entry)
 
     def _finish(self, entry: dict) -> None:
         with self._lock:

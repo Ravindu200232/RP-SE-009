@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geometric — Build interfaces that feel precise</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest">
+    </script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#8B5CF6',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                        surface: '#FFFFFF',
+                        ink: '#111827',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            border-radius: 0 !important;
+        }
+        *:focus-visible {
+            outline: 2px solid #3B82F6;
+            outline-offset: 2px;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        .bg-grid {
+            background-image:
+                linear-gradient(to right, rgba(17, 24, 39, 0.04) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(17, 24, 39, 0.04) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .faq-item.open .faq-answer {
+            max-height: 300px;
+        }
+        .faq-item.open .faq-icon {
+            transform: rotate(45deg);
+        }
+        .faq-icon {
+            transition: transform 0.3s ease;
+        }
+        .hero-svg {
+            width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body class="font-sans text-ink bg-white antialiased">
+
+    <!-- ===== NAVIGATION ===== -->
+    <nav class="sticky top-0 z-50 bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-primary flex items-center justify-center">
+                        <svg class="w-4 h-4 text-white" viewBox="0 0 16 16" fill="none">
+                            <rect x="2" y="2" width="12" height="12" stroke="currentColor" stroke-width="2"/>
+                            <rect x="5" y="5" width="6" height="6" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <span class="font-bold text-lg tracking-tight">Geometric</span>
+                </div>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="text-sm font-medium text-gray-600 hover:text-ink transition-colors">Features</a>
+                    <a href="#process" class="text-sm font-medium text-gray-600 hover:text-ink transition-colors">Process</a>
+                    <a href="#pricing" class="text-sm font-medium text-gray-600 hover:text-ink transition-colors">Pricing</a>
+                    <a href="#faq" class="text-sm font-medium text-gray-600 hover:text-ink transition-colors">FAQ</a>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="#" class="hidden sm:inline-flex text-sm font-medium text-gray-600 hover:text-ink transition-colors">Sign in</a>
+                    <a href="#pricing" class="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 text-sm font-semibold hover:bg-blue-600 transition-colors">
+                        Get Started
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== HERO ===== -->
+    <header class="bg-gray-50 bg-grid border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-32">
+            <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                <div>
+                    <div class="inline-flex items-center gap-2 bg-white border border-gray-200 px-3 py-1 mb-6">
+                        <span class="w-2 h-2 bg-success"></span>
+                        <span class="font-mono text-xs text-gray-600">v2.0 — Now available</span>
+                    </div>
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] mb-6">
+                        Build interfaces<br>that feel <span class="text-primary">precise</span>.
+                    </h1>
+                    <p class="text-lg text-gray-600 mb-8 max-w-md">
+                        A geometric design system for teams who value structure, clarity, and speed. Components, tokens, and patterns — all in one place.
+                    </p>
+                    <div class="flex flex-wrap gap-4">
+                        <a href="#pricing" class="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 font-semibold hover:bg-blue-600 transition-colors">
+                            Start building
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </a>
+                        <a href="#features" class="inline-flex items-center gap-2 bg-white border border-gray-300 px-6 py-3 font-semibold text-gray-700 hover:border-gray-400 hover:text-ink transition-colors">
+                            View documentation
+                        </a>
+                    </div>
+                    <div class="flex items-center gap-6 mt-8">
+                        <div class="flex items-center gap-2">
+                            <div class="flex -space-x-2">
+                                <div class="w-8 h-8 bg-primary border-2 border-white"></div>
+                                <div class="w-8 h-8 bg-secondary border-2 border-white"></div>
+                                <div class="w-8 h-8 bg-success border-2 border-white"></div>
+                            </div>
+                            <span class="text-sm text-gray-600">Trusted by 12k+ teams</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hidden lg:block">
+                    <svg class="hero-svg" viewBox="0 0 480 480" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="480" height="480" fill="#F9FAFB"/>
+                        <line x1="0" y1="80" x2="480" y2="80" stroke="#E5E7EB" stroke-width="1"/>
+                        <line x1="0" y1="160" x2="480" y2="160" stroke="#E5E7EB" stroke-width="1"/>
+                        <line x1="0" y1="240" x2="480" y2="240" stroke="#E5E7EB" stroke-width="1"/>
+                        <line x1="0" y1="320" x2="480" y2="320" stroke="#E5E7EB" stroke-width="1"/>
+                        <line x1="0" y1="400" x2="480" y2="400" stroke="#E5E7EB" stroke-width="1"/>
+                        <line x1="80" y1="0" x2="80" y2="480" stroke="#E5E7EB" stroke-width="1"/>
+                        <line x1="160" y1="0" x2="160" y2="480" stroke="#E5E7EB" stroke-width="1"/>
+                        <line x1="240" y1="0" x2="240" y2="480" stroke="#E5E7EB" stroke-width="1"/>
+                        <line x1="320" y1="0" x2="320" y2="480" stroke="#E5E7EB" stroke-width="1"/>
+                        <line x1="400" y1="0" x2="400" y2="480" stroke="#E5E7EB" stroke-width="1"/>
+                        <rect x="60" y="60" width="360" height="360" stroke="#3B82F6" stroke-width="2"/>
+                        <line x1="60" y1="420" x2="420" y2="60" stroke="#8B5CF6" stroke-width="1" stroke-dasharray="6 4"/>
+                        <rect x="140" y="140" width="200" height="200" fill="#3B82F6" fill-opacity="0.08"/>
+                        <rect x="190" y="190" width="100" height="100" fill="#3B82F6"/>
+                        <rect x="60" y="60" width="20" height="20" fill="#8B5CF6"/>
+                        <rect x="400" y="60" width="20" height="20" fill="#16A34A"/>
+                        <rect x="60" y="400" width="20" height="20" fill="#D97706"/>
+                        <rect x="400" y="400" width="20" height="20" fill="#DC2626"/>
+                        <rect x="140" y="140" width="12" height="12" fill="#8B5CF6"/>
+                        <rect x="328" y="140" width="12" height="12" fill="#16A34A"/>
+                        <rect x="140" y="328" width="12" height="12" fill="#D97706"/>
+                        <rect x="328" y="328" width="12" height="12" fill="#DC2626"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== STATS ===== -->
+    <section class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-gray-200">
+                <div class="p-6 sm:p-8">
+                    <p class="font-mono text-3xl sm:text-4xl font-bold text-ink mb-2">99.9%</p>
+                    <p class="text-sm text-gray-600 font-medium">Uptime</p>
+                </div>
+                <div class="p-6 sm:p-8">
+                    <p class="font-mono text-3xl sm:text-4xl font-bold text-ink mb-2">12k+</p>
+                    <p class="text-sm text-gray-600 font-medium">Teams</p>
+                </div>
+                <div class="p-6 sm:p-8">
+                    <p class="font-mono text-3xl sm:text-4xl font-bold text-ink mb-2">4.9/5</p>
+                    <p class="text-sm text-gray-600 font-medium">Rating</p>
+                </div>
+                <div class="p-6 sm:p-8">
+                    <p class="font-mono text-3xl sm:text-4xl font-bold text-ink mb-2">40+</p>
+                    <p class="text-sm text-gray-600 font-medium">Components</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FEATURES ===== -->
+    <section id="features" class="bg-gray-50 py-16 sm:py-24">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="mb-12 sm:mb-16">
+                <p class="font-mono text-sm text-primary mb-3">01 — Features</p>
+                <h2 class="text-3xl sm:text-4xl font-bold tracking-tight mb-4">Everything you need to ship</h2>
+                <p class="text-gray-600 max-w-2xl text-lg">A complete toolkit for building consistent, accessible interfaces — without the busywork.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-white border border-gray-200 p-6 hover:border-primary transition-colors">
+                    <div class="w-10 h-10 bg-primary bg-opacity-10 flex items-center justify-center mb-4">
+                        <i data-lucide="palette" class="w-5 h-5 text-primary"></i>
+                    </div>
+                    <h3 class="font-semibold text-lg mb-2">Design Tokens</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">Centralized variables for color, type, and spacing. Change one value, update the entire system.</p>
+                </div>
+                <div class="bg-white border border-gray-200 p-6 hover:border-primary transition-colors">
+                    <div class="w-10 h-10 bg-primary bg-opacity-10 flex items-center justify-center mb-4">
+                        <i data-lucide="component" class="w-5 h-5 text-primary"></i>
+                    </div>
+                    <h3 class="font-semibold text-lg mb-2">Component Library</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">40+ accessible components, ready to use. Built with semantic HTML and keyboard navigation.</p>
+                </div>
+                <div class="bg-white border border-gray-200 p-6 hover:border-primary transition-colors">
+                    <div class="w-10 h-10 bg-primary bg-opacity-10 flex items-center justify-center mb-4">
+                        <i data-lucide="sliders" class="w-5 h-5 text-primary"></i>
+                    </div>
+                    <h3 class="font-semibold text-lg mb-2">Theme Builder</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">Customize your brand in minutes, not days. Generate a complete theme from just a few inputs.</p>
+                </div>
+                <div class="bg-white border border-gray-200 p-6 hover:border-primary transition-colors">
+                    <div class="w-10 h-10 bg-primary bg-opacity-10 flex items-center justify-center mb-4">
+                        <i data-lucide="book-open" class="w-5 h-5 text-primary"></i>
+                    </div>
+                    <h3 class="font-semibold text-lg mb-2">Documentation</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">Clear docs with live examples and code snippets. Every component has a dedicated page.</p>
+                </div>
+                <div class="bg-white border border-gray-200 p-6 hover:border-primary transition-colors">
+                    <div class="w-10 h-10 bg-primary bg-opacity-10 flex items-center justify-center mb-4">
+                        <i data-lucide="accessibility" class="w-5 h-5 text-primary"></i>
+                    </div>
+                    <h3 class="font-semibold text-lg mb-2">Accessibility</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">WCAG 2.2 AA compliant out of the box. Focus states, ARIA labels, and keyboard support included.</p>
+                </div>
+                <div class="bg-white border border-gray-200 p-6 hover:border-primary transition-colors">
+                    <div class="w-10 h-10 bg-primary bg-opacity-10 flex items-center justify-center mb-4">
+                        <i data-lucide="figma" class="w-5 h-5 text-primary"></i>
+                    </div>
+                    <h3 class="font-semibold text-lg mb-2">Figma Kit</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">A complete Figma library that stays in sync with the code. Design and develop without friction.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PROCESS ===== -->
+    <section id="process" class="bg-white py-16 sm:py-24">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="mb-12 sm:mb-16">
+                <p class="font-mono text-sm text-primary mb-3">02 — Process</p>
+                <h2 class="text-3xl sm:text-4xl font-bold tracking-tight mb-4">From install to ship in four steps</h2>
+                <p class="text-gray-600 max-w-2xl text-lg">Get up and running quickly with a straightforward workflow.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="relative border border-gray-200 p-6">
+                    <div class="absolute top-0 left-0 w-8 h-8 bg-primary flex items-center justify-center">
+                        <span class="font-mono text-sm text-white font-bold">01</span>
+                    </div>
+                    <div class="pt-8">
+                        <i data-lucide="download" class="w-6 h-6 text-primary mb-3"></i>
+                        <h3 class="font-semibold mb-2">Install</h3>
+                        <p class="text-gray-600 text-sm">Add the package to your project with a single command.</p>
+                    </div>
+                </div>
+                <div class="relative border border-gray-200 p-6">
+                    <div class="absolute top-0 left-0 w-8 h-8 bg-primary flex items-center justify-center">
+                        <span class="font-mono text-sm text-white font-bold">02</span>
+                    </div>
+                    <div class="pt-8">
+                        <i data-lucide="settings" class="w-6 h-6 text-primary mb-3"></i>
+                        <h3 class="font-semibold mb-2">Configure</h3>
+                        <p class="text-gray-600 text-sm">Set up your theme tokens and customize the look and feel.</p>
+                    </div>
+                </div>
+                <div class="relative border border-gray-200 p-6">
+                    <div class="absolute top-0 left-0 w-8 h-8 bg-primary flex items-center justify-center">
+                        <span class="font-mono text-sm text-white font-bold">03</span>
+                    </div>
+                    <div class="pt-8">
+                        <i data-lucide="code" class="w-6 h-6 text-primary mb-3"></i>
+                        <h3 class="font-semibold mb-2">Build</h3>
+                        <p class="text-gray-600 text-sm">Compose interfaces using pre-built components and patterns.</p>
+                    </div>
+                </div>
+                <div class="relative border border-gray-200 p-6">
+                    <div class="absolute top-0 left-0 w-8 h-8 bg-primary flex items-center justify-center">
+                        <span class="font-mono text-sm text-white font-bold">04</span>
+                    </div>
+                    <div class="pt-8">
+                        <i data-lucide="rocket" class="w-6 h-6 text-primary mb-3"></i>
+                        <h3 class="font-semibold mb-2">Ship</h3>
+                        <p class="text-gray-600 text-sm">Deploy with confidence. Every component is tested and accessible.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== BENEFITS ===== -->
+    <section id="benefits" class="bg-gray-50 py-16 sm:py-24">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="mb-12 sm:mb-16">
+                <p class="font-mono text-sm text-primary mb-3">03 — Benefits</p>
+                <h2 class="text-3xl sm:text-4xl font-bold tracking-tight mb-4">Why teams choose Geometric</h2>
+            </div>
+            <div class="space-y-12">
+                <div class="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+                    <div>
+                        <div class="w-12 h-12 bg-primary flex items-center justify-center mb-4">
+                            <i data-lucide="clock" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-3">Save hours every week</h3>
+                        <p class="text-gray-600 leading-relaxed">Pre-built components mean less time coding and more time designing. Stop rebuilding the same button, modal, and form — start shipping features.</p>
+                        <ul class="mt-4 space-y-2">
+                            <li class="flex items-center gap-2 text-sm text-gray-700">
+                                <span class="w-2 h-2 bg-success"></span>
+                                Reduce UI development time by up to 60%
+                            </li>
+                            <li class="flex items-center gap-2 text-sm text-gray-700">
+                                <span class="w-2 h-2 bg-success"></span>
+                                Eliminate repetitive code across projects
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="bg-white border border-gray-200 p-8">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-10 h-10 bg-gray-100 flex items-center justify-center">
+                                <i data-lucide="bar-chart" class="w-5 h-5 text-gray-500"></i>
+                            </div>
+                            <div>
+                                <p class="font-mono text-xs text-gray-500">Time saved</p>
+                                <p class="font-mono text-2xl font-bold">60%</p>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-3">
+                                <span class="w-2 h-2 bg-gray-300"></span>
+                                <span class="text-sm text-gray-600">Without Geometric</span>
+                                <div class="flex-1 h-2 bg-gray-100"><div class="h-2 bg-gray-300 w-full"></div></div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="w-2 h-2 bg-primary"></span>
+                                <span class="text-sm text-gray-600">With Geometric</span>
+                                <div class="flex-1 h-2 bg-gray-100"><div class="h-2 bg-primary w-2/5"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+                    <div class="order-2 lg:order-1 bg-white border border-gray-200 p-8">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="border border-gray-200 p-4">
+                                <p class="font-mono text-xs text-gray-500 mb-1">Color</p>
+                                <div class="flex gap-1">
+                                    <span class="w-6 h-6 bg-primary"></span>
+                                    <span class="w-6 h-6 bg-secondary"></span>
+                                    <span class="w-6 h-6 bg-success"></span>
+                                </div>
+                            </div>
+                            <div class="border border-gray-200 p-4">
+                                <p class="font-mono text-xs text-gray-500 mb-1">Type</p>
+                                <p class="font-bold text-lg">Aa</p>
+                                <p class="font-mono text-xs text-gray-500">Inter</p>
+                            </div>
+                            <div class="border border-gray-200 p-4">
+                                <p class="font-mono text-xs text-gray-500 mb-1">Spacing</p>
+                                <div class="flex gap-1 items-end">
+                                    <span class="w-2 h-2 bg-gray-400"></span>
+                                    <span class="w-2 h-4 bg-gray-400"></span>
+                                    <span class="w-2 h-6 bg-gray-400"></span>
+                                    <span class="w-2 h-8 bg-gray-400"></span>
+                                </div>
+                            </div>
+                            <div class="border border-gray-200 p-4">
+                                <p class="font-mono text-xs text-gray-500 mb-1">Radius</p>
+                                <div class="w-8 h-8 bg-gray-200"></div>
+                                <p class="font-mono text-xs text-gray-500 mt-1">0px</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="order-1 lg:order-2">
+                        <div class="w-12 h-12 bg-secondary flex items-center justify-center mb-4">
+                            <i data-lucide="layers" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-3">Consistent by default</h3>
+                        <p class="text-gray-600 leading-relaxed">Every component follows the same patterns and tokens. No more guessing which button style to use — the system decides for you.</p>
+                        <ul class="mt-4 space-y-2">
+                            <li class="flex items-center gap-2 text-sm text-gray-700">
+                                <span class="w-2 h-2 bg-success"></span>
+                                Single source of truth for all UI decisions
+                            </li>
+                            <li class="flex items-center gap-2 text-sm text-gray-700">
+                                <span class="w-2 h-2 bg-success"></span>
+                                Design and code stay perfectly in sync
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+                    <div>
+                        <div class="w-12 h-12 bg-success flex items-center justify-center mb-4">
+                            <i data-lucide="shield-check" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-3">Accessible from day one</h3>
+                        <p class="text-gray-600 leading-relaxed">Built-in accessibility means you don't have to think about it. Every component meets WCAG 2.2 AA standards.</p>
+                        <ul class="mt-4 space-y-2">
+                            <li class="flex items-center gap-2 text-sm text-gray-700">
+                                <span class="w-2 h-2 bg-success"></span>
+                                Keyboard-first interactions
+                            </li>
+                            <li class="flex items-center gap-2 text-sm text-gray-700">
+                                <span class="w-2 h-2 bg-success"></span>
+                                Visible focus states on every element
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="bg-white border border-gray-200 p-8">
+                        <div class="flex items-center gap-3 mb-4">
+                            <span class="w-2 h-2 bg-success"></span>
+                            <span class="font-mono text-xs text-gray-500">WCAG 2.2 AA</span>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between border-b border-gray-100 pb-2">
+                                <span class="text-sm text-gray-600">Keyboard navigation</span>
+                                <span class="font-mono text-xs text-success">Pass</span>
+                            </div>
+                            <div class="flex items-center justify-between border-b border-gray-100 pb-2">
+                                <span class="text-sm text-gray-600">Focus visible</span>
+                                <span class="font-mono text-xs text-success">Pass</span>
+                            </div>
+                            <div class="flex items-center justify-between border-b border-gray-100 pb-2">
+                                <span class="text-sm text-gray-600">Color contrast</span>
+                                <span class="font-mono text-xs text-success">Pass</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-600">Screen reader</span>
+                                <span class="font-mono text-xs text-success">Pass</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== TESTIMONIALS ===== -->
+    <section id="testimonials" class="bg-white py-16 sm:py-24">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="mb-12 sm:mb-16">
+                <p class="font-mono text-sm text-primary mb-3">04 — Testimonials</p>
+                <h2 class="text-3xl sm:text-4xl font-bold tracking-tight mb-4">Loved by teams worldwide</h2>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="border border-gray-200 p-6 flex flex-col">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed flex-1 mb-6">"Geometric transformed how our team ships UI. Everything just works — the components are solid, the docs are clear, and the consistency is unmatched."</p>
+                    <div class="flex items-center gap-3 border-t border-gray-100 pt-4">
+                        <div class="w-10 h-10 bg-primary flex items-center justify-center">
+                            <span class="font-mono text-sm text-white font-bold">SC</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-sm">Sarah Chen</p>
+                            <p class="text-xs text-gray-500">Design Lead, Acme</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="border border-gray-200 p-6 flex flex-col">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed flex-1 mb-6">"The most consistent design system we've ever used. The token system alone is worth it — we rebranded in a day."</p>
+                    <div class="flex items-center gap-3 border-t border-gray-100 pt-4">
+                        <div class="w-10 h-10 bg-secondary flex items-center justify-center">
+                            <span class="font-mono text-sm text-white font-bold">MJ</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-sm">Marcus Johnson</p>
+                            <p class="text-xs text-gray-500">Frontend Engineer, Globex</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="border border-gray-200 p-6 flex flex-col">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed flex-1 mb-6">"Setup took minutes, not weeks. The Figma kit synced perfectly with our codebase. Incredible experience."</p>
+                    <div class="flex items-center gap-3 border-t border-gray-100 pt-4">
+                        <div class="w-10 h-10 bg-success flex items-center justify-center">
+                            <span class="font-mono text-sm text-white font-bold">PP</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-sm">Priya Patel</p>
+                            <p class="text-xs text-gray-500">Product Manager, Initech</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PRICING ===== -->
+    <section id="pricing" class="bg-gray-50 py-16 sm:py-24">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="mb-12 sm:mb-16">
+                <p class="font-mono text-sm text-primary mb-3">05 — Pricing</p>
+                <h2 class="text-3xl sm:text-4xl font-bold tracking-tight mb-4">Simple, transparent pricing</h2>
+                <p class="text-gray-600 max-w-2xl text-lg">Start free. Upgrade when you're ready. No hidden fees, no surprises.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Starter -->
+                <div class="bg-white border border-gray-200 p-8 flex flex-col">
+                    <p class="font-mono text-sm text-gray-500 mb-2">Starter</p>
+                    <p class="font-mono text-4xl font-bold mb-2">$0</p>
+                    <p class="text-sm text-gray-500 mb-6">For individuals and small projects</p>
+                    <ul class="space-y-3 mb-8 flex-1">
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            20 components
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Basic design tokens
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Community support
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-400">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                            Figma kit
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-400">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                            Priority support
+                        </li>
+                    </ul>
+                    <a href="#" class="block text-center border border-gray-300 px-4 py-2 font-semibold text-sm hover:border-gray-400 hover:text-ink transition-colors">Get started</a>
+                </div>
+                <!-- Pro -->
+                <div class="bg-white border-2 border-primary p-8 flex flex-col relative">
+                    <div class="absolute top-0 right-0 bg-primary px-3 py-1">
+                        <span class="font-mono text-xs text-white font-bold">POPULAR</span>
+                    </div>
+                    <p class="font-mono text-sm text-primary mb-2">Pro</p>
+                    <p class="font-mono text-4xl font-bold mb-2">$24<span class="text-base text-gray-400 font-normal">/mo</span></p>
+                    <p class="text-sm text-gray-500 mb-6">For growing teams</p>
+                    <ul class="space-y-3 mb-8 flex-1">
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            All 40+ components
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Full token access
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Figma kit included
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Priority support
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Theme builder
+                        </li>
+                    </ul>
+                    <a href="#" class="block text-center bg-primary text-white px-4 py-2 font-semibold text-sm hover:bg-blue-600 transition-colors">Start free trial</a>
+                </div>
+                <!-- Enterprise -->
+                <div class="bg-white border border-gray-200 p-8 flex flex-col">
+                    <p class="font-mono text-sm text-gray-500 mb-2">Enterprise</p>
+                    <p class="font-mono text-4xl font-bold mb-2">Custom</p>
+                    <p class="text-sm text-gray-500 mb-6">For large organizations</p>
+                    <ul class="space-y-3 mb-8 flex-1">
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Everything in Pro
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Custom theming
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Dedicated support
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            SSO / SAML
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Custom SLAs
+                        </li>
+                    </ul>
+                    <a href="#" class="block text-center border border-gray-300 px-4 py-2 font-semibold text-sm hover:border-gray-400 hover:text-ink transition-colors">Contact sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section id="faq" class="bg-white py-16 sm:py-24">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="mb-12 text-center">
+                <p class="font-mono text-sm text-primary mb-3">06 — FAQ</p>
+                <h2 class="text-3xl sm:text-4xl font-bold tracking-tight mb-4">Frequently asked questions</h2>
+            </div>
+            <div class="space-y-4">
+                <div class="faq-item border border-gray-200">
+                    <button class="faq-question w-full flex items-center justify-between p-5 text-left font-semibold hover:bg-gray-50 transition-colors">
+                        <span>What is Geometric?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-gray-400"></i>
+                    </button>
+                    <div class="faq-answer px-5">
+                        <p class="pb-5 text-gray-600 text-sm leading-relaxed">Geometric is a design system for building consistent, accessible interfaces. It includes design tokens, a component library, documentation, and a Figma kit — all designed to work together seamlessly.</p>
+                    </div>
+                </div>
+                <div class="faq-item border border-gray-200">
+                    <button class="faq-question w-full flex items-center justify-between p-5 text-left font-semibold hover:bg-gray-50 transition-colors">
+                        <span>How do I install it?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-gray-400"></i>
+                    </button>
+                    <div class="faq-answer px-5">
+                        <p class="pb-5 text-gray-600 text-sm leading-relaxed">Install via npm: <code class="font-mono text-xs bg-gray-100 px-2 py-0.5">npm install geometric</code>. Then import the CSS and components in your project. Full setup instructions are in the documentation.</p>
+                    </div>
+                </div>
+                <div class="faq-item border border-gray-200">
+                    <button class="faq-question w-full flex items-center justify-between p-5 text-left font-semibold hover:bg-gray-50 transition-colors">
+                        <span>Can I customize the tokens?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-gray-400"></i>
+                    </button>
+                    <div class="faq-answer px-5">
+                        <p class="pb-5 text-gray-600 text-sm leading-relaxed">Yes! All design tokens are fully customizable. You can override colors, typography, spacing, and more through a simple configuration file. The Theme Builder makes this even easier with a visual interface.</p>
+                    </div>
+                </div>
+                <div class="faq-item border border-gray-200">
+                    <button class="faq-question w-full flex items-center justify-between p-5 text-left font-semibold hover:bg-gray-50 transition-colors">
+                        <span>Is it accessible?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-gray-400"></i>
+                    </button>
+                    <div class="faq-answer px-5">
+                        <p class="pb-5 text-gray-600 text-sm leading-relaxed">Absolutely. Every component is built to meet WCAG 2.2 AA standards, with keyboard-first interactions, visible focus states, and proper ARIA labels. Accessibility is a core principle, not an afterthought.</p>
+                    </div>
+                </div>
+                <div class="faq-item border border-gray-200">
+                    <button class="faq-question w-full flex items-center justify-between p-5 text-left font-semibold hover:bg-gray-50 transition-colors">
+                        <span>Do you offer support?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-gray-400"></i>
+                    </button>
+                    <div class="faq-answer px-5">
+                        <p class="pb-5 text-gray-600 text-sm leading-relaxed">Yes. Starter plans include community support. Pro plans include priority email support. Enterprise plans include dedicated support with custom SLAs and a named account manager.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== CTA BANNER ===== -->
+    <section class="bg-primary py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">Ready to build something great?</h2>
+            <p class="text-blue-100 text-lg mb-8 max-w-xl mx-auto">Join 12,000+ teams shipping faster with Geometric.</p>
+            <div class="flex flex-wrap justify-center gap-4">
+                <a href="#" class="inline-flex items-center gap-2 bg-white text-ink px-6 py-3 font-semibold hover:bg-gray-100 transition-colors">
+                    Start free
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </a>
+                <a href="#" class="inline-flex items-center gap-2 bg-transparent border border-white text-white px-6 py-3 font-semibold hover:bg-blue-600 transition-colors">
+                    Book a demo
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="bg-ink text-gray-400">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-6 h-6 bg-primary flex items-center justify-center">
+                            <svg class="w-3 h-3 text-white" viewBox="0 0 16 16" fill="none">
+                                <rect x="2" y="2" width="12" height="12" stroke="currentColor" stroke-width="2"/>
+                                <rect x="5" y="5" width="6" height="6" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <span class="font-bold text-white">Geometric</span>
+                    </div>
+                    <p class="text-sm text-gray-500 leading-relaxed">A geometric design system for teams who value structure, clarity, and speed.</p>
+                </div>
+                <div>
+                    <p class="font-mono text-xs text-gray-500 uppercase mb-4">Product</p>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Features</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Pricing</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Changelog</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Roadmap</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <p class="font-mono text-xs text-gray-500 uppercase mb-4">Resources</p>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Documentation</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Figma Kit</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">GitHub</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Community</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <p class="font-mono text-xs text-gray-500 uppercase mb-4">Company</p>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">About</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Blog</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Careers</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="text-xs text-gray-500">© 2024 Geometric. All rights reserved.</p>
+                <div class="flex items-center gap-6">
+                    <a href="#" class="text-xs text-gray-500 hover:text-white transition-colors">Privacy</a>
+                    <a href="#" class="text-xs text-gray-500 hover:text-white transition-colors">Terms</a>
+                    <a href="#" class="text-xs text-gray-500 hover:text-white transition-colors">Security</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // FAQ accordion
+        document.querySelectorAll('.faq-item').forEach(item => {
+            item.querySelector('.faq-question').addEventListener('click', () => {
+                const isOpen = item.classList.contains('open');
+                document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+                if (!isOpen) {
+                    item.classList.add('open');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

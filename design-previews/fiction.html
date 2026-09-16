@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiction — Design System in Action</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cossette+Texte:ital,wght@0,100..900;1,100..900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#222222',
+                        secondary: '#FFE9CE',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                        surface: '#FFFFFF',
+                        ink: '#111827',
+                        cream: '#FFF8F0',
+                    },
+                    fontFamily: {
+                        display: ['"Cossette Texte"', 'sans-serif'],
+                        body: ['"Cossette Texte"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    borderRadius: {
+                        none: '0px',
+                    },
+                    boxShadow: {
+                        'none': 'none',
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Cossette Texte', sans-serif;
+            background-color: #FFF8F0;
+            color: #111827;
+        }
+        .display-font {
+            font-family: 'Cossette Texte', sans-serif;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+        }
+        .mono-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Thick black outlines */
+        .outline-thick {
+            border: 3px solid #222222;
+        }
+        .outline-medium {
+            border: 2px solid #222222;
+        }
+        /* Flat surfaces, no shadows */
+        .flat {
+            box-shadow: none;
+        }
+        /* Rounded shapes */
+        .rounded-shape {
+            border-radius: 24px;
+        }
+        .rounded-shape-sm {
+            border-radius: 12px;
+        }
+        /* Decorative hand-drawn feel */
+        .decorative-line {
+            border-bottom: 3px dashed #222222;
+        }
+        .decorative-dot {
+            width: 12px;
+            height: 12px;
+            background-color: #222222;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        /* Focus states */
+        .focus-ring:focus-visible {
+            outline: 4px solid #D97706;
+            outline-offset: 2px;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #FFE9CE;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #222222;
+            border-radius: 0;
+        }
+    </style>
+</head>
+<body class="bg-cream text-ink antialiased">
+
+    <!-- ==================== NAVIGATION ==================== -->
+    <nav class="bg-primary text-white sticky top-0 z-50 outline-thick">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 sm:h-20">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-secondary rounded-shape-sm flex items-center justify-center">
+                        <i data-lucide="sparkles" class="w-5 h-5 text-primary"></i>
+                    </div>
+                    <span class="display-font text-2xl sm:text-3xl">Fiction</span>
+                </div>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="text-sm font-medium hover:text-secondary transition-colors focus-ring px-2 py-1">Features</a>
+                    <a href="#process" class="text-sm font-medium hover:text-secondary transition-colors focus-ring px-2 py-1">Process</a>
+                    <a href="#benefits" class="text-sm font-medium hover:text-secondary transition-colors focus-ring px-2 py-1">Benefits</a>
+                    <a href="#testimonials" class="text-sm font-medium hover:text-secondary transition-colors focus-ring px-2 py-1">Testimonials</a>
+                    <a href="#pricing" class="text-sm font-medium hover:text-secondary transition-colors focus-ring px-2 py-1">Pricing</a>
+                    <a href="#faq" class="text-sm font-medium hover:text-secondary transition-colors focus-ring px-2 py-1">FAQ</a>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="#" class="hidden sm:inline-block text-sm font-medium hover:text-secondary transition-colors focus-ring px-2 py-1">Log in</a>
+                    <a href="#pricing" class="bg-secondary text-primary px-4 py-2 sm:px-6 sm:py-3 text-sm font-bold outline-medium hover:bg-white transition-colors focus-ring">Get Started</a>
+                </div>
+                <button class="md:hidden text-white focus-ring" aria-label="Open menu">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ==================== HERO ==================== -->
+    <header class="relative overflow-hidden bg-secondary">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-32">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="inline-flex items-center gap-2 bg-white px-4 py-2 outline-medium rounded-shape-sm mb-6">
+                        <span class="decorative-dot"></span>
+                        <span class="mono-font text-xs font-bold uppercase tracking-wider">v2.0 — Now Live</span>
+                    </div>
+                    <h1 class="display-font text-4xl sm:text-5xl lg:text-7xl leading-tight mb-6">
+                        Build delightful<br>
+                        <span class="text-primary bg-white px-2 inline-block -rotate-1">digital stories</span>
+                    </h1>
+                    <p class="text-lg sm:text-xl text-ink/80 mb-8 max-w-lg">
+                        Fiction is the playful design system that turns complex interfaces into friendly, memorable experiences. Bold colors, thick outlines, zero shadows — just pure fun.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 mb-12">
+                        <a href="#pricing" class="bg-primary text-white px-8 py-4 text-center font-bold outline-thick hover:bg-ink transition-colors focus-ring">
+                            Start Building Free
+                        </a>
+                        <a href="#features" class="bg-white text-primary px-8 py-4 text-center font-bold outline-thick hover:bg-secondary transition-colors focus-ring">
+                            See How It Works
+                        </a>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="flex -space-x-2">
+                            <div class="w-10 h-10 bg-primary rounded-full outline-medium flex items-center justify-center text-white text-xs font-bold">JD</div>
+                            <div class="w-10 h-10 bg-warning rounded-full outline-medium flex items-center justify-center text-white text-xs font-bold">MK</div>
+                            <div class="w-10 h-10 bg-success rounded-full outline-medium flex items-center justify-center text-white text-xs font-bold">AL</div>
+                            <div class="w-10 h-10 bg-danger rounded-full outline-medium flex items-center justify-center text-white text-xs font-bold">+</div>
+                        </div>
+                        <p class="text-sm font-medium">Trusted by 2,000+ creators</p>
+                    </div>
+                </div>
+                <div class="relative hidden lg:block">
+                    <!-- Decorative illustration -->
+                    <div class="relative w-full aspect-square">
+                        <div class="absolute top-0 right-0 w-64 h-64 bg-primary rounded-shape rotate-6"></div>
+                        <div class="absolute bottom-0 left-0 w-72 h-72 bg-white rounded-shape -rotate-3 outline-thick"></div>
+                        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-warning rounded-shape rotate-2 outline-thick"></div>
+                        <div class="absolute top-8 right-8 w-16 h-16 bg-success rounded-full"></div>
+                        <div class="absolute bottom-8 left-8 w-12 h-12 bg-danger rounded-full"></div>
+                        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+                            <i data-lucide="wand-2" class="w-16 h-16 text-primary mx-auto mb-2"></i>
+                            <p class="display-font text-2xl text-primary">Make it fun!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Decorative wave -->
+        <svg class="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0 50 C 240 100, 480 0, 720 50 C 960 100, 1200 0, 1440 50 L 1440 100 L 0 100 Z" fill="#FFF8F0"/>
+        </svg>
+    </header>
+
+    <!-- ==================== STATS ==================== -->
+    <section class="py-16 sm:py-20 bg-cream">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white p-6 outline-thick rounded-shape text-center hover:bg-secondary transition-colors">
+                    <p class="display-font text-4xl sm:text-5xl text-primary mb-2">99%</p>
+                    <p class="text-sm font-medium">Satisfaction rate</p>
+                </div>
+                <div class="bg-white p-6 outline-thick rounded-shape text-center hover:bg-secondary transition-colors">
+                    <p class="display-font text-4xl sm:text-5xl text-primary mb-2">2k+</p>
+                    <p class="text-sm font-medium">Active creators</p>
+                </div>
+                <div class="bg-white p-6 outline-thick rounded-shape text-center hover:bg-secondary transition-colors">
+                    <p class="display-font text-4xl sm:text-5xl text-primary mb-2">50+</p>
+                    <p class="text-sm font-medium">Pre-built components</p>
+                </div>
+                <div class="bg-white p-6 outline-thick rounded-shape text-center hover:bg-secondary transition-colors">
+                    <p class="display-font text-4xl sm:text-5xl text-primary mb-2">24/7</p>
+                    <p class="text-sm font-medium">Support available</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FEATURES ==================== -->
+    <section id="features" class="py-16 sm:py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="display-font text-3xl sm:text-4xl lg:text-5xl mb-4">Everything you need to create</h2>
+                <p class="text-lg text-ink/70 max-w-2xl mx-auto">Powerful tools wrapped in a friendly, approachable interface. No complexity, just creativity.</p>
+                <div class="decorative-line w-24 mx-auto mt-6"></div>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="bg-cream p-8 outline-thick rounded-shape hover:bg-secondary transition-colors">
+                    <div class="w-14 h-14 bg-primary rounded-shape-sm flex items-center justify-center mb-6">
+                        <i data-lucide="palette" class="w-7 h-7 text-white"></i>
+                    </div>
+                    <h3 class="display-font text-xl mb-3">Playful Palette</h3>
+                    <p class="text-sm text-ink/70">Saturated brand colors with thick outlines that make every interface feel hand-crafted and inviting.</p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="bg-cream p-8 outline-thick rounded-shape hover:bg-secondary transition-colors">
+                    <div class="w-14 h-14 bg-warning rounded-shape-sm flex items-center justify-center mb-6">
+                        <i data-lucide="type" class="w-7 h-7 text-white"></i>
+                    </div>
+                    <h3 class="display-font text-xl mb-3">Bold Typography</h3>
+                    <p class="text-sm text-ink/70">Cossette Texte at weights 100–900 gives you expressive display type that commands attention.</p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="bg-cream p-8 outline-thick rounded-shape hover:bg-secondary transition-colors">
+                    <div class="w-14 h-14 bg-success rounded-shape-sm flex items-center justify-center mb-6">
+                        <i data-lucide="shapes" class="w-7 h-7 text-white"></i>
+                    </div>
+                    <h3 class="display-font text-xl mb-3">Rounded Everything</h3>
+                    <p class="text-sm text-ink/70">Generously rounded corners on every component create a soft, approachable feel users love.</p>
+                </div>
+                <!-- Feature 4 -->
+                <div class="bg-cream p-8 outline-thick rounded-shape hover:bg-secondary transition-colors">
+                    <div class="w-14 h-14 bg-danger rounded-shape-sm flex items-center justify-center mb-6">
+                        <i data-lucide="mouse-pointer-click" class="w-7 h-7 text-white"></i>
+                    </div>
+                    <h3 class="display-font text-xl mb-3">Zero Shadows</h3>
+                    <p class="text-sm text-ink/70">Flat surfaces with no shadows keep the design honest and focused on content, not depth.</p>
+                </div>
+                <!-- Feature 5 -->
+                <div class="bg-cream p-8 outline-thick rounded-shape hover:bg-secondary transition-colors">
+                    <div class="w-14 h-14 bg-secondary rounded-shape-sm flex items-center justify-center mb-6">
+                        <i data-lucide="sparkle" class="w-7 h-7 text-primary"></i>
+                    </div>
+                    <h3 class="display-font text-xl mb-3">Hand-Drawn Feel</h3>
+                    <p class="text-sm text-ink/70">Decorative illustrations in every section add personality and charm to your interfaces.</p>
+                </div>
+                <!-- Feature 6 -->
+                <div class="bg-cream p-8 outline-thick rounded-shape hover:bg-secondary transition-colors">
+                    <div class="w-14 h-14 bg-primary rounded-shape-sm flex items-center justify-center mb-6">
+                        <i data-lucide="accessibility" class="w-7 h-7 text-white"></i>
+                    </div>
+                    <h3 class="display-font text-xl mb-3">WCAG 2.2 AA</h3>
+                    <p class="text-sm text-ink/70">Accessible by default with keyboard-first interactions and visible focus states throughout.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== PROCESS ==================== -->
+    <section id="process" class="py-16 sm:py-24 bg-secondary">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="display-font text-3xl sm:text-4xl lg:text-5xl mb-4">How it works</h2>
+                <p class="text-lg text-ink/70 max-w-2xl mx-auto">Three simple steps from idea to launch. No complicated setup, no steep learning curve.</p>
+                <div class="decorative-line w-24 mx-auto mt-6"></div>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Step 1 -->
+                <div class="relative bg-white p-8 outline-thick rounded-shape">
+                    <div class="absolute -top-6 left-8 w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white display-font text-xl">1</div>
+                    <h3 class="display-font text-xl mb-3 mt-4">Choose your components</h3>
+                    <p class="text-sm text-ink/70">Browse our library of 50+ pre-built components and pick the ones that fit your project.</p>
+                    <div class="mt-6 flex gap-2">
+                        <div class="w-12 h-12 bg-secondary rounded-shape-sm"></div>
+                        <div class="w-12 h-12 bg-warning rounded-shape-sm"></div>
+                        <div class="w-12 h-12 bg-success rounded-shape-sm"></div>
+                    </div>
+                </div>
+                <!-- Step 2 -->
+                <div class="relative bg-white p-8 outline-thick rounded-shape">
+                    <div class="absolute -top-6 left-8 w-12 h-12 bg-warning rounded-full flex items-center justify-center text-white display-font text-xl">2</div>
+                    <h3 class="display-font text-xl mb-3 mt-4">Customize with tokens</h3>
+                    <p class="text-sm text-ink/70">Use semantic design tokens to adjust colors, spacing, and typography to match your brand.</p>
+                    <div class="mt-6 mono-font text-xs bg-cream p-4 rounded-shape-sm outline-medium">
+                        <p class="text-primary">$primary: #222222;</p>
+                        <p class="text-warning">$spacing: 4px;</p>
+                        <p class="text-success">$radius: 24px;</p>
+                    </div>
+                </div>
+                <!-- Step 3 -->
+                <div class="relative bg-white p-8 outline-thick rounded-shape">
+                    <div class="absolute -top-6 left-8 w-12 h-12 bg-success rounded-full flex items-center justify-center text-white display-font text-xl">3</div>
+                    <h3 class="display-font text-xl mb-3 mt-4">Launch & delight</h3>
+                    <p class="text-sm text-ink/70">Ship your product with confidence knowing it's accessible, responsive, and fun to use.</p>
+                    <div class="mt-6 flex items-center gap-2">
+                        <i data-lucide="rocket" class="w-6 h-6 text-primary"></i>
+                        <span class="text-sm font-bold">Ready in minutes</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== BENEFITS ==================== -->
+    <section id="benefits" class="py-16 sm:py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h2 class="display-font text-3xl sm:text-4xl lg:text-5xl mb-6">Why teams choose Fiction</h2>
+                    <p class="text-lg text-ink/70 mb-8">We've built Fiction to solve real problems for real teams. Here's what makes us different.</p>
+                    <div class="space-y-6">
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 bg-success rounded-shape-sm flex items-center justify-center shrink-0">
+                                <i data-lucide="check" class="w-6 h-6 text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg mb-1">Faster development</h3>
+                                <p class="text-sm text-ink/70">Pre-built components and consistent tokens cut development time by up to 60%.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 bg-success rounded-shape-sm flex items-center justify-center shrink-0">
+                                <i data-lucide="check" class="w-6 h-6 text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg mb-1">Better accessibility</h3>
+                                <p class="text-sm text-ink/70">WCAG 2.2 AA compliance built-in means everyone can use your product.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 bg-success rounded-shape-sm flex items-center justify-center shrink-0">
+                                <i data-lucide="check" class="w-6 h-6 text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg mb-1">Consistent quality</h3>
+                                <p class="text-sm text-ink/70">Semantic tokens and strict guidelines ensure every screen looks and feels cohesive.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 bg-success rounded-shape-sm flex items-center justify-center shrink-0">
+                                <i data-lucide="check" class="w-6 h-6 text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg mb-1">Happy users</h3>
+                                <p class="text-sm text-ink/70">Playful design increases engagement and makes your product memorable.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative">
+                    <div class="bg-primary rounded-shape p-8 outline-thick">
+                        <div class="bg-white rounded-shape-sm p-6 mb-6">
+                            <p class="display-font text-2xl mb-2">"Fiction changed how we build."</p>
+                            <p class="text-sm text-ink/70">Our team shipped 3x faster with a design system that's actually fun to use.</p>
+                        </div>
+                        <div class="bg-secondary rounded-shape-sm p-6">
+                            <p class="display-font text-2xl mb-2">"Finally, accessible AND playful."</p>
+                            <p class="text-sm text-ink/70">We didn't have to compromise on either. Fiction delivers both.</p>
+                        </div>
+                        <div class="absolute -bottom-4 -right-4 w-24 h-24 bg-warning rounded-full flex items-center justify-center rotate-12">
+                            <span class="text-white font-bold text-sm text-center">Loved by<br>teams!</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== TESTIMONIALS ==================== -->
+    <section id="testimonials" class="py-16 sm:py-24 bg-cream">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="display-font text-3xl sm:text-4xl lg:text-5xl mb-4">Loved by creators everywhere</h2>
+                <p class="text-lg text-ink/70 max-w-2xl mx-auto">Don't just take our word for it. Here's what our community says.</p>
+                <div class="decorative-line w-24 mx-auto mt-6"></div>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Testimonial 1 -->
+                <div class="bg-white p-8 outline-thick rounded-shape">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-sm mb-6">"Fiction is the first design system that actually made me excited to build UI. The playful aesthetic is a game-changer for our product."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold">JD</div>
+                        <div>
+                            <p class="font-bold text-sm">Jane Doe</p>
+                            <p class="text-xs text-ink/60">Product Designer, Acme Inc.</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 2 -->
+                <div class="bg-white p-8 outline-thick rounded-shape">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-sm mb-6">"The accessibility features are outstanding. We passed our audit on the first try thanks to Fiction's built-in compliance."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-warning rounded-full flex items-center justify-center text-white font-bold">MK</div>
+                        <div>
+                            <p class="font-bold text-sm">Mike Kim</p>
+                            <p class="text-xs text-ink/60">Engineering Lead, TechFlow</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 3 -->
+                <div class="bg-white p-8 outline-thick rounded-shape">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-sm mb-6">"Our users constantly compliment the interface. Fiction made our app feel friendly and approachable without sacrificing professionalism."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-success rounded-full flex items-center justify-center text-white font-bold">AL</div>
+                        <div>
+                            <p class="font-bold text-sm">Alex Lee</p>
+                            <p class="text-xs text-ink/60">Founder, StartupHub</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== PRICING ==================== -->
+    <section id="pricing" class="py-16 sm:py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="display-font text-3xl sm:text-4xl lg:text-5xl mb-4">Simple, transparent pricing</h2>
+                <p class="text-lg text-ink/70 max-w-2xl mx-auto">Start free and scale as you grow. No hidden fees, no surprises.</p>
+                <div class="decorative-line w-24 mx-auto mt-6"></div>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <!-- Starter -->
+                <div class="bg-cream p-8 outline-thick rounded-shape flex flex-col">
+                    <h3 class="display-font text-xl mb-2">Starter</h3>
+                    <p class="text-sm text-ink/60 mb-6">For personal projects</p>
+                    <p class="display-font text-4xl mb-6">$0<span class="text-base font-normal text-ink/60">/mo</span></p>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success"></i> 5 components</li>
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success"></i> Basic tokens</li>
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success"></i> Community support</li>
+                        <li class="flex items-center gap-2 text-sm text-ink/40"><i data-lucide="x" class="w-4 h-4 text-danger"></i> Advanced components</li>
+                        <li class="flex items-center gap-2 text-sm text-ink/40"><i data-lucide="x" class="w-4 h-4 text-danger"></i> Priority support</li>
+                    </ul>
+                    <a href="#" class="bg-white text-primary px-6 py-3 text-center font-bold outline-thick hover:bg-secondary transition-colors focus-ring">Get Started</a>
+                </div>
+                <!-- Pro (Popular) -->
+                <div class="bg-primary text-white p-8 outline-thick rounded-shape flex flex-col relative">
+                    <div class="absolute -top-4 right-8 bg-warning px-4 py-1 text-xs font-bold uppercase tracking-wider rounded-shape-sm">Popular</div>
+                    <h3 class="display-font text-xl mb-2">Pro</h3>
+                    <p class="text-sm text-white/70 mb-6">For growing teams</p>
+                    <p class="display-font text-4xl mb-6">$19<span class="text-base font-normal text-white/60">/mo</span></p>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success"></i> All 50+ components</li>
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success"></i> Full token library</li>
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success"></i> Priority support</li>
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success"></i> Team collaboration</li>
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success"></i> Advanced animations</li>
+                    </ul>
+                    <a href="#" class="bg-secondary text-primary px-6 py-3 text-center font-bold outline-thick hover:bg-white transition-colors focus-ring">Start Free Trial</a>
+                </div>
+                <!-- Enterprise -->
+                <div class="bg-cream p-8 outline-thick rounded-shape flex flex-col">
+                    <h3 class="display-font text-xl mb-2">Enterprise</h3>
+                    <p class="text-sm text-ink/60 mb-6">For large organizations</p>
+                    <p class="display-font text-4xl mb-6">Custom</p>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success"></i> Everything in Pro</li>
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success"></i> Custom design tokens</li>
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success"></i> Dedicated support</li>
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success"></i> SSO & SAML</li>
+                        <li class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4 text-success"></i> Custom SLAs</li>
+                    </ul>
+                    <a href="#" class="bg-white text-primary px-6 py-3 text-center font-bold outline-thick hover:bg-secondary transition-colors focus-ring">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FAQ ==================== -->
+    <section id="faq" class="py-16 sm:py-24 bg-secondary">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="display-font text-3xl sm:text-4xl lg:text-5xl mb-4">Frequently asked questions</h2>
+                <p class="text-lg text-ink/70">Everything you need to know about Fiction.</p>
+                <div class="decorative-line w-24 mx-auto mt-6"></div>
+            </div>
+            <div class="space-y-4">
+                <!-- FAQ 1 -->
+                <details class="bg-white outline-thick rounded-shape group">
+                    <summary class="flex items-center justify-between p-6 cursor-pointer font-bold hover:bg-cream transition-colors focus-ring">
+                        <span>What is Fiction?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <div class="px-6 pb-6 text-sm text-ink/70">
+                        Fiction is a playful, accessible design system built for teams who want to create delightful digital experiences. It includes pre-built components, semantic design tokens, and comprehensive guidelines — all designed to be fun to use.
+                    </div>
+                </details>
+                <!-- FAQ 2 -->
+                <details class="bg-white outline-thick rounded-shape group">
+                    <summary class="flex items-center justify-between p-6 cursor-pointer font-bold hover:bg-cream transition-colors focus-ring">
+                        <span>Is Fiction really free to start?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <div class="px-6 pb-6 text-sm text-ink/70">
+                        Yes! Our Starter plan is completely free forever. You get access to 5 components and basic tokens. Upgrade to Pro when you need more power and flexibility.
+                    </div>
+                </details>
+                <!-- FAQ 3 -->
+                <details class="bg-white outline-thick rounded-shape group">
+                    <summary class="flex items-center justify-between p-6 cursor-pointer font-bold hover:bg-cream transition-colors focus-ring">
+                        <span>How does Fiction handle accessibility?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <div class="px-6 pb-6 text-sm text-ink/70">
+                        Fiction is built with WCAG 2.2 AA compliance from the ground up. Every component includes keyboard-first interactions, visible focus states, and proper ARIA attributes. We test every release against accessibility standards.
+                    </div>
+                </details>
+                <!-- FAQ 4 -->
+                <details class="bg-white outline-thick rounded-shape group">
+                    <summary class="flex items-center justify-between p-6 cursor-pointer font-bold hover:bg-cream transition-colors focus-ring">
+                        <span>Can I customize the design tokens?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <div class="px-6 pb-6 text-sm text-ink/70">
+                        Absolutely! All colors, spacing, typography, and other design tokens are fully customizable. Use our token system to match your brand while maintaining the playful Fiction aesthetic.
+                    </div>
+                </details>
+                <!-- FAQ 5 -->
+                <details class="bg-white outline-thick rounded-shape group">
+                    <summary class="flex items-center justify-between p-6 cursor-pointer font-bold hover:bg-cream transition-colors focus-ring">
+                        <span>What support options are available?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <div class="px-6 pb-6 text-sm text-ink/70">
+                        Starter plan includes community support. Pro and Enterprise plans include priority support with guaranteed response times. Enterprise customers get a dedicated support engineer.
+                    </div>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="bg-primary text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="grid md:grid-cols-4 gap-12 mb-12">
+                <div class="md:col-span-2">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-secondary rounded-shape-sm flex items-center justify-center">
+                            <i data-lucide="sparkles" class="w-5 h-5 text-primary"></i>
+                        </div>
+                        <span class="display-font text-2xl">Fiction</span>
+                    </div>
+                    <p class="text-sm text-white/70 max-w-sm">The playful design system for teams who want to create delightful, accessible digital experiences.</p>
+                    <div class="flex gap-4 mt-6">
+                        <a href="#" class="text-white/70 hover:text-white transition-colors focus-ring" aria-label="Twitter">
+                            <i data-lucide="twitter" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" class="text-white/70 hover:text-white transition-colors focus-ring" aria-label="GitHub">
+                            <i data-lucide="github" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" class="text-white/70 hover:text-white transition-colors focus-ring" aria-label="LinkedIn">
+                            <i data-lucide="linkedin" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" class="text-white/70 hover:text-white transition-colors focus-ring" aria-label="Dribbble">
+                            <i data-lucide="dribbble" class="w-5 h-5"></i>
+                        </a>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-bold mb-4">Product</h3>
+                    <ul class="space-y-2 text-sm text-white/70">
+                        <li><a href="#features" class="hover:text-white transition-colors focus-ring">Features</a></li>
+                        <li><a href="#pricing" class="hover:text-white transition-colors focus-ring">Pricing</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-ring">Changelog</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-ring">Documentation</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-bold mb-4">Company</h3>
+                    <ul class="space-y-2 text-sm text-white/70">
+                        <li><a href="#" class="hover:text-white transition-colors focus-ring">About</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-ring">Blog</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-ring">Careers</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-ring">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-white/20 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="text-xs text-white/60">© 2025 Fiction Design System. All rights reserved.</p>
+                <div class="flex gap-6">
+                    <a href="#" class="text-xs text-white/60 hover:text-white transition-colors focus-ring">Privacy Policy</a>
+                    <a href="#" class="text-xs text-white/60 hover:text-white transition-colors focus-ring">Terms of Service</a>
+                    <a href="#" class="text-xs text-white/60 hover:text-white transition-colors focus-ring">Cookie Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Initialize Lucide icons -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon — Design at the Speed of Light</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#BBF351',
+                        secondary: '#00BCFF',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                        surface: '#FFFFFF',
+                        ink: '#111827',
+                        dark: '#0B0F1A',
+                        'dark-card': '#131A2B',
+                    },
+                    fontFamily: {
+                        sans: ['Roboto', 'sans-serif'],
+                        display: ['"STIX Two Text"', 'serif'],
+                        mono: ['"Source Code Pro"', 'monospace'],
+                    },
+                    boxShadow: {
+                        'neon': '0 0 24px rgba(187, 243, 81, 0.35)',
+                        'neon-cyan': '0 0 24px rgba(0, 188, 255, 0.35)',
+                        'neon-lg': '0 0 48px rgba(187, 243, 81, 0.25)',
+                    },
+                },
+            },
+        };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100;200;300;400;500;600;700;800;900&family=STIX+Two+Text:wght@400;500;600;700&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest">
+    </script>
+</head>
+
+<body class="bg-dark font-sans text-white antialiased">
+
+    <!-- ===== NAVIGATION ===== -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-dark/95 backdrop-blur border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+            <a href="#" class="flex items-center gap-2" aria-label="Neon home">
+                <div class="w-8 h-8 bg-primary flex items-center justify-center">
+                    <span class="text-ink font-mono font-bold text-sm">N</span>
+                </div>
+                <span class="font-display text-xl font-bold text-white tracking-tight">Neon</span>
+            </a>
+            <div class="hidden md:flex items-center gap-8">
+                <a href="#features" class="text-white/70 hover:text-primary text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-dark">Features</a>
+                <a href="#process" class="text-white/70 hover:text-primary text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-dark">Process</a>
+                <a href="#pricing" class="text-white/70 hover:text-primary text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-dark">Pricing</a>
+                <a href="#faq" class="text-white/70 hover:text-primary text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-dark">FAQ</a>
+            </div>
+            <a href="#pricing" class="bg-primary text-ink text-sm font-bold px-4 py-2 hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-dark shadow-neon">
+                Get Started
+            </a>
+        </div>
+    </nav>
+
+    <!-- ===== HERO ===== -->
+    <header class="relative pt-32 pb-16 overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(187,243,81,0.08),transparent_60%)]"></div>
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(0,188,255,0.06),transparent_50%)]"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="inline-flex items-center gap-2 bg-dark-card border border-white/10 px-3 py-1 mb-6">
+                        <span class="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                        <span class="text-xs font-mono text-white/70">v2.0 — Now Available</span>
+                    </div>
+                    <h1 class="font-display text-[40px] sm:text-[40px] lg:text-[40px] font-bold leading-tight text-white mb-4">
+                        Design at the<br>
+                        <span class="text-primary">speed of light</span>
+                    </h1>
+                    <p class="text-lg text-white/70 mb-8 max-w-md">
+                        A high-contrast design system for bold, accessible interfaces. Built with semantic tokens and neon precision.
+                    </p>
+                    <div class="flex flex-wrap gap-4">
+                        <a href="#pricing" class="bg-primary text-ink text-sm font-bold px-6 py-3 hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-dark shadow-neon">
+                            Get Started
+                        </a>
+                        <a href="#features" class="border border-secondary text-secondary text-sm font-bold px-6 py-3 hover:bg-secondary/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 focus-visible:ring-offset-dark">
+                            View Docs
+                        </a>
+                    </div>
+                </div>
+                <div class="hidden lg:block">
+                    <svg viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto" role="img" aria-label="Neon abstract geometric visual">
+                        <rect width="600" height="600" fill="#0B0F1A"/>
+                        <defs>
+                            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+                            </pattern>
+                            <radialGradient id="glowGreen" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stop-color="#BBF351" stop-opacity="0.35"/>
+                                <stop offset="100%" stop-color="#BBF351" stop-opacity="0"/>
+                            </radialGradient>
+                            <radialGradient id="glowCyan" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stop-color="#00BCFF" stop-opacity="0.3"/>
+                                <stop offset="100%" stop-color="#00BCFF" stop-opacity="0"/>
+                            </radialGradient>
+                        </defs>
+                        <rect width="600" height="600" fill="url(#grid)"/>
+                        <circle cx="250" cy="250" r="200" fill="url(#glowGreen)"/>
+                        <circle cx="350" cy="350" r="150" fill="url(#glowCyan)"/>
+                        <circle cx="300" cy="300" r="140" stroke="#BBF351" stroke-width="1.5" stroke-dasharray="8 4"/>
+                        <circle cx="300" cy="300" r="100" stroke="#00BCFF" stroke-width="1.5"/>
+                        <circle cx="300" cy="300" r="60" stroke="#BBF351" stroke-width="2"/>
+                        <circle cx="300" cy="300" r="8" fill="#BBF351"/>
+                        <line x1="160" y1="300" x2="440" y2="300" stroke="#BBF351" stroke-width="1" stroke-dasharray="4 4"/>
+                        <line x1="300" y1="160" x2="300" y2="440" stroke="#00BCFF" stroke-width="1" stroke-dasharray="4 4"/>
+                        <rect x="220" y="220" width="16" height="16" fill="#BBF351"/>
+                        <rect x="364" y="364" width="12" height="12" fill="#00BCFF"/>
+                        <circle cx="364" cy="220" r="6" fill="#00BCFF"/>
+                        <circle cx="220" cy="364" r="4" fill="#BBF351"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== STATS ===== -->
+    <section class="py-16 bg-dark border-y border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <p class="font-mono text-[40px] font-bold text-primary">99.9%</p>
+                    <p class="text-sm text-white/60 mt-2">Uptime</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-mono text-[40px] font-bold text-secondary">10K+</p>
+                    <p class="text-sm text-white/60 mt-2">Users</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-mono text-[40px] font-bold text-primary">50+</p>
+                    <p class="text-sm text-white/60 mt-2">Components</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-mono text-[40px] font-bold text-secondary">4.9/5</p>
+                    <p class="text-sm text-white/60 mt-2">Rating</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FEATURES ===== -->
+    <section id="features" class="py-24 bg-dark-card">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="font-mono text-sm text-primary mb-2">// features</p>
+                <h2 class="font-display text-[32px] font-bold text-white">Everything you need</h2>
+                <p class="text-base text-white/60 mt-4 max-w-lg mx-auto">Six core pillars that make Neon the fastest way to build accessible interfaces.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-surface p-6 text-ink">
+                    <div class="w-10 h-10 bg-primary flex items-center justify-center mb-4">
+                        <i data-lucide="contrast" class="w-5 h-5 text-ink"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-bold mb-2">High Contrast</h3>
+                    <p class="text-sm text-ink/70">WCAG 2.2 AA compliant by default. Every token pair is tested for readability.</p>
+                </div>
+                <div class="bg-surface p-6 text-ink">
+                    <div class="w-10 h-10 bg-secondary flex items-center justify-center mb-4">
+                        <i data-lucide="palette" class="w-5 h-5 text-ink"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-bold mb-2">Neon Tokens</h3>
+                    <p class="text-sm text-ink/70">Semantic color tokens that keep your design system consistent and maintainable.</p>
+                </div>
+                <div class="bg-surface p-6 text-ink">
+                    <div class="w-10 h-10 bg-primary flex items-center justify-center mb-4">
+                        <i data-lucide="zap" class="w-5 h-5 text-ink"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-bold mb-2">Fast Typography</h3>
+                    <p class="text-sm text-ink/70">Optimized font loading with a curated scale: 14/16/18/24/32/40.</p>
+                </div>
+                <div class="bg-surface p-6 text-ink">
+                    <div class="w-10 h-10 bg-secondary flex items-center justify-center mb-4">
+                        <i data-lucide="smartphone" class="w-5 h-5 text-ink"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-bold mb-2">Responsive</h3>
+                    <p class="text-sm text-ink/70">Mobile-first layouts that scale from 400px to 4K without breaking a sweat.</p>
+                </div>
+                <div class="bg-surface p-6 text-ink">
+                    <div class="w-10 h-10 bg-primary flex items-center justify-center mb-4">
+                        <i data-lucide="keyboard" class="w-5 h-5 text-ink"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-bold mb-2">Accessible</h3>
+                    <p class="text-sm text-ink/70">Keyboard-first interactions with visible focus states on every component.</p>
+                </div>
+                <div class="bg-surface p-6 text-ink">
+                    <div class="w-10 h-10 bg-secondary flex items-center justify-center mb-4">
+                        <i data-lucide="settings" class="w-5 h-5 text-ink"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-bold mb-2">Customizable</h3>
+                    <p class="text-sm text-ink/70">Themeable via CSS variables. Swap tokens without touching component code.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PROCESS ===== -->
+    <section id="process" class="py-24 bg-dark">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="font-mono text-sm text-secondary mb-2">// process</p>
+                <h2 class="font-display text-[32px] font-bold text-white">From zero to shipped</h2>
+                <p class="text-base text-white/60 mt-4 max-w-lg mx-auto">Four steps to get your product running on Neon.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="relative">
+                    <div class="flex items-center mb-4">
+                        <span class="font-mono text-[32px] font-bold text-primary">01</span>
+                        <div class="flex-1 h-px bg-white/10 ml-4"></div>
+                    </div>
+                    <h3 class="font-display text-lg font-bold text-white mb-2">Install</h3>
+                    <p class="text-sm text-white/60">Add the package to your project with a single command.</p>
+                </div>
+                <div class="relative">
+                    <div class="flex items-center mb-4">
+                        <span class="font-mono text-[32px] font-bold text-secondary">02</span>
+                        <div class="flex-1 h-px bg-white/10 ml-4"></div>
+                    </div>
+                    <h3 class="font-display text-lg font-bold text-white mb-2">Configure</h3>
+                    <p class="text-sm text-white/60">Set your tokens. Map colors, fonts, and spacing to your brand.</p>
+                </div>
+                <div class="relative">
+                    <div class="flex items-center mb-4">
+                        <span class="font-mono text-[32px] font-bold text-primary">03</span>
+                        <div class="flex-1 h-px bg-white/10 ml-4"></div>
+                    </div>
+                    <h3 class="font-display text-lg font-bold text-white mb-2">Build</h3>
+                    <p class="text-sm text-white/60">Compose components. Every piece is accessible out of the box.</p>
+                </div>
+                <div class="relative">
+                    <div class="flex items-center mb-4">
+                        <span class="font-mono text-[32px] font-bold text-secondary">04</span>
+                        <div class="flex-1 h-px bg-white/10 ml-4"></div>
+                    </div>
+                    <h3 class="font-display text-lg font-bold text-white mb-2">Ship</h3>
+                    <p class="text-sm text-white/60">Deploy with confidence. Your UI is consistent and compliant.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== BENEFITS ===== -->
+    <section class="py-24 bg-dark-card">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <p class="font-mono text-sm text-primary mb-2">// benefits</p>
+                    <h2 class="font-display text-[32px] font-bold text-white mb-4">Why teams switch to Neon</h2>
+                    <p class="text-base text-white/60 mb-8">Stop fighting your design system. Start building.</p>
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-4">
+                            <div class="w-6 h-6 bg-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <i data-lucide="check" class="w-4 h-4 text-ink"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-display text-base font-bold text-white">Increased speed</h3>
+                                <p class="text-sm text-white/60">Teams report 3× faster UI development with pre-built components.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-6 h-6 bg-secondary flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <i data-lucide="check" class="w-4 h-4 text-ink"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-display text-base font-bold text-white">Consistent language</h3>
+                                <p class="text-sm text-white/60">One visual language across every product, every platform.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-6 h-6 bg-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <i data-lucide="check" class="w-4 h-4 text-ink"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-display text-base font-bold text-white">Built-in accessibility</h3>
+                                <p class="text-sm text-white/60">WCAG 2.2 AA compliance is the default, not an afterthought.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-6 h-6 bg-secondary flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <i data-lucide="check" class="w-4 h-4 text-ink"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-display text-base font-bold text-white">Reduced design debt</h3>
+                                <p class="text-sm text-white/60">Semantic tokens eliminate one-off colors and inconsistent spacing.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="hidden lg:block">
+                    <svg viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto" role="img" aria-label="Neon benefits visual">
+                        <rect width="500" height="500" fill="#131A2B"/>
+                        <defs>
+                            <radialGradient id="bGlow" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stop-color="#00BCFF" stop-opacity="0.25"/>
+                                <stop offset="100%" stop-color="#00BCFF" stop-opacity="0"/>
+                            </radialGradient>
+                        </defs>
+                        <circle cx="250" cy="250" r="180" fill="url(#bGlow)"/>
+                        <rect x="150" y="150" width="200" height="200" stroke="#BBF351" stroke-width="2"/>
+                        <rect x="170" y="170" width="160" height="160" stroke="#00BCFF" stroke-width="1.5" stroke-dasharray="6 3"/>
+                        <circle cx="250" cy="250" r="40" fill="#BBF351" fill-opacity="0.2" stroke="#BBF351" stroke-width="2"/>
+                        <circle cx="250" cy="250" r="8" fill="#BBF351"/>
+                        <line x1="150" y1="250" x2="350" y2="250" stroke="#00BCFF" stroke-width="1" stroke-dasharray="4 4"/>
+                        <line x1="250" y1="150" x2="250" y2="350" stroke="#BBF351" stroke-width="1" stroke-dasharray="4 4"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== TESTIMONIALS ===== -->
+    <section class="py-24 bg-dark">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="font-mono text-sm text-primary mb-2">// testimonials</p>
+                <h2 class="font-display text-[32px] font-bold text-white">Loved by teams</h2>
+                <p class="text-base text-white/60 mt-4 max-w-lg mx-auto">Real stories from real teams who made the switch.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-surface p-6 text-ink flex flex-col">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 fill-primary text-primary"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-primary text-primary"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-primary text-primary"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-primary text-primary"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-primary text-primary"></i>
+                    </div>
+                    <p class="text-sm text-ink/80 flex-1">"Neon transformed our design workflow. We shipped our new dashboard in half the time."</p>
+                    <div class="mt-6 pt-4 border-t border-ink/10">
+                        <p class="font-display text-sm font-bold text-ink">Sarah Chen</p>
+                        <p class="text-xs text-ink/60">Product Designer, Lumen</p>
+                    </div>
+                </div>
+                <div class="bg-surface p-6 text-ink flex flex-col">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 fill-primary text-primary"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-primary text-primary"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-primary text-primary"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-primary text-primary"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-primary text-primary"></i>
+                    </div>
+                    <p class="text-sm text-ink/80 flex-1">"The accessibility features are outstanding. We passed our audit with zero issues."</p>
+                    <div class="mt-6 pt-4 border-t border-ink/10">
+                        <p class="font-display text-sm font-bold text-ink">Marcus Johnson</p>
+                        <p class="text-xs text-ink/60">Frontend Engineer, Arc</p>
+                    </div>
+                </div>
+                <div class="bg-surface p-6 text-ink flex flex-col">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 fill-primary text-primary"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-primary text-primary"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-primary text-primary"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-primary text-primary"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-primary text-primary"></i>
+                    </div>
+                    <p class="text-sm text-ink/80 flex-1">"We shipped 3× faster with Neon. The token system is a game changer."</p>
+                    <div class="mt-6 pt-4 border-t border-ink/10">
+                        <p class="font-display text-sm font-bold text-ink">Elena Rodriguez</p>
+                        <p class="text-xs text-ink/60">Engineering Manager, Pulse</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PRICING ===== -->
+    <section id="pricing" class="py-24 bg-dark-card">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="font-mono text-sm text-secondary mb-2">// pricing</p>
+                <h2 class="font-display text-[32px] font-bold text-white">Simple pricing</h2>
+                <p class="text-base text-white/60 mt-4 max-w-lg mx-auto">Start free. Scale when you're ready.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Starter -->
+                <div class="bg-surface p-8 text-ink flex flex-col">
+                    <h3 class="font-display text-lg font-bold mb-1">Starter</h3>
+                    <p class="text-sm text-ink/60 mb-6">For personal projects</p>
+                    <p class="font-mono text-[40px] font-bold text-ink mb-6">$0<span class="text-sm text-ink/60 font-normal">/mo</span></p>
+                    <ul class="space-y-3 mb-8 flex-1">
+                        <li class="flex items-center gap-3 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            50 components
+                        </li>
+                        <li class="flex items-center gap-3 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Community support
+                        </li>
+                        <li class="flex items-center gap-3 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Basic tokens
+                        </li>
+                        <li class="flex items-center gap-3 text-sm text-ink/40">
+                            <i data-lucide="x" class="w-4 h-4 text-ink/30"></i>
+                            Figma library
+                        </li>
+                    </ul>
+                    <a href="#" class="border border-ink text-ink text-sm font-bold px-4 py-2 text-center hover:bg-ink hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2">
+                        Start Free
+                    </a>
+                </div>
+                <!-- Pro -->
+                <div class="bg-surface p-8 text-ink flex flex-col border-2 border-primary relative">
+                    <div class="absolute top-0 right-0 bg-primary text-ink text-xs font-mono font-bold px-3 py-1">
+                        POPULAR
+                    </div>
+                    <h3 class="font-display text-lg font-bold mb-1">Pro</h3>
+                    <p class="text-sm text-ink/60 mb-6">For growing teams</p>
+                    <p class="font-mono text-[40px] font-bold text-ink mb-6">$19<span class="text-sm text-ink/60 font-normal">/mo</span></p>
+                    <ul class="space-y-3 mb-8 flex-1">
+                        <li class="flex items-center gap-3 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            All components
+                        </li>
+                        <li class="flex items-center gap-3 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Priority support
+                        </li>
+                        <li class="flex items-center gap-3 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Custom tokens
+                        </li>
+                        <li class="flex items-center gap-3 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Figma library
+                        </li>
+                    </ul>
+                    <a href="#" class="bg-primary text-ink text-sm font-bold px-4 py-2 text-center hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 shadow-neon">
+                        Get Pro
+                    </a>
+                </div>
+                <!-- Enterprise -->
+                <div class="bg-surface p-8 text-ink flex flex-col">
+                    <h3 class="font-display text-lg font-bold mb-1">Enterprise</h3>
+                    <p class="text-sm text-ink/60 mb-6">For large organizations</p>
+                    <p class="font-mono text-[40px] font-bold text-ink mb-6">$49<span class="text-sm text-ink/60 font-normal">/mo</span></p>
+                    <ul class="space-y-3 mb-8 flex-1">
+                        <li class="flex items-center gap-3 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Everything in Pro
+                        </li>
+                        <li class="flex items-center gap-3 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Dedicated support
+                        </li>
+                        <li class="flex items-center gap-3 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            SSO/SAML
+                        </li>
+                        <li class="flex items-center gap-3 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Custom contracts
+                        </li>
+                    </ul>
+                    <a href="#" class="border border-ink text-ink text-sm font-bold px-4 py-2 text-center hover:bg-ink hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2">
+                        Contact Sales
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section id="faq" class="py-24 bg-dark">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="font-mono text-sm text-primary mb-2">// faq</p>
+                <h2 class="font-display text-[32px] font-bold text-white">Frequently asked</h2>
+                <p class="text-base text-white/60 mt-4">Everything you need to know.</p>
+            </div>
+            <div class="space-y-4">
+                <details class="bg-dark-card border border-white/10">
+                    <summary class="flex items-center justify-between px-6 py-4 cursor-pointer text-white font-medium text-base hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-dark">
+                        What is Neon?
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-white/60"></i>
+                    </summary>
+                    <div class="px-6 pb-4 text-sm text-white/60">
+                        Neon is a high-contrast design system for building bold, accessible interfaces. It provides semantic tokens, pre-built components, and a consistent visual language.
+                    </div>
+                </details>
+                <details class="bg-dark-card border border-white/10">
+                    <summary class="flex items-center justify-between px-6 py-4 cursor-pointer text-white font-medium text-base hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-dark">
+                        How do I install Neon?
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-white/60"></i>
+                    </summary>
+                    <div class="px-6 pb-4 text-sm text-white/60">
+                        Install via npm: <code class="font-mono text-primary bg-dark px-2 py-0.5 text-xs">npm install neon-design-system</code>. Then import the CSS and start using components.
+                    </div>
+                </details>
+                <details class="bg-dark-card border border-white/10">
+                    <summary class="flex items-center justify-between px-6 py-4 cursor-pointer text-white font-medium text-base hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-dark">
+                        Is Neon accessible?
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-white/60"></i>
+                    </summary>
+                    <div class="px-6 pb-4 text-sm text-white/60">
+                        Yes. Every component is built to WCAG 2.2 AA standards, with keyboard-first interactions and visible focus states on all interactive elements.
+                    </div>
+                </details>
+                <details class="bg-dark-card border border-white/10">
+                    <summary class="flex items-center justify-between px-6 py-4 cursor-pointer text-white font-medium text-base hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-dark">
+                        Can I customize the tokens?
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-white/60"></i>
+                    </summary>
+                    <div class="px-6 pb-4 text-sm text-white/60">
+                        Absolutely. All colors, fonts, and spacing values are exposed as CSS variables. Override them in your theme file to match your brand.
+                    </div>
+                </details>
+                <details class="bg-dark-card border border-white/10">
+                    <summary class="flex items-center justify-between px-6 py-4 cursor-pointer text-white font-medium text-base hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-dark">
+                        Do you offer support?
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-white/60"></i>
+                    </summary>
+                    <div class="px-6 pb-4 text-sm text-white/60">
+                        Community support is free on our Discord. Pro and Enterprise plans include priority support with guaranteed response times.
+                    </div>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="py-16 bg-dark-card border-t border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-6 h-6 bg-primary flex items-center justify-center">
+                            <span class="text-ink font-mono font-bold text-xs">N</span>
+                        </div>
+                        <span class="font-display text-lg font-bold text-white">Neon</span>
+                    </div>
+                    <p class="text-sm text-white/50">Design at the speed of light.</p>
+                </div>
+                <div>
+                    <h4 class="font-display text-sm font-bold text-white mb-4">Product</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#features" class="text-sm text-white/50 hover:text-primary transition-colors">Features</a></li>
+                        <li><a href="#pricing" class="text-sm text-white/50 hover:text-primary transition-colors">Pricing</a></li>
+                        <li><a href="#" class="text-sm text-white/50 hover:text-primary transition-colors">Changelog</a></li>
+                        <li><a href="#" class="text-sm text-white/50 hover:text-primary transition-colors">Roadmap</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-display text-sm font-bold text-white mb-4">Resources</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-white/50 hover:text-primary transition-colors">Documentation</a></li>
+                        <li><a href="#" class="text-sm text-white/50 hover:text-primary transition-colors">Components</a></li>
+                        <li><a href="#" class="text-sm text-white/50 hover:text-primary transition-colors">Tokens</a></li>
+                        <li><a href="#" class="text-sm text-white/50 hover:text-primary transition-colors">Figma</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-display text-sm font-bold text-white mb-4">Company</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-white/50 hover:text-primary transition-colors">About</a></li>
+                        <li><a href="#" class="text-sm text-white/50 hover:text-primary transition-colors">Blog</a></li>
+                        <li><a href="#" class="text-sm text-white/50 hover:text-primary transition-colors">Careers</a></li>
+                        <li><a href="#" class="text-sm text-white/50 hover:text-primary transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="text-xs text-white/40">© 2025 Neon Design System. All rights reserved.</p>
+                <div class="flex items-center gap-4">
+                    <a href="#" class="text-white/40 hover:text-primary transition-colors" aria-label="Twitter">
+                        <i data-lucide="twitter" class="w-4 h-4"></i>
+                    </a>
+                    <a href="#" class="text-white/40 hover:text-primary transition-colors" aria-label="GitHub">
+                        <i data-lucide="github" class="w-4 h-4"></i>
+                    </a>
+                    <a href="#" class="text-white/40 hover:text-primary transition-colors" aria-label="Discord">
+                        <i data-lucide="message-circle" class="w-4 h-4"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

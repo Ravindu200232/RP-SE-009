@@ -563,16 +563,16 @@ function Mongo({ deploy, onSave }) {
 
 function Row({ title, ok, unknown, detail, actions, children }) {
   return (
-    <div className={cn('rounded-xl border border-white/10 border-l-[3px] bg-white/[.03] p-3 shadow-sm transition-all',
-      unknown ? 'border-l-white/20' : ok ? 'border-l-emerald-400' : 'border-l-rose-500')}>
+    <div className={cn('rounded-xl border border-[rgba(145,158,171,0.16)] border-l-[3px] bg-[#1C252E] p-3 shadow-sm transition-all',
+      unknown ? 'border-l-white/20' : ok ? 'border-l-[#22C55E]' : 'border-l-[#FF5630]')}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="grid size-3.5 shrink-0 place-items-center">
-          {unknown ? <Loader2 className="size-3 animate-spin text-white/40" />
-                   : ok ? <Check className="size-3.5 text-emerald-400" />
-                        : <X className="size-3.5 text-rose-400" />}
+          {unknown ? <Loader2 className="size-3 animate-spin text-[#919EAB]" />
+                   : ok ? <Check className="size-3.5 text-[#22C55E]" />
+                        : <X className="size-3.5 text-[#FF5630]" />}
         </span>
         <span className="text-[12.5px] font-bold text-white">{title}</span>
-        <span className="min-w-0 flex-1 truncate text-[11px] text-white/60">{detail}</span>
+        <span className="min-w-0 flex-1 truncate text-[11px] text-[#919EAB]">{detail}</span>
         {actions}
       </div>
       {children}
@@ -592,13 +592,13 @@ const Field = ({ label, hint, children }) => (
 
 const Select = ({ value, onChange, options, placeholder }) => (
   <select value={value} onChange={e => onChange(e.target.value)}
-          className="h-[32px] w-full rounded-lg border border-white/10 bg-[#121622] px-2.5
-                     text-[12px] text-white outline-none focus:border-blue-500/60">
-    {placeholder && <option value="" className="bg-[#121622] text-white">{placeholder}</option>}
+          className="h-[32px] w-full rounded-xl border border-[rgba(145,158,171,0.2)] bg-[#141A21] px-2.5
+                     text-[12px] text-white outline-none focus:border-[#1877F2]/60 transition-colors">
+    {placeholder && <option value="" className="bg-[#1C252E] text-white">{placeholder}</option>}
     {options.map(o => {
       const v = typeof o === 'string' ? o : o.value
       const l = typeof o === 'string' ? o : o.label
-      return <option key={v} value={v} className="bg-[#121622] text-white">{l}</option>
+      return <option key={v} value={v} className="bg-[#1C252E] text-white">{l}</option>
     })}
   </select>
 )

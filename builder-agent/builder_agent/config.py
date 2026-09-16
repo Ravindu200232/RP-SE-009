@@ -63,12 +63,14 @@ NEXT_MONGO = Stack(
         "One Next.js application written in JavaScript. API work belongs in route handlers, not a second server.",
         "Persist through the project's Mongoose data layer; no other application database.",
         "Use Vitest for project unit and integration tests.",
-        "Use the engine's direct-CDP browser journeys for E2E; do not add a project E2E framework.",
+        "Use the engine's direct-CDP browser journeys for E2E; do not add a project E2E framework. "
+        "Check the routes themselves with curl first - a page that refuses to render records is not "
+        "a route that refuses to return them.",
         "Detect the installed versions, router shape, package manager and code style from the project itself.",
         "Never migrate the generated application to another framework, database or distributed architecture.",
     ),
-    skills=("full-app-builder", "planning", "html-prototype", "nextjs", "react",
-            "node", "mongoose", "runtime", "vitest", "browser-e2e"),
+    skills=("html-prototype", "stack-nextjs", "stack-testing", "stack-debug",
+            "stack-security"),
 )
 
 MERN_MICRO = Stack(
@@ -82,16 +84,16 @@ MERN_MICRO = Stack(
         "React plus Express/Node microservices, written in JavaScript.",
         "Each service owns its own collections through its own Mongoose layer and never reaches into another service's data.",
         "Use Vitest in every service and in the client.",
-        "Use the engine's direct-CDP browser journeys for E2E; do not add a project E2E framework.",
+        "Use the engine's direct-CDP browser journeys for E2E; do not add a project E2E framework. "
+        "Check the routes themselves with curl first - a page that refuses to render records is not "
+        "a route that refuses to return them.",
         "Every service must run locally with plain Node and no container runtime. Docker is a deliverable, never a requirement for running or verifying the app.",
         "Expose the whole application through ONE public port: a gateway serves the built client and proxies each service under its own path prefix.",
         "Generate a Dockerfile (and a compose file when there is more than one service) as build output, but never verify through it.",
         "Never collapse the services back into one server, and never migrate off this architecture.",
     ),
-    skills=("full-app-builder", "planning", "html-prototype", "mern-microservices",
-            "react", "node", "mongoose", "runtime", "vitest", "browser-e2e",
-            "express", "api-gateway", "api-contracts", "local-multiservice-runtime"),
-    extras=("docker",),
+    skills=("html-prototype", "stack-mern", "stack-testing", "stack-debug",
+            "stack-security"),
     parallel_units=True,
 )
 

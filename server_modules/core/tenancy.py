@@ -193,6 +193,7 @@ def start_run(target, args, *, project=None, user=None, replay_path=None) -> Non
               (kind == "run_element_edit" and len(args) > 7 and str(args[7]).startswith("/prototype"))) else "developer"
         RUN.agent = role
         request_path = replay_path
+        journal = None
         started = False
         try:
             if kind in _DURABLE_TARGETS:
@@ -211,8 +212,8 @@ def start_run(target, args, *, project=None, user=None, replay_path=None) -> Non
                         raise ValueError(error)
                     request_path = request_path or directory / ".agentforge" / "requests" / f"{time.time_ns()}.json"
                     if not replay_path:
-                        atomic_json(request_path, {"target": kind, "args": list(args), "project": project,
-                                                   "agent": role, "owner": (user or {}).get("id", "")})
+                        journal = {"target": kind, "args": list(args), "project": project, "agent": role,
+                                   "owner": (user or {}).get("id", ""), "started": True}
                     state = ProjectState(directory)
                     current = state.read().get("agents", {}).get(role, {})
                     if not replay_path and current.get("status") not in ("running", "finishing"):
@@ -226,6 +227,13 @@ def start_run(target, args, *, project=None, user=None, replay_path=None) -> Non
             def work():
                 nonlocal started
                 started = True
+                if journal is not None:
+                    # Saved here, with the machine in hand, and not on joining
+                    # the line. A run that never started left nothing half done
+                    # to pick up, and saving the whole line meant every restart
+                    # replayed builds nobody was waiting for any more - ahead of
+                    # whatever the studio asked for next.
+                    atomic_json(request_path, journal)
                 request = json.loads(request_path.read_text(encoding="utf-8")) if request_path else {}
                 if not request.get("stage"):
                     target(*args)

@@ -84,13 +84,13 @@ export default function SettingsModal({ onClose, onSaved }) {
   ]
 
   return (
-    <Modal onClose={onClose} className="max-w-none w-[min(1040px,95vw)] h-[min(650px,90vh)] p-0 overflow-hidden flex flex-col rounded-[22px] sm:rounded-[26px] border border-white/15 bg-[#0e1320] shadow-[0_30px_90px_rgba(0,0,0,0.85)]">
+    <Modal onClose={onClose} className="max-w-none w-[min(1040px,95vw)] h-[min(650px,90vh)] p-0 overflow-hidden flex flex-col rounded-3xl border border-[rgba(145,158,171,0.2)] bg-[#141A21] shadow-[0_0_2px_0_rgba(145,158,171,0.2),0_24px_48px_0_rgba(0,0,0,0.24)]">
       <div className="flex flex-col sm:flex-row flex-1 min-h-0 overflow-hidden">
 
         {/* ── Left Sidebar / Mobile Top Nav ── */}
-        <aside className="w-full sm:w-56 shrink-0 border-b sm:border-b-0 sm:border-r border-white/10 bg-[#0a0d16]/95 flex sm:flex-col justify-between p-2 sm:p-3 select-none">
+        <aside className="w-full sm:w-56 shrink-0 border-b sm:border-b-0 sm:border-r border-[rgba(145,158,171,0.16)] bg-[#1C252E] flex sm:flex-col justify-between p-2 sm:p-3 select-none">
           <div className="flex-1 overflow-x-auto sm:overflow-y-auto no-scrollbar sm:pr-1">
-            <div className="hidden sm:block px-2.5 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wider text-white/35">
+            <div className="hidden sm:block px-2.5 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wider text-[#919EAB]/60">
               Settings
             </div>
             <div className="flex sm:flex-col gap-1 sm:gap-0.5">
@@ -104,11 +104,11 @@ export default function SettingsModal({ onClose, onSaved }) {
                     className={cn(
                       'shrink-0 sm:w-full flex items-center gap-2 sm:gap-2.5 px-2.5 py-1.5 rounded-xl text-left text-[12px] whitespace-nowrap transition-all',
                       active
-                        ? 'bg-white/[.12] text-white font-semibold shadow-sm'
-                        : 'text-white/55 hover:text-white hover:bg-white/[.05] font-medium'
+                        ? 'bg-[#1877F2]/12 text-[#1877F2] font-semibold shadow-sm'
+                        : 'text-[#919EAB] hover:text-white hover:bg-[rgba(145,158,171,0.08)] font-medium'
                     )}
                   >
-                    <item.Icon className={cn('size-3.5 shrink-0', active ? 'text-blue-400' : 'text-white/40')} />
+                    <item.Icon className={cn('size-3.5 shrink-0', active ? 'text-[#1877F2]' : 'text-[#919EAB]/60')} />
                     <span>{item.label}</span>
                   </button>
                 )
@@ -117,15 +117,15 @@ export default function SettingsModal({ onClose, onSaved }) {
           </div>
 
           {/* User profile footer */}
-          <div className="hidden sm:block pt-2 border-t border-white/10">
-            <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl bg-white/[.02]">
-              <div className="size-7 rounded-full bg-blue-600 flex items-center justify-center text-[12px] font-bold text-white shrink-0 shadow-md shadow-blue-500/25">
+          <div className="hidden sm:block pt-2 border-t border-[rgba(145,158,171,0.16)]">
+            <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl bg-[rgba(145,158,171,0.06)] border border-[rgba(145,158,171,0.1)]">
+              <div className="size-7 rounded-full bg-[#1877F2] flex items-center justify-center text-[12px] font-bold text-white shrink-0 shadow-md shadow-[#1877F2]/25">
                 {initial}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[11.5px] font-semibold text-white/90">{displayName}</div>
                 {displayEmail && (
-                  <div className="truncate text-[10px] text-white/40 font-mono">{displayEmail}</div>
+                  <div className="truncate text-[10px] text-[#919EAB] font-mono">{displayEmail}</div>
                 )}
               </div>
             </div>
@@ -133,9 +133,9 @@ export default function SettingsModal({ onClose, onSaved }) {
         </aside>
 
         {/* ── Right Content ── */}
-        <main className="flex-1 flex flex-col min-w-0 bg-[#0e1320] overflow-hidden">
+        <main className="flex-1 flex flex-col min-w-0 bg-[#141A21] overflow-hidden">
           {/* Header */}
-          <header className="h-[52px] sm:h-[58px] shrink-0 border-b border-white/10 px-4 sm:px-6 flex items-center justify-between">
+          <header className="h-[52px] sm:h-[58px] shrink-0 border-b border-[rgba(145,158,171,0.16)] px-4 sm:px-6 flex items-center justify-between">
             <div className="min-w-0 flex-1 pr-2">
               <h2 className="font-display text-[15px] sm:text-[16px] font-bold tracking-tight text-white truncate">
                 {activeTab === 'general'      ? 'General'
@@ -163,7 +163,7 @@ export default function SettingsModal({ onClose, onSaved }) {
             <button
               onClick={onClose}
               title="Close"
-              className="rounded-xl p-1.5 text-white/40 hover:bg-white/10 hover:text-white transition-all shrink-0"
+              className="rounded-xl p-1.5 text-[#919EAB] hover:bg-[rgba(145,158,171,0.08)] hover:text-white transition-all shrink-0"
             >
               <X className="size-4" />
             </button>
@@ -175,11 +175,11 @@ export default function SettingsModal({ onClose, onSaved }) {
             {/* ── GENERAL ── */}
             {activeTab === 'general' && !isAdmin && (
               <div className="space-y-4 max-w-[700px]">
-                <p className="rounded-xl border border-white/10 bg-white/[.03] px-4 py-3 text-[12px] text-white/60">
+                <p className="rounded-2xl border border-[rgba(145,158,171,0.16)] bg-[#1C252E] px-4 py-3 text-[12px] text-[#919EAB]">
                   The Ollama engine, its key and AgentForge's own database are
                   shared by everyone on this machine, so only its admin changes
                   them. Your GitHub, AWS, Vercel and production database are
-                  yours alone — they are under <b className="text-white/80">Integrations</b>.
+                  yours alone — they are under <b className="text-white">Integrations</b>.
                 </p>
                 <MongoState mongo={meta?.mongo} />
               </div>
@@ -189,64 +189,64 @@ export default function SettingsModal({ onClose, onSaved }) {
               <div className="space-y-5 max-w-[700px]">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label className="block">
-                    <span className="mb-1.5 block text-[11.5px] font-semibold text-white/55">Ollama Host</span>
+                    <span className="mb-1.5 block text-[11.5px] font-semibold text-[#919EAB]">Ollama Host</span>
                     <input
                       value={host}
                       onChange={e => setHost(e.target.value)}
                       placeholder="http://127.0.0.1:11434"
-                      className="w-full rounded-xl border border-white/10 bg-white/[.04] px-3 py-2 text-[12.5px] text-white outline-none placeholder:text-white/25 focus:border-blue-500/60 transition-colors"
+                      className="w-full rounded-xl border border-[rgba(145,158,171,0.2)] bg-[#1C252E] px-3 py-2 text-[12.5px] text-white outline-none placeholder:text-[#919EAB]/30 focus:border-[#1877F2] focus:ring-1 focus:ring-[#1877F2] transition-colors"
                     />
                   </label>
 
                   <label className="block">
-                    <span className="mb-1.5 block text-[11.5px] font-semibold text-white/55">ollama.com API Key</span>
+                    <span className="mb-1.5 block text-[11.5px] font-semibold text-[#919EAB]">ollama.com API Key</span>
                     <input
                       type="password"
                       value={key}
                       onChange={e => setKey(e.target.value)}
                       placeholder={meta?.api_key_hint ? `saved (${meta.api_key_hint})` : 'Paste your key'}
-                      className="w-full rounded-xl border border-white/10 bg-white/[.04] px-3 py-2 text-[12.5px] text-white outline-none placeholder:text-white/25 focus:border-blue-500/60 transition-colors"
+                      className="w-full rounded-xl border border-[rgba(145,158,171,0.2)] bg-[#1C252E] px-3 py-2 text-[12.5px] text-white outline-none placeholder:text-[#919EAB]/30 focus:border-[#1877F2] focus:ring-1 focus:ring-[#1877F2] transition-colors"
                     />
                   </label>
 
                   <label className="block">
-                    <span className="mb-1.5 block text-[11.5px] font-semibold text-white/55">Local Context Window</span>
+                    <span className="mb-1.5 block text-[11.5px] font-semibold text-[#919EAB]">Local Context Window</span>
                     <input
                       value={ctx}
                       onChange={e => setCtx(e.target.value)}
                       placeholder="e.g. 32768"
-                      className="w-full rounded-xl border border-white/10 bg-white/[.04] px-3 py-2 text-[12.5px] text-white outline-none placeholder:text-white/25 focus:border-blue-500/60 transition-colors"
+                      className="w-full rounded-xl border border-[rgba(145,158,171,0.2)] bg-[#1C252E] px-3 py-2 text-[12.5px] text-white outline-none placeholder:text-[#919EAB]/30 focus:border-[#1877F2] focus:ring-1 focus:ring-[#1877F2] transition-colors"
                     />
                   </label>
 
                   <label className="block">
-                    <span className="mb-1.5 block text-[11.5px] font-semibold text-white/55">MongoDB URI</span>
+                    <span className="mb-1.5 block text-[11.5px] font-semibold text-[#919EAB]">MongoDB URI</span>
                     <input
                       value={mongo}
                       onChange={e => setMongo(e.target.value)}
                       placeholder={meta?.mongodb_uri_set ? `saved (${meta.mongodb_uri_hint})` : 'mongodb+srv://…'}
-                      className="w-full rounded-xl border border-white/10 bg-white/[.04] px-3 py-2 text-[12.5px] text-white outline-none placeholder:text-white/25 focus:border-blue-500/60 transition-colors"
+                      className="w-full rounded-xl border border-[rgba(145,158,171,0.2)] bg-[#1C252E] px-3 py-2 text-[12.5px] text-white outline-none placeholder:text-[#919EAB]/30 focus:border-[#1877F2] focus:ring-1 focus:ring-[#1877F2] transition-colors"
                     />
                   </label>
                 </div>
 
                 <MongoState mongo={meta?.mongo} />
 
-                <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                <div className="flex items-center justify-between pt-4 border-t border-[rgba(145,158,171,0.16)]">
                   <div className="flex items-center gap-2 text-[11.5px]">
                     <span className={cn(
                       'size-2 rounded-full',
-                      cloudOn ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)]'
-                      : tone === 'bad' ? 'bg-rose-400'
-                      : 'bg-amber-400'
+                      cloudOn ? 'bg-[#22C55E] shadow-[0_0_6px_rgba(34,197,94,0.6)]'
+                      : tone === 'bad' ? 'bg-[#FF5630]'
+                      : 'bg-[#FFAB00]'
                     )} />
-                    <span className="text-white/50 font-mono">{note}</span>
+                    <span className="text-[#919EAB] font-mono">{note}</span>
                   </div>
                   <button
                     type="button"
                     disabled={saving}
                     onClick={save}
-                    className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-semibold text-white shadow-lg shadow-blue-500/20 hover:bg-blue-500 disabled:opacity-50 transition-all active:scale-95"
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#1877F2] px-4 py-2 text-[12px] font-semibold text-white shadow-[0_8px_16px_0_rgba(24,119,242,0.24)] hover:bg-[#0C44AE] disabled:opacity-50 transition-all active:scale-95"
                   >
                     {saving && <Loader2 className="size-3.5 animate-spin" />}
                     Save Settings
@@ -258,7 +258,7 @@ export default function SettingsModal({ onClose, onSaved }) {
             {/* ── APPLICATION ── */}
             {activeTab === 'application' && (
               <div className="space-y-4 max-w-[700px]">
-                <div className="rounded-2xl border border-white/10 bg-white/[.025] divide-y divide-white/10">
+                <div className="rounded-2xl border border-[rgba(145,158,171,0.16)] bg-[#1C252E] divide-y divide-[rgba(145,158,171,0.12)]">
                   {[
                     { name: 'HTTP Gateway',     desc: 'API server on port 7824',              status: 'Running' },
                     { name: 'WebSocket Bridge', desc: 'Live stream on ws://127.0.0.1:7825',   status: 'Connected' },
@@ -267,9 +267,9 @@ export default function SettingsModal({ onClose, onSaved }) {
                     <div key={svc.name} className="flex items-center justify-between p-4">
                       <div>
                         <div className="text-[13px] font-medium text-white">{svc.name}</div>
-                        <div className="text-[11.5px] text-white/40 mt-0.5">{svc.desc}</div>
+                        <div className="text-[11.5px] text-[#919EAB] mt-0.5">{svc.desc}</div>
                       </div>
-                      <span className="rounded-lg bg-emerald-500/15 border border-emerald-500/20 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-300">
+                      <span className="rounded-lg bg-[#22C55E]/15 border border-[#22C55E]/20 px-2.5 py-0.5 text-[11px] font-semibold text-[#22C55E]">
                         {svc.status}
                       </span>
                     </div>
@@ -282,7 +282,7 @@ export default function SettingsModal({ onClose, onSaved }) {
                   <button
                     type="button"
                     onClick={() => api.mongoPrefetch().catch(() => {})}
-                    className="rounded-xl border border-white/15 bg-white/[.05] px-4 py-2 text-[12px] font-medium text-white hover:bg-white/[.10] transition-colors"
+                    className="rounded-xl border border-[rgba(145,158,171,0.2)] bg-[#28323D]/50 px-4 py-2 text-[12px] font-medium text-white hover:bg-[#333F4D]/60 transition-colors"
                   >
                     Download mongod binary
                   </button>
@@ -293,7 +293,7 @@ export default function SettingsModal({ onClose, onSaved }) {
             {/* ── MODELS ── */}
             {activeTab === 'models' && (
               <div className="space-y-4 max-w-[700px]">
-                <div className="rounded-2xl border border-white/10 bg-white/[.025] divide-y divide-white/10">
+                <div className="rounded-2xl border border-[rgba(145,158,171,0.16)] bg-[#1C252E] divide-y divide-[rgba(145,158,171,0.12)]">
                   {[
                     { role: 'Agent (default)', key: 'agent' },
                     { role: 'Builder',         key: 'builder' },
@@ -306,15 +306,15 @@ export default function SettingsModal({ onClose, onSaved }) {
                     const label = m ? (modelLabel ? modelLabel(m) : m) : '—'
                     return (
                       <div key={key} className="flex items-center justify-between px-4 py-3.5">
-                        <div className="text-[12.5px] font-medium text-white/75">{role}</div>
-                        <span className="rounded-lg bg-white/[.06] border border-white/10 px-3 py-1 font-mono text-[11px] text-blue-300 max-w-[260px] truncate">
+                        <div className="text-[12.5px] font-medium text-white/90">{role}</div>
+                        <span className="rounded-lg bg-[#1877F2]/10 border border-[#1877F2]/20 px-3 py-1 font-mono text-[11px] text-[#1877F2] max-w-[260px] truncate">
                           {label}
                         </span>
                       </div>
                     )
                   })}
                 </div>
-                <p className="text-[11px] text-white/30">
+                <p className="text-[11px] text-[#919EAB]">
                   Models are selected in the build panel when starting a project.
                 </p>
               </div>
@@ -323,23 +323,23 @@ export default function SettingsModal({ onClose, onSaved }) {
             {/* ── APPEARANCE ── */}
             {activeTab === 'appearance' && (
               <div className="space-y-4 max-w-[700px]">
-                <div className="rounded-2xl border border-white/10 bg-white/[.025] p-5">
+                <div className="rounded-2xl border border-[rgba(145,158,171,0.16)] bg-[#1C252E] p-5">
                   <div className="text-[13px] font-medium text-white mb-3">Color Theme</div>
                   <div className="grid grid-cols-2 gap-3">
                     {/* Dark Bolt — active */}
-                    <div className="relative rounded-xl border-2 border-blue-500/60 bg-[#0c0f17] p-4 shadow-[0_0_20px_rgba(59,130,246,0.12)]">
+                    <div className="relative rounded-xl border-2 border-[#1877F2] bg-[#141A21] p-4 shadow-[0_0_20px_rgba(24,119,242,0.15)]">
                       <div className="flex gap-1.5 mb-3">
-                        <span className="size-2.5 rounded-full bg-[#1a2035]" />
-                        <span className="size-2.5 rounded-full bg-blue-500/60" />
-                        <span className="size-2.5 rounded-full bg-purple-500/60" />
+                        <span className="size-2.5 rounded-full bg-[#1877F2]" />
+                        <span className="size-2.5 rounded-full bg-[#8E33FF]" />
+                        <span className="size-2.5 rounded-full bg-[#22C55E]" />
                       </div>
-                      <div className="text-[12px] font-semibold text-white">Dark Bolt</div>
-                      <div className="text-[10.5px] text-white/40 mt-0.5">Active theme</div>
-                      <Check className="absolute top-3 right-3 size-3.5 text-blue-400" />
+                      <div className="text-[12px] font-semibold text-white">Material Kit Dark</div>
+                      <div className="text-[10.5px] text-[#919EAB] mt-0.5">Active theme</div>
+                      <Check className="absolute top-3 right-3 size-3.5 text-[#1877F2]" />
                     </div>
 
                     {/* Light — coming soon */}
-                    <div className="rounded-xl border border-white/10 bg-white/[.03] p-4 opacity-35 cursor-not-allowed">
+                    <div className="rounded-xl border border-[rgba(145,158,171,0.16)] bg-[#141A21]/40 p-4 opacity-35 cursor-not-allowed">
                       <div className="flex gap-1.5 mb-3">
                         <span className="size-2.5 rounded-full bg-white/20" />
                         <span className="size-2.5 rounded-full bg-white/30" />
@@ -366,15 +366,15 @@ export default function SettingsModal({ onClose, onSaved }) {
             {/* ── SHORTCUTS ── */}
             {activeTab === 'shortcuts' && (
               <div className="max-w-[700px]">
-                <div className="rounded-2xl border border-white/10 bg-white/[.025] divide-y divide-white/10">
+                <div className="rounded-2xl border border-[rgba(145,158,171,0.16)] bg-[#1C252E] divide-y divide-[rgba(145,158,171,0.12)]">
                   {[
                     { key: 'Ctrl + Enter', action: 'Submit prompt and start build' },
                     { key: 'Escape',       action: 'Close modal or dropdown' },
                     { key: 'Ctrl + /',     action: 'Focus prompt input' },
                   ].map((s, i) => (
                     <div key={i} className="flex items-center justify-between px-4 py-3.5">
-                      <span className="text-[12.5px] text-white/75">{s.action}</span>
-                      <kbd className="rounded-lg border border-white/15 bg-white/[.07] px-2.5 py-1 font-mono text-[11px] text-white font-medium">
+                      <span className="text-[12.5px] text-white/90">{s.action}</span>
+                      <kbd className="rounded-lg border border-[rgba(145,158,171,0.2)] bg-[#141A21] px-2.5 py-1 font-mono text-[11px] text-white font-medium">
                         {s.key}
                       </kbd>
                     </div>
@@ -395,22 +395,22 @@ function MongoState({ mongo }) {
   let text, tone
   if (mongo.override) {
     text = 'using your MONGODB_URI'
-    tone = 'text-emerald-300'
+    tone = 'text-[#22C55E]'
   } else if (mongo.running) {
     text = mongo.external
       ? `adopted the MongoDB already on :${mongo.port}`
       : `MongoDB running on :${mongo.port}`
-    tone = 'text-emerald-300'
+    tone = 'text-[#22C55E]'
   } else if (mongo.downloaded) {
     text = 'mongod downloaded, not running'
-    tone = 'text-amber-300'
+    tone = 'text-[#FFAB00]'
   } else {
     text = mongo.reason || 'mongod not downloaded yet'
-    tone = mongo.reason ? 'text-rose-400' : 'text-white/40'
+    tone = mongo.reason ? 'text-[#FF5630]' : 'text-[#919EAB]'
   }
   return (
-    <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[.03] px-3.5 py-2.5 font-mono text-[11px]">
-      <Database className="size-3.5 shrink-0 text-blue-400" />
+    <div className="flex items-center gap-2.5 rounded-xl border border-[rgba(145,158,171,0.16)] bg-[#1C252E] px-3.5 py-2.5 font-mono text-[11px]">
+      <Database className="size-3.5 shrink-0 text-[#1877F2]" />
       <span className={tone}>{text}</span>
     </div>
   )

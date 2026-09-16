@@ -31,13 +31,13 @@ export default function UnitTests({ qa }) {
   if (v.fileResults) return (
     <div className="space-y-4">
       <Summary>
-        <Stat n={`${unit.passed}/${unit.total}`} label="files passed" tone="text-emerald-400" />
-        <Stat n={unit.failed} label="files failed" tone={unit.failed ? 'text-rose-400' : undefined} />
+        <Stat n={`${unit.passed}/${unit.total}`} label="files passed" tone="text-[#22C55E]" />
+        <Stat n={unit.failed} label="files failed" tone={unit.failed ? 'text-[#FF5630]' : undefined} />
       </Summary>
       <p className="text-[12px] text-slate-300">{v.note}</p>
       <p className="font-mono text-[10px] text-slate-500">Vitest cache · {new Date(v.recordedAt).toLocaleString()}</p>
       <div className="space-y-2">{v.fileResults.map(row => (
-        <div key={row.file} className="flex items-center gap-3 rounded-xl border border-white/10 bg-[#121622]/80 px-4 py-3 shadow-lg backdrop-blur-xl">
+        <div key={row.file} className="flex items-center gap-3 rounded-xl border border-line bg-[#1C252E] px-4 py-3 shadow-lg backdrop-blur-xl">
           <code className="min-w-0 flex-1 break-all font-mono text-[12px] text-slate-200">{row.file}</code>
           <span className="font-mono text-[11px] text-slate-400">{row.duration == null ? '—' : `${Math.round(row.duration)}ms`}</span>
           <Badge tone={row.status === 'failed' ? 'bad' : 'ok'}>{row.status}</Badge>
@@ -64,10 +64,10 @@ export default function UnitTests({ qa }) {
         </div>
       )}
       <Summary>
-        <Stat n={unit.passed} label="passing" tone="text-emerald-400" />
-        <Stat n={unit.failed} label="failing" tone={unit.failed ? 'text-rose-400' : undefined} />
+        <Stat n={unit.passed} label="passing" tone="text-[#22C55E]" />
+        <Stat n={unit.failed} label="failing" tone={unit.failed ? 'text-[#FF5630]' : undefined} />
         {skipped.length > 0 && (
-          <Stat n={skipped.length} label="never ran" tone="text-amber-400" />
+          <Stat n={skipped.length} label="never ran" tone="text-[#FFAB00]" />
         )}
         <Stat n={unit.files} label="files" />
         <span className="ml-auto font-mono text-[11px] text-slate-500">
@@ -77,13 +77,13 @@ export default function UnitTests({ qa }) {
       {!suites.length && <p className="text-[12px] text-slate-400">Saved runner totals. Individual assertion details were not saved.</p>}
 
       {skipped.length > 0 && (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-[12px] text-amber-200">
+        <div className="rounded-xl border border-[#FFAB00]/30 bg-[#FFAB00]/10 px-4 py-3 text-[12px] text-amber-200">
           <b>{skipped.length}</b> case(s) are marked <code>it.skip</code> and never ran. They are not passing.
         </div>
       )}
 
       {qa?.report?.unit?.deleted ? (
-        <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-[12px] text-rose-300">
+        <div className="rounded-xl border border-[#FF5630]/30 bg-[#FF5630]/10 px-4 py-3 text-[12px] text-rose-300">
           <b>{qa.report.unit.deleted}</b> case(s) present when the stage started are no longer in the suite. The numbers above are over what is left.
         </div>
       ) : null}
@@ -95,17 +95,17 @@ export default function UnitTests({ qa }) {
           const passed = s.cases.filter(c => c.status === 'passed').length
           return (
             <section key={s.file}
-                     className="overflow-hidden rounded-2xl border border-white/10 bg-[#121622]/80 shadow-xl backdrop-blur-xl transition-all duration-200 hover:border-white/20">
+                     className="overflow-hidden rounded-2xl border border-line bg-[#1C252E] shadow-xl backdrop-blur-xl transition-all duration-200 hover:border-white/20">
               <button onClick={() => {
                         const next = new Set(open)
                         next.has(s.file) ? next.delete(s.file) : next.add(s.file)
                         setOpen(next)
                       }}
-                      className="flex w-full items-center gap-3 bg-[#121622] px-4 py-3 text-left transition-colors hover:bg-white/[0.03]">
+                      className="flex w-full items-center gap-3 bg-[#1C252E] px-4 py-3 text-left transition-colors hover:bg-white/[0.03]">
                 {isOpen ? <ChevronDown className="size-3.5 text-slate-400" />
                         : <ChevronRight className="size-3.5 text-slate-400" />}
                 <span className={cn('size-2 rounded-full',
-                                    failed ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]' : 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]')} />
+                                    failed ? 'bg-[#FF5630] shadow-[0_0_8px_rgba(255,86,48,0.6)]' : 'bg-[#22C55E] shadow-[0_0_8px_rgba(34,197,94,0.6)]')} />
                 <span className="flex-1 truncate font-mono text-[12px] font-semibold text-slate-200">
                   {s.file}
                 </span>
@@ -146,9 +146,9 @@ export default function UnitTests({ qa }) {
 
 const LABEL = { passed: 'pass', failed: 'fail', pass: 'pass', fail: 'fail',
                 warn: 'warn', skipped: 'skipped', pending: 'skipped', todo: 'todo' }
-const TONE = { passed: 'text-emerald-400', pass: 'text-emerald-400', failed: 'text-rose-400',
-               fail: 'text-rose-400', warn: 'text-amber-400', skipped: 'text-amber-400',
-               pending: 'text-amber-400' }
+const TONE = { passed: 'text-[#22C55E]', pass: 'text-[#22C55E]', failed: 'text-[#FF5630]',
+               fail: 'text-[#FF5630]', warn: 'text-[#FFAB00]', skipped: 'text-[#FFAB00]',
+               pending: 'text-[#FFAB00]' }
 
 const shortPath = (p) => String(p || '').replace(/\\/g, '/').split('/tests/').pop()
 const firstLines = (m) => String(m || '').split('\n').slice(0, 6).join('\n')

@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lingo — Learn Languages Playfully</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#58cc02',
+                        secondary: '#ce82ff',
+                        success: '#58cc02',
+                        warning: '#ffc800',
+                        danger: '#ff4b4b',
+                        surface: '#FFFFFF',
+                        text: '#3c3c3c',
+                    },
+                    fontFamily: {
+                        sans: ['Nunito', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    boxShadow: {
+                        'tactile': '0 4px 0 rgba(0,0,0,0.15)',
+                        'tactile-lg': '0 8px 0 rgba(0,0,0,0.15)',
+                    },
+                    borderRadius: {
+                        'xl': '1rem',
+                        '2xl': '1.5rem',
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Nunito', sans-serif; }
+        .btn-tactile { box-shadow: 0 4px 0 rgba(0,0,0,0.15); transition: all 0.1s ease; }
+        .btn-tactile:hover { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.15); }
+        .btn-tactile:active { transform: translateY(4px); box-shadow: 0 0 0 rgba(0,0,0,0.15); }
+        .btn-tactile:focus-visible { outline: 3px solid #ce82ff; outline-offset: 2px; }
+        .card-tactile { box-shadow: 0 6px 0 rgba(0,0,0,0.1); }
+        .card-tactile:hover { box-shadow: 0 8px 0 rgba(0,0,0,0.1); transform: translateY(-2px); }
+        .icon-bubble { transition: transform 0.2s ease; }
+        .icon-bubble:hover { transform: scale(1.1) rotate(-5deg); }
+        .hero-illustration { animation: float 3s ease-in-out infinite; }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .faq-item summary { list-style: none; }
+        .faq-item summary::-webkit-details-marker { display: none; }
+        .faq-item[open] .faq-icon { transform: rotate(45deg); }
+        .faq-icon { transition: transform 0.2s ease; }
+    </style>
+</head>
+<body class="bg-surface text-text antialiased">
+    <!-- Navigation -->
+    <nav class="bg-white border-b-4 border-primary sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-2">
+                    <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+                        <i data-lucide="languages" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <span class="text-2xl font-black text-text">Lingo</span>
+                </div>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="font-bold hover:text-primary transition-colors">Features</a>
+                    <a href="#process" class="font-bold hover:text-primary transition-colors">Process</a>
+                    <a href="#pricing" class="font-bold hover:text-primary transition-colors">Pricing</a>
+                    <a href="#faq" class="font-bold hover:text-primary transition-colors">FAQ</a>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="#" class="font-bold hover:text-primary transition-colors hidden sm:block">Log in</a>
+                    <a href="#pricing" class="bg-primary text-white font-extrabold px-4 py-2 rounded-xl btn-tactile">Get Started</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="bg-gradient-to-b from-primary/10 to-transparent">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="inline-flex items-center gap-2 bg-secondary/20 text-secondary px-4 py-2 rounded-full font-bold mb-6">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                        New: AI-powered conversations
+                    </div>
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight mb-6">
+                        Learn a language<br>
+                        <span class="text-primary">the fun way</span>
+                    </h1>
+                    <p class="text-lg text-gray-600 mb-8 max-w-lg">
+                        Bite-sized lessons, game-like challenges, and instant feedback. Join millions learning with Lingo today.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="#pricing" class="bg-primary text-white font-extrabold text-lg px-8 py-4 rounded-xl btn-tactile text-center">
+                            Start Learning Free
+                        </a>
+                        <a href="#features" class="bg-white border-4 border-primary text-primary font-extrabold text-lg px-8 py-4 rounded-xl btn-tactile text-center">
+                            See How It Works
+                        </a>
+                    </div>
+                    <div class="flex items-center gap-4 mt-8">
+                        <div class="flex -space-x-2">
+                            <div class="w-10 h-10 bg-secondary rounded-full border-2 border-white flex items-center justify-center text-white text-sm font-bold">A</div>
+                            <div class="w-10 h-10 bg-primary rounded-full border-2 border-white flex items-center justify-center text-white text-sm font-bold">B</div>
+                            <div class="w-10 h-10 bg-warning rounded-full border-2 border-white flex items-center justify-center text-white text-sm font-bold">C</div>
+                            <div class="w-10 h-10 bg-danger rounded-full border-2 border-white flex items-center justify-center text-white text-sm font-bold">D</div>
+                        </div>
+                        <span class="text-sm font-bold text-gray-600">4.9/5 from 2M+ learners</span>
+                    </div>
+                </div>
+                <div class="relative hero-illustration">
+                    <div class="relative w-full max-w-md mx-auto">
+                        <!-- Main character illustration -->
+                        <div class="bg-primary rounded-3xl p-8 card-tactile">
+                            <div class="flex items-center justify-center mb-6">
+                                <div class="w-32 h-32 bg-white rounded-full flex items-center justify-center">
+                                    <i data-lucide="smile" class="w-20 h-20 text-primary"></i>
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-white font-black text-2xl mb-2">¡Hola!</div>
+                                <div class="bg-white/20 rounded-xl p-4">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-white font-bold">Level 5</span>
+                                        <span class="text-white font-bold">🔥 12 day streak</span>
+                                    </div>
+                                    <div class="bg-white/20 rounded-full h-4 mb-2">
+                                        <div class="bg-warning rounded-full h-4 w-3/4"></div>
+                                    </div>
+                                    <span class="text-white text-sm font-bold">75% to Level 6</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Floating elements -->
+                        <div class="absolute -top-4 -right-4 bg-secondary rounded-2xl p-3 card-tactile">
+                            <i data-lucide="trophy" class="w-8 h-8 text-white"></i>
+                        </div>
+                        <div class="absolute -bottom-4 -left-4 bg-warning rounded-2xl p-3 card-tactile">
+                            <i data-lucide="zap" class="w-8 h-8 text-white"></i>
+                        </div>
+                        <div class="absolute top-1/2 -right-8 bg-white rounded-2xl p-3 card-tactile">
+                            <i data-lucide="heart" class="w-8 h-8 text-danger"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="bg-primary py-12 border-y-4 border-primary/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="text-4xl font-black text-white mb-2">500M+</div>
+                    <div class="text-white/80 font-bold">Downloads</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-black text-white mb-2">40+</div>
+                    <div class="text-white/80 font-bold">Languages</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-black text-white mb-2">95%</div>
+                    <div class="text-white/80 font-bold">Success rate</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-black text-white mb-2">4.9★</div>
+                    <div class="text-white/80 font-bold">Avg. rating</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-black mb-4">Everything you need to succeed</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">Our gamified approach keeps you motivated with streaks, points, and friendly competition.</p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="bg-white rounded-2xl p-8 card-tactile border-4 border-primary/10">
+                    <div class="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-6 icon-bubble">
+                        <i data-lucide="gamepad-2" class="w-7 h-7 text-primary"></i>
+                    </div>
+                    <h3 class="text-xl font-extrabold mb-3">Gamified Lessons</h3>
+                    <p class="text-gray-600">Earn points, unlock levels, and compete with friends. Learning feels like playing your favorite game.</p>
+                </div>
+                <div class="bg-white rounded-2xl p-8 card-tactile border-4 border-secondary/10">
+                    <div class="w-14 h-14 bg-secondary/10 rounded-xl flex items-center justify-center mb-6 icon-bubble">
+                        <i data-lucide="mic" class="w-7 h-7 text-secondary"></i>
+                    </div>
+                    <h3 class="text-xl font-extrabold mb-3">Speech Recognition</h3>
+                    <p class="text-gray-600">Practice pronunciation with instant AI feedback. Perfect your accent with real-time scoring.</p>
+                </div>
+                <div class="bg-white rounded-2xl p-8 card-tactile border-4 border-warning/10">
+                    <div class="w-14 h-14 bg-warning/10 rounded-xl flex items-center justify-center mb-6 icon-bubble">
+                        <i data-lucide="brain" class="w-7 h-7 text-warning"></i>
+                    </div>
+                    <h3 class="text-xl font-extrabold mb-3">Smart Review</h3>
+                    <p class="text-gray-600">Our algorithm schedules reviews at the perfect moment to maximize long-term retention.</p>
+                </div>
+                <div class="bg-white rounded-2xl p-8 card-tactile border-4 border-danger/10">
+                    <div class="w-14 h-14 bg-danger/10 rounded-xl flex items-center justify-center mb-6 icon-bubble">
+                        <i data-lucide="users" class="w-7 h-7 text-danger"></i>
+                    </div>
+                    <h3 class="text-xl font-extrabold mb-3">Community</h3>
+                    <p class="text-gray-600">Join clubs, participate in events, and practice with native speakers from around the world.</p>
+                </div>
+                <div class="bg-white rounded-2xl p-8 card-tactile border-4 border-primary/10">
+                    <div class="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-6 icon-bubble">
+                        <i data-lucide="wifi-off" class="w-7 h-7 text-primary"></i>
+                    </div>
+                    <h3 class="text-xl font-extrabold mb-3">Offline Mode</h3>
+                    <p class="text-gray-600">Download lessons and learn anywhere, even without an internet connection. Perfect for travel.</p>
+                </div>
+                <div class="bg-white rounded-2xl p-8 card-tactile border-4 border-secondary/10">
+                    <div class="w-14 h-14 bg-secondary/10 rounded-xl flex items-center justify-center mb-6 icon-bubble">
+                        <i data-lucide="bar-chart-3" class="w-7 h-7 text-secondary"></i>
+                    </div>
+                    <h3 class="text-xl font-extrabold mb-3">Progress Tracking</h3>
+                    <p class="text-gray-600">Detailed analytics show your strengths, weaknesses, and daily learning patterns.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Process Section -->
+    <section id="process" class="bg-gradient-to-b from-primary/5 to-transparent py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-black mb-4">How it works</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">Start speaking a new language in just 5 minutes a day.</p>
+            </div>
+            <div class="grid md:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-6 card-tactile">
+                        <span class="text-white font-black text-3xl">1</span>
+                    </div>
+                    <h3 class="text-lg font-extrabold mb-2">Create Account</h3>
+                    <p class="text-gray-600">Sign up free and choose your learning goals</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-secondary rounded-2xl flex items-center justify-center mx-auto mb-6 card-tactile">
+                        <span class="text-white font-black text-3xl">2</span>
+                    </div>
+                    <h3 class="text-lg font-extrabold mb-2">Take Placement Test</h3>
+                    <p class="text-gray-600">We assess your level and create a custom path</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-warning rounded-2xl flex items-center justify-center mx-auto mb-6 card-tactile">
+                        <span class="text-white font-black text-3xl">3</span>
+                    </div>
+                    <h3 class="text-lg font-extrabold mb-2">Learn Daily</h3>
+                    <p class="text-gray-600">Complete fun lessons and earn rewards</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-danger rounded-2xl flex items-center justify-center mx-auto mb-6 card-tactile">
+                        <span class="text-white font-black text-3xl">4</span>
+                    </div>
+                    <h3 class="text-lg font-extrabold mb-2">Speak Fluently</h3>
+                    <p class="text-gray-600">Achieve your goals and connect with the world</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h2 class="text-4xl font-black mb-6">Why choose Lingo?</h2>
+                    <div class="space-y-6">
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 bg-success/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check-circle-2" class="w-6 h-6 text-success"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-extrabold text-lg mb-1">Proven Methodology</h3>
+                                <p class="text-gray-600">Backed by cognitive science research and tested with millions of learners worldwide.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="clock" class="w-6 h-6 text-secondary"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-extrabold text-lg mb-1">Flexible Schedule</h3>
+                                <p class="text-gray-600">Learn at your own pace with lessons designed for busy lifestyles. 5 minutes is enough.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 bg-warning/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="shield-check" class="w-6 h-6 text-warning"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-extrabold text-lg mb-1">Safe & Private</h3>
+                                <p class="text-gray-600">Your data is encrypted and never sold. Learn in a safe, ad-free environment.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 bg-danger/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="infinity" class="w-6 h-6 text-danger"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-extrabold text-lg mb-1">Lifetime Access</h3>
+                                <p class="text-gray-600">One subscription, all languages. Switch between courses whenever you want.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative">
+                    <div class="bg-gradient-to-br from-primary to-secondary rounded-3xl p-8 card-tactile">
+                        <div class="text-center mb-6">
+                            <div class="text-white font-black text-2xl mb-2">Your daily progress</div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4 mb-6">
+                            <div class="bg-white/20 rounded-xl p-4 text-center">
+                                <div class="text-white font-black text-2xl">12</div>
+                                <div class="text-white/80 text-sm font-bold">Day streak</div>
+                            </div>
+                            <div class="bg-white/20 rounded-xl p-4 text-center">
+                                <div class="text-white font-black text-2xl">450</div>
+                                <div class="text-white/80 text-sm font-bold">XP today</div>
+                            </div>
+                            <div class="bg-white/20 rounded-xl p-4 text-center">
+                                <div class="text-white font-black text-2xl">8</div>
+                                <div class="text-white/80 text-sm font-bold">Lessons</div>
+                            </div>
+                        </div>
+                        <div class="bg-white/20 rounded-xl p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-white font-bold">Spanish</span>
+                                <span class="text-white font-bold">78%</span>
+                            </div>
+                            <div class="bg-white/20 rounded-full h-4">
+                                <div class="bg-warning rounded-full h-4 w-[78%]"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="absolute -bottom-4 -right-4 bg-white rounded-2xl p-4 card-tactile">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="trending-up" class="w-6 h-6 text-success"></i>
+                            <span class="font-extrabold">+25% faster</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="bg-secondary/10 py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-black mb-4">Loved by millions</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">Real stories from real learners around the world.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-white rounded-2xl p-8 card-tactile">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-5 h-5 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-warning text-warning"></i>
+                    </div>
+                    <p class="text-gray-700 mb-6">"I never thought I could learn Japanese, but Lingo made it so fun! The gamification keeps me coming back every day."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-black">S</div>
+                        <div>
+                            <div class="font-extrabold">Sarah M.</div>
+                            <div class="text-sm text-gray-500">Learning Japanese</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl p-8 card-tactile">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-5 h-5 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-warning text-warning"></i>
+                    </div>
+                    <p class="text-gray-700 mb-6">"The speech recognition is incredible! It caught my pronunciation mistakes that even my tutor missed. Highly recommend!"</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-secondary rounded-full flex items-center justify-center text-white font-black">J</div>
+                        <div>
+                            <div class="font-extrabold">James K.</div>
+                            <div class="text-sm text-gray-500">Learning Spanish</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl p-8 card-tactile">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-5 h-5 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-warning text-warning"></i>
+                    </div>
+                    <p class="text-gray-700 mb-6">"As a busy mom, I only have 10 minutes a day. Lingo fits perfectly into my schedule and I'm already conversational in French!"</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-warning rounded-full flex items-center justify-center text-white font-black">E</div>
+                        <div>
+                            <div class="font-extrabold">Elena R.</div>
+                            <div class="text-sm text-gray-500">Learning French</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-black mb-4">Simple, transparent pricing</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">Start free, upgrade when you're ready. Cancel anytime.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <div class="bg-white rounded-2xl p-8 card-tactile border-4 border-primary/10">
+                    <div class="text-center mb-6">
+                        <h3 class="text-xl font-extrabold mb-2">Free</h3>
+                        <div class="text-4xl font-black text-primary mb-2">$0</div>
+                        <div class="text-gray-500 font-bold">Forever</div>
+                    </div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-success flex-shrink-0"></i>
+                            <span class="text-sm font-bold">5 lessons per day</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-success flex-shrink-0"></i>
+                            <span class="text-sm font-bold">Basic progress tracking</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-success flex-shrink-0"></i>
+                            <span class="text-sm font-bold">Community access</span>
+                        </li>
+                        <li class="flex items-center gap-2 opacity-40">
+                            <i data-lucide="x" class="w-5 h-5 text-danger flex-shrink-0"></i>
+                            <span class="text-sm font-bold">Offline mode</span>
+                        </li>
+                        <li class="flex items-center gap-2 opacity-40">
+                            <i data-lucide="x" class="w-5 h-5 text-danger flex-shrink-0"></i>
+                            <span class="text-sm font-bold">AI speech coach</span>
+                        </li>
+                    </ul>
+                    <a href="#" class="block text-center bg-white border-4 border-primary text-primary font-extrabold px-6 py-3 rounded-xl btn-tactile">Start Free</a>
+                </div>
+                <div class="bg-primary rounded-2xl p-8 card-tactile relative transform md:scale-105">
+                    <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-warning text-white font-extrabold px-4 py-1 rounded-full text-sm">POPULAR</div>
+                    <div class="text-center mb-6">
+                        <h3 class="text-xl font-extrabold text-white mb-2">Super</h3>
+                        <div class="text-4xl font-black text-white mb-2">$6.99</div>
+                        <div class="text-white/80 font-bold">per month</div>
+                    </div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-white flex-shrink-0"></i>
+                            <span class="text-sm font-bold text-white">Unlimited lessons</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-white flex-shrink-0"></i>
+                            <span class="text-sm font-bold text-white">Offline mode</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-white flex-shrink-0"></i>
+                            <span class="text-sm font-bold text-white">AI speech coach</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-white flex-shrink-0"></i>
+                            <span class="text-sm font-bold text-white">Advanced analytics</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-white flex-shrink-0"></i>
+                            <span class="text-sm font-bold text-white">No ads</span>
+                        </li>
+                    </ul>
+                    <a href="#" class="block text-center bg-white text-primary font-extrabold px-6 py-3 rounded-xl btn-tactile">Try Free 14 Days</a>
+                </div>
+                <div class="bg-white rounded-2xl p-8 card-tactile border-4 border-secondary/10">
+                    <div class="text-center mb-6">
+                        <h3 class="text-xl font-extrabold mb-2">Family</h3>
+                        <div class="text-4xl font-black text-secondary mb-2">$9.99</div>
+                        <div class="text-gray-500 font-bold">per month</div>
+                    </div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-success flex-shrink-0"></i>
+                            <span class="text-sm font-bold">Up to 6 accounts</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-success flex-shrink-0"></i>
+                            <span class="text-sm font-bold">All Super features</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-success flex-shrink-0"></i>
+                            <span class="text-sm font-bold">Parent dashboard</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-success flex-shrink-0"></i>
+                            <span class="text-sm font-bold">Progress reports</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-success flex-shrink-0"></i>
+                            <span class="text-sm font-bold">Priority support</span>
+                        </li>
+                    </ul>
+                    <a href="#" class="block text-center bg-secondary text-white font-extrabold px-6 py-3 rounded-xl btn-tactile">Get Family Plan</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="bg-gray-50 py-20">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-black mb-4">Frequently asked questions</h2>
+                <p class="text-lg text-gray-600">Everything you need to know about Lingo.</p>
+            </div>
+            <div class="space-y-4">
+                <details class="faq-item bg-white rounded-2xl p-6 card-tactile">
+                    <summary class="flex items-center justify-between cursor-pointer">
+                        <span class="font-extrabold text-lg">Is Lingo really free?</span>
+                        <i data-lucide="plus" class="w-6 h-6 text-primary flex-shrink-0 faq-icon"></i>
+                    </summary>
+                    <p class="mt-4 text-gray-600">Yes! Lingo is free forever with daily lesson limits. Upgrade to Super for unlimited access and premium features.</p>
+                </details>
+                <details class="faq-item bg-white rounded-2xl p-6 card-tactile">
+                    <summary class="flex items-center justify-between cursor-pointer">
+                        <span class="font-extrabold text-lg">How much time do I need daily?</span>
+                        <i data-lucide="plus" class="w-6 h-6 text-primary flex-shrink-0 faq-icon"></i>
+                    </summary>
+                    <p class="mt-4 text-gray-600">Just 5-10 minutes a day is enough to see progress. Our lessons are designed to fit into any schedule.</p>
+                </details>
+                <details class="faq-item bg-white rounded-2xl p-6 card-tactile">
+                    <summary class="flex items-center justify-between cursor-pointer">
+                        <span class="font-extrabold text-lg">Which languages can I learn?</span>
+                        <i data-lucide="plus" class="w-6 h-6 text-primary flex-shrink-0 faq-icon"></i>
+                    </summary>
+                    <p class="mt-4 text-gray-600">We offer 40+ languages including Spanish, French, German, Japanese, Korean, Chinese, Italian, and more!</p>
+                </details>
+                <details class="faq-item bg-white rounded-2xl p-6 card-tactile">
+                    <summary class="flex items-center justify-between cursor-pointer">
+                        <span class="font-extrabold text-lg">Can I cancel my subscription anytime?</span>
+                        <i data-lucide="plus" class="w-6 h-6 text-primary flex-shrink-0 faq-icon"></i>
+                    </summary>
+                    <p class="mt-4 text-gray-600">Absolutely! Cancel anytime with one click. No questions asked, no hidden fees.</p>
+                </details>
+                <details class="faq-item bg-white rounded-2xl p-6 card-tactile">
+                    <summary class="flex items-center justify-between cursor-pointer">
+                        <span class="font-extrabold text-lg">Is Lingo suitable for kids?</span>
+                        <i data-lucide="plus" class="w-6 h-6 text-primary flex-shrink-0 faq-icon"></i>
+                    </summary>
+                    <p class="mt-4 text-gray-600">Yes! Our Family plan includes a dedicated kids mode with age-appropriate content and parental controls.</p>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="bg-gradient-to-r from-primary to-secondary py-20">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-4xl font-black text-white mb-4">Ready to start your journey?</h2>
+            <p class="text-xl text-white/80 mb-8">Join 500 million learners and start speaking a new language today.</p>
+            <a href="#pricing" class="inline-block bg-white text-primary font-extrabold text-lg px-10 py-4 rounded-xl btn-tactile">Get Started Free</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-text text-white py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8 mb-12">
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+                            <i data-lucide="languages" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <span class="text-2xl font-black">Lingo</span>
+                    </div>
+                    <p class="text-white/60 text-sm">Learn languages the fun way. Free forever, upgrade anytime.</p>
+                </div>
+                <div>
+                    <h4 class="font-extrabold mb-4">Product</h4>
+                    <ul class="space-y-2 text-white/60">
+                        <li><a href="#features" class="hover:text-white transition-colors">Features</a></li>
+                        <li><a href="#pricing" class="hover:text-white transition-colors">Pricing</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Mobile App</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Languages</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-extrabold mb-4">Company</h4>
+                    <ul class="space-y-2 text-white/60">
+                        <li><a href="#" class="hover:text-white transition-colors">About Us</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Careers</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Blog</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Press</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-extrabold mb-4">Support</h4>
+                    <ul class="space-y-2 text-white/60">
+                        <li><a href="#" class="hover:text-white transition-colors">Help Center</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Contact Us</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Privacy Policy</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Terms of Service</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-white/20 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <p class="text-white/60 text-sm">© 2024 Lingo. All rights reserved.</p>
+                <div class="flex gap-4">
+                    <a href="#" class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors" aria-label="Twitter">
+                        <i data-lucide="twitter" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors" aria-label="Facebook">
+                        <i data-lucide="facebook" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors" aria-label="Instagram">
+                        <i data-lucide="instagram" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors" aria-label="YouTube">
+                        <i data-lucide="youtube" class="w-5 h-5"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>

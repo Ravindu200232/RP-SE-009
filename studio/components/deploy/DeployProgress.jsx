@@ -12,8 +12,8 @@ export default function DeployProgress({ run }) {
   const [label, tone] = STATE_TEXT[run.state] || [run.state || 'Working', 'run']
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#121622]/90 p-5 shadow-xl backdrop-blur-xl text-white">
-      <SectionLabel className="border-b border-white/10 pb-2"
+    <div className="rounded-2xl border border-[rgba(145,158,171,0.16)] bg-[#1C252E] p-5 shadow-[0_0_2px_0_rgba(145,158,171,0.2),0_12px_24px_-4px_rgba(0,0,0,0.16)] backdrop-blur-xl text-white">
+      <SectionLabel className="border-b border-[rgba(145,158,171,0.16)] pb-2"
                     right={<Tag tone={{ pass: 'ok', fail: 'bad',
                                         run: 'accent' }[tone] || 'mute'}>
                       {label}
@@ -21,42 +21,42 @@ export default function DeployProgress({ run }) {
         Deploying to {TARGETS.find(target => target.id === run.target)?.label || run.target}
       </SectionLabel>
 
-      <div className="mt-4 flex h-2 overflow-hidden rounded-full bg-white/10">
+      <div className="mt-4 flex h-2 overflow-hidden rounded-full bg-[#28323D]">
         <span className={cn('transition-all duration-500 rounded-full',
-                            tone === 'fail' ? 'bg-rose-500' : tone === 'pass' ? 'bg-emerald-400' : 'bg-blue-500')}
+                            tone === 'fail' ? 'bg-[#FF5630]' : tone === 'pass' ? 'bg-[#22C55E]' : 'bg-[#1877F2]')}
               style={{ width: `${pct}%` }} />
       </div>
-      <p className="mt-2 flex items-center gap-2.5 text-[12px] text-white/60">
-        <span className="font-mono text-[12px] font-bold text-blue-400">{pct}%</span>
+      <p className="mt-2 flex items-center gap-2.5 text-[12px] text-[#919EAB]">
+        <span className="font-mono text-[12px] font-bold text-[#1877F2]">{pct}%</span>
         {run.message}
       </p>
 
-      <ol className="mt-4 overflow-hidden rounded-xl border border-white/10 bg-white/[.02]">
+      <ol className="mt-4 overflow-hidden rounded-xl border border-[rgba(145,158,171,0.16)] bg-[#141A21]/40">
         {rows.map(r => (
           <li key={r.id}
-              className={cn('flex items-start gap-3 border-b border-white/5 last:border-0',
+              className={cn('flex items-start gap-3 border-b border-[rgba(145,158,171,0.08)] last:border-0',
                 'border-l-[3px] py-2.5 px-3.5',
-                r.status === 'active' ? 'border-l-blue-500 bg-blue-500/[.06]'
-                  : r.status === 'error' ? 'border-l-rose-500 bg-rose-500/[.06]'
-                  : r.status === 'done' ? 'border-l-emerald-400'
+                r.status === 'active' ? 'border-l-[#1877F2] bg-[#1877F2]/10'
+                  : r.status === 'error' ? 'border-l-[#FF5630] bg-[#FF5630]/10'
+                  : r.status === 'done' ? 'border-l-[#22C55E]'
                   : 'border-l-transparent')}>
             <span className="mt-[2px] grid size-3.5 shrink-0 place-items-center">
               {r.status === 'done'
-                ? <Check className="size-3.5 text-emerald-400" />
+                ? <Check className="size-3.5 text-[#22C55E]" />
                 : r.status === 'error'
-                ? <AlertTriangle className="size-3.5 text-rose-400" />
+                ? <AlertTriangle className="size-3.5 text-[#FF5630]" />
                 : r.status === 'active'
-                ? <Loader2 className="size-3 animate-spin text-blue-400" />
+                ? <Loader2 className="size-3 animate-spin text-[#1877F2]" />
                 : <span className="size-1.5 rounded-full bg-white/20" />}
             </span>
             <span className="min-w-0 flex-1">
               <span className={cn('block text-[12.5px]',
-                r.status === 'pending' ? 'text-white/40'
-                  : r.status === 'error' ? 'font-semibold text-rose-300'
+                r.status === 'pending' ? 'text-[#919EAB]/60'
+                  : r.status === 'error' ? 'font-semibold text-[#FF5630]'
                   : r.status === 'active' ? 'font-bold text-white' : 'text-white/90')}>
                 {r.title}
               </span>
-              <span className="block font-mono text-[10.5px] leading-snug text-white/50 mt-0.5">
+              <span className="block font-mono text-[10.5px] leading-snug text-[#919EAB] mt-0.5">
                 {r.message || r.detail}
               </span>
             </span>
@@ -65,15 +65,15 @@ export default function DeployProgress({ run }) {
       </ol>
 
       {run.error && (
-        <p className="mt-3.5 flex items-start gap-2.5 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-3 text-[12px] text-rose-300">
-          <AlertTriangle className="mt-px size-4 shrink-0 text-rose-400" />
+        <p className="mt-3.5 flex items-start gap-2.5 rounded-xl border border-[#FF5630]/30 bg-[#FF5630]/10 px-3.5 py-3 text-[12px] text-[#FF5630]">
+          <AlertTriangle className="mt-px size-4 shrink-0 text-[#FF5630]" />
           <span className="min-w-0">{run.error}</span>
         </p>
       )}
 
       {run.url && (
         <a href={run.url} target="_blank" rel="noreferrer"
-           className="mt-3.5 flex items-center gap-2.5 rounded-xl bg-blue-600 px-4 py-3 font-mono text-[12px] font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-500">
+           className="mt-3.5 flex items-center gap-2.5 rounded-xl bg-[#1877F2] px-4 py-3 font-mono text-[12px] font-semibold text-white shadow-[0_8px_16px_0_rgba(24,119,242,0.24)] transition-all hover:bg-[#0C44AE]">
           <Rocket className="size-4 shrink-0" />
           <span className="min-w-0 truncate">{run.url}</span>
         </a>

@@ -32,10 +32,11 @@ page, and not a place for lorem ipsum.
 ## The files you write
 
 ```
-.agentforge/prototype/styles.css    the whole look, written first
-.agentforge/prototype/index.html    the first screen the plan named
-.agentforge/prototype/<screen>.html one per remaining screen, named after its route
-.agentforge/prototype/demo.js       the script that makes the flow work
+.agentforge/prototype/styles.css     the shared look, written first
+.agentforge/prototype/index.html     the first screen the plan named
+.agentforge/prototype/<screen>.html  one per remaining screen, named after its route
+.agentforge/prototype/css/<screen>.css  what that one screen alone wears
+.agentforge/prototype/demo.js        the script that makes the flow work
 ```
 
 Create the folder with `writeFile`. There is nothing in it to read, and nothing
@@ -47,8 +48,15 @@ character, and writing it first is what makes twelve pages look like one
 product. Pages written before their stylesheet carry their design in their
 markup, and then the look cannot be changed in one place.
 
-**Every rule lives in it**: no `<style>` block in a page, no `style="…"` on an
-element. A rule written into one file drifts from the other eleven.
+**Two stylesheets, split by what is shared.** `styles.css` holds the tokens, the
+shell, and every component more than one screen uses. A screen's own
+`css/<screen>.css` holds only what that screen alone wears — its entrance, its
+extra motion, the one thing nobody else has. A shared rule in a page file leaves
+the other eleven behind; a page's flourish in the shared one makes twelve carry
+it.
+
+**No `<style>` block in a page and no `style="…"` on an element**: those are the
+two that cannot be changed from one place.
 
 ## The design contract owns the look
 
@@ -78,6 +86,7 @@ a button rule breaks it.
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Overview | Workspace</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="css/overview.css">
 </head>
 ```
 
@@ -92,7 +101,7 @@ the page keeps its styling.
 
 ## The stylesheet
 
-`styles.css` is the whole look, in this order: the tokens; a short reset
+`styles.css` is the shared look, in this order: the tokens; a short reset
 (`box-sizing`, margins off, body type and colour, `img { max-width: 100% }`);
 the shell; the components; the layout helpers you actually use; the motion;
 then the tablet and phone blocks.
@@ -106,8 +115,7 @@ Ordinary CSS a person can read:
   background: var(--primary); color: #fff; font-weight: 600; cursor: pointer;
   transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
 }
-.button-primary:hover  { background: var(--primary-hover); transform: translateY(-1px); }
-.button-primary:active { transform: translateY(0) scale(.98); }
+.button-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
 ```
 
 **A class says what the thing is, not what it looks like.** `.metric-card`,

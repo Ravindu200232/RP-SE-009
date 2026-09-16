@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Café · warm minimal landing</title>
+  <!-- Tailwind via CDN, Google Fonts, Lucide icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- custom token mapping (café system) -->
+  <style>
+    :root {
+      --primary: #5D4432;
+      --secondary: #E9E3DD;
+      --success: #16A34A;
+      --warning: #D97706;
+      --danger: #DC2626;
+      --surface: #F9F7F5;
+      --text: #3E2B1E;
+    }
+    * {
+      font-family: 'Poppins', sans-serif;
+      /* sharp corners – no radius anywhere */
+      border-radius: 0 !important;
+    }
+    body {
+      background-color: var(--surface);
+      color: var(--text);
+      font-weight: 400;
+      line-height: 1.5;
+    }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .bg-primary { background-color: var(--primary); }
+    .bg-secondary { background-color: var(--secondary); }
+    .bg-surface { background-color: var(--surface); }
+    .text-primary { color: var(--primary); }
+    .text-secondary { color: var(--secondary); }
+    .border-primary { border-color: var(--primary); }
+    .border-secondary { border-color: var(--secondary); }
+    .border-text { border-color: var(--text); }
+    .border-surface { border-color: var(--surface); }
+    .bg-success { background-color: var(--success); }
+    .bg-warning { background-color: var(--warning); }
+    .bg-danger { background-color: var(--danger); }
+    .text-success { color: var(--success); }
+    .text-warning { color: var(--warning); }
+    .text-danger { color: var(--danger); }
+    .bg-white { background-color: #FFFFFF; }
+    .text-white { color: #FFFFFF; }
+    .border-white { border-color: #FFFFFF; }
+    /* focus visible – strong outline */
+    *:focus-visible {
+      outline: 3px solid var(--primary);
+      outline-offset: 2px;
+    }
+    /* consistent spacing rhythm */
+    .section-pad { padding: 4rem 1.5rem; }
+    .container-cafe { max-width: 1200px; margin: 0 auto; }
+    /* sharp, minimal cards */
+    .card-sharp { border: 1px solid var(--secondary); background: white; box-shadow: none; }
+    /* decorative shapes – no photos */
+    .blob-cafe {
+      background: var(--secondary);
+      width: 100%;
+      height: 100%;
+      clip-path: polygon(12% 0%, 88% 0%, 100% 100%, 0% 100%);
+    }
+    .dot-pattern {
+      background-image: radial-gradient(var(--primary) 1.5px, transparent 1.5px);
+      background-size: 16px 16px;
+      opacity: 0.08;
+    }
+  </style>
+</head>
+<body class="antialiased">
+
+  <!-- ===== NAVIGATION ===== -->
+  <header class="bg-surface border-b border-secondary sticky top-0 z-50">
+    <div class="container-cafe flex items-center justify-between px-5 py-4">
+      <!-- logo -->
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-primary flex items-center justify-center">
+          <i data-lucide="coffee" class="w-5 h-5 text-white"></i>
+        </div>
+        <span class="text-xl font-bold tracking-tight text-primary">café</span>
+      </div>
+      <!-- desktop nav -->
+      <nav class="hidden md:flex items-center gap-8 text-sm font-medium">
+        <a href="#" class="hover:text-primary transition">Home</a>
+        <a href="#" class="hover:text-primary transition">Process</a>
+        <a href="#" class="hover:text-primary transition">Pricing</a>
+        <a href="#" class="hover:text-primary transition">FAQ</a>
+      </nav>
+      <div class="flex items-center gap-3">
+        <a href="#" class="hidden sm:inline-block text-sm font-medium border border-primary px-4 py-2 text-primary hover:bg-primary hover:text-white transition">Sign in</a>
+        <a href="#" class="bg-primary text-white text-sm font-medium px-4 py-2 hover:bg-[#4a3728] transition">Get started</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== HERO ===== -->
+  <section class="bg-surface section-pad">
+    <div class="container-cafe grid md:grid-cols-2 gap-12 items-center">
+      <div>
+        <p class="font-mono text-xs uppercase tracking-widest text-primary mb-4">☕ slow mornings, fast builds</p>
+        <h1 class="text-4xl md:text-5xl font-extrabold leading-tight text-primary">Warm, minimal<br/>design system for<br/>human interfaces.</h1>
+        <p class="mt-6 text-lg text-text/80 max-w-md">Café blends cozy tones with sharp clarity — build calm, accessible products without the visual noise.</p>
+        <div class="mt-8 flex flex-wrap gap-4">
+          <a href="#" class="bg-primary text-white px-6 py-3 font-medium hover:bg-[#4a3728] transition">Explore components</a>
+          <a href="#" class="border border-primary px-6 py-3 font-medium text-primary hover:bg-secondary transition">View on GitHub</a>
+        </div>
+        <div class="mt-8 flex items-center gap-4 text-sm">
+          <span class="flex items-center gap-1"><i data-lucide="check-circle" class="w-4 h-4 text-success"></i> WCAG 2.2 AA</span>
+          <span class="flex items-center gap-1"><i data-lucide="keyboard" class="w-4 h-4 text-primary"></i> keyboard-first</span>
+        </div>
+      </div>
+      <!-- abstract CSS art – no photos -->
+      <div class="relative h-64 md:h-80 w-full bg-secondary overflow-hidden">
+        <div class="absolute inset-0 dot-pattern"></div>
+        <div class="absolute -bottom-8 -right-8 w-64 h-64 bg-primary opacity-20 rotate-12"></div>
+        <div class="absolute top-8 left-8 w-24 h-24 bg-primary/10 border border-primary"></div>
+        <div class="absolute bottom-10 left-10 w-32 h-32 bg-white border border-primary flex items-center justify-center">
+          <i data-lucide="cup-soda" class="w-12 h-12 text-primary"></i>
+        </div>
+        <div class="absolute top-4 right-10 w-16 h-16 bg-white border border-primary flex items-center justify-center">
+          <i data-lucide="leaf" class="w-6 h-6 text-primary"></i>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== STATS ===== -->
+  <section class="bg-primary section-pad">
+    <div class="container-cafe grid grid-cols-2 md:grid-cols-4 gap-8 text-white">
+      <div>
+        <p class="text-3xl font-bold">120+</p>
+        <p class="text-sm text-white/70 mt-1">components</p>
+      </div>
+      <div>
+        <p class="text-3xl font-bold">99.9%</p>
+        <p class="text-sm text-white/70 mt-1">uptime</p>
+      </div>
+      <div>
+        <p class="text-3xl font-bold">4.9</p>
+        <p class="text-sm text-white/70 mt-1">rating</p>
+      </div>
+      <div>
+        <p class="text-3xl font-bold">0</p>
+        <p class="text-sm text-white/70 mt-1">round corners</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FEATURES ===== -->
+  <section class="bg-surface section-pad">
+    <div class="container-cafe">
+      <h2 class="text-3xl font-bold text-primary mb-12">Features built for calm</h2>
+      <div class="grid md:grid-cols-3 gap-6">
+        <!-- feature 1 -->
+        <div class="card-sharp p-6">
+          <div class="w-10 h-10 bg-secondary flex items-center justify-center mb-4">
+            <i data-lucide="palette" class="w-5 h-5 text-primary"></i>
+          </div>
+          <h3 class="font-semibold text-lg">Token-driven</h3>
+          <p class="text-sm mt-2 text-text/70">Every color, spacing, and type style uses semantic tokens — no raw hex values.</p>
+        </div>
+        <!-- feature 2 -->
+        <div class="card-sharp p-6">
+          <div class="w-10 h-10 bg-secondary flex items-center justify-center mb-4">
+            <i data-lucide="accessibility" class="w-5 h-5 text-primary"></i>
+          </div>
+          <h3 class="font-semibold text-lg">AA accessible</h3>
+          <p class="text-sm mt-2 text-text/70">Contrast-checked, keyboard-first, visible focus states on every interactive element.</p>
+        </div>
+        <!-- feature 3 -->
+        <div class="card-sharp p-6">
+          <div class="w-10 h-10 bg-secondary flex items-center justify-center mb-4">
+            <i data-lucide="zap" class="w-5 h-5 text-primary"></i>
+          </div>
+          <h3 class="font-semibold text-lg">Zero radius</h3>
+          <p class="text-sm mt-2 text-text/70">Sharp corners everywhere — a distinctive, editorial look that stays consistent.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PROCESS ===== -->
+  <section class="bg-secondary section-pad">
+    <div class="container-cafe">
+      <h2 class="text-3xl font-bold text-primary mb-12">How it works</h2>
+      <div class="grid md:grid-cols-4 gap-6">
+        <div class="border border-primary p-6 bg-surface">
+          <span class="font-mono text-2xl font-bold text-primary">01</span>
+          <h3 class="mt-3 font-semibold">Define</h3>
+          <p class="text-sm mt-2 text-text/70">Set your semantic tokens and type scale.</p>
+        </div>
+        <div class="border border-primary p-6 bg-surface">
+          <span class="font-mono text-2xl font-bold text-primary">02</span>
+          <h3 class="mt-3 font-semibold">Design</h3>
+          <p class="text-sm mt-2 text-text/70">Compose with sharp, minimal components.</p>
+        </div>
+        <div class="border border-primary p-6 bg-surface">
+          <span class="font-mono text-2xl font-bold text-primary">03</span>
+          <h3 class="mt-3 font-semibold">Build</h3>
+          <p class="text-sm mt-2 text-text/70">Use the tokens directly in your code.</p>
+        </div>
+        <div class="border border-primary p-6 bg-surface">
+          <span class="font-mono text-2xl font-bold text-primary">04</span>
+          <h3 class="mt-3 font-semibold">Ship</h3>
+          <p class="text-sm mt-2 text-text/70">Accessible, consistent, and fast.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== BENEFITS ===== -->
+  <section class="bg-surface section-pad">
+    <div class="container-cafe grid md:grid-cols-2 gap-10 items-center">
+      <div class="order-2 md:order-1 relative h-64 bg-secondary overflow-hidden">
+        <div class="absolute inset-0 bg-primary/5"></div>
+        <div class="absolute top-6 left-6 w-20 h-20 bg-primary"></div>
+        <div class="absolute bottom-6 right-6 w-32 h-32 bg-white border border-primary"></div>
+        <i data-lucide="heart-handshake" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 text-primary"></i>
+      </div>
+      <div class="order-1 md:order-2">
+        <h2 class="text-3xl font-bold text-primary mb-6">Why teams choose café</h2>
+        <ul class="space-y-4">
+          <li class="flex gap-3"><i data-lucide="check" class="w-5 h-5 text-success mt-0.5"></i><span><strong>Consistent rhythm</strong> — spacing scale 2/4/8/12/16/24/32/48 everywhere.</span></li>
+          <li class="flex gap-3"><i data-lucide="check" class="w-5 h-5 text-success mt-0.5"></i><span><strong>Warm & neutral</strong> — primary #5D4432, secondary #E9E3DD, surface #F9F7F5.</span></li>
+          <li class="flex gap-3"><i data-lucide="check" class="w-5 h-5 text-success mt-0.5"></i><span><strong>Sharp identity</strong> — no rounded corners, distinctive and modern.</span></li>
+          <li class="flex gap-3"><i data-lucide="check" class="w-5 h-5 text-success mt-0.5"></i><span><strong>Poppins everywhere</strong> — expressive but friendly, weights 100–900.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TESTIMONIALS ===== -->
+  <section class="bg-secondary section-pad">
+    <div class="container-cafe">
+      <h2 class="text-3xl font-bold text-primary mb-12">Loved by builders</h2>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="bg-white p-6 border border-primary">
+          <div class="flex gap-1 text-warning mb-3">
+            <i data-lucide="star" class="w-4 h-4 fill-warning"></i><i data-lucide="star" class="w-4 h-4 fill-warning"></i><i data-lucide="star" class="w-4 h-4 fill-warning"></i><i data-lucide="star" class="w-4 h-4 fill-warning"></i><i data-lucide="star" class="w-4 h-4 fill-warning"></i>
+          </div>
+          <p class="text-sm">"Finally a system that respects sharp corners and warm tones. Our UI finally feels cohesive."</p>
+          <p class="mt-4 font-semibold text-primary">— Maya Chen</p>
+          <p class="text-xs text-text/60">Product Designer</p>
+        </div>
+        <div class="bg-white p-6 border border-primary">
+          <div class="flex gap-1 text-warning mb-3">
+            <i data-lucide="star" class="w-4 h-4 fill-warning"></i><i data-lucide="star" class="w-4 h-4 fill-warning"></i><i data-lucide="star" class="w-4 h-4 fill-warning"></i><i data-lucide="star" class="w-4 h-4 fill-warning"></i><i data-lucide="star" class="w-4 h-4 fill-warning"></i>
+          </div>
+          <p class="text-sm">"The token system is brilliant. We migrated our entire dashboard in two days."</p>
+          <p class="mt-4 font-semibold text-primary">— Jonas Weber</p>
+          <p class="text-xs text-text/60">Frontend Lead</p>
+        </div>
+        <div class="bg-white p-6 border border-primary">
+          <div class="flex gap-1 text-warning mb-3">
+            <i data-lucide="star" class="w-4 h-4 fill-warning"></i><i data-lucide="star" class="w-4 h-4 fill-warning"></i><i data-lucide="star" class="w-4 h-4 fill-warning"></i><i data-lucide="star" class="w-4 h-4 fill-warning"></i><i data-lucide="star" class="w-4 h-4 fill-warning"></i>
+          </div>
+          <p class="text-sm">"Accessibility is baked in, not bolted on. Focus states are beautiful."</p>
+          <p class="mt-4 font-semibold text-primary">— Priya Sharma</p>
+          <p class="text-xs text-text/60">Accessibility Engineer</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PRICING ===== -->
+  <section class="bg-surface section-pad">
+    <div class="container-cafe">
+      <h2 class="text-3xl font-bold text-primary mb-12">Simple pricing</h2>
+      <div class="grid md:grid-cols-3 gap-6">
+        <!-- basic -->
+        <div class="border border-primary p-6 bg-white">
+          <h3 class="font-semibold text-lg">Basic</h3>
+          <p class="mt-2 text-3xl font-bold">$0</p>
+          <p class="text-sm text-text/60">per month</p>
+          <ul class="mt-6 space-y-2 text-sm">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i>Core components</li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i>Community support</li>
+            <li class="flex gap-2"><i data-lucide="x" class="w-4 h-4 text-danger"></i>Advanced tokens</li>
+          </ul>
+          <a href="#" class="mt-8 block text-center border border-primary px-4 py-2 text-primary hover:bg-secondary transition">Start free</a>
+        </div>
+        <!-- pro -->
+        <div class="border border-primary p-6 bg-primary text-white">
+          <h3 class="font-semibold text-lg">Pro</h3>
+          <p class="mt-2 text-3xl font-bold">$24</p>
+          <p class="text-sm text-white/70">per month</p>
+          <ul class="mt-6 space-y-2 text-sm">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i>All components</li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i>Figma library</li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i>Priority support</li>
+          </ul>
+          <a href="#" class="mt-8 block text-center bg-white text-primary px-4 py-2 font-medium hover:bg-secondary transition">Get Pro</a>
+        </div>
+        <!-- enterprise -->
+        <div class="border border-primary p-6 bg-white">
+          <h3 class="font-semibold text-lg">Enterprise</h3>
+          <p class="mt-2 text-3xl font-bold">Custom</p>
+          <p class="text-sm text-text/60">tailored</p>
+          <ul class="mt-6 space-y-2 text-sm">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i>Custom tokens</li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i>Design review</li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i>SSO & audit</li>
+          </ul>
+          <a href="#" class="mt-8 block text-center border border-primary px-4 py-2 text-primary hover:bg-secondary transition">Contact us</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FAQ ===== -->
+  <section class="bg-secondary section-pad">
+    <div class="container-cafe max-w-3xl">
+      <h2 class="text-3xl font-bold text-primary mb-8">Frequently asked</h2>
+      <div class="space-y-4">
+        <details class="bg-white border border-primary p-5">
+          <summary class="font-medium cursor-pointer">Is café really free for commercial use?</summary>
+          <p class="mt-3 text-sm text-text/70">Yes, the core system is MIT licensed. You can use it in commercial projects without restrictions.</p>
+        </details>
+        <details class="bg-white border border-primary p-5">
+          <summary class="font-medium cursor-pointer">Can I customize the color tokens?</summary>
+          <p class="mt-3 text-sm text-text/70">Absolutely. All colors are exposed as CSS variables — override them in your theme.</p>
+        </details>
+        <details class="bg-white border border-primary p-5">
+          <summary class="font-medium cursor-pointer">Do you provide Figma files?</summary>
+          <p class="mt-3 text-sm text-text/70">Pro and Enterprise plans include the full Figma library, updated regularly.</p>
+        </details>
+        <details class="bg-white border border-primary p-5">
+          <summary class="font-medium cursor-pointer">How does accessibility testing work?</summary>
+          <p class="mt-3 text-sm text-text/70">Every component is tested against WCAG 2.2 AA, including keyboard navigation and contrast.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="bg-primary text-white section-pad">
+    <div class="container-cafe grid md:grid-cols-4 gap-8">
+      <div>
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 bg-white flex items-center justify-center">
+            <i data-lucide="coffee" class="w-5 h-5 text-primary"></i>
+          </div>
+          <span class="text-xl font-bold">café</span>
+        </div>
+        <p class="text-sm text-white/70 mt-4">Warm, minimal, accessible.</p>
+      </div>
+      <div>
+        <h4 class="font-semibold mb-4">Product</h4>
+        <ul class="space-y-2 text-sm text-white/70">
+          <li><a href="#" class="hover:text-white">Components</a></li>
+          <li><a href="#" class="hover:text-white">Tokens</a></li>
+          <li><a href="#" class="hover:text-white">Templates</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="font-semibold mb-4">Resources</h4>
+        <ul class="space-y-2 text-sm text-white/70">
+          <li><a href="#" class="hover:text-white">Documentation</a></li>
+          <li><a href="#" class="hover:text-white">Changelog</a></li>
+          <li><a href="#" class="hover:text-white">Support</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="font-semibold mb-4">Connect</h4>
+        <div class="flex gap-4">
+          <a href="#" aria-label="Twitter"><i data-lucide="twitter" class="w-5 h-5"></i></a>
+          <a href="#" aria-label="GitHub"><i data-lucide="github" class="w-5 h-5"></i></a>
+          <a href="#" aria-label="LinkedIn"><i data-lucide="linkedin" class="w-5 h-5"></i></a>
+        </div>
+      </div>
+    </div>
+    <div class="container-cafe mt-10 pt-6 border-t border-white/20 text-sm text-white/60 flex flex-col md:flex-row justify-between">
+      <p>© 2025 café design system. All rights reserved.</p>
+      <div class="flex gap-6 mt-2 md:mt-0">
+        <a href="#" class="hover:text-white">Privacy</a>
+        <a href="#" class="hover:text-white">Terms</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- lucide init -->
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

@@ -193,6 +193,20 @@ def _front_matter(text: str) -> tuple[dict, str]:
     return meta, body.lstrip("\n")
 
 
+def skill_index(workspace: Path | str, name: str) -> str:
+    """A pack's index, front matter removed, for placing straight in a prompt.
+
+    A pack index is a few kilobytes and every build needs it, so it is cheaper
+    to carry it in the system prompt than to spend the first turn discovering
+    it. Returns an empty string when the pack is not installed.
+    """
+    try:
+        _, body = _front_matter(read_skill(workspace, name))
+    except Exception:  # noqa: BLE001 - a missing pack must not stop a build
+        return ""
+    return body.strip()
+
+
 def catalog(workspace: Path | str) -> list[dict]:
     """Every skill this project can read, project copies taking precedence."""
     found: dict[str, dict] = {}

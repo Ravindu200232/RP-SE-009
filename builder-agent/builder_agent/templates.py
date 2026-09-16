@@ -143,7 +143,7 @@ def template_notice(result: Scaffold) -> str:
         "its README before adding a service or any other repeated part.",
         "The scaffold was verified before it shipped. Implement the complete product first, then "
         "install dependencies once and follow the build, runtime, unit and E2E order from the "
-        "full-app-builder skill; do not spend an extra pass retesting the untouched placeholder.",
+        "stack pack; do not spend an extra pass retesting the untouched placeholder.",
     ])
 
 

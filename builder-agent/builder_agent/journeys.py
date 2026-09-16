@@ -131,9 +131,21 @@ def _retry_assert(page, step: dict) -> tuple[bool, str]:
     budget = max(0.1, min(STEP_TIMEOUT, float(step.get("timeoutMs", 5000)) / 1000))
     deadline = time.time() + budget
     passed, detail = _assert(page, step)
+    # Polling on a tight beat rather than backing off. The backoff here assumed
+    # a poll was expensive; measured, it is not - a full accessibility tree on a
+    # list page is 6.5ms and a selector lookup 2ms, so a 20ms beat spends about
+    # a third of a core and nothing else. The backoff's cost was latency: it
+    # slept 50, then 100, then 200, then 400ms, so a state that arrived at 200ms
+    # was not seen until 350, and one arriving at 400ms not until 750. On a
+    # journey of eighty steps that is seconds of waiting for something already
+    # true. Past a second the state is genuinely slow, and a 50ms beat is plenty.
+    # The tree is never cached between polls; re-reading it is the point.
+    beat, slow_after = 0.02, time.time() + 1.0
     while not passed and time.time() < deadline:
-        time.sleep(0.25)
+        time.sleep(min(beat, max(0.0, deadline - time.time())))
         passed, detail = _assert(page, step)
+        if not passed and time.time() > slow_after:
+            beat = 0.05
     return passed, detail
 
 

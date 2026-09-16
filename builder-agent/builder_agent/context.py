@@ -6,6 +6,7 @@ long run makes hundreds of requests and only ever has to fit the next one.
 from __future__ import annotations
 
 import json
+import os
 import re
 from dataclasses import dataclass
 
@@ -13,6 +14,16 @@ from .llm import estimate_tokens
 
 # One bounded native tool call, whole. Below this a cut-off answer is certain.
 OUTPUT_FLOOR = 2048
+
+# How full the usable window gets before the transcript is compacted. This used
+# to be a flat 64,000 whatever the model could hold, on the reasoning that a big
+# window is capacity rather than licence to resend everything. Measured against a
+# 1,048,576-token model that was backwards: compaction evicts the files the run
+# is working from, the model reads them again, and the window refills. One build
+# read `styles.css` forty-nine times and wrote nothing in twelve minutes. A
+# re-read costs a round trip and seven to nine seconds; carrying a file already
+# in the window costs prompt the model would have paid to fetch it anyway.
+COMPACT_AT = max(0.1, min(0.95, float(os.environ.get("AGENTFORGE_COMPACT_AT", "0.75"))))
 
 
 def output_reserve(context_tokens: int, max_tokens: int) -> int:
@@ -84,9 +95,11 @@ class ContextBudget:
             reserve=self.reserve,
             used_percent=min(100, round(prompt_tokens * 100 / input_limit)),
             near_limit=prompt_tokens >= input_limit,
-            # Large model windows are capacity, not a reason to resend a
-            # million-token transcript on every testing turn.
-            should_compact=prompt_tokens >= min(input_limit, 64_000),
+            # Follows the window: a 1M model compacts near 1M, a 32k model near
+            # 32k. `input_limit` has already had the output reserve and the
+            # safety margin taken out of it, so this fraction is of room the
+            # request can genuinely use.
+            should_compact=prompt_tokens >= int(input_limit * COMPACT_AT),
         )
 
     def observe(self, prompt_tokens: int, estimate: int) -> None:

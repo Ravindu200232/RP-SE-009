@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bold — design system in action</title>
+  <!-- Google Fonts: Archivo Black (display) + JetBrains Mono (mono) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* design system tokens — bold */
+    :root {
+      --color-primary: #0077BC;
+      --color-secondary: #009866;
+      --color-success: #16A34A;
+      --color-warning: #D97706;
+      --color-danger: #DC2626;
+      --color-surface: #111111;
+      --color-text: #111827;
+      --font-display: 'Archivo Black', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 32px;
+    }
+    body { font-family: var(--font-display); background: #f5f5f4; color: var(--color-text); }
+    .font-mono { font-family: var(--font-mono); }
+    .font-display { font-family: var(--font-display); }
+    .bg-surface { background: var(--color-surface); }
+    .text-surface { color: var(--color-surface); }
+    .bg-primary { background: var(--color-primary); }
+    .bg-secondary { background: var(--color-secondary); }
+    .text-primary { color: var(--color-primary); }
+    .text-secondary { color: var(--color-secondary); }
+    .border-surface { border-color: var(--color-surface); }
+    .border-primary { border-color: var(--color-primary); }
+    .border-secondary { border-color: var(--color-secondary); }
+    /* sharp corners — no rounding anywhere */
+    * { border-radius: 0 !important; }
+    /* focus visible — high contrast */
+    :focus-visible { outline: 4px solid var(--color-primary); outline-offset: 2px; }
+    /* reduced motion */
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+  </style>
+</head>
+<body class="bg-neutral-100 antialiased">
+
+  <!-- ========== NAVIGATION ========== -->
+  <header class="bg-surface text-white sticky top-0 z-50 border-b-4 border-primary">
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between" aria-label="Main navigation">
+      <div class="flex items-center gap-2">
+        <span class="w-8 h-8 bg-primary inline-block"></span>
+        <span class="text-2xl font-display tracking-tight">BOLD</span>
+      </div>
+      <div class="hidden md:flex items-center gap-8 font-mono text-sm uppercase tracking-wider">
+        <a href="#features" class="hover:text-primary transition-colors">Features</a>
+        <a href="#process" class="hover:text-primary transition-colors">Process</a>
+        <a href="#testimonials" class="hover:text-primary transition-colors">Stories</a>
+        <a href="#pricing" class="hover:text-primary transition-colors">Pricing</a>
+        <a href="#faq" class="hover:text-primary transition-colors">FAQ</a>
+      </div>
+      <a href="#pricing" class="bg-primary px-5 py-2 font-mono text-sm font-bold uppercase tracking-wider hover:bg-secondary transition-colors inline-flex items-center gap-2">
+        <i data-lucide="arrow-right" class="w-4 h-4"></i> Get Bold
+      </a>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- ========== HERO ========== -->
+    <section class="bg-surface text-white">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28 grid lg:grid-cols-2 gap-16 items-center">
+        <div>
+          <p class="font-mono text-primary uppercase tracking-widest text-sm mb-4">● bold system v2.0</p>
+          <h1 class="text-5xl sm:text-6xl lg:text-7xl font-display leading-[1.1] tracking-tight">
+            Design that <span class="text-primary">shouts</span> —<br> never whispers.
+          </h1>
+          <p class="mt-6 text-lg font-mono text-neutral-300 max-w-xl">
+            Heavyweight typography, high-contrast blocks, and zero rounded corners.
+            Built for teams that mean business.
+          </p>
+          <div class="mt-10 flex flex-wrap gap-4">
+            <a href="#pricing" class="bg-primary px-8 py-4 font-mono font-bold uppercase tracking-wide text-lg inline-flex items-center gap-3 hover:bg-secondary transition-colors">
+              <i data-lucide="zap" class="w-5 h-5"></i> Start free
+            </a>
+            <a href="#process" class="border-4 border-white px-8 py-4 font-mono font-bold uppercase tracking-wide text-lg inline-flex items-center gap-3 hover:bg-white hover:text-surface transition-colors">
+              <i data-lucide="play" class="w-5 h-5"></i> See process
+            </a>
+          </div>
+        </div>
+        <!-- abstract CSS shape — no photos -->
+        <div class="relative h-80 lg:h-96 bg-neutral-900 border-4 border-primary overflow-hidden">
+          <div class="absolute top-0 left-0 w-2/3 h-2/3 bg-primary opacity-80"></div>
+          <div class="absolute bottom-0 right-0 w-1/2 h-1/2 bg-secondary opacity-90"></div>
+          <div class="absolute top-1/2 left-1/2 w-40 h-40 bg-white -translate-x-1/2 -translate-y-1/2 rotate-12"></div>
+          <div class="absolute bottom-6 left-6 font-mono text-white text-sm border-2 border-white px-3 py-1 uppercase">sharp by design</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== STATS ========== -->
+    <section class="bg-primary text-white">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div class="border-l-4 border-white pl-4">
+          <p class="text-4xl font-display">98%</p>
+          <p class="font-mono text-sm uppercase tracking-wider mt-1">retention</p>
+        </div>
+        <div class="border-l-4 border-white pl-4">
+          <p class="text-4xl font-display">2.4x</p>
+          <p class="font-mono text-sm uppercase tracking-wider mt-1">conversion</p>
+        </div>
+        <div class="border-l-4 border-white pl-4">
+          <p class="text-4xl font-display">120+</p>
+          <p class="font-mono text-sm uppercase tracking-wider mt-1">teams</p>
+        </div>
+        <div class="border-l-4 border-white pl-4">
+          <p class="text-4xl font-display">0px</p>
+          <p class="font-mono text-sm uppercase tracking-wider mt-1">border radius</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== FEATURES ========== -->
+    <section id="features" class="bg-neutral-100 py-20">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-end justify-between mb-12">
+          <h2 class="text-4xl sm:text-5xl font-display max-w-xl">Features with <span class="text-primary">zero compromise</span></h2>
+          <p class="font-mono text-sm uppercase tracking-widest text-neutral-500 hidden md:block">/ 01</p>
+        </div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- feature 1 -->
+          <div class="bg-white border-4 border-surface p-6 hover:bg-surface hover:text-white transition-colors group">
+            <i data-lucide="type" class="w-10 h-10 text-primary group-hover:text-primary mb-4"></i>
+            <h3 class="text-2xl font-display mb-2">Archivo Black</h3>
+            <p class="font-mono text-sm leading-relaxed opacity-80">Heavyweight display type, 9 weights, always loud. No thin fonts allowed.</p>
+          </div>
+          <!-- feature 2 -->
+          <div class="bg-white border-4 border-surface p-6 hover:bg-surface hover:text-white transition-colors group">
+            <i data-lucide="palette" class="w-10 h-10 text-primary group-hover:text-primary mb-4"></i>
+            <h3 class="text-2xl font-display mb-2">High contrast</h3>
+            <p class="font-mono text-sm leading-relaxed opacity-80">#0077BC on #111111 — always AA/AAA. Color never carries meaning alone.</p>
+          </div>
+          <!-- feature 3 -->
+          <div class="bg-white border-4 border-surface p-6 hover:bg-surface hover:text-white transition-colors group">
+            <i data-lucide="square" class="w-10 h-10 text-primary group-hover:text-primary mb-4"></i>
+            <h3 class="text-2xl font-display mb-2">Sharp corners</h3>
+            <p class="font-mono text-sm leading-relaxed opacity-80">0px radius everywhere. Buttons, cards, inputs — all cut straight.</p>
+          </div>
+          <!-- feature 4 -->
+          <div class="bg-white border-4 border-surface p-6 hover:bg-surface hover:text-white transition-colors group">
+            <i data-lucide="keyboard" class="w-10 h-10 text-primary group-hover:text-primary mb-4"></i>
+            <h3 class="text-2xl font-display mb-2">Keyboard-first</h3>
+            <p class="font-mono text-sm leading-relaxed opacity-80">Visible focus rings, logical tab order, 44px touch targets.</p>
+          </div>
+          <!-- feature 5 -->
+          <div class="bg-white border-4 border-surface p-6 hover:bg-surface hover:text-white transition-colors group">
+            <i data-lucide="move" class="w-10 h-10 text-primary group-hover:text-primary mb-4"></i>
+            <h3 class="text-2xl font-display mb-2">4px rhythm</h3>
+            <p class="font-mono text-sm leading-relaxed opacity-80">Spacing scale: 4/8/12/16/24/32. Every gap is a token.</p>
+          </div>
+          <!-- feature 6 -->
+          <div class="bg-white border-4 border-surface p-6 hover:bg-surface hover:text-white transition-colors group">
+            <i data-lucide="monitor" class="w-10 h-10 text-primary group-hover:text-primary mb-4"></i>
+            <h3 class="text-2xl font-display mb-2">Desktop-first</h3>
+            <p class="font-mono text-sm leading-relaxed opacity-80">Expressive scale starts big, scales down gracefully to 400px.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== PROCESS ========== -->
+    <section id="process" class="bg-surface text-white py-20">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-4xl sm:text-5xl font-display mb-16">Process — <span class="text-secondary">no fluff</span></h2>
+        <div class="grid md:grid-cols-3 gap-8">
+          <!-- step 1 -->
+          <div class="border-2 border-secondary p-8 relative">
+            <span class="font-mono text-secondary text-sm">STEP 01</span>
+            <h3 class="text-2xl font-display mt-4 mb-3">Audit</h3>
+            <p class="font-mono text-sm opacity-80">We strip every interface to its raw structure. No rounded corners survive.</p>
+            <div class="absolute top-0 right-0 w-8 h-8 bg-secondary"></div>
+          </div>
+          <!-- step 2 -->
+          <div class="border-2 border-primary p-8 relative">
+            <span class="font-mono text-primary text-sm">STEP 02</span>
+            <h3 class="text-2xl font-display mt-4 mb-3">Build</h3>
+            <p class="font-mono text-sm opacity-80">Heavyweight type, primary/secondary blocks, 4px spacing grid.</p>
+            <div class="absolute top-0 right-0 w-8 h-8 bg-primary"></div>
+          </div>
+          <!-- step 3 -->
+          <div class="border-2 border-white p-8 relative">
+            <span class="font-mono text-white text-sm">STEP 03</span>
+            <h3 class="text-2xl font-display mt-4 mb-3">Ship</h3>
+            <p class="font-mono text-sm opacity-80">Test with keyboard, screen reader, and harsh contrast. Always AA.</p>
+            <div class="absolute top-0 right-0 w-8 h-8 bg-white"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== BENEFITS ========== -->
+    <section class="bg-secondary text-white py-16">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-12 items-center">
+        <div>
+          <h2 class="text-4xl font-display mb-6">Why teams switch to bold</h2>
+          <ul class="space-y-4 font-mono text-lg">
+            <li class="flex items-start gap-3"><i data-lucide="check-circle" class="w-6 h-6 mt-1 shrink-0"></i> 47% faster design reviews</li>
+            <li class="flex items-start gap-3"><i data-lucide="check-circle" class="w-6 h-6 mt-1 shrink-0"></i> 100% accessible by default</li>
+            <li class="flex items-start gap-3"><i data-lucide="check-circle" class="w-6 h-6 mt-1 shrink-0"></i> No more “can we round this?”</li>
+            <li class="flex items-start gap-3"><i data-lucide="check-circle" class="w-6 h-6 mt-1 shrink-0"></i> One typeface, nine weights</li>
+          </ul>
+        </div>
+        <!-- abstract graphic -->
+        <div class="bg-surface p-8 border-4 border-white h-64 flex items-center justify-center">
+          <div class="grid grid-cols-3 gap-2 w-full max-w-xs">
+            <div class="h-16 bg-primary"></div>
+            <div class="h-16 bg-white"></div>
+            <div class="h-16 bg-secondary"></div>
+            <div class="h-16 bg-white"></div>
+            <div class="h-16 bg-primary"></div>
+            <div class="h-16 bg-white"></div>
+            <div class="h-16 bg-secondary"></div>
+            <div class="h-16 bg-white"></div>
+            <div class="h-16 bg-primary"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== TESTIMONIALS ========== -->
+    <section id="testimonials" class="bg-neutral-100 py-20">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-4xl sm:text-5xl font-display mb-12">Teams that <span class="text-primary">went bold</span></h2>
+        <div class="grid md:grid-cols-3 gap-6">
+          <!-- testimonial 1 -->
+          <figure class="bg-white border-4 border-surface p-6">
+            <div class="flex gap-1 text-warning mb-4" aria-label="5 out of 5 stars">
+              <i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i>
+            </div>
+            <blockquote class="font-mono text-sm leading-relaxed">“We removed every border radius and our conversion jumped 2x. Bold is the only way.”</blockquote>
+            <figcaption class="mt-6 flex items-center gap-3">
+              <span class="w-10 h-10 bg-primary inline-block"></span>
+              <div><p class="font-display">Maya Chen</p><p class="font-mono text-xs text-neutral-500">VP Design, Northwind</p></div>
+            </figcaption>
+          </figure>
+          <!-- testimonial 2 -->
+          <figure class="bg-white border-4 border-surface p-6">
+            <div class="flex gap-1 text-warning mb-4"><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i></div>
+            <blockquote class="font-mono text-sm leading-relaxed">“Finally a system that respects keyboard users. Focus states are impossible to miss.”</blockquote>
+            <figcaption class="mt-6 flex items-center gap-3">
+              <span class="w-10 h-10 bg-secondary inline-block"></span>
+              <div><p class="font-display">Jonas Weber</p><p class="font-mono text-xs text-neutral-500">Lead Engineer, Sable</p></div>
+            </figcaption>
+          </figure>
+          <!-- testimonial 3 -->
+          <figure class="bg-white border-4 border-surface p-6">
+            <div class="flex gap-1 text-warning mb-4"><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i><i data-lucide="star" class="w-5 h-5 fill-current"></i></div>
+            <blockquote class="font-mono text-sm leading-relaxed">“Archivo Black is all we need. It’s loud, confident, and our brand finally matches.”</blockquote>
+            <figcaption class="mt-6 flex items-center gap-3">
+              <span class="w-10 h-10 bg-warning inline-block"></span>
+              <div><p class="font-display">Aisha Bello</p><p class="font-mono text-xs text-neutral-500">Brand Lead, Kite</p></div>
+            </figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== PRICING ========== -->
+    <section id="pricing" class="bg-surface text-white py-20">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-4xl sm:text-5xl font-display mb-12">Pricing — <span class="text-primary">straight cut</span></h2>
+        <div class="grid md:grid-cols-3 gap-6">
+          <!-- basic -->
+          <div class="border-4 border-white p-8 flex flex-col">
+            <h3 class="text-2xl font-display uppercase">Starter</h3>
+            <p class="font-mono text-sm mt-2 opacity-70">For small teams</p>
+            <p class="text-5xl font-display my-6">$0<span class="text-lg font-mono text-neutral-400">/mo</span></p>
+            <ul class="font-mono text-sm space-y-2 mb-8 flex-1">
+              <li>✓ 3 projects</li>
+              <li>✓ Bold components</li>
+              <li>✓ Community support</li>
+            </ul>
+            <a href="#" class="bg-white text-surface text-center font-mono font-bold py-3 uppercase hover:bg-primary hover:text-white transition-colors">Start free</a>
+          </div>
+          <!-- pro (highlight) -->
+          <div class="bg-primary border-4 border-primary p-8 flex flex-col relative">
+            <span class="absolute top-0 right-0 bg-white text-surface font-mono text-xs px-3 py-1 font-bold">MOST BOLD</span>
+            <h3 class="text-2xl font-display uppercase">Pro</h3>
+            <p class="font-mono text-sm mt-2 opacity-80">For scaling teams</p>
+            <p class="text-5xl font-display my-6">$49<span class="text-lg font-mono text-neutral-200">/mo</span></p>
+            <ul class="font-mono text-sm space-y-2 mb-8 flex-1">
+              <li>✓ Unlimited projects</li>
+              <li>✓ Advanced tokens</li>
+              <li>✓ Priority support</li>
+              <li>✓ 0px radius guarantee</li>
+            </ul>
+            <a href="#" class="bg-white text-primary text-center font-mono font-bold py-3 uppercase hover:bg-surface hover:text-white transition-colors">Go bold</a>
+          </div>
+          <!-- enterprise -->
+          <div class="border-4 border-white p-8 flex flex-col">
+            <h3 class="text-2xl font-display uppercase">Scale</h3>
+            <p class="font-mono text-sm mt-2 opacity-70">For orgs</p>
+            <p class="text-5xl font-display my-6">$99<span class="text-lg font-mono text-neutral-400">/mo</span></p>
+            <ul class="font-mono text-sm space-y-2 mb-8 flex-1">
+              <li>✓ SSO & audit</li>
+              <li>✓ Custom tokens</li>
+              <li>✓ 24/7 support</li>
+            </ul>
+            <a href="#" class="bg-white text-surface text-center font-mono font-bold py-3 uppercase hover:bg-primary hover:text-white transition-colors">Contact sales</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== FAQ ========== -->
+    <section id="faq" class="bg-neutral-100 py-20">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-4xl font-display mb-10">FAQ — <span class="text-primary">bold answers</span></h2>
+        <div class="space-y-4">
+          <details class="bg-white border-4 border-surface p-6" open>
+            <summary class="font-display text-xl cursor-pointer list-none flex justify-between items-center">Why no rounded corners? <i data-lucide="plus" class="w-5 h-5"></i></summary>
+            <p class="mt-4 font-mono text-sm leading-relaxed">Sharp corners are part of the bold identity — they communicate precision and confidence. They also make focus states more distinguishable.</p>
+          </details>
+          <details class="bg-white border-4 border-surface p-6">
+            <summary class="font-display text-xl cursor-pointer list-none flex justify-between items-center">Is Archivo Black the only font? <i data-lucide="plus" class="w-5 h-5"></i></summary>
+            <p class="mt-4 font-mono text-sm leading-relaxed">Yes, for display. JetBrains Mono is used for labels, code, and data. Both are loaded via Google Fonts.</p>
+          </details>
+          <details class="bg-white border-4 border-surface p-6">
+            <summary class="font-display text-xl cursor-pointer list-none flex justify-between items-center">What about accessibility? <i data-lucide="plus" class="w-5 h-5"></i></summary>
+            <p class="mt-4 font-mono text-sm leading-relaxed">We meet WCAG 2.2 AA everywhere. High contrast is built into the token set, and focus is always visible.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="bg-surface text-white border-t-4 border-primary">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid md:grid-cols-4 gap-8">
+      <div>
+        <div class="flex items-center gap-2 mb-4">
+          <span class="w-8 h-8 bg-primary inline-block"></span>
+          <span class="text-2xl font-display">BOLD</span>
+        </div>
+        <p class="font-mono text-sm opacity-70">Design system for teams that refuse to be subtle.</p>
+      </div>
+      <div>
+        <h4 class="font-mono text-sm uppercase tracking-widest text-primary mb-4">Product</h4>
+        <ul class="space-y-2 font-mono text-sm opacity-80">
+          <li><a href="#features" class="hover:text-primary">Features</a></li>
+          <li><a href="#pricing" class="hover:text-primary">Pricing</a></li>
+          <li><a href="#faq" class="hover:text-primary">FAQ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="font-mono text-sm uppercase tracking-widest text-secondary mb-4">Company</h4>
+        <ul class="space-y-2 font-mono text-sm opacity-80">
+          <li><a href="#" class="hover:text-secondary">About</a></li>
+          <li><a href="#" class="hover:text-secondary">Blog</a></li>
+          <li><a href="#" class="hover:text-secondary">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="font-mono text-sm uppercase tracking-widest text-white mb-4">Legal</h4>
+        <ul class="space-y-2 font-mono text-sm opacity-80">
+          <li><a href="#" class="hover:text-white">Privacy</a></li>
+          <li><a href="#" class="hover:text-white">Terms</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-neutral-800 py-6 text-center font-mono text-xs opacity-60">
+      © 2025 BOLD SYSTEMS — ALL RIGHTS RESERVED. NO ROUNDED CORNERS.
+    </div>
+  </footer>
+
+  <!-- lucide icons init -->
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

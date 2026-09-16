@@ -425,9 +425,9 @@ export default function Interview({ projectId, onDone, onCancel }) {
           )}
 
           {isInteg && q?.isField ? (
-            <div className="ml-auto mt-4 max-w-[690px] rounded-2xl border border-white/15 bg-[#121622]/95 p-4 shadow-2xl backdrop-blur-2xl transition-all focus-within:border-blue-500/50 focus-within:shadow-[0_15px_40px_rgba(37,99,235,.15)]">
+            <div className="ml-auto mt-4 max-w-[690px] rounded-2xl border border-line bg-[#1C252E] p-4 shadow-2xl backdrop-blur-2xl transition-all focus-within:border-[#1877F2]/50 focus-within:shadow-[0_15px_40px_rgba(24,119,242,.15)]">
               <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[.04] px-3.5 py-3">
-                {q.isSecret ? <Lock className="size-4 shrink-0 text-amber-400" /> : <KeyRound className="size-4 shrink-0 text-blue-400" />}
+                {q.isSecret ? <Lock className="size-4 shrink-0 text-[#FFAB00]" /> : <KeyRound className="size-4 shrink-0 text-[#1877F2]" />}
                 <input
                   ref={composer}
                   type={q.isSecret && !showSecret ? 'password' : 'text'}
@@ -467,7 +467,7 @@ export default function Interview({ projectId, onDone, onCancel }) {
                   <button
                     disabled={phase === 'sending' || !text.trim()}
                     onClick={() => handleIntegAnswer(text.trim())}
-                    className="inline-flex h-9 items-center gap-2 rounded-xl bg-blue-600 px-4 text-[12px] font-semibold text-white shadow-lg shadow-blue-500/25 transition hover:bg-blue-500 disabled:opacity-40"
+                    className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#1877F2] px-4 text-[12px] font-semibold text-white shadow-[0_8px_16px_0_rgba(24,119,242,0.24)] transition hover:bg-[#0C44AE] disabled:opacity-40"
                   >
                     {phase === 'sending' ? <Loader2 className="size-3.5 animate-spin" /> : <ArrowRight className="size-3.5" />}
                     Continue
@@ -477,8 +477,8 @@ export default function Interview({ projectId, onDone, onCancel }) {
             </div>
           ) : (
             <>
-              {!typing && options.length > 0 && (
-                <div className="ml-11 max-w-[680px]">
+              {options.length > 0 && (
+                <div className="ml-11 mb-4 max-w-[680px]">
                   <div className="flex flex-wrap gap-2.5">
                     {options.map((o, i) => {
                       const value = o.value ?? o.label
@@ -487,13 +487,16 @@ export default function Interview({ projectId, onDone, onCancel }) {
                       const suggested = o.suggested || value === recommended
                       return (
                         <button key={`${value}-${i}`} disabled={phase === 'sending'} onClick={() => {
-                          if (value === TYPE_ANOTHER) return setTyping(true)
+                          if (value === TYPE_ANOTHER) {
+                            composer.current?.focus()
+                            return
+                          }
                           if (isInteg) return handleIntegAnswer(value)
                           if (multi) return setPicked(p => p.includes(value) ? p.filter(x => x !== value) : [...p, value])
                           answer({ key: q.id, value, selected: [String(value)] })
                         }} className={cn('rounded-full px-4 py-2 text-[12px] font-medium transition-all shadow-sm disabled:opacity-45 text-left',
                           chosen
-                            ? 'bg-blue-600 text-white border border-blue-400 shadow-lg shadow-blue-500/25'
+                            ? 'bg-[#1877F2] text-white border border-[#1877F2] shadow-[0_4px_12px_0_rgba(24,119,242,0.24)]'
                             : 'border border-white/10 bg-white/[.05] text-white/80 hover:bg-white/[.1] hover:text-white hover:border-white/20'
                         )}>
                           <span>{o.label ?? String(value)}</span>
@@ -503,35 +506,61 @@ export default function Interview({ projectId, onDone, onCancel }) {
                       )
                     })}
                   </div>
-                  <div className="mt-4 flex items-center gap-3">
-                    {multi && <Button variant="solid" disabled={!picked.length || phase === 'sending'} onClick={() => answer({ key: q.id, value: picked, selected: picked.map(String) })}>Continue with {picked.length}</Button>}
-                    <button onClick={() => setTyping(true)} className="text-[11.5px] font-medium text-white/50 hover:text-white transition">Write a different answer</button>
-                  </div>
+                  {multi && (
+                    <div className="mt-3 flex items-center gap-3">
+                      <Button variant="solid" disabled={!picked.length || phase === 'sending'} onClick={() => answer({ key: q.id, value: picked, selected: picked.map(String) })}>
+                        Continue with {picked.length} selected
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {(typing || options.length === 0) && (
-                <div className="ml-auto mt-4 max-w-[690px] rounded-2xl border border-white/15 bg-[#121622]/95 p-4 shadow-2xl backdrop-blur-2xl transition-all focus-within:border-blue-500/50 focus-within:shadow-[0_15px_40px_rgba(37,99,235,.15)]">
-                  <TextArea ref={composer} value={text} rows={3} placeholder="Type your answer…" onChange={e => setText(e.target.value)} onKeyDown={e => {
+              <div className="ml-auto mt-2 max-w-[690px] rounded-2xl border border-line bg-[#1C252E] p-4 shadow-2xl backdrop-blur-2xl transition-all focus-within:border-[#1877F2]/50 focus-within:shadow-[0_15px_40px_rgba(24,119,242,.15)]">
+                {options.length > 0 && (
+                  <div className="mb-2 px-1 text-[11px] font-medium text-white/45">
+                    Or type your own answer:
+                  </div>
+                )}
+                <TextArea
+                  ref={composer}
+                  value={text}
+                  rows={options.length > 0 ? 2 : 3}
+                  placeholder={options.length > 0 ? "Type custom details or a different answer…" : "Type your answer…"}
+                  onChange={e => setText(e.target.value)}
+                  onKeyDown={e => {
                     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && text.trim()) {
                       if (isInteg) handleIntegAnswer(text.trim())
-                      else answer({ key: q.id, value: text.trim(), text: text.trim() })
+                      else {
+                        const payload = { key: q.id, value: text.trim(), text: text.trim() }
+                        if (multi && picked.length) payload.selected = picked.map(String)
+                        answer(payload)
+                      }
                     }
-                  }} className="w-full resize-none bg-transparent px-1 py-1 text-[13.5px] leading-relaxed text-white outline-none placeholder:text-white/40 caret-blue-400" />
-                  <AttachList attach={attach} className="mx-1 mb-2" />
-                  <div className="flex items-center gap-2 border-t border-white/10 px-1 pt-3">
-                    <AttachButtons attach={attach} disabled={phase === 'sending'} />
-                    <span className="flex-1" />
-                    {options.length > 0 && <button onClick={() => { setTyping(false); setText('') }} className="rounded-xl px-3 py-1.5 text-[11px] font-medium text-white/60 hover:bg-white/[.06] hover:text-white transition">Options</button>}
-                    <button disabled={phase === 'sending' || (!text.trim() && !attach.items.length)} onClick={() => {
+                  }}
+                  className="w-full resize-none bg-transparent px-1 py-1 text-[13.5px] leading-relaxed text-white outline-none placeholder:text-white/40 caret-blue-400"
+                />
+                <AttachList attach={attach} className="mx-1 mb-2" />
+                <div className="flex items-center gap-2 border-t border-white/10 px-1 pt-3">
+                  <AttachButtons attach={attach} disabled={phase === 'sending'} />
+                  <span className="flex-1" />
+                  <button
+                    disabled={phase === 'sending' || (!text.trim() && !attach.items.length && !(multi && picked.length))}
+                    onClick={() => {
                       if (isInteg) handleIntegAnswer(text.trim())
-                      else answer({ key: q.id, value: text.trim() || null, text: text.trim() })
-                    }} className="inline-flex h-9 items-center gap-2 rounded-xl bg-blue-600 px-4 text-[12px] font-semibold text-white shadow-lg shadow-blue-500/25 transition hover:bg-blue-500 disabled:opacity-40">
-                      {phase === 'sending' ? <Loader2 className="size-3.5 animate-spin" /> : <ArrowRight className="size-3.5" />} Send
-                    </button>
-                  </div>
+                      else {
+                        const val = text.trim() || (multi && picked.length ? picked : null)
+                        const payload = { key: q.id, value: val, text: text.trim() }
+                        if (multi && picked.length) payload.selected = picked.map(String)
+                        answer(payload)
+                      }
+                    }}
+                    className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#1877F2] px-4 text-[12px] font-semibold text-white shadow-[0_8px_16px_0_rgba(24,119,242,0.24)] transition hover:bg-[#0C44AE] disabled:opacity-40"
+                  >
+                    {phase === 'sending' ? <Loader2 className="size-3.5 animate-spin" /> : <ArrowRight className="size-3.5" />} Send
+                  </button>
                 </div>
-              )}
+              </div>
             </>
           )}
 
@@ -540,12 +569,12 @@ export default function Interview({ projectId, onDone, onCancel }) {
         </div>
       </div>
 
-      <footer className="shrink-0 border-t border-white/10 bg-black/30 px-6 py-3 backdrop-blur-xl">
+      <footer className="shrink-0 border-t border-line bg-[#141A21]/90 px-6 py-3 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[820px] items-center gap-2 text-[11px] text-white/60">
-          <Sparkles className="size-3.5 text-blue-400" /> Your answers become the implementation contract. You can review the full plan before anything is built.
+          <Sparkles className="size-3.5 text-[#1877F2]" /> Your answers become the implementation contract. You can review the full plan before anything is built.
           <span className="flex-1" />
-          <button disabled={answered === 0 && !integHistory.length} onClick={draftPlanNow} className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[.06] px-3.5 py-1.5 font-medium text-white/90 transition hover:bg-white/[.12] disabled:opacity-40">
-            <FileText className="size-3 text-amber-400" /> Review plan
+          <button disabled={answered === 0 && !integHistory.length} onClick={draftPlanNow} className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-white/[.06] px-3.5 py-1.5 font-medium text-white/90 transition hover:bg-white/[.12] disabled:opacity-40">
+            <FileText className="size-3 text-[#FFAB00]" /> Review plan
           </button>
         </div>
       </footer>
@@ -568,8 +597,8 @@ function Message({ side, label, current, children }) {
           right
             ? 'rounded-tr-sm bg-accent/20 border border-accent/30 text-white font-medium'
             : current
-              ? 'rounded-tl-sm bg-[#121622]/95 border border-blue-500/30 ring-1 ring-blue-500/20 text-white'
-              : 'rounded-tl-sm bg-[#121622]/80 border border-white/10 text-white/90'
+              ? 'rounded-tl-sm bg-[#1C252E] border border-[#1877F2]/30 ring-1 ring-[#1877F2]/20 text-white'
+              : 'rounded-tl-sm bg-[#1C252E] border border-line text-white/90'
         )}>
           {children}
         </div>
@@ -586,8 +615,8 @@ function said(a) {
 
 export function Waiting({ children, sub }) {
   return (
-    <div className="flex items-center gap-3.5 rounded-2xl border border-white/10 bg-[#121622]/90 px-7 py-6 shadow-2xl backdrop-blur-2xl">
-      <Loader2 className="size-5 shrink-0 animate-spin text-blue-400" />
+    <div className="flex items-center gap-3.5 rounded-2xl border border-line bg-[#1C252E] px-7 py-6 shadow-2xl backdrop-blur-2xl">
+      <Loader2 className="size-5 shrink-0 animate-spin text-[#1877F2]" />
       <div><p className="text-[13.5px] font-semibold text-white">{children}</p>{sub && <p className="mt-1 text-[11px] text-white/50">{sub}</p>}</div>
     </div>
   )

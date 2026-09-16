@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codex — Radically Minimal Design System</title>
+    <meta name="description" content="A radically minimal, blank-canvas interface where typography carries the visual weight.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Open Sans', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        primary: '#000000',
+                        secondary: '#ffffff',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                        surface: '#FFFFFF',
+                        ink: '#111827',
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        ::selection { background: #000; color: #fff; }
+        a:focus-visible, button:focus-visible, summary:focus-visible {
+            outline: 2px solid #000;
+            outline-offset: 2px;
+            border-radius: 9999px;
+        }
+        details summary::-webkit-details-marker { display: none; }
+        details summary { list-style: none; }
+        .card-radius { border-radius: 8px; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-surface font-sans text-ink antialiased">
+
+    <!-- ===== NAVIGATION ===== -->
+    <header class="sticky top-0 z-50 bg-surface border-b border-primary">
+        <nav class="max-w-6xl mx-auto flex items-center justify-between px-4 py-4">
+            <a href="#" class="text-2xl font-extrabold tracking-tight text-primary">Codex</a>
+            <div class="hidden md:flex items-center gap-1">
+                <a href="#features" class="px-3 py-2 text-sm font-medium text-ink/70 hover:text-primary hover:bg-primary/5 rounded-full transition-colors">Features</a>
+                <a href="#process" class="px-3 py-2 text-sm font-medium text-ink/70 hover:text-primary hover:bg-primary/5 rounded-full transition-colors">Process</a>
+                <a href="#pricing" class="px-3 py-2 text-sm font-medium text-ink/70 hover:text-primary hover:bg-primary/5 rounded-full transition-colors">Pricing</a>
+                <a href="#faq" class="px-3 py-2 text-sm font-medium text-ink/70 hover:text-primary hover:bg-primary/5 rounded-full transition-colors">FAQ</a>
+            </div>
+            <a href="#pricing" class="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition-colors">Get Started</a>
+        </nav>
+    </header>
+
+    <!-- ===== HERO ===== -->
+    <section class="border-b border-primary">
+        <div class="max-w-6xl mx-auto px-4 py-16 md:py-24 grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+            <div>
+                <p class="font-mono text-xs uppercase tracking-widest text-ink/50 mb-4">Codex Design System</p>
+                <h1 class="text-3xl font-black tracking-tight leading-tight text-primary mb-4">Radically minimal.<br>Boldly simple.</h1>
+                <p class="text-base text-ink/70 leading-relaxed mb-8 max-w-md">A blank-canvas interface where typography carries the weight. Black is the only color. Content is the hero.</p>
+                <div class="flex flex-wrap gap-3">
+                    <a href="#pricing" class="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white hover:bg-primary/90 transition-colors">Get Started</a>
+                    <a href="#features" class="rounded-full border border-primary px-6 py-3 text-sm font-semibold text-primary hover:bg-primary/5 transition-colors">Learn More</a>
+                </div>
+            </div>
+            <div class="hidden md:block">
+                <svg viewBox="0 0 400 320" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto" role="img" aria-label="Abstract geometric composition">
+                    <rect x="0" y="0" width="400" height="320" fill="white"/>
+                    <rect x="40" y="40" width="160" height="240" fill="black"/>
+                    <circle cx="280" cy="100" r="60" fill="black"/>
+                    <circle cx="280" cy="100" r="25" fill="white"/>
+                    <rect x="240" y="200" width="120" height="60" fill="black"/>
+                </svg>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== STATS ===== -->
+    <section class="border-b border-primary">
+        <div class="max-w-6xl mx-auto px-4 py-12 md:py-16">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0">
+                <div class="md:border-r border-primary md:pr-6">
+                    <p class="text-3xl font-extrabold text-primary">99.9%</p>
+                    <p class="text-sm text-ink/60 mt-1">Uptime</p>
+                </div>
+                <div class="md:border-r border-primary md:px-6">
+                    <p class="text-3xl font-extrabold text-primary">10k+</p>
+                    <p class="text-sm text-ink/60 mt-1">Users</p>
+                </div>
+                <div class="md:border-r border-primary md:px-6">
+                    <p class="text-3xl font-extrabold text-primary">50ms</p>
+                    <p class="text-sm text-ink/60 mt-1">Response</p>
+                </div>
+                <div class="md:pl-6">
+                    <p class="text-3xl font-extrabold text-primary">4.9</p>
+                    <p class="text-sm text-ink/60 mt-1">Rating</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FEATURES ===== -->
+    <section id="features" class="border-b border-primary">
+        <div class="max-w-6xl mx-auto px-4 py-16 md:py-24">
+            <div class="mb-12">
+                <p class="font-mono text-xs uppercase tracking-widest text-ink/50 mb-2">Features</p>
+                <h2 class="text-2xl font-bold tracking-tight text-primary">Everything you need.<br>Nothing you don't.</h2>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Feature 1 -->
+                <div class="card-radius border border-primary/20 hover:border-primary p-6 transition-colors">
+                    <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center mb-4">
+                        <i data-lucide="zap" class="w-4 h-4 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-primary mb-2">Minimal by Design</h3>
+                    <p class="text-sm text-ink/70 leading-relaxed">Every pixel serves a purpose. No clutter, no noise, no distractions.</p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="card-radius border border-primary/20 hover:border-primary p-6 transition-colors">
+                    <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center mb-4">
+                        <i data-lucide="type" class="w-4 h-4 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-primary mb-2">Typography First</h3>
+                    <p class="text-sm text-ink/70 leading-relaxed">Open Sans carries the visual weight with precision and clarity.</p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="card-radius border border-primary/20 hover:border-primary p-6 transition-colors">
+                    <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center mb-4">
+                        <i data-lucide="accessibility" class="w-4 h-4 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-primary mb-2">Accessibility Built In</h3>
+                    <p class="text-sm text-ink/70 leading-relaxed">WCAG 2.2 AA compliant, keyboard-first, with visible focus states.</p>
+                </div>
+                <!-- Feature 4 -->
+                <div class="card-radius border border-primary/20 hover:border-primary p-6 transition-colors">
+                    <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center mb-4">
+                        <i data-lucide="circle" class="w-4 h-4 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-primary mb-2">Pill-Shaped Interactions</h3>
+                    <p class="text-sm text-ink/70 leading-relaxed">Soft, conversational buttons and controls that feel natural.</p>
+                </div>
+                <!-- Feature 5 -->
+                <div class="card-radius border border-primary/20 hover:border-primary p-6 transition-colors">
+                    <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center mb-4">
+                        <i data-lucide="contrast" class="w-4 h-4 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-primary mb-2">Black &amp; White</h3>
+                    <p class="text-sm text-ink/70 leading-relaxed">A monochrome palette that never distracts from your content.</p>
+                </div>
+                <!-- Feature 6 -->
+                <div class="card-radius border border-primary/20 hover:border-primary p-6 transition-colors">
+                    <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center mb-4">
+                        <i data-lucide="gauge" class="w-4 h-4 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-primary mb-2">Performance Native</h3>
+                    <p class="text-sm text-ink/70 leading-relaxed">No shadows, no gradients, no bloat. Just fast, clean rendering.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PROCESS ===== -->
+    <section id="process" class="border-b border-primary">
+        <div class="max-w-6xl mx-auto px-4 py-16 md:py-24">
+            <div class="mb-12">
+                <p class="font-mono text-xs uppercase tracking-widest text-ink/50 mb-2">Process</p>
+                <h2 class="text-2xl font-bold tracking-tight text-primary">Three steps to clarity.</h2>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="border-t-2 border-primary pt-4">
+                    <span class="font-mono text-xs text-ink/50">01</span>
+                    <h3 class="text-xl font-semibold text-primary mt-2">Define</h3>
+                    <p class="text-sm text-ink/70 mt-2 leading-relaxed">We start by understanding the problem space. Research, audit, and align on goals.</p>
+                </div>
+                <div class="border-t-2 border-primary pt-4">
+                    <span class="font-mono text-xs text-ink/50">02</span>
+                    <h3 class="text-xl font-semibold text-primary mt-2">Design</h3>
+                    <p class="text-sm text-ink/70 mt-2 leading-relaxed">We craft solutions with typography and space. Every element earns its place.</p>
+                </div>
+                <div class="border-t-2 border-primary pt-4">
+                    <span class="font-mono text-xs text-ink/50">03</span>
+                    <h3 class="text-xl font-semibold text-primary mt-2">Deliver</h3>
+                    <p class="text-sm text-ink/70 mt-2 leading-relaxed">We ship with confidence. Accessible, performant, and pixel-perfect.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== BENEFITS ===== -->
+    <section class="border-b border-primary">
+        <div class="max-w-6xl mx-auto px-4 py-16 md:py-24">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <p class="font-mono text-xs uppercase tracking-widest text-ink/50 mb-2">Benefits</p>
+                    <h2 class="text-2xl font-bold tracking-tight text-primary mb-6">Why teams choose Codex.</h2>
+                    <ul class="space-y-4">
+                        <li class="flex items-start gap-3">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-success mt-0.5 shrink-0"></i>
+                            <span class="text-base text-ink/80">Faster decision-making with a clear visual hierarchy.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-success mt-0.5 shrink-0"></i>
+                            <span class="text-base text-ink/80">Clearer communication through consistent typography.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-success mt-0.5 shrink-0"></i>
+                            <span class="text-base text-ink/80">Higher engagement with a distraction-free interface.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-success mt-0.5 shrink-0"></i>
+                            <span class="text-base text-ink/80">Lower bounce rate thanks to focused, readable content.</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="hidden md:block">
+                    <svg viewBox="0 0 400 320" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto" role="img" aria-label="Abstract geometric composition">
+                        <rect x="0" y="0" width="400" height="320" fill="white"/>
+                        <circle cx="120" cy="120" r="80" fill="black"/>
+                        <circle cx="280" cy="200" r="60" fill="black"/>
+                        <rect x="200" y="40" width="120" height="80" fill="black"/>
+                        <circle cx="280" cy="200" r="20" fill="white"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== TESTIMONIALS ===== -->
+    <section class="border-b border-primary">
+        <div class="max-w-6xl mx-auto px-4 py-16 md:py-24">
+            <div class="mb-12">
+                <p class="font-mono text-xs uppercase tracking-widest text-ink/50 mb-2">Testimonials</p>
+                <h2 class="text-2xl font-bold tracking-tight text-primary">Loved by designers.</h2>
+            </div>
+            <div class="grid md:grid-cols-3 gap-4">
+                <!-- Testimonial 1 -->
+                <div class="card-radius border border-primary/20 hover:border-primary p-6 transition-colors">
+                    <i data-lucide="quote" class="w-6 h-6 text-primary mb-4"></i>
+                    <p class="text-base text-ink/80 leading-relaxed mb-6">"The cleanest interface I've ever used. Every element feels intentional and purposeful."</p>
+                    <div class="border-t border-primary/10 pt-4">
+                        <p class="text-sm font-semibold text-primary">Sarah Chen</p>
+                        <p class="text-xs text-ink/60">Product Designer</p>
+                    </div>
+                </div>
+                <!-- Testimonial 2 -->
+                <div class="card-radius border border-primary/20 hover:border-primary p-6 transition-colors">
+                    <i data-lucide="quote" class="w-6 h-6 text-primary mb-4"></i>
+                    <p class="text-base text-ink/80 leading-relaxed mb-6">"Codex transformed how we think about minimalism. Nothing feels missing, nothing feels extra."</p>
+                    <div class="border-t border-primary/10 pt-4">
+                        <p class="text-sm font-semibold text-primary">Marcus Webb</p>
+                        <p class="text-xs text-ink/60">Frontend Engineer</p>
+                    </div>
+                </div>
+                <!-- Testimonial 3 -->
+                <div class="card-radius border border-primary/20 hover:border-primary p-6 transition-colors">
+                    <i data-lucide="quote" class="w-6 h-6 text-primary mb-4"></i>
+                    <p class="text-base text-ink/80 leading-relaxed mb-6">"The attention to typography is unmatched. It's poetry in pixels."</p>
+                    <div class="border-t border-primary/10 pt-4">
+                        <p class="text-sm font-semibold text-primary">Amara Okafor</p>
+                        <p class="text-xs text-ink/60">Design Lead</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PRICING ===== -->
+    <section id="pricing" class="border-b border-primary">
+        <div class="max-w-6xl mx-auto px-4 py-16 md:py-24">
+            <div class="mb-12 text-center">
+                <p class="font-mono text-xs uppercase tracking-widest text-ink/50 mb-2">Pricing</p>
+                <h2 class="text-2xl font-bold tracking-tight text-primary">Simple, transparent pricing.</h2>
+            </div>
+            <div class="grid md:grid-cols-3 gap-4 items-stretch">
+                <!-- Starter -->
+                <div class="card-radius border border-primary/20 p-6 flex flex-col">
+                    <h3 class="text-xl font-semibold text-primary mb-1">Starter</h3>
+                    <p class="text-sm text-ink/60 mb-4">For personal projects</p>
+                    <p class="text-3xl font-extrabold text-primary mb-6">$0</p>
+                    <ul class="space-y-3 mb-8 flex-1">
+                        <li class="flex items-center gap-2 text-sm text-ink/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>1 project
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-ink/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>Basic components
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-ink/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>Community support
+                        </li>
+                    </ul>
+                    <a href="#" class="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary text-center hover:bg-primary/5 transition-colors">Start Free</a>
+                </div>
+                <!-- Pro (Highlighted) -->
+                <div class="card-radius bg-primary p-6 flex flex-col">
+                    <h3 class="text-xl font-semibold text-white mb-1">Pro</h3>
+                    <p class="text-sm text-white/70 mb-4">For professionals</p>
+                    <p class="text-3xl font-extrabold text-white mb-6">$19<span class="text-sm font-medium text-white/60">/mo</span></p>
+                    <ul class="space-y-3 mb-8 flex-1">
+                        <li class="flex items-center gap-2 text-sm text-white/90">
+                            <i data-lucide="check" class="w-4 h-4 text-white shrink-0"></i>Unlimited projects
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-white/90">
+                            <i data-lucide="check" class="w-4 h-4 text-white shrink-0"></i>All components
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-white/90">
+                            <i data-lucide="check" class="w-4 h-4 text-white shrink-0"></i>Priority support
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-white/90">
+                            <i data-lucide="check" class="w-4 h-4 text-white shrink-0"></i>Figma library
+                        </li>
+                    </ul>
+                    <a href="#" class="rounded-full bg-white px-4 py-2 text-sm font-semibold text-primary text-center hover:bg-white/90 transition-colors">Get Pro</a>
+                </div>
+                <!-- Enterprise -->
+                <div class="card-radius border border-primary/20 p-6 flex flex-col">
+                    <h3 class="text-xl font-semibold text-primary mb-1">Enterprise</h3>
+                    <p class="text-sm text-ink/60 mb-4">For teams</p>
+                    <p class="text-3xl font-extrabold text-primary mb-6">$49<span class="text-sm font-medium text-ink/60">/mo</span></p>
+                    <ul class="space-y-3 mb-8 flex-1">
+                        <li class="flex items-center gap-2 text-sm text-ink/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>Everything in Pro
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-ink/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>Custom tokens
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-ink/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>SSO / SAML
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-ink/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>Dedicated support
+                        </li>
+                    </ul>
+                    <a href="#" class="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary text-center hover:bg-primary/5 transition-colors">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section id="faq" class="border-b border-primary">
+        <div class="max-w-3xl mx-auto px-4 py-16 md:py-24">
+            <div class="mb-12 text-center">
+                <p class="font-mono text-xs uppercase tracking-widest text-ink/50 mb-2">FAQ</p>
+                <h2 class="text-2xl font-bold tracking-tight text-primary">Frequently asked questions.</h2>
+            </div>
+            <div class="border-t border-primary">
+                <!-- FAQ Item 1 -->
+                <details class="group border-b border-primary">
+                    <summary class="flex items-center justify-between py-4 cursor-pointer">
+                        <span class="text-base font-semibold text-primary">What is Codex?</span>
+                        <i data-lucide="plus" class="w-4 h-4 text-primary transition-transform duration-200 group-open:rotate-45 shrink-0"></i>
+                    </summary>
+                    <div class="pb-4 text-sm text-ink/70 leading-relaxed">Codex is a radically minimal design system built around typography and whitespace. It provides a complete set of components, tokens, and guidelines for building clean, accessible interfaces.</div>
+                </details>
+                <!-- FAQ Item 2 -->
+                <details class="group border-b border-primary">
+                    <summary class="flex items-center justify-between py-4 cursor-pointer">
+                        <span class="text-base font-semibold text-primary">Is Codex free?</span>
+                        <i data-lucide="plus" class="w-4 h-4 text-primary transition-transform duration-200 group-open:rotate-45 shrink-0"></i>
+                    </summary>
+                    <div class="pb-4 text-sm text-ink/70 leading-relaxed">Yes, the Starter plan is free forever. It includes 1 project and access to all basic components. Pro and Enterprise plans add more features and support.</div>
+                </details>
+                <!-- FAQ Item 3 -->
+                <details class="group border-b border-primary">
+                    <summary class="flex items-center justify-between py-4 cursor-pointer">
+                        <span class="text-base font-semibold text-primary">Can I customize the tokens?</span>
+                        <i data-lucide="plus" class="w-4 h-4 text-primary transition-transform duration-200 group-open:rotate-45 shrink-0"></i>
+                    </summary>
+                    <div class="pb-4 text-sm text-ink/70 leading-relaxed">Absolutely. All design tokens are exposed as CSS variables. You can override colors, spacing, typography, and more to match your brand while keeping the system's structure.</div>
+                </details>
+                <!-- FAQ Item 4 -->
+                <details class="group border-b border-primary">
+                    <summary class="flex items-center justify-between py-4 cursor-pointer">
+                        <span class="text-base font-semibold text-primary">Does Codex support dark mode?</span>
+                        <i data-lucide="plus" class="w-4 h-4 text-primary transition-transform duration-200 group-open:rotate-45 shrink-0"></i>
+                    </summary>
+                    <div class="pb-4 text-sm text-ink/70 leading-relaxed">Codex is designed as a light-first system. However, since all tokens are CSS variables, you can easily create a dark variant by swapping token values.</div>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="border-t border-primary">
+        <div class="max-w-6xl mx-auto px-4 py-12 md:py-16">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div class="md:col-span-1">
+                    <a href="#" class="text-2xl font-extrabold tracking-tight text-primary">Codex</a>
+                    <p class="text-sm text-ink/60 mt-2 leading-relaxed">A radically minimal design system for the modern web.</p>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold text-primary mb-4">Product</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#features" class="text-sm text-ink/60 hover:text-primary transition-colors">Features</a></li>
+                        <li><a href="#pricing" class="text-sm text-ink/60 hover:text-primary transition-colors">Pricing</a></li>
+                        <li><a href="#faq" class="text-sm text-ink/60 hover:text-primary transition-colors">FAQ</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold text-primary mb-4">Company</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-ink/60 hover:text-primary transition-colors">About</a></li>
+                        <li><a href="#" class="text-sm text-ink/60 hover:text-primary transition-colors">Blog</a></li>
+                        <li><a href="#" class="text-sm text-ink/60 hover:text-primary transition-colors">Careers</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold text-primary mb-4">Social</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-ink/60 hover:text-primary transition-colors">Twitter</a></li>
+                        <li><a href="#" class="text-sm text-ink/60 hover:text-primary transition-colors">GitHub</a></li>
+                        <li><a href="#" class="text-sm text-ink/60 hover:text-primary transition-colors">LinkedIn</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-primary/10 mt-12 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+                <p class="text-xs text-ink/50">&copy; 2024 Codex. All rights reserved.</p>
+                <a href="#" class="text-xs text-ink/50 hover:text-primary transition-colors">Back to top ↑</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

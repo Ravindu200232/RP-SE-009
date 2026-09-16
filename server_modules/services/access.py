@@ -15,8 +15,10 @@ from urllib.parse import unquote
 # Anyone who is signed in. The settings answer each person with their own.
 USER_GET = {"/projects", "/models", "/srs-status", "/deploy-status", "/settings",
             "/image-check", "/mongo"}
+# The design theme library: the same seventy pages for everyone.
+USER_GET_PREFIX = ("/design-theme-preview/",)
 USER_POST = {"/logo-prompt", "/tune", "/build-attach", "/upload-project", "/jobs",
-             "/build/cancel", "/settings"}
+             "/build/cancel", "/settings", "/design-theme-preview"}
 # The run in progress, which is one person's at a time.
 RUN_GET = {"/decisions"}
 RUN_POST = {"/decision"}
@@ -47,7 +49,7 @@ def rule(method: str, path: str, body: dict | None = None) -> tuple:
     if path.startswith("/deploy/"):
         return _deploy_rule(method, path[7:], body)
     if method == "GET":
-        if path in USER_GET:
+        if path in USER_GET or path.startswith(USER_GET_PREFIX):
             return ("user", "")
         if path in RUN_GET:
             return ("run", "")

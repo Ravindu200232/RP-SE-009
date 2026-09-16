@@ -87,16 +87,16 @@ export default function BuildSetup({
           title="Select tech stack architecture for the build"
           className={cn(
             'inline-flex h-8 items-center gap-1.5 rounded-full border border-white/10 bg-white/[.04] px-2.5 text-[11px] font-medium text-white/80 shadow-sm transition-all hover:bg-white/[.09] hover:border-white/20 hover:text-white',
-            stack && 'border-blue-500/40 bg-blue-500/10 text-blue-300'
+            stack && 'border-[#1877F2]/40 bg-[#1877F2]/10 text-[#1877F2]'
           )}
         >
-          <Layers className="size-2.5 shrink-0 text-blue-400" aria-hidden="true" />
+          <Layers className="size-2.5 shrink-0 text-[#1877F2]" aria-hidden="true" />
           <span>{currentStackLabel}</span>
           <ChevronDown className={cn('size-2.5 shrink-0 text-white/40 transition-transform duration-200', stackOpen && 'rotate-180 text-white')} />
         </button>
 
         {stackOpen && (
-          <div className="absolute top-full left-0 mt-1.5 w-72 rounded-2xl border border-white/15 bg-[#121622]/95 p-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
+          <div className="absolute top-full left-0 mt-1.5 w-72 rounded-2xl border border-line bg-[#1C252E] p-1.5 shadow-[0_20px_40px_-4px_rgba(0,0,0,0.48)] backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
             <div className="space-y-1">
               {stackOptions.map(item => {
                 const isSelected = stack === item.id || (!stack && !item.id)
@@ -111,7 +111,7 @@ export default function BuildSetup({
                     className={cn(
                       'group w-full flex items-start justify-between rounded-xl p-2 text-left transition-all',
                       isSelected
-                        ? 'border border-blue-500/40 bg-blue-600/15 text-white'
+                        ? 'border border-[#1877F2]/40 bg-[#1877F2]/15 text-white'
                         : 'border border-transparent text-white/80 hover:bg-white/[.06] hover:text-white'
                     )}
                   >
@@ -119,7 +119,7 @@ export default function BuildSetup({
                       <div className="flex items-center gap-1.5">
                         <span className="text-[11.5px] font-semibold text-white">{item.name}</span>
                         {!item.id && (
-                          <span className="rounded-md bg-blue-500/20 px-1.5 py-0.5 text-[9px] font-semibold text-blue-300 uppercase tracking-wider">
+                          <span className="rounded-md bg-[#1877F2]/20 px-1.5 py-0.5 text-[9px] font-semibold text-[#1877F2] uppercase tracking-wider">
                             Default
                           </span>
                         )}
@@ -131,7 +131,7 @@ export default function BuildSetup({
                       )}
                     </div>
                     {isSelected && (
-                      <Check className="size-3 shrink-0 text-blue-400 mt-0.5" />
+                      <Check className="size-3 shrink-0 text-[#1877F2] mt-0.5" />
                     )}
                   </button>
                 )

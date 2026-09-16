@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CraftBoard — Build things that feel real</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Germania+One&family=Roboto:wght@100;300;400;500;700;900&family=JetBrains+Mono:wght@100;400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest">
+    </script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#FA3C00',
+                        secondary: '#F08321',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                        surface: '#FFFFFF',
+                        text: '#111827',
+                    },
+                    fontFamily: {
+                        sans: ['Roboto', 'sans-serif'],
+                        display: ['Germania One', 'cursive'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        .noise-bg::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 60;
+            pointer-events: none;
+            opacity: 0.025;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+        .btn-3d {
+            transition: all 0.08s ease;
+            border-bottom-width: 4px;
+            border-bottom-style: solid;
+        }
+        .btn-3d:active {
+            border-bottom-width: 1px;
+            transform: translateY(3px);
+        }
+        .card-3d {
+            transition: all 0.15s ease;
+        }
+        .card-3d:hover {
+            transform: translateY(-2px);
+        }
+        .faq-answer {
+            display: none;
+        }
+        .faq-item.open .faq-answer {
+            display: block;
+        }
+        .faq-item.open .faq-icon {
+            transform: rotate(180deg);
+        }
+        .faq-icon {
+            transition: transform 0.2s ease;
+        }
+        .mobile-menu {
+            display: none;
+        }
+        .mobile-menu.open {
+            display: block;
+        }
+    </style>
+</head>
+<body class="font-sans bg-[#f5f0eb] text-text noise-bg antialiased">
+
+    <!-- Navigation -->
+    <nav class="bg-gradient-to-b from-surface to-[#f0ebe5] border-b-2 border-[#d4cec8] shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-9 h-9 bg-primary rounded-md shadow-[0_3px_0_0_#C23000] flex items-center justify-center">
+                    <i data-lucide="hammer" class="w-5 h-5 text-white"></i>
+                </div>
+                <span class="font-display text-2xl text-text tracking-wide">CraftBoard</span>
+            </div>
+            <div class="hidden md:flex items-center gap-8">
+                <a href="#features" class="text-text/80 hover:text-primary font-medium text-sm transition-colors">Features</a>
+                <a href="#process" class="text-text/80 hover:text-primary font-medium text-sm transition-colors">Process</a>
+                <a href="#pricing" class="text-text/80 hover:text-primary font-medium text-sm transition-colors">Pricing</a>
+                <a href="#faq" class="text-text/80 hover:text-primary font-medium text-sm transition-colors">FAQ</a>
+            </div>
+            <div class="flex items-center gap-3">
+                <button class="hidden sm:block bg-gradient-to-b from-primary to-[#C23000] text-white font-bold px-5 py-2.5 rounded-md shadow-[0_4px_0_0_#8B1A00] btn-3d border-b-[#8B1A00] text-sm">
+                    Get Started
+                </button>
+                <button id="menu-btn" class="md:hidden w-10 h-10 bg-gradient-to-b from-white to-[#e8e2dc] rounded-md shadow-[0_3px_0_0_#b8b2ac] border border-[#d4cec8] flex items-center justify-center">
+                    <i data-lucide="menu" class="w-5 h-5 text-text"></i>
+                </button>
+            </div>
+        </div>
+        <div id="mobile-menu" class="mobile-menu md:hidden bg-surface border-t border-[#e8e2dc] px-4 py-3">
+            <a href="#features" class="block py-2 text-text/80 hover:text-primary font-medium text-sm">Features</a>
+            <a href="#process" class="block py-2 text-text/80 hover:text-primary font-medium text-sm">Process</a>
+            <a href="#pricing" class="block py-2 text-text/80 hover:text-primary font-medium text-sm">Pricing</a>
+            <a href="#faq" class="block py-2 text-text/80 hover:text-primary font-medium text-sm">FAQ</a>
+            <button class="mt-2 w-full bg-gradient-to-b from-primary to-[#C23000] text-white font-bold px-4 py-2.5 rounded-md shadow-[0_4px_0_0_#8B1A00] btn-3d border-b-[#8B1A00] text-sm">
+                Get Started
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-[#FFF8F0] via-[#f5f0eb] to-[#FDE8D0]"></div>
+        <div class="absolute top-20 left-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-20 right-10 w-60 h-60 bg-secondary/10 rounded-full blur-3xl"></div>
+        <div class="relative max-w-7xl mx-auto px-4 py-16 md:py-24 grid md:grid-cols-2 gap-12 items-center">
+            <div>
+                <div class="inline-flex items-center gap-2 bg-secondary/10 text-secondary font-mono text-xs px-3 py-1.5 rounded-md border border-secondary/20 mb-5 shadow-[0_2px_0_0_rgba(240,131,33,0.2)]">
+                    <span class="w-2 h-2 bg-success rounded-full inline-block"></span>
+                    v2.0 Now Available
+                </div>
+                <h1 class="font-display text-4xl md:text-5xl lg:text-6xl text-text leading-tight mb-4">
+                    Build things that <span class="text-primary">feel real.</span>
+                </h1>
+                <p class="text-text/70 text-lg mb-8 max-w-md">
+                    CraftBoard brings the warmth of physical tools to your digital workflow. Plan, build, and ship with a tool that feels like home.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button class="bg-gradient-to-b from-primary to-[#C23000] text-white font-bold px-7 py-3.5 rounded-md shadow-[0_5px_0_0_#8B1A00] btn-3d border-b-[#8B1A00] text-base">
+                        Start Free Trial
+                    </button>
+                    <button class="bg-gradient-to-b from-surface to-[#e8e2dc] text-text font-bold px-7 py-3.5 rounded-md shadow-[0_5px_0_0_#b8b2ac] btn-3d border-b-[#b8b2ac] border border-[#d4cec8] text-base flex items-center gap-2">
+                        <i data-lucide="play" class="w-4 h-4"></i>
+                        Watch Demo
+                    </button>
+                </div>
+            </div>
+            <div class="relative">
+                <!-- CSS-drawn dashboard mockup -->
+                <div class="bg-surface rounded-lg shadow-[0_12px_40px_rgba(0,0,0,0.12)] border border-[#e8e2dc] p-6 rotate-1 hover:rotate-0 transition-transform duration-300">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex gap-2">
+                            <div class="w-3 h-3 rounded-full bg-danger shadow-[0_1px_0_0_rgba(0,0,0,0.2)]"></div>
+                            <div class="w-3 h-3 rounded-full bg-warning shadow-[0_1px_0_0_rgba(0,0,0,0.2)]"></div>
+                            <div class="w-3 h-3 rounded-full bg-success shadow-[0_1px_0_0_rgba(0,0,0,0.2)]"></div>
+                        </div>
+                        <span class="font-mono text-xs text-text/40">craftboard.app</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 mb-6">
+                        <div class="bg-[#f8f4f0] rounded-md p-3 border border-[#e8e2dc] shadow-[0_2px_0_0_#e0d8d0]">
+                            <div class="text-xs text-text/50 mb-1 font-mono">Tasks</div>
+                            <div class="font-display text-2xl text-text">24</div>
+                        </div>
+                        <div class="bg-[#f8f4f0] rounded-md p-3 border border-[#e8e2dc] shadow-[0_2px_0_0_#e0d8d0]">
+                            <div class="text-xs text-text/50 mb-1 font-mono">Done</div>
+                            <div class="font-display text-2xl text-success">18</div>
+                        </div>
+                        <div class="bg-[#f8f4f0] rounded-md p-3 border border-[#e8e2dc] shadow-[0_2px_0_0_#e0d8d0]">
+                            <div class="text-xs text-text/50 mb-1 font-mono">Due</div>
+                            <div class="font-display text-2xl text-warning">6</div>
+                        </div>
+                    </div>
+                    <div class="bg-[#f8f4f0] rounded-md p-4 border border-[#e8e2dc] shadow-[0_2px_0_0_#e0d8d0]">
+                        <div class="text-xs text-text/50 mb-3 font-mono">Progress</div>
+                        <div class="flex items-end gap-2 h-24">
+                            <div class="flex-1 bg-gradient-to-t from-primary to-[#FF6B3D] rounded-t-md shadow-[0_2px_0_0_rgba(0,0,0,0.1)]" style="height: 60%"></div>
+                            <div class="flex-1 bg-gradient-to-t from-secondary to-[#FFA756] rounded-t-md shadow-[0_2px_0_0_rgba(0,0,0,0.1)]" style="height: 80%"></div>
+                            <div class="flex-1 bg-gradient-to-t from-success to-[#4ADE80] rounded-t-md shadow-[0_2px_0_0_rgba(0,0,0,0.1)]" style="height: 45%"></div>
+                            <div class="flex-1 bg-gradient-to-t from-warning to-[#FBBF24] rounded-t-md shadow-[0_2px_0_0_rgba(0,0,0,0.1)]" style="height: 70%"></div>
+                            <div class="flex-1 bg-gradient-to-t from-primary to-[#FF6B3D] rounded-t-md shadow-[0_2px_0_0_rgba(0,0,0,0.1)]" style="height: 90%"></div>
+                            <div class="flex-1 bg-gradient-to-t from-secondary to-[#FFA756] rounded-t-md shadow-[0_2px_0_0_rgba(0,0,0,0.1)]" style="height: 55%"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Floating badge -->
+                <div class="absolute -top-5 -right-3 bg-gradient-to-b from-warning to-[#B45309] text-white font-bold px-4 py-2 rounded-md shadow-[0_4px_0_0_#92400E] rotate-6">
+                    <span class="font-mono text-xs">★ 4.9/5</span>
+                </div>
+                <!-- Floating card -->
+                <div class="absolute -bottom-4 -left-3 bg-surface rounded-md shadow-[0_4px_0_0_#e0d8d0] border border-[#e8e2dc] px-4 py-2 flex items-center gap-2 -rotate-2">
+                    <div class="w-6 h-6 bg-success rounded-full shadow-[0_2px_0_0_#0D7A2E] flex items-center justify-center">
+                        <i data-lucide="check" class="w-3 h-3 text-white"></i>
+                    </div>
+                    <span class="text-xs font-bold text-text">Task completed!</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="bg-gradient-to-b from-[#f5f0eb] to-surface py-12">
+        <div class="max-w-7xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div class="bg-surface rounded-lg border border-[#e8e2dc] shadow-[0_4px_0_0_#e0d8d0] p-6 text-center card-3d">
+                <div class="font-display text-4xl text-primary mb-2">10K+</div>
+                <div class="text-sm text-text/60 font-medium">Active Users</div>
+            </div>
+            <div class="bg-surface rounded-lg border border-[#e8e2dc] shadow-[0_4px_0_0_#e0d8d0] p-6 text-center card-3d">
+                <div class="font-display text-4xl text-success mb-2">99.9%</div>
+                <div class="text-sm text-text/60 font-medium">Uptime</div>
+            </div>
+            <div class="bg-surface rounded-lg border border-[#e8e2dc] shadow-[0_4px_0_0_#e0d8d0] p-6 text-center card-3d">
+                <div class="font-display text-4xl text-warning mb-2">4.9/5</div>
+                <div class="text-sm text-text/60 font-medium">Rating</div>
+            </div>
+            <div class="bg-surface rounded-lg border border-[#e8e2dc] shadow-[0_4px_0_0_#e0d8d0] p-6 text-center card-3d">
+                <div class="font-display text-4xl text-secondary mb-2">50+</div>
+                <div class="text-sm text-text/60 font-medium">Integrations</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="py-16 bg-surface">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-14">
+                <div class="inline-block bg-primary/5 text-primary font-mono text-xs px-3 py-1 rounded-md border border-primary/10 mb-3">FEATURES</div>
+                <h2 class="font-display text-3xl md:text-4xl text-text mb-2">Everything you need</h2>
+                <p class="text-text/60 text-lg">Powerful features wrapped in a familiar, tactile interface.</p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-[#f8f4f0] rounded-lg border border-[#e8e2dc] shadow-[0_4px_0_0_#e0d8d0] p-6 card-3d hover:shadow-[0_6px_0_0_#e0d8d0]">
+                    <div class="w-12 h-12 bg-primary rounded-md shadow-[0_3px_0_0_#C23000] flex items-center justify-center mb-4">
+                        <i data-lucide="users" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2">Real-time Collaboration</h3>
+                    <p class="text-text/60 text-sm leading-relaxed">Work together with your team in real-time. See changes as they happen.</p>
+                </div>
+                <div class="bg-[#f8f4f0] rounded-lg border border-[#e8e2dc] shadow-[0_4px_0_0_#e0d8d0] p-6 card-3d hover:shadow-[0_6px_0_0_#e0d8d0]">
+                    <div class="w-12 h-12 bg-success rounded-md shadow-[0_3px_0_0_#0D7A2E] flex items-center justify-center mb-4">
+                        <i data-lucide="check-square" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2">Task Management</h3>
+                    <p class="text-text/60 text-sm leading-relaxed">Organize tasks with boards, lists, and cards that feel like physical objects.</p>
+                </div>
+                <div class="bg-[#f8f4f0] rounded-lg border border-[#e8e2dc] shadow-[0_4px_0_0_#e0d8d0] p-6 card-3d hover:shadow-[0_6px_0_0_#e0d8d0]">
+                    <div class="w-12 h-12 bg-warning rounded-md shadow-[0_3px_0_0_#B45309] flex items-center justify-center mb-4">
+                        <i data-lucide="bar-chart" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2">Analytics Dashboard</h3>
+                    <p class="text-text/60 text-sm leading-relaxed">Track progress with beautiful, tactile charts and reports.</p>
+                </div>
+                <div class="bg-[#f8f4f0] rounded-lg border border-[#e8e2dc] shadow-[0_4px_0_0_#e0d8d0] p-6 card-3d hover:shadow-[0_6px_0_0_#e0d8d0]">
+                    <div class="w-12 h-12 bg-secondary rounded-md shadow-[0_3px_0_0_#C06A1A] flex items-center justify-center mb-4">
+                        <i data-lucide="settings" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2">Custom Workflows</h3>
+                    <p class="text-text/60 text-sm leading-relaxed">Build workflows that match your team's unique process.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Process -->
+    <section id="process" class="py-16 bg-[#f5f0eb]">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-14">
+                <div class="inline-block bg-secondary/5 text-secondary font-mono text-xs px-3 py-1 rounded-md border border-secondary/10 mb-3">PROCESS</div>
+                <h2 class="font-display text-3xl md:text-4xl text-text mb-2">How it works</h2>
+                <p class="text-text/60 text-lg">Get started in minutes with a simple, tactile process.</p>
+            </div>
+            <div class="grid md:grid-cols-4 gap-6 relative">
+                <div class="hidden md:block absolute top-1/2 left-8 right-8 h-0.5 bg-[#d4cec8] -z-0"></div>
+                <div class="relative z-10">
+                    <div class="bg-surface rounded-lg border border-[#e8e2dc] shadow-[0_4px_0_0_#e0d8d0] p-6 text-center card-3d">
+                        <div class="w-14 h-14 bg-primary rounded-full shadow-[0_4px_0_0_#C23000] flex items-center justify-center mx-auto mb-4">
+                            <span class="font-display text-xl text-white">1</span>
+                        </div>
+                        <h3 class="font-bold mb-2">Create a Board</h3>
+                        <p class="text-text/60 text-sm">Set up a board for your project in seconds.</p>
+                    </div>
+                </div>
+                <div class="relative z-10">
+                    <div class="bg-surface rounded-lg border border-[#e8e2dc] shadow-[0_4px_0_0_#e0d8d0] p-6 text-center card-3d">
+                        <div class="w-14 h-14 bg-secondary rounded-full shadow-[0_4px_0_0_#C06A1A] flex items-center justify-center mx-auto mb-4">
+                            <span class="font-display text-xl text-white">2</span>
+                        </div>
+                        <h3 class="font-bold mb-2">Add Tasks</h3>
+                        <p class="text-text/60 text-sm">Add tasks, assign owners, and set deadlines.</p>
+                    </div>
+                </div>
+                <div class="relative z-10">
+                    <div class="bg-surface rounded-lg border border-[#e8e2dc] shadow-[0_4px_0_0_#e0d8d0] p-6 text-center card-3d">
+                        <div class="w-14 h-14 bg-warning rounded-full shadow-[0_4px_0_0_#B45309] flex items-center justify-center mx-auto mb-4">
+                            <span class="font-display text-xl text-white">3</span>
+                        </div>
+                        <h3 class="font-bold mb-2">Collaborate</h3>
+                        <p class="text-text/60 text-sm">Invite your team and start working together.</p>
+                    </div>
+                </div>
+                <div class="relative z-10">
+                    <div class="bg-surface rounded-lg border border-[#e8e2dc] shadow-[0_4px_0_0_#e0d8d0] p-6 text-center card-3d">
+                        <div class="w-14 h-14 bg-success rounded-full shadow-[0_4px_0_0_#0D7A2E] flex items-center justify-center mx-auto mb-4">
+                            <span class="font-display text-xl text-white">4</span>
+                        </div>
+                        <h3 class="font-bold mb-2">Ship</h3>
+                        <p class="text-text/60 text-sm">Launch your project with confidence.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits -->
+    <section class="py-16 bg-surface">
+        <div class="max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
+            <div>
+                <div class="inline-block bg-success/5 text-success font-mono text-xs px-3 py-1 rounded-md border border-success/10 mb-3">BENEFITS</div>
+                <h2 class="font-display text-3xl md:text-4xl text-text mb-4">Why teams love CraftBoard</h2>
+                <p class="text-text/60 text-lg mb-8">Join thousands of teams who have transformed their workflow.</p>
+                <ul class="space-y-4">
+                    <li class="flex items-start gap-3">
+                        <div class="w-7 h-7 bg-success rounded-full shadow-[0_2px_0_0_#0D7A2E] flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <i data-lucide="check" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <span class="text-text/80 font-medium">Ship projects 30% faster</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <div class="w-7 h-7 bg-success rounded-full shadow-[0_2px_0_0_#0D7A2E] flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <i data-lucide="check" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <span class="text-text/80 font-medium">Reduce meetings by 50%</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <div class="w-7 h-7 bg-success rounded-full shadow-[0_2px_0_0_#0D7A2E] flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <i data-lucide="check" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <span class="text-text/80 font-medium">Keep everyone aligned in real-time</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <div class="w-7 h-7 bg-success rounded-full shadow-[0_2px_0_0_#0D7A2E] flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <i data-lucide="check" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <span class="text-text/80 font-medium">Beautiful, intuitive interface</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="bg-[#f8f4f0] rounded-lg border border-[#e8e2dc] shadow-[0_8px_24px_rgba(0,0,0,0.08)] p-8 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-secondary/5 rounded-full blur-2xl"></div>
+                <div class="flex items-center justify-center gap-6 mb-6 relative">
+                    <div class="w-20 h-20 bg-primary rounded-full shadow-[0_5px_0_0_#C23000] flex items-center justify-center rotate-[-8deg]">
+                        <i data-lucide="zap" class="w-9 h-9 text-white"></i>
+                    </div>
+                    <div class="font-display text-3xl text-text">=</div>
+                    <div class="w-20 h-20 bg-success rounded-full shadow-[0_5px_0_0_#0D7A2E] flex items-center justify-center rotate-[8deg]">
+                        <i data-lucide="rocket" class="w-9 h-9 text-white"></i>
+                    </div>
+                </div>
+                <div class="text-center relative">
+                    <div class="font-display text-4xl text-text mb-2">30% Faster</div>
+                    <p class="text-text/60 text-sm">Average speedup reported by teams after switching to CraftBoard.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="py-16 bg-[#f5f0eb]">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-14">
+                <div class="inline-block bg-warning/5 text-warning font-mono text-xs px-3 py-1 rounded-md border border-warning/10 mb-3">TESTIMONIALS</div>
+                <h2 class="font-display text-3xl md:text-4xl text-text mb-2">Loved by teams everywhere</h2>
+                <p class="text-text/60 text-lg">Don't take our word for it.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="bg-surface rounded-lg border border-[#e8e2dc] shadow-[0_4px_0_0_#e0d8d0] p-6 card-3d">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-text/80 mb-6 leading-relaxed">"CraftBoard feels like the first project tool that actually gets out of my way. It's a joy to use every day."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 bg-primary rounded-full shadow-[0_3px_0_0_#C23000] flex items-center justify-center">
+                            <span class="font-display text-sm text-white">S</span>
+                        </div>
+                        <div>
+                            <div class="font-bold text-sm">Sarah Chen</div>
+                            <div class="text-xs text-text/50">Product Manager, Acme</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-surface rounded-lg border border-[#e8e2dc] shadow-[0_4px_0_0_#e0d8d0] p-6 card-3d">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-text/80 mb-6 leading-relaxed">"The tactile interface makes it feel like I'm working with physical cards. It's incredibly satisfying."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 bg-secondary rounded-full shadow-[0_3px_0_0_#C06A1A] flex items-center justify-center">
+                            <span class="font-display text-sm text-white">M</span>
+                        </div>
+                        <div>
+                            <div class="font-bold text-sm">Mike Johnson</div>
+                            <div class="text-xs text-text/50">Dev Lead, TechCorp</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-surface rounded-lg border border-[#e8e2dc] shadow-[0_4px_0_0_#e0d8d0] p-6 card-3d">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-text/80 mb-6 leading-relaxed">"We switched our entire agency to CraftBoard. The learning curve was zero — everyone just got it."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 bg-success rounded-full shadow-[0_3px_0_0_#0D7A2E] flex items-center justify-center">
+                            <span class="font-display text-sm text-white">A</span>
+                        </div>
+                        <div>
+                            <div class="font-bold text-sm">Ana Rodriguez</div>
+                            <div class="text-xs text-text/50">Agency Owner, StudioR</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section id="pricing" class="py-16 bg-surface">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-14">
+                <div class="inline-block bg-primary/5 text-primary font-mono text-xs px-3 py-1 rounded-md border border-primary/10 mb-3">PRICING</div>
+                <h2 class="font-display text-3xl md:text-4xl text-text mb-2">Simple pricing</h2>
+                <p class="text-text/60 text-lg">Start free. Upgrade when you're ready.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-6 items-stretch">
+                <!-- Free -->
+                <div class="bg-[#f8f4f0] rounded-lg border border-[#e8e2dc] shadow-[0_4px_0_0_#e0d8d0] p-7 flex flex-col">
+                    <h3 class="font-display text-xl text-text mb-1">Free</h3>
+                    <div class="font-display text-4xl text-text mb-1">$0</div>
+                    <p class="text-text/50 text-xs font-mono mb-6">forever</p>
+                    <p class="text-text/60 text-sm mb-6">For individuals just getting started.</p>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                            <span>3 boards</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                            <span>Unlimited tasks</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                            <span>Basic analytics</span>
+                        </li>
+                    </ul>
+                    <button class="w-full bg-gradient-to-b from-surface to-[#e8e2dc] text-text font-bold px-4 py-3 rounded-md shadow-[0_4px_0_0_#b8b2ac] btn-3d border-b-[#b8b2ac] border border-[#d4cec8] text-sm">
+                        Get Started
+                    </button>
+                </div>
+                <!-- Pro (featured) -->
+                <div class="bg-gradient-to-b from-[#FFF8F0] to-[#FDE8D0] rounded-lg border-2 border-primary shadow-[0_6px_0_0_#C23000] p-7 flex flex-col relative md:-my-2 md:py-9">
+                    <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-bold px-4 py-1.5 rounded-md shadow-[0_2px_0_0_#8B1A00] tracking-wide">
+                        ★ POPULAR
+                    </div>
+                    <h3 class="font-display text-xl text-text mb-1">Pro</h3>
+                    <div class="font-display text-4xl text-text mb-1">$12<span class="text-sm text-text/50 font-sans font-normal">/user/mo</span></div>
+                    <p class="text-text/50 text-xs font-mono mb-6">billed annually</p>
+                    <p class="text-text/60 text-sm mb-6">For growing teams that need more.</p>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                            <span>Unlimited boards</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                            <span>Advanced analytics</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                            <span>Priority support</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                            <span>Custom workflows</span>
+                        </li>
+                    </ul>
+                    <button class="w-full bg-gradient-to-b from-primary to-[#C23000] text-white font-bold px-4 py-3 rounded-md shadow-[0_4px_0_0_#8B1A00] btn-3d border-b-[#8B1A00] text-sm">
+                        Start Free Trial
+                    </button>
+                </div>
+                <!-- Enterprise -->
+                <div class="bg-[#f8f4f0] rounded-lg border border-[#e8e2dc] shadow-[0_4px_0_0_#e0d8d0] p-7 flex flex-col">
+                    <h3 class="font-display text-xl text-text mb-1">Enterprise</h3>
+                    <div class="font-display text-4xl text-text mb-1">Custom</div>
+                    <p class="text-text/50 text-xs font-mono mb-6">contact us</p>
+                    <p class="text-text/60 text-sm mb-6">For large organizations with custom needs.</p>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                            <span>SSO/SAML</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                            <span>Dedicated support</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                            <span>Custom integrations</span>
+                        </li>
+                    </ul>
+                    <button class="w-full bg-gradient-to-b from-surface to-[#e8e2dc] text-text font-bold px-4 py-3 rounded-md shadow-[0_4px_0_0_#b8b2ac] btn-3d border-b-[#b8b2ac] border border-[#d4cec8] text-sm">
+                        Contact Us
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="py-16 bg-[#f5f0eb]">
+        <div class="max-w-3xl mx-auto px-4">
+            <div class="text-center mb-14">
+                <div class="inline-block bg-secondary/5 text-secondary font-mono text-xs px-3 py-1 rounded-md border border-secondary/10 mb-3">FAQ</div>
+                <h2 class="font-display text-3xl md:text-4xl text-text mb-2">Frequently asked questions</h2>
+                <p class="text-text/60 text-lg">Everything you need to know.</p>
+            </div>
+            <div class="space-y-4">
+                <div class="faq-item bg-surface rounded-lg border border-[#e8e2dc] shadow-[0_3px_0_0_#e0d8d0] overflow-hidden">
+                    <button class="faq-question w-full flex items-center justify-between p-5 text-left font-bold text-text hover:text-primary transition-colors">
+                        <span>Is there a free plan?</span>
+                        <i data-lucide="chevron-down" class="faq-icon w-5 h-5 text-text/40 flex-shrink-0"></i>
+                    </button>
+                    <div class="faq-answer px-5 pb-5 text-text/60 text-sm leading-relaxed">
+                        Yes! Our free plan includes 3 boards, unlimited tasks, and basic analytics. No credit card required. Upgrade anytime to unlock more features.
+                    </div>
+                </div>
+                <div class="faq-item bg-surface rounded-lg border border-[#e8e2dc] shadow-[0_3px_0_0_#e0d8d0] overflow-hidden">
+                    <button class="faq-question w-full flex items-center justify-between p-5 text-left font-bold text-text hover:text-primary transition-colors">
+                        <span>Can I upgrade or downgrade anytime?</span>
+                        <i data-lucide="chevron-down" class="faq-icon w-5 h-5 text-text/40 flex-shrink-0"></i>
+                    </button>
+                    <div class="faq-answer px-5 pb-5 text-text/60 text-sm leading-relaxed">
+                        Absolutely. You can change your plan at any time. Changes are prorated automatically, so you only pay for what you use.
+                    </div>
+                </div>
+                <div class="faq-item bg-surface rounded-lg border border-[#e8e2dc] shadow-[0_3px_0_0_#e0d8d0] overflow-hidden">
+                    <button class="faq-question w-full flex items-center justify-between p-5 text-left font-bold text-text hover:text-primary transition-colors">
+                        <span>Do you offer SSO?</span>
+                        <i data-lucide="chevron-down" class="faq-icon w-5 h-5 text-text/40 flex-shrink-0"></i>
+                    </button>
+                    <div class="faq-answer px-5 pb-5 text-text/60 text-sm leading-relaxed">
+                        Yes, SSO/SAML is available on our Enterprise plan. Contact us for more details and to set up a demo.
+                    </div>
+                </div>
+                <div class="faq-item bg-surface rounded-lg border border-[#e8e2dc] shadow-[0_3px_0_0_#e0d8d0] overflow-hidden">
+                    <button class="faq-question w-full flex items-center justify-between p-5 text-left font-bold text-text hover:text-primary transition-colors">
+                        <span>What happens to my data if I cancel?</span>
+                        <i data-lucide="chevron-down" class="faq-icon w-5 h-5 text-text/40 flex-shrink-0"></i>
+                    </button>
+                    <div class="faq-answer px-5 pb-5 text-text/60 text-sm leading-relaxed">
+                        You can export all your data at any time. After cancellation, your data is retained for 30 days before being permanently deleted.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-[#1a1a2e] text-white pt-14 pb-8">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="grid md:grid-cols-4 gap-10 mb-10">
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-9 h-9 bg-primary rounded-md shadow-[0_3px_0_0_#C23000] flex items-center justify-center">
+                            <i data-lucide="hammer" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <span class="font-display text-xl tracking-wide">CraftBoard</span>
+                    </div>
+                    <p class="text-white/50 text-sm leading-relaxed">Build things that feel real. CraftBoard brings physical warmth to digital work.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4 text-sm uppercase tracking-wider text-white/80">Product</h4>
+                    <ul class="space-y-2.5 text-sm text-white/50">
+                        <li><a href="#" class="hover:text-white transition-colors">Features</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Pricing</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Integrations</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Changelog</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4 text-sm uppercase tracking-wider text-white/80">Company</h4>
+                    <ul class="space-y-2.5 text-sm text-white/50">
+                        <li><a href="#" class="hover:text-white transition-colors">About</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Blog</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Careers</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4 text-sm uppercase tracking-wider text-white/80">Legal</h4>
+                    <ul class="space-y-2.5 text-sm text-white/50">
+                        <li><a href="#" class="hover:text-white transition-colors">Privacy</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Terms</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Security</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-white/10 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+                <p class="text-white/30 text-sm font-mono">© 2024 CraftBoard. All rights reserved.</p>
+                <div class="flex gap-5">
+                    <a href="#" class="text-white/40 hover:text-white transition-colors">
+                        <i data-lucide="twitter" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="text-white/40 hover:text-white transition-colors">
+                        <i data-lucide="github" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="text-white/40 hover:text-white transition-colors">
+                        <i data-lucide="linkedin" class="w-5 h-5"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Mobile menu toggle
+        const menuBtn = document.getElementById('menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        menuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('open');
+            const icon = menuBtn.querySelector('i');
+            if (mobileMenu.classList.contains('open')) {
+                icon.setAttribute('data-lucide', 'x');
+            } else {
+                icon.setAttribute('data-lucide', 'menu');
+            }
+            lucide.createIcons();
+        });
+
+        // FAQ accordion
+        document.querySelectorAll('.faq-question').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const item = btn.closest('.faq-item');
+                const wasOpen = item.classList.contains('open');
+                // Close all
+                document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+                // Toggle clicked
+                if (!wasOpen) {
+                    item.classList.add('open');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

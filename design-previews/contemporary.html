@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova — Design for the future</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jost:wght@100;200;300;400;500;600;700;800;900&family=Overpass+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest">
+    </script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Jost', 'sans-serif'],
+                        mono: ['Overpass Mono', 'monospace'],
+                    },
+                    colors: {
+                        primary: '#C800DF',
+                        secondary: '#E60076',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                        surface: '#FFFFFF',
+                        ink: '#111827',
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+        :focus-visible {
+            outline: 3px solid #C800DF;
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+        .dark :focus-visible {
+            outline-color: #E60076;
+        }
+        .grid-pattern {
+            background-image: linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        .grid-pattern-dark {
+            background-image: linear-gradient(rgba(17, 24, 39, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(17, 24, 39, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+        details[open] .faq-icon {
+            transform: rotate(45deg);
+        }
+        .faq-icon {
+            transition: transform 0.2s ease;
+        }
+    </style>
+</head>
+
+<body class="bg-surface text-ink dark:bg-[#0B0B14] dark:text-gray-100 font-sans antialiased">
+
+    <!-- ===== NAVIGATION ===== -->
+    <header class="sticky top-0 z-50 bg-white/90 dark:bg-[#0B0B14]/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
+        <nav class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8" aria-label="Main navigation">
+            <div class="flex h-16 items-center justify-between">
+                <!-- Logo -->
+                <a href="#" class="flex items-center gap-2 min-h-[44px] px-2" aria-label="Nova home">
+                    <span class="inline-block w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary"></span>
+                    <span class="text-xl font-bold tracking-tight">Nova</span>
+                </a>
+
+                <!-- Desktop links -->
+                <div class="hidden md:flex items-center gap-1">
+                    <a href="#features" class="px-4 py-2 min-h-[44px] flex items-center text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-ink dark:hover:text-white transition-colors">Features</a>
+                    <a href="#process" class="px-4 py-2 min-h-[44px] flex items-center text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-ink dark:hover:text-white transition-colors">Process</a>
+                    <a href="#pricing" class="px-4 py-2 min-h-[44px] flex items-center text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-ink dark:hover:text-white transition-colors">Pricing</a>
+                    <a href="#faq" class="px-4 py-2 min-h-[44px] flex items-center text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-ink dark:hover:text-white transition-colors">FAQ</a>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleDarkMode()" aria-label="Toggle dark mode" class="p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                        <i data-lucide="sun" class="w-5 h-5 dark:hidden"></i>
+                        <i data-lucide="moon" class="w-5 h-5 hidden dark:block"></i>
+                    </button>
+                    <a href="#pricing" class="hidden sm:inline-flex items-center justify-center px-5 py-2.5 min-h-[44px] rounded-full bg-primary text-white text-sm font-semibold hover:bg-[#A000B8] transition-colors">
+                        Get Started
+                    </a>
+                    <!-- Mobile menu button -->
+                    <button id="mobile-menu-btn" class="md:hidden p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="Toggle menu" aria-expanded="false">
+                        <i data-lucide="menu" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile menu -->
+            <div id="mobile-menu" class="hidden md:hidden pb-4">
+                <div class="flex flex-col gap-1 px-2">
+                    <a href="#features" class="px-4 py-3 min-h-[44px] flex items-center text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors">Features</a>
+                    <a href="#process" class="px-4 py-3 min-h-[44px] flex items-center text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors">Process</a>
+                    <a href="#pricing" class="px-4 py-3 min-h-[44px] flex items-center text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors">Pricing</a>
+                    <a href="#faq" class="px-4 py-3 min-h-[44px] flex items-center text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors">FAQ</a>
+                    <a href="#pricing" class="mt-2 px-5 py-3 min-h-[44px] flex items-center justify-center rounded-full bg-primary text-white text-sm font-semibold">Get Started</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+
+        <!-- ===== HERO ===== -->
+        <section class="relative overflow-hidden bg-gradient-to-br from-[#7A0096] via-[#A000B8] to-[#C800DF] text-white">
+            <div class="absolute inset-0 grid-pattern" aria-hidden="true"></div>
+            <div class="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-white/10 blur-3xl" aria-hidden="true"></div>
+            <div class="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-secondary/30 blur-3xl" aria-hidden="true"></div>
+
+            <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 md:py-28 lg:py-32">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                    <div>
+                        <p class="font-mono text-sm uppercase tracking-widest text-white/70 mb-4">Nova Design System</p>
+                        <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight tracking-tight">
+                            Design that feels like the future.
+                        </h1>
+                        <p class="mt-6 text-lg md:text-xl text-white/80 max-w-xl leading-relaxed">
+                            Nova is the AI-powered design platform that helps teams ship accessible, beautiful interfaces at the speed of thought.
+                        </p>
+                        <div class="mt-8 flex flex-wrap gap-4">
+                            <a href="#pricing" class="inline-flex items-center justify-center gap-2 px-7 py-3.5 min-h-[48px] rounded-full bg-white text-primary font-semibold hover:bg-gray-100 transition-colors">
+                                Start building
+                                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </a>
+                            <a href="#features" class="inline-flex items-center justify-center gap-2 px-7 py-3.5 min-h-[48px] rounded-full border-2 border-white/40 text-white font-semibold hover:bg-white/10 transition-colors">
+                                View demo
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Hero visual -->
+                    <div class="relative hidden lg:block" aria-hidden="true">
+                        <div class="relative mx-auto max-w-md">
+                            <!-- Glow -->
+                            <div class="absolute -inset-4 bg-white/10 rounded-3xl blur-2xl"></div>
+                            <!-- Mock card -->
+                            <div class="relative bg-white dark:bg-[#1A1A2E] rounded-2xl shadow-2xl p-6">
+                                <div class="flex items-center gap-2 mb-5">
+                                    <span class="w-3 h-3 rounded-full bg-danger"></span>
+                                    <span class="w-3 h-3 rounded-full bg-warning"></span>
+                                    <span class="w-3 h-3 rounded-full bg-success"></span>
+                                    <span class="ml-auto font-mono text-xs text-gray-400">nova.app</span>
+                                </div>
+                                <div class="space-y-3">
+                                    <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                                    <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                                </div>
+                                <!-- Chart bars -->
+                                <div class="flex items-end gap-3 mt-6 h-28">
+                                    <div class="flex-1 bg-primary rounded-t-lg" style="height: 40%"></div>
+                                    <div class="flex-1 bg-secondary rounded-t-lg" style="height: 70%"></div>
+                                    <div class="flex-1 bg-primary rounded-t-lg" style="height: 55%"></div>
+                                    <div class="flex-1 bg-secondary rounded-t-lg" style="height: 90%"></div>
+                                    <div class="flex-1 bg-primary rounded-t-lg" style="height: 65%"></div>
+                                    <div class="flex-1 bg-secondary rounded-t-lg" style="height: 80%"></div>
+                                </div>
+                                <div class="mt-6 flex items-center justify-between">
+                                    <div class="flex -space-x-2">
+                                        <span class="w-8 h-8 rounded-full bg-primary border-2 border-white dark:border-[#1A1A2E]"></span>
+                                        <span class="w-8 h-8 rounded-full bg-secondary border-2 border-white dark:border-[#1A1A2E]"></span>
+                                        <span class="w-8 h-8 rounded-full bg-warning border-2 border-white dark:border-[#1A1A2E]"></span>
+                                    </div>
+                                    <span class="font-mono text-xs text-gray-400">+12k teams</span>
+                                </div>
+                            </div>
+                            <!-- Floating badge -->
+                            <div class="absolute -top-4 -right-4 bg-white dark:bg-[#1A1A2E] rounded-xl shadow-lg px-4 py-2 flex items-center gap-2">
+                                <i data-lucide="sparkles" class="w-4 h-4 text-primary"></i>
+                                <span class="text-xs font-semibold">AI Powered</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== STATS ===== -->
+        <section class="bg-ink text-white py-14 md:py-16" aria-label="Key metrics">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-6">
+                    <div class="text-center">
+                        <p class="text-3xl md:text-5xl font-bold tracking-tight">99.9%</p>
+                        <p class="mt-2 font-mono text-xs md:text-sm text-gray-400 uppercase tracking-wider">Uptime</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-3xl md:text-5xl font-bold tracking-tight">12k+</p>
+                        <p class="mt-2 font-mono text-xs md:text-sm text-gray-400 uppercase tracking-wider">Teams</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-3xl md:text-5xl font-bold tracking-tight">4.9/5</p>
+                        <p class="mt-2 font-mono text-xs md:text-sm text-gray-400 uppercase tracking-wider">Rating</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-3xl md:text-5xl font-bold tracking-tight">40%</p>
+                        <p class="mt-2 font-mono text-xs md:text-sm text-gray-400 uppercase tracking-wider">Faster shipping</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== FEATURES (Bento Grid) ===== -->
+        <section id="features" class="py-20 md:py-28 bg-surface dark:bg-[#0B0B14]">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="max-w-2xl mb-12 md:mb-16">
+                    <p class="font-mono text-sm uppercase tracking-widest text-primary dark:text-secondary mb-3">Features</p>
+                    <h2 class="text-3xl md:text-5xl font-bold tracking-tight">Everything you need, nothing you don't.</h2>
+                    <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">A complete toolkit for building accessible, high-performance interfaces.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Card 1: AI Personalization (large) -->
+                    <div class="md:col-span-2 bg-gradient-to-br from-[#8B00A8] to-[#C800DF] rounded-2xl p-8 md:p-10 text-white relative overflow-hidden">
+                        <div class="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-white/10 blur-2xl" aria-hidden="true"></div>
+                        <div class="relative">
+                            <div class="flex items-center gap-3 mb-4">
+                                <span class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                                </span>
+                                <span class="font-mono text-xs uppercase tracking-wider text-white/70">AI Personalization</span>
+                            </div>
+                            <h3 class="text-2xl md:text-3xl font-bold mb-3">Your design system, personalized</h3>
+                            <p class="text-white/80 max-w-md leading-relaxed">Nova learns your brand and generates components that fit perfectly. From colors to typography, everything adapts to your identity.</p>
+                            <div class="mt-6 flex flex-wrap gap-2">
+                                <span class="px-3 py-1.5 rounded-full bg-white/20 text-xs font-medium">Auto-generated</span>
+                                <span class="px-3 py-1.5 rounded-full bg-white/20 text-xs font-medium">Brand-aware</span>
+                                <span class="px-3 py-1.5 rounded-full bg-white/20 text-xs font-medium">Continuous learning</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Dark Mode -->
+                    <div class="bg-gray-50 dark:bg-[#151522] rounded-2xl p-8 border border-gray-100 dark:border-gray-800">
+                        <div class="flex items-center gap-3 mb-4">
+                            <span class="w-10 h-10 rounded-xl bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                <i data-lucide="moon" class="w-5 h-5 text-ink dark:text-white"></i>
+                            </span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">Dark by default</h3>
+                        <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">Seamless dark mode support in every component. No flicker, no extra work.</p>
+                    </div>
+
+                    <!-- Card 3: Accessibility -->
+                    <div class="bg-gray-50 dark:bg-[#151522] rounded-2xl p-8 border border-gray-100 dark:border-gray-800">
+                        <div class="flex items-center gap-3 mb-4">
+                            <span class="w-10 h-10 rounded-xl bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                <i data-lucide="accessibility" class="w-5 h-5 text-ink dark:text-white"></i>
+                            </span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">WCAG 2.2 AA</h3>
+                        <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">Every component is built accessible from day one. Screen-reader tested.</p>
+                    </div>
+
+                    <!-- Card 4: Performance -->
+                    <div class="bg-gray-50 dark:bg-[#151522] rounded-2xl p-8 border border-gray-100 dark:border-gray-800">
+                        <div class="flex items-center gap-3 mb-4">
+                            <span class="w-10 h-10 rounded-xl bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                <i data-lucide="zap" class="w-5 h-5 text-ink dark:text-white"></i>
+                            </span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">Sub-50ms</h3>
+                        <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">Buttery-smooth interactions, always. Optimized for the lowest latency.</p>
+                    </div>
+
+                    <!-- Card 5: Security -->
+                    <div class="bg-gray-50 dark:bg-[#151522] rounded-2xl p-8 border border-gray-100 dark:border-gray-800">
+                        <div class="flex items-center gap-3 mb-4">
+                            <span class="w-10 h-10 rounded-xl bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                <i data-lucide="shield" class="w-5 h-5 text-ink dark:text-white"></i>
+                            </span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">SOC 2</h3>
+                        <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">Enterprise-grade security built in. Your data is always protected.</p>
+                    </div>
+
+                    <!-- Card 6: Bento Grids (wide) -->
+                    <div class="md:col-span-3 bg-ink dark:bg-[#151522] rounded-2xl p-8 md:p-10 text-white relative overflow-hidden">
+                        <div class="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-primary/20 blur-3xl" aria-hidden="true"></div>
+                        <div class="relative grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                            <div>
+                                <div class="flex items-center gap-3 mb-4">
+                                    <span class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                                        <i data-lucide="layout-grid" class="w-5 h-5"></i>
+                                    </span>
+                                    <span class="font-mono text-xs uppercase tracking-wider text-gray-400">Bento Grids</span>
+                                </div>
+                                <h3 class="text-2xl md:text-3xl font-bold mb-3">Layouts that adapt</h3>
+                                <p class="text-gray-400 leading-relaxed max-w-md">Bento grids that look stunning on any screen. From mobile to ultra-wide, your content always finds its perfect place.</p>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3" aria-hidden="true">
+                                <div class="bg-primary/30 rounded-xl h-24"></div>
+                                <div class="bg-secondary/30 rounded-xl h-24"></div>
+                                <div class="bg-white/10 rounded-xl h-24"></div>
+                                <div class="bg-primary/20 rounded-xl h-24"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== PROCESS ===== -->
+        <section id="process" class="py-20 md:py-28 bg-gray-50 dark:bg-[#0F0F1A]">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="max-w-2xl mb-12 md:mb-16">
+                    <p class="font-mono text-sm uppercase tracking-widest text-primary dark:text-secondary mb-3">Process</p>
+                    <h2 class="text-3xl md:text-5xl font-bold tracking-tight">From idea to production in four steps.</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-8">
+                    <!-- Step 1 -->
+                    <div class="relative">
+                        <div class="bg-white dark:bg-[#151522] rounded-2xl p-8 border border-gray-100 dark:border-gray-800 h-full">
+                            <span class="font-mono text-4xl font-bold text-gray-200 dark:text-gray-700">01</span>
+                            <div class="mt-4 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                                <i data-lucide="palette" class="w-6 h-6 text-primary"></i>
+                            </div>
+                            <h3 class="mt-4 text-lg font-bold">Define tokens</h3>
+                            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">Set your colors, type, and spacing. Establish the foundation.</p>
+                        </div>
+                    </div>
+                    <!-- Step 2 -->
+                    <div class="relative">
+                        <div class="bg-white dark:bg-[#151522] rounded-2xl p-8 border border-gray-100 dark:border-gray-800 h-full">
+                            <span class="font-mono text-4xl font-bold text-gray-200 dark:text-gray-700">02</span>
+                            <div class="mt-4 w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center">
+                                <i data-lucide="puzzle" class="w-6 h-6 text-secondary"></i>
+                            </div>
+                            <h3 class="mt-4 text-lg font-bold">Build components</h3>
+                            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">Create accessible, reusable components that work everywhere.</p>
+                        </div>
+                    </div>
+                    <!-- Step 3 -->
+                    <div class="relative">
+                        <div class="bg-white dark:bg-[#151522] rounded-2xl p-8 border border-gray-100 dark:border-gray-800 h-full">
+                            <span class="font-mono text-4xl font-bold text-gray-200 dark:text-gray-700">03</span>
+                            <div class="mt-4 w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center">
+                                <i data-lucide="check-circle" class="w-6 h-6 text-success"></i>
+                            </div>
+                            <h3 class="mt-4 text-lg font-bold">Test & validate</h3>
+                            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">Automated accessibility checks and visual regression testing.</p>
+                        </div>
+                    </div>
+                    <!-- Step 4 -->
+                    <div class="relative">
+                        <div class="bg-white dark:bg-[#151522] rounded-2xl p-8 border border-gray-100 dark:border-gray-800 h-full">
+                            <span class="font-mono text-4xl font-bold text-gray-200 dark:text-gray-700">04</span>
+                            <div class="mt-4 w-12 h-12 rounded-xl bg-warning/10 flex items-center justify-center">
+                                <i data-lucide="rocket" class="w-6 h-6 text-warning"></i>
+                            </div>
+                            <h3 class="mt-4 text-lg font-bold">Ship & iterate</h3>
+                            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">Deploy and improve continuously with real user feedback.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== BENEFITS (Color-blocked) ===== -->
+        <section id="benefits" aria-label="Benefits">
+            <!-- Benefit 1: Primary -->
+            <div class="bg-gradient-to-br from-[#8B00A8] to-[#C800DF] text-white py-16 md:py-20">
+                <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                        <div>
+                            <p class="font-mono text-sm uppercase tracking-widest text-white/70 mb-3">Benefit</p>
+                            <h2 class="text-3xl md:text-4xl font-bold tracking-tight">Ship faster with confidence</h2>
+                            <p class="mt-4 text-lg text-white/80 leading-relaxed">Nova removes the friction between design and development, so your team can focus on what matters.</p>
+                        </div>
+                        <div>
+                            <ul class="space-y-4">
+                                <li class="flex items-start gap-3">
+                                    <span class="mt-1 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                                        <i data-lucide="check" class="w-4 h-4"></i>
+                                    </span>
+                                    <span class="text-white/90">Consistent design tokens across every platform</span>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <span class="mt-1 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                                        <i data-lucide="check" class="w-4 h-4"></i>
+                                    </span>
+                                    <span class="text-white/90">Component library that scales with your team</span>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <span class="mt-1 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                                        <i data-lucide="check" class="w-4 h-4"></i>
+                                    </span>
+                                    <span class="text-white/90">Automated quality checks in CI/CD pipelines</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Benefit 2: Secondary -->
+            <div class="bg-gradient-to-br from-[#B0005C] to-[#E60076] text-white py-16 md:py-20">
+                <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                        <div class="lg:order-2">
+                            <p class="font-mono text-sm uppercase tracking-widest text-white/70 mb-3">Benefit</p>
+                            <h2 class="text-3xl md:text-4xl font-bold tracking-tight">Design that includes everyone</h2>
+                            <p class="mt-4 text-lg text-white/80 leading-relaxed">Accessibility isn't an afterthought. It's the foundation of every component we ship.</p>
+                        </div>
+                        <div class="lg:order-1">
+                            <ul class="space-y-4">
+                                <li class="flex items-start gap-3">
+                                    <span class="mt-1 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                                        <i data-lucide="check" class="w-4 h-4"></i>
+                                    </span>
+                                    <span class="text-white/90">WCAG 2.2 AA compliance by default</span>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <span class="mt-1 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                                        <i data-lucide="check" class="w-4 h-4"></i>
+                                    </span>
+                                    <span class="text-white/90">Screen-reader tested components</span>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <span class="mt-1 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                                        <i data-lucide="check" class="w-4 h-4"></i>
+                                    </span>
+                                    <span class="text-white/90">Keyboard-first interactions</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== TESTIMONIALS ===== -->
+        <section id="testimonials" class="py-20 md:py-28 bg-surface dark:bg-[#0B0B14]">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="max-w-2xl mb-12 md:mb-16">
+                    <p class="font-mono text-sm uppercase tracking-widest text-primary dark:text-secondary mb-3">Testimonials</p>
+                    <h2 class="text-3xl md:text-5xl font-bold tracking-tight">Loved by teams worldwide.</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Testimonial 1 -->
+                    <figure class="bg-gray-50 dark:bg-[#151522] rounded-2xl p-8 border border-gray-100 dark:border-gray-800">
+                        <div class="flex gap-1 mb-4" aria-label="5 out of 5 stars">
+                            <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        </div>
+                        <blockquote class="text-gray-700 dark:text-gray-300 leading-relaxed">
+                            "Nova transformed our design workflow. We ship 3x faster now, and the quality is better than ever."
+                        </blockquote>
+                        <figcaption class="mt-6 flex items-center gap-3">
+                            <span class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary">SC</span>
+                            <div>
+                                <p class="text-sm font-semibold">Sarah Chen</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Design Lead, Acme</p>
+                            </div>
+                        </figcaption>
+                    </figure>
+
+                    <!-- Testimonial 2 -->
+                    <figure class="bg-gray-50 dark:bg-[#151522] rounded-2xl p-8 border border-gray-100 dark:border-gray-800">
+                        <div class="flex gap-1 mb-4" aria-label="5 out of 5 stars">
+                            <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        </div>
+                        <blockquote class="text-gray-700 dark:text-gray-300 leading-relaxed">
+                            "The accessibility features alone are worth it. Best investment we've made this year."
+                        </blockquote>
+                        <figcaption class="mt-6 flex items-center gap-3">
+                            <span class="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center font-bold text-secondary">MJ</span>
+                            <div>
+                                <p class="text-sm font-semibold">Marcus Johnson</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">CTO, WidgetCo</p>
+                            </div>
+                        </figcaption>
+                    </figure>
+
+                    <!-- Testimonial 3 -->
+                    <figure class="bg-gray-50 dark:bg-[#151522] rounded-2xl p-8 border border-gray-100 dark:border-gray-800">
+                        <div class="flex gap-1 mb-4" aria-label="5 out of 5 stars">
+                            <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        </div>
+                        <blockquote class="text-gray-700 dark:text-gray-300 leading-relaxed">
+                            "Beautiful, fast, and accessible. Nova is the future of design systems."
+                        </blockquote>
+                        <figcaption class="mt-6 flex items-center gap-3">
+                            <span class="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center font-bold text-success">PP</span>
+                            <div>
+                                <p class="text-sm font-semibold">Priya Patel</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Product Designer, TechFlow</p>
+                            </div>
+                        </figcaption>
+                    </figure>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== PRICING ===== -->
+        <section id="pricing" class="py-20 md:py-28 bg-gray-50 dark:bg-[#0F0F1A]">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="max-w-2xl mb-12 md:mb-16">
+                    <p class="font-mono text-sm uppercase tracking-widest text-primary dark:text-secondary mb-3">Pricing</p>
+                    <h2 class="text-3xl md:text-5xl font-bold tracking-tight">Simple, transparent pricing.</h2>
+                    <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">Start free. Upgrade when you're ready.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+                    <!-- Starter -->
+                    <div class="bg-white dark:bg-[#151522] rounded-2xl p-8 border border-gray-100 dark:border-gray-800 flex flex-col">
+                        <h3 class="text-lg font-bold">Starter</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">For individuals</p>
+                        <p class="mt-6 text-4xl font-bold tracking-tight">$0</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">forever free</p>
+                        <ul class="mt-8 space-y-3 flex-1">
+                            <li class="flex items-center gap-2 text-sm">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                                1 project
+                            </li>
+                            <li class="flex items-center gap-2 text-sm">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                                Basic components
+                            </li>
+                            <li class="flex items-center gap-2 text-sm">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                                Community support
+                            </li>
+                        </ul>
+                        <a href="#" class="mt-8 inline-flex items-center justify-center px-6 py-3 min-h-[44px] rounded-full border-2 border-gray-200 dark:border-gray-700 text-sm font-semibold hover:border-primary transition-colors">
+                            Get started
+                        </a>
+                    </div>
+
+                    <!-- Pro (highlighted) -->
+                    <div class="bg-gradient-to-br from-[#8B00A8] to-[#C800DF] rounded-2xl p-8 text-white flex flex-col relative shadow-xl">
+                        <span class="absolute top-4 right-4 px-3 py-1 rounded-full bg-white/20 text-xs font-semibold">Popular</span>
+                        <h3 class="text-lg font-bold">Pro</h3>
+                        <p class="text-sm text-white/70 mt-1">For growing teams</p>
+                        <p class="mt-6 text-4xl font-bold tracking-tight">$24</p>
+                        <p class="text-sm text-white/70 mt-1">per user / month</p>
+                        <ul class="mt-8 space-y-3 flex-1">
+                            <li class="flex items-center gap-2 text-sm">
+                                <i data-lucide="check" class="w-4 h-4 flex-shrink-0"></i>
+                                Unlimited projects
+                            </li>
+                            <li class="flex items-center gap-2 text-sm">
+                                <i data-lucide="check" class="w-4 h-4 flex-shrink-0"></i>
+                                AI personalization
+                            </li>
+                            <li class="flex items-center gap-2 text-sm">
+                                <i data-lucide="check" class="w-4 h-4 flex-shrink-0"></i>
+                                Priority support
+                            </li>
+                            <li class="flex items-center gap-2 text-sm">
+                                <i data-lucide="check" class="w-4 h-4 flex-shrink-0"></i>
+                                Advanced analytics
+                            </li>
+                        </ul>
+                        <a href="#" class="mt-8 inline-flex items-center justify-center px-6 py-3 min-h-[44px] rounded-full bg-white text-primary text-sm font-semibold hover:bg-gray-100 transition-colors">
+                            Start free trial
+                        </a>
+                    </div>
+
+                    <!-- Enterprise -->
+                    <div class="bg-white dark:bg-[#151522] rounded-2xl p-8 border border-gray-100 dark:border-gray-800 flex flex-col">
+                        <h3 class="text-lg font-bold">Enterprise</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">For large organizations</p>
+                        <p class="mt-6 text-4xl font-bold tracking-tight">Custom</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">tailored to you</p>
+                        <ul class="mt-8 space-y-3 flex-1">
+                            <li class="flex items-center gap-2 text-sm">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                                Everything in Pro
+                            </li>
+                            <li class="flex items-center gap-2 text-sm">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                                SSO / SAML
+                            </li>
+                            <li class="flex items-center gap-2 text-sm">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                                Dedicated support
+                            </li>
+                            <li class="flex items-center gap-2 text-sm">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                                Custom SLAs
+                            </li>
+                        </ul>
+                        <a href="#" class="mt-8 inline-flex items-center justify-center px-6 py-3 min-h-[44px] rounded-full border-2 border-gray-200 dark:border-gray-700 text-sm font-semibold hover:border-primary transition-colors">
+                            Contact sales
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== FAQ ===== -->
+        <section id="faq" class="py-20 md:py-28 bg-surface dark:bg-[#0B0B14]">
+            <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12 md:mb-16">
+                    <p class="font-mono text-sm uppercase tracking-widest text-primary dark:text-secondary mb-3">FAQ</p>
+                    <h2 class="text-3xl md:text-5xl font-bold tracking-tight">Frequently asked questions.</h2>
+                </div>
+
+                <div class="space-y-4">
+                    <!-- FAQ 1 -->
+                    <details class="bg-gray-50 dark:bg-[#151522] rounded-2xl border border-gray-100 dark:border-gray-800 group">
+                        <summary class="flex items-center justify-between px-6 py-5 min-h-[44px] cursor-pointer list-none">
+                            <span class="font-semibold text-sm md:text-base">What is Nova?</span>
+                            <span class="faq-icon w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 ml-4">
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                            </span>
+                        </summary>
+                        <div class="px-6 pb-5 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                            Nova is a design system platform that combines AI-powered personalization with accessible, high-performance components. It helps teams ship beautiful interfaces faster while maintaining consistency across all platforms.
+                        </div>
+                    </details>
+
+                    <!-- FAQ 2 -->
+                    <details class="bg-gray-50 dark:bg-[#151522] rounded-2xl border border-gray-100 dark:border-gray-800 group">
+                        <summary class="flex items-center justify-between px-6 py-5 min-h-[44px] cursor-pointer list-none">
+                            <span class="font-semibold text-sm md:text-base">How does AI personalization work?</span>
+                            <span class="faq-icon w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 ml-4">
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                            </span>
+                        </summary>
+                        <div class="px-6 pb-5 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                            Nova analyzes your brand assets, design history, and usage patterns to generate components that match your identity. The AI continuously learns from your team's feedback and adapts the design system accordingly.
+                        </div>
+                    </details>
+
+                    <!-- FAQ 3 -->
+                    <details class="bg-gray-50 dark:bg-[#151522] rounded-2xl border border-gray-100 dark:border-gray-800 group">
+                        <summary class="flex items-center justify-between px-6 py-5 min-h-[44px] cursor-pointer list-none">
+                            <span class="font-semibold text-sm md:text-base">Is Nova accessible?</span>
+                            <span class="faq-icon w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 ml-4">
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                            </span>
+                        </summary>
+                        <div class="px-6 pb-5 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                            Yes. Every component in Nova is built to meet WCAG 2.2 AA standards. We test with screen readers, ensure keyboard-first interactions, and provide visible focus states. Accessibility is a core requirement, not an afterthought.
+                        </div>
+                    </details>
+
+                    <!-- FAQ 4 -->
+                    <details class="bg-gray-50 dark:bg-[#151522] rounded-2xl border border-gray-100 dark:border-gray-800 group">
+                        <summary class="flex items-center justify-between px-6 py-5 min-h-[44px] cursor-pointer list-none">
+                            <span class="font-semibold text-sm md:text-base">Can I self-host Nova?</span>
+                            <span class="faq-icon w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 ml-4">
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                            </span>
+                        </summary>
+                        <div class="px-6 pb-5 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                            Yes, self-hosting is available on our Enterprise plan. We provide Docker images, Kubernetes manifests, and full documentation to help you deploy Nova in your own infrastructure.
+                        </div>
+                    </details>
+
+                    <!-- FAQ 5 -->
+                    <details class="bg-gray-50 dark:bg-[#151522] rounded-2xl border border-gray-100 dark:border-gray-800 group">
+                        <summary class="flex items-center justify-between px-6 py-5 min-h-[44px] cursor-pointer list-none">
+                            <span class="font-semibold text-sm md:text-base">What support do you offer?</span>
+                            <span class="faq-icon w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 ml-4">
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                            </span>
+                        </summary>
+                        <div class="px-6 pb-5 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                            Starter plans include community support via our Discord and GitHub. Pro plans include priority email support with a 4-hour response time. Enterprise plans include a dedicated support engineer and custom SLAs.
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="bg-ink text-white py-16">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-10">
+                <!-- Brand -->
+                <div class="md:col-span-1">
+                    <a href="#" class="flex items-center gap-2" aria-label="Nova home">
+                        <span class="inline-block w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary"></span>
+                        <span class="text-xl font-bold">Nova</span>
+                    </a>
+                    <p class="mt-4 text-sm text-gray-400 leading-relaxed">Design that feels like the future. Built for teams who care about quality and accessibility.</p>
+                </div>
+
+                <!-- Product links -->
+                <div>
+                    <h3 class="font-mono text-xs uppercase tracking-widest text-gray-500 mb-4">Product</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#features" class="text-sm text-gray-400 hover:text-white transition-colors min-h-[44px] inline-flex items-center">Features</a></li>
+                        <li><a href="#pricing" class="text-sm text-gray-400 hover:text-white transition-colors min-h-[44px] inline-flex items-center">Pricing</a></li>
+                        <li><a href="#testimonials" class="text-sm text-gray-400 hover:text-white transition-colors min-h-[44px] inline-flex items-center">Testimonials</a></li>
+                        <li><a href="#faq" class="text-sm text-gray-400 hover:text-white transition-colors min-h-[44px] inline-flex items-center">FAQ</a></li>
+                    </ul>
+                </div>
+
+                <!-- Company links -->
+                <div>
+                    <h3 class="font-mono text-xs uppercase tracking-widest text-gray-500 mb-4">Company</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-gray-400 hover:text-white transition-colors min-h-[44px] inline-flex items-center">About</a></li>
+                        <li><a href="#" class="text-sm text-gray-400 hover:text-white transition-colors min-h-[44px] inline-flex items-center">Blog</a></li>
+                        <li><a href="#" class="text-sm text-gray-400 hover:text-white transition-colors min-h-[44px] inline-flex items-center">Careers</a></li>
+                        <li><a href="#" class="text-sm text-gray-400 hover:text-white transition-colors min-h-[44px] inline-flex items-center">Contact</a></li>
+                    </ul>
+                </div>
+
+                <!-- Social -->
+                <div>
+                    <h3 class="font-mono text-xs uppercase tracking-widest text-gray-500 mb-4">Follow us</h3>
+                    <div class="flex gap-3">
+                        <a href="#" aria-label="Twitter" class="w-11 h-11 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors">
+                            <i data-lucide="twitter" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" aria-label="GitHub" class="w-11 h-11 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors">
+                            <i data-lucide="github" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" aria-label="LinkedIn" class="w-11 h-11 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors">
+                            <i data-lucide="linkedin" class="w-5 h-5"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-12 pt-8 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="text-sm text-gray-500">© 2024 Nova. All rights reserved.</p>
+                <div class="flex gap-6">
+                    <a href="#" class="text-sm text-gray-500 hover:text-gray-300 transition-colors min-h-[44px] inline-flex items-center">Privacy</a>
+                    <a href="#" class="text-sm text-gray-500 hover:text-gray-300 transition-colors min-h-[44px] inline-flex items-center">Terms</a>
+                    <a href="#" class="text-sm text-gray-500 hover:text-gray-300 transition-colors min-h-[44px] inline-flex items-center">Security</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script>
+        // Dark mode toggle
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            html.classList.toggle('dark');
+            const isDark = html.classList.contains('dark');
+            localStorage.setItem('darkMode', isDark ? 'dark' : 'light');
+        }
+
+        // Initialize dark mode from localStorage or system preference
+        (function initDarkMode() {
+            const stored = localStorage.getItem('darkMode');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (stored === 'dark' || (!stored && prefersDark)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+
+        // Mobile menu toggle
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        mobileMenuBtn.addEventListener('click', () => {
+            const isHidden = mobileMenu.classList.contains('hidden');
+            mobileMenu.classList.toggle('hidden');
+            mobileMenuBtn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+            const icon = mobileMenuBtn.querySelector('i');
+            if (isHidden) {
+                icon.setAttribute('data-lucide', 'x');
+            } else {
+                icon.setAttribute('data-lucide', 'menu');
+            }
+            lucide.createIcons();
+        });
+
+        // Close mobile menu on link click
+        mobileMenu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+                mobileMenuBtn.setAttribute('aria-expanded', 'false');
+                const icon = mobileMenuBtn.querySelector('i');
+                icon.setAttribute('data-lucide', 'menu');
+                lucide.createIcons();
+            });
+        });
+
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+
+</body>
+</html>

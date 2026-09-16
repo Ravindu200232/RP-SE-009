@@ -478,7 +478,7 @@ export default function Studio() {
                         title={!buildAllowed && ['preview', 'testing', 'deploy'].includes(id) ? 'Complete the prototype first' : label}
                         className={cn('inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full px-3',
                           'font-display text-[11px] font-semibold transition-all disabled:opacity-35 disabled:cursor-not-allowed',
-                          view === id ? 'bg-accent/15 text-accent shadow-sm ring-1 ring-accent/30 dark:bg-white/10 dark:text-ink dark:ring-white/10'
+                          view === id ? 'bg-[#1877F2]/15 text-[#1877F2] shadow-sm ring-1 ring-[#1877F2]/30'
                                       : 'text-muted hover:bg-black/[.03] hover:text-ink dark:hover:bg-white/5')}>
                   <Icon className="size-3.5 shrink-0" />
                   {label}
@@ -500,7 +500,7 @@ export default function Studio() {
                 className={cn(
                   'h-7 px-2.5 rounded-full text-[11px] font-semibold transition-all flex items-center gap-1.5',
                   mobileView === 'chat'
-                    ? 'bg-accent text-white shadow-sm'
+                    ? 'bg-[#1877F2] text-white shadow-sm'
                     : 'text-muted hover:text-ink'
                 )}
               >
@@ -513,7 +513,7 @@ export default function Studio() {
                 className={cn(
                   'h-7 px-2.5 rounded-full text-[11px] font-semibold transition-all',
                   mobileView === 'view'
-                    ? 'bg-accent text-white shadow-sm'
+                    ? 'bg-[#1877F2] text-white shadow-sm'
                     : 'text-muted hover:text-ink'
                 )}
               >
@@ -526,7 +526,7 @@ export default function Studio() {
               <button
                 onClick={resumeBuild}
                 title="Build this application from the approved SRS"
-                className="inline-flex h-9 items-center gap-2 rounded-full bg-accent px-4 text-[11.5px] font-semibold text-white shadow-md transition-all hover:bg-press mr-2"
+                className="inline-flex h-9 items-center gap-2 rounded-full bg-[#1877F2] hover:bg-[#0C44AE] px-4 text-[11.5px] font-semibold text-white shadow-[0_8px_16px_0_rgba(24,119,242,0.24)] transition-all mr-2"
               >
                 <Rocket className="size-[13px]" /> Build Now
               </button>
@@ -537,7 +537,7 @@ export default function Studio() {
               <button
                 onClick={resumeBuild}
                 title="Build full application from this prototype"
-                className="inline-flex h-9 items-center gap-2 rounded-full bg-blue-600 px-4 text-[11.5px] font-semibold text-white shadow-md transition-all hover:bg-blue-500 mr-2"
+                className="inline-flex h-9 items-center gap-2 rounded-full bg-[#1877F2] hover:bg-[#0C44AE] px-4 text-[11.5px] font-semibold text-white shadow-[0_8px_16px_0_rgba(24,119,242,0.24)] transition-all mr-2"
               >
                 <Rocket className="size-[13px]" /> Build App Now
               </button>

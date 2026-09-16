@@ -3,6 +3,8 @@
 # Everything else here comes from the runtime parts executed before this one;
 # only real modules are imported.
 from server_modules.services.shots import capture_drawing, capture_element, port_for
+from server_modules.builder.theme_preview import read_preview as read_theme_preview
+from server_modules.builder.theme_preview import render_preview as render_theme_preview
 from urllib.parse import parse_qs, unquote
 
 
@@ -295,6 +297,14 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
                 self._plain(200, data, "image/png", extra=(("Cache-Control", "no-cache"),))
             except (OSError, ValueError):
                 self._json({"error": "Screenshot not found"}, 404)
+        elif path.startswith("/design-theme-preview/"):
+            try:
+                self._plain(200, read_theme_preview(path[22:].strip("/")), "text/html; charset=utf-8",
+                            extra=(("Cache-Control", "no-cache"),))
+            except ValueError as error:
+                self._json({"error": str(error)}, 400)
+            except (FileNotFoundError, OSError):
+                self._json({"error": "not drawn yet", "drawn": False}, 404)
         elif path.startswith("/prototype/"):
             proj, _, rel = path[11:].strip("/").partition("/")
             try:
@@ -464,6 +474,15 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
             return {}
 
     def _api_post(self, path):
+        if path == "/design-theme-preview":
+            body = self._body()
+            try:
+                render_theme_preview(body.get("slug", ""), body.get("model", ""))
+                return self._json({"ok": True, "slug": body.get("slug", "")})
+            except (ValueError, FileNotFoundError) as error:
+                return self._json({"error": str(error)}, 400)
+            except Exception as error:  # noqa: BLE001 - a draw that fails is an answer
+                return self._json({"error": f"The preview could not be drawn: {error}"}, 502)
         if path.startswith("/runtime/") and path.endswith("/activity"):
             try:
                 runtime = runtime_for(unquote(path[9:-9]))

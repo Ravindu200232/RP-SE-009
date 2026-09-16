@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Levels — Frictionless Design</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#27272A',
+                        secondary: '#8B5CF6',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                        surface: '#FFFFFF',
+                        text: '#111827',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    spacing: {
+                        '4': '4px',
+                        '8': '8px',
+                        '12': '12px',
+                        '16': '16px',
+                        '24': '24px',
+                        '32': '32px',
+                    },
+                    borderRadius: {
+                        none: '0px',
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        /* Base styles */
+        body { font-family: 'Inter', sans-serif; color: #111827; background: #FFFFFF; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        /* Sharp corners everywhere */
+        * { border-radius: 0 !important; }
+        /* Focus states */
+        :focus-visible {
+            outline: 2px solid #8B5CF6;
+            outline-offset: 2px;
+        }
+        /* Smooth scroll */
+        html { scroll-behavior: smooth; }
+        /* Custom utility for gradient text */
+        .text-gradient {
+            background: linear-gradient(135deg, #8B5CF6 0%, #27272A 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        /* Hover transitions */
+        .transition-all { transition: all 0.2s ease; }
+    </style>
+</head>
+<body class="bg-surface text-text antialiased">
+
+    <!-- ==================== NAVIGATION ==================== -->
+    <nav class="sticky top-0 z-50 bg-surface/95 backdrop-blur border-b border-primary/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <div class="flex items-center gap-8">
+                    <a href="#" class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-primary flex items-center justify-center">
+                            <span class="text-surface font-bold text-lg">L</span>
+                        </div>
+                        <span class="font-bold text-lg tracking-tight">levels</span>
+                    </a>
+                    <!-- Desktop Nav -->
+                    <div class="hidden md:flex items-center gap-6">
+                        <a href="#features" class="text-sm font-medium hover:text-secondary transition-colors">Features</a>
+                        <a href="#process" class="text-sm font-medium hover:text-secondary transition-colors">Process</a>
+                        <a href="#pricing" class="text-sm font-medium hover:text-secondary transition-colors">Pricing</a>
+                        <a href="#faq" class="text-sm font-medium hover:text-secondary transition-colors">FAQ</a>
+                    </div>
+                </div>
+                <!-- CTA -->
+                <div class="flex items-center gap-4">
+                    <a href="#" class="hidden sm:block text-sm font-medium hover:text-secondary transition-colors">Sign in</a>
+                    <a href="#pricing" class="bg-primary text-surface px-4 py-2 text-sm font-semibold hover:bg-secondary transition-colors">
+                        Get Started
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ==================== HERO ==================== -->
+    <section class="relative overflow-hidden">
+        <!-- Background pattern -->
+        <div class="absolute inset-0 opacity-5">
+            <div class="absolute top-0 left-0 w-64 h-64 bg-secondary transform rotate-12"></div>
+            <div class="absolute bottom-0 right-0 w-96 h-96 bg-primary transform -rotate-6"></div>
+        </div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="inline-flex items-center gap-2 bg-secondary/10 px-4 py-2 mb-6">
+                        <span class="w-2 h-2 bg-secondary"></span>
+                        <span class="text-sm font-medium text-secondary">New: Levels Analytics 2.0</span>
+                    </div>
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
+                        Design that<br>
+                        <span class="text-gradient">removes friction.</span>
+                    </h1>
+                    <p class="text-lg text-text/70 mb-8 max-w-lg">
+                        We build conversion-focused experiences that guide users toward action through clarity, trust, and speed. No noise. No friction. Just results.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="#pricing" class="bg-primary text-surface px-6 py-3 font-semibold text-center hover:bg-secondary transition-colors">
+                            Start Free Trial
+                        </a>
+                        <a href="#features" class="border-2 border-primary px-6 py-3 font-semibold text-center hover:bg-primary hover:text-surface transition-colors">
+                            See How It Works
+                        </a>
+                    </div>
+                    <div class="flex items-center gap-4 mt-8">
+                        <div class="flex -space-x-2">
+                            <div class="w-8 h-8 bg-secondary flex items-center justify-center text-surface text-xs font-bold">JD</div>
+                            <div class="w-8 h-8 bg-primary flex items-center justify-center text-surface text-xs font-bold">AK</div>
+                            <div class="w-8 h-8 bg-success flex items-center justify-center text-surface text-xs font-bold">SM</div>
+                        </div>
+                        <div class="text-sm">
+                            <div class="flex items-center gap-1">
+                                <span class="text-warning">★★★★★</span>
+                                <span class="font-semibold">4.9/5</span>
+                            </div>
+                            <span class="text-text/60">Trusted by 2,000+ teams</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Hero Visual -->
+                <div class="relative">
+                    <div class="bg-primary p-8 lg:p-12 relative">
+                        <div class="absolute -top-4 -right-4 w-24 h-24 bg-secondary opacity-20"></div>
+                        <div class="absolute -bottom-4 -left-4 w-16 h-16 bg-success opacity-20"></div>
+                        <div class="relative">
+                            <!-- Dashboard mockup -->
+                            <div class="bg-surface p-6 shadow-lg">
+                                <div class="flex items-center justify-between mb-6">
+                                    <div>
+                                        <div class="text-xs text-text/60 font-mono">Revenue</div>
+                                        <div class="text-3xl font-bold">$84,294</div>
+                                    </div>
+                                    <div class="bg-success/10 px-3 py-1">
+                                        <span class="text-success text-sm font-semibold">+24.5%</span>
+                                    </div>
+                                </div>
+                                <!-- Chart bars -->
+                                <div class="flex items-end gap-2 h-32 mb-6">
+                                    <div class="flex-1 bg-secondary/30" style="height: 40%"></div>
+                                    <div class="flex-1 bg-secondary/40" style="height: 60%"></div>
+                                    <div class="flex-1 bg-secondary/50" style="height: 45%"></div>
+                                    <div class="flex-1 bg-secondary/60" style="height: 75%"></div>
+                                    <div class="flex-1 bg-secondary/70" style="height: 55%"></div>
+                                    <div class="flex-1 bg-secondary/80" style="height: 85%"></div>
+                                    <div class="flex-1 bg-secondary" style="height: 65%"></div>
+                                </div>
+                                <!-- Stats row -->
+                                <div class="grid grid-cols-3 gap-4">
+                                    <div>
+                                        <div class="text-xs text-text/60 font-mono">Users</div>
+                                        <div class="font-semibold">12,847</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-text/60 font-mono">Conv.</div>
+                                        <div class="font-semibold">3.2%</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-text/60 font-mono">Churn</div>
+                                        <div class="font-semibold text-danger">0.8%</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== STATS ==================== -->
+    <section class="border-y border-primary/10 bg-primary text-surface">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="text-3xl lg:text-4xl font-bold mb-2">99.9%</div>
+                    <div class="text-sm text-surface/70">Uptime SLA</div>
+                </div>
+                <div>
+                    <div class="text-3xl lg:text-4xl font-bold mb-2">2.5x</div>
+                    <div class="text-sm text-surface/70">Avg. Conversion Lift</div>
+                </div>
+                <div>
+                    <div class="text-3xl lg:text-4xl font-bold mb-2">40ms</div>
+                    <div class="text-sm text-surface/70">Page Load Time</div>
+                </div>
+                <div>
+                    <div class="text-3xl lg:text-4xl font-bold mb-2">12k+</div>
+                    <div class="text-sm text-surface/70">Active Users</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FEATURES ==================== -->
+    <section id="features" class="py-16 lg:py-24">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12 lg:mb-16">
+                <div class="inline-flex items-center gap-2 bg-secondary/10 px-4 py-2 mb-4">
+                    <span class="w-2 h-2 bg-secondary"></span>
+                    <span class="text-sm font-medium text-secondary">Features</span>
+                </div>
+                <h2 class="text-3xl lg:text-4xl font-bold mb-4">Everything you need. Nothing you don't.</h2>
+                <p class="text-lg text-text/60 max-w-2xl mx-auto">Purpose-built tools that streamline your workflow and eliminate friction at every step.</p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="border border-primary/10 p-6 hover:border-secondary transition-colors">
+                    <div class="w-12 h-12 bg-secondary/10 flex items-center justify-center mb-4">
+                        <i data-lucide="zap" class="w-6 h-6 text-secondary"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Lightning Performance</h3>
+                    <p class="text-text/60 text-sm">Sub-50ms response times with edge caching and optimized asset delivery. Your users never wait.</p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="border border-primary/10 p-6 hover:border-secondary transition-colors">
+                    <div class="w-12 h-12 bg-secondary/10 flex items-center justify-center mb-4">
+                        <i data-lucide="shield" class="w-6 h-6 text-secondary"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Enterprise Security</h3>
+                    <p class="text-text/60 text-sm">SOC 2 Type II certified with end-to-end encryption, SSO, and granular access controls.</p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="border border-primary/10 p-6 hover:border-secondary transition-colors">
+                    <div class="w-12 h-12 bg-secondary/10 flex items-center justify-center mb-4">
+                        <i data-lucide="bar-chart" class="w-6 h-6 text-secondary"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Real-time Analytics</h3>
+                    <p class="text-text/60 text-sm">Live dashboards with actionable insights. Track every metric that matters to your business.</p>
+                </div>
+                <!-- Feature 4 -->
+                <div class="border border-primary/10 p-6 hover:border-secondary transition-colors">
+                    <div class="w-12 h-12 bg-secondary/10 flex items-center justify-center mb-4">
+                        <i data-lucide="workflow" class="w-6 h-6 text-secondary"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Smart Automation</h3>
+                    <p class="text-text/60 text-sm">Automate repetitive tasks with visual workflows. Save hours every week with intelligent triggers.</p>
+                </div>
+                <!-- Feature 5 -->
+                <div class="border border-primary/10 p-6 hover:border-secondary transition-colors">
+                    <div class="w-12 h-12 bg-secondary/10 flex items-center justify-center mb-4">
+                        <i data-lucide="users" class="w-6 h-6 text-secondary"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Team Collaboration</h3>
+                    <p class="text-text/60 text-sm">Real-time collaboration with comments, mentions, and shared workspaces. Keep everyone aligned.</p>
+                </div>
+                <!-- Feature 6 -->
+                <div class="border border-primary/10 p-6 hover:border-secondary transition-colors">
+                    <div class="w-12 h-12 bg-secondary/10 flex items-center justify-center mb-4">
+                        <i data-lucide="plug" class="w-6 h-6 text-secondary"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">50+ Integrations</h3>
+                    <p class="text-text/60 text-sm">Connect with your favorite tools. Slack, GitHub, Figma, and more. Native integrations out of the box.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== PROCESS ==================== -->
+    <section id="process" class="py-16 lg:py-24 bg-primary text-surface">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12 lg:mb-16">
+                <div class="inline-flex items-center gap-2 bg-secondary/20 px-4 py-2 mb-4">
+                    <span class="w-2 h-2 bg-secondary"></span>
+                    <span class="text-sm font-medium text-secondary">Process</span>
+                </div>
+                <h2 class="text-3xl lg:text-4xl font-bold mb-4">From idea to impact in 4 steps</h2>
+                <p class="text-lg text-surface/60 max-w-2xl mx-auto">A proven methodology that delivers results, fast.</p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Step 1 -->
+                <div class="relative">
+                    <div class="bg-surface/10 p-6 h-full">
+                        <div class="font-mono text-4xl font-bold text-secondary mb-4">01</div>
+                        <h3 class="text-lg font-semibold mb-2">Discover</h3>
+                        <p class="text-surface/60 text-sm">Deep-dive into your users' needs, pain points, and behaviors. We map the full journey.</p>
+                    </div>
+                </div>
+                <!-- Step 2 -->
+                <div class="relative">
+                    <div class="bg-surface/10 p-6 h-full">
+                        <div class="font-mono text-4xl font-bold text-secondary mb-4">02</div>
+                        <h3 class="text-lg font-semibold mb-2">Design</h3>
+                        <p class="text-surface/60 text-sm">Rapid prototyping and iteration. We test, learn, and refine until it feels effortless.</p>
+                    </div>
+                </div>
+                <!-- Step 3 -->
+                <div class="relative">
+                    <div class="bg-surface/10 p-6 h-full">
+                        <div class="font-mono text-4xl font-bold text-secondary mb-4">03</div>
+                        <h3 class="text-lg font-semibold mb-2">Build</h3>
+                        <p class="text-surface/60 text-sm">Agile development with continuous integration. Weekly demos and transparent progress.</p>
+                    </div>
+                </div>
+                <!-- Step 4 -->
+                <div class="relative">
+                    <div class="bg-surface/10 p-6 h-full">
+                        <div class="font-mono text-4xl font-bold text-secondary mb-4">04</div>
+                        <h3 class="text-lg font-semibold mb-2">Scale</h3>
+                        <p class="text-surface/60 text-sm">Launch, measure, and optimize. We help you scale what works and fix what doesn't.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== BENEFITS ==================== -->
+    <section class="py-16 lg:py-24">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="inline-flex items-center gap-2 bg-secondary/10 px-4 py-2 mb-4">
+                        <span class="w-2 h-2 bg-secondary"></span>
+                        <span class="text-sm font-medium text-secondary">Benefits</span>
+                    </div>
+                    <h2 class="text-3xl lg:text-4xl font-bold mb-6">Why teams choose Levels</h2>
+                    <p class="text-lg text-text/60 mb-8">We don't just build software. We build momentum for your business.</p>
+                    <div class="space-y-6">
+                        <div class="flex gap-4">
+                            <div class="w-8 h-8 bg-success/10 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check" class="w-5 h-5 text-success"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold mb-1">Faster Time to Market</h3>
+                                <p class="text-text/60 text-sm">Launch in weeks, not months. Our streamlined process gets you live sooner.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-8 h-8 bg-success/10 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check" class="w-5 h-5 text-success"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold mb-1">Higher Conversion Rates</h3>
+                                <p class="text-text/60 text-sm">Data-driven design that turns visitors into customers. Average 2.5x lift.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-8 h-8 bg-success/10 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check" class="w-5 h-5 text-success"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold mb-1">Lower Total Cost</h3>
+                                <p class="text-text/60 text-sm">Efficient workflows and fewer revisions mean you spend less, get more.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-8 h-8 bg-success/10 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check" class="w-5 h-5 text-success"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold mb-1">Dedicated Support</h3>
+                                <p class="text-text/60 text-sm">24/7 support with real humans. Average response time under 5 minutes.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Visual -->
+                <div class="relative">
+                    <div class="bg-secondary/5 border border-secondary/20 p-8">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-12 h-12 bg-secondary flex items-center justify-center">
+                                <i data-lucide="trending-up" class="w-6 h-6 text-surface"></i>
+                            </div>
+                            <div>
+                                <div class="font-semibold">Growth Metrics</div>
+                                <div class="text-sm text-text/60 font-mono">Last 6 months</div>
+                            </div>
+                        </div>
+                        <!-- Growth chart -->
+                        <div class="flex items-end gap-2 h-48">
+                            <div class="flex-1 bg-secondary/20" style="height: 30%"></div>
+                            <div class="flex-1 bg-secondary/30" style="height: 45%"></div>
+                            <div class="flex-1 bg-secondary/40" style="height: 55%"></div>
+                            <div class="flex-1 bg-secondary/50" style="height: 65%"></div>
+                            <div class="flex-1 bg-secondary/70" style="height: 80%"></div>
+                            <div class="flex-1 bg-secondary" style="height: 100%"></div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4 mt-6">
+                            <div class="bg-surface p-4 border border-primary/10">
+                                <div class="text-2xl font-bold text-secondary">+180%</div>
+                                <div class="text-xs text-text/60">Revenue</div>
+                            </div>
+                            <div class="bg-surface p-4 border border-primary/10">
+                                <div class="text-2xl font-bold text-secondary">+95%</div>
+                                <div class="text-xs text-text/60">Users</div>
+                            </div>
+                            <div class="bg-surface p-4 border border-primary/10">
+                                <div class="text-2xl font-bold text-secondary">-40%</div>
+                                <div class="text-xs text-text/60">Churn</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== TESTIMONIALS ==================== -->
+    <section class="py-16 lg:py-24 bg-primary text-surface">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12 lg:mb-16">
+                <div class="inline-flex items-center gap-2 bg-secondary/20 px-4 py-2 mb-4">
+                    <span class="w-2 h-2 bg-secondary"></span>
+                    <span class="text-sm font-medium text-secondary">Testimonials</span>
+                </div>
+                <h2 class="text-3xl lg:text-4xl font-bold mb-4">Loved by teams worldwide</h2>
+                <p class="text-lg text-surface/60 max-w-2xl mx-auto">Don't take our word for it. Here's what our customers say.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Testimonial 1 -->
+                <div class="bg-surface/10 p-6">
+                    <div class="flex items-center gap-1 mb-4 text-warning">
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                    </div>
+                    <p class="text-sm mb-6">"Levels transformed our conversion rate overnight. The design system is so intuitive that our team adopted it in days, not months."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-secondary flex items-center justify-center font-bold">SK</div>
+                        <div>
+                            <div class="font-semibold text-sm">Sarah Kim</div>
+                            <div class="text-xs text-surface/60">VP Product, TechFlow</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 2 -->
+                <div class="bg-surface/10 p-6">
+                    <div class="flex items-center gap-1 mb-4 text-warning">
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                    </div>
+                    <p class="text-sm mb-6">"The speed is incredible. Our pages load in under 40ms and the analytics give us insights we never had before. Game changer."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-success flex items-center justify-center font-bold">MR</div>
+                        <div>
+                            <div class="font-semibold text-sm">Marcus Rivera</div>
+                            <div class="text-xs text-surface/60">CTO, DataSync</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 3 -->
+                <div class="bg-surface/10 p-6">
+                    <div class="flex items-center gap-1 mb-4 text-warning">
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                    </div>
+                    <p class="text-sm mb-6">"We switched from a legacy platform and saw immediate improvements. The support team is phenomenal—always there when we need them."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-warning flex items-center justify-center font-bold">EL</div>
+                        <div>
+                            <div class="font-semibold text-sm">Emily Liu</div>
+                            <div class="text-xs text-surface/60">Head of Growth, ScaleUp</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== PRICING ==================== -->
+    <section id="pricing" class="py-16 lg:py-24">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12 lg:mb-16">
+                <div class="inline-flex items-center gap-2 bg-secondary/10 px-4 py-2 mb-4">
+                    <span class="w-2 h-2 bg-secondary"></span>
+                    <span class="text-sm font-medium text-secondary">Pricing</span>
+                </div>
+                <h2 class="text-3xl lg:text-4xl font-bold mb-4">Simple, transparent pricing</h2>
+                <p class="text-lg text-text/60 max-w-2xl mx-auto">Start free. Upgrade when you're ready. No hidden fees, no surprises.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <!-- Starter -->
+                <div class="border border-primary/10 p-8 flex flex-col">
+                    <h3 class="text-lg font-semibold mb-2">Starter</h3>
+                    <p class="text-sm text-text/60 mb-6">Perfect for individuals and small projects</p>
+                    <div class="mb-6">
+                        <span class="text-4xl font-bold">$0</span>
+                        <span class="text-text/60">/month</span>
+                    </div>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Up to 3 projects
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Basic analytics
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Community support
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            1GB storage
+                        </li>
+                    </ul>
+                    <a href="#" class="border-2 border-primary px-6 py-3 font-semibold text-center hover:bg-primary hover:text-surface transition-colors">
+                        Get Started
+                    </a>
+                </div>
+                <!-- Pro (Featured) -->
+                <div class="bg-primary text-surface p-8 flex flex-col relative">
+                    <div class="absolute top-0 right-0 bg-secondary px-4 py-1 text-xs font-semibold">MOST POPULAR</div>
+                    <h3 class="text-lg font-semibold mb-2">Pro</h3>
+                    <p class="text-sm text-surface/60 mb-6">For growing teams that need more power</p>
+                    <div class="mb-6">
+                        <span class="text-4xl font-bold">$49</span>
+                        <span class="text-surface/60">/month</span>
+                    </div>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Unlimited projects
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Advanced analytics
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Priority support
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            100GB storage
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Custom integrations
+                        </li>
+                    </ul>
+                    <a href="#" class="bg-secondary px-6 py-3 font-semibold text-center hover:bg-secondary/80 transition-colors">
+                        Start 14-Day Trial
+                    </a>
+                </div>
+                <!-- Enterprise -->
+                <div class="border border-primary/10 p-8 flex flex-col">
+                    <h3 class="text-lg font-semibold mb-2">Enterprise</h3>
+                    <p class="text-sm text-text/60 mb-6">For organizations with advanced needs</p>
+                    <div class="mb-6">
+                        <span class="text-4xl font-bold">Custom</span>
+                    </div>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Everything in Pro
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            SSO/SAML
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Dedicated support
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Custom SLAs
+                        </li>
+                    </ul>
+                    <a href="#" class="border-2 border-primary px-6 py-3 font-semibold text-center hover:bg-primary hover:text-surface transition-colors">
+                        Contact Sales
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FAQ ==================== -->
+    <section id="faq" class="py-16 lg:py-24 bg-primary text-surface">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <div class="inline-flex items-center gap-2 bg-secondary/20 px-4 py-2 mb-4">
+                    <span class="w-2 h-2 bg-secondary"></span>
+                    <span class="text-sm font-medium text-secondary">FAQ</span>
+                </div>
+                <h2 class="text-3xl lg:text-4xl font-bold mb-4">Frequently asked questions</h2>
+                <p class="text-lg text-surface/60">Everything you need to know. Can't find an answer? Contact us.</p>
+            </div>
+            <div class="space-y-4">
+                <!-- FAQ 1 -->
+                <div class="bg-surface/10">
+                    <button class="w-full flex items-center justify-between p-6 text-left font-semibold hover:bg-surface/20 transition-colors">
+                        What makes Levels different from other platforms?
+                        <i data-lucide="chevron-down" class="w-5 h-5 flex-shrink-0"></i>
+                    </button>
+                    <div class="px-6 pb-6 text-sm text-surface/70">
+                        Levels is built on a conversion-focused design philosophy. Every feature, every pixel is optimized to remove friction and guide users toward action. We combine speed, clarity, and trust into one seamless experience.
+                    </div>
+                </div>
+                <!-- FAQ 2 -->
+                <div class="bg-surface/10">
+                    <button class="w-full flex items-center justify-between p-6 text-left font-semibold hover:bg-surface/20 transition-colors">
+                        Can I switch plans later?
+                        <i data-lucide="chevron-down" class="w-5 h-5 flex-shrink-0"></i>
+                    </button>
+                    <div class="px-6 pb-6 text-sm text-surface/70">
+                        Absolutely! You can upgrade, downgrade, or cancel at any time. Changes are prorated automatically, and you'll never lose your data.
+                    </div>
+                </div>
+                <!-- FAQ 3 -->
+                <div class="bg-surface/10">
+                    <button class="w-full flex items-center justify-between p-6 text-left font-semibold hover:bg-surface/20 transition-colors">
+                        How secure is my data?
+                        <i data-lucide="chevron-down" class="w-5 h-5 flex-shrink-0"></i>
+                    </button>
+                    <div class="px-6 pb-6 text-sm text-surface/70">
+                        Security is our top priority. We're SOC 2 Type II certified, use end-to-end encryption, and offer SSO/SAML for enterprise plans. Your data is never sold or shared.
+                    </div>
+                </div>
+                <!-- FAQ 4 -->
+                <div class="bg-surface/10">
+                    <button class="w-full flex items-center justify-between p-6 text-left font-semibold hover:bg-surface/20 transition-colors">
+                        Do you offer a free trial for Pro?
+                        <i data-lucide="chevron-down" class="w-5 h-5 flex-shrink-0"></i>
+                    </button>
+                    <div class="px-6 pb-6 text-sm text-surface/70">
+                        Yes! We offer a 14-day free trial on all paid plans. No credit card required. You can cancel anytime during the trial.
+                    </div>
+                </div>
+                <!-- FAQ 5 -->
+                <div class="bg-surface/10">
+                    <button class="w-full flex items-center justify-between p-6 text-left font-semibold hover:bg-surface/20 transition-colors">
+                        What kind of support do you provide?
+                        <i data-lucide="chevron-down" class="w-5 h-5 flex-shrink-0"></i>
+                    </button>
+                    <div class="px-6 pb-6 text-sm text-surface/70">
+                        All plans include access to our knowledge base and community forum. Pro and Enterprise plans include priority support with average response times under 5 minutes.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== CTA BANNER ==================== -->
+    <section class="py-16 lg:py-24 bg-secondary text-surface">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl lg:text-5xl font-bold mb-4">Ready to remove friction?</h2>
+            <p class="text-lg text-surface/80 mb-8 max-w-2xl mx-auto">Join thousands of teams who've transformed their digital experience with Levels. Start your free trial today.</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#" class="bg-surface text-primary px-8 py-4 font-semibold hover:bg-primary hover:text-surface transition-colors">
+                    Start Free Trial
+                </a>
+                <a href="#" class="border-2 border-surface px-8 py-4 font-semibold hover:bg-surface hover:text-primary transition-colors">
+                    Book a Demo
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="bg-primary text-surface py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8 mb-12">
+                <!-- Brand -->
+                <div class="col-span-1">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-secondary flex items-center justify-center">
+                            <span class="text-surface font-bold text-lg">L</span>
+                        </div>
+                        <span class="font-bold text-lg">levels</span>
+                    </div>
+                    <p class="text-sm text-surface/60 mb-4">Design that removes friction. Built for speed, clarity, and trust.</p>
+                    <div class="flex items-center gap-4">
+                        <a href="#" class="text-surface/60 hover:text-secondary transition-colors">
+                            <i data-lucide="twitter" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" class="text-surface/60 hover:text-secondary transition-colors">
+                            <i data-lucide="linkedin" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" class="text-surface/60 hover:text-secondary transition-colors">
+                            <i data-lucide="github" class="w-5 h-5"></i>
+                        </a>
+                    </div>
+                </div>
+                <!-- Product -->
+                <div>
+                    <h3 class="font-semibold mb-4">Product</h3>
+                    <ul class="space-y-2 text-sm text-surface/60">
+                        <li><a href="#features" class="hover:text-secondary transition-colors">Features</a></li>
+                        <li><a href="#pricing" class="hover:text-secondary transition-colors">Pricing</a></li>
+                        <li><a href="#" class="hover:text-secondary transition-colors">Integrations</a></li>
+                        <li><a href="#" class="hover:text-secondary transition-colors">Changelog</a></li>
+                        <li><a href="#" class="hover:text-secondary transition-colors">Roadmap</a></li>
+                    </ul>
+                </div>
+                <!-- Company -->
+                <div>
+                    <h3 class="font-semibold mb-4">Company</h3>
+                    <ul class="space-y-2 text-sm text-surface/60">
+                        <li><a href="#" class="hover:text-secondary transition-colors">About</a></li>
+                        <li><a href="#" class="hover:text-secondary transition-colors">Blog</a></li>
+                        <li><a href="#" class="hover:text-secondary transition-colors">Careers</a></li>
+                        <li><a href="#" class="hover:text-secondary transition-colors">Press Kit</a></li>
+                        <li><a href="#" class="hover:text-secondary transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+                <!-- Resources -->
+                <div>
+                    <h3 class="font-semibold mb-4">Resources</h3>
+                    <ul class="space-y-2 text-sm text-surface/60">
+                        <li><a href="#" class="hover:text-secondary transition-colors">Documentation</a></li>
+                        <li><a href="#" class="hover:text-secondary transition-colors">API Reference</a></li>
+                        <li><a href="#" class="hover:text-secondary transition-colors">Community</a></li>
+                        <li><a href="#" class="hover:text-secondary transition-colors">Status</a></li>
+                        <li><a href="#" class="hover:text-secondary transition-colors">Security</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-surface/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="text-sm text-surface/60">
+                    © 2024 Levels. All rights reserved.
+                </div>
+                <div class="flex items-center gap-6 text-sm text-surface/60">
+                    <a href="#" class="hover:text-secondary transition-colors">Privacy Policy</a>
+                    <a href="#" class="hover:text-secondary transition-colors">Terms of Service</a>
+                    <a href="#" class="hover:text-secondary transition-colors">Cookie Settings</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Lucide Icons Initialization -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

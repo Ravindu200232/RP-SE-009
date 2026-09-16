@@ -111,11 +111,11 @@ def _prepare_workspace(prompt: str, project: str, srs_id: str) -> Path:
     return proj_dir
 
 
-def _brief(proj_dir: Path, prompt: str) -> str:
+def _brief(proj_dir: Path, prompt: str, model: str = "") -> str:
     """The request, plus whatever the approved specification already settled."""
     parts = [prompt.strip()]
     try:
-        spec = _srs_brief(proj_dir, "")
+        spec = _srs_brief(proj_dir, model)
     except Exception:                                                # noqa: BLE001
         spec = ""
     if spec:
@@ -782,11 +782,17 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
             MONGO.ensure_running()
         saved = ProjectState(proj_dir).read().get("agents", {}).get(RUN.agent, {})
         request = saved.get("request", {}) if not prompt and saved.get("status") in ("interrupted", "paused", "failed") else {}
-        brief = request.get("prompt") or _brief(proj_dir, prompt or (
-            "Build this application from the approved prototype and specification below. "
-            "Nothing has been written yet." if first else
-            "Continue this project: finish whatever is incomplete and "
-            "make every verification pass."))
+        brief = request.get("prompt")
+        if brief and "APPROVED SPECIFICATION (build to this):" in brief:
+            fresh_spec = _srs_brief(proj_dir, model)
+            if fresh_spec and len(fresh_spec) > 5000 and len(brief) < len(fresh_spec):
+                brief = ""
+        if not brief:
+            brief = _brief(proj_dir, prompt or (
+                "Build this application from the approved prototype and specification below. "
+                "Nothing has been written yet." if first else
+                "Continue this project: finish whatever is incomplete and "
+                "make every verification pass."), model=model)
         if logo:
             brief += f"\n\nA logo has already been generated at {logo}; use it in the header."
         if attachments:
@@ -924,7 +930,7 @@ def _edit_run(project: str, prompt: str, model, think, qa_model: str, console: s
         # The project is already built, so it knows its own stack far better
         # than the sentence asking for a change does.
         phases = ("build",) if is_html_mod else EDIT_PHASES
-        agent, outcome = _run_agent(proj_dir, _brief(proj_dir, full), model, think,
+        agent, outcome = _run_agent(proj_dir, _brief(proj_dir, full, model=model), model, think,
                                     phases=phases, kind=kind, plan=False,
                                     stack=project_stack(proj_dir), no_tests=is_html_mod)
         if outcome.status == "cancelled":
