@@ -61,6 +61,142 @@ def _script_error(path: Path) -> str:
     return "it does not parse"
 
 
+_SCRIPT_OPEN = re.compile(r"<script\b[^>]*>", re.I)
+_SCRIPT_CLOSE = re.compile(r"</script\s*>", re.I)
+
+
+_INLINE = re.compile(r"<script\b(?![^>]*\bsrc=)[^>]*>(.*?)</script\s*>", re.I | re.S)
+
+
+def _inline_scripts_parse(text: str) -> bool:
+    """Does every inline script on this page parse as JavaScript?"""
+    import os
+    import tempfile
+    for block in _INLINE.findall(text):
+        if not block.strip():
+            continue
+        handle = tempfile.NamedTemporaryFile("w", suffix=".js", delete=False,
+                                             encoding="utf-8")
+        try:
+            handle.write(block)
+            handle.close()
+            if _script_error(Path(handle.name)):
+                return False
+        finally:
+            try:
+                os.unlink(handle.name)
+            except OSError:
+                pass
+    return True
+
+
+def repair_script_tags(path: Path) -> str:
+    """Remove a stray <script> tag, but only when doing so is proved to help.
+
+    Two shapes turn up, both from an edit that rewrote a block and kept the
+    wrapper: an opening tag written twice in a row, and a closing tag inserted
+    before the code it was meant to follow. The page stops parsing at that
+    point, so `Unexpected token '<'` or `Unexpected end of input` is all the
+    browser can say about it.
+
+    Which tag is the stray one cannot be decided by position - the surplus
+    closing tag was in the middle of the block, not at its end, and removing the
+    last one merged two scripts and broke a page that had only one fault. So
+    each candidate is tried and kept only if every inline script on the page
+    then parses. A page that cannot be fixed this way is left exactly as it is
+    and reported, because a half-repair is worse than an honest finding.
+    """
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return ""
+    if _inline_scripts_parse(text):
+        return ""
+
+    found = _without_stray_tags(text)
+    if found is None:
+        return ""
+    fixed, notes = found
+    try:
+        path.write_text(fixed, encoding="utf-8")
+    except OSError:
+        return ""
+    return "; ".join(sorted(set(notes)))
+
+
+_ANY_TAG = re.compile(r"<script\b([^>]*)>|</script\s*>", re.I)
+
+
+def _strays(text: str):
+    """The tags that cannot be where they are, with what each one was.
+
+    Found by pairing the tags in order rather than by looking for a shape: an
+    opening tag while one is already open is illegal wherever it sits, and a
+    closing tag with nothing open is stray wherever it sits.
+
+    A `<script src=...></script>` is a matched pair and is never offered. It
+    was, once, and deleting its closing tag let the include swallow the rest of
+    the page - which then "parsed", because an external script's body is not
+    checked. Repairing a page by silently dropping a file it loads is worse
+    than leaving the page broken.
+    """
+    tags = list(_ANY_TAG.finditer(text))
+    depth = 0
+    for index, hit in enumerate(tags):
+        attributes = hit.group(1)
+        if attributes is None:                       # a closing tag
+            depth = max(0, depth - 1)
+            # Which of several closing tags is the stray one cannot be settled
+            # by pairing - both sit in legal positions, and only the code
+            # decides. So every closing tag is offered, except the one that
+            # completes a `<script src=...></script>`: that pair is always
+            # matched, and breaking it lets the include swallow the page.
+            before = tags[index - 1] if index else None
+            if before is not None and before.group(1) and "src=" in before.group(1).lower():
+                continue
+            yield ("a stray </script> closed a block early",
+                   text[:hit.start()] + text[hit.end():])
+            continue
+        # Scripts cannot nest, so an opening tag while one is open is stray.
+        if depth:
+            yield ("a <script> tag was opened while one was already open",
+                   text[:hit.start()] + text[hit.end():])
+        depth += 1
+
+
+def _without_stray_tags(text: str, depth: int = 3):
+    """(page, notes) once every inline script parses, or None if never.
+
+    Searched rather than counted. A page carrying both faults gets *more*
+    unbalanced when the duplicate opening tag goes - closings then outnumber
+    openings - so any measure of "closer to balanced" rejects the very move
+    that leads to the fix. Whether the scripts parse is the only test that
+    holds, so it is the only one used.
+    """
+    if _inline_scripts_parse(text):
+        return text, []
+    if depth <= 0:
+        return None
+    for note, attempt in _strays(text):
+        deeper = _without_stray_tags(attempt, depth - 1)
+        if deeper is not None:
+            return deeper[0], [note] + deeper[1]
+    return None
+
+
+def repair_all_script_tags(root: Path) -> list[dict]:
+    """Balance every page's script tags before anything tries to parse them."""
+    folder = _prototype(Path(root).resolve())
+    if not folder.is_dir():
+        return []
+    repaired = []
+    for path in sorted(folder.rglob("*.html"))[:MAX_PAGES]:
+        note = repair_script_tags(path)
+        if note:
+            repaired.append({"page": path.name, "kind": "markup repaired", "text": note})
+    return repaired
+
+
 def static_validate(root: Path) -> list[dict]:
     """Run deterministic checks for every generated page before browser I/O.
 
@@ -193,7 +329,14 @@ def validate(root: Path, browser: Browser | None = None) -> list[dict]:
 
 
 def validate_all(root: Path, browser: Browser | None = None) -> list[dict]:
-    """Collect static and browser findings in one bounded validation pass."""
+    """Collect static and browser findings in one bounded validation pass.
+
+    Unbalanced script tags are repaired first. They have one correct fix and
+    they hide everything after them: a page whose first script stops parsing
+    reports one syntax error and nothing about the page itself, so validating
+    before repairing them wastes the pass.
+    """
+    repair_all_script_tags(root)
     findings = static_validate(root)
     findings.extend(validate(root, browser=browser))
     return findings

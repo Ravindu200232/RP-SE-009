@@ -60,7 +60,7 @@ def _auth_page(page: dict) -> list[dict]:
     return blocks
 
 
-def _entity_of(page: dict, tables: list[str]) -> str:
+def _entity_of(page: dict, tables: list[str], pairs=()) -> str:
     """Which stored thing this page is mostly about, for honest column labels.
 
     The page's own name and route decide it, and only then what it says it does:
@@ -78,10 +78,11 @@ def _entity_of(page: dict, tables: list[str]) -> str:
         # A longer stem is a more specific match, so "appointments" beats
         # "patients" on a page whose route is /book and whose title is Booking.
         score = (3 * len(stem) if stem in title else len(stem) if stem in body else 0)
-        # A verb the page is named for, pointing at the thing it acts on.
-        for verb, noun in (("book", "appointment"), ("schedul", "appointment"),
-                           ("bill", "invoice"), ("visit", "appointment"),
-                           ("note", "consultation"), ("service", "categor")):
+        # A page named for a verb ("/book", "Billing") is about the thing that
+        # verb acts on, and the specification's own workflows are where that
+        # pairing is stated - not in a list of nouns written here, which could
+        # only ever hold the vocabulary of one product.
+        for verb, noun in pairs:
             if verb in title and noun in stem:
                 score = max(score, 3 * len(stem) + 1)
         if score > best_score:
@@ -89,14 +90,14 @@ def _entity_of(page: dict, tables: list[str]) -> str:
     return best or (tables[0] if tables else "records")
 
 
-def _page_blocks(page: dict, tables: list[str]) -> list[dict]:
+def _page_blocks(page: dict, tables: list[str], rows: list = (), pairs=()) -> list[dict]:
     """One page's layout, decided by what the specification says it does."""
     if str(page.get("page_type") or "").strip().lower() == "auth":
         return _auth_page(page)
 
     functions = [str(f) for f in (page.get("functions") or [])]
     text = _words(page.get("page_name"), page.get("route"), *functions)
-    entity = _entity_of(page, tables)
+    entity = _entity_of(page, tables, pairs)
 
     listing = _mentions(text, "list", "view", "see", "history", "table", "search",
                         "browse", "manage", "schedule", "day", "portal", "records")
@@ -126,17 +127,17 @@ def _page_blocks(page: dict, tables: list[str]) -> list[dict]:
         form_w = 34
         blocks.append(_block("panel", GUTTER, y, form_w, GRID - y - 6, "New " + entity.rstrip("s")))
         inner = y + 6
-        for label in _fields_for(functions, entity)[:4]:
+        for label in _fields_for(entity, rows)[:4]:
             blocks.append(_block("field", GUTTER + 3, inner, form_w - 6, 7, label))
             inner += 10
         blocks.append(_block("button", GUTTER + 3, inner, form_w - 6, 8, "Save"))
         blocks.append(_block("table", GUTTER + form_w + 4, y, FULL - form_w - 4,
                              GRID - y - 6, entity.title(), rows=6,
-                             columns=_columns_for(entity, functions)))
+                             columns=_columns_for(entity, rows)))
     elif entry:
         blocks.append(_block("panel", 22, y, 56, GRID - y - 6, "New " + entity.rstrip("s")))
         inner = y + 6
-        for label in _fields_for(functions, entity)[:5]:
+        for label in _fields_for(entity, rows)[:5]:
             blocks.append(_block("field", 26, inner, 48, 7, label))
             inner += 10
         blocks.append(_block("button", 26, inner, 48, 8, "Save"))
@@ -145,7 +146,7 @@ def _page_blocks(page: dict, tables: list[str]) -> list[dict]:
         blocks.append(_block("button", 70, y, 26, 7, "Filter"))
         y += 11
         blocks.append(_block("table", GUTTER, y, FULL, GRID - y - 6, entity.title(),
-                             rows=7, columns=_columns_for(entity, functions)))
+                             rows=7, columns=_columns_for(entity, rows)))
     else:
         blocks.append(_block("cards", GUTTER, y, FULL, 36, entity.title(), rows=2))
         y += 40
@@ -154,37 +155,79 @@ def _page_blocks(page: dict, tables: list[str]) -> list[dict]:
     return blocks
 
 
-_FIELD_HINTS = (
-    (("date", "time", "slot", "schedule", "appointment"), ["Date", "Time"]),
-    (("doctor", "dentist", "staff", "assign"), ["Doctor"]),
-    (("patient", "customer", "member", "client"), ["Patient"]),
-    (("amount", "pay", "price", "invoice", "billing", "fee"), ["Amount"]),
-    (("note", "comment", "diagnosis", "treatment", "reason"), ["Notes"]),
-    (("status", "confirm", "cancel"), ["Status"]),
-)
+# Columns every stored thing tends to carry that say nothing about it on a
+# form: an identifier, a timestamp, a soft-delete flag. Named by shape, not by
+# any one product's vocabulary.
+_PLUMBING = re.compile(r"^(id|_id|uuid|created_at|updated_at|deleted_at|"
+                       r"created|updated|.*_id|.*_hash|password.*|.*_token|"
+                       r"salt|is_deleted|version)$", re.I)
 
 
-def _fields_for(functions: list[str], entity: str) -> list[str]:
-    """Field labels taken from what the page says it does, not invented."""
-    text = _words(*functions, entity)
-    out: list[str] = []
-    for needles, labels in _FIELD_HINTS:
-        if _mentions(text, *needles):
-            out += [l for l in labels if l not in out]
-    return out or ["Name", "Details"]
+def _label_of(column) -> str:
+    """"scheduled_at" -> "Scheduled at". The customer's own word, tidied."""
+    name = column.get("name") if isinstance(column, dict) else column
+    words = re.sub(r"[_\-]+", " ", str(name or "")).strip()
+    return (words[:1].upper() + words[1:]) if words else ""
 
 
-def _columns_for(entity: str, functions: list[str]) -> list[str]:
-    columns = [entity.rstrip("s").title()] + _fields_for(functions, entity)[:3]
+def _fields_for(entity: str, tables: list) -> list[str]:
+    """Field labels read off the entity's own columns.
+
+    Taken from the specification rather than guessed from a list of words. A
+    hardcoded list can only know the vocabulary of whatever product it was
+    written against, and it labelled every form in every product with that
+    one's nouns.
+    """
+    stem = re.sub(r"[^a-z]+", "", str(entity).lower()).rstrip("s")
+    for table in tables:
+        if not isinstance(table, dict):
+            continue
+        name = re.sub(r"[^a-z]+", "", str(table.get("table_name")
+                                          or table.get("name") or "").lower()).rstrip("s")
+        if name != stem:
+            continue
+        # The schema calls them `fields`; `columns` is accepted too so a
+        # differently shaped document still yields real labels.
+        out = [_label_of(c) for c in (table.get("fields") or table.get("columns") or [])]
+        out = [c for c in out if c and not _PLUMBING.match(c.replace(" ", "_"))]
+        if out:
+            return out
+    return ["Name", "Details"]
+
+
+def _columns_for(entity: str, tables: list) -> list[str]:
+    fields = _fields_for(entity, tables)
+    columns = [entity.rstrip("s").title()] + [f for f in fields if f.lower() != "name"][:3]
     return (columns + ["Status"])[:5] if "Status" not in columns else columns[:5]
+
+
+def _verb_noun_pairs(doc: dict, tables: list[str]) -> list[tuple]:
+    """Which word a product uses for acting on which of its stored things.
+
+    Read from the specification's own workflows: a workflow called "Booking a
+    Visit" whose steps mention appointments states that pairing, in that
+    product's vocabulary. A list written here could only hold one product's.
+    """
+    stems = {re.sub(r"[^a-z]+", "", t.lower()).rstrip("s"): t for t in tables}
+    pairs = set()
+    for flow in (doc.get("business_workflows") or []):
+        if not isinstance(flow, dict):
+            continue
+        verbs = {w[:5] for w in re.findall(r"[a-z]{4,}", str(flow.get("workflow_name") or "").lower())}
+        said = _words(*(flow.get("steps") or [])).replace(" ", "")
+        for stem in stems:
+            if stem and stem in said:
+                pairs |= {(verb, stem) for verb in verbs}
+    return sorted(pairs)
 
 
 def wireframes_for(doc: dict) -> list[dict]:
     """Every page in the specification, as a placed block layout."""
-    tables = [str(t.get("table_name") or t.get("name") or "")
-              for t in ((doc.get("database_design") or {}).get("tables") or [])
-              if isinstance(t, dict)]
+    rows = [t for t in ((doc.get("database_design") or {}).get("tables") or [])
+            if isinstance(t, dict)]
+    tables = [str(t.get("table_name") or t.get("name") or "") for t in rows]
     tables = [t for t in tables if t]
+    pairs = _verb_noun_pairs(doc, tables)
     out = []
     for page in (doc.get("public_pages") or []) + (doc.get("protected_pages") or []):
         if not isinstance(page, dict):
@@ -198,7 +241,7 @@ def wireframes_for(doc: dict) -> list[dict]:
             "roles": [str(r) for r in (page.get("allowed_roles") or [])],
             "functions": [str(f) for f in (page.get("functions") or [])],
             "blocks": [{**b, "id": f"b{i + 1}"} for i, b in
-                       enumerate(_page_blocks(page, tables))],
+                       enumerate(_page_blocks(page, tables, rows, pairs))],
         })
     return out
 
