@@ -207,6 +207,14 @@ def patch_file(args, ctx):
     for edit in sorted(edits, key=lambda e: int(e.get("startLine", 0)), reverse=True):
         start = int(edit.get("startLine", 0))
         end = int(edit.get("endLine", start))
+        # Self-heal 0-indexed ranges sent by LLMs (e.g. 0-608 instead of 1-609)
+        if start == 0:
+            start = 1
+            if end < len(lines):
+                end += 1
+        if 1 <= start <= len(lines) and end > len(lines):
+            end = len(lines)
+
         if start < 1 or end < start or start > len(lines) + 1:
             raise ToolError(f"Edit range {start}-{end} is outside {ctx.sandbox.relative(path)} "
                             f"({len(lines)} lines).")
