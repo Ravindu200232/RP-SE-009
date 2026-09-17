@@ -19,11 +19,14 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 
 from ..generators.page_context import page_context, product_context
 from ..generators.wireframe_html import page_html
 from ..generators.wireframes import KINDS, wireframes_for
 from ..llm import get_llm
+
+log = logging.getLogger("srs.wireframes")
 
 # How many pages are drawn at once. Quality is the point here, so this is about
 # not holding the model's whole queue rather than about finishing quickly.
@@ -183,21 +186,83 @@ def _ask_for(page: dict, doc: dict, product: str) -> str:
     )
 
 
-async def draft_page(page: dict, doc: dict, product: str) -> dict | None:
-    """One page's layout and height from the model, or None to keep the derived one."""
-    check = _validator(page)
+# Draws in flight, so one version is never drawn twice at once, and the tasks
+# themselves, because asyncio keeps only a weak reference to a bare task and
+# will collect one mid-flight.
+_IN_FLIGHT: dict[tuple[str, str], object] = {}
+
+
+def draw_later(project_id: str, doc: dict) -> None:
+    """Replace the projection with a drawn set, without making anyone wait.
+
+    The projection is what a document has the instant it is saved, and it is
+    honest but thin: it knows a page lists rooms, so it draws a table with grey
+    bars in it. Nobody reviewing a wireframe learns anything from grey bars,
+    and the drawn set - real room numbers, real prices, the status column's own
+    declared values - was reachable only by pressing a button most people never
+    pressed. So the good set is what a saved specification gets, and the
+    projection is what it shows in the seconds before that arrives.
+
+    Scheduled rather than awaited: drawing costs a model call per page, and no
+    save should block on it. If the process stops first the projection stands
+    and the button still works, which is the same floor as before.
+    """
+    key = (str(project_id), str((doc or {}).get("version") or ""))
+    if not doc or key in _IN_FLIGHT:
+        return
+
+    async def work() -> None:
+        try:
+            from ..services import storage
+            storage.save_drawn_wireframes(project_id, doc, await draft_wireframes(doc))
+        except Exception:  # noqa: BLE001 - the projection is already saved
+            pass
+        finally:
+            _IN_FLIGHT.pop(key, None)
+
     try:
-        body = await get_llm().complete_json(
-            system=_SYS, user=_ask_for(page, doc, product),
-            validator=check, label="srs_wireframe")
-        # `complete_json` returns what the model sent and uses the validator
-        # only to decide whether to accept it, so the cleaning the validator
-        # does - ids, clamped boxes, capped lists - has to be taken from a
-        # second call. Without it the raw blocks are stored, unnumbered and
-        # unclamped, and the editor cannot address them.
-        return check(body)
-    except Exception:  # noqa: BLE001 - a page that cannot be drawn keeps its projection
-        return None
+        _IN_FLIGHT[key] = asyncio.get_running_loop().create_task(work())
+    except RuntimeError:  # no loop running - nothing to schedule onto
+        _IN_FLIGHT.pop(key, None)
+
+
+async def draft_page(page: dict, doc: dict, product: str) -> dict | None:
+    """One page's layout and height from the model, or None to keep the derived one.
+
+    Tried twice. The usual failure is `LLMRepairFailed` with nothing partial to
+    show, which is the model having answered in prose instead of JSON - and it
+    is intermittent, because this deployment ignores `format` entirely (the
+    same prompt returns prose with `format: "json"`, with a full schema, and
+    with no format at all, on cloud models and on a local one). JSON therefore
+    comes back because the system prompt asks for it, which is a thing that
+    works most of the time rather than always. Measured here, roughly one page
+    in three came back unusable and silently reverted to the projection - the
+    thin grey-bar layout - with nothing logged to say why.
+
+    A second attempt is the honest fix available on this endpoint: it costs one
+    call on the pages that need it and nothing on the pages that do not.
+    """
+    check = _validator(page)
+    name = page.get("page_name") or page.get("route") or "a page"
+    trouble = None
+    for attempt in (1, 2):
+        try:
+            body = await get_llm().complete_json(
+                system=_SYS, user=_ask_for(page, doc, product),
+                validator=check, label="srs_wireframe")
+            # `complete_json` returns what the model sent and uses the validator
+            # only to decide whether to accept it, so the cleaning the validator
+            # does - ids, clamped boxes, capped lists - has to be taken from a
+            # second call. Without it the raw blocks are stored, unnumbered and
+            # unclamped, and the editor cannot address them.
+            return check(body)
+        except Exception as exc:  # noqa: BLE001 - the projection is the floor
+            trouble = exc
+            log.info("wireframe for %s failed on attempt %d: %s: %s",
+                     name, attempt, type(exc).__name__, str(exc)[:200])
+    log.warning("keeping the derived layout for %s - the drawing pass failed "
+                "twice (%s: %s)", name, type(trouble).__name__, str(trouble)[:200])
+    return None
 
 
 async def draft_wireframes(doc: dict, *, on_page=None) -> list[dict]:

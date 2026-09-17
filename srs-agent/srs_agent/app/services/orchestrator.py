@@ -453,6 +453,10 @@ async def generate_srs(project_id: str) -> dict:
     srs["srs_document"]["version"] = version
 
     storage.save_srs_json(project_id, srs, version)
+    # The drawn set follows the save on its own, so what someone opens is the
+    # good one rather than the projection with a button beside it.
+    from ..agents.wireframe_generator import draw_later
+    draw_later(project_id, srs["srs_document"])
     from ..generators.agent_handoff import write_handoff
     write_handoff(storage.project_dir(project_id) / "handoff", srs, project.get("stack", ""))
 
@@ -505,6 +509,10 @@ async def customize(project_id: str, prompt: str) -> dict:
         attach_handoff(srs, plan, pack, auth=_auth_on(pack, plan))
 
     storage.save_srs_json(project_id, srs, version)
+    # The drawn set follows the save on its own, so what someone opens is the
+    # good one rather than the projection with a button beside it.
+    from ..agents.wireframe_generator import draw_later
+    draw_later(project_id, srs["srs_document"])
     from ..generators.agent_handoff import write_handoff
     write_handoff(storage.project_dir(project_id) / "handoff", srs, project.get("stack", ""))
 
