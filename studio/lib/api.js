@@ -117,6 +117,21 @@ export const api = {
       post('/image-upload', { ...body, filename: file.name, data_base64 }))
   }),
 
+  // The customer's own pictures for the product's pages. Kept under their own
+  // names beside the project, captioned one by one, and copied next to the
+  // drawing and the built app so the same <img> resolves in both.
+  siteImages: (project) => req(`/site-images/${encodeURIComponent(project)}`),
+  siteImageUrl: (project, file) =>
+    `${API}/site-image/${encodeURIComponent(project)}/${encodeURIComponent(file)}`,
+  siteImageSave: (project, file, purpose = '') => Promise.resolve(tooBig(file)).then(big => {
+    if (big) throw big
+    return fileToBase64(file).then(data_base64 =>
+      post('/site-image-save', { project, filename: file.name, purpose, data_base64 }))
+  }),
+  siteImageDescribe: (project, file, purpose) =>
+    post('/site-image-describe', { project, file, purpose }),
+  siteImageDrop: (project, file) => post('/site-image-drop', { project, file }),
+
   // Photograph what the user pointed at, so it can travel with the message.
   shot: (body) => post('/shot', body),
 

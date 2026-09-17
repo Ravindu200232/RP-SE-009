@@ -459,6 +459,10 @@ async def generate_srs(project_id: str) -> dict:
     snapshot = copy.deepcopy(srs)
     snapshot["srs_document"]["diagrams"] = storage.snapshot_diagrams(
         project_id, version, srs["srs_document"].get("diagrams", []))
+    # The review rounds that produced this version, kept the way the diagrams
+    # are: the next generation overwrites round-1.json, and the record of how
+    # this document came to read the way it does should survive that.
+    storage.snapshot_reviews(project_id, version)
     from ...jobs import CURRENT_JOB
     await repo.save_version({"id": repo.new_id("ver_"), "project_id": project_id, "version": version, "operation_id": CURRENT_JOB.get(),
                              "label": "Initial generation" if not existing

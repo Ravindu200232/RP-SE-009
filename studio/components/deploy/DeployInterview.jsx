@@ -38,6 +38,20 @@ export default function DeployInterview({ project, target, value, onChange, rede
         </select>
       </label>}
     </div>
+    {/* A domain is the one deployment choice that has to be made somewhere
+        other than here as well: the DNS record is the customer's to create, so
+        saying so beside the box is the difference between "it did not work"
+        and "I have one step left". */}
+    <label className="mt-3 block text-[11px] text-[#919EAB]">Custom domain (optional)
+      <input className={INPUT} value={value.custom_domain || ''}
+        onChange={e => patch('custom_domain', e.target.value)}
+        placeholder="app.example.com" />
+      <span className="mt-1 block text-[10.5px] text-[#919EAB]/70">
+        Leave empty to use the address the provider gives. If you enter one, point its
+        DNS at the deployment after the first release — the record is created in your
+        registrar, not here.
+      </span>
+    </label>
     <label className="mt-3 block text-[11px] text-[#919EAB]">GitHub README content (leave empty to keep the current README)
       <textarea className={INPUT} rows={3} value={value.readme || ''} onChange={e => patch('readme', e.target.value)} placeholder="Describe the app, setup and deployment…" />
     </label>

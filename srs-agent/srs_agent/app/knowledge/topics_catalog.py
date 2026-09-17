@@ -508,23 +508,26 @@ TOPICS: list[Topic] = [
         coverage=("data_entities",),
     ),
 
+    # This build never draws its own artwork, so asking which pictures to
+    # *generate* promised something nothing downstream delivers - and a plan
+    # written from that answer pointed <img> tags at files no one would ever
+    # create. What is worth knowing is whether the product needs photographs at
+    # all, and if so where they are to come from.
     Topic(
         key="images", kind="yes_no", label="Images",
-        intent="Whether the app needs generated artwork.",
+        intent="Whether the product's pages need real photographs or pictures.",
         fallback_options=_yes_no(),
         srs_fields=("ui_ux_requirements",),
         coverage=("file_uploads",),
     ),
     Topic(
-        key="image_kinds", kind="multi", label="Artwork",
-        intent="Which images are needed.",
+        key="image_source", kind="single", label="Where pictures come from",
+        intent="Where those pictures are to come from, since none are drawn here.",
         applies_to=wants_images,
         fallback_options=[
-            {"label": "Product visual / illustrations", "value": "illustrations"},
-            {"label": "Logo mark", "value": "logo"},
-            {"label": "Avatar placeholders", "value": "avatar"},
-            {"label": "Empty-state art", "value": "empty"},
-            {"label": "Social share card", "value": "og"},
+            {"label": "Find them on the web (Google, stock photo sites)", "value": "web"},
+            {"label": "I will upload my own on the design screen", "value": "upload"},
+            {"label": "No real photos — use colour, icons and illustration", "value": "none"},
         ],
         srs_fields=("ui_ux_requirements",),
         coverage=("file_uploads",),

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   ArrowLeft, ArrowUp, Check, FileDown, History, ListTree, Loader2,
-  RotateCcw, Square,
+  RotateCcw, Square, Trash2,
 } from 'lucide-react'
 import { api, API } from '@/lib/api'
 import { useStore } from '@/lib/store'

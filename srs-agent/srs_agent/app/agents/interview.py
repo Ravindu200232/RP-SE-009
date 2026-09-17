@@ -360,8 +360,8 @@ def _why_needed(topic: topics.Topic, item: dict) -> str:
         "page_functions": "This defines the actions a public visitor must be able to complete.",
         "data_tables": "This determines the business information that must persist between visits.",
         "table_entities": f"These details define what one {subject or 'record'} contains and what forms and validation need.",
-        "images": "This tells the builder whether artwork is part of the requested scope.",
-        "image_kinds": "This names the exact artwork assets the builder must create.",
+        "images": "This tells the builder whether the pages carry photographs at all.",
+        "image_source": "This decides where every picture on the finished pages comes from.",
         "extra_notes": "This is the final chance to capture a rule, exception or expectation not covered earlier.",
     }
     return reasons.get(topic.key, topic.intent)
@@ -408,8 +408,8 @@ def _fallback_question(topic: topics.Topic, item: dict) -> str:
         "tool_inputs": "What information must a person provide before the tool can produce a correct result?",
         "tool_outputs": "What result must the tool return so the user can act on it?",
         "save_history": "Should someone be able to return later and see previous results?",
-        "images": "Does the build need original generated artwork, or can it work without generated images?",
-        "image_kinds": "Which original image assets should be produced as part of the build?",
+        "images": "Do the pages need real photographs or pictures, or can they work with colour, icons and illustration?",
+        "image_source": "Where should those pictures come from?",
         "theme_type": "Light or dark?",
         "color_palette": "Which colours suit your brand?",
         "extra_notes": "Before I write the specification, is there any rule, exception, must-have behaviour or failure case that would make the finished product unacceptable if we missed it?",

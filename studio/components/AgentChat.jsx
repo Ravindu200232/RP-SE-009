@@ -26,6 +26,8 @@ import { chatTurns } from '@/lib/chat'
 import { consoleReport, forgetConsole } from '@/lib/console-log'
 import { computeLineDiff } from '@/lib/diff'
 import { useStore } from '@/lib/store'
+import { useRunData } from '@/lib/use-run-data'
+import DeployActivity from './deploy/DeployActivity'
 import { useEditAttachments } from '@/lib/use-edit-attachments'
 import { answerQuestion, reviseDrawing, send } from '@/lib/ws'
 import { cn } from '@/lib/utils'
@@ -43,6 +45,37 @@ const KIND_TONE = {
   done: 'bg-ok-tint text-ok',
 }
 
+/**
+ * The deployment agent's conversation, in the same place as the other two.
+ *
+ * It reads the run the Deploy panel published to the store rather than
+ * fetching the deployment state again, so both show the same run and answering
+ * here is answering there.
+ */
+function DeployChat() {
+  const runId = useStore(s => s.deployRunId)
+  const run = useRunData(runId)
+  const running = Boolean(run.events?.length) && !run.question && run.busy
+  if (!runId) {
+    return (
+      <div className="flex min-h-0 flex-1 items-center justify-center px-6 text-center">
+        <p className="text-[11.5px] text-muted">
+          No deployment has run for this project yet. Start one from the Deploy tab
+          and its conversation appears here.
+        </p>
+      </div>
+    )
+  }
+  // Not a scroller wrapping a fixed block: the stream is the column, so it
+  // takes the panel's whole height and the log scrolls inside it.
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <DeployActivity fill events={run.events} running={running} question={run.question}
+                      runId={runId} onAnswered={run.reload} />
+    </div>
+  )
+}
+
 export default function AgentChat() {
   const logs = useStore(s => s.logs)
   const chat = useStore(s => s.chat)
@@ -50,6 +83,7 @@ export default function AgentChat() {
   const buildAllowed = useStore(s => Boolean(s.buildAvailability[s.project]))
   const project = useStore(s => s.project)
   const agentRole = useStore(s => s.agentRole)
+  const onDeploy = useStore(s => s.view === 'deploy')
   const switchAgent = useStore(s => s.switchAgent)
   const question = useStore(s => s.question)
   const drawing = useStore(s => s.drawing)
@@ -220,10 +254,20 @@ export default function AgentChat() {
       <div className="flex gap-1 border-b border-line p-2" aria-label="Agent conversations">
         {[['designer', 'Designer · UI/UX'], ['developer', 'Developer · QA']].map(([role, label]) => (
           <button key={role} disabled={role === 'developer' && !buildAllowed} title={role === 'developer' && !buildAllowed ? 'Complete the prototype first' : label} onClick={() => { switchAgent(role); useStore.getState().setView(role === 'designer' ? 'prototype' : 'preview') }}
-            className={cn('flex-1 rounded-lg px-2 py-2 text-xs font-semibold', agentRole === role ? 'bg-accent/15 text-accent' : 'text-muted hover:text-ink')}
-            aria-pressed={agentRole === role}>{label}</button>
+            className={cn('flex-1 rounded-lg px-2 py-2 text-xs font-semibold', !onDeploy && agentRole === role ? 'bg-accent/15 text-accent' : 'text-muted hover:text-ink')}
+            aria-pressed={!onDeploy && agentRole === role}>{label}</button>
         ))}
+        {/* The deployment has its own agent, so it gets its own conversation
+            here rather than a stream buried under the panel on the right. */}
+        <button disabled={!buildAllowed} title={buildAllowed ? 'Deployment' : 'Complete the prototype first'}
+          onClick={() => useStore.getState().setView('deploy')}
+          className={cn('flex-1 rounded-lg px-2 py-2 text-xs font-semibold',
+            onDeploy ? 'bg-accent/15 text-accent' : 'text-muted hover:text-ink')}
+          aria-pressed={onDeploy}>Deployment</button>
       </div>
+      {onDeploy ? (
+        <DeployChat />
+      ) : (<>
       <header className="shrink-0 border-b border-line/60 px-3.5 py-3">
         <div className="flex items-center gap-2">
           <span className="grid size-7 place-items-center rounded-xl bg-accent/10 text-accent">
@@ -317,6 +361,7 @@ export default function AgentChat() {
       </footer>
 
       <StatusLine stats={stats} />
+      </>)}
     </aside>
   )
 }

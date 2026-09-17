@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Check, ChevronDown, Layers, Sparkles, Zap } from 'lucide-react'
+import { Check, ChevronDown, Layers } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { STACKS } from '@/lib/stacks'
 import { TIERS, tierFromModel } from '@/lib/models'
@@ -11,14 +11,6 @@ export default function BuildSetup({
   const currentTier = tierFromModel(model, think)
   const [stackOpen, setStackOpen] = useState(false)
   const stackRef = useRef(null)
-
-  function toggleTier(targetTier) {
-    const nextTier = currentTier === targetTier ? 'medium' : targetTier
-    const tierDef = TIERS[nextTier]
-    onModelChange?.(tierDef.model)
-    onThinkChange?.(tierDef.think)
-    onTierChange?.(nextTier)
-  }
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -45,39 +37,10 @@ export default function BuildSetup({
       {/* Hidden input to satisfy verification contract build-model */}
       <input type="hidden" id="build-model" value={model || TIERS[currentTier]?.model || ''} />
 
-      {/* High and Ultra options beside the input composer with refined small icons */}
-      <div className="inline-flex h-8 items-center gap-0.5 rounded-full border border-line bg-panel2/80 p-0.5" role="group" aria-label="Performance tier">
-        <button
-          type="button"
-          aria-pressed={currentTier === 'high'}
-          onClick={() => toggleTier('high')}
-          title="High: Fast reasoning with thinking on"
-          className={cn(
-            'inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-[11px] font-medium transition-all',
-            currentTier === 'high'
-              ? 'bg-accent text-white shadow-sm'
-              : 'text-muted hover:text-ink hover:bg-ink/[.08]'
-          )}
-        >
-          <Zap className="size-2.5 shrink-0" aria-hidden="true" />
-          High
-        </button>
-        <button
-          type="button"
-          aria-pressed={currentTier === 'ultra'}
-          onClick={() => toggleTier('ultra')}
-          title="Ultra: Deep reasoning with thinking on"
-          className={cn(
-            'inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-[11px] font-medium transition-all',
-            currentTier === 'ultra'
-              ? 'bg-accent text-white shadow-sm'
-              : 'text-muted hover:text-ink hover:bg-ink/[.08]'
-          )}
-        >
-          <Sparkles className="size-2.5 shrink-0" aria-hidden="true" />
-          Ultra
-        </button>
-      </div>
+      {/* No High/Ultra here. Two buttons named after speeds stood in for a model
+          nobody could see, and picking one silently changed both the model and
+          whether it reasons. Both now live in Settings → Models, where the
+          choice is the actual model this machine can reach. */}
 
       {/* Custom Stack Selector Dropdown with refined small icon */}
       <div className="relative" ref={stackRef}>

@@ -127,11 +127,15 @@ def _title_of(name: str) -> str:
 class BuilderAgent:
     """The builder agent: plans, designs, builds and proves one application."""
 
-    # A validation repair is a surgical follow-up, not a second build.  Keep
-    # its model turns bounded so an unrepairable drawing cannot consume the
-    # remaining run indefinitely.
+    # No cap by default, like every other run (`Config.max_iterations = 0`).
+    # A bounded repair sounds prudent and reads as a failure: a drawing that
+    # needed a thirteenth turn stopped at "Stopped at the configured iteration
+    # limit" and failed the run, with the pages already written and possibly
+    # fine. What ends this loop is the validation passing or the loop's own
+    # convergence guards - a repeated action, a repeated failure, a repeated
+    # read - not a turn count. Set AGENTFORGE_MAX_PROTOTYPE_REPAIR to bound it.
     MAX_PROTOTYPE_REPAIR_ITERATIONS = int(
-        os.environ.get("AGENTFORGE_MAX_PROTOTYPE_REPAIR", "12"))
+        os.environ.get("AGENTFORGE_MAX_PROTOTYPE_REPAIR", "0"))
 
     def __init__(self, config: Config, *, client=None, events: Events | None = None,
                  cancel=None, memory: Memory | None = None) -> None:
@@ -433,14 +437,6 @@ class BuilderAgent:
                     "rule in `styles.css` says what it does. Write that stylesheet, point "
                     "the pages at it, and leave the markup alone otherwise.")
                 continue
-
-            # Parallel flow verification, screenshot capture, and living SRS update
-            try:
-                from server_modules.srs.srs_sync import sync_from_prototype_async
-                if isinstance(root, (str, Path)):
-                    sync_from_prototype_async(Path(root), drawn)
-            except Exception:
-                pass
 
             if not getattr(self, "prototype_approval", True):
                 if getattr(self.config, "prototype_only", False):

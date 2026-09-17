@@ -10,6 +10,7 @@ from ..agents.domain_classifier import classify_node
 from ..agents.english_plan import english_plan_node
 from ..agents.intake import intake_node
 from ..agents.pdf_generator import generate_pdf
+from ..agents.reviewer import review_srs_node
 from ..agents.srs_generator import generate_srs_node
 from ..agents.state import AgentState
 from ..services.events import bus
@@ -41,33 +42,7 @@ def _build_analysis():
     return g.compile()
 
 
-def _build_generation():
-    g = StateGraph(AgentState)
-    g.add_node("audit", audit_node)
-    g.add_node("english_plan", english_plan_node)
-    g.add_node("generate", generate_srs_node)
-    g.add_node("render_diagrams", diagram_node)
-    g.add_edge(START, "audit")
-    g.add_edge("audit", "english_plan")
-    g.add_edge("english_plan", "generate")
-    g.add_edge("generate", "render_diagrams")
-    g.add_edge("render_diagrams", END)
-    return g.compile()
-
-
-def _build_customization():
-    g = StateGraph(AgentState)
-    g.add_node("customize", customize_node)
-    g.add_node("render_diagrams", diagram_node)
-    g.add_edge(START, "customize")
-    g.add_edge("customize", "render_diagrams")
-    g.add_edge("render_diagrams", END)
-    return g.compile()
-
-
 _analysis = None
-_generation = None
-_customization = None
 
 
 async def run_analysis(state: AgentState) -> AgentState:
@@ -78,7 +53,9 @@ async def run_analysis(state: AgentState) -> AgentState:
 
 
 async def run_generation(state: AgentState) -> AgentState:
-    return await _checkpointed("generation", state, [audit_node, english_plan_node, generate_srs_node, diagram_node])
+    return await _checkpointed(
+        "generation", state,
+        [audit_node, english_plan_node, generate_srs_node, review_srs_node, diagram_node])
 
 
 async def run_customization(state: AgentState) -> AgentState:
@@ -97,8 +74,18 @@ async def _checkpointed(kind: str, state: AgentState, steps) -> AgentState:
     if saved.get("input") == fingerprint:
         state = saved["state"]
         index = saved["next"]
-    for number in range(index, len(steps)):
-        result = await steps[number](state)
-        state = {**state, **result}
-        storage.write_json(path, {"input": fingerprint, "next": number + 1, "state": state})
+    # An index-driven walk rather than a for-range, so a step can ask to go back
+    # to an earlier one by returning `_goto`. That is the whole of the reviewer's
+    # enhance loop. The checkpoint format does not change - `next` was already an
+    # index, it may simply now decrease - so a job interrupted mid-generation
+    # still resumes where it stopped.
+    #
+    # The cap lives in the node that asks, not here: a loop that cannot run away
+    # regardless of what a node returns is worth more than a second counter.
+    names = [getattr(step, "__name__", str(position)) for position, step in enumerate(steps)]
+    while index < len(steps):
+        state = {**state, **await steps[index](state)}
+        target = state.pop("_goto", None)
+        index = names.index(target) if target in names else index + 1
+        storage.write_json(path, {"input": fingerprint, "next": index, "state": state})
     return state

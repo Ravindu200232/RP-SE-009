@@ -256,6 +256,7 @@ export default function Studio() {
   async function openProject(name, row = null) {
     const st = useStore.getState()
     if (!name || (st.opening && st.project === name)) return
+    st.noteOpened(name)
     const request = ++opening.current
     const rowObj = row || projects.find(p => p.name === name)
     const requestedView = st.projectViews[name] || (rowObj?.spec_only && !rowObj?.prototype_only ? 'srs' : rowObj?.prototype_only ? 'prototype' : 'preview')

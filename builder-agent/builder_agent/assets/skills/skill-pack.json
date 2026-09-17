@@ -83,6 +83,77 @@
         "authorisation"
       ],
       "verificationPhases": []
+    },
+    {
+      "name": "payments",
+      "match": [
+        "payment",
+        "payments",
+        "pay",
+        "paying",
+        "checkout",
+        "card",
+        "stripe",
+        "payhere",
+        "billing",
+        "invoice",
+        "subscription",
+        "subscriptions",
+        "donation",
+        "deposit",
+        "refund",
+        "refunds",
+        "payment gateway",
+        "online payment",
+        "gewuma",
+        "gevima"
+      ],
+      "verificationPhases": []
+    },
+    {
+      "name": "image-uploads",
+      "match": [
+        "image upload",
+        "image uploads",
+        "upload image",
+        "upload images",
+        "photo upload",
+        "upload photo",
+        "upload photos",
+        "picture upload",
+        "file upload",
+        "uploads",
+        "cloudinary",
+        "gallery",
+        "profile photo",
+        "avatar",
+        "attachment",
+        "attachments"
+      ],
+      "verificationPhases": []
+    },
+    {
+      "name": "notifications",
+      "match": [
+        "email",
+        "emails",
+        "e mail",
+        "mail",
+        "notification",
+        "notifications",
+        "notify",
+        "sms",
+        "text message",
+        "otp",
+        "resend",
+        "twilio",
+        "reminder",
+        "reminders",
+        "confirmation email",
+        "alert",
+        "alerts"
+      ],
+      "verificationPhases": []
     }
   ]
 }

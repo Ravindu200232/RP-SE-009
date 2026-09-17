@@ -161,7 +161,11 @@ def carry_unit(saved: dict | None, current: dict | None,
     old = (saved or {}).get("testResults")
     new = (current or {}).get("testResults")
     if not isinstance(old, list) or not old:
-        return current or saved or None
+        # Whichever says more, not whichever is newer. A run recorded without a
+        # reportPath carries totals only, and taking it because it is current
+        # replaced the per-case detail with "37 passing, 0 failing, 3 files" -
+        # true, and unable to name a single test.
+        return max(current or {}, saved or {}, key=_size) or None
     if not isinstance(new, list) or not new:
         # Nothing at file granularity to merge into; keep whichever says more.
         return max(current or {}, saved, key=_size) or None

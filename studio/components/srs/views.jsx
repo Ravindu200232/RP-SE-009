@@ -1,19 +1,15 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import {
-  Activity, AlertCircle, AlertTriangle, ArrowRight, ArrowUpRight, Box, Check, CheckCircle2,
-  ChevronRight, Clock, Compass, Copy, Cpu, Database, ExternalLink, Eye, FileCode,
-  FileSpreadsheet, FileText, Globe, Key, Laptop, Layers, Lock, Maximize2,
-  MessageSquare, Monitor, RefreshCw, Server, Shield, ShieldAlert, ShieldCheck,
-  Smartphone, Sparkles, Tablet, Terminal, Users, Workflow, Zap,
+  AlertTriangle, ArrowRight, Check, CheckCircle2, Compass, Copy, Cpu, Database, FileCode,
+  FileText, Globe, Key, Lock, Maximize2, MessageSquare, ShieldAlert, ShieldCheck, Sparkles,
+  Users, Workflow, Zap,
 } from 'lucide-react'
-import { Empty, Table, Tag, TD, TH, TR } from '../ui'
-import { Summary, Stat } from '../testing/TestingResult'
+import { Empty, Table } from '../ui'
 import DiagramViewer from './DiagramViewer'
+import Overview from './Overview'
 import { cn } from '@/lib/utils'
-
-
 const list = (value) => Array.isArray(value) ? value : []
 
 
@@ -73,772 +69,6 @@ const Columns = ({ children }) => (
 )
 
 
-function Overview({ srs, onSelectView }) {
-  const doc = srs?.document || {}
-  const summary = doc.app_summary || {}
-  const projectName = doc.project_name || summary.app_name || 'Application'
-  const category = doc.system_category || 'Full-Stack Web Application'
-  const blurb = typeof summary === 'string' ? summary : (summary.short_description || '')
-  const goal = typeof summary === 'string' ? '' : (summary.business_goal || '')
-  const auth = Boolean(doc.authentication_requirement?.login_required)
-  const reqs = list(doc.functional_requirements)
-  const roles = list(doc.roles)
-  const tables = list(doc.database_design?.tables)
-  const workflows = list(doc.business_workflows)
-  const risks = list(doc.risk_priority)
-  const ambiguities = list(doc.ambiguities)
-  const handoff = srs?.handoff || {}
-  const evidence = doc.prototype_evidence || {}
-  const screens = list(evidence.screens).length ? evidence.screens : list(evidence.pages).map(p => ({
-    screen_name: typeof p === 'string' ? p.replace(/\.[^/.]+$/, '').replace(/_/g, ' ').toUpperCase() : (p.screen_name || 'Screen'),
-    file: typeof p === 'string' ? p : p.file,
-    actions: p.actions || ['Interactive Navigation', 'Data Display', 'Action Controls'],
-  }))
-  const diagrams = list(srs.diagrams)
-  const [activeDiagram, setActiveDiagram] = useState(0)
-  const [zoomed, setZoomed] = useState(false)
-  const currentDiagram = diagrams[Math.min(activeDiagram, Math.max(0, diagrams.length - 1))]
-
-  if (!srs.have?.document) {
-    return <Empty>No specification has been adopted yet for this project.</Empty>
-  }
-
-  return (
-    <div className="mx-auto max-w-[1140px] pb-14 text-white space-y-7">
-      {/* ── 1. Master Executive Hero Card ── */}
-      <div className="relative overflow-hidden rounded-3xl border border-blue-500/25 bg-[radial-gradient(ellipse_at_top_left,#101b38_0%,#0c1020_60%,#090d19_100%)] p-6 sm:p-8 shadow-2xl">
-        <div className="pointer-events-none absolute -right-16 -top-16 size-80 rounded-full bg-blue-600/10 blur-3xl" />
-        <div className="pointer-events-none absolute -left-16 -bottom-16 size-72 rounded-full bg-purple-600/10 blur-3xl" />
-
-        <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-5">
-          <div className="flex items-center gap-3">
-            <div className="grid size-11 place-items-center rounded-2xl bg-blue-600/20 text-blue-400 border border-blue-500/30 shadow-lg shadow-blue-500/10">
-              <Sparkles className="size-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="font-display text-[22px] sm:text-[26px] font-black tracking-tight text-white">
-                  {projectName}
-                </h2>
-                <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[10.5px] font-semibold text-white/80 border border-white/10">
-                  {category}
-                </span>
-              </div>
-              <p className="text-[12px] text-white/50 mt-0.5">
-                Executive Product Specification · Living Single Source of Truth
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3.5 py-1.5 text-[11.5px] font-semibold text-emerald-300 border border-emerald-500/30 shadow-sm">
-              <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Living SRS · 100% Build Parity</span>
-            </span>
-          </div>
-        </div>
-
-        {/* Executive Value Proposition */}
-        <div className="relative z-10 mt-5">
-          <h3 className="text-[13px] font-bold uppercase tracking-wider text-blue-300/80 mb-1.5">
-            Executive Purpose & Value Proposition
-          </h3>
-          <p className="max-w-[960px] text-[14px] leading-relaxed text-white/90">
-            {blurb || goal || `${projectName} delivers a high-performance web experience that automates key operations, preserves data integrity, and provides users with a seamless digital interface.`}
-          </p>
-          {goal && goal !== blurb && (
-            <p className="mt-2 text-[12.5px] text-white/70">
-              <span className="font-bold text-white">Strategic Objective:</span> {goal}
-            </p>
-          )}
-        </div>
-
-        {/* Quick Jump Navigation Pill Bar */}
-        {onSelectView && (
-          <div className="relative z-10 mt-5 pt-4 border-t border-white/10">
-            <span className="text-[10.5px] font-semibold uppercase tracking-wider text-white/40 block mb-2">
-              Explore Specialized SRS Views:
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {[
-                { id: 'document', label: 'Formal Document', icon: FileText },
-                { id: 'requirements', label: `Requirements (${reqs.length})`, icon: Workflow },
-                { id: 'diagrams', label: `Diagrams (${diagrams.length})`, icon: Compass },
-                { id: 'data', label: `Data & Storage (${tables.length})`, icon: Database },
-                { id: 'roles', label: `Roles (${roles.length || 1})`, icon: Users },
-                { id: 'prototype_flow', label: `Prototype (${screens.length})`, icon: Monitor },
-                { id: 'plan', label: 'Approved Plan', icon: FileCode },
-                { id: 'handoff', label: 'Tech Delivery', icon: Cpu },
-                { id: 'risks', label: `Risks & Safeguards (${risks.length + ambiguities.length})`, icon: ShieldAlert },
-              ].map(item => {
-                const Icon = item.icon
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => onSelectView(item.id)}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[.04] px-3 py-1 text-[11px] font-semibold text-white/80 hover:bg-white/10 hover:text-white transition-all shadow-sm"
-                  >
-                    <Icon className="size-3 text-blue-400" />
-                    <span>{item.label}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ── High-Level Business KPIs ── */}
-        <div className="relative z-10 mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          <div className="rounded-2xl border border-white/10 bg-white/[.04] p-3.5 backdrop-blur-md">
-            <div className="flex items-center justify-between text-white/50 text-[11px] font-medium mb-1">
-              <span>Capabilities</span>
-              <Workflow className="size-3.5 text-blue-400" />
-            </div>
-            <div className="text-[22px] font-black text-white font-display">
-              {reqs.length || '12+'}
-            </div>
-            <div className="text-[10px] text-emerald-400 font-semibold mt-0.5">
-              100% Traceable
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-white/[.04] p-3.5 backdrop-blur-md">
-            <div className="flex items-center justify-between text-white/50 text-[11px] font-medium mb-1">
-              <span>User Personas</span>
-              <Users className="size-3.5 text-purple-400" />
-            </div>
-            <div className="text-[22px] font-black text-white font-display">
-              {roles.length || 1}
-            </div>
-            <div className="text-[10px] text-purple-300 font-semibold mt-0.5">
-              Role-Based Access
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-white/[.04] p-3.5 backdrop-blur-md">
-            <div className="flex items-center justify-between text-white/50 text-[11px] font-medium mb-1">
-              <span>Data Records</span>
-              <Database className="size-3.5 text-emerald-400" />
-            </div>
-            <div className="text-[22px] font-black text-white font-display">
-              {tables.length || 4}
-            </div>
-            <div className="text-[10px] text-emerald-300 font-semibold mt-0.5">
-              Atomic Persistence
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-white/[.04] p-3.5 backdrop-blur-md">
-            <div className="flex items-center justify-between text-white/50 text-[11px] font-medium mb-1">
-              <span>Prototype Screens</span>
-              <Monitor className="size-3.5 text-amber-400" />
-            </div>
-            <div className="text-[22px] font-black text-white font-display">
-              {screens.length || 1}
-            </div>
-            <div className="text-[10px] text-amber-300 font-semibold mt-0.5">
-              Zero Dead-Ends
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-white/[.04] p-3.5 backdrop-blur-md">
-            <div className="flex items-center justify-between text-white/50 text-[11px] font-medium mb-1">
-              <span>SLO Latency</span>
-              <Zap className="size-3.5 text-sky-400" />
-            </div>
-            <div className="text-[22px] font-black text-white font-display">
-              &lt;200ms
-            </div>
-            <div className="text-[10px] text-sky-300 font-semibold mt-0.5">
-              Sub-second render
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-white/[.04] p-3.5 backdrop-blur-md">
-            <div className="flex items-center justify-between text-white/50 text-[11px] font-medium mb-1">
-              <span>Safeguards</span>
-              <ShieldCheck className="size-3.5 text-emerald-400" />
-            </div>
-            <div className="text-[22px] font-black text-white font-display">
-              {risks.length || '3+'}
-            </div>
-            <div className="text-[10px] text-emerald-300 font-semibold mt-0.5">
-              Built-in Guardrails
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── 2. Interactive System Flow & Architecture (With Diagrams) ── */}
-      <div className="rounded-3xl border border-white/10 bg-[#0d121f] p-6 shadow-xl">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="grid size-8 place-items-center rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30">
-              <Compass className="size-4" />
-            </div>
-            <div>
-              <h3 className="text-[16px] font-bold text-white">
-                Interactive System Flow & Architecture
-              </h3>
-              <p className="text-[11.5px] text-white/50">
-                Visual blueprints explaining how users, security, and data interact in plain English
-              </p>
-            </div>
-          </div>
-
-          {diagrams.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {diagrams.map((d, i) => (
-                <button
-                  key={d.name}
-                  onClick={() => setActiveDiagram(i)}
-                  className={cn(
-                    'rounded-xl px-3 py-1 text-[11px] font-semibold transition-all',
-                    i === activeDiagram
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-                      : 'bg-white/[.04] text-white/70 hover:bg-white/[.08] hover:text-white border border-white/5'
-                  )}
-                >
-                  {d.name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Diagram Graphic */}
-        {currentDiagram && (
-          <div className="mt-5">
-            <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-[#090d16] p-4">
-              {currentDiagram.svg ? (
-                <>
-                  <button
-                    onClick={() => setZoomed(true)}
-                    title="Click to view full size diagram"
-                    className="block w-full cursor-zoom-in text-left"
-                  >
-                    <div
-                      className="srs-diagram flex justify-center [&_svg]:h-auto [&_svg]:max-w-full [&_svg]:max-h-[380px]"
-                      dangerouslySetInnerHTML={{ __html: currentDiagram.svg }}
-                    />
-                  </button>
-                  <span className="pointer-events-none absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-black/80 px-3 py-1 text-[11px] font-semibold text-white/90 opacity-0 transition-opacity group-hover:opacity-100 border border-white/10">
-                    <Maximize2 className="size-3.5" /> Enlarge Blueprint
-                  </span>
-                </>
-              ) : (
-                <div className="py-8 text-center text-[12px] text-white/60">
-                  <Workflow className="size-8 mx-auto text-blue-400/60 mb-2" />
-                  <p className="font-semibold text-white/80">System Flow Visual Model</p>
-                  <p className="text-[11px] text-white/40 mt-1">
-                    Visual model generated from active system contracts
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Plain English System Flow Walkthrough Card */}
-            <div className="mt-4 rounded-2xl border border-blue-500/25 bg-[#0f1526] p-5 shadow-lg">
-              <div className="flex items-center gap-2 text-[13px] font-bold text-blue-300 mb-2">
-                <CheckCircle2 className="size-4 text-blue-400" />
-                <span>How This Flow Operates (Step-by-Step for Clients & Owners):</span>
-              </div>
-              
-              <p className="text-[12.5px] leading-relaxed text-white/80 mb-3.5">
-                {currentDiagram.businessSummary ||
-                  `This diagram illustrates how ${projectName} guides user interactions safely into business services and persistent storage without exposing internal credentials.`}
-              </p>
-
-              {/* Numbered Flow Badges */}
-              <div className="grid gap-2 sm:grid-cols-2">
-                {(list(currentDiagram.flowExplanation).length ? list(currentDiagram.flowExplanation) : [
-                  '1. Customer accesses the application interface via desktop or mobile browser.',
-                  '2. Secure session boundary authenticates user permissions and validates inputs.',
-                  '3. Core application business services execute operations atomically.',
-                  '4. Verified data is saved to encrypted storage and instant confirmation is returned.',
-                ]).map((step, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-start gap-2.5 rounded-xl border border-white/5 bg-white/[.025] p-3 text-[12px] text-white/85"
-                  >
-                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-blue-500/20 font-mono text-[10px] font-bold text-blue-300">
-                      {idx + 1}
-                    </span>
-                    <span className="leading-relaxed">{step.replace(/^\d+\.\s*/, '')}</span>
-                  </div>
-                ))}
-              </div>
-
-              {list(currentDiagram.keyTakeaways).length > 0 && (
-                <div className="mt-3.5 border-t border-white/10 pt-3 flex flex-wrap gap-4">
-                  {list(currentDiagram.keyTakeaways).map((t, idx) => (
-                    <div key={idx} className="flex items-center gap-1.5 text-[11.5px] text-emerald-300">
-                      <ShieldCheck className="size-3.5 text-emerald-400 shrink-0" />
-                      <span>{t}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {onSelectView && (
-              <div className="mt-3.5 flex justify-end">
-                <button
-                  onClick={() => onSelectView('diagrams')}
-                  className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-blue-400 hover:text-blue-300 transition-colors"
-                >
-                  <span>Explore all {diagrams.length} architecture diagrams in Diagrams tab</span>
-                  <ArrowRight className="size-3.5" />
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {zoomed && currentDiagram?.svg && (
-          <DiagramViewer svg={currentDiagram.svg} title={currentDiagram.title || 'System Diagram'} onClose={() => setZoomed(false)} />
-        )}
-      </div>
-
-      {/* ── 3. Core Business Capabilities & Features ── */}
-      <div className="rounded-3xl border border-white/10 bg-[#0d121f] p-6 shadow-xl">
-        <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-5">
-          <div className="flex items-center gap-2.5">
-            <div className="grid size-8 place-items-center rounded-xl bg-purple-600/20 text-purple-400 border border-purple-500/30">
-              <Layers className="size-4" />
-            </div>
-            <div>
-              <h3 className="text-[16px] font-bold text-white">
-                Core System Capabilities & Features
-              </h3>
-              <p className="text-[11.5px] text-white/50">
-                Functional actions and business workflows guaranteed by this software
-              </p>
-            </div>
-          </div>
-          <span className="text-[11px] font-semibold text-purple-300 bg-purple-500/15 px-3 py-1 rounded-full border border-purple-500/25">
-            {reqs.length} Capabilities Verified
-          </span>
-        </div>
-
-        <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
-          {reqs.slice(0, 9).map((req, idx) => {
-            const isAutoSynced = req.source === 'builder_feature_update' || req.feature_name
-            return (
-              <div
-                key={req.id || idx}
-                className={cn(
-                  'rounded-2xl border p-4.5 transition-all flex flex-col justify-between shadow-md',
-                  isAutoSynced
-                    ? 'border-purple-500/40 bg-[linear-gradient(135deg,#13112a_0%,#191433_100%)]'
-                    : 'border-white/10 bg-white/[.025] hover:border-white/20'
-                )}
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="font-mono text-[11px] font-bold text-blue-400 bg-blue-500/15 px-2 py-0.5 rounded-md">
-                      {req.id || `REQ-${idx + 1 < 10 ? '0' : ''}${idx + 1}`}
-                    </span>
-                    {isAutoSynced ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/20 px-2 py-0.5 text-[10px] font-semibold text-purple-300 border border-purple-500/30">
-                        <Zap className="size-2.5 text-purple-300" />
-                        Auto-Synced Feature
-                      </span>
-                    ) : (
-                      <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-300 border border-emerald-500/25">
-                        {req.module || 'Core Action'}
-                      </span>
-                    )}
-                  </div>
-                  <h4 className="text-[13.5px] font-bold text-white mb-1.5">
-                    {req.feature_name || req.requirement?.split('.')[0] || 'System Capability'}
-                  </h4>
-                  <p className="text-[12px] leading-relaxed text-white/70">
-                    {req.requirement || 'Enables users to perform key business actions with verified feedback.'}
-                  </p>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[11px]">
-                  <span className="text-white/40">Priority: <b className="text-white/70 capitalize">{req.priority || 'High'}</b></span>
-                  <span className="inline-flex items-center gap-1 text-emerald-400 font-medium">
-                    <CheckCircle2 className="size-3" />
-                    <span>Implemented</span>
-                  </span>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
-        {onSelectView && (
-          <div className="mt-5 pt-4 border-t border-white/10 flex justify-between items-center">
-            <span className="text-[11.5px] text-white/50">
-              Showing top capabilities · New features built with the agent are automatically registered here
-            </span>
-            <button
-              onClick={() => onSelectView('requirements')}
-              className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-purple-400 hover:text-purple-300 transition-colors"
-            >
-              <span>View all {reqs.length} requirements & workflows in Requirements tab</span>
-              <ArrowRight className="size-3.5" />
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* ── 4. Who Uses This App (Roles) & What Data It Remembers (Data Records) ── */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Roles Card */}
-        <div className="rounded-3xl border border-white/10 bg-[#0d121f] p-6 shadow-xl flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="grid size-8 place-items-center rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30">
-                  <Users className="size-4" />
-                </div>
-                <div>
-                  <h3 className="text-[15px] font-bold text-white">
-                    User Roles & Permissions
-                  </h3>
-                  <p className="text-[11.5px] text-white/50">
-                    Who can access the application and what they are allowed to do
-                  </p>
-                </div>
-              </div>
-              <span className="rounded-full bg-blue-500/10 px-2.5 py-0.5 text-[10.5px] font-semibold text-blue-300 border border-blue-500/20">
-                {roles.length || 1} Personas
-              </span>
-            </div>
-
-            <div className="space-y-3">
-              {(roles.length ? roles : [{ role_name: 'General User', description: 'Can browse content, interact with features, and submit actions.' }]).map((r, i) => (
-                <div key={i} className="rounded-2xl border border-white/5 bg-white/[.02] p-4">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[13px] font-bold text-white flex items-center gap-2">
-                      <span className="size-2 rounded-full bg-blue-400" />
-                      {r.role_name || r.name || 'User'}
-                    </span>
-                    <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold text-blue-300 border border-blue-500/20">
-                      Active Role
-                    </span>
-                  </div>
-                  <p className="text-[12px] leading-relaxed text-white/70">
-                    {r.description || 'Authorized to navigate all product features, view data, and execute transactions.'}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-white/5">
-            <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 p-3 text-[11.5px] text-blue-200 mb-3">
-              {auth
-                ? '🔒 Secured by session authentication — sensitive features require logging in.'
-                : '🔓 Open access — users can access capabilities directly without friction.'}
-            </div>
-            {onSelectView && (
-              <button
-                onClick={() => onSelectView('roles')}
-                className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-blue-400 hover:text-blue-300 transition-colors"
-              >
-                <span>View Full Role Access Matrix & Permissions →</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Data Records Card */}
-        <div className="rounded-3xl border border-white/10 bg-[#0d121f] p-6 shadow-xl flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="grid size-8 place-items-center rounded-xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30">
-                  <Database className="size-4" />
-                </div>
-                <div>
-                  <h3 className="text-[15px] font-bold text-white">
-                    Information This System Remembers
-                  </h3>
-                  <p className="text-[11.5px] text-white/50">
-                    Business records stored and organized in persistent cloud storage
-                  </p>
-                </div>
-              </div>
-              <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10.5px] font-semibold text-emerald-300 border border-emerald-500/20">
-                {tables.length || 4} Collections
-              </span>
-            </div>
-
-            <div className="space-y-3">
-              {(tables.length ? tables.slice(0, 4) : [
-                { table_name: 'Core Records', description: 'Stores user submitted transactions, catalog items, and configuration data.' }
-              ]).map((t, i) => (
-                <div key={i} className="rounded-2xl border border-white/5 bg-white/[.02] p-4">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[13px] font-bold text-white flex items-center gap-2">
-                      <Database className="size-3.5 text-emerald-400" />
-                      {(t.table_name || t.name || 'Record').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                    </span>
-                    <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-300 border border-emerald-500/20">
-                      {list(t.fields || t.columns).length || 5} fields
-                    </span>
-                  </div>
-                  <p className="text-[12px] leading-relaxed text-white/70">
-                    {t.description || 'Preserves vital operational details with atomic validation and instant retrieval.'}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-white/5">
-            <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-[11.5px] text-emerald-200 mb-3">
-              🛡️ All stored data is validated server-side to prevent corruption or incomplete entries.
-            </div>
-            {onSelectView && (
-              <button
-                onClick={() => onSelectView('data')}
-                className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
-              >
-                <span>View Complete Database Schema & Relationships →</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* ── 5. Verified User Journey & Prototype Screens ── */}
-      <div className="rounded-3xl border border-white/10 bg-[#0d121f] p-6 shadow-xl">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4 mb-5">
-          <div className="flex items-center gap-2.5">
-            <div className="grid size-8 place-items-center rounded-xl bg-amber-600/20 text-amber-400 border border-amber-500/30">
-              <Monitor className="size-4" />
-            </div>
-            <div>
-              <h3 className="text-[16px] font-bold text-white">
-                Verified Screen Journeys (HTML Prototype)
-              </h3>
-              <p className="text-[11.5px] text-white/50">
-                Live interactive screens verified for flow integrity before and during build
-              </p>
-            </div>
-          </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-[11px] font-semibold text-emerald-300 border border-emerald-500/25">
-            <CheckCircle2 className="size-3" />
-            <span>Zero Dead-Ends · All Links Verified</span>
-          </span>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {screens.map((screen, idx) => (
-            <div key={idx} className="rounded-2xl border border-white/10 bg-white/[.025] p-4 shadow-md hover:border-white/20 transition-all">
-              <div className="flex items-center justify-between border-b border-white/5 pb-2.5 mb-2.5">
-                <span className="font-mono text-[11px] font-bold text-amber-400">
-                  Screen #{idx + 1}
-                </span>
-                <span className="font-mono text-[10px] text-white/40">
-                  {screen.file || 'index.html'}
-                </span>
-              </div>
-              <h4 className="text-[14px] font-bold text-white mb-2">
-                {screen.screen_name || 'Application Screen'}
-              </h4>
-              <div className="space-y-1">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-white/40 block">
-                  Interactive Controls:
-                </span>
-                <div className="flex flex-wrap gap-1">
-                  {list(screen.actions).map((act, i) => (
-                    <span key={i} className="inline-flex items-center gap-1 rounded-md bg-white/[.04] px-2 py-0.5 text-[11px] text-white/70 border border-white/5">
-                      <Check className="size-2.5 text-blue-400" />
-                      {act}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {onSelectView && (
-          <div className="mt-5 pt-4 border-t border-white/10 flex justify-between items-center">
-            <span className="text-[11.5px] text-white/50">
-              Interactive prototype was automatically crawled and verified with zero broken routes
-            </span>
-            <button
-              onClick={() => onSelectView('prototype_flow')}
-              className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-amber-400 hover:text-amber-300 transition-colors"
-            >
-              <span>Inspect Prototype & Navigation Pathways →</span>
-              <ArrowRight className="size-3.5" />
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* ── 6. Business Safeguards & Built-in Mitigations ── */}
-      <div className="rounded-3xl border border-white/10 bg-[#0d121f] p-6 shadow-xl">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4 mb-5">
-          <div className="flex items-center gap-2.5">
-            <div className="grid size-8 place-items-center rounded-xl bg-rose-600/20 text-rose-400 border border-rose-500/30">
-              <ShieldAlert className="size-4" />
-            </div>
-            <div>
-              <h3 className="text-[16px] font-bold text-white">
-                Business Safeguards & Risk Protections
-              </h3>
-              <p className="text-[11.5px] text-white/50">
-                Identified operational risks paired with automated architectural mitigations
-              </p>
-            </div>
-          </div>
-          {onSelectView && (
-            <button
-              onClick={() => onSelectView('risks')}
-              className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-rose-300 hover:text-rose-200"
-            >
-              <span>View Full Risk Radar →</span>
-            </button>
-          )}
-        </div>
-
-        <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
-          {(risks.length ? risks.slice(0, 3) : [
-            { risk: 'Data Loss During Disconnections', reason: 'Network drops during form submissions', mitigation: 'Atomic database transactions and local client rollback' },
-            { risk: 'Unauthorized Access', reason: 'Direct URL manipulation attempt', mitigation: 'Server-side route middleware and session verification' },
-            { risk: 'System Slowdown Under Traffic', reason: 'Multiple simultaneous user queries', mitigation: 'Edge-cached static assets and database indexing' }
-          ]).map((r, i) => (
-            <div key={i} className="rounded-2xl border border-white/5 bg-white/[.025] p-4 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] font-semibold text-rose-300 border border-rose-500/25">
-                    {r.severity || 'Medium Risk'}
-                  </span>
-                  <span className="text-[10px] text-white/40 font-mono">Mitigated</span>
-                </div>
-                <h4 className="text-[13.5px] font-bold text-white mb-1.5">
-                  {r.risk || line(r)}
-                </h4>
-                {r.reason && (
-                  <p className="text-[11.5px] text-white/65 mb-3 leading-relaxed">
-                    <span className="text-white/80 font-medium">Cause:</span> {r.reason}
-                  </p>
-                )}
-              </div>
-              {r.mitigation && (
-                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[.05] p-2.5 text-[11px] text-emerald-200">
-                  <span className="font-bold block text-emerald-300 mb-0.5">Built-in Mitigation:</span>
-                  {r.mitigation}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── 7. Modern Cloud Architecture & Delivery ── */}
-      <div className="rounded-3xl border border-white/10 bg-[#0d121f] p-6 shadow-xl">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4 mb-5">
-          <div className="flex items-center gap-2.5">
-            <div className="grid size-8 place-items-center rounded-xl bg-purple-600/20 text-purple-400 border border-purple-500/30">
-              <Cpu className="size-4" />
-            </div>
-            <div>
-              <h3 className="text-[16px] font-bold text-white">
-                Modern Cloud Architecture & Delivery
-              </h3>
-              <p className="text-[11.5px] text-white/50">
-                Production-grade technology stack chosen for stability, infinite scale, and security
-              </p>
-            </div>
-          </div>
-          {onSelectView && (
-            <button
-              onClick={() => onSelectView('handoff')}
-              className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-purple-300 hover:text-purple-200"
-            >
-              <span>View Tech Handoff & Prompt →</span>
-            </button>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-2xl border border-white/5 bg-white/[.025] p-4">
-            <span className="text-[10.5px] font-semibold uppercase tracking-wider text-purple-300 block mb-1">Frontend Layer</span>
-            <span className="font-bold text-white text-[15px] block">Next.js 16 + React</span>
-            <p className="text-[11px] text-white/60 mt-1">High performance server rendering with sub-second page transitions</p>
-          </div>
-          <div className="rounded-2xl border border-white/5 bg-white/[.025] p-4">
-            <span className="text-[10.5px] font-semibold uppercase tracking-wider text-emerald-300 block mb-1">Persistence</span>
-            <span className="font-bold text-white text-[15px] block">MongoDB Atlas</span>
-            <p className="text-[11px] text-white/60 mt-1">High-availability cloud document store with automatic backups and isolation</p>
-          </div>
-          <div className="rounded-2xl border border-white/5 bg-white/[.025] p-4">
-            <span className="text-[10.5px] font-semibold uppercase tracking-wider text-blue-300 block mb-1">Design System</span>
-            <span className="font-bold text-white text-[15px] block">Tailwind Bolt Dark</span>
-            <p className="text-[11px] text-white/60 mt-1">Pixel-perfect edge-to-edge dark theme with mobile responsive layouts</p>
-          </div>
-          <div className="rounded-2xl border border-white/5 bg-white/[.025] p-4">
-            <span className="text-[10.5px] font-semibold uppercase tracking-wider text-amber-300 block mb-1">API Services</span>
-            <span className="font-bold text-white text-[15px] block">{handoff.appType || 'RESTful API'}</span>
-            <p className="text-[11px] text-white/60 mt-1">Lightweight atomic endpoints returning structured JSON with error boundaries</p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── 8. Quality, Speed & Security Commitments ── */}
-      <div className="rounded-3xl border border-white/10 bg-[#0d121f] p-6 shadow-xl">
-        <h3 className="text-[15px] font-bold text-white mb-4 flex items-center gap-2">
-          <ShieldCheck className="size-4 text-emerald-400" />
-          <span>Non-Technical Quality & Security Commitments</span>
-        </h3>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-2xl border border-white/5 bg-white/[.02] p-4">
-            <div className="flex items-center gap-2 text-[12px] font-bold text-sky-300 mb-1">
-              <Zap className="size-3.5 text-sky-400" />
-              <span>Speed & Responsiveness</span>
-            </div>
-            <p className="text-[11.5px] leading-relaxed text-white/70">
-              API queries respond in under 200ms; full page loads complete in under 1 second.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-white/5 bg-white/[.02] p-4">
-            <div className="flex items-center gap-2 text-[12px] font-bold text-purple-300 mb-1">
-              <Laptop className="size-3.5 text-purple-400" />
-              <span>Mobile & Laptop Friendly</span>
-            </div>
-            <p className="text-[11.5px] leading-relaxed text-white/70">
-              Fluid responsive layouts verified from narrow 360px phones up to widescreen desktops.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-white/5 bg-white/[.02] p-4">
-            <div className="flex items-center gap-2 text-[12px] font-bold text-emerald-300 mb-1">
-              <Shield className="size-3.5 text-emerald-400" />
-              <span>OWASP Top 10 Protected</span>
-            </div>
-            <p className="text-[11.5px] leading-relaxed text-white/70">
-              Server-side boundary guards prevent injection, data leakage, and unauthorized modifications.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-white/5 bg-white/[.02] p-4">
-            <div className="flex items-center gap-2 text-[12px] font-bold text-amber-300 mb-1">
-              <Activity className="size-3.5 text-amber-400" />
-              <span>100% Living Parity</span>
-            </div>
-            <p className="text-[11.5px] leading-relaxed text-white/70">
-              Every planned requirement is continuously tracked and verified against the running code.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-
 function Document({ srs }) {
   const doc = srs.document || {}
   if (!srs.have?.document) return <Empty>No SRS document was adopted for this project.</Empty>
@@ -856,6 +86,8 @@ function Document({ srs }) {
   const tables = list(doc.database_design?.tables)
   const relationships = list(doc.database_design?.relationships)
   const matrix = list(doc.role_access_matrix)
+  // What the document actually leaves unanswered, not a standing claim of zero.
+  const openQuestions = list(doc.ambiguities).filter(a => a?.needs_clarification).length
   const hasPlan = Object.keys(plan).length > 0
   const hasRoleMatrix = auth && matrix.length > 0
   const overallN = hasPlan ? 3 : 2
@@ -951,11 +183,13 @@ function Document({ srs }) {
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/[.04] p-3.5 backdrop-blur-md">
             <span className="text-[10.5px] text-white/50 block mb-1">Data Tables</span>
-            <span className="font-display text-[20px] font-bold text-white">{tables.length || 1}</span>
+            <span className="font-display text-[20px] font-bold text-white">{tables.length}</span>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/[.04] p-3.5 backdrop-blur-md">
-            <span className="text-[10.5px] text-white/50 block mb-1">Ambiguities</span>
-            <span className="font-display text-[20px] font-bold text-emerald-400">0 (Resolved)</span>
+            <span className="text-[10.5px] text-white/50 block mb-1">Open questions</span>
+            <span className={`font-display text-[20px] font-bold ${openQuestions ? 'text-amber-300' : 'text-white'}`}>
+              {openQuestions}
+            </span>
           </div>
         </div>
       </div>
@@ -2408,99 +1642,71 @@ function Interview({ srs }) {
 }
 
 function PrototypeFlow({ srs }) {
-  const doc = srs.document || {}
-  const evidence = doc.prototype_evidence || {}
-  const screens = list(evidence.screens).length ? evidence.screens : list(evidence.pages).map(p => ({
-    screen_name: typeof p === 'string' ? p.replace(/\.[^/.]+$/, '').replace(/_/g, ' ').toUpperCase() : (p.screen_name || 'Screen'),
-    file: typeof p === 'string' ? p : p.file,
-    actions: p.actions || ['Browse Content', 'Interactive Controls', 'Navigation Links'],
-  }))
-  const shots = list(evidence.screenshots)
-  const audit = evidence.flow_audit || {}
-  const verified = evidence.verified !== false
+  // The pages the server found on disk. This used to read
+  // `document.prototype_evidence`, written by a separate sync whose file was
+  // overwritten after every change - so the list was right until the next
+  // revision and then quietly wrong. When there is nothing, the page says so
+  // rather than inventing a "Main Application Interface" with three made-up
+  // controls on it.
+  const pages = list(srs?.prototype?.pages)
+  const screenshot = Boolean(srs?.prototype?.screenshot)
+  const routes = list((srs.document || {}).screens)
 
-  const fallbackScreens = screens.length ? screens : [
-    { screen_name: 'Main Application Interface', file: 'index.html', actions: ['Navigation', 'Data View', 'Action Triggers'] },
-  ]
+  const named = (file) => {
+    const match = routes.find(s => String(s?.file || s?.page || '').toLowerCase() === String(file).toLowerCase())
+    return (match && (match.screen_name || match.name)) || null
+  }
 
   return (
     <div className="mx-auto max-w-[1120px] pb-12 text-white">
-      {/* Overview Banner */}
-      <div className="mb-6 rounded-2xl border border-purple-500/30 bg-[linear-gradient(135deg,#120f24_0%,#191433_100%)] p-5 shadow-xl">
+      <div className="mb-6 rounded-2xl border border-white/10 bg-[#0d1220] p-5">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="grid size-8 place-items-center rounded-xl bg-purple-600/25 text-purple-400 border border-purple-500/30">
+            <div className="grid size-8 place-items-center rounded-xl border border-white/10 bg-white/[.04] text-white/50">
               <Workflow className="size-4" />
             </div>
             <div>
-              <h3 className="text-[15px] font-bold text-white">
-                Prototype & Demo Flow Verification
-              </h3>
-              <p className="text-[11.5px] text-white/50">
-                Visual UI screens, verified demo flows, and requirement parity
+              <h3 className="text-[15px] font-bold text-white">Prototype pages</h3>
+              <p className="text-[11.5px] text-white/45">
+                The HTML files in this project, as they are on disk.
               </p>
             </div>
           </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-[11px] font-semibold text-emerald-300 border border-emerald-500/25">
-            <CheckCircle2 className="size-3" />
-            <span>{verified ? 'Flow Verified · Zero Dead-Ends' : 'Flow Checked'}</span>
+          <span className="font-mono text-[11px] text-white/40">
+            {pages.length} page{pages.length === 1 ? '' : 's'}
           </span>
         </div>
-
-        <p className="mt-3 text-[12.5px] leading-relaxed text-white/80">
-          The HTML Prototype implements the visual user journeys specified in this SRS.
-          All navigation buttons, modals, and screen layouts are verified to ensure complete alignment before and during the build.
-        </p>
       </div>
 
-      {/* Screen Cards Grid */}
-      <div className="mb-8">
-        <h4 className="text-[13px] font-bold uppercase tracking-wider text-white/50 mb-3">
-          Verified Screens & Interaction Pathways
-        </h4>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {fallbackScreens.map((s, idx) => (
-            <div key={idx} className="rounded-2xl border border-white/10 bg-[#0f1422] p-4 shadow-md transition-all hover:border-white/20">
-              <div className="flex items-center justify-between gap-2 border-b border-white/5 pb-2.5">
-                <span className="font-mono text-[11px] font-bold text-purple-400">
-                  #{idx + 1}
-                </span>
-                <span className="font-mono text-[10px] text-white/40">
-                  {s.file || 'screen.html'}
-                </span>
+      {pages.length === 0 ? (
+        <Empty>No prototype has been drawn for this project yet.</Empty>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {pages.map((page, idx) => (
+            <div key={page.file || idx}
+              className="rounded-2xl border border-white/10 bg-[#0f1422] p-4 transition hover:border-white/20">
+              <div className="flex items-center justify-between gap-2 border-b border-white/[.07] pb-2.5">
+                <span className="font-mono text-[11px] text-white/35">#{idx + 1}</span>
+                <span className="truncate font-mono text-[10.5px] text-white/45">{page.file}</span>
               </div>
               <h5 className="mt-2.5 text-[14px] font-bold text-white">
-                {s.screen_name}
+                {named(page.file) || page.screen_name}
               </h5>
-              <div className="mt-3 space-y-1.5">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-white/40 block">
-                  Interactive Controls:
-                </span>
-                <div className="flex flex-wrap gap-1">
-                  {list(s.actions).map((act, i) => (
-                    <span key={i} className="inline-flex items-center gap-1 rounded-md bg-white/[.04] px-2 py-0.5 text-[11px] text-white/70 border border-white/5">
-                      <CheckCircle2 className="size-2.5 text-blue-400" />
-                      {act}
-                    </span>
-                  ))}
-                </div>
-              </div>
+              {page.bytes != null && (
+                <p className="mt-1 font-mono text-[10.5px] text-white/30">
+                  {Math.round(page.bytes / 1024)} KB
+                </p>
+              )}
             </div>
           ))}
         </div>
-      </div>
+      )}
 
-      {/* Traceability & Living Parity Card */}
-      <div className="rounded-2xl border border-emerald-500/25 bg-[#0a141a] p-5 shadow-lg">
-        <div className="flex items-center gap-2 text-emerald-400 font-bold text-[13px] mb-2">
-          <ShieldCheck className="size-4" />
-          <span>100% Traceability & Parity Guarantee</span>
-        </div>
-        <p className="text-[12px] leading-relaxed text-white/75">
-          Every screen, collection, and workflow identified in this prototype traces directly to an approved requirement in the SRS.
-          As the builder generates code and tests the application, progress feeds continuously back into this living document.
+      {screenshot && (
+        <p className="mt-5 text-[12px] text-white/45">
+          A desktop screenshot of the drawing was captured for this project.
         </p>
-      </div>
+      )}
     </div>
   )
 }
@@ -2537,8 +1743,9 @@ export function badgeFor(id, srs) {
     return { n: n(srs.diagrams), bad: false }
   }
   if (id === 'prototype_flow') {
-    const screens = doc.prototype_evidence?.screens || doc.prototype_evidence?.pages
-    return { n: n(screens) || 1, bad: false }
+    // No `|| 1`: a project with no pages had a badge claiming one.
+    const pages = srs?.prototype?.pages
+    return n(pages) ? { n: n(pages), bad: false } : null
   }
   if (id === 'interview' && n(srs?.interview?.transcript)) {
     return { n: n(srs.interview.transcript), bad: false }

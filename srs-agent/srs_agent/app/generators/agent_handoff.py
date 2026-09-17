@@ -484,6 +484,11 @@ _KNOWN_KEYS = {
     "approved_plan_markdown", "builder_handoff", "diagrams",
     "standards_profile", "document_control", "requirements_quality_review",
     "ambiguities", "risk_priority", "customer_notes",
+    # Written by parent_sync after every accepted change. Without it here the
+    # escape hatch below turns it into an "## Effective Plan" section, so a
+    # synced project's app.md would differ from a freshly generated one - the
+    # handoff shape changing under the agents for no product reason.
+    "effective_plan",
 }
 
 

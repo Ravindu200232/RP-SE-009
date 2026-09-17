@@ -98,7 +98,7 @@
       "Outfit"
     ],
     "bytes": 10131,
-    "hasPreview": false
+    "hasPreview": true
   },
   "bento": {
     "slug": "bento",
@@ -187,7 +187,7 @@
   "claude": {
     "slug": "claude",
     "name": "\"Claude\"",
-    "description": "\"A research-journal aesthetic printed on warm stone \u2014 authoritative, editorial, almost achromatic. Pages live on warm ivory parchment (never pure white), with near-black slate as the dominant ink.\"",
+    "description": "\"A research-journal aesthetic printed on warm stone — authoritative, editorial, almost achromatic. Pages live on warm ivory parchment (never pure white), with near-black slate as the dominant ink.\"",
     "colors": {
       "primary": "#141413",
       "secondary": "#FAF9F6",
@@ -525,7 +525,7 @@
   "fiction": {
     "slug": "fiction",
     "name": "\"Fiction\"",
-    "description": "\"A playful, energetic, cartoonesque interface inspired by friendly children's-book illustrations \u2014 warm cream backgrounds, big bold custom display typography, saturated brand color blocks, thick black outlines, generously rounded shapes\"",
+    "description": "\"A playful, energetic, cartoonesque interface inspired by friendly children's-book illustrations — warm cream backgrounds, big bold custom display typography, saturated brand color blocks, thick black outlines, generously rounded shapes\"",
     "colors": {
       "primary": "#222222",
       "secondary": "#FFE9CE",
@@ -695,7 +695,7 @@
   "impeccable": {
     "slug": "impeccable",
     "name": "\"Impeccable\"",
-    "description": "\"A modern, graphic, editorial-poster aesthetic \u2014 warm and confident \u2014 built on alternating cream and burnt orange sections, an amber brand color.\"",
+    "description": "\"A modern, graphic, editorial-poster aesthetic — warm and confident — built on alternating cream and burnt orange sections, an amber brand color.\"",
     "colors": {
       "primary": "#CC8800",
       "secondary": "#C55221",
@@ -716,7 +716,7 @@
   "kinetic": {
     "slug": "kinetic",
     "name": "Kinetic Typography",
-    "description": "High-energy brutalism meets kinetic poster design. Confidence through scale. Urgency through motion. Clarity through contrast. The design screams rather than whispers\u2014everything is uppercase, oversized, and in-your-face. It's a poster come to life, with the raw energy of street art and the precision",
+    "description": "High-energy brutalism meets kinetic poster design. Confidence through scale. Urgency through motion. Clarity through contrast. The design screams rather than whispers—everything is uppercase, oversized, and in-your-face. It's a poster come to life, with the raw energy of street art and the precision",
     "colors": {
       "secondary": "#DFE104",
       "surface": "#09090B",
@@ -727,7 +727,7 @@
       "Inter"
     ],
     "bytes": 23068,
-    "hasPreview": false
+    "hasPreview": true
   },
   "levels": {
     "slug": "levels",
@@ -892,7 +892,7 @@
       "Source Serif 4"
     ],
     "bytes": 14747,
-    "hasPreview": false
+    "hasPreview": true
   },
   "neobrutalism": {
     "slug": "neobrutalism",
@@ -1192,7 +1192,7 @@
   "sega": {
     "slug": "sega",
     "name": "\"Sega\"",
-    "description": "\"A playful, arcade-inspired interface for games \u2014 built on the VT323 pixel typeface, hard-edged 0px corners, chunky pill buttons that physically press into solid offset blocks\"",
+    "description": "\"A playful, arcade-inspired interface for games — built on the VT323 pixel typeface, hard-edged 0px corners, chunky pill buttons that physically press into solid offset blocks\"",
     "colors": {
       "primary": "#4502FF",
       "secondary": "#FFDA14",

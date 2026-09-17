@@ -68,6 +68,42 @@ def _sync_parent_documents(directory, request_path, request, label, role, summar
     raise RuntimeError("SRS synchronization exceeded 30 minutes; its job remains available for retry")
 
 
+def clear_qa_change(directory) -> None:
+    """Consume the digest, so the next change cannot re-post this evidence."""
+    try:
+        from server_modules.srs.qa_change import clear_change
+        clear_change(directory)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def read_qa_change(directory) -> dict:
+    """The verification digest this build left behind, if it ran tests at all."""
+    try:
+        from server_modules.srs.qa_change import read_change
+        return read_change(directory)
+    except Exception:  # noqa: BLE001 - never fail a sync over a missing note
+        return {}
+
+
+def _with_screen_inventory(directory, summary: str) -> str:
+    """Name the pages that exist, rather than trusting prose to have named them.
+
+    The drawing's screen list used to reach the SRS through a separate writer
+    whose file `adopt_srs` overwrote after every sync - and which the
+    `DesignerAgent` path, the one most prototype edits take, never called. A
+    directory listing appended to the change the transaction already carries is
+    both accurate and durable, and it costs no extra round trip.
+    """
+    proto = directory / ".agentforge" / "prototype"
+    if not proto.is_dir():
+        return summary
+    pages = sorted(page.name for page in proto.glob("*.html"))
+    if not pages:
+        return summary
+    return f"{summary}\n\nPrototype pages now present: {', '.join(pages)}."
+
+
 def synchronize_completed_change(directory, request_path, request):
     """Run after completion only. Sibling runs never enqueue another change transaction."""
     if not (directory / ".agentforge" / "srs" / "link.json").is_file():
@@ -78,6 +114,8 @@ def synchronize_completed_change(directory, request_path, request):
     stage = request.get("stage", "source_completed")
     agents = state.read().get("agents", {})
     summary = request.get("change_summary") or agents.get(source, {}).get("summary") or "Completed the requested project update."
+    if source == "designer":
+        summary = _with_screen_inventory(directory, summary)
     request["change_summary"] = summary
 
     def checkpoint(next_stage):
@@ -114,10 +152,22 @@ def synchronize_completed_change(directory, request_path, request):
         request["sibling_summary"] = completed.get("summary") or summary
         checkpoint("sibling_completed")
     elif stage == "srs_updated":
-        checkpoint("complete")
+        checkpoint("qa_pending")
     if stage == "sibling_completed":
         result = _sync_parent_documents(directory, request_path, request, "mirror", sibling, request["sibling_summary"])
         request["srs_version"] = result.get("version")
+        checkpoint("qa_pending")
+    # QA last, and only after the code it tested is in the document: verification
+    # recorded against an earlier version would say a requirement passed before
+    # the change that rewrote it. A missing digest is the normal case for a
+    # prototype-only change, and simply skips.
+    if stage == "qa_pending":
+        digest = read_qa_change(directory)
+        if digest.get("summary_text"):
+            result = _sync_parent_documents(directory, request_path, request,
+                                            "qa", "qa", digest["summary_text"])
+            request["srs_version"] = result.get("version")
+            clear_qa_change(directory)
         checkpoint("complete")
     state.update(sync={"status": "completed", "version": request.get("srs_version"), "source": source})
     emit({"type": "sync_state", "project": directory.name, "status": "completed", "version": request.get("srs_version")})

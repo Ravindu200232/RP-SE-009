@@ -60,10 +60,10 @@ export default function DeployAccounts({ deploy, onSaved }) {
           <Aws deploy={deploy} onSave={save} probe={probe}
                onRecheck={() => setProbe(null)} />
           <Vercel deploy={deploy} onSave={save} />
-          <HostedCredential title="Netlify" setting="netlify_token" saved={deploy?.netlify_token_set} onSave={save}
+          <HostedCredential title="Netlify" provider="netlify" setting="netlify_token" saved={deploy?.netlify_token_set} onSave={save}
             label="Personal access token" href="https://app.netlify.com/user/applications#personal-access-tokens"
             hint="Create a token in your Netlify account. The deployment uses it to provision your site and as an encrypted GitHub Actions secret." />
-          <HostedCredential title="Azure" setting="azure_credentials" saved={deploy?.azure_credentials_set} onSave={save}
+          <HostedCredential title="Azure" provider="azure" setting="azure_credentials" saved={deploy?.azure_credentials_set} onSave={save}
             label="Service principal credentials (JSON)" href="https://learn.microsoft.com/en-us/azure/app-service/deploy-github-actions"
             hint="Enter JSON containing clientId, clientSecret, tenantId and subscriptionId for your deployment service principal. Give it access to the selected resource group." />
           <Mongo deploy={deploy} onSave={save} />
@@ -477,22 +477,76 @@ function Vercel({ deploy, onSave }) {
 }
 
 
-function HostedCredential({ title, setting, saved, label, hint, href, onSave }) {
+/**
+ * A hosted provider, signed in to rather than pasted at.
+ *
+ * This was a password box and a Save button: a wrong token was stored as
+ * happily as a working one, and the first anyone heard of it was a deployment
+ * that failed. It now asks the provider who the credential belongs to - the
+ * same thing the Vercel row does - so "saved" and "works" stop being the same
+ * word.
+ */
+function HostedCredential({ title, provider, setting, saved, label, hint, href, onSave }) {
   const [value, setValue] = useState('')
-  const [busy, setBusy] = useState(false)
+  const [busy, setBusy] = useState('')
+  const [status, setStatus] = useState(null)
   const [error, setError] = useState('')
-  async function save() {
-    setBusy(true); setError('')
-    try { await onSave({ [setting]: value.trim() }); setValue('') }
-    catch (e) { setError(e.message) }
-    finally { setBusy(false) }
+
+  // What is already saved, checked once, so the row opens telling the truth.
+  useEffect(() => {
+    let live = true
+    if (!saved) { setStatus(null); return undefined }
+    api.deploy(`/aws/${provider}/status`, { token: '' })
+      .then(answer => { if (live) setStatus(answer) })
+      .catch(() => {})
+    return () => { live = false }
+  }, [provider, saved])
+
+  async function check(token) {
+    setBusy('check'); setError(''); setStatus(null)
+    try { setStatus(await api.deploy(`/aws/${provider}/status`, { token })) }
+    catch (failure) { setError(failure.message) }
+    finally { setBusy('') }
   }
-  return <Row title={title} ok={Boolean(saved)} unknown={false} detail={saved ? 'credentials saved' : 'connect your account'}>
+
+  async function save() {
+    setBusy('save'); setError('')
+    try {
+      await onSave({ [setting]: value.trim() })
+      const token = value.trim()
+      setValue('')
+      if (token !== '-') await check(token)
+    } catch (failure) { setError(failure.message) } finally { setBusy('') }
+  }
+
+  const connected = Boolean(status?.connected)
+  const detail = status
+    ? (connected
+        ? `${status.account || 'connected'}${status.verified === false ? ' · signs in on the runner' : ''}`
+        : status.message || status.error || 'credentials rejected')
+    : saved ? 'credentials saved' : 'connect your account'
+
+  return <Row title={title} ok={saved ? connected : false} unknown={Boolean(saved) && !status}
+              detail={detail}>
     <div className="mt-2 w-full space-y-2">
       <Field label={label} hint={<>{hint} Stored encrypted with your account. Type a single - to clear it. <a href={href} target="_blank" rel="noreferrer" className="text-accent hover:underline">Setup guide</a></>}>
         <Input type="password" autoComplete="off" value={value} onChange={e => setValue(e.target.value)} placeholder={saved ? 'saved — enter a replacement' : label} />
       </Field>
-      <Button size="sm" variant="outline" disabled={busy || !value.trim()} onClick={save}>{busy && <Loader2 className="size-3 animate-spin" />}Save credentials</Button>
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant="outline" disabled={Boolean(busy) || !value.trim()} onClick={save}>
+          {busy === 'save' && <Loader2 className="size-3 animate-spin" />}Save and sign in
+        </Button>
+        <Button size="sm" variant="ghost" disabled={Boolean(busy) || (!saved && !value.trim())}
+                onClick={() => check(value.trim())}>
+          {busy === 'check' && <Loader2 className="size-3 animate-spin" />}Test connection
+        </Button>
+      </div>
+      {status && !connected && (
+        <p className="text-[10.5px] text-bad">{status.message || status.error}</p>
+      )}
+      {status?.connected && status.verified === false && (
+        <p className="text-[10.5px] text-muted">{status.message}</p>
+      )}
       {error && <p className="text-[10.5px] text-bad">{error}</p>}
     </div>
   </Row>

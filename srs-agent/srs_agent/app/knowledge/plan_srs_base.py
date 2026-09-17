@@ -267,8 +267,14 @@ def _requirements_from_plan(plan: dict, tables: list[dict], auth: bool,
     if auth:
         add("Authentication",
             "The system shall let a person sign in with an email address and password")
+        # Stated as a server-side rule on purpose. "Show only the screens their
+        # role allows" describes hiding links, which a builder satisfies with a
+        # conditional render while every endpoint stays open - the exact defect
+        # the reviewer kept raising against this requirement.
         add("Authorization",
-            "The system shall show each signed-in person only the screens their role allows")
+            "The system shall check the signed-in person's role on the server for every request "
+            "and refuse any read or write their role does not allow, returning 403, "
+            "whether or not the interface offered them the action")
         if account_policy.get("registration_mode") == "open":
             role = account_policy.get("registration_role") or "approved default user"
             add("Authentication",
@@ -350,35 +356,34 @@ def _nfrs(auth: bool, devices: list[str]) -> list[dict]:
 
 
 def build_branding(session: dict, pack: dict, app_name: str) -> dict:
-    """What the app looks like, and whether a logo has to be drawn."""
+    """What the app looks like, and where its pictures are to come from."""
     answers = (session or {}).get("answers") or {}
 
     def ans(key, default=None):
         entry = answers.get(key)
         return default if entry is None else entry.get("value", default)
 
-    artwork = ans("image_kinds") or []
-    if isinstance(artwork, str):
-        artwork = [artwork]
-    logo_requested = any(str(item).strip().lower() in {"logo", "logo_mark", "logo mark"}
-                         for item in artwork)
-    source = "generate" if logo_requested else "none"
+    # Nothing here draws a logo, so nothing here may promise one. The customer's
+    # own mark arrives as an upload on the design screen, which is the only
+    # source that produces a file the pages can actually point at.
+    source = "upload" if str(ans("image_source") or "").strip().lower() == "upload" else "none"
 
     palette_name = _resolve_palette(ans("color_palette"), pack)
     palette = PALETTES[palette_name]
     theme = str(ans("theme_type") or "light")
 
-    branding = {
-        "logo_required": source == "generate",
+    return {
+        "logo_required": False,
         "logo_source": source,
         "logo_image_prompt": "",
         "theme": theme,
         "palette": palette_name,
         "primary_color": palette.get("primary", "#6366F1"),
+        # Where every picture on the pages comes from: "web" to source them
+        # online, "upload" for the customer's own files, "none" for a design
+        # that carries no photographs at all.
+        "image_source": str(ans("image_source") or "none").strip().lower(),
     }
-    if source == "generate":
-        branding["logo_image_prompt"] = _logo_prompt(app_name, pack, branding)
-    return branding
 
 
 _PALETTE_ALIASES = {
@@ -401,20 +406,4 @@ def _resolve_palette(answer, pack: dict) -> str:
     return fallback if fallback in PALETTES else "indigo"
 
 
-def _logo_prompt(app_name: str, pack: dict, branding: dict) -> str:
-    """A text-to-image prompt for the logo mark."""
-    label = str(pack.get("app_label") or "web application").lower()
-
-    domain = str(pack.get("domain_label") or "").strip()
-    named = domain and float(pack.get("domain_confidence") or 0) >= 0.6
-    subject = f"a {label}" + (f" for {domain.lower()}" if named else "")
-    dark = branding.get("theme") == "dark"
-    return (
-        f"A flat vector logo mark for \"{app_name}\", {subject}. "
-        f"One simple, memorable symbol that reads clearly at 32 pixels. "
-        f"Primary colour {branding['primary_color']} on a "
-        f"{'dark charcoal' if dark else 'white'} background. "
-        f"No text, no lettering, no gradients, no photorealism, no drop shadows. "
-        f"Square composition, generous margin, transparent background, SVG-like clean edges."
-    )
 

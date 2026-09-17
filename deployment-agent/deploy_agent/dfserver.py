@@ -36,6 +36,7 @@ from deployment_agent.aws_onboarding import (
 )
 from deployment_agent.mongodb_check import check_mongodb_uri
 from deployment_agent.security import redact_data
+from deployment_agent.hosted import azure_connection_status, netlify_connection_status
 from deployment_agent.vercel_auth import connection_status as vercel_connection_status
 from deployment_agent.state import StateStore
 from deployment_agent.supervisor import reconcile_once, start_supervisor
@@ -292,6 +293,10 @@ class APIHandler(SimpleHTTPRequestHandler):
             )
         if action == "vercel/status":
             return self._json(vercel_connection_status(str(body.get("token", ""))))
+        if action == "netlify/status":
+            return self._json(netlify_connection_status(str(body.get("token", ""))))
+        if action == "azure/status":
+            return self._json(azure_connection_status(str(body.get("token", ""))))
         if action == "bootstrap-role-template":
             return self._json(
                 {"template": bootstrap_role_template(str(body.get("principal_arn", "")))}

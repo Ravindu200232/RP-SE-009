@@ -44,18 +44,25 @@ class Decision:
 class Approvals:
     """The questions a run may ask, and how long it will wait for an answer."""
 
-    def __init__(self, events, enabled: bool = False, timeout: float = 300.0) -> None:
+    def __init__(self, events, enabled=False, timeout: float = 300.0) -> None:
         self.events = events
-        # Off unless a surface that can actually answer turns it on.
-        self.enabled = enabled
+        # Off unless a surface that can actually answer turns it on - and then
+        # only for the questions that surface actually wants. The studio has its
+        # own plan review and design picker, so asking those again in the chat
+        # would be the same decision twice, each holding the build for ten
+        # minutes. `True` means every kind; a set names the ones to ask.
+        self.enabled = enabled if isinstance(enabled, bool) else frozenset(enabled or ())
         self.timeout = timeout
         self.pending: dict[str, Decision] = {}
         self._lock = threading.Lock()
 
+    def asks(self, kind: str) -> bool:
+        return bool(self.enabled) and (self.enabled is True or kind in self.enabled)
+
     def ask(self, kind: str, payload: dict, default: dict,
             timeout: float | None = None, cancel=None) -> dict:
         """Publish a question and wait, or return `default`."""
-        if not self.enabled:
+        if not self.asks(kind):
             return dict(default, decision=default.get("decision", "default"), asked=False)
 
         decision = Decision(kind, payload, default,

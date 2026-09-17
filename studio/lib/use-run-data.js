@@ -38,6 +38,10 @@ export function useRunData(runId) {
       artifacts: value(artifacts, 'artifacts'),
       evidence: value(evidence, 'evidence'),
       question: details.status === 'fulfilled' ? details.value.pending_question : null,
+      // The whole run record, not just the one field the composer needed. It
+      // carries what was deployed, where, from which repo and how it scored —
+      // everything the Evidence tab has to show beside the captured files.
+      detail: details.status === 'fulfilled' ? (details.value || null) : null,
     })
 
     const failed = [events, artifacts].find(r => r.status === 'rejected')
@@ -47,12 +51,13 @@ export function useRunData(runId) {
   }, [runId])
 
   useEffect(() => {
-    setData({ events: [], artifacts: [], evidence: [] })
+    setData({ events: [], artifacts: [], evidence: [], detail: null })
     setBusy(false); setError('')
     load()
   }, [load])
 
-  const mine = data.runId === runId ? data : { events: [], artifacts: [], evidence: [] }
+  const mine = data.runId === runId
+    ? data : { events: [], artifacts: [], evidence: [], detail: null }
   return { ...mine, busy, error, reload: load }
 }
 

@@ -13,8 +13,116 @@ import { useAuthStore } from '@/lib/auth'
 import { modelLabel } from '@/lib/models'
 import DeployAccounts from './deploy/DeployAccounts'
 
+/**
+ * One model for every role, chosen from what this machine can actually reach.
+ *
+ * The tab used to list six roles read-only and say the choice was made "in the
+ * build panel", which meant the only place to change it was a tier button
+ * beside the composer that mapped to a model nobody could see. Here the models
+ * are the ones Ollama reports - installed locally, or available in the cloud
+ * account - and the one that is picked is the one every build uses.
+ */
+function ModelPicker({ meta, onSaved }) {
+  const [catalog, setCatalog] = useState(null)
+  const [chosen, setChosen] = useState('')
+  const [think, setThink] = useState(true)
+  const [busy, setBusy] = useState(false)
+  const [note, setNote] = useState('')
+
+  useEffect(() => {
+    if (!meta) return
+    setChosen(meta.agent_model || '')
+    setThink(meta.agent_think !== false)
+  }, [meta])
+
+  useEffect(() => {
+    let alive = true
+    api.models().then(d => { if (alive) setCatalog(d) }).catch(() => { if (alive) setCatalog({}) })
+    return () => { alive = false }
+  }, [])
+
+  async function save(model, thinking) {
+    setBusy(true); setNote('')
+    try {
+      await api.saveSettings({ agent_model: model, agent_think: thinking })
+      setNote('saved')
+      onSaved?.()
+    } catch (failure) { setNote(failure.message) } finally { setBusy(false) }
+  }
+
+  const groups = [
+    ['On this machine', catalog?.local_models || []],
+    ['Cloud', catalog?.cloud || []],
+  ]
+  const anything = groups.some(([, rows]) => rows.length)
+
+  return (
+    <div className="max-w-[700px] space-y-4">
+      <div className="flex items-center justify-between rounded-2xl border border-line bg-panel px-4 py-3.5 shadow-sm">
+        <div>
+          <p className="text-[12.5px] font-medium text-ink">Thinking</p>
+          <p className="mt-0.5 text-[11px] text-muted">
+            Reasoning before answering. Slower, and better on hard changes. The
+            specification agent never uses it.
+          </p>
+        </div>
+        <button type="button" disabled={busy} onClick={() => { setThink(!think); save(chosen, !think) }}
+          aria-pressed={think}
+          className={cn('h-6 w-11 shrink-0 rounded-full border transition-colors',
+            think ? 'border-accent bg-accent/80' : 'border-line bg-panel2')}>
+          <span className={cn('block size-4 rounded-full bg-white transition-transform',
+            think ? 'translate-x-6' : 'translate-x-1')} />
+        </button>
+      </div>
+
+      <div className="rounded-2xl border border-line bg-panel shadow-sm">
+        {!catalog && <p className="px-4 py-3.5 text-[11.5px] text-muted">Reading the model list…</p>}
+        {catalog && !anything && (
+          <p className="px-4 py-3.5 text-[11.5px] text-muted">
+            Ollama reported no models. Start it, or pull one, and reopen this tab.
+          </p>
+        )}
+        {groups.map(([label, rows]) => rows.length > 0 && (
+          <div key={label}>
+            <p className="border-b border-line px-4 pb-1.5 pt-3 text-[10px] uppercase tracking-wider text-muted2">
+              {label}
+            </p>
+            <div className="divide-y divide-line">
+              {rows.map(row => {
+                const id = row.id || row
+                const picked = id === chosen
+                return (
+                  <button key={id} type="button" disabled={busy}
+                    onClick={() => { setChosen(id); save(id, think) }}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-panel2">
+                    <span className={cn('grid size-4 shrink-0 place-items-center rounded-full border',
+                      picked ? 'border-accent bg-accent' : 'border-line')}>
+                      {picked && <Check className="size-2.5 text-white" />}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[12.5px] text-ink">
+                        {modelLabel ? modelLabel(id) : id}
+                      </span>
+                      <span className="block truncate font-mono text-[10px] text-muted2">{id}</span>
+                    </span>
+                    {row.installed === false && (
+                      <span className="shrink-0 text-[10px] text-muted2">not pulled</span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="text-[11px] text-muted">
+        {busy ? 'Saving…' : note || 'Every build, prototype and repair uses this model.'}
+      </p>
+    </div>
+  )
+}
+
 export default function SettingsModal({ onClose, onSaved }) {
-  const storeModels = useStore(s => s.models)
   const theme = useStore(s => s.theme)
   const setTheme = useStore(s => s.setTheme)
   const user = useAuthStore(s => s.user)
@@ -293,34 +401,7 @@ export default function SettingsModal({ onClose, onSaved }) {
             )}
 
             {/* ── MODELS ── */}
-            {activeTab === 'models' && (
-              <div className="space-y-4 max-w-[700px]">
-                <div className="rounded-2xl border border-line bg-panel divide-y divide-line shadow-sm">
-                  {[
-                    { role: 'Agent (default)', key: 'agent' },
-                    { role: 'Builder',         key: 'builder' },
-                    { role: 'Planner',         key: 'planner' },
-                    { role: 'Design',          key: 'design' },
-                    { role: 'QA & Testing',    key: 'qa' },
-                    { role: 'SRS',             key: 'srs' },
-                  ].map(({ role, key }) => {
-                    const m = storeModels?.[key] || ''
-                    const label = m ? (modelLabel ? modelLabel(m) : m) : '—'
-                    return (
-                      <div key={key} className="flex items-center justify-between px-4 py-3.5">
-                        <div className="text-[12.5px] font-medium text-ink">{role}</div>
-                        <span className="rounded-lg bg-accent/10 border border-accent/20 px-3 py-1 font-mono text-[11px] text-accent max-w-[260px] truncate">
-                          {label}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-                <p className="text-[11px] text-muted">
-                  Models are selected in the build panel when starting a project.
-                </p>
-              </div>
-            )}
+            {activeTab === 'models' && <ModelPicker meta={meta} onSaved={onSaved} />}
 
             {/* ── APPEARANCE ── */}
             {activeTab === 'appearance' && (

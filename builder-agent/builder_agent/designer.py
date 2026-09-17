@@ -90,7 +90,11 @@ class DesignerAgent(BuilderAgent):
                                      verification_kinds=[],
                                      max_iterations=self.MAX_PROTOTYPE_REPAIR_ITERATIONS).run(
                                          prototype_repair_prompt(real_findings))
-                if outcome.status == "completed":
+                # A repair that ran out of turns is judged the same way as one
+                # that said it finished: by re-opening the pages. "It used its
+                # turns" is not a verdict on the drawing, and reporting it as a
+                # failed run hid a prototype that was already correct.
+                if outcome.status in ("completed", "max_iterations"):
                     remaining = validate_prototype_all(root)
                     remaining_real = remaining
                     if remaining_real:

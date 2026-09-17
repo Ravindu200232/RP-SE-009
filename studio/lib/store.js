@@ -36,6 +36,16 @@ export const KEYS = {
 
   srsId: 'agentforge-srs-id', srsPhase: 'agentforge-srs-phase',
   think: 'agentforge-think', images: 'agentforge-img',
+  starred: 'agentforge-starred', recent: 'agentforge-recent',
+}
+
+const RECENT_KEPT = 20
+
+function readList(key) {
+  try {
+    const raw = JSON.parse(LS?.getItem(key) || '[]')
+    return Array.isArray(raw) ? raw.filter(x => typeof x === 'string') : []
+  } catch { return [] }
 }
 
 
@@ -164,6 +174,33 @@ export const useStore = create((set, get) => ({
   setE2eLive: (e2eLive) => set({ e2eLive }),
   project: null,
   view: 'preview',
+  // The deployment run the Deploy panel is showing, so the chat beside it can
+  // show that run's conversation without fetching the deploy state twice.
+  deployRunId: '',
+  setDeployRunId: (deployRunId) => set({ deployRunId: deployRunId || '' }),
+
+  // Starred and recently opened are this browser's, not the server's: nothing
+  // about them belongs to the project on disk, and an account here never sees
+  // another account's work anyway.
+  starred: readList(KEYS.starred),
+  recent: readList(KEYS.recent),
+  // Which shelf the Projects screen is showing, set from the sidebar.
+  projectFilter: '',
+  setProjectFilter: (projectFilter) => set({ projectFilter: projectFilter || '' }),
+  toggleStar: (name) => {
+    if (!name) return
+    const starred = get().starred.includes(name)
+      ? get().starred.filter(x => x !== name)
+      : [...get().starred, name]
+    set({ starred })
+    try { LS?.setItem(KEYS.starred, JSON.stringify(starred)) } catch { }
+  },
+  noteOpened: (name) => {
+    if (!name) return
+    const recent = [name, ...get().recent.filter(x => x !== name)].slice(0, RECENT_KEPT)
+    set({ recent })
+    try { LS?.setItem(KEYS.recent, JSON.stringify(recent)) } catch { }
+  },
   setView: (view) => {
     const state = get()
     if (['preview', 'testing', 'deploy'].includes(view) && state.project && !state.buildAvailability[state.project]) return

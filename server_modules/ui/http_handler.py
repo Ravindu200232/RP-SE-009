@@ -269,6 +269,7 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
                 "api_key_hint": (f"…{key[-4:]}" if key else ""),
                 "local_num_ctx": s.get("local_num_ctx", max_context("llama3.1:8b")),
                 "agent_model": s.get("agent_model", default_agent_model()),
+                "agent_think": bool(s.get("agent_think", True)),
                 **_image_settings(),
                 "mongodb_uri_set": bool(uri),
                 "mongodb_uri_hint": _redact_uri(uri),
@@ -297,6 +298,17 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
                 self._plain(200, data, "image/png", extra=(("Cache-Control", "no-cache"),))
             except (OSError, ValueError):
                 self._json({"error": "Screenshot not found"}, 404)
+        elif path.startswith("/site-image/"):
+            proj, _, name = unquote(path[12:].strip("/")).partition("/")
+            try:
+                data, kind = read_site_image(proj, name)
+                self._plain(200, data, kind, extra=(("Cache-Control", "no-cache"),))
+            except ValueError as error:
+                self._json({"error": str(error)}, 400)
+            except (FileNotFoundError, OSError):
+                self._json({"error": "No such image"}, 404)
+        elif path.startswith("/site-images/"):
+            self._json(site_image_list(unquote(path[13:].strip("/"))))
         elif path.startswith("/design-theme-preview/"):
             try:
                 self._plain(200, read_theme_preview(path[22:].strip("/")), "text/html; charset=utf-8",
@@ -635,6 +647,20 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
             self._json({"ok": True, "file": str(out), "name": name,
                         "data_uri": preview_uri(out),
                         "url": (f"/generated/{name}.png" if proj else "")})
+        elif path == "/site-image-save":
+            body = self._body()
+            out = site_image_save(body.get("project", ""), body.get("filename", ""),
+                                  body.get("data_base64", ""), str(body.get("purpose", "")))
+            self._json(out, 400 if out.get("error") else 200)
+        elif path == "/site-image-describe":
+            body = self._body()
+            out = site_image_describe(body.get("project", ""), body.get("file", ""),
+                                      str(body.get("purpose", "")))
+            self._json(out, 400 if out.get("error") else 200)
+        elif path == "/site-image-drop":
+            body = self._body()
+            out = site_image_drop(body.get("project", ""), body.get("file", ""))
+            self._json(out, 400 if out.get("error") else 200)
         elif path == "/agent-build":
             body = {**self._body(), "type": "agent_build"}
             job = _message_job(body)
@@ -764,7 +790,7 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
             user = acting() or {}
             server_keys = ("ollama_api_key", "mongodb_uri", "ollama_host", "lan_access",
                            "image_enabled", "image_host", "image_config", "image_launcher",
-                           "local_num_ctx", "agent_model")
+                           "local_num_ctx", "agent_model", "agent_think")
             if any(key in body for key in server_keys) and not user.get("admin"):
                 return self._json({"error": "only the admin can change AgentForge's own settings "
                                             "- your deployment accounts are under Deploy"}, 403)
@@ -797,6 +823,10 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
                     pass
             if body.get("agent_model"):
                 patch["agent_model"] = str(body["agent_model"]).strip()
+            # One switch for the build's reasoning, saved rather than carried on
+            # each request, so a run started from anywhere uses the same answer.
+            if "agent_think" in body:
+                patch["agent_think"] = bool(body["agent_think"])
             # No srs_model or deploy_model: those two agents use one fixed model
             # (see their bridges), and the studio's picker is for the build.
             ok = save_settings(patch) if patch else True

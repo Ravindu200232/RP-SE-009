@@ -36,6 +36,12 @@ class GeneratorHostedMixin:
             steps.append({"name": "Deploy compiled app", "uses": "azure/webapps-deploy@v3", "with": {
                 "app-name": "${{ vars.AZURE_WEBAPP_NAME }}", "package": package,
             }})
+            if service.framework != "nextjs":
+                # An App Service runs one command. A workspace of services needs
+                # every one of them up, so it starts the whole tree rather than
+                # the gateway alone - which would proxy to ports nobody is
+                # listening on. On EC2 this is a systemd unit per service.
+                steps.append({"name": "Start every service, not just the gateway", "run": 'az webapp config set --name "$AZURE_WEBAPP_NAME" --resource-group "$AZURE_RESOURCE_GROUP" --startup-file "npm run start:all" --output none'})
             steps.append({"name": "Record deployed commit", "run": 'az webapp config appsettings set --name "$AZURE_WEBAPP_NAME" --resource-group "$AZURE_RESOURCE_GROUP" --settings AGENTFORGE_COMMIT_SHA="$GITHUB_SHA" --output none'})
             env = {"AZURE_WEBAPP_NAME": "${{ vars.AZURE_WEBAPP_NAME }}", "AZURE_RESOURCE_GROUP": "${{ vars.AZURE_RESOURCE_GROUP }}"}
         steps.append({"name": "Check homepage and health", "run": f'curl --fail --retry 12 --retry-delay 5 "$APPLICATION_URL/"\ncurl --fail --retry 12 --retry-delay 5 "$APPLICATION_URL{service.health_path}"'})

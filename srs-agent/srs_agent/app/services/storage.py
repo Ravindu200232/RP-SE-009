@@ -44,6 +44,52 @@ def save_srs_json(project_id: str, srs: dict, version: str) -> Path:
     return path
 
 
+def save_review_round(project_id: str, round_no: int, payload: dict) -> Path:
+    """Keep one reviewer round beside the document it judged.
+
+    Rounds happen before a version exists, so they cannot live in the version
+    table; and the full findings - raw scores, suggested rewrites, the model's
+    own reasoning - are working notes, not part of the specification the
+    builder reads. They stay on disk, where the studio can show them and the
+    handoff never sees them.
+    """
+    directory = project_dir(project_id) / "reviews"
+    write_json(directory / f"round-{int(round_no)}.json", payload)
+    return write_json(directory / "latest.json", payload)
+
+
+def read_reviews(project_id: str) -> list[dict]:
+    """Every recorded round, oldest first."""
+    directory = project_dir(project_id) / "reviews"
+    if not directory.is_dir():
+        return []
+    rounds = []
+    for path in sorted(directory.glob("round-*.json"),
+                       key=lambda p: int(p.stem.split("-")[-1] or 0)):
+        try:
+            rounds.append(json.loads(path.read_text(encoding="utf-8")))
+        except (OSError, ValueError):
+            continue
+    return rounds
+
+
+def snapshot_reviews(project_id: str, version: str) -> int:
+    """Stamp the rounds that produced this version, the way diagrams are kept."""
+    directory = project_dir(project_id) / "reviews"
+    if not directory.is_dir():
+        return 0
+    target = directory / f"v{version}"
+    target.mkdir(parents=True, exist_ok=True)
+    kept = 0
+    for path in sorted(directory.glob("round-*.json")):
+        try:
+            write_text(target / path.name, path.read_text(encoding="utf-8"))
+            kept += 1
+        except OSError:
+            continue
+    return kept
+
+
 def srs_pdf_path(project_id: str, version: str | None = None) -> Path:
     name = f"SRS_v{version}.pdf" if version else "SRS_latest.pdf"
     return project_dir(project_id) / name

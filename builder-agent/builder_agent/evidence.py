@@ -376,13 +376,34 @@ class Evidence:
         return record
 
     def record_external(self, kind: str, suite: str, source: str, covers,
-                        status: str, output: str = "", reason: str | None = None) -> dict:
-        """Deterministic non-command evidence, such as a browser journey."""
+                        status: str, output: str = "", reason: str | None = None,
+                        engine: bool = False) -> dict:
+        """Deterministic non-command evidence, such as a browser journey.
+
+        `engine` marks the caller as the journey runner itself, which produces
+        the step trace. Everything else is the agent describing a result it did
+        not execute here, and may not overwrite a trace with a description.
+        """
         self.active = True
         if status not in ("passed", "failed"):
             raise ToolError("External evidence status must be passed or failed.")
         covered = self.validate_covers(kind, covers)
         record = self._record(kind, suite)
+        # A journey the engine ran is already recorded, with the steps it
+        # actually executed. Re-recording it by hand replaces that trace with a
+        # sentence - measured: nine passing journeys came back as "no
+        # measurable browser stages" and the run reported no pass rate at all,
+        # because the engine's record had been overwritten by a description of
+        # what the journey was for. The trace is evidence; a summary is a claim.
+        #
+        # The engine itself reruns a suite freely: that is what a repair is, and
+        # each rerun carries a new trace of its own.
+        if (not engine and kind == "e2e" and record.get("journeyFingerprint")
+                and record.get("revision") == self.revision):
+            raise ToolError(
+                f"The e2e suite {suite!r} is already recorded from the journey that ran, with "
+                "its step trace. Recording it again would replace that trace with a summary. "
+                "Rerun the journey with browserRunJourney if the result needs to change.")
         record.update({
             "command": clip(source or "direct execution", 4000), "source": clip(source, 240),
             "testFiles": [], "coverageReports": [], "coverage": None, "covers": covered,

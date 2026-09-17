@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { FileDown, Hammer, RefreshCw } from 'lucide-react'
 import { api } from '@/lib/api'
+import { diagramRows } from '@/lib/srs-view'
 import { useStore } from '@/lib/store'
 import { Badge, Button, Empty, SubTab, SubTabs } from '../ui'
 import { VIEWS, badgeFor } from './views'
@@ -23,7 +24,9 @@ export default function SrsResult({ specOnly = false, onBuild }) {
     let last
     for (let i = 0; i < 4; i++) {
       try {
-        setSrs(await api.srsResults(project))
+        const loaded = await api.srsResults(project)
+        // Same normaliser the review screen uses, so both render identical rows.
+        setSrs({ ...loaded, diagrams: diagramRows(loaded?.diagrams) })
         setState('ready')
         return
       } catch (e) {

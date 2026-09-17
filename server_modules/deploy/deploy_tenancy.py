@@ -124,10 +124,16 @@ def deploy_request_for(user, method: str, path: str, body):
                 "GitHub and Vercel are connected with a token in Deployment accounts - "
                 "a sign-in here would sign this whole machine in, for everyone on it.")
         body["profile"] = aws_profile_for(user, body.get("profile") or "console")
-    elif route == "/api/aws/vercel/status":
-        token = str(body.get("token") or "").strip() or deploy_settings_for(user).get("vercel_token", "")
+    elif route in ("/api/aws/vercel/status", "/api/aws/netlify/status", "/api/aws/azure/status"):
+        # Each hosted provider is checked the same way: this person's saved
+        # credential unless the box in front of them holds a new one.
+        provider = route.rsplit("/", 2)[1]
+        saved_as = {"vercel": "vercel_token", "netlify": "netlify_token",
+                    "azure": "azure_credentials"}[provider]
+        token = str(body.get("token") or "").strip() or deploy_settings_for(user).get(saved_as, "")
         if not token:
-            return path, body, {"connected": False, "error": "no Vercel token saved"}
+            return path, body, {"connected": False,
+                                "error": f"no {provider.title()} credentials saved"}
         body["token"] = token
     elif route.startswith("/api/aws/") or route.startswith("/api/runs/"):
         # Only this person's AWS sign-ins - and never none, which to boto3 means

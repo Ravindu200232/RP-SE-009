@@ -73,6 +73,39 @@ class EvidenceExporter:
             Paragraph(f"State: {run['state']}", styles["BodyText"]),
             Spacer(1, 8),
         ]
+        # The same record the Evidence tab shows, so the downloaded report and
+        # the screen agree about what was deployed and where.
+        plan, repo = run.get("plan") or {}, run.get("repo") or {}
+        monitor_now = run.get("monitor") or {}
+        facts = [
+            ("Provider", plan.get("provider") or plan.get("target") or monitor_now.get("provider")),
+            ("Region", plan.get("region")),
+            ("Strategy", plan.get("strategy") or plan.get("mode")),
+            ("Live URL", run.get("url") or plan.get("url") or monitor_now.get("url")),
+            ("Domain", plan.get("domain") or run.get("domain")),
+            ("Repository", repo.get("url") or repo.get("remote") or repo.get("name")),
+            ("Branch", repo.get("branch")),
+            ("Commit", str(repo.get("commit") or repo.get("sha") or "")[:12]),
+            ("Started", run.get("created_at")),
+            ("Updated", run.get("updated_at")),
+        ]
+        stated = [[label, self._xml(redact_text(str(value)))]
+                  for label, value in facts if value not in (None, "", {})]
+        if stated:
+            story.append(Paragraph("Deployment record", styles["Heading2"]))
+            record = Table([["Detail", "Value"]] + stated, colWidths=[45 * mm, 125 * mm])
+            record.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#EEF2FF")),
+                        ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#CBD5E1")),
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("PADDING", (0, 0), (-1, -1), 6),
+                    ]
+                )
+            )
+            story.extend([record, Spacer(1, 12)])
+
         readiness = run.get("readiness") or {}
         story.append(Paragraph(f"Readiness: {readiness.get('score', 0)}/100", styles["Heading2"]))
         categories = readiness.get("categories", {})

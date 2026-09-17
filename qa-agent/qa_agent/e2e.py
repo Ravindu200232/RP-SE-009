@@ -76,6 +76,12 @@ class Journey:
     flow: str = ""
     stages: list = field(default_factory=list)
     blocked_upstream: bool = False
+    # Pages this journey opened and read for usability: {page, note}, where the
+    # note is "clean" when nothing was wrong. These are observations about a
+    # page, not steps the user took, so they are kept out of `stages` - counted
+    # there they would inflate stage_total and make a journey look longer than
+    # the path it actually walked.
+    ui_quality: list = field(default_factory=list)
 
     def score(self) -> dict:
         passed = sum(1 for s in self.stages if s["status"] == "passed")
@@ -87,7 +93,7 @@ class Journey:
     def as_dict(self) -> dict:
         return {"title": self.title, "role": self.role, "flow": self.flow,
                 "stages": self.stages, "blocked_upstream": self.blocked_upstream,
-                **self.score()}
+                "ui_quality": self.ui_quality, **self.score()}
 
 
 @dataclass
@@ -117,6 +123,7 @@ class E2EResult:
 
 
 _STEP_LABEL = re.compile(r"^(\d+)\.\s+(.*)$")
+_UI_QUALITY = re.compile(r"^ui-quality\s+(\S+):\s*(.+)$")
 
 
 def journeys_from_evidence(evidence: dict) -> list[Journey]:
@@ -129,12 +136,17 @@ def journeys_from_evidence(evidence: dict) -> list[Journey]:
     for record in evidence.get("suites", []):
         if record.get("kind") != "e2e":
             continue
-        stages, hit_failure = [], False
+        stages, checked, hit_failure = [], [], False
         for line in str(record.get("output") or "").splitlines():
             match = _STEP_LABEL.match(line.strip())
             if not match:
                 continue
             number, label = match.group(1), match.group(2)
+            seen = _UI_QUALITY.match(label)
+            if seen:
+                # An observation about the page, not a step the user took.
+                checked.append({"page": seen.group(1), "note": seen.group(2).strip()})
+                continue
             if hit_failure:
                 # Never executed. Marking these failed would both overstate the
                 # damage and hide where the journey actually broke.
@@ -149,7 +161,7 @@ def journeys_from_evidence(evidence: dict) -> list[Journey]:
             stages[-1]["status"] = "failed"
         journeys.append(Journey(title=record.get("suite", "journey"),
                                 flow=record.get("source", "direct-CDP journey"),
-                                stages=stages,
+                                stages=stages, ui_quality=checked,
                                 blocked_upstream=record.get("status") == "interrupted"))
     return journeys
 

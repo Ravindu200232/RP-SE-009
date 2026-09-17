@@ -23,6 +23,73 @@ def netlify_api(method: str, path: str, data=None):
     return response.json() if response.content else {}
 
 
+NETLIFY_HINT = ("Create a personal access token at app.netlify.com, under "
+                "User settings, Applications.")
+AZURE_HINT = ("Paste the service principal JSON from "
+              "`az ad sp create-for-rbac --sdk-auth`.")
+
+
+def netlify_connection_status(supplied: str = "") -> dict:
+    """Non-throwing summary for the dashboard, like Vercel's.
+
+    Netlify had a paste box and nothing else: a token that was wrong was stored
+    exactly as happily as one that worked, and the first anyone heard of it was
+    a failed deployment. Asking Netlify who the token belongs to costs one
+    request and turns the box into a sign-in.
+    """
+    token = str(supplied or "").strip() or str(owner_credentials.current().get("netlify_token") or "")
+    if not token:
+        return {"connected": False, "source": "", "message": NETLIFY_HINT}
+    source = "pasted token" if supplied else "saved token"
+    try:
+        response = requests.get("https://api.netlify.com/api/v1/user",
+                                headers={"Authorization": f"Bearer {token}"}, timeout=30)
+        if not response.ok:
+            return {"connected": False, "source": source,
+                    "message": f"Netlify HTTP {response.status_code}: "
+                               f"{redact_text(response.text[:200])}"}
+        user = response.json() or {}
+    except Exception as error:  # noqa: BLE001 - a status check never raises
+        return {"connected": False, "source": source, "message": str(error)[:200]}
+    return {"connected": True, "source": source, "verified": True,
+            "account": user.get("email") or user.get("slug") or "",
+            "name": user.get("full_name") or ""}
+
+
+def azure_connection_status(supplied: str = "") -> dict:
+    """The same for Azure, and honest about which half it proved.
+
+    The shape of the service principal JSON can be checked here; the sign-in
+    itself needs the Azure CLI, which is on the CI runner and not necessarily on
+    this machine. Saying "connected" for a well-formed blob nobody has ever
+    signed in with would be the same false comfort the paste box gave, so the
+    two are reported apart.
+    """
+    raw = str(supplied or "").strip() or str(owner_credentials.current().get("azure_credentials") or "")
+    if not raw:
+        return {"connected": False, "source": "", "message": AZURE_HINT}
+    source = "pasted credentials" if supplied else "saved credentials"
+    try:
+        credentials = validate_azure_credentials(raw)
+    except ValueError as error:
+        return {"connected": False, "source": source, "message": str(error)}
+    account = credentials["subscriptionId"]
+    try:
+        run_command(["az", "login", "--service-principal",
+                     "--username", credentials["clientId"],
+                     "--password", credentials["clientSecret"],
+                     "--tenant", credentials["tenantId"], "--output", "none"],
+                    env=owner_credentials.command_env(), timeout=90, check=True)
+    except FileNotFoundError:
+        return {"connected": True, "source": source, "verified": False, "account": account,
+                "message": "The credentials are complete. The Azure CLI is not on this "
+                           "machine, so the sign-in is proved on the CI runner instead."}
+    except Exception as error:  # noqa: BLE001 - a status check never raises
+        return {"connected": False, "source": source, "account": account,
+                "message": redact_text(str(error))[:200]}
+    return {"connected": True, "source": source, "verified": True, "account": account}
+
+
 def validate_azure_credentials(value: str) -> dict:
     try:
         credentials = json.loads(value)

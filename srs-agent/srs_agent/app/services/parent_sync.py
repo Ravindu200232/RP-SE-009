@@ -18,6 +18,22 @@ from . import storage
 from .orchestrator import _bump_minor, now_iso, summarize_srs
 
 
+# What each reporter is allowed to change. A developer's completed feature
+# should grow the specification; a test run never should, however many
+# requirement names it mentions.
+_SOURCE_RULES = {
+    "qa": (
+        "\n\nTHIS REPORT IS VERIFICATION EVIDENCE, NOT A CHANGE TO THE PRODUCT. "
+        "Update only `requirement_traceability_matrix` - set each row's "
+        "`verification_status` to Verified or Not Verified and fill its `test_case` "
+        "from the evidence named - and the status of `acceptance_criteria`. Add, "
+        "remove or reword nothing else: no functional requirement, no table, no "
+        "role, no page, no workflow. A requirement the report does not mention "
+        "keeps whatever status it already had."
+    ),
+}
+
+
 async def synchronize(project_id: str, change_id: str, source: str, summary: str) -> dict:
     project = await repo.get_project(project_id)
     latest = await repo.latest_version(project_id)
@@ -40,13 +56,25 @@ async def synchronize(project_id: str, change_id: str, source: str, summary: str
             "A design-only change must not invent backend features. If already represented, return "
             "an empty srs_document patch and an empty diff_summary. Never turn this report into a new "
             "feature merely because it mentions verification or generation."
+            + _SOURCE_RULES.get(source, "")
         )
+        # `merge_edit`'s third argument is a *user's editing instruction*: it is
+        # keyword-matched for removal intent, and on a match the patch replaces
+        # the list instead of folding into it. Nothing that reaches here is a
+        # user instruction - it is an agent's report of work it finished - so
+        # none of it may be read as one. A QA report saying "Do NOT add, remove
+        # or reword ..." matched on `remove` and deleted 37 of 76 traceability
+        # rows; a developer's summary mentioning what it dropped does the same.
+        # Removal in this path belongs to the patch's content, which
+        # `_merge_list` folds by identity and never shrinks. The customization
+        # route still passes the user's own words, where "remove" means remove.
+        edit_intent = ""
         result = await get_llm().complete_json(
             system='You maintain the authoritative parent SRS. Return JSON {"srs_document": {changed complete sections only}, "diff_summary": [short changes]}. No new product plan.',
             user=f"CURRENT SRS:\n{json.dumps(_editable_view(srs), ensure_ascii=False)}\n\n{prompt}",
-            validator=lambda body: validate_srs(merge_edit(srs, body.get("srs_document"), summary)),
+            validator=lambda body: validate_srs(merge_edit(srs, body.get("srs_document"), edit_intent)),
             label="srs_parent_compare")
-        updated = merge_edit(srs, result.get("srs_document"), summary)
+        updated = merge_edit(srs, result.get("srs_document"), edit_intent)
         diff = result.get("diff_summary") or []
         changed = _editable_view(updated) != _editable_view(srs)
         if not changed:

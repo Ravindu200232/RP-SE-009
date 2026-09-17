@@ -26,7 +26,7 @@ import time
 from dataclasses import dataclass, field
 
 from .compactor import Compactor
-from .design import install_theme
+from .design import THEME_MARKER, install_theme, installed_theme, theme_prompt
 from .context import ContextBudget, is_context_error
 from .errors import AbortError, ToolError
 from .evidence import failure_packet
@@ -188,6 +188,9 @@ class Loop:
         # Set before any _refresh_system call: the prompt names the theme file
         # only once one has been installed.
         self.theme: dict = {}
+        # Appended to whichever system prompt this role builds, so the design
+        # system reaches the model the same way the preview's did.
+        self.theme_brief: str = ""
         self.testing_enabled = (not config.review and registry.has("runTests")
                                 and bool(memory.evidence.enabled_kinds))
 
@@ -271,8 +274,9 @@ class Loop:
                 "Ensure interactive buttons and links have distinct labels or data-testid attributes to avoid "
                 "selector ambiguities during E2E journeys. Implement the approved specification using the selected stack. "
                 "The browser journeys are the E2E layer: no install, no second server, no framework to "
-                "add. Before them, check the routes directly with executeTerminal and curl - an "
-                "unauthenticated read of a collection, then the same read as each role. A browser only "
+                "add. Before them, cover the routes in the unit run instead: one test file per route "
+                "module, importing that module, asserting an unauthenticated read, a read as a role the "
+                "route does not allow, and a read as one it does. A browser only "
                 "issues the requests the UI issues, and nothing on screen asks for another person's "
                 "records, so no journey ever exercises the route that would hand them over. "
                 "Run the suite once and read it from its report, not from its console. "
@@ -283,22 +287,54 @@ class Loop:
                 "the failing case and its message are already recorded and you fix from them. Do not re-run "
                 "one spec to grep its output: measured, a build ran the same file eight times with eight "
                 "different greps to read what one report already held. "
+                "Before your first unit run, read stack-testing/page-and-component-tests.md and "
+                "stack-testing/api-preflight.md once each - they say what must carry a test and why a "
+                "route only counts as covered when a test imports its own module. Once, not per file. "
                 "Unit-test every module that decides something or accepts input: validation, authentication "
                 "and permission checks, pricing and totals, date and availability logic, and every route "
                 "handler that reads a request body or a query parameter. One test file beside each, covering "
-                "the accepted case, the rejected case, and the boundary between them. Modules that only "
-                "render markup or re-export need none. Measured, builds were writing two to four test files "
+                "the accepted case, the rejected case, and the boundary between them. Every page and every "
+                "component you generate also gets its own test file - it renders inside its real providers, "
+                "and each role, loading and empty branch is asserted; only a pure re-export needs none. "
+                "Measured, builds were writing two to four test files "
                 "for eighty of source, which tests the scaffold and nothing the build decided. "
                 "Continue existing work without generating a second product plan. Write code and tests only in "
                 "application folders. Define verification scope, run checks, and report completion accurately."
-                + self._preloaded_indexes(pack))
+                + self._preloaded_indexes(pack) + (self.theme_brief or ""))
             return
+        # The theme rides in the system prompt, which is where the preview the
+        # customer chose from was drawn from: `render_preview` sends the very
+        # same file as `role: "system"`, and that is why those pages came out
+        # looking like their theme instead of like each other. Carried as a
+        # pinned user message it reads as one more thing in the transcript.
         self.memory.set_system(system_prompt(
             workspace=self.sandbox.root, model=self.router.label,
             stack=self.config.stack, quality=self.config.quality,
             context_tokens=self.budget.limit, review=self.config.review,
             testing_enabled=self.testing_enabled, verification_kinds=self.verification_kinds,
-            plan_only=self.config.plan_only))
+            plan_only=self.config.plan_only) + (self.theme_brief or ""))
+
+    def _install_theme(self, task: str) -> None:
+        """Put the chosen theme where the run can read it, and hand it over.
+
+        The customizer names the theme in the direction; a later build brief does
+        not, so a theme already installed by the designer counts. What is pinned
+        is the same text the theme's preview was drawn from, with the customer's
+        colours and fonts after it - one message, so the agent is not asked to go
+        and find the look it is supposed to be building.
+        """
+        self.theme = (install_theme(self.sandbox.root, task)
+                      or installed_theme(self.sandbox.root))
+        if not self.theme:
+            return
+        brief = theme_prompt(self.sandbox.root, task if THEME_MARKER.search(task or "") else "")
+        self.theme_brief = ("\n\n" + brief) if brief else ""
+        named = self.theme.get("slug") or "the chosen theme"
+        self.events.emit("notice", level="info",
+                         message=f"Design theme {named} installed at {self.theme['path']}; "
+                                 f"its design system is in the system prompt "
+                                 f"({len(brief):,} chars).")
+        self._refresh_system()
 
     def _sync_layout(self, force: bool = False) -> None:
         if self.config.extra.get("agent_role") == "designer":
@@ -318,6 +354,13 @@ class Loop:
         self.memory.add_pinned(format_layout(layout), "project-layout")
 
     def _prepare_workspace(self, task: str) -> None:
+        # The theme comes first, and before the designer's early return: writing a
+        # design system into the workspace is not scaffolding app code, and the
+        # designer is the one role that draws the thing. It used to sit below the
+        # return, so the agent that makes the look never received the look - only
+        # the direction's colours and fonts did, which is why every theme came out
+        # as the same page in a different colour.
+        self._install_theme(task)
         if self.config.extra.get("agent_role") == "designer":
             # Designer owns only the prototype. It must never scaffold app code.
             return
@@ -332,15 +375,6 @@ class Loop:
             self.events.emit("notice", level="warn",
                              message=f"Stack template not applied: {scaffold.reason}")
 
-        # The customizer sends the theme by name, not by prompt - a design system
-        # runs to thousands of words, which is a file to read, not a message to
-        # carry. Both roles get it: the drawing sets the look, the build matches it.
-        self.theme = install_theme(self.sandbox.root, task)
-        if self.theme:
-            self.events.emit("notice", level="info",
-                             message=f"Design theme {self.theme['slug']} installed at "
-                                     f"{self.theme['path']}.")
-            self._refresh_system()
 
         if self.config.extra.get("agent_role") == "developer":
             # The SRS owns the product instructions. Do not install category-specific

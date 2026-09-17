@@ -40,8 +40,13 @@ def adopt_srs(srs_id: str, proj_dir: Path) -> bool:
         copied = 0
         if staging.is_dir():
             for src in staging.rglob("*"):
+                parts = src.relative_to(staging).parts if src.is_file() else ()
+                # `site-images` is the customer's own pictures, adopted straight
+                # into `.agentforge/images` where the pages look for them. Copied
+                # here as well they would be a second, stale set nothing serves.
                 if (not src.is_file() or src.name.endswith("-checkpoint.json") or
-                        any(part.startswith(".") for part in src.relative_to(staging).parts) or "changes" in src.relative_to(staging).parts):
+                        any(part.startswith(".") for part in parts)
+                        or "changes" in parts or "site-images" in parts):
                     continue
                 if src.name.startswith(".env") and src.name != ".env.example":
                     continue
@@ -138,6 +143,31 @@ def adopt_srs(srs_id: str, proj_dir: Path) -> bool:
     except Exception as e:
         elog("WARN", f"   ⚠️  Could not adopt the SRS: {type(e).__name__}: {e}")
         return False
+
+
+_NOT_A_NAME = {
+    "yes", "y", "no", "n", "ok", "okay", "sure", "yep", "yeah", "none", "n/a",
+    "na", "true", "false", "skip", "default", "any", "anything", "whatever",
+    "app", "application", "project", "test", "untitled", "tbd", "todo",
+}
+
+
+def _is_a_name(name: str, limit: int = 60) -> bool:
+    """Did the customer type a name, or agree to a question?
+
+    The interview asks what to call the app, and an answer of "yes" is an
+    answer to a different question. Taken as a name it reaches the header, the
+    title bar, the sign-in screen and `package.json` - measured, exactly that
+    happened - so a word that cannot be a product's name is treated as no
+    answer at all, and the build names the app from the idea instead.
+    """
+    text = " ".join(str(name or "").split())
+    if not text or len(text) > int(limit):
+        return False
+    if text.lower() in _NOT_A_NAME:
+        return False
+    # A name has something to say. Punctuation and digits alone do not.
+    return any(char.isalpha() for char in text)
 
 
 def _srs_app_name(srs_id: str) -> str:
@@ -678,20 +708,64 @@ def read_srs_results(proj_name: str) -> dict:
     out["interview"] = load(srs_dir / "interview.json", {}) or {}
     out["have"]["interview"] = bool(out["interview"].get("transcript"))
 
+    # The document already carries each diagram's narrative - the generator
+    # writes business_summary, flow_explanation and key_takeaways onto every
+    # artifact. Rebuilding rows from the .mmd files alone dropped all of it, so
+    # the SRS tab fell back to four canned sentences about a customer accessing
+    # an interface, the same four for every project. Disk owns the drawing;
+    # the document owns the words.
+    narrative = {}
+    for artifact in (out["document"].get("diagrams") or []):
+        if isinstance(artifact, dict):
+            key = str(artifact.get("kind") or artifact.get("id") or "").strip()
+            if key:
+                narrative[key] = artifact
+                narrative.setdefault(key.replace("dia_", ""), artifact)
+
     diagrams = []
     d_dir = srs_dir / "diagrams"
     if d_dir.is_dir():
         for mmd in sorted(d_dir.glob("*.mmd")):
             svg = mmd.with_suffix(".svg")
             body = text(svg) if svg.is_file() else ""
+            artifact = narrative.get(mmd.stem, {})
             diagrams.append({
                 "name": mmd.stem,
                 "mermaid": text(mmd),
                 "svg": body if 0 < len(body) <= 400_000 else "",
                 "png": (mmd.with_suffix(".png")).is_file(),
+                "title": artifact.get("title") or "",
+                "question": artifact.get("question") or "",
+                "definition": artifact.get("definition") or "",
+                "businessSummary": artifact.get("business_summary") or "",
+                "flowExplanation": artifact.get("flow_explanation") or [],
+                "keyTakeaways": artifact.get("key_takeaways") or [],
+                "drawingRules": artifact.get("drawing_rules") or [],
+                "notation": artifact.get("notation") or [],
+                "standard": artifact.get("standard") or "",
+                "applicable": artifact.get("applicable", True),
+                "applicabilityNote": artifact.get("applicability_note") or "",
             })
     out["diagrams"] = diagrams
     out["have"]["diagrams"] = bool(diagrams)
+
+    # The pages that actually exist on disk. This used to come from
+    # `document.prototype_evidence`, written by a separate sync that
+    # `adopt_srs` overwrote after every change - so the list was accurate until
+    # the next revision and then silently stale. A directory listing cannot go
+    # out of date, and it cannot invent a screen that was never drawn.
+    pages = []
+    proto_dir = proj_dir / ".agentforge" / "prototype"
+    if proto_dir.is_dir():
+        for page in sorted(proto_dir.glob("*.html")):
+            pages.append({
+                "file": page.name,
+                "screen_name": page.stem.replace("-", " ").replace("_", " ").strip().title(),
+                "bytes": page.stat().st_size,
+            })
+    shot = srs_dir / "prototype_shots" / "screen_desktop.png"
+    out["prototype"] = {"pages": pages, "screenshot": shot.is_file()}
+    out["have"]["prototype"] = bool(pages)
 
     out["have"]["pdf"] = (srs_dir / "SRS_latest.pdf").is_file()
     return out

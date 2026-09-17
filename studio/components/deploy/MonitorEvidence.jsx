@@ -6,9 +6,42 @@ import { Badge, Button, Panel, SectionLabel } from '../ui'
 import { ago } from './MonitorViews'
 import { cn } from '@/lib/utils'
 
-export function Evidence({ evidence, runId, busy }) {
+/** Everything recorded about one deployment, in the order someone reads it. */
+function record(detail, snap) {
+  if (!detail) return []
+  const plan = detail.plan || {}
+  const spec = detail.spec || {}
+  const monitor = detail.monitor || snap || {}
+  const repo = detail.repo || {}
+  const infra = monitor.infrastructure || monitor.infra || {}
+  const rows = [
+    ['Project', detail.project_name],
+    ['Run', detail.id || detail.run_id],
+    ['State', detail.state],
+    ['Provider', plan.provider || plan.target || monitor.provider],
+    ['Region', plan.region || infra.region],
+    ['Strategy', plan.strategy || plan.mode],
+    ['Live URL', detail.url || plan.url || monitor.url || infra.url],
+    ['Domain', plan.domain || detail.domain || monitor.domain],
+    ['Repository', repo.url || repo.remote || repo.name],
+    ['Branch', repo.branch],
+    ['Commit', String(repo.commit || repo.sha || '').slice(0, 12)],
+    ['Architecture', spec.architecture || (spec.services?.length > 1 ? 'microservices' : 'single service')],
+    ['Services', (spec.services || []).map(s => s.name).join(', ')],
+    ['Readiness', detail.readiness?.score != null ? `${detail.readiness.score}/100` : ''],
+    ['Started', detail.created_at ? ago(detail.created_at) : ''],
+    ['Updated', detail.updated_at ? ago(detail.updated_at) : ''],
+  ]
+  return rows.filter(([, value]) => value != null && String(value).trim() !== '')
+}
+
+const LINKISH = /^(https?:)?\/\//i
+
+export function Evidence({ evidence, runId, busy, detail, snap }) {
   const items = evidence || []
   const verified = items.filter(e => e.verified).length
+  const rows = record(detail, snap)
+  const services = (detail?.spec?.services) || []
 
   return (
     <div className="space-y-4">
@@ -19,6 +52,60 @@ export function Evidence({ evidence, runId, busy }) {
         <Stat Icon={Clock} label="Newest"
               value={items.length ? ago(items[items.length - 1].created_at) : '—'} />
       </div>
+
+      {/* The record itself, above the files. The captured screenshots are
+          supporting material; what was deployed, where and from which commit is
+          the thing someone opens this tab to find out. */}
+      <Panel className="p-4">
+        <SectionLabel className="border-b-2 border-line2 pb-1.5">Deployment record</SectionLabel>
+        {rows.length === 0
+          ? <p className="mt-2 text-[11.5px] text-muted">
+              {busy ? 'Reading the run…' : 'No run record — this project has not been deployed yet.'}
+            </p>
+          : <dl className="mt-2 grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
+              {rows.map(([label, value]) => (
+                <div key={label} className="flex items-baseline justify-between gap-3
+                                            border-b border-line/60 py-1">
+                  <dt className="shrink-0 text-[10px] font-semibold uppercase tracking-[1px] text-muted2">
+                    {label}
+                  </dt>
+                  <dd className="min-w-0 truncate text-right font-mono text-[11px] text-ink"
+                      title={String(value)}>
+                    {LINKISH.test(String(value))
+                      ? <a href={String(value)} target="_blank" rel="noreferrer"
+                           className="text-accent hover:underline">{String(value)}</a>
+                      : String(value)}
+                  </dd>
+                </div>
+              ))}
+            </dl>}
+
+        {services.length > 0 && (
+          <div className="mt-4">
+            <SectionLabel className="border-b-2 border-line2 pb-1.5">
+              Services deployed
+            </SectionLabel>
+            <ul className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              {services.map((s, i) => (
+                <li key={s.name || i} className="border border-line bg-bg p-2.5">
+                  <p className="truncate text-[11.5px] text-ink" title={s.name}>{s.name}</p>
+                  <p className="mt-0.5 truncate font-mono text-[10px] text-muted2">
+                    {[s.framework || 'Node.js', s.version, s.root && `root ${s.root}`,
+                      s.port && `port ${s.port}`].filter(Boolean).join(' · ')}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {detail?.error && (
+          <p role="alert" className="mt-4 border border-bad/20 bg-bad/[.045] px-3 py-2
+                                     text-[11.5px] text-bad">
+            {detail.error}
+          </p>
+        )}
+      </Panel>
 
       <Panel className="p-4">
         <SectionLabel className="border-b-2 border-line2 pb-1.5" right={

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   FolderUp, Settings, Download, ExternalLink, Search, Play, Trash2,
-  PanelLeftClose, PanelLeftOpen, Home, LayoutGrid, Star, Clock, Folder,
+  PanelLeftClose, PanelLeftOpen, Home, LayoutGrid, Star, Clock,
   BookOpen, FileText, Activity, ChevronDown, Gift, CreditCard, LogOut,
   X, Menu,
 } from 'lucide-react'
@@ -32,6 +32,7 @@ export default function Sidebar({
   const statusText = useStore(z => z.statusText)
   const busyProject = useStore(z => z.busyProject)
   const persist = useStore(z => z.persist)
+  const starred = useStore(z => z.starred)
   const addLog = useStore(z => z.addLog)
 
   const [collapsed, setCollapsed] = useState(false)
@@ -162,19 +163,37 @@ export default function Sidebar({
           <span>Settings</span>
         </button>
 
-        <button className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-muted hover:bg-ink/[.05] hover:text-ink">
-          <Star className="size-4 shrink-0 text-muted2" />
-          <span>Starred</span>
+        {/* Both open the Projects screen on a shelf of their own. "Shared with
+            you" used to sit here too and was removed: accounts on this server
+            are isolated by design - `auth_db` says nothing is shared between
+            them - so it was a door onto a room that cannot exist. */}
+        <button
+          onClick={() => {
+            useStore.getState().setProjectFilter('starred')
+            onScreenChange?.('projects')
+            if (isMobile) onMobileClose?.()
+          }}
+          className="flex items-center justify-between rounded-xl px-3 py-1.5 text-left text-muted hover:bg-ink/[.05] hover:text-ink">
+          <div className="flex items-center gap-3">
+            <Star className="size-4 shrink-0 text-muted2" />
+            <span>Starred</span>
+          </div>
+          {starred.length > 0 && (
+            <span className="rounded-full bg-panel2 px-2 py-0.5 font-mono text-[10px] text-muted">
+              {starred.length}
+            </span>
+          )}
         </button>
 
-        <button className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-muted hover:bg-ink/[.05] hover:text-ink">
+        <button
+          onClick={() => {
+            useStore.getState().setProjectFilter('recent')
+            onScreenChange?.('projects')
+            if (isMobile) onMobileClose?.()
+          }}
+          className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-left text-muted hover:bg-ink/[.05] hover:text-ink">
           <Clock className="size-4 shrink-0 text-muted2" />
           <span>Recently viewed</span>
-        </button>
-
-        <button className="flex items-center gap-3 rounded-xl px-3 py-1.5 text-muted hover:bg-ink/[.05] hover:text-ink">
-          <Folder className="size-4 shrink-0 text-muted2" />
-          <span>Shared with you</span>
         </button>
       </nav>
 

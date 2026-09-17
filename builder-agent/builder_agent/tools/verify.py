@@ -108,9 +108,16 @@ def run_tests(args, ctx):
     record["processId"] = result.get("processId")
     if not result.get("pending"):
         result["coverage"] = _read_coverage(ctx, args.get("coverageReports"))
-        if kind == "unit" and args.get("reportPath"):
+        # The scaffold's own `npm test` writes test-report.json, so look there
+        # when the call did not name a path. A run recorded without one carries
+        # totals and nothing else, and "37 passing, 3 files" cannot name the
+        # test that broke. The mtime check below still refuses a stale file, so
+        # guessing the usual name costs nothing when it is not there.
+        if kind == "unit":
             try:
-                path = ctx.sandbox.resolve(args["reportPath"], must_exist=True)
+                path = ctx.sandbox.resolve(args.get("reportPath") or "test-report.json")
+                if not path.is_file():
+                    raise FileNotFoundError(path)
                 data = json.loads(path.read_text(encoding="utf-8"))
                 if (path.stat().st_mtime >= started and isinstance(data, dict)
                         and isinstance(data.get("testResults"), list)):

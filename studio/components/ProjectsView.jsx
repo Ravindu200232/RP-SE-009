@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Search, Plus, ChevronDown, Layers, FileText, Globe, Trash2,
-  Calendar, ArrowRight, Play, FolderCode,
+  Calendar, ArrowRight, Play, FolderCode, Star,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useStore } from '@/lib/store'
 
 function ProjectVisualThumbnail({ project, name }) {
   const containerRef = useRef(null)
@@ -111,6 +112,15 @@ export default function ProjectsView({
   const [filterTag, setFilterTag] = useState('all') // 'all', 'app', 'prototype', 'srs'
   const [confirmDelete, setConfirmDelete] = useState('')
 
+  // The shelf the sidebar asked for, if any. It sits outside the tag filter
+  // because it answers a different question: not what kind of thing this is,
+  // but whether you marked it or opened it.
+  const shelf = useStore(s => s.projectFilter)
+  const setShelf = useStore(s => s.setProjectFilter)
+  const starred = useStore(s => s.starred)
+  const recent = useStore(s => s.recent)
+  const toggleStar = useStore(s => s.toggleStar)
+
   const counts = useMemo(() => {
     let apps = 0, prototypes = 0, srs = 0
     for (const p of projects) {
@@ -129,18 +139,23 @@ export default function ProjectsView({
       const matchSearch = !q || name.includes(q) || title.includes(q)
       if (!matchSearch) return false
 
+      if (shelf === 'starred' && !starred.includes(p.name)) return false
+      if (shelf === 'recent' && !recent.includes(p.name)) return false
+
       if (filterTag === 'srs') return Boolean(p.spec_only)
       if (filterTag === 'prototype') return Boolean(p.prototype_only)
       if (filterTag === 'app') return !p.spec_only && !p.prototype_only
       return true
     }).sort((a, b) => {
+      // Recently viewed has its own order: the order you viewed them in.
+      if (shelf === 'recent') return recent.indexOf(a.name) - recent.indexOf(b.name)
       if (sortBy === 'mtime_desc') return (b.mtime || 0) - (a.mtime || 0)
       if (sortBy === 'mtime_asc') return (a.mtime || 0) - (b.mtime || 0)
       if (sortBy === 'title_asc') return String(a.title || a.name).localeCompare(String(b.title || b.name))
       if (sortBy === 'title_desc') return String(b.title || b.name).localeCompare(String(a.title || a.name))
       return 0
     })
-  }, [projects, search, filterTag, sortBy])
+  }, [projects, search, filterTag, sortBy, shelf, starred, recent])
 
   function formatDate(mtime) {
     if (!mtime) return 'Recent'
@@ -155,10 +170,20 @@ export default function ProjectsView({
         <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
           <div>
             <h1 className="text-[24px] sm:text-[30px] font-bold tracking-tight text-ink">
-              All projects
+              {shelf === 'starred' ? 'Starred' : shelf === 'recent' ? 'Recently viewed' : 'All projects'}
             </h1>
-            <p className="mt-1 text-[12px] sm:text-[13px] text-muted">
-              Manage, preview, and build your AI-generated applications and prototypes.
+            <p className="mt-1 flex flex-wrap items-center gap-2 text-[12px] sm:text-[13px] text-muted">
+              {shelf === 'starred'
+                ? 'The projects you marked with a star.'
+                : shelf === 'recent'
+                  ? 'The projects you opened, most recent first.'
+                  : 'Manage, preview, and build your AI-generated applications and prototypes.'}
+              {shelf && (
+                <button onClick={() => setShelf('')}
+                        className="text-accent underline-offset-2 hover:underline">
+                  show all projects
+                </button>
+              )}
             </p>
           </div>
           <button
@@ -331,6 +356,20 @@ export default function ProjectsView({
                             {p.title || name}
                           </button>
                           
+                          {/* Star. Always visible once set, so the shelf it
+                              feeds is not a list you cannot see the source of. */}
+                          <button
+                            onClick={() => toggleStar(name)}
+                            title={starred.includes(name) ? 'Remove from Starred' : 'Add to Starred'}
+                            aria-pressed={starred.includes(name)}
+                            className={cn('cursor-pointer p-1 transition-colors',
+                              starred.includes(name)
+                                ? 'text-[#FFAB00]'
+                                : 'text-muted2 opacity-70 hover:text-ink sm:opacity-0 group-hover:opacity-100')}
+                          >
+                            <Star className={cn('size-3.5', starred.includes(name) && 'fill-current')} />
+                          </button>
+
                           {/* Delete Action */}
                           {!isDeleting ? (
                             <button

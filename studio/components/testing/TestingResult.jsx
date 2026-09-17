@@ -34,7 +34,7 @@ const VIEWS = [
   { id: 'security', label: 'Security', C: Security },
   { id: 'perf', label: 'Performance', C: Performance },
   { id: 'coder', label: 'Coder', C: Coder },
-  { id: 'screenshots', label: 'Screenshots', C: Screenshots },
+  { id: 'screenshots', label: 'UI Quality', C: Screenshots },
 ]
 
 export default function TestingResult() {

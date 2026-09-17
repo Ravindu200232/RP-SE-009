@@ -23,6 +23,7 @@ _RUNTIME_PARTS = (
     'server_modules/deploy/deploy_runtime.py',
     'server_modules/deploy/deploy_tenancy.py',
     'server_modules/builder/media.py',
+    'server_modules/builder/site_images.py',
     'server_modules/builder/qa.py',
     'server_modules/builder/bridge.py',
     'server_modules/builder/pipeline.py',

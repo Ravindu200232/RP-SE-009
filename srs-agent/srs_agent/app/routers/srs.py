@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 
 class ParentChange(BaseModel):
     change_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,100}$")
-    source: str = Field(pattern=r"^(designer|developer|design-customizer)$")
+    source: str = Field(pattern=r"^(designer|developer|design-customizer|qa)$")
     summary: str = Field(min_length=1, max_length=12000)
 
 

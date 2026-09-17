@@ -13,6 +13,38 @@ def _snake(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", spaced.lower()).strip("_")
 
 
+def _step_actor(step: str, roles: list[str], default: str) -> str:
+    """Who performs this step - the role it names, not the journey it belongs to.
+
+    A workflow is titled for the person it serves, but its steps are performed by
+    whoever the step names: "Doctor uses Clinical Workspace to record consultation"
+    sits inside the patient's visit journey and is still the doctor's action.
+    Crediting it to the journey's owner granted patients the right to create
+    doctor records.
+
+    Only a role the step *opens* with is the actor. A role named later is the
+    object ("View patient schedules" is the nurse's duty, not the patient's), so
+    those keep the workflow's own role.
+    """
+    low = re.sub(r"[^a-z ]+", " ", str(step or "").lower()).strip() + " "
+    first = low.split(" ", 1)[0]
+    for role in roles:
+        name = str(role or "").strip().lower()
+        if not name:
+            continue
+        # Exact words only. "Manage weekly availability" is the doctor's step,
+        # not the Clinic Manager's, however close the two words look.
+        if low.startswith(name + " ") or first == name.split()[-1]:
+            return role
+    return default
+
+
+def _plan_role_names(plan: dict) -> list[str]:
+    """Longest first, so "Clinic Manager" is tried before "Manager"."""
+    names = [str(user.get("role") or "").strip() for user in (plan.get("users") or [])]
+    return sorted((name for name in names if name), key=len, reverse=True)
+
+
 def _role_actions_for_table(plan: dict, table_name: str) -> dict[str, list[str]]:
     """Read CRUD-like permissions from role duties and workflows."""
     label = table_name.replace("_", " ").lower()
@@ -42,17 +74,27 @@ def _role_actions_for_table(plan: dict, table_name: str) -> dict[str, list[str]]
     for user in plan.get("users") or []:
         for duty in user.get("can_do") or []:
             add(str(user.get("role") or ""), str(duty))
+    roles = _plan_role_names(plan)
     for flow in plan.get("workflows") or []:
         role = str(flow.get("who") or "")
         for step in flow.get("steps") or []:
-            add(role, str(step))
+            add(_step_actor(str(step), roles, role), str(step))
     return out
 
 
 def _public_reads_table(public_pages: list[dict], table_name: str) -> bool:
+    """Does a page anyone can open actually list this table?
+
+    Sign-in and sign-up are open to anyone, but they describe the account being
+    created, not data on display: "Create the approved Patient account." named
+    the patients table and published every patient record to visitors. An auth
+    page never exposes a table, so it is not evidence of a public read.
+    """
     label = table_name.replace("_", " ").lower()
     singular = label[:-1] if label.endswith("s") else label
     for page in public_pages:
+        if str(page.get("page_type") or "").strip().lower() == "auth":
+            continue
         blob = " ".join([
             str(page.get("page_name") or ""),
             str(page.get("route") or ""),

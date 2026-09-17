@@ -11,9 +11,13 @@
     "build": "npm run build --workspace client",
     "start": "node packages/gateway/src/server.js",
     "seed": "node scripts/seed.mjs",
-    "test": "npm run test --workspaces --if-present"
+    "test": "vitest run --reporter=default --reporter=json --outputFile=test-report.json",
+    "start:all": "node scripts/start-all.mjs"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.8"
   }
 }

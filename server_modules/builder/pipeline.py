@@ -96,7 +96,11 @@ def _prepare_workspace(prompt: str, project: str, srs_id: str) -> Path:
         if srs_id and not adopt_srs(srs_id, proj_dir):
             raise RuntimeError("Could not load the approved specification")
         return proj_dir
-    name = project_name_for(prompt)
+    # With an approved SRS the prompt is the design direction, not the product:
+    # "Design theme: Clean (design-theme:clean)..." named the folder
+    # `designthemeclean` for a build of CareBridge Clinics. The specification
+    # knows what the customer called it, so ask it first.
+    name = project_name_for(_srs_app_name(srs_id) or prompt)
     proj_dir = PROD_DIR / name
     proj_dir.mkdir(parents=True, exist_ok=True)
     # Its builder's from the moment it exists - decided here, by the server,
@@ -108,12 +112,20 @@ def _prepare_workspace(prompt: str, project: str, srs_id: str) -> Path:
     if srs_id:
         if not adopt_srs(srs_id, proj_dir):
             raise RuntimeError("Could not load the approved specification")
+        # Pictures chosen on the design screen were uploaded before this folder
+        # existed, so they waited beside the specification. This is the first
+        # moment they have a project to belong to.
+        adopt_site_images(srs_id, proj_dir)
     return proj_dir
 
 
 def _brief(proj_dir: Path, prompt: str, model: str = "") -> str:
     """The request, plus whatever the approved specification already settled."""
-    parts = [prompt.strip()]
+    # The customer's chosen name goes above everything, which is what
+    # `_srs_name_line` was written for and never got: it was defined and never
+    # called, so the one part of the spec the customer typed themselves reached
+    # no build. Empty whenever the interview produced no usable name.
+    parts = [_srs_name_line(proj_dir) + prompt.strip()]
     try:
         spec = _srs_brief(proj_dir, model)
     except Exception:                                                # noqa: BLE001
@@ -127,6 +139,16 @@ def _brief(proj_dir: Path, prompt: str, model: str = "") -> str:
         parts += ["", f"This project's database is "
                       f"`{db_name_for(proj_dir.name)}`. Read the connection string from "
                       "MONGODB_URI in the environment; never hard-code one."]
+    # The customer's own photographs, put where the pages can load them before
+    # the agent is told they exist - a brief that names a file the run cannot
+    # open is worse than no brief, because the agent writes the <img> anyway.
+    try:
+        publish_site_images(proj_dir)
+        pictures = site_images_brief(proj_dir)
+    except Exception:                                                # noqa: BLE001
+        pictures = ""
+    if pictures:
+        parts += ["", pictures.strip()]
     return "\n".join(parts)
 
 
@@ -136,7 +158,14 @@ def _brief(proj_dir: Path, prompt: str, model: str = "") -> str:
 GATE_TIMEOUT = 600
 
 
-def _config(proj_dir: Path, prompt: str, model: str, think, gates: bool = False,
+# The one question the studio wants asked in the build rather than up front: a
+# skill that needs an account says so in its own setup.json, and the answer is
+# only useful once there is a workspace to write the value into. Plan, design
+# and prototype are decided on their own screens, so they are not in this set.
+BUILD_GATES = ("setup",)
+
+
+def _config(proj_dir: Path, prompt: str, model: str, think, gates=BUILD_GATES,
             stack: str = "", prototype_only: bool = False) -> Config:
     # A stack chosen in the studio is a decision; reading it out of the wording
     # of the brief is a guess, and only the fallback.
@@ -565,7 +594,7 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
     restored = False
     if fresh:
         forget_session(proj_dir.name, role)
-        config = _config(proj_dir, brief, model, think, gates=False, stack=stack, prototype_only=prototype_only)
+        config = _config(proj_dir, brief, model, think, stack=stack, prototype_only=prototype_only)
         config.extra["agent_role"] = role
         agent = (DesignerAgent if role == "designer" else BuilderAgent)(config, events=Events(), cancel=_cancelled)
         agent.sandbox = Sandbox(proj_dir, role=role)
@@ -667,15 +696,10 @@ def _verify(proj_dir: Path, project: str, model: str, think, qa_model: str, *, m
                  host=ollama.host, events=events, think=bool(think),
                  cancel=_cancelled, memory=memory)
     try:
-        report = qa.run()
-        try:
-            from server_modules.srs.srs_sync import sync_from_qa
-            sync_from_qa(proj_dir, {
-                "unit_tests_passed": getattr(report, "passed", 0) if hasattr(report, "passed") else 1,
-                "e2e_passed": getattr(report, "e2e_passed", 0) if hasattr(report, "e2e_passed") else 1,
-            })
-        except Exception:
-            pass
+        # Verification reaches the SRS through the change transaction now, with
+        # per-requirement evidence (server_modules/srs/qa_change.py). What used
+        # to be here stamped VERIFIED on every requirement in the document
+        # regardless of what had been tested.
         return report
     finally:
         qa.dispose()
@@ -726,6 +750,15 @@ def _record_verification(proj_dir: Path, project: str, agent, outcome):
         project=project, project_dir=proj_dir, evidence=evidence, security=security,
         complete=outcome.status == "completed")
     path = qa_report.write(proj_dir, record)
+    # Left for synchronize_completed_change to post once the build's own sync
+    # has landed. Writing it here rather than posting here keeps this function a
+    # publisher, and keeps QA from racing the developer's change transaction.
+    try:
+        from server_modules.srs.qa_change import write_change
+        write_change(proj_dir, evidence, record)
+    except Exception as error:  # noqa: BLE001 - a lost digest must not fail a build
+        emit({"type": "notice", "level": "warn", "project": project,
+              "message": f"QA traceability digest not written: {error}"})
     emit({"type": "test_report", "project": project,
           "stages": record["stages"], "complete": record["complete"]})
     ok = evidence.get("ready", False) and not security["findings"]
@@ -815,6 +848,10 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
             return
 
         fill_missing_images(proj_dir, "the build")
+        # Again, now the scaffold exists: the first pass ran before there was a
+        # `client/public` to copy into, and a deployed build carries whatever is
+        # in its static root at this moment.
+        publish_site_images(proj_dir)
         url = _serve(proj_dir, agent)
         qa_outcome = _record_verification(proj_dir, name, agent, outcome)
         if _finish(name, url, outcome, qa_outcome):

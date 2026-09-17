@@ -217,11 +217,57 @@ def _keep_picture(proj_dir: Path | None):
     return keep
 
 
+# Where a file attached to a chat is kept, inside the project the chat is
+# about, so the agent's own file tools can open it. Under `.agentforge/` because
+# it belongs to the session, not to the product's source.
+CHAT_UPLOAD_DIR = "uploads"
+# How much of a text file travels in the prompt. The file itself is on disk, so
+# this is an opening, not the content: enough to see what was sent and decide
+# whether to read the rest, rather than six thousand characters of a file the
+# agent could have opened for itself.
+CHAT_TEXT_HEAD = 1200
+
+
+def keep_chat_upload(proj_dir: Path | None, filename: str, data_b64: str) -> str:
+    """Put the file where the agent can read it, and say where that is.
+
+    Inlining a file into the prompt was the only way an agent ever saw one, and
+    it truncated: a 40 KB component arrived as its first six thousand
+    characters, and the agent answered about the half it had been shown. A file
+    on disk has no such limit - the agent opens what it needs, as many times as
+    it needs.
+    """
+    if proj_dir is None:
+        return ""
+    raw = Path(str(filename or "upload").replace("\\", "/")).name
+    stem, suffix = _safe_stem(raw, "upload"), Path(raw).suffix.lower()[:12]
+    folder = proj_dir / ".agentforge" / CHAT_UPLOAD_DIR
+    try:
+        blob = base64.b64decode(_strip_data_url(data_b64), validate=False)
+        if not blob:
+            return ""
+        folder.mkdir(parents=True, exist_ok=True)
+        # Same name, same content: one upload, not a folder of copies.
+        target = folder / f"{stem}{suffix}"
+        count = 2
+        while target.is_file() and target.read_bytes() != blob and count < 100:
+            target = folder / f"{stem}-{count}{suffix}"
+            count += 1
+        target.write_bytes(blob)
+    except (OSError, ValueError) as e:                          # noqa: BLE001
+        log.debug(f"chat upload {raw}: {e}")
+        return ""
+    return f".agentforge/{CHAT_UPLOAD_DIR}/{target.name}"
+
+
 def read_attachment(filename: str, data_b64: str, proj_dir: Path = None) -> dict:
     """Convert one image, PDF, audio, or text attachment into prompt context."""
     name = str(filename or "upload")
     lower = name.lower()
-    out = {"kind": "file", "text": "", "url": "", "note": ""}
+    out = {"kind": "file", "text": "", "url": "", "note": "", "path": ""}
+    # Kept first and regardless of what can be extracted from it: a file the
+    # extractor cannot parse is still a file the agent can open.
+    out["path"] = keep_chat_upload(proj_dir, name, data_b64)
 
     try:
         if lower.endswith(IMAGE_EXT):
@@ -266,6 +312,13 @@ def read_attachment(filename: str, data_b64: str, proj_dir: Path = None) -> dict
 
         out["text"] = (res.get("text") or "").strip()
         out["note"] = res.get("warning") or res.get("error") or ""
+        # A document, a recording and an archive have no other reading than the
+        # one just made, so all of it travels. Source and data do: the file is
+        # on disk, and the agent reads it there rather than through a window
+        # this function chose for it.
+        if out["kind"] == "text" and out["path"] and len(out["text"]) > CHAT_TEXT_HEAD:
+            out["text"] = out["text"][:CHAT_TEXT_HEAD].rstrip()
+            out["truncated"] = True
     except Exception as e:                                      # noqa: BLE001
         log.warning(f"attachment {name}: {e}")
         out["note"] = f"{name} could not be read ({e})"
@@ -410,18 +463,23 @@ def preview_uri(out: Path) -> str:
 
 
 def _image_wishes(proj_dir: Path) -> list:
-    """Read requested image kinds from the adopted SRS interview."""
+    """What the interview said about pictures, if it asked for any at all.
+
+    The interview no longer asks which artwork to draw - nothing here draws any -
+    so what it reports is where pictures come from. Only "web" leaves the build
+    free to place pictures of its own; uploaded files arrive with their own
+    brief, and "none" means the pages carry no photographs.
+    """
     try:
         doc = json.loads((proj_dir / ".agentforge" / "srs" / "interview.json")
                          .read_text(encoding="utf-8"))
     except Exception:
         return []
     for answer in doc.get("answers") or []:
-        if answer.get("question_id") != "image_kinds":
+        if answer.get("question_id") != "image_source":
             continue
-        value = answer.get("value")
-        items = value if isinstance(value, list) else [value]
-        return [str(v).replace("_", " ").strip() for v in items if str(v)]
+        value = str(answer.get("value") or "").strip().lower()
+        return ["photographs sourced from the web"] if value == "web" else []
     return []
 
 

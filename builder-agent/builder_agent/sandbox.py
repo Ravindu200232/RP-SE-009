@@ -113,12 +113,21 @@ class Sandbox:
         handoff = relative.startswith(".agentforge/handoff/") and target.suffix.lower() == ".md"
         prototype = relative == ".agentforge/prototype" or relative.startswith(".agentforge/prototype/")
         own = relative == f".agentforge/agents/{self.role}" or relative.startswith(f".agentforge/agents/{self.role}/")
+        # What the customer handed in: pictures uploaded on the design screen
+        # and files dropped into the chat. Both are told to the agent by path,
+        # and a path it is refused is worse than one it was never given - it
+        # reads as the file being missing. Readable by either role, writable by
+        # neither: these are the customer's originals, and an agent that edits
+        # one silently changes what was asked for.
+        given = (relative in (".agentforge/images", ".agentforge/uploads")
+                 or relative.startswith(".agentforge/images/")
+                 or relative.startswith(".agentforge/uploads/"))
         ancestors = relative in (".agentforge", ".agentforge/handoff", ".agentforge/agents")
         if self.role == "designer":
-            allowed = prototype or own or (not write and (handoff or ancestors))
+            allowed = prototype or own or (not write and (handoff or given or ancestors))
         else:
             allowed = (not relative.startswith(".agentforge") and not relative.startswith(".agent/")) or own
-            allowed = allowed or (not write and (handoff or prototype or ancestors))
+            allowed = allowed or (not write and (handoff or prototype or given or ancestors))
         if not allowed or (write and handoff):
             raise SecurityError(f"{self.role} cannot {'write' if write else 'read'} {relative}")
 

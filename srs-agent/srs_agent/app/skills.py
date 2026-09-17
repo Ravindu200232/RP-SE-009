@@ -29,17 +29,36 @@ def read_manifest() -> dict[str, dict]:
         return {}
 
 
-def select_srs_skills(task_text: str = "") -> list[str]:
+ALWAYS = ("core", "visualization", "synchronization")
+
+
+def select_srs_skills(task_text: str = "", *, only=None, always=ALWAYS) -> list[str]:
+    """The skills a node should be given.
+
+    `only` restricts the selection to named skills, with their `requires`
+    resolved. Without it every caller gets the core, visualization and
+    synchronization skills whatever it is doing - so the SRS generator was
+    handed guidance on headless screenshot capture and prototype crawling,
+    which it cannot act on and which costs context it needs for requirements.
+    """
     manifest = read_manifest()
     if not manifest:
         return []
+
+    if only is not None:
+        wanted = {name for name in only if name in manifest}
+        for name in list(wanted):
+            for req in manifest[name].get("requires", []):
+                if req in manifest:
+                    wanted.add(req)
+        return sorted(wanted)
 
     norm_text = _normalise(task_text)
     selected: set[str] = set()
 
     # Core and visualization skills are always selected by default
     for name, meta in manifest.items():
-        if meta.get("category") in ("core", "visualization", "synchronization"):
+        if meta.get("category") in always:
             selected.add(name)
 
     # Contextual matching
@@ -72,14 +91,22 @@ def get_srs_skill_text(name: str) -> str:
         return ""
 
 
-def get_active_skills_guidance(task_text: str = "") -> str:
-    selected = select_srs_skills(task_text)
+def get_active_skills_guidance(task_text: str = "", *, only=None,
+                               always=ALWAYS, budget: int = 6000) -> str:
+    """The selected skills as one prompt block.
+
+    `budget` caps each skill, so one long document cannot crowd the others
+    out of a window that is also carrying the plan and the brief.
+    """
+    selected = select_srs_skills(task_text, only=only, always=always)
     if not selected:
         return ""
 
     blocks = []
     for s_name in selected:
         content = get_srs_skill_text(s_name)
+        if content and budget and len(content) > budget:
+            content = content[:budget].rstrip() + chr(10) + "…"
         if content:
             blocks.append(f"### Skill: {s_name}\n{content}")
 

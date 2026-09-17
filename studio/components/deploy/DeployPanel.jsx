@@ -13,7 +13,6 @@ import { cn } from '@/lib/utils'
 import DeployProgress from './DeployProgress'
 import DeployResult from './DeployResult'
 import DeployInterview from './DeployInterview'
-import DeployActivity, { DeploymentQuestion } from './DeployActivity'
 import { Infrastructure, Logs, Overview, StatusBar, ago } from './MonitorViews'
 import { Pipeline } from './MonitorPipeline'
 import { CiCd, Repository } from './MonitorRepo'
@@ -57,6 +56,10 @@ export default function DeployPanel({ onSettings, accountsRevision = 0 }) {
   })
 
   const run = useRunData(runId)
+
+  // Publish it so the chat beside this panel can show the same run.
+  const setDeployRunId = useStore(s => s.setDeployRunId)
+  useEffect(() => { setDeployRunId(runId) }, [runId, setDeployRunId])
 
   const refresh = useCallback(async () => {
     if (!project) return
@@ -133,13 +136,18 @@ export default function DeployPanel({ onSettings, accountsRevision = 0 }) {
     return () => { ok = false }
   }, [accountsRevision])
 
-  // Vercel runs a Next.js app. A workspace of services goes to AWS, and EC2 is
-  // where it starts, because it is the one that stays inside the free tier.
-  const targets = mine?.stack === 'mern-microservices'
-    ? TARGETS.filter(t => t.id.startsWith('aws_')) : TARGETS
+  // A workspace of services needs a host that can run more than one process.
+  // AWS puts each service under its own systemd unit; an Azure App Service
+  // starts them together from one startup command. Vercel and Netlify each run
+  // a single app, so they are shown and refused rather than quietly missing -
+  // "where did Netlify go" is a worse question than "why can't I pick it".
+  const services = mine?.stack === 'mern-microservices'
+  const refusal = t => (services && !t.id.startsWith('aws_') && t.id !== 'azure'
+    ? `${t.label} runs one app, not a workspace of services.` : '')
+  const targets = TARGETS
   useEffect(() => {
-    if (!targets.some(t => t.id === target)) setTarget('aws_ec2')
-  }, [targets, target])
+    if (refusal(TARGETS.find(t => t.id === target) || {})) setTarget('aws_ec2')
+  }, [services, target])
   const where = TARGETS.find(t => t.id === target)?.label || target
 
   const s = mine?.settings || {}
@@ -263,31 +271,37 @@ export default function DeployPanel({ onSettings, accountsRevision = 0 }) {
       )}
 
       {running || live ? <DeployProgress run={live} /> : null}
-      <DeploymentQuestion question={run.question} runId={runId} onAnswered={run.reload} />
 
       {!running && (
         <div className="rounded-2xl border border-[rgba(145,158,171,0.16)] bg-[#1C252E] p-6 shadow-[0_0_2px_0_rgba(145,158,171,0.2),0_12px_24px_-4px_rgba(0,0,0,0.16)] backdrop-blur-xl">
           <SectionLabel>Where should it go?</SectionLabel>
           <p className="mt-1 text-[11.5px] text-[#919EAB]">Choose the cloud destination for this reviewed build.</p>
           <div className="mt-3.5 grid gap-3 sm:grid-cols-2">
-            {targets.map(t => (
-              <button key={t.id} onClick={() => setTarget(t.id)}
+            {targets.map(t => {
+              const why = refusal(t)
+              return (
+              <button key={t.id} onClick={() => setTarget(t.id)} disabled={Boolean(why)}
+                      title={why || undefined}
                       className={cn('rounded-xl border p-4 text-left shadow-sm transition-all',
-                        target === t.id
+                        why
+                          ? 'cursor-not-allowed border-[rgba(145,158,171,0.12)] bg-[#28323D]/20 opacity-55'
+                          : target === t.id
                           ? 'border-[#1877F2] bg-[#1877F2]/10 ring-1 ring-[#1877F2]/30'
                           : 'border-[rgba(145,158,171,0.16)] bg-[#28323D]/50 hover:-translate-y-0.5 hover:border-[rgba(145,158,171,0.28)] hover:bg-[#333F4D]/50')}>
                 <span className="flex items-center gap-2.5 text-[13px] font-bold text-white">
                   <span className={cn('grid size-4 place-items-center rounded-full border',
-                    target === t.id ? 'border-[#1877F2] bg-[#1877F2]' : 'border-[rgba(145,158,171,0.32)] bg-[#28323D]')}>
-                    {target === t.id && <Check className="size-2.5 text-white" />}
+                    why ? 'border-[rgba(145,158,171,0.2)] bg-transparent'
+                        : target === t.id ? 'border-[#1877F2] bg-[#1877F2]' : 'border-[rgba(145,158,171,0.32)] bg-[#28323D]')}>
+                    {target === t.id && !why && <Check className="size-2.5 text-white" />}
                   </span>
                   {t.label}
+                  {why && <span className="ml-auto rounded-full bg-white/[.06] px-2 py-0.5 text-[9.5px] font-normal uppercase tracking-wide text-[#919EAB]">unavailable</span>}
                 </span>
                 <span className="mt-1.5 block text-[11px] leading-relaxed text-[#919EAB]">
-                  {t.blurb}
+                  {why || t.blurb}
                 </span>
               </button>
-            ))}
+            )})}
           </div>
 
           <SectionLabel className="mt-6"
@@ -371,9 +385,11 @@ export default function DeployPanel({ onSettings, accountsRevision = 0 }) {
       </>)}
       </div>
 
+      {/* The deployment conversation lives in the chat panel with the other
+          two agents. Kept here as well it was the same stream twice on one
+          screen, and the answer box was in both. */}
       <div className="sticky bottom-0 z-10 bg-panel">
         <MonitorConsole key={`console-${runId}`} events={run.events} snapErrors={monitor.snap?.errors} />
-        <DeployActivity key={`activity-${runId}`} events={run.events} running={running} />
       </div>
     </div>
   )
@@ -459,7 +475,8 @@ function MonitorPane({ view, monitor, runId, state, run }) {
       {view === 'logs' && <Logs snap={snap} />}
       {view === 'api' && <ApiValidation snap={snap} />}
       {view === 'evidence' && (
-        <Evidence evidence={run.evidence} runId={runId} busy={run.busy} />
+        <Evidence evidence={run.evidence} runId={runId} busy={run.busy}
+                  detail={run.detail} snap={snap} />
       )}
     </div>
   )

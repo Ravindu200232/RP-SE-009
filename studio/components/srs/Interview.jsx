@@ -49,13 +49,15 @@ export default function Interview({ projectId, onDone, onCancel }) {
 
   async function refresh() {
     try {
-      const setup = await api.integrations(projectId)
-      setIntegSetup(setup.questions || [])
-      if (setup.confirmed && setup.answers?.length && Object.keys(integAnswers).length === 0) {
-        const byId = {}
-        setup.answers.forEach(a => { byId[a.id] = { choice: a.provider, values: {} } })
-        setIntegAnswers(byId)
-      }
+      // The interview no longer asks which payment provider or mail service to
+      // use. Those questions are declared by the skills themselves
+      // (`skills/<name>/setup.json`) and the build already asks them, at the
+      // point where there is a workspace to write the answer into - so asking
+      // here as well was the same question twice, from two places reading the
+      // same file, and it put a vendor into a specification that should name a
+      // capability. Empty keeps every step below inert; the branches it
+      // switched on are now unreachable and can go.
+      setIntegSetup([])
       const next = await api.srs(`/projects/${projectId}/interview`)
       setState(next)
       setTyping(false)
@@ -255,6 +257,15 @@ export default function Interview({ projectId, onDone, onCancel }) {
       await api.srs(`/projects/${projectId}/interview/answer`, attachments.length ? { ...payload, attachments } : payload)
       attach.reset()
 
+      // With no integration questions to ask, none of the triggers below may
+      // fire: they key off the wording of an answer, not off the catalogue, so
+      // a mention of "card" would open a payments step that has no question in
+      // it and leave the interview on a blank screen headed "Payment Gateway".
+      if (!(integSetup || []).length) {
+        await refresh()
+        return
+      }
+
       // Inspect whether this question or the user's answer triggers an integration!
       const currentVal = payload.value != null ? payload.value : (payload.selected || payload.text || '')
       const valStr = Array.isArray(currentVal) ? currentVal.join(' ') : String(currentVal)
@@ -315,24 +326,10 @@ export default function Interview({ projectId, onDone, onCancel }) {
         }
       }
 
-      // 3. Image/File Uploads Trigger
-      const uploadTopic = /images|image_kinds/.test(q?.topic || '') ||
-        /\b(upload|uploads|pictures?|images?|photos?|avatar|document)\b/i.test(qContext)
-      const uploadAnswer = /\b(upload|uploads|photo|photos|image|images|avatar|gallery)\b/i.test(valStr)
-      const isPurelyNoUpload = /^(none|no|false)$/i.test(valStr.trim())
-
-      if (!integAnswers['image-uploads'] && (uploadTopic || uploadAnswer)) {
-        if (isPurelyNoUpload) {
-          const updated = { ...integAnswers, 'image-uploads': { choice: 'none', values: {} } }
-          setIntegAnswers(updated)
-          await saveIntegrationsSnapshot(updated)
-        } else {
-          setIntegStep({ kind: 'image-uploads', stage: 'choice' })
-          setPhase('asking')
-          setText('')
-          return
-        }
-      }
+      // Pictures used to open a storage-credentials step here. They no longer
+      // do: the interview asks only whether the pages need photographs and
+      // where they come from, and the customer's own files are uploaded on the
+      // design screen, where they can be seen and captioned.
 
       await refresh()
     } catch (e) {

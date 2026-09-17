@@ -1,9 +1,13 @@
 import { api } from '@/lib/api'
 import { guideForDiagram } from '@/lib/diagram-guide'
 
-function diagramRows(rows) {
+// One normaliser for both shapes of diagram row: the sidecar's artifacts
+// (`source`, `business_summary`, `png_path`) and the server's disk rows
+// (`mermaid`, `businessSummary`, `png`). The SRS tab and the review screen
+// render the same component, so they must agree on the row it receives.
+export function diagramRows(rows) {
   return (rows || [])
-    .filter(d => d && (d.source || d.svg))
+    .filter(d => d && (d.source || d.mermaid || d.svg))
     .map(d => {
       const name = d.kind || d.name || 'diagram'
       const guide = guideForDiagram(name)
@@ -19,13 +23,13 @@ function diagramRows(rows) {
       notation: d.notation || guide.notation,
       standard: d.standard || '',
       applicable: d.applicable !== false,
-      applicabilityNote: d.applicability_note || '',
+      applicabilityNote: d.applicability_note || d.applicabilityNote || '',
       mermaid: d.source || d.mermaid || '',
 
       svg: d.svg || '',
-      png: Boolean(d.png_path),
+      png: Boolean(d.png_path || d.png),
 
-      rendered: Boolean(d.svg || d.svg_path || d.png_path),
+      rendered: Boolean(d.svg || d.svg_path || d.png_path || d.png),
     }})
 }
 
