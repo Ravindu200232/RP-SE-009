@@ -29,7 +29,7 @@ PROJECT_GET = ("/workflow/", "/runtime/", "/files/", "/stream/", "/session/", "/
 # One project, named in the body.
 PROJECT_POST = {"/sync/retry", "/resume", "/delete-project", "/save-file", "/element-edit", "/feature",
                 "/agent-update", "/stream", "/shot", "/undo", "/deploy-start",
-                "/projects/assign", "/preview-link"}
+                "/projects/assign", "/preview-link", "/spec-change"}
 # One project if the body names one, otherwise nobody's in particular.
 MAYBE_PROJECT_POST = {"/attach", "/image", "/image-upload"}
 # One specification, named in the body.

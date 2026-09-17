@@ -1,14 +1,13 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
-  ArrowLeft, ArrowUp, Check, FileDown, History, ListTree, Loader2,
-  RotateCcw, Square, Trash2,
+  ArrowLeft, Check, FileDown, ListTree, Loader2, RotateCcw, Square, Trash2,
 } from 'lucide-react'
 import { api, API } from '@/lib/api'
 import { useStore } from '@/lib/store'
 import { loadSrsView, srsViewFromVersion } from '@/lib/srs-view'
-import { Badge, Button, Empty, SubTab, SubTabs, Tag, TextArea } from '../ui'
+import { Badge, Button, Empty, SubTab, SubTabs, Tag } from '../ui'
 import { VIEWS, badgeFor } from './views'
 import { WireframeEditor } from './Wireframes'
 import { SrsRevisions } from './SrsRevisions'
@@ -27,12 +26,11 @@ export default function SrsReview({ projectId, onApproved, onKept, onBack }) {
   const [editingWireframe, setEditingWireframe] = useState(null)
 
 
-  const [prompt, setPrompt] = useState('')
-  const [thread, setThread] = useState([])
   const [busy, setBusy] = useState('')
-  const [waited, setWaited] = useState(0)
   const [viewing, setViewing] = useState(null)
-  const box = useRef(null)
+  // What the editor said it changed, kept for the summary panel on the right.
+  // The revision itself lives in `SrsRevisions`, which owns the composer.
+  const [lastChange, setLastChange] = useState('')
 
   /** Throw this specification away and leave. */
   async function discard() {
@@ -64,37 +62,7 @@ export default function SrsReview({ projectId, onApproved, onKept, onBack }) {
 
   useEffect(() => { load()  }, [projectId])
 
-  useEffect(() => {
-    if (!busy) return
-    setWaited(0)
-    const t = setInterval(() => setWaited(w => w + 1), 1000)
-    return () => clearInterval(t)
-  }, [busy])
 
-  async function revise() {
-    const text = prompt.trim()
-    if (!text || busy) return
-    setPrompt('')
-    setViewing(null)
-    setThread(t => [...t, { role: 'you', text }])
-    setBusy('revising')
-    setError('')
-    try {
-      const r = await api.srs(`/projects/${projectId}/customize`, { prompt: text })
-      const said = r?.diff_summary || []
-      setThread(t => [...t, {
-        role: 'srs',
-        text: said.length ? said.join('\n') : 'The specification was updated.',
-        version: r?.version,
-      }])
-      addLog('INFO', `SRS revised — v${r?.version || '?'}`)
-      await load()
-    } catch (e) {
-      setThread(t => [...t, { role: 'error', text: e.message }])
-    } finally {
-      setBusy('')
-    }
-  }
 
   /** Approve the specification and proceed directly to build. */
   async function approve() {
@@ -123,7 +91,6 @@ export default function SrsReview({ projectId, onApproved, onKept, onBack }) {
   const View = (VIEWS.find(v => v.id === sub) || VIEWS[0]).C
 
   const counts = viewing ? countOf(viewing.document) : (srs?.summary || {})
-  const versions = srs?.versions || []
 
   const approved = srs?.status === 'approved'
 
@@ -225,7 +192,11 @@ export default function SrsReview({ projectId, onApproved, onKept, onBack }) {
               className="w-[270px] shrink-0 rounded-2xl border border-line bg-panel shadow-xl backdrop-blur-xl"
               current={viewing?.version || srs?.version}
               onPickVersion={v => setViewing(v ? srsViewFromVersion(v, projectId) : null)}
-              onRevised={load} />
+              onRevised={answer => {
+                const said = answer?.diff_summary || []
+                setLastChange(said.length ? said.join('\n') : 'The specification was updated.')
+                return load()
+              }} />
 
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#121622]/90 shadow-2xl backdrop-blur-xl">
               <SubTabs>
@@ -297,16 +268,16 @@ export default function SrsReview({ projectId, onApproved, onKept, onBack }) {
               )}
             </div>
 
-            {thread.filter(m => m.role === 'srs').slice(-1).map((m, i) => (
-              <div key={i} className="mt-5">
+            {lastChange && (
+              <div className="mt-5">
                 <p className="label-xs mb-2 text-ink">
                   What changed, as the editor described it
                 </p>
                 <p className="whitespace-pre-wrap text-[11.5px] leading-relaxed text-muted">
-                  {m.text}
+                  {lastChange}
                 </p>
               </div>
-            ))}
+            )}
 
             <p className="mt-4 text-[10.5px] leading-relaxed text-muted2">
               The “Approved Plan” pane shows the plan you signed off. It stays

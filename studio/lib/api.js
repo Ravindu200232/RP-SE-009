@@ -97,6 +97,10 @@ export const api = {
   // Everything that has happened to a project, so a reload does not lose it.
   stream: (project) => req(`/stream/${encodeURIComponent(project)}`),
   retrySync: project => post('/sync/retry', { project }),
+
+  // A change typed into the specification, carried down into whichever of the
+  // prototype and the build the user chose.
+  specChange: (project, prompt, targets) => post('/spec-change', { project, prompt, targets }),
   workflow: (project) => req(`/workflow/${encodeURIComponent(project)}`),
   saveStream: (project, logs, chat) => post('/stream', { project, logs, chat }),
 

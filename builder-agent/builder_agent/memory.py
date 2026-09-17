@@ -98,14 +98,21 @@ class Memory:
                 return
         self.messages.insert(0, message)
 
-    def set_task(self, content: str) -> None:
+    def set_task(self, content: str, images: list | None = None) -> None:
         # Earlier requests stay in the transcript but cannot all stay pinned
         # forever across a long session. The active request does.
         for message in self.messages:
             if message.get("meta", {}).get("kind") == "task":
                 message["pinned"] = False
-        self.messages.append({"role": "user", "content": content, "pinned": True,
-                              "meta": {"kind": "task"}})
+        task = {"role": "user", "content": content, "pinned": True,
+                "meta": {"kind": "task"}}
+        # A picture someone attached travels as a picture. Described in words it
+        # is one model's reading of it, and the model doing the work never sees
+        # the thing it was asked about - which for a screenshot of a bug, or a
+        # design someone wants matched, is most of the information.
+        if images:
+            task["images"] = list(images)
+        self.messages.append(task)
 
     def add_user(self, content: str, **meta) -> None:
         target = self._pending if self._pending is not None else self.messages

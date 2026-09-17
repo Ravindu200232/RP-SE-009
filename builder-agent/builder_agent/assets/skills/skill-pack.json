@@ -154,6 +154,19 @@
         "alerts"
       ],
       "verificationPhases": []
+    },
+    {
+      "name": "scoped-change-tests",
+      "match": [
+        "add this to the existing application",
+        "next request in this project conversation",
+        "apply this change to your own artifact",
+        "apply that revision to your own artifact"
+      ],
+      "verificationPhases": [
+        "unit",
+        "e2e"
+      ]
     }
   ]
 }

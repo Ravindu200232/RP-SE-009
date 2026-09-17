@@ -32,6 +32,7 @@ import { useEditAttachments } from '@/lib/use-edit-attachments'
 import { answerQuestion, reviseDrawing, send } from '@/lib/ws'
 import { cn } from '@/lib/utils'
 import EditAttach from './EditAttach'
+import SrsRevisionsPanel from './srs/SrsRevisionsPanel'
 
 const ICONS = {
   read: Search, plan: Search, write: FileCode2, build: FileCode2,
@@ -84,6 +85,7 @@ export default function AgentChat() {
   const project = useStore(s => s.project)
   const agentRole = useStore(s => s.agentRole)
   const onDeploy = useStore(s => s.view === 'deploy')
+  const onSrs = useStore(s => s.view === 'srs')
   const switchAgent = useStore(s => s.switchAgent)
   const question = useStore(s => s.question)
   const drawing = useStore(s => s.drawing)
@@ -254,8 +256,8 @@ export default function AgentChat() {
       <div className="flex gap-1 border-b border-line p-2" aria-label="Agent conversations">
         {[['designer', 'Designer · UI/UX'], ['developer', 'Developer · QA']].map(([role, label]) => (
           <button key={role} disabled={role === 'developer' && !buildAllowed} title={role === 'developer' && !buildAllowed ? 'Complete the prototype first' : label} onClick={() => { switchAgent(role); useStore.getState().setView(role === 'designer' ? 'prototype' : 'preview') }}
-            className={cn('flex-1 rounded-lg px-2 py-2 text-xs font-semibold', !onDeploy && agentRole === role ? 'bg-accent/15 text-accent' : 'text-muted hover:text-ink')}
-            aria-pressed={!onDeploy && agentRole === role}>{label}</button>
+            className={cn('flex-1 rounded-lg px-2 py-2 text-xs font-semibold', !onDeploy && !onSrs && agentRole === role ? 'bg-accent/15 text-accent' : 'text-muted hover:text-ink')}
+            aria-pressed={!onDeploy && !onSrs && agentRole === role}>{label}</button>
         ))}
         {/* The deployment has its own agent, so it gets its own conversation
             here rather than a stream buried under the panel on the right. */}
@@ -264,8 +266,19 @@ export default function AgentChat() {
           className={cn('flex-1 rounded-lg px-2 py-2 text-xs font-semibold',
             onDeploy ? 'bg-accent/15 text-accent' : 'text-muted hover:text-ink')}
           aria-pressed={onDeploy}>Deployment</button>
+        {/* The specification is the fourth conversation. It is keyed on the
+            view rather than on an agent role, so opening the SRS tab selects
+            it on its own - which is where someone reading the document would
+            look for its history anyway. */}
+        <button title="The specification and its revisions"
+          onClick={() => useStore.getState().setView('srs')}
+          className={cn('flex-1 rounded-lg px-2 py-2 text-xs font-semibold',
+            onSrs ? 'bg-accent/15 text-accent' : 'text-muted hover:text-ink')}
+          aria-pressed={onSrs}>Specification</button>
       </div>
-      {onDeploy ? (
+      {onSrs ? (
+        <SrsRevisionsPanel />
+      ) : onDeploy ? (
         <DeployChat />
       ) : (<>
       <header className="shrink-0 border-b border-line/60 px-3.5 py-3">
@@ -348,7 +361,8 @@ export default function AgentChat() {
             className="w-full resize-none bg-transparent px-2 py-1 text-[13px] leading-relaxed text-ink outline-none placeholder:text-muted2 disabled:opacity-45" />
           <div className="mt-1 flex items-center justify-between border-t border-line/40 pt-1.5 px-1">
             {project ? (
-              <EditAttach attach={attach} disabled={reading} />
+              <EditAttach attach={attach} project={project}
+                      onSpoken={said => setText((text ? text.trimEnd() + ' ' : '') + said)} disabled={reading} />
             ) : <span />}
             <button onClick={submit}
                     disabled={!project || reading || !text.trim()}

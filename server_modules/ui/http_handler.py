@@ -759,6 +759,24 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
                 daemon=True
             ).start()
             self._json({"ok": True})
+        elif path == "/spec-change":
+            body = self._body()
+            project = str(body.get("project", "")).strip()
+            prompt = str(body.get("prompt", "")).strip()
+            wanted = [str(role) for role in (body.get("targets") or [])
+                      if str(role) in ("designer", "developer")]
+            _, directory, error = _owned_dir(PROD_DIR, project, "project name", "project")
+            if error or not prompt or not wanted:
+                return self._json({"error": error or "A project, a change and something to "
+                                                     "update are all required"}, 400)
+            # Re-checked here rather than trusted from the browser: the studio
+            # listed what existed when the page loaded, which may be a while ago.
+            missing = [role for role in wanted if not artifact_exists(directory, role)]
+            if missing:
+                return self._json({"error": f"This project has no {' or '.join(missing)} "
+                                            "artifact to update"}, 400)
+            start_run(run_spec_change, (project, prompt, wanted), project=project)
+            self._json({"ok": True})
         elif path == "/agent-update":
             body = {**self._body(), "type": "agent_update"}
             job = _message_job(body)

@@ -687,6 +687,10 @@ def read_srs_results(proj_name: str) -> dict:
             return default
 
     out = {"project": proj_name, "have": {}}
+    # What a change to this specification could be carried into. Answered from
+    # the same two tests the transaction itself uses, so what the studio offers
+    # and what the server will accept can never disagree.
+    out["targets"] = {role: artifact_exists(proj_dir, role) for role in ("designer", "developer")}
     if not srs_dir.is_dir():
 
         out["have"] = {k: False for k in

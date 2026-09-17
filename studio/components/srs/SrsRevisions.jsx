@@ -21,7 +21,7 @@ import { loadSrsView } from '@/lib/srs-view'
 import { Button, TextArea } from '../ui'
 import { cn } from '@/lib/utils'
 
-export function SrsRevisions({ srsId, onRevised, onPickVersion, current, className }) {
+export function SrsRevisions({ srsId, onRevised, onPickVersion, current, className, working }) {
   const addLog = useStore(s => s.addLog)
   const [versions, setVersions] = useState([])
   const [prompt, setPrompt] = useState('')
@@ -118,10 +118,17 @@ export function SrsRevisions({ srsId, onRevised, onPickVersion, current, classNa
             Rewriting specification… {waited}s
           </div>
         )}
+
+        {working && !busy && (
+          <div className="flex items-center gap-2 px-2.5 py-2 text-[11.5px] text-white/60">
+            <Loader2 className="size-3 animate-spin text-blue-400" />
+            Carrying the change into the prototype and the app…
+          </div>
+        )}
       </div>
 
       <div className="border-t border-white/10 bg-black/20 p-3">
-        <TextArea value={prompt} rows={3} ref={box} disabled={Boolean(busy) || !srsId}
+        <TextArea value={prompt} rows={3} ref={box} disabled={Boolean(busy) || working || !srsId}
           placeholder="Describe a change — “add a refunds page only the manager can open”…"
           onChange={e => setPrompt(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) revise() }}
@@ -131,11 +138,13 @@ export function SrsRevisions({ srsId, onRevised, onPickVersion, current, classNa
         <div className="mt-2 flex items-center gap-2">
           {/* The diagrams really are redrawn on every revision — `customize`
               runs the diagram node after the edit — so this says what happens. */}
-          <span className="flex-1 font-mono text-[9.5px] text-white/40">diagrams update too</span>
+          <span className="flex-1 font-mono text-[9.5px] text-white/40">
+            {working ? 'updating the prototype and the app…' : 'diagrams update too'}
+          </span>
           <Button variant="solid" size="icon"
             className="size-7 rounded-lg bg-blue-600 text-white shadow hover:bg-blue-500"
-            disabled={!prompt.trim() || Boolean(busy) || !srsId} onClick={revise}>
-            <ArrowUp className="size-3.5" />
+            disabled={!prompt.trim() || Boolean(busy) || working || !srsId} onClick={revise}>
+            {busy || working ? <Loader2 className="size-3.5 animate-spin" /> : <ArrowUp className="size-3.5" />}
           </Button>
         </div>
       </div>

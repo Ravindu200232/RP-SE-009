@@ -35,6 +35,7 @@ from .layout import format_layout, inspect_layout
 from .memory import observation_key
 from .prompts import (blueprint_task, completion_block, format_reminder,
                       system_prompt, task_message)
+from .attached_images import images_in
 from .skills import catalog, install_skill_pack, skill_index
 from .templates import install_template, template_notice
 from .tools import ToolContext
@@ -453,7 +454,15 @@ class Loop:
                                          plan_only=self.config.plan_only))
         if self.config.extra.get("agent_role"):
             instruction = task
-        self.memory.set_task(instruction)
+        # The attached pictures go with the request, not only their paths.
+        try:
+            pictures = images_in(instruction, self.sandbox.root)
+        except Exception:                                        # noqa: BLE001
+            pictures = []
+        if pictures:
+            self.events.emit("notice", level="info",
+                             message=f"{len(pictures)} attached image(s) sent with the request.")
+        self.memory.set_task(instruction, images=pictures)
         self.events.emit("agent:start", task=task[:2000], model=self.router.label,
                          workspace=str(self.sandbox.root), stack=self.config.stack,
                          quality=self.config.quality.name)

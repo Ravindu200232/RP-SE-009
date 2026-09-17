@@ -1,10 +1,10 @@
 'use client'
 
 /** Attach and record, for the editing chats. */
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { FileText, Image as ImageIcon, Loader2, Mic, Paperclip, Square, X } from 'lucide-react'
 
-import { ACCEPT_UPLOAD } from '@/lib/api'
+import { ACCEPT_UPLOAD, api } from '@/lib/api'
 import { useRecorder } from '@/lib/use-attachments'
 import { Button } from './ui'
 import { cn } from '@/lib/utils'
@@ -12,9 +12,35 @@ import { cn } from '@/lib/utils'
 const PICTURE = /\.(png|jpe?g|webp|gif|bmp)$/i
 const SOUND = /\.(wav|mp3|m4a|ogg|webm|flac)$/i
 
-export default function EditAttach({ attach, disabled, className }) {
+export default function EditAttach({ attach, disabled, className, project, onSpoken }) {
   const picker = useRef(null)
-  const recorder = useRecorder(file => attach.add([file]))
+  const [hearing, setHearing] = useState(false)
+  const [heard, setHeard] = useState('')
+
+  /**
+   * Speaking is typing, not attaching.
+   *
+   * The recording used to be added to the request as a file, which meant the
+   * words only existed inside the prompt the agent received - you could not
+   * read them, fix a misheard name, or add a sentence before sending. It is
+   * transcribed here and put in the box instead, where it is text like any
+   * other. The transcription is the same one an attached recording gets; only
+   * where the result lands is different.
+   */
+  const recorder = useRecorder(async file => {
+    if (!onSpoken) return attach.add([file])
+    setHearing(true); setHeard('')
+    try {
+      const got = await api.attach(file, { project })
+      const said = (got?.text || '').trim()
+      if (said) onSpoken(said)
+      else setHeard(got?.note || 'Nothing could be made out in that recording.')
+    } catch (e) {
+      setHeard(e.message || 'That recording could not be read.')
+    } finally {
+      setHearing(false)
+    }
+  })
 
   return (
     <div className={cn('flex flex-wrap items-center gap-1.5', className)}>
@@ -28,15 +54,16 @@ export default function EditAttach({ attach, disabled, className }) {
       </Button>
 
       <Button variant={recorder.recording ? 'solid' : 'ghost'} size="sm"
-              disabled={disabled} onClick={recorder.toggle}
+              disabled={disabled || hearing} onClick={recorder.toggle}
               title={recorder.recording ? 'Stop recording' : 'Say it instead of typing it'}>
         {recorder.recording
           ? <><Square className="size-2.5 fill-current" /> {recorder.seconds}s</>
-          : <Mic className="size-3" />}
+          : hearing ? <Loader2 className="size-3 animate-spin" />
+            : <Mic className="size-3" />}
       </Button>
 
-      {recorder.error && (
-        <span className="text-[10px] text-deep">{recorder.error}</span>
+      {(recorder.error || heard) && (
+        <span className="text-[10px] text-deep">{recorder.error || heard}</span>
       )}
 
       {attach.items.map(it => {
