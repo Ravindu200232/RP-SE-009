@@ -11,6 +11,7 @@ import { loadSrsView, srsViewFromVersion } from '@/lib/srs-view'
 import { Badge, Button, Empty, SubTab, SubTabs, Tag, TextArea } from '../ui'
 import { VIEWS, badgeFor } from './views'
 import { WireframeEditor } from './Wireframes'
+import { SrsRevisions } from './SrsRevisions'
 import { cn } from '@/lib/utils'
 
 export default function SrsReview({ projectId, onApproved, onKept, onBack }) {
@@ -218,72 +219,13 @@ export default function SrsReview({ projectId, onApproved, onKept, onBack }) {
           />
         ) : (
           <>
-            <aside className="flex w-[270px] shrink-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-xl backdrop-blur-xl">
-              <div className="flex items-center gap-2 border-b border-line px-4 py-3">
-                <History className="size-3.5 text-accent" />
-                <span className="font-display text-[12px] font-bold text-ink uppercase tracking-wider">Revisions</span>
-                <span className="flex-1" />
-                <span className="rounded-full bg-panel2 px-2 py-0.5 font-mono text-[10px] text-muted">{versions.length}</span>
-              </div>
-
-              <div className="min-h-0 flex-1 overflow-y-auto p-2">
-                {versions.map((v, i) => (
-                  <button key={v.id || i}
-                          onClick={() => setViewing(
-                            i === versions.length - 1 ? null
-                              : srsViewFromVersion(v, projectId))}
-                          className={cn('mb-1.5 w-full rounded-xl border px-3 py-2 text-left transition-all',
-                            (viewing?.version || srs?.version) === v.version
-                              ? 'border-blue-500/40 bg-blue-500/15 text-white shadow-sm'
-                              : 'border-transparent bg-white/[.02] text-white/70 hover:bg-white/[.05] hover:text-white')}>
-                    <span className="font-mono text-[10.5px] font-semibold text-blue-400">v{v.version}</span>
-                    <span className="mt-0.5 block text-[11.5px] leading-snug">
-                      {v.label || 'Revision'}
-                    </span>
-                  </button>
-                ))}
-
-                {thread.map((m, i) => (
-                  <div key={`t${i}`}
-                       className={cn('mb-2 rounded-xl p-3 text-[11.5px] leading-relaxed',
-                         m.role === 'you' ? 'ml-6 border border-accent/30 bg-accent/20 text-white font-medium'
-                           : m.role === 'error'
-                             ? 'border border-red-500/30 bg-red-500/10 text-red-300'
-                             : 'border border-white/5 bg-white/[.03] text-white/80')}>
-                    {m.role === 'you' && <span className="text-accent text-[10px] font-bold uppercase tracking-wider block mb-1">you</span>}
-                    {m.text}
-                  </div>
-                ))}
-
-                {busy === 'revising' && (
-                  <div className="flex items-center gap-2 px-2.5 py-2 text-[11.5px] text-white/60">
-                    <Loader2 className="size-3 animate-spin text-blue-400" />
-                    Rewriting specification… {waited}s
-                  </div>
-                )}
-              </div>
-
-              <div className="border-t border-white/10 p-3 bg-black/20">
-                <TextArea value={prompt} rows={3} ref={box} disabled={Boolean(busy)}
-                          placeholder="Describe a change — “add a refunds page only the manager can open”…"
-                          onChange={e => setPrompt(e.target.value)}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) revise()
-                          }}
-                          className="w-full resize-none rounded-xl border border-white/10 bg-white/[.04] p-2.5 text-[12px]
-                                     leading-relaxed text-white outline-none focus:border-blue-500/50
-                                     placeholder:text-white/40 disabled:opacity-50 caret-blue-400" />
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="flex-1 font-mono text-[9.5px] text-white/40">
-                    diagrams update too
-                  </span>
-                  <Button variant="solid" size="icon" className="size-7 rounded-lg bg-blue-600 hover:bg-blue-500 text-white shadow"
-                          disabled={!prompt.trim() || Boolean(busy)} onClick={revise}>
-                    <ArrowUp className="size-3.5" />
-                  </Button>
-                </div>
-              </div>
-            </aside>
+            {/* The same panel the workspace shows. Nothing here is specific to
+                reviewing: it is the specification's history either way. */}
+            <SrsRevisions srsId={projectId}
+              className="w-[270px] shrink-0 rounded-2xl border border-line bg-panel shadow-xl backdrop-blur-xl"
+              current={viewing?.version || srs?.version}
+              onPickVersion={v => setViewing(v ? srsViewFromVersion(v, projectId) : null)}
+              onRevised={load} />
 
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#121622]/90 shadow-2xl backdrop-blur-xl">
               <SubTabs>
