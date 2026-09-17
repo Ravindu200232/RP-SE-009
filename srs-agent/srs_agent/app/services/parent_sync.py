@@ -110,6 +110,10 @@ async def synchronize(project_id: str, change_id: str, source: str, summary: str
         await repo.update_version_document(latest["id"], srs)
 
     storage.save_srs_json(project_id, srs, version)
+    # The drawn set follows the save on its own, so what someone opens is the
+    # good one rather than the projection with a button beside it.
+    from ..agents.wireframe_generator import draw_later
+    draw_later(project_id, srs["srs_document"])
     await repo.save_diagrams(project_id, srs["srs_document"].get("diagrams", []))
     write_handoff(storage.project_dir(project_id) / "handoff", srs, project.get("stack", ""))
     await generate_pdf(project_id, srs, status="Approved", version=version)
