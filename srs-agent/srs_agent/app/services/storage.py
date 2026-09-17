@@ -106,12 +106,77 @@ def save_drawn_wireframes(project_id: str, doc: dict, frames: list) -> dict:
     return read_wireframes(project_id)
 
 
+def html_dir(project_id: str) -> Path:
+    """Where the full-fidelity HTML drawing of each page lives.
+
+    Beside the blocks rather than instead of them. The blocks are what the
+    tools editor moves and what the projection can always produce; the HTML is
+    a second, richer view of the same page, and a page may have one, both or
+    neither.
+    """
+    d = wireframes_dir(project_id) / "html"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def _html_name(route: str) -> str:
+    """A route as a filename. `/product/[id]` -> `product-id.html`."""
+    safe = "".join(ch if ch.isalnum() else "-" for ch in str(route or "/").strip("/").lower())
+    safe = "-".join(part for part in safe.split("-") if part)
+    return f"{safe or 'index'}.html"
+
+
+def _html_versions(project_id: str) -> dict:
+    try:
+        stored = json.loads((html_dir(project_id) / "drawn.json").read_text(encoding="utf-8"))
+        return stored if isinstance(stored, dict) else {}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def save_page_html(project_id: str, route: str, html: str, version: str = "") -> None:
+    """Keep the drawing, and the version of the specification it was drawn from.
+
+    The version is the whole point of the sidecar. The blocks are re-derived on
+    every save because a projection costs milliseconds; a full page costs a
+    model call each, so it is drawn on request and then goes quietly out of
+    date the next time the document moves. Recording what it was drawn from is
+    what lets the editor say so instead of showing a stale page as current.
+    """
+    (html_dir(project_id) / _html_name(route)).write_text(str(html or ""), encoding="utf-8")
+    versions = _html_versions(project_id)
+    versions[str(route)] = str(version or "")
+    write_json(html_dir(project_id) / "drawn.json", versions)
+
+
+def read_page_html(project_id: str, route: str) -> str:
+    try:
+        return (html_dir(project_id) / _html_name(route)).read_text(encoding="utf-8")
+    except Exception:  # noqa: BLE001
+        return ""
+
+
 def read_wireframes(project_id: str) -> dict:
     try:
-        return json.loads((wireframes_dir(project_id) / "wireframes.json")
-                          .read_text(encoding="utf-8"))
+        payload = json.loads((wireframes_dir(project_id) / "wireframes.json")
+                             .read_text(encoding="utf-8"))
     except Exception:  # noqa: BLE001
         return {"pages": [], "journeys": []}
+    # Tell the editor which pages have the full drawing, so it can offer the
+    # view rather than opening an empty frame and finding out - and which of
+    # those were drawn from an older version of the document.
+    folder = wireframes_dir(project_id) / "html"
+    version = str(payload.get("version") or "")
+    versions = _html_versions(project_id) if folder.is_dir() else {}
+    for page in (payload.get("pages") or []):
+        if not isinstance(page, dict):
+            continue
+        route = page.get("route")
+        page["has_html"] = (folder / _html_name(route)).is_file()
+        page["html_stale"] = bool(page["has_html"]
+                                  and version
+                                  and str(versions.get(str(route), "")) != version)
+    return payload
 
 
 def save_wireframe_edit(project_id: str, route: str, blocks: list) -> dict:

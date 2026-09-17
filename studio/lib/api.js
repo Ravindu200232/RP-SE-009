@@ -135,6 +135,16 @@ export const api = {
   // The slow pass: each page laid out on its own, with sample data in it.
   drawWireframes: (srsId) =>
     api.srs(`/projects/${encodeURIComponent(srsId)}/wireframes/draw`, {}),
+  // The full drawing: the same page as a finished HTML screen. A second view
+  // of one page, not a replacement for its blocks - the tools editor still
+  // works on those.
+  drawWireframeHtml: (srsId, route = '') =>
+    api.srs(`/projects/${encodeURIComponent(srsId)}/wireframes/html`, { route }),
+  // Read straight from the agent rather than through a job: it is one page of
+  // HTML and it is what the <iframe> loads.
+  wireframeHtmlUrl: (srsId, route) =>
+    `${API}/srs/projects/${encodeURIComponent(srsId)}/wireframes/html`
+      + `?route=${encodeURIComponent(route)}`,
 
   siteImages: (project) => req(`/site-images/${encodeURIComponent(project)}`),
   siteImageUrl: (project, file) =>
