@@ -66,6 +66,7 @@ function Block({
   onPick,
   isEditable = false,
   dragging = false,
+  placingKind = null,
   onBlockMouseDown,
   onResizeMouseDown,
 }) {
@@ -315,6 +316,7 @@ function Block({
     <div
       style={common0}
       onMouseDown={e => {
+        if (placingKind) return
         if (isEditable) {
           onBlockMouseDown?.(e, block)
         } else if (onPick) {
@@ -324,13 +326,15 @@ function Block({
       }}
       className={cn(
         'group absolute select-none transition-[box-shadow]',
-        isEditable ? (dragging ? 'cursor-grabbing z-30' : 'cursor-grab hover:z-20') : (onPick ? 'cursor-pointer' : ''),
-        selected ? 'outline outline-2 outline-[#1877F2] z-30 shadow-md ring-1 ring-blue-400/50' : 'hover:outline hover:outline-1 hover:outline-[#1877F2]/40'
+        isEditable
+          ? (placingKind ? 'cursor-crosshair' : (dragging ? 'cursor-grabbing z-30' : 'cursor-grab hover:z-20'))
+          : (onPick ? 'cursor-pointer' : ''),
+        selected && !placingKind ? 'outline outline-2 outline-[#1877F2] z-30 shadow-md ring-1 ring-blue-400/50' : 'hover:outline hover:outline-1 hover:outline-[#1877F2]/40'
       )}
     >
       {renderContent()}
 
-      {selected && isEditable && (
+      {selected && isEditable && !placingKind && (
         <>
           <div className="pointer-events-none absolute -top-5 left-0 z-40 flex items-center gap-1 rounded bg-[#1877F2] px-1.5 py-0.5 font-mono text-[9px] font-medium text-white shadow-md">
             <span>{kind}</span>
@@ -364,10 +368,13 @@ function Frame({
   onBlockMouseDown = null,
   onResizeMouseDown = null,
   onDropKind = null,
+  placingKind = null,
+  onCanvasPlace = null,
 }) {
   const [width, setWidth] = useState(0)
   const frameRef = useRef(null)
   const [isDragOver, setIsDragOver] = useState(false)
+  const [ghostCoords, setGhostCoords] = useState(null)
 
   const box = useCallback(node => {
     frameRef.current = node
@@ -407,16 +414,58 @@ function Frame({
     onDropKind?.(e, rect, canvas)
   }
 
+  // Live mouse hover for Figma-style placement ghost preview
+  const handleMouseMove = e => {
+    if (!isEditable || !placingKind || !frameRef.current) return
+    const rect = frameRef.current.getBoundingClientRect()
+    const pixelX = e.clientX - rect.left
+    const pixelY = e.clientY - rect.top
+    const scale = rect.width
+    const gridX = (pixelX / scale) * 100
+    const gridY = (pixelY / scale) * 100
+    const def = DEFAULT_SIZES[placingKind] || { w: 40, h: 10 }
+    const x = Math.max(0, Math.min(100 - def.w, Math.round(gridX - def.w / 2)))
+    const y = Math.max(0, Math.round(gridY - def.h / 2))
+    setGhostCoords({ x, y, w: def.w, h: def.h, kind: placingKind, label: def.label || placingKind })
+  }
+
+  const handleMouseLeave = () => {
+    if (placingKind) setGhostCoords(null)
+  }
+
+  const handleCanvasMouseDown = e => {
+    if (isEditable && placingKind && frameRef.current) {
+      e.stopPropagation()
+      e.preventDefault()
+      const rect = frameRef.current.getBoundingClientRect()
+      const pixelX = e.clientX - rect.left
+      const pixelY = e.clientY - rect.top
+      const scale = rect.width
+      const gridX = (pixelX / scale) * 100
+      const gridY = (pixelY / scale) * 100
+      const def = DEFAULT_SIZES[placingKind] || { w: 40, h: 10 }
+      const x = Math.max(0, Math.min(100 - def.w, Math.round(gridX - def.w / 2)))
+      const y = Math.max(0, Math.round(gridY - def.h / 2))
+      onCanvasPlace?.(placingKind, { x, y })
+      setGhostCoords(null)
+      return
+    }
+    onBackground?.(e)
+  }
+
   return (
     <div
       ref={box}
-      onMouseDown={onBackground}
+      onMouseDown={handleCanvasMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       className={cn(
         'relative w-full bg-white transition-all',
         fit ? 'h-full overflow-hidden' : '',
+        isEditable && placingKind ? 'cursor-crosshair' : '',
         isEditable && isDragOver ? 'ring-2 ring-[#1877F2] ring-offset-2' : ''
       )}
       style={{ contain: 'paint', height: height ?? undefined }}
@@ -428,6 +477,36 @@ function Frame({
           </span>
         </div>
       )}
+
+      {/* Figma-style Live Ghost Preview */}
+      {isEditable && placingKind && ghostCoords && (
+        <div
+          style={{
+            position: 'absolute',
+            left: pc(ghostCoords.x),
+            top: pc(100 * ghostCoords.y / canvas),
+            width: pc(ghostCoords.w),
+            height: pc(100 * ghostCoords.h / canvas),
+            pointerEvents: 'none',
+            zIndex: 50,
+          }}
+          className="rounded-lg border-2 border-dashed border-[#1877F2] bg-[#1877F2]/15 backdrop-blur-[1px] flex flex-col justify-between p-1.5 select-none shadow-2xl transition-[left,top] duration-75"
+        >
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1 rounded bg-[#1877F2] px-1.5 py-0.5 font-mono text-[9.5px] font-bold text-white shadow">
+              <span>+</span>
+              <span className="capitalize">{ghostCoords.kind}</span>
+            </span>
+            <span className="rounded bg-black/75 px-1.5 py-0.5 font-mono text-[9px] font-medium text-white shadow">
+              X: {ghostCoords.x}% · Y: {ghostCoords.y}%
+            </span>
+          </div>
+          <div className="text-center font-semibold text-[11px] text-[#1877F2] bg-white/90 py-0.5 rounded shadow-sm">
+            Click to place here
+          </div>
+        </div>
+      )}
+
       {width > 0 && blocks.map(block => (
         <Block
           key={block.id}
@@ -438,6 +517,7 @@ function Frame({
           onPick={onPick}
           isEditable={isEditable}
           dragging={draggingId === block.id}
+          placingKind={placingKind}
           onBlockMouseDown={onBlockMouseDown}
           onResizeMouseDown={onResizeMouseDown}
         />
@@ -491,6 +571,7 @@ export function WireframeEditor({ owner, page, onClose, onSaved }) {
   const [asking, setAsking] = useState(false)
   const [draggingId, setDraggingId] = useState(null)
   const [resizingId, setResizingId] = useState(null)
+  const [placingKind, setPlacingKind] = useState(null)
 
   const block = blocks.find(b => b.id === picked) || null
   const dirty = JSON.stringify(blocks) !== JSON.stringify(page.blocks || [])
@@ -625,6 +706,11 @@ export function WireframeEditor({ owner, page, onClose, onSaved }) {
     addBlock(kind, { x, y })
   }, [addBlock])
 
+  const handleCanvasPlace = useCallback((kind, coords) => {
+    addBlock(kind, coords)
+    setPlacingKind(null)
+  }, [addBlock])
+
   // Keyboard navigation & deletion
   useEffect(() => {
     const handleKeyDown = e => {
@@ -632,7 +718,11 @@ export function WireframeEditor({ owner, page, onClose, onSaved }) {
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
 
       if (e.key === 'Escape') {
-        setPicked('')
+        if (placingKind) {
+          setPlacingKind(null)
+        } else {
+          setPicked('')
+        }
       } else if ((e.key === 'Delete' || e.key === 'Backspace') && picked) {
         removeBlock()
       } else if (picked && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
@@ -651,7 +741,7 @@ export function WireframeEditor({ owner, page, onClose, onSaved }) {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [picked, removeBlock])
+  }, [picked, removeBlock, placingKind])
 
   async function save() {
     setSaving(true)
@@ -802,7 +892,7 @@ export function WireframeEditor({ owner, page, onClose, onSaved }) {
               <p className="text-[11px] font-bold uppercase tracking-wider text-ink">
                 Add Components
               </p>
-              <span className="text-[9.5px] text-muted2">Drag or click +</span>
+              <span className="text-[9.5px] text-muted2">Click or drag</span>
             </div>
 
             {CATEGORIES.map(cat => (
@@ -811,25 +901,54 @@ export function WireframeEditor({ owner, page, onClose, onSaved }) {
                   {cat.name}
                 </p>
                 <div className="grid grid-cols-2 gap-1.5">
-                  {cat.kinds.map(kind => (
-                    <div
-                      key={kind}
-                      draggable
-                      onDragStart={e => {
-                        e.dataTransfer.setData('text/plain', kind)
-                        e.dataTransfer.effectAllowed = 'copy'
-                      }}
-                      onClick={() => addBlock(kind)}
-                      className="group flex cursor-grab items-center justify-between rounded-lg border border-line bg-panel2/60 px-2 py-1.5 text-[11px] text-ink transition hover:border-accent hover:bg-raised active:cursor-grabbing select-none"
-                      title={`Drag onto canvas or click to add ${kind}`}
-                    >
-                      <div className="flex min-w-0 items-center gap-1.5">
-                        <GripVertical className="size-3 text-muted2 group-hover:text-accent shrink-0" />
-                        <span className="truncate capitalize">{kind}</span>
+                  {cat.kinds.map(kind => {
+                    const isPlacing = placingKind === kind
+                    return (
+                      <div
+                        key={kind}
+                        draggable
+                        onDragStart={e => {
+                          e.dataTransfer.setData('text/plain', kind)
+                          e.dataTransfer.effectAllowed = 'copy'
+                        }}
+                        onClick={() => {
+                          if (isPlacing) {
+                            setPlacingKind(null)
+                          } else {
+                            setPlacingKind(kind)
+                            setPicked('')
+                          }
+                        }}
+                        className={cn(
+                          'group flex cursor-pointer items-center justify-between rounded-lg border px-2 py-1.5 text-[11px] transition select-none',
+                          isPlacing
+                            ? 'border-blue-500 bg-blue-500/25 text-white ring-2 ring-blue-500/60 shadow-[0_0_12px_rgba(24,119,242,0.35)]'
+                            : 'border-line bg-panel2/60 text-ink hover:border-accent hover:bg-raised active:cursor-grabbing'
+                        )}
+                        title={isPlacing ? 'Click canvas to place, or click here to cancel' : `Click to place ${kind} on canvas (Figma style), or drag`}
+                      >
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          <GripVertical className={cn('size-3 shrink-0', isPlacing ? 'text-blue-400' : 'text-muted2 group-hover:text-accent')} />
+                          <span className="truncate capitalize font-medium">{kind}</span>
+                        </div>
+                        {isPlacing ? (
+                          <span className="size-2 rounded-full bg-blue-400 animate-ping shrink-0" />
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={e => {
+                              e.stopPropagation()
+                              addBlock(kind)
+                            }}
+                            title={`Add ${kind} at bottom`}
+                            className="rounded p-0.5 text-muted hover:text-ink hover:bg-white/10 shrink-0"
+                          >
+                            <Plus className="size-3" />
+                          </button>
+                        )}
                       </div>
-                      <Plus className="size-3 text-muted group-hover:text-ink shrink-0" />
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             ))}
@@ -939,9 +1058,26 @@ export function WireframeEditor({ owner, page, onClose, onSaved }) {
 
         {/* Scrollable Canvas Viewport */}
         <div
-          className="flex min-h-0 flex-1 items-start justify-center overflow-y-auto bg-[#0a0d14] p-6"
+          className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto bg-[#0a0d14] p-6"
           onMouseDown={() => setPicked('')}
         >
+          {/* Active Placement Hint Banner */}
+          {placingKind && (
+            <div className="sticky top-0 z-50 mb-3 flex w-full max-w-[960px] items-center justify-between rounded-xl border border-blue-500/40 bg-blue-600 px-4 py-2 text-white shadow-xl shadow-blue-500/20 backdrop-blur-md">
+              <div className="flex items-center gap-2 text-xs font-semibold">
+                <span className="flex size-2 rounded-full bg-white animate-ping" />
+                <span>Placement Mode: Click anywhere on canvas to place <strong className="underline underline-offset-2 capitalize">{placingKind}</strong></span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPlacingKind(null)}
+                className="rounded-lg bg-black/25 px-2.5 py-1 text-[11px] font-medium text-white/90 hover:bg-black/40 hover:text-white transition cursor-pointer"
+              >
+                Press <kbd className="font-mono bg-white/20 px-1.5 py-0.5 rounded text-[10px] font-bold">Esc</kbd> to cancel
+              </button>
+            </div>
+          )}
+
           <div
             className="w-full max-w-[960px] overflow-hidden rounded-xl border border-white/15 bg-white shadow-2xl transition-all"
             onClick={e => e.stopPropagation()}
@@ -972,6 +1108,8 @@ export function WireframeEditor({ owner, page, onClose, onSaved }) {
               onBlockMouseDown={handleBlockMouseDown}
               onResizeMouseDown={handleResizeMouseDown}
               onDropKind={handleDropKind}
+              placingKind={placingKind}
+              onCanvasPlace={handleCanvasPlace}
             />
           </div>
         </div>
