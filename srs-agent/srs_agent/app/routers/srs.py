@@ -50,6 +50,79 @@ async def srs_json(project_id: str):
     return srs
 
 
+class WireframeEdit(BaseModel):
+    """One page's layout, as the editor left it.
+
+    The route names the only page this may touch. Blocks carry position and
+    size but no colour: a wireframe is black and white by definition, and a
+    palette belongs to the design screen, not here.
+    """
+    route: str = Field(min_length=1, max_length=200)
+    blocks: list[dict] = Field(max_length=120)
+
+
+@router.get("/{project_id}/wireframes")
+async def wireframes(project_id: str):
+    """Every page as a block layout, plus the journeys through them.
+
+    Derived on save, so this is a read of what the document already implies -
+    there is nothing to generate here and nothing to wait for.
+    """
+    from ..services import storage
+    saved = storage.read_wireframes(project_id)
+    if not saved.get("pages"):
+        # A project generated before wireframes existed has none on disk yet.
+        srs = await orchestrator.latest_srs(project_id)
+        if not srs:
+            raise HTTPException(404, "no SRS generated yet")
+        storage.save_wireframes(project_id, srs)
+        saved = storage.read_wireframes(project_id)
+    return saved
+
+
+@router.post("/{project_id}/wireframes/draw")
+async def draw_wireframes(project_id: str):
+    """Redraw every page properly, with sample data in it.
+
+    Slower than the projection by design: each page is laid out on its own so
+    the model spends a whole answer on it. Hand edits are re-applied afterwards,
+    so redrawing never costs someone the page they arranged themselves.
+    """
+    from ..agents.wireframe_generator import draft_wireframes
+    from ..services import storage
+    srs = await orchestrator.latest_srs(project_id)
+    if not srs:
+        raise HTTPException(404, "no SRS generated yet")
+    doc = srs["srs_document"]
+    return storage.save_drawn_wireframes(project_id, doc, await draft_wireframes(doc))
+
+
+@router.post("/{project_id}/wireframes/edit")
+async def edit_wireframe(project_id: str, request: WireframeEdit):
+    from ..services import storage
+    blocks = []
+    for raw in request.blocks:
+        if not isinstance(raw, dict):
+            continue
+        # Position and size are clamped to the grid the renderer draws on, so a
+        # dragged block cannot be saved outside the frame it is edited in.
+        block = {"id": str(raw.get("id") or "")[:40],
+                 "kind": str(raw.get("kind") or "panel")[:20],
+                 "label": str(raw.get("label") or "")[:120]}
+        for key, cap in (("x", 100), ("y", 100), ("w", 100), ("h", 100)):
+            try:
+                block[key] = max(0, min(cap, int(round(float(raw.get(key, 0))))))
+            except (TypeError, ValueError):
+                block[key] = 0
+        block["w"] = max(4, min(block["w"], 100 - block["x"]))
+        block["h"] = max(3, min(block["h"], 100 - block["y"]))
+        for extra in ("rows", "columns"):
+            if raw.get(extra):
+                block[extra] = raw[extra]
+        blocks.append(block)
+    return storage.save_wireframe_edit(project_id, request.route, blocks)
+
+
 @router.get("/{project_id}/requirements")
 async def requirements(project_id: str):
     doc = await _doc_or_404(project_id)

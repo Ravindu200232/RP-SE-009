@@ -75,6 +75,59 @@ def adopt_site_images(srs_id: str, proj_dir: Path) -> int:
     return moved
 
 
+def adopt_wireframes(srs_id: str, proj_dir: Path) -> int:
+    """Put the page layouts where the drawing pass can read them.
+
+    Adopted to `.agentforge/wireframes/` rather than left under the copied
+    specification, because that is the one folder both agents are allowed to
+    read and the one the brief can name without qualification.
+    """
+    staging = PROD_DIR / ".srs" / str(srs_id or "") / "wireframes"
+    if not staging.is_dir():
+        return 0
+    target = proj_dir / ".agentforge" / "wireframes"
+    copied = 0
+    try:
+        target.mkdir(parents=True, exist_ok=True)
+        for item in staging.iterdir():
+            if item.is_file() and item.suffix.lower() == ".json":
+                shutil.copy2(item, target / item.name)
+                copied += 1
+    except OSError as e:                                        # noqa: BLE001
+        log.debug(f"adopt wireframes {srs_id}: {e}")
+    return copied
+
+
+def read_project_wireframes(project: str) -> dict:
+    """The page layouts a built project adopted, for its own SRS tab."""
+    _, proj_dir, error = _owned_dir(PROD_DIR, project, "project name", "project")
+    if error:
+        return {"pages": [], "journeys": [], "error": error}
+    path = proj_dir / ".agentforge" / "wireframes" / "wireframes.json"
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:                                           # noqa: BLE001
+        return {"pages": [], "journeys": []}
+
+
+def wireframe_brief(proj_dir: Path) -> str:
+    """The line that tells a drawing pass the layouts already exist."""
+    path = proj_dir / ".agentforge" / "wireframes" / "wireframes.json"
+    try:
+        pages = (json.loads(path.read_text(encoding="utf-8")) or {}).get("pages") or []
+    except Exception:                                           # noqa: BLE001
+        return ""
+    if not pages:
+        return ""
+    routes = ", ".join(str(p.get("route")) for p in pages[:14])
+    return (f"\n\nWIREFRAMES EXIST for {len(pages)} page(s): {routes}. Read "
+            f"`.agentforge/wireframes/wireframes.json` before drawing. Each page lists its "
+            f"blocks on a 0-100 grid - kind, label, x, y, w, h - which is where the customer "
+            f"expects things to sit. Follow that arrangement; a page marked \"edited\": true "
+            f"was positioned by hand, so match it closely. The wireframes carry no colour and "
+            f"no navigation by design - take the layout from them and the look from the theme.\n")
+
+
 def _site_rows(folder: Path) -> list:
     """What is on disk, in the order it was added, with its caption."""
     try:

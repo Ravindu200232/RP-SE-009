@@ -307,6 +307,11 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
                 self._json({"error": str(error)}, 400)
             except (FileNotFoundError, OSError):
                 self._json({"error": "No such image"}, 404)
+        elif path.startswith("/project-wireframes/"):
+            # A built project reads its adopted copy. The SRS agent serves the
+            # staged one by specification id; this serves the same file for a
+            # project that now has a name of its own.
+            self._json(read_project_wireframes(unquote(path[20:].strip("/"))))
         elif path.startswith("/site-images/"):
             self._json(site_image_list(unquote(path[13:].strip("/"))))
         elif path.startswith("/design-theme-preview/"):

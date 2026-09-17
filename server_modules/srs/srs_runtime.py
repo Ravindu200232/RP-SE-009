@@ -46,7 +46,8 @@ def adopt_srs(srs_id: str, proj_dir: Path) -> bool:
                 # here as well they would be a second, stale set nothing serves.
                 if (not src.is_file() or src.name.endswith("-checkpoint.json") or
                         any(part.startswith(".") for part in parts)
-                        or "changes" in parts or "site-images" in parts):
+                        or "changes" in parts or "site-images" in parts
+                        or "wireframes" in parts):
                     continue
                 if src.name.startswith(".env") and src.name != ".env.example":
                     continue

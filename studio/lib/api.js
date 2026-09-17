@@ -120,6 +120,18 @@ export const api = {
   // The customer's own pictures for the product's pages. Kept under their own
   // names beside the project, captioned one by one, and copied next to the
   // drawing and the built app so the same <img> resolves in both.
+  // Wireframes live with the specification while it is being reviewed, and
+  // with the project once one exists. The id tells them apart: a specification
+  // id is what the SRS agent answers to, a project name is not.
+  wireframes: (owner) => (/^prj_/.test(String(owner || ''))
+    ? api.srs(`/projects/${encodeURIComponent(owner)}/wireframes`)
+    : req(`/project-wireframes/${encodeURIComponent(owner)}`)),
+  editWireframe: (srsId, route, blocks) =>
+    api.srs(`/projects/${encodeURIComponent(srsId)}/wireframes/edit`, { route, blocks }),
+  // The slow pass: each page laid out on its own, with sample data in it.
+  drawWireframes: (srsId) =>
+    api.srs(`/projects/${encodeURIComponent(srsId)}/wireframes/draw`, {}),
+
   siteImages: (project) => req(`/site-images/${encodeURIComponent(project)}`),
   siteImageUrl: (project, file) =>
     `${API}/site-image/${encodeURIComponent(project)}/${encodeURIComponent(file)}`,

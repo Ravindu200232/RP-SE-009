@@ -93,8 +93,10 @@ def _prepare_workspace(prompt: str, project: str, srs_id: str) -> Path:
         if error:
             raise ValueError(error)
         _write_env(proj_dir)
-        if srs_id and not adopt_srs(srs_id, proj_dir):
-            raise RuntimeError("Could not load the approved specification")
+        if srs_id:
+            if not adopt_srs(srs_id, proj_dir):
+                raise RuntimeError("Could not load the approved specification")
+            _adopt_customer_assets(srs_id, proj_dir)
         return proj_dir
     # With an approved SRS the prompt is the design direction, not the product:
     # "Design theme: Clean (design-theme:clean)..." named the folder
@@ -112,11 +114,21 @@ def _prepare_workspace(prompt: str, project: str, srs_id: str) -> Path:
     if srs_id:
         if not adopt_srs(srs_id, proj_dir):
             raise RuntimeError("Could not load the approved specification")
-        # Pictures chosen on the design screen were uploaded before this folder
-        # existed, so they waited beside the specification. This is the first
-        # moment they have a project to belong to.
-        adopt_site_images(srs_id, proj_dir)
+        _adopt_customer_assets(srs_id, proj_dir)
     return proj_dir
+
+
+def _adopt_customer_assets(srs_id: str, proj_dir: Path) -> None:
+    """Pictures and page layouts chosen before this folder existed.
+
+    Both are decided on screens that run between an approved specification and
+    the first build, so they wait beside the specification until there is a
+    project to belong to. Re-adopted on every run, not only the first: a
+    wireframe edited after the build, or a picture added later, is otherwise
+    invisible to every run but the one that created the folder.
+    """
+    adopt_site_images(srs_id, proj_dir)
+    adopt_wireframes(srs_id, proj_dir)
 
 
 def _brief(proj_dir: Path, prompt: str, model: str = "") -> str:
@@ -149,6 +161,15 @@ def _brief(proj_dir: Path, prompt: str, model: str = "") -> str:
         pictures = ""
     if pictures:
         parts += ["", pictures.strip()]
+    # The page layouts the specification implies. Named for the drawing pass,
+    # which otherwise arranges each page from scratch and disagrees with the
+    # wireframe the customer just approved.
+    try:
+        layouts = wireframe_brief(proj_dir)
+    except Exception:                                                # noqa: BLE001
+        layouts = ""
+    if layouts:
+        parts += ["", layouts.strip()]
     return "\n".join(parts)
 
 

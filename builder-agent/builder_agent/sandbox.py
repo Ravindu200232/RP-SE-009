@@ -119,9 +119,11 @@ class Sandbox:
         # reads as the file being missing. Readable by either role, writable by
         # neither: these are the customer's originals, and an agent that edits
         # one silently changes what was asked for.
-        given = (relative in (".agentforge/images", ".agentforge/uploads")
-                 or relative.startswith(".agentforge/images/")
-                 or relative.startswith(".agentforge/uploads/"))
+        # `wireframes` joins them: the drawing pass is told to follow the page
+        # layouts the specification implies, and a layout it is refused is a
+        # layout it invents instead.
+        given = any(relative == f".agentforge/{name}" or relative.startswith(f".agentforge/{name}/")
+                    for name in ("images", "uploads", "wireframes"))
         ancestors = relative in (".agentforge", ".agentforge/handoff", ".agentforge/agents")
         if self.role == "designer":
             allowed = prototype or own or (not write and (handoff or given or ancestors))

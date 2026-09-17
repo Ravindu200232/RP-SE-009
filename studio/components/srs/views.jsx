@@ -9,6 +9,7 @@ import {
 import { Empty, Table } from '../ui'
 import DiagramViewer from './DiagramViewer'
 import Overview from './Overview'
+import { UserJourney, Wireframes } from './Wireframes'
 import { cn } from '@/lib/utils'
 const list = (value) => Array.isArray(value) ? value : []
 
@@ -1713,7 +1714,9 @@ function PrototypeFlow({ srs }) {
 
 
 export const VIEWS = [
+  { id: 'wireframe', label: 'Wireframe', C: Wireframes },
   { id: 'overview', label: 'Overview', C: Overview },
+  { id: 'journey', label: 'User Journey', C: UserJourney },
   { id: 'document', label: 'Document', C: Document },
   { id: 'requirements', label: 'Requirements', C: Requirements },
   { id: 'diagrams', label: 'Diagrams', C: Diagrams },

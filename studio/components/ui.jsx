@@ -131,7 +131,7 @@ export const Empty = ({ children, bad }) => (
   </p>
 )
 
-export function Modal({ onClose, children, className }) {
+export function Modal({ onClose, children, className, style, overlayClassName }) {
   useEffect(() => {
     const key = (e) => { if (e.key === 'Escape') onClose?.() }
     document.addEventListener('keydown', key)
@@ -139,10 +139,14 @@ export function Modal({ onClose, children, className }) {
   }, [onClose])
   return (
   // Keep tall dialogs reachable within the viewport.
+    // `overlayClassName` is how a dialog asks to fill the window: the padding
+    // and the blur behind it are what leave a border around a "full screen" one.
     <div onClick={onClose}
-         className="fixed inset-0 z-[600] flex items-center justify-center
-                    overscroll-contain bg-black/75 backdrop-blur-sm p-4">
-      <div onClick={e => e.stopPropagation()}
+         className={cn(`fixed inset-0 z-[600] flex items-center justify-center
+                    overscroll-contain bg-black/75 backdrop-blur-sm p-4`, overlayClassName)}>
+      {/* `style` wins over the size classes, which is the only reliable way for
+          a caller to ask for a dialog that fills the window. */}
+      <div onClick={e => e.stopPropagation()} style={style}
            className={cn('w-full max-w-[520px] max-h-[90vh] overflow-y-auto',
              'rounded-[24px] border border-line2',
              'bg-panel p-6 shadow-[-40px_40px_80px_-8px_rgba(0,0,0,0.6)] text-ink', className)}>
