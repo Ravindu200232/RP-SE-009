@@ -14,11 +14,18 @@ from deployment_agent.security import redact_data
 
 class OllamaClient:
     def __init__(self, base_url: str = OLLAMA_URL, model: str = OLLAMA_MODEL,
-                 headers: dict | None = None):
+                 headers: dict | None = None, think: bool | None = None):
         self.base_url = base_url.rstrip("/")
         self.model = model
 
         self.headers = dict(headers or {})
+        if think is None:
+            try:
+                from deploy_agent.bridge import deploy_think
+                think = deploy_think()
+            except Exception:
+                think = False
+        self.think = bool(think)
 
         self._native_schema_supported: bool | None = (
             False if model.endswith(":cloud") or model.endswith("-cloud") else None
@@ -83,9 +90,8 @@ class OllamaClient:
                         "model": self.model,
                         "messages": messages,
                         "stream": True,
-                        # Deployment planning is deliberately deterministic and
-                        # never inherits the Studio Builder thinking switch.
-                        "think": False,
+                        # Deployment planning connects to the Studio Builder thinking switch.
+                        "think": bool(self.think),
                         "options": {"temperature": 0, "num_predict": OLLAMA_NUM_PREDICT},
                     }
                     if native_schema:

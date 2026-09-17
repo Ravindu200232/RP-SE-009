@@ -267,7 +267,8 @@ def _srs_brief(proj_dir: Path, model: str = "") -> str:
                     break
             if not model:
                 from builder_agent.llm import load_settings
-                model = str(load_settings().get("default_agent_model", "")).strip()
+                s = load_settings()
+                model = str(s.get("agent_model") or s.get("default_agent_model", "")).strip()
         except Exception:
             pass
 

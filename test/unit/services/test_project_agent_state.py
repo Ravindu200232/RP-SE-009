@@ -55,6 +55,11 @@ class ProjectAgentStateTests(unittest.TestCase):
             developer.check_access(self.root / '.agentforge/prototype/index.html', write=True)
         with self.assertRaises(SecurityError):
             designer.resolve('.agentforge/agents/developer/conversation.json')
+        # Skills: designer can read theme/system skills, but cannot write them
+        designer.check_access(self.root / '.agents/skills/design-theme/SKILL.md', write=False)
+        designer.check_access(self.root / '.agent/skills/design-theme/SKILL.md', write=False)
+        with self.assertRaises(SecurityError):
+            designer.check_access(self.root / '.agents/skills/design-theme/SKILL.md', write=True)
 
     def test_queued_run_belongs_to_current_server(self):
         state = ProjectState(self.root)

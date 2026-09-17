@@ -124,12 +124,15 @@ class Sandbox:
         # layout it invents instead.
         given = any(relative == f".agentforge/{name}" or relative.startswith(f".agentforge/{name}/")
                     for name in ("images", "uploads", "wireframes"))
-        ancestors = relative in (".agentforge", ".agentforge/handoff", ".agentforge/agents")
+        skills = (relative == ".agents/skills" or relative.startswith(".agents/skills/")
+                  or relative == ".agent/skills" or relative.startswith(".agent/skills/"))
+        ancestors = relative in (".agentforge", ".agentforge/handoff", ".agentforge/agents",
+                                 ".agents", ".agents/skills", ".agent", ".agent/skills")
         if self.role == "designer":
-            allowed = prototype or own or (not write and (handoff or given or ancestors))
+            allowed = prototype or own or (not write and (handoff or given or skills or ancestors))
         else:
             allowed = (not relative.startswith(".agentforge") and not relative.startswith(".agent/")) or own
-            allowed = allowed or (not write and (handoff or prototype or given or ancestors))
+            allowed = allowed or (not write and (handoff or prototype or given or skills or ancestors))
         if not allowed or (write and handoff):
             raise SecurityError(f"{self.role} cannot {'write' if write else 'read'} {relative}")
 

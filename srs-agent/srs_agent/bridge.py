@@ -50,10 +50,12 @@ def agentforge_settings() -> dict:
 def srs_model() -> str:
     """The model that writes the specification.
 
-    Fixed, not a setting: the studio's model picker is for the build. SRS calls
-    never think (the Ollama adapter sends think: False).
+    Uses the model selected in settings (agent_model), falling back to
+    DEFAULT_SRS_MODEL. SRS calls never think (the Ollama adapter sends think: False).
     """
-    return DEFAULT_SRS_MODEL
+    settings = agentforge_settings()
+    model = str(settings.get("agent_model") or "").strip()
+    return model or DEFAULT_SRS_MODEL
 
 
 def route(model: str) -> tuple[str, dict]:

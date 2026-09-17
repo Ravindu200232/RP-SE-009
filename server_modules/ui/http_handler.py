@@ -850,8 +850,8 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
             # each request, so a run started from anywhere uses the same answer.
             if "agent_think" in body:
                 patch["agent_think"] = bool(body["agent_think"])
-            # No srs_model or deploy_model: those two agents use one fixed model
-            # (see their bridges), and the studio's picker is for the build.
+            # agent_model is inherited across all agents (build, SRS, and deployment).
+            # SRS keeps thinking off, while deployment connects to agent_think.
             ok = save_settings(patch) if patch else True
             if patch.get("ollama_host"):
                 ollama.host = patch["ollama_host"].rstrip("/")

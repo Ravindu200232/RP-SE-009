@@ -16,6 +16,7 @@ if _AGENT not in sys.path:
 
 from deploy_agent import bridge as deploy_bridge  # noqa: E402
 from dfagents.monitor import MonitorAgent  # noqa: E402
+from dfagents.planner import OllamaClient  # noqa: E402
 from srs_agent import bridge as srs_bridge  # noqa: E402
 
 # What the picker used to write for every role at once.
@@ -27,13 +28,33 @@ PICKED_FOR_THE_BUILD = {
 
 
 class FixedModelTests(unittest.TestCase):
-    def test_the_deployment_plan_is_written_by_gemma_whatever_was_saved(self):
+    def test_the_deployment_plan_uses_settings_model_or_fallback(self):
         with mock.patch.object(deploy_bridge, "agentforge_settings", return_value=dict(PICKED_FOR_THE_BUILD)):
+            self.assertEqual(deploy_bridge.deploy_model(), "glm-5.3-flash:cloud")
+        with mock.patch.object(deploy_bridge, "agentforge_settings", return_value={}):
             self.assertEqual(deploy_bridge.deploy_model(), "gemma4:31b-cloud")
 
-    def test_the_specification_is_written_by_gemma_whatever_was_saved(self):
+    def test_the_specification_uses_settings_model_or_fallback(self):
         with mock.patch.object(srs_bridge, "agentforge_settings", return_value=dict(PICKED_FOR_THE_BUILD)):
+            self.assertEqual(srs_bridge.srs_model(), "glm-5.3-flash:cloud")
+        with mock.patch.object(srs_bridge, "agentforge_settings", return_value={}):
             self.assertEqual(srs_bridge.srs_model(), "gemma4:31b-cloud")
+
+    def test_the_deployment_thinking_reflects_settings(self):
+        with mock.patch.object(deploy_bridge, "agentforge_settings", return_value={"agent_think": True}):
+            self.assertTrue(deploy_bridge.deploy_think())
+        with mock.patch.object(deploy_bridge, "agentforge_settings", return_value={"agent_think": False}):
+            self.assertFalse(deploy_bridge.deploy_think())
+
+    def test_ollama_client_respects_deployment_thinking(self):
+        with mock.patch.object(deploy_bridge, "agentforge_settings", return_value={"agent_think": False}):
+            client = OllamaClient()
+            self.assertFalse(client.think)
+        with mock.patch.object(deploy_bridge, "agentforge_settings", return_value={"agent_think": True}):
+            client = OllamaClient()
+            self.assertTrue(client.think)
+        client_explicit = OllamaClient(think=True)
+        self.assertTrue(client_explicit.think)
 
 
 class _Response:
