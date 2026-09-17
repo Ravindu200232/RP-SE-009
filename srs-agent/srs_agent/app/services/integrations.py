@@ -13,10 +13,18 @@ ENV_NAME = re.compile(r"^[A-Z][A-Z0-9_]{1,63}$")
 
 def questions() -> list:
     root = REPO_ROOT / "builder-agent" / "builder_agent" / "assets" / "skills"
+    backup = REPO_ROOT / "builder-agent" / "builder_agent" / "assets" / "_skills-backup"
     rows = []
     for name in KINDS:
-        body = json.loads((root / name / "setup.json").read_text(encoding="utf-8"))
-        rows.append({**body, "id": name})
+        target = root / name / "setup.json"
+        if not target.is_file():
+            target = backup / name / "setup.json"
+        if target.is_file():
+            try:
+                body = json.loads(target.read_text(encoding="utf-8"))
+                rows.append({**body, "id": name})
+            except Exception:
+                pass
     return rows
 
 

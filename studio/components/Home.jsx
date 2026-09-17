@@ -279,21 +279,27 @@ export default function Home({
     s.setSrs({ srsId: id, srsPhase: 'design', srsBusy: '' })
   }
 
-  if (srsPhase === 'design' && srsId) return <DesignCustomize key={srsId} projectId={srsId}
-    onBack={() => s.setSrs({ srsPhase: 'review' })}
-    onContinue={async direction => {
-      // Keep the operation ID across transport retries and reloads.
-      const key = `agentforge-design-change-${srsId}`
-      let saved
-      try { saved = JSON.parse(localStorage.getItem(key) || 'null') } catch { }
-      if (saved?.summary !== direction) saved = { change_id: `design-${crypto.randomUUID()}`, summary: direction }
-      localStorage.setItem(key, JSON.stringify(saved))
-      await api.srs(`/projects/${srsId}/changes`, { ...saved, source: 'design-customizer' })
-      localStorage.removeItem(key)
-      onStarted?.()
-      startBuild(direction, '', srsId, null, { model: designModel, stack, think }, true)
-      s.setSrs({ srsPhase: 'idle', srsBusy: '' })
-    }} />
+  if (srsPhase === 'design' && srsId) {
+    return (
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[radial-gradient(circle_at_50%_15%,#152e68_0%,#0c152a_38%,#080c16_100%)] text-white">
+        <DesignCustomize key={srsId} projectId={srsId}
+          onBack={() => s.setSrs({ srsPhase: 'review' })}
+          onContinue={async direction => {
+            // Keep the operation ID across transport retries and reloads.
+            const key = `agentforge-design-change-${srsId}`
+            let saved
+            try { saved = JSON.parse(localStorage.getItem(key) || 'null') } catch { }
+            if (saved?.summary !== direction) saved = { change_id: `design-${crypto.randomUUID()}`, summary: direction }
+            localStorage.setItem(key, JSON.stringify(saved))
+            await api.srs(`/projects/${srsId}/changes`, { ...saved, source: 'design-customizer' })
+            localStorage.removeItem(key)
+            onStarted?.()
+            startBuild(direction, '', srsId, null, { model: designModel, stack, think }, true)
+            s.setSrs({ srsPhase: 'idle', srsBusy: '' })
+          }} />
+      </div>
+    )
+  }
 
   if (srsPhase === 'review' && srsId) {
     return (

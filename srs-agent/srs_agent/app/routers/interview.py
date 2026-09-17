@@ -1,6 +1,8 @@
 """Customer-led requirement interview endpoints."""
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -8,6 +10,8 @@ from ..schemas.questions import InterviewAnswer
 from ..services import orchestrator
 from ..services import integrations
 from ..models import repositories as repo
+
+log = logging.getLogger("agentforge.srs.interview")
 
 router = APIRouter(prefix="/projects", tags=["interview"])
 
@@ -21,7 +25,12 @@ async def integration_questions(project_id: str):
     project = await repo.get_project(project_id)
     if not project:
         raise HTTPException(404, "Project not found")
-    return {"questions": integrations.questions(), "answers": project.get("integrations", []),
+    try:
+        q = integrations.questions()
+    except Exception as exc:
+        log.warning("integrations.questions failed: %s", exc)
+        q = []
+    return {"questions": q, "answers": project.get("integrations", []),
             "confirmed": bool(project.get("integrations_confirmed"))}
 
 
@@ -39,7 +48,11 @@ async def integration_answers(project_id: str, payload: IntegrationAnswers):
 
 @router.get("/{project_id}/interview")
 async def interview_state(project_id: str):
-    return await orchestrator.interview_state(project_id)
+    try:
+        return await orchestrator.interview_state(project_id)
+    except Exception as exc:
+        log.error("Failed to retrieve interview state for %s: %s", project_id, exc, exc_info=True)
+        raise HTTPException(500, f"Interview could not load: {exc}")
 
 
 @router.post("/{project_id}/interview/answer")
