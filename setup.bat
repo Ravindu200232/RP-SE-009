@@ -22,8 +22,18 @@ where python >nul 2>&1 || (
 )
 
 echo [1/4] Installing Python dependencies...
-%PY% -m pip install -r requirements.txt -r srs-agent\requirements.txt -r deployment-agent\requirements.txt
-if errorlevel 1 exit /b 1
+REM One file at a time, so a wheel that will not build on this machine names
+REM itself. Installed as a single command, a failure anywhere stopped all three
+REM lists and the message said only that pip had failed - which is how a new
+REM machine ended up running with the specification agent's packages missing.
+for %%R in ("requirements.txt" "srs-agent\requirements.txt" "deployment-agent\requirements.txt") do (
+  echo   - %%~R
+  %PY% -m pip install -r %%~R
+  if errorlevel 1 (
+    echo [AgentForge] Could not install %%~R - see the pip output above.
+    exit /b 1
+  )
+)
 
 echo [2/4] Installing Electron dependencies...
 if exist desktop\package-lock.json (
