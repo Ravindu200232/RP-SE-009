@@ -123,6 +123,49 @@ async def edit_wireframe(project_id: str, request: WireframeEdit):
     return storage.save_wireframe_edit(project_id, request.route, blocks)
 
 
+class WireframeHtmlRequest(BaseModel):
+    route: str = ""
+
+
+@router.post("/{project_id}/wireframes/html")
+async def draw_wireframe_html(project_id: str, request: WireframeHtmlRequest):
+    """The full drawing: one page, or the whole set when no route is named.
+
+    Separate from `/draw` because the two views cost differently. The blocks
+    are what the tools editor moves and are always there; this is a whole page
+    of HTML per screen, so it is asked for rather than assumed.
+    """
+    from ..agents.wireframe_generator import draft_html_wireframe, draft_html_wireframes
+    from ..services import storage
+    srs = await orchestrator.latest_srs(project_id)
+    if not srs:
+        raise HTTPException(404, "no SRS generated yet")
+    doc = srs["srs_document"]
+    version = str(doc.get("version") or "")
+    if request.route:
+        pages = (doc.get("public_pages") or []) + (doc.get("protected_pages") or [])
+        page = next((p for p in pages
+                     if isinstance(p, dict) and p.get("route") == request.route), None)
+        if not page:
+            raise HTTPException(404, f"no page at {request.route}")
+        storage.save_page_html(project_id, request.route,
+                               await draft_html_wireframe(page, doc), version)
+        return {"drawn": [request.route]}
+    drawn = await draft_html_wireframes(doc)
+    for page_route, html in drawn.items():
+        storage.save_page_html(project_id, page_route, html, version)
+    return {"drawn": sorted(drawn)}
+
+
+@router.get("/{project_id}/wireframes/html", response_class=PlainTextResponse)
+async def wireframe_html(project_id: str, route: str):
+    from ..services import storage
+    html = storage.read_page_html(project_id, route)
+    if not html:
+        raise HTTPException(404, f"{route} has not been drawn in full yet")
+    return PlainTextResponse(html, media_type="text/html")
+
+
 @router.get("/{project_id}/requirements")
 async def requirements(project_id: str):
     doc = await _doc_or_404(project_id)

@@ -1119,7 +1119,74 @@ export function WireframeEditor({ owner, page, onClose, onSaved }) {
 }
 
 /** Fallback modal editor when used in isolation. */
+/* The full drawing of one page: a finished HTML screen in a frame.
+ *
+ * Read-only on purpose. The blocks are what the tools move, and there is no
+ * way to drag a box in generated HTML - so this view offers the one thing it
+ * can honestly offer, which is to draw the page again. */
+function FullPage({ owner, page }) {
+  const [drawing, setDrawing] = useState(false)
+  const [problem, setProblem] = useState('')
+  const [stamp, setStamp] = useState(page.has_html ? 1 : 0)
+  // Cleared by a successful redraw rather than re-read, so the notice goes
+  // away when the thing it is about is fixed.
+  const [stale, setStale] = useState(Boolean(page.html_stale))
+
+  async function draw() {
+    setDrawing(true); setProblem('')
+    try {
+      await api.drawWireframeHtml(owner, page.route)
+      setStamp(n => n + 1)
+      setStale(false)
+    } catch (failure) {
+      setProblem(failure?.message || 'The page could not be drawn.')
+    } finally {
+      setDrawing(false)
+    }
+  }
+
+  return (
+    <div className="flex h-full min-h-0 flex-1 flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[11.5px] text-muted">
+          {stamp
+            ? 'The page drawn in full, from the specification. Read only — use Layout to move things.'
+            : 'This page has not been drawn in full yet.'}
+        </p>
+        <Button onClick={draw} disabled={drawing}>
+          {drawing ? 'Drawing…' : stamp ? 'Draw again' : 'Draw this page'}
+        </Button>
+      </div>
+      {stale && stamp ? (
+        <p className="rounded-md border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-[11.5px] text-amber-200">
+          The specification has changed since this page was drawn. What is shown
+          below is the older version — draw it again to bring it up to date.
+        </p>
+      ) : null}
+      {problem ? <p className="text-[11.5px] text-rose-300">{problem}</p> : null}
+      {stamp ? (
+        <iframe
+          key={stamp}
+          title={`${page.page_name || page.route} wireframe`}
+          src={api.wireframeHtmlUrl(owner, page.route)}
+          className="min-h-0 flex-1 w-full rounded-lg border border-white/10 bg-white"
+        />
+      ) : (
+        <div className="flex min-h-0 flex-1 items-center justify-center rounded-lg border border-dashed border-white/10 text-[12px] text-muted">
+          Nothing drawn for {page.route} yet.
+        </div>
+      )}
+    </div>
+  )
+}
+
 function PageEditor({ owner, page, onClose, onSaved }) {
+  // The full drawing lives with the specification agent, so it is offered only
+  // where that agent is the owner. A project reading its mirrored copy has the
+  // blocks and nothing to draw with.
+  const canDrawFull = /^prj_/.test(String(owner || ''))
+  const [view, setView] = useState('layout')
+
   return (
     <Modal
       onClose={onClose}
@@ -1127,13 +1194,38 @@ function PageEditor({ owner, page, onClose, onSaved }) {
       style={{ maxWidth: 'none', width: '100%', height: '100%', maxHeight: '100%' }}
       className="overflow-hidden rounded-none border-0 p-0"
     >
-      <div className="flex h-full min-h-0 gap-4 p-5 bg-[#0a0d14]">
-        <WireframeEditor
-          owner={owner}
-          page={page}
-          onClose={onClose}
-          onSaved={onSaved}
-        />
+      <div className="flex h-full min-h-0 flex-col gap-3 p-5 bg-[#0a0d14]">
+        {canDrawFull ? (
+          <div className="flex shrink-0 items-center gap-1">
+            {[['layout', 'Layout'], ['full', 'Full page']].map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setView(key)}
+                aria-pressed={view === key}
+                className={`rounded-md px-3 py-1.5 text-[11.5px] font-medium transition ${
+                  view === key
+                    ? 'bg-white/10 text-white'
+                    : 'text-muted hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+        <div className="flex min-h-0 flex-1 gap-4">
+          {view === 'full' && canDrawFull ? (
+            <FullPage owner={owner} page={page} />
+          ) : (
+            <WireframeEditor
+              owner={owner}
+              page={page}
+              onClose={onClose}
+              onSaved={onSaved}
+            />
+          )}
+        </div>
       </div>
     </Modal>
   )
@@ -1200,7 +1292,9 @@ export function Wireframes({ srs, onEditPage }) {
             <span className="block space-y-1 p-3">
               <span className="flex items-baseline justify-between gap-2">
                 <span className="truncate text-[12px] font-medium text-ink">{page.page_name}</span>
-                {page.edited && <Badge tone="accent">edited</Badge>}
+                {page.html_stale
+                  ? <Badge tone="warn">redraw</Badge>
+                  : page.edited ? <Badge tone="accent">edited</Badge> : null}
               </span>
               <span className="block truncate font-mono text-[10px] text-muted2">{page.route}</span>
               <span className="block truncate text-[10px] text-muted2">

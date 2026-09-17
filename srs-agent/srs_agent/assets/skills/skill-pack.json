@@ -72,6 +72,17 @@
         "living-srs-sync",
         "diagram-crafting"
       ]
+    },
+    {
+      "name": "wireframe-generation",
+      "category": "wireframe",
+      "description": "Draws one application screen as a Low-Fidelity / Mid-Fidelity wireframe in classic Balsamiq / Figma blueprint style - strictly monochrome, crossed-box image placeholders, realistic sample data - as sections that drop into the studio's own wireframe shell.",
+      "match": [
+        "wireframe", "wireframes", "blueprint", "low-fidelity", "mid-fidelity", "balsamiq", "prototype layout"
+      ],
+      "requires": [
+        "functional-requirements"
+      ]
     }
   ]
 }
