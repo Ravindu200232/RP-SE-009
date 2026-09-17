@@ -388,7 +388,7 @@ function Frame({
 
   const blocks = page?.blocks || []
   const canvas = Math.max(100, page?.canvas || 0,
-                          ...blocks.map(b => (b.y || 0) + (b.h || 0)))
+                          ...blocks.map(b => (b.y || 0) + (b.h || 0) + 4))
   const height = fit ? null : Math.round(width * canvas / 100)
 
   const handleDragOver = e => {
@@ -518,8 +518,8 @@ function Frame({
           isEditable={isEditable}
           dragging={draggingId === block.id}
           placingKind={placingKind}
-          onBlockMouseDown={onBlockMouseDown}
-          onResizeMouseDown={onResizeMouseDown}
+          onBlockMouseDown={(e, b) => onBlockMouseDown?.(e, b, frameRef.current?.getBoundingClientRect())}
+          onResizeMouseDown={(e, b) => onResizeMouseDown?.(e, b, frameRef.current?.getBoundingClientRect())}
         />
       ))}
     </div>
@@ -621,7 +621,7 @@ export function WireframeEditor({ owner, page, onClose, onSaved }) {
     const startClientY = e.clientY
     const origX = b.x
     const origY = b.y
-    const widthPx = frameRect.width
+    const widthPx = frameRect?.width || 800
 
     const handleMouseMove = moveEvent => {
       moveEvent.preventDefault()
@@ -659,7 +659,7 @@ export function WireframeEditor({ owner, page, onClose, onSaved }) {
     const startClientY = e.clientY
     const origW = b.w
     const origH = b.h
-    const widthPx = frameRect.width
+    const widthPx = frameRect?.width || 800
 
     const handleMouseMove = moveEvent => {
       moveEvent.preventDefault()
@@ -1058,12 +1058,12 @@ export function WireframeEditor({ owner, page, onClose, onSaved }) {
 
         {/* Scrollable Canvas Viewport */}
         <div
-          className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto bg-[#0a0d14] p-6"
+          className="flex w-full min-h-0 flex-1 flex-col items-center overflow-y-auto bg-[#0a0d14] p-6 overscroll-contain"
           onMouseDown={() => setPicked('')}
         >
           {/* Active Placement Hint Banner */}
           {placingKind && (
-            <div className="sticky top-0 z-50 mb-3 flex w-full max-w-[960px] items-center justify-between rounded-xl border border-blue-500/40 bg-blue-600 px-4 py-2 text-white shadow-xl shadow-blue-500/20 backdrop-blur-md">
+            <div className="sticky top-0 z-50 mb-3 flex w-full max-w-[960px] shrink-0 items-center justify-between rounded-xl border border-blue-500/40 bg-blue-600 px-4 py-2 text-white shadow-xl shadow-blue-500/20 backdrop-blur-md">
               <div className="flex items-center gap-2 text-xs font-semibold">
                 <span className="flex size-2 rounded-full bg-white animate-ping" />
                 <span>Placement Mode: Click anywhere on canvas to place <strong className="underline underline-offset-2 capitalize">{placingKind}</strong></span>
@@ -1079,7 +1079,7 @@ export function WireframeEditor({ owner, page, onClose, onSaved }) {
           )}
 
           <div
-            className="w-full max-w-[960px] overflow-hidden rounded-xl border border-white/15 bg-white shadow-2xl transition-all"
+            className="w-full max-w-[960px] shrink-0 mb-12 overflow-hidden rounded-xl border border-white/15 bg-white shadow-2xl transition-all"
             onClick={e => e.stopPropagation()}
           >
             {/* Browser Frame Mockup Chrome */}
@@ -1099,7 +1099,7 @@ export function WireframeEditor({ owner, page, onClose, onSaved }) {
 
             {/* Interactive Frame with Drag & Drop */}
             <Frame
-              page={{ blocks }}
+              page={{ ...page, blocks }}
               selected={picked}
               onPick={setPicked}
               onBackground={() => setPicked('')}
