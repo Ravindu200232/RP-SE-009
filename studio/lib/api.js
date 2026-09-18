@@ -130,16 +130,6 @@ export const api = {
   wireframes: (owner) => (/^prj_/.test(String(owner || ''))
     ? api.srs(`/projects/${encodeURIComponent(owner)}/wireframes`)
     : req(`/project-wireframes/${encodeURIComponent(owner)}`)),
-  editWireframe: (srsId, route, blocks) =>
-    api.srs(`/projects/${encodeURIComponent(srsId)}/wireframes/edit`, { route, blocks }),
-  // The slow pass: each page laid out on its own, with sample data in it.
-  drawWireframes: (srsId) =>
-    api.srs(`/projects/${encodeURIComponent(srsId)}/wireframes/draw`, {}),
-  // The full drawing: the same page as a finished HTML screen. A second view
-  // of one page, not a replacement for its blocks - the tools editor still
-  // works on those.
-  drawWireframeHtml: (srsId, route = '') =>
-    api.srs(`/projects/${encodeURIComponent(srsId)}/wireframes/html`, { route }),
   // What the tools editor rearranged, as the page itself.
   saveWireframeHtml: (srsId, route, html) =>
     api.srs(`/projects/${encodeURIComponent(srsId)}/wireframes/html/edit`, { route, html }),

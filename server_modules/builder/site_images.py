@@ -93,21 +93,44 @@ def adopt_wireframes(srs_id: str, proj_dir: Path) -> int:
             if item.is_file() and item.suffix.lower() == ".json":
                 shutil.copy2(item, target / item.name)
                 copied += 1
+        # The drawings themselves. The page list alone says which pages exist;
+        # these say what is on them, and they are what the brief points at.
+        drawings = staging / "html"
+        if drawings.is_dir():
+            here = target / "html"
+            here.mkdir(parents=True, exist_ok=True)
+            for item in drawings.iterdir():
+                if item.is_file() and item.suffix.lower() in (".html", ".json"):
+                    shutil.copy2(item, here / item.name)
+                    copied += 1
     except OSError as e:                                        # noqa: BLE001
         log.debug(f"adopt wireframes {srs_id}: {e}")
     return copied
 
 
 def read_project_wireframes(project: str) -> dict:
-    """The page layouts a built project adopted, for its own SRS tab."""
+    """The page list a built project adopted, for its own SRS tab."""
     _, proj_dir, error = _owned_dir(PROD_DIR, project, "project name", "project")
     if error:
         return {"pages": [], "journeys": [], "error": error}
-    path = proj_dir / ".agentforge" / "wireframes" / "wireframes.json"
+    folder = proj_dir / ".agentforge" / "wireframes"
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        saved = json.loads((folder / "wireframes.json").read_text(encoding="utf-8"))
     except Exception:                                           # noqa: BLE001
         return {"pages": [], "journeys": []}
+    # Which pages have a drawing is a fact about this folder, and the copy on
+    # disk was written before the drawings were adopted, so it cannot say.
+    drawings = folder / "html"
+    for page in (saved.get("pages") or []):
+        if isinstance(page, dict):
+            page["has_html"] = (drawings / _html_name(page.get("route"))).is_file()
+    return saved
+
+
+def _html_name(route: str) -> str:
+    """A route as a filename, the same way the specification agent names it."""
+    safe = "".join(c if c.isalnum() else "-" for c in str(route or "/").strip("/").lower())
+    return f"{'-'.join(p for p in safe.split('-') if p) or 'index'}.html"
 
 
 def wireframe_brief(proj_dir: Path) -> str:
@@ -119,13 +142,18 @@ def wireframe_brief(proj_dir: Path) -> str:
         return ""
     if not pages:
         return ""
-    routes = ", ".join(str(p.get("route")) for p in pages[:14])
-    return (f"\n\nWIREFRAMES EXIST for {len(pages)} page(s): {routes}. Read "
-            f"`.agentforge/wireframes/wireframes.json` before drawing. Each page lists its "
-            f"blocks on a 0-100 grid - kind, label, x, y, w, h - which is where the customer "
-            f"expects things to sit. Follow that arrangement; a page marked \"edited\": true "
-            f"was positioned by hand, so match it closely. The wireframes carry no colour and "
-            f"no navigation by design - take the layout from them and the look from the theme.\n")
+    drawn = [p for p in pages if p.get("has_html")]
+    if not drawn:
+        return ""
+    routes = ", ".join(str(p.get("route")) for p in drawn[:14])
+    return (f"\n\nWIREFRAMES EXIST for {len(drawn)} page(s): {routes}. They are in "
+            f"`.agentforge/wireframes/html/`, one HTML file per page, named after the route "
+            f"(`/manage/tools` is `manage-tools.html`, `/` is `index.html`). Read the ones "
+            f"for the pages you are drawing before you draw them: each is the arrangement "
+            f"the customer reviewed and, where they moved something by hand, the arrangement "
+            f"they chose. Follow the order and grouping of the sections, the columns of each "
+            f"table and the fields of each form. The wireframes are black and white by "
+            f"design - take the layout from them and the look from the theme.\n")
 
 
 def _site_rows(folder: Path) -> list:
