@@ -106,10 +106,8 @@ class Memory:
                 message["pinned"] = False
         task = {"role": "user", "content": content, "pinned": True,
                 "meta": {"kind": "task"}}
-        # A picture someone attached travels as a picture. Described in words it
-        # is one model's reading of it, and the model doing the work never sees
-        # the thing it was asked about - which for a screenshot of a bug, or a
-        # design someone wants matched, is most of the information.
+        # A picture travels as a picture, because described in words the model
+        # doing the work never sees the bug or the design it was asked about.
         if images:
             task["images"] = list(images)
         self.messages.append(task)

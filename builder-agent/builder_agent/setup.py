@@ -31,14 +31,12 @@ from .skills import SKILL_ROOT
 ENV_NAME = re.compile(r"^[A-Z][A-Z0-9_]{1,63}$")
 MAX_FIELDS = 12
 
-# Long enough to go and find a key in someone else's dashboard, which is what
-# this is actually asking for, and short enough that a closed browser does not
-# hold a build open for the afternoon.
+# Long enough to find a key in someone else's dashboard, short enough that a
+# closed browser does not hold a build open for the afternoon.
 ASK_TIMEOUT = 900.0
 
-# A question about the product is not that. It is answered in seconds by
-# somebody watching, or it is not going to be answered at all, so waiting a
-# quarter of an hour on one only stalls a run nobody is in front of.
+# A question about the product is answered in seconds or not at all, so waiting
+# a quarter of an hour only stalls a run nobody is in front of.
 QUESTION_TIMEOUT = 240.0
 
 
@@ -63,9 +61,8 @@ def read_fields(raw, *, source: str = "") -> list[dict]:
         seen.add(key)
         example = str(item.get("example") or "").strip()
         if not example:
-            # Told only "API key", people paste an account id, or a publishable
-            # key where a secret belongs, or the whole line they copied out of
-            # a dashboard. An example is the difference.
+            # Told only "API key", people paste an account id or a publishable
+            # key where a secret belongs, so an example is the difference.
             raise ToolError(f"{key} needs an example value{where}. Someone who has never seen "
                             "this setting cannot tell a key from an account id without one.")
         out.append({
@@ -182,10 +179,8 @@ def apply_answer(root: Path, question: dict, answer: dict) -> dict:
     root = Path(root)
     answer = answer or {}
     choice = str(answer.get("choice") or "").strip()[:40]
-    # An option that needs nothing needs nothing. Falling back to every option's
-    # fields when the chosen one had none put Resend's and Twilio's keys into
-    # the example file of a project whose author had just said "send nothing".
-    # The fallback is for a question nobody answered at all.
+    # An option that needs nothing needs nothing, since falling back put Resend
+    # and Twilio keys into a project whose author had just said "send nothing".
     chosen = fields_of(question, choice) if choice else all_fields(question)
 
     merge_env(root / ".env.example",

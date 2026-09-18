@@ -95,17 +95,15 @@ def read_manifest() -> dict[str, dict]:
 
 
 def select(entries: dict, evidence: str, task: str, stack_id: str) -> list[str]:
-    # The task is always part of what a skill is matched against. Keeping it a
-    # separate argument that only the negation check reads was a foot-gun: a
-    # caller that passed them apart got selection from the project alone.
+    # The task is always part of what a skill is matched against, since a caller
+    # that passed it separately got selection from the project alone.
     corpus = _normalise(task + "\n" + str(evidence or ""))
     stack = stack_for(stack_id)
 
     def available(name: str) -> bool:
         item = entries.get(name)
-        # A skill declared for another stack is never selectable here. Without
-        # this, ordinary project evidence - an express dependency, a stray
-        # Dockerfile - pulls another stack's guidance into this build.
+        # Another stack's skill is never selectable here, or a stray dependency
+        # pulls that stack's guidance into this build.
         return bool(item) and (not item["stacks"] or stack.id in item["stacks"]) \
 
     selected = {name for name in stack.skills if available(name)}
@@ -246,10 +244,8 @@ def read_skill(workspace: Path | str, name: str, resource: str = "") -> str:
             resolved.relative_to(base.resolve())
         except (OSError, ValueError):
             raise ValueError(f"{resource!r} is outside the {name} skill.") from None
-        # Example files carry a guard suffix so npm does not treat a sketch as
-        # a workspace and the project's own runner does not collect its tests.
-        # The model asks for the logical name, which is the right thing to ask
-        # for, so resolve the suffix here rather than spending a turn on it.
+        # Example files carry a guard suffix so npm ignores them, and the model
+        # asks for the logical name, so resolve the suffix here.
         for candidate in (resolved, *(resolved.with_name(resolved.name + guard)
                                       for guard in GUARD_SUFFIXES)):
             if candidate.is_file():
