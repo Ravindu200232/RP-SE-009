@@ -808,6 +808,35 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
         elif path == "/mongo/prefetch":
             threading.Thread(target=MONGO.prefetch, daemon=True).start()
             self._json({"ok": True})
+        elif path in ("/github/device/start", "/github/device/poll"):
+            # Signing in to GitHub the way the AWS console sign-in already
+            # works: a code approved in the browser, rather than a personal
+            # access token pasted into a field. The token never reaches the
+            # studio - it is saved straight into this person's own settings.
+            # `github_device` is self-contained and imports normally.
+            # `deploy_settings_for` and `save_deploy_settings` are not imported:
+            # the deploy parts are exec'd into the shared runtime namespace and
+            # are already in scope here. Importing them as a module gives them
+            # fresh globals without `auth_db`, and the first call raises
+            # NameError - which is how this route failed the first time.
+            from server_modules.deploy.github_device import FLOWS
+            body = self._body()
+            user = acting() or {}
+            if not user:
+                return self._json({"error": "sign in to continue", "auth": "required"}, 401)
+            try:
+                if path.endswith("/start"):
+                    client_id = (str(body.get("client_id") or "").strip()
+                                 or str(deploy_settings_for(user).get("github_client_id") or ""))
+                    self._json(FLOWS.start(client_id))
+                else:
+                    answer = FLOWS.poll(str(body.get("flow_id", "")))
+                    if answer.get("status") == "ready":
+                        deploy = save_deploy_settings(user, {"github_token": answer.pop("token")})
+                        answer["deploy"] = deploy
+                    self._json(answer)
+            except ValueError as error:
+                self._json({"error": str(error)}, 400)
         elif path == "/settings":
             body = self._body()
             user = acting() or {}
