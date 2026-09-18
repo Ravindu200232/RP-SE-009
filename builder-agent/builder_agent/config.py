@@ -44,10 +44,8 @@ class Stack:
     rules: tuple[str, ...]
     # Skills this stack always needs, whatever the request happens to mention.
     skills: tuple[str, ...] = ()
-    # Skills this stack often needs but that are not part of its contract, so
-    # a request can ask for them and a request can rule them out. Docker is the
-    # example: the rules above call it a deliverable, never a requirement for
-    # running or verifying the app, so "no docker" has to mean no docker.
+    # Not part of the stack's contract, so a request can ask for them and a
+    # request can rule them out.
     extras: tuple[str, ...] = ()
     parallel_units: bool = False
 
@@ -226,9 +224,8 @@ class Config:
     context_tokens: int = DEFAULT_CONTEXT_TOKENS
     max_iterations: int = 0            # 0 = no fixed cap; checkpoints renew room
     temperature: float = 0.2
-    # One model turn must stay bounded even when the selected model exposes a
-    # very large context window.  Large windows are for useful input, not a
-    # licence for a single verification decision to run for half an hour.
+    # One turn stays bounded however large the window, which is for useful input
+    # rather than a licence to run for half an hour.
     max_response_tokens: int = 16_384
     response_timeout: int = 240
     stream_stall_timeout: int = 60

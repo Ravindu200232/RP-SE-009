@@ -98,9 +98,8 @@ class Compactor:
         return {"compacted": True, "method": "checkpoint"}
 
     def _handoff(self) -> str:
-        # Summarise a bounded data snapshot, never submit the full tool history.
-        # Preserve both ends of large messages (the latest diagnostic is often
-        # at the end) and keep the original transcript in the recovery archive.
+        # A bounded snapshot rather than the full tool history, keeping both ends
+        # of large messages because the latest diagnostic is often at the end.
         limit = min(24_000, self.budget.limit // 3)
         snapshot = self.memory.build()
         def clipped(message):

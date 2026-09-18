@@ -789,7 +789,7 @@ class MotionIsAskedForEverywhereTests(unittest.TestCase):
 
     def test_the_skills_no_longer_carry_a_motion_manual(self):
         skills = Path("builder-agent/builder_agent/assets/skills")
-        for name in ("html-prototype", "frontend-design"):
+        for name in ("html-prototype",):
             with self.subTest(name):
                 text = (skills / name / "SKILL.md").read_text(encoding="utf-8")
                 self.assertNotIn("IntersectionObserver", text)

@@ -31,11 +31,8 @@ MIN_STYLE_SIGNS = 2
 STYLESHEET_LINK = re.compile(r"""<link[^>]+rel=["']?stylesheet["']?[^>]*>""", re.I)
 PAGES = (".html",)
 
-# What the page looks like once it has loaded, rather than what it links to.
-# Counting the rules in `document.styleSheets` cannot be used: a page opened
-# from a file is not allowed to read its own stylesheet, and every page then
-# reads as unstyled - which had this asking for a stylesheet that was already
-# 16KB long, round after round.
+# What the page looks like once loaded, because a page opened from a file may
+# not read its own stylesheet and every one then reads as unstyled.
 STYLE_SIGNS = """
 (() => {
   const body = getComputedStyle(document.body);

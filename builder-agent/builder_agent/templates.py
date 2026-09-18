@@ -25,15 +25,9 @@ TEMPLATE_ROOT = ASSET_ROOT / "templates"
 # project's own runner discovering the template's suites. Scaffolding strips it.
 TEMPLATE_SUFFIX = ".tpl"
 
-# The engine's own directories do not make a workspace non-empty: a task that
-# was planned, saved or restored has these and is still greenfield.
-#
-# `.env.example` is one of them, and leaving it out cost a whole stack: the
-# setup step writes the names it asked about there, so a build that was asked
-# anything at all arrived here with one file in the workspace, was declared to
-# contain a project, and never got its template. The MERN builds that went
-# through that had no .gitignore - which is also why their security review
-# read the client bundle and reported four findings against React's own code.
+# The engine's own files do not make a workspace non-empty, and leaving
+# `.env.example` off this list cost a whole stack: any build that was asked a
+# setup question arrived with one file, was called a project, and got no template.
 ENGINE_ENTRIES = frozenset({".agent", ".agents", ".agentforge", ".git", ".gitignore",
                             ".env", ".env.local", ".env.example",
                             ".vscode", ".idea", "node_modules"})
@@ -61,10 +55,8 @@ def _template_files(root: Path) -> list[tuple[Path, str]]:
         if not source.is_file():
             continue
         relative = source.relative_to(root).as_posix()
-        # Everything under scaffold/ is a skeleton to copy later, not part of
-        # the project yet, so it keeps its guard suffix: stripping it there
-        # would put a package.json npm might install and a test file the
-        # project's runner would execute into a directory meant to be inert.
+        # Everything under scaffold/ keeps its guard suffix, because stripping it
+        # would put an installable package.json in a directory meant to be inert.
         inert = relative.startswith("scaffold/")
         target = (relative[:-len(TEMPLATE_SUFFIX)]
                   if not inert and relative.endswith(TEMPLATE_SUFFIX) else relative)
@@ -147,10 +139,8 @@ def template_notice(result: Scaffold) -> str:
     ])
 
 
-# The packages that turn the markup into a styled page. Losing one of these is
-# the only kind of missing dependency that raises nothing at all: the build
-# passes, the app serves, every test goes green, and the page renders as
-# unstyled HTML because `@tailwind utilities` was a directive nobody compiled.
+# Losing one of these is the only missing dependency that raises nothing at all:
+# the build passes, the tests go green, and the page renders as unstyled HTML.
 STYLING_TOOLCHAIN = ("tailwindcss", "postcss", "autoprefixer")
 
 # The config files those packages read. Written by the scaffold; without them

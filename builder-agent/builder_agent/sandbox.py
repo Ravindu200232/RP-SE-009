@@ -26,16 +26,9 @@ IGNORED_DIRS = frozenset({
     ".vscode", "vendor", ".agent", ".terraform",
 })
 
-# Dot-directories that are the agent's own work and must stay findable.
-#
-# `.agentforge` holds the drawing - the pages the drawing pass writes and then
-# has to search and revise. It was ignored here and, being a dot-directory,
-# ignored twice over, so `search` could not see a file the same agent had just
-# written. Every query came back "No match ... search for a shorter fragment",
-# which is what the message advises, so a run hunting a class it had written
-# went `href="gallery"` -> `href=` -> `href` -> `nav` -> `the`, each shorter
-# and each empty, until the phase was spent. The pages were there the whole
-# time; nothing could look at them.
+# Dot-directories that are the agent's own work and must stay findable, since
+# ignoring `.agentforge` hid the drawing from the pass that had just written it
+# and a run spent its whole phase searching for a class that was there.
 VISIBLE_DOT_DIRS = frozenset({".agentforge"})
 
 BINARY_SUFFIXES = frozenset({
@@ -113,15 +106,9 @@ class Sandbox:
         handoff = relative.startswith(".agentforge/handoff/") and target.suffix.lower() == ".md"
         prototype = relative == ".agentforge/prototype" or relative.startswith(".agentforge/prototype/")
         own = relative == f".agentforge/agents/{self.role}" or relative.startswith(f".agentforge/agents/{self.role}/")
-        # What the customer handed in: pictures uploaded on the design screen
-        # and files dropped into the chat. Both are told to the agent by path,
-        # and a path it is refused is worse than one it was never given - it
-        # reads as the file being missing. Readable by either role, writable by
-        # neither: these are the customer's originals, and an agent that edits
-        # one silently changes what was asked for.
-        # `wireframes` joins them: the drawing pass is told to follow the page
-        # layouts the specification implies, and a layout it is refused is a
-        # layout it invents instead.
+        # The customer's own uploads and wireframes: readable by either role and
+        # writable by neither, because a path the agent is refused reads as a file
+        # that is missing and a layout it is refused is one it invents instead.
         given = any(relative == f".agentforge/{name}" or relative.startswith(f".agentforge/{name}/")
                     for name in ("images", "uploads", "wireframes"))
         skills = (relative == ".agents/skills" or relative.startswith(".agents/skills/")

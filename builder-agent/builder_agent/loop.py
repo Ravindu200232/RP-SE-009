@@ -55,30 +55,22 @@ MAX_PARSE_FAILURES = 4
 MAX_CUTOFF_RETRIES = 2
 MAX_SAME_FAILURE = 3
 
-# How many times the same read may return the same answer before the loop says
-# so. A failing call that repeats is already caught; a *succeeding* one was not,
-# and a model that cannot find what it expects will happily read the same file
-# sixteen times in ninety seconds and write nothing.
+# A failing call that repeats is caught; a succeeding one was not, until a run
+# read the same file sixteen times and wrote nothing.
 MAX_SAME_READ = 3
-# Which skill pack a stack's build reads from. A pack is one skill directory
-# holding an index and one file per entry, so the build opens the index and then
-# only the entries it needs, rather than sorting a flat catalogue of thirty.
+# One directory per stack - an index plus a file per entry - so a build opens
+# the index and then only what it needs.
 STACK_PACKS = {"nextjs-mongo": "stack-nextjs", "mern-microservices": "stack-mern"}
-# The packs whose index every build needs whatever the stack: how to test, and
-# where the rule behind a failure is written down. Their indexes go into the
-# prompt rather than being discovered, so turn one already knows the entry
-# names and spends its calls on the entries themselves.
+# Every build needs these two, so their indexes go in the prompt rather than
+# being discovered.
 SHARED_PACKS = ("stack-testing", "stack-debug")
 MAX_TERMINAL_BATCH = 4
 MAX_BATCH_CALLS = 8
-# How many times a run may claim completion with the evidence still missing.
-# The gate exists to send it back to work, not to trap it: a model that cannot
-# produce the evidence will not produce it on the twentieth attempt either, and
-# an unbounded gate is an infinite loop with a polite message.
+# Sends a run back for missing evidence without trapping it, since unbounded
+# this is an infinite loop with a polite message.
 MAX_COMPLETION_BLOCKS = 4
-# A provider hiccup - a 5xx, a dropped connection - is not a reason to throw
-# away a run that is going fine. Retried with a short backoff; a persistent
-# failure still surfaces rather than looping.
+# A 5xx or a dropped connection is not a reason to throw away a run that is
+# going fine.
 MAX_TRANSPORT_RETRIES = 3
 TRANSPORT_BACKOFF = 4.0
 
@@ -99,11 +91,8 @@ def _signature(tool: str, args: dict) -> str:
         f"{tool}\0{json.dumps(args, sort_keys=True, default=str)}".encode()).hexdigest()[:16]
 
 
-# A window of a file is still that file. `_signature` hashes the whole argument
-# dict, offset and limit included, so nine slices of one stylesheet looked like
-# nine unrelated calls and the repeat counter never moved: one build read
-# `styles.css` forty-nine times, wrote nothing, and ran twelve minutes. These
-# are counted by what was looked at instead of by how it was sliced.
+# `_signature` includes offset and limit, so nine slices of one stylesheet
+# counted as nine unrelated calls and a build read styles.css forty-nine times.
 PAGED_READS = frozenset({"readFile", "readFiles", "readSkill"})
 
 
@@ -237,9 +226,8 @@ class Loop:
                 "avoid repeated failed actions, and finish promptly with an accurate account of what changed.")
             return
         if self.config.extra.get("agent_role") == "developer":
-            # One pack per stack, rather than a flat catalogue the build has to
-            # sort through: the index names what is inside, and each entry is
-            # read on its own with a resourcePath when the work reaches it.
+            # One pack per stack, so the index names what is inside and each
+            # entry is read on its own.
             pack = STACK_PACKS.get(self.config.stack, "")
             pack_note = (
                 f"Your stack's skills are the `{pack}` pack. Its index is already below, read - "
@@ -247,10 +235,8 @@ class Loop:
                 f"readSkill(name=\"{pack}\", resourcePath=\"<entry>.md\"). Hardening and review are "
                 f"in `stack-security`. "
                 if pack else "")
-            # The framework's own documentation, so a build error that names a
-            # framework rule is answered by the page that defines it rather than
-            # by another guess at the same file. The trigger has to be countable:
-            # a run that reads one file eleven times is not short of the file.
+            # The framework's own docs, so an error naming a framework rule is
+            # answered by the page that defines it rather than another guess.
             docs_note = (
                 "When a build, a dev server or a test run fails, `stack-debug` holds the page that "
                 "defines the rule the error names - the official Next.js and Vitest documentation. "
@@ -303,11 +289,8 @@ class Loop:
                 "application folders. Define verification scope, run checks, and report completion accurately."
                 + self._preloaded_indexes(pack) + (self.theme_brief or ""))
             return
-        # The theme rides in the system prompt, which is where the preview the
-        # customer chose from was drawn from: `render_preview` sends the very
-        # same file as `role: "system"`, and that is why those pages came out
-        # looking like their theme instead of like each other. Carried as a
-        # pinned user message it reads as one more thing in the transcript.
+        # The theme rides in the system prompt, the same place `render_preview`
+        # sends it from, which is why those previews looked like their theme.
         self.memory.set_system(system_prompt(
             workspace=self.sandbox.root, model=self.router.label,
             stack=self.config.stack, quality=self.config.quality,
@@ -355,12 +338,9 @@ class Loop:
         self.memory.add_pinned(format_layout(layout), "project-layout")
 
     def _prepare_workspace(self, task: str) -> None:
-        # The theme comes first, and before the designer's early return: writing a
-        # design system into the workspace is not scaffolding app code, and the
-        # designer is the one role that draws the thing. It used to sit below the
-        # return, so the agent that makes the look never received the look - only
-        # the direction's colours and fonts did, which is why every theme came out
-        # as the same page in a different colour.
+        # Before the designer's early return, because below it the agent that
+        # makes the look never received it and every theme came out as the same
+        # page in a different colour.
         self._install_theme(task)
         if self.config.extra.get("agent_role") == "designer":
             # Designer owns only the prototype. It must never scaffold app code.
@@ -643,9 +623,8 @@ class Loop:
     def _run_one(self, call) -> dict | None:
         tool = self.registry.get(call.tool)
         if not tool:
-            # Name the closest tools rather than the first dozen alphabetically:
-            # a model that invented `summonPony` is not helped by a list that
-            # starts at `backgroundProcess` and stops before `writeFile`.
+            # The closest tools, not the first dozen alphabetically, since a model
+            # that invented `summonPony` is not helped by a list ending at `b`.
             names = sorted(self.registry.names())
             near = difflib.get_close_matches(call.tool, names, n=5, cutoff=0.4) or names[:8]
             self.memory.add_tool_result(
@@ -695,10 +674,8 @@ class Loop:
         ok = result.get("ok", True)
         body = str(result.get("content") or "")
 
-        # The same read, returning the same answer, over and over. It is not a
-        # failure - which is exactly why nothing caught it - but it is not
-        # progress either, and the loop is the only thing in a position to
-        # notice. Say so plainly and let the model move; do not refuse the call.
+        # Not a failure, which is why nothing caught it, so say so and let the
+        # model move rather than refusing the call.
         if ok and not tool.mutates:
             digest = hashlib.sha256(body.encode("utf-8", "replace")).hexdigest()
             target = _read_target(call.tool, args)
@@ -708,10 +685,8 @@ class Loop:
             # everything else counts only when the answer comes back identical.
             times = times + 1 if (target or seen == digest) else 1
             self.repeated_reads[key] = (digest, times)
-            # Said once, and only as an observation. A repeat is never refused:
-            # the model is the one that knows whether it still needs the file,
-            # and a read it genuinely needs is cheaper than a wrong guess about
-            # what it remembers. The answer itself always comes back in full.
+            # An observation rather than a refusal, since the model knows whether
+            # it still needs the file.
             if times >= MAX_SAME_READ:
                 what = _read_label(call.tool, args)
                 body = (f"[Read {times} times in this run, with nothing changed in between - "

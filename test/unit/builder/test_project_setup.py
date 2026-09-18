@@ -42,76 +42,65 @@ class SkillPackTests(unittest.TestCase):
 
     def test_the_stack_core_is_always_selected_whatever_the_request_says(self):
         selected = select(self.entries, "", "hello", "nextjs-mongo")
-        for name in ("full-app-builder", "nextjs", "mongoose", "vitest", "browser-e2e", "runtime"):
+        for name in ("html-prototype", "stack-nextjs", "stack-testing",
+                     "stack-debug", "stack-security"):
             self.assertIn(name, selected)
 
     def test_a_skill_belonging_to_another_stack_is_never_selectable(self):
-        # An express dependency in a Next.js project must not drag the
-        # microservices guidance into the build.
+        # The microservices guidance must not reach a Next.js build, whatever
+        # the request mentions.
         selected = select(self.entries, "express gateway service", "add an api", "nextjs-mongo")
-        for name in ("express", "api-gateway", "mern-microservices"):
-            self.assertNotIn(name, selected)
+        self.assertNotIn("stack-mern", selected)
+        self.assertIn("stack-nextjs", selected)
 
     def test_a_request_that_rules_a_term_out_does_not_get_its_skill(self):
-        with_docker = select(self.entries, "", "a mern shop with docker", "mern-microservices")
-        without = select(self.entries, "", "a mern shop, no docker", "mern-microservices")
+        with_payments = select(self.entries, "", "a shop that takes card payments", "nextjs-mongo")
+        without = select(self.entries, "", "a shop, no card payments", "nextjs-mongo")
 
-        self.assertIn("docker", with_docker)
-        self.assertNotIn("docker", without)
+        self.assertIn("payments", with_payments)
+        self.assertNotIn("payments", without)
 
     def test_the_sinhala_forms_studio_users_type_are_understood(self):
-        # "docker nathuwa" and "docker epa" both mean "without docker"; the
-        # studio's users write them, and ignoring that installs guidance the
+        # "payments nathuwa" and "payments epa" both mean "without payments";
+        # the studio's users write them, and ignoring that installs guidance the
         # user has just asked not to have.
-        for phrase in ("mern shop docker nathuwa", "mern shop docker epa"):
-            self.assertNotIn("docker", select(self.entries, "", phrase, "mern-microservices"),
+        for phrase in ("a shop with payments nathuwa", "a shop with payments epa"):
+            self.assertNotIn("payments", select(self.entries, "", phrase, "nextjs-mongo"),
                              phrase)
 
     def test_installing_copies_the_selected_skills_into_the_project(self):
         pack = install_skill_pack(self.root, "build a hotel booking app", "nextjs-mongo")
 
         self.assertEqual(pack.warnings, [])
-        self.assertIn("full-app-builder", pack.installed)
-        self.assertTrue((self.root / ".agents/skills/full-app-builder/SKILL.md").is_file())
-        self.assertIn("unit", pack.phase_skills)
-
-    def test_page_composition_reaches_both_stacks_with_the_design_skill(self):
-        """Composition is UI work, so it travels wherever the design does."""
-        for stack in ("nextjs-mongo", "mern-microservices"):
-            with self.subTest(stack=stack):
-                picked = select(self.entries, "", "build a site with pages", stack)
-                self.assertIn("page-composition", picked)
-                self.assertIn("frontend-design", picked)
-
-    def test_composition_defers_to_the_contract_instead_of_re_deciding_it(self):
-        """Two skills that both choose a palette would fight over every build."""
-        body = (SKILL_ROOT / "page-composition" / "SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("Do not re-open either here", body)
-        for owned in ("palette", "corners", "spacing", "motion", "contrast"):
-            self.assertIn(owned, body.split("## Make it this product")[0])
-
+        self.assertIn("stack-nextjs", pack.installed)
+        self.assertTrue((self.root / ".agents/skills/stack-nextjs/SKILL.md").is_file())
 
     def test_a_project_that_overrides_a_skill_keeps_its_own_version(self):
-        target = self.root / ".agents/skills/runtime"
+        target = self.root / ".agents/skills/stack-nextjs"
         target.mkdir(parents=True)
         (target / "SKILL.md").write_text("mine", encoding="utf-8")
 
         pack = install_skill_pack(self.root, "build an app", "nextjs-mongo")
 
-        self.assertIn("runtime", pack.preserved)
+        self.assertIn("stack-nextjs", pack.preserved)
         self.assertEqual((target / "SKILL.md").read_text(), "mine")
-        self.assertEqual(read_skill(self.root, "runtime"), "mine")
+        self.assertEqual(read_skill(self.root, "stack-nextjs"), "mine")
 
     def test_an_example_file_is_read_by_the_name_it_would_really_have(self):
-        """Sketch files carry a guard suffix; the model asks for the real name.
+        """Example files carry a guard suffix; the model asks for the real name.
 
         `.txt` keeps npm from treating a sketch as a workspace and keeps the
         project's runner from collecting its tests. Asking the model to know
-        that would cost a turn every time, so the suffix resolves here.
+        that would cost a turn every time, so the suffix resolves here. The
+        fixture is written by the test: what is under test is the resolution,
+        not whichever skill happens to ship a guarded file today.
         """
         install_skill_pack(self.root, "build a nextjs shop", "nextjs-mongo")
+        guarded = self.root / ".agents/skills/stack-nextjs/sketch/test"
+        guarded.mkdir(parents=True, exist_ok=True)
+        (guarded / "product.model.test.js.txt").write_text("vitest example", encoding="utf-8")
 
-        body = read_skill(self.root, "nextjs-sketch", "sketch/test/product.model.test.js")
+        body = read_skill(self.root, "stack-nextjs", "sketch/test/product.model.test.js")
 
         self.assertIn("vitest", body)
 
@@ -119,7 +108,7 @@ class SkillPackTests(unittest.TestCase):
         install_skill_pack(self.root, "build a nextjs shop", "nextjs-mongo")
 
         with self.assertRaises(ValueError) as caught:
-            read_skill(self.root, "nextjs-sketch", "sketch/test/nope.js")
+            read_skill(self.root, "stack-nextjs", "sketch/test/nope.js")
 
         message = str(caught.exception)
         self.assertIn("has no file", message)
@@ -130,12 +119,12 @@ class SkillPackTests(unittest.TestCase):
     def test_a_resource_path_cannot_escape_the_skill_it_belongs_to(self):
         install_skill_pack(self.root, "build an app", "nextjs-mongo")
         with self.assertRaises(ValueError):
-            read_skill(self.root, "runtime", "../../../etc/passwd")
+            read_skill(self.root, "stack-nextjs", "../../../etc/passwd")
 
     def test_the_catalog_prefers_the_project_copy_of_a_skill(self):
         install_skill_pack(self.root, "build an app", "nextjs-mongo")
         rows = {row["name"]: row for row in catalog(self.root)}
-        self.assertEqual(rows["runtime"]["source"], "project")
+        self.assertEqual(rows["stack-nextjs"]["source"], "project")
 
 
 class StackTemplateTests(unittest.TestCase):
