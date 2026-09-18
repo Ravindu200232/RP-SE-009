@@ -117,8 +117,13 @@ def adopt_srs(srs_id: str, proj_dir: Path) -> bool:
         # that was built once kept whatever it had on that day. Both showed the
         # same thing in the workspace: "No pages in the specification yet", on a
         # specification with ten pages in it.
+        # `adopt_wireframes` is not imported: `site_images` is one of the
+        # runtime parts, exec'd into this same namespace, so the name is
+        # already here. Importing it as a module hands it fresh globals
+        # without `Path`, and the first line of it raises NameError - which is
+        # exactly what happened, and was reported as "wireframes were not
+        # adopted: name 'Path' is not defined".
         try:
-            from server_modules.builder.site_images import adopt_wireframes
             adopt_wireframes(srs_id, proj_dir)
         except Exception as exc:                                     # noqa: BLE001
             elog("WARN", f"   wireframes were not adopted: {exc}")
