@@ -482,6 +482,94 @@ function Aws({ deploy, onSave, probe, onRecheck }) {
 }
 
 
+/* Signing in through a provider's own command line tool.
+ *
+ * Vercel, Netlify and Azure have no device flow, so their `login` command is
+ * what drives the browser. Azure prints a code to type and the other two open
+ * a tab by themselves, which is why the code only appears when there is one. */
+function CliSignIn({ provider, onDone }) {
+  const [state, setState] = useState(null)   // { flow_id, shows_code }
+  const [code, setCode] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const [tool, setTool] = useState(null)
+  const stop = useRef(false)
+
+  useEffect(() => {
+    let live = true
+    api.cliSigninAvailable()
+      .then(d => { if (live) setTool(d?.providers?.[provider] || null) })
+      .catch(() => {})
+    return () => { live = false; stop.current = true }
+  }, [provider])
+
+  async function signIn() {
+    setBusy(true); setErr(''); setCode(null); stop.current = false
+    try {
+      const started = await api.cliSigninStart(provider)
+      setState(started)
+      const deadline = Date.now() + 10 * 60 * 1000
+      while (!stop.current && Date.now() < deadline) {
+        await new Promise(r => setTimeout(r, 2000))
+        const answer = await api.cliSigninPoll(started.flow_id)
+        if (answer.status === 'ready') { setState(null); onDone?.(); return }
+        if (answer.user_code) {
+          setCode({ code: answer.user_code, uri: answer.verification_uri })
+        }
+      }
+      setErr('That sign-in did not finish in time.')
+    } catch (e) {
+      setErr(e.message)
+    } finally {
+      setBusy(false); setState(null)
+    }
+  }
+
+  async function cancel() {
+    stop.current = true
+    if (state?.flow_id) { try { await api.cliSigninCancel(state.flow_id) } catch {} }
+    setBusy(false); setState(null); setCode(null)
+  }
+
+  if (tool && !tool.installed) {
+    return (
+      <p className="text-[10.5px] text-muted2">
+        To sign in through the browser, install the {tool.title} tool:{' '}
+        <code className="font-mono text-ink">{tool.install}</code>. Until then, use a token.
+      </p>
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      {code ? (
+        <div className="rounded-lg border border-line bg-panel2 p-3">
+          <p className="text-[11px] text-muted">Enter this code in the browser:</p>
+          <p className="my-1.5 font-mono text-[18px] font-bold tracking-[0.3em] text-ink">
+            {code.code}
+          </p>
+          {code.uri && (
+            <a className="text-[11px] text-accent hover:underline" target="_blank"
+               rel="noreferrer" href={code.uri}>{code.uri}</a>
+          )}
+        </div>
+      ) : busy ? (
+        <p className="text-[10.5px] text-muted2">
+          A browser tab should have opened — finish the sign-in there.
+        </p>
+      ) : null}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button size="sm" disabled={busy} onClick={signIn}>
+          {busy && <Loader2 className="size-3 animate-spin" />} Sign in with browser
+        </Button>
+        {busy && <Button size="sm" variant="outline" onClick={cancel}>Cancel</Button>}
+      </div>
+      {err && <p className="text-[10.5px] text-deep">{err}</p>}
+    </div>
+  )
+}
+
+
 function Vercel({ deploy, onSave }) {
   const [token, setToken] = useState('')
   const [busy, setBusy] = useState('')
@@ -527,8 +615,9 @@ function Vercel({ deploy, onSave }) {
     <Row title="Vercel" ok={connected}
          unknown={!status && !deploy?.vercel_token_set}
          detail={detail}>
-      <div className="mt-2 w-full space-y-2">
-        <Field label="Access token"
+      <div className="mt-2 w-full space-y-3">
+        <CliSignIn provider="vercel" onDone={() => onSave({})} />
+        <Field label="Or paste an access token"
                hint="Your own Vercel account. Kept with your account here, encrypted,
                      and set as a GitHub Actions secret on the repository the
                      deployment creates — Vercel has no OIDC equivalent. Type a
@@ -610,6 +699,11 @@ function HostedCredential({ title, provider, setting, saved, label, hint, href, 
 
   return <Row title={title} ok={saved ? connected : false} unknown={Boolean(saved) && !status}
               detail={detail}>
+    {(provider === 'netlify' || provider === 'azure') && (
+      <div className="mt-2 w-full">
+        <CliSignIn provider={provider} onDone={() => onSave({})} />
+      </div>
+    )}
     <div className="mt-2 w-full space-y-2">
       <Field label={label} hint={<>{hint} Stored encrypted with your account. Type a single - to clear it. <a href={href} target="_blank" rel="noreferrer" className="text-accent hover:underline">Setup guide</a></>}>
         <Input type="password" autoComplete="off" value={value} onChange={e => setValue(e.target.value)} placeholder={saved ? 'saved — enter a replacement' : label} />

@@ -808,6 +808,31 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
         elif path == "/mongo/prefetch":
             threading.Thread(target=MONGO.prefetch, daemon=True).start()
             self._json({"ok": True})
+        elif path in ("/cli-signin/start", "/cli-signin/poll", "/cli-signin/cancel"):
+            # Vercel, Netlify and Azure have no device flow, so their own
+            # `login` command drives the browser and this reads the credential
+            # it leaves behind. `save_deploy_settings` is already in scope.
+            from server_modules.deploy.cli_signin import SIGNINS
+            body = self._body()
+            user = acting() or {}
+            if not user:
+                return self._json({"error": "sign in to continue", "auth": "required"}, 401)
+            try:
+                if path.endswith("/start"):
+                    self._json(SIGNINS.start(str(body.get("provider", ""))))
+                elif path.endswith("/cancel"):
+                    self._json(SIGNINS.cancel(str(body.get("flow_id", ""))))
+                else:
+                    answer = SIGNINS.poll(str(body.get("flow_id", "")))
+                    if answer.get("status") == "ready":
+                        patch = {answer.pop("setting"): answer.pop("value")}
+                        answer["deploy"] = save_deploy_settings(user, patch)
+                    self._json(answer)
+            except ValueError as error:
+                self._json({"error": str(error)}, 400)
+        elif path == "/cli-signin/available":
+            from server_modules.deploy.cli_signin import SIGNINS
+            self._json({"providers": SIGNINS.available()})
         elif path in ("/github/device/start", "/github/device/poll"):
             # Signing in to GitHub the way the AWS console sign-in already
             # works: a code approved in the browser, rather than a personal

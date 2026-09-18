@@ -19,9 +19,12 @@ USER_GET = {"/projects", "/models", "/srs-status", "/deploy-status", "/settings"
 USER_GET_PREFIX = ("/design-theme-preview/",)
 USER_POST = {"/logo-prompt", "/tune", "/build-attach", "/upload-project", "/jobs",
              "/build/cancel", "/settings", "/design-theme-preview",
-             # Signing in to GitHub in the browser. Each person's own accounts,
-             # so signed in is the whole requirement - nothing here is admin's.
-             "/github/device/start", "/github/device/poll"}
+             # Signing in to a deployment account in the browser. Each person's
+             # own accounts, so signed in is the whole requirement - nothing
+             # here is admin's.
+             "/github/device/start", "/github/device/poll",
+             "/cli-signin/start", "/cli-signin/poll", "/cli-signin/cancel",
+             "/cli-signin/available"}
 # The run in progress, which is one person's at a time.
 RUN_GET = {"/decisions"}
 RUN_POST = {"/decision"}
