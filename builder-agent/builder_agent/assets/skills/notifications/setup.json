@@ -45,10 +45,10 @@
       "hint": "Text messages. Numbers are stored in E.164: +94771234567.",
       "fields": [
         {"key": "TWILIO_ACCOUNT_SID", "label": "Account SID",
-         "example": "AC1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+         "example": "AC<paste-your-account-sid>",
          "hint": "console.twilio.com, at the top of the page.", "secret": false},
         {"key": "TWILIO_AUTH_TOKEN", "label": "Auth token",
-         "example": "9f8e7d6c5b4a39281706f5e4d3c2b1a0",
+         "example": "<paste-your-auth-token>",
          "hint": "The same panel, behind 'show'.", "secret": true},
         {"key": "TWILIO_FROM_NUMBER", "label": "Sending number",
          "example": "+15005550006",
