@@ -13,7 +13,7 @@
       "hint": "No real money. Card 4242 4242 4242 4242 always succeeds.",
       "fields": [
         {"key": "STRIPE_SECRET_KEY", "label": "Stripe secret key",
-         "example": "sk_test_51H8xkLm9QpR2sT4uV6wX8yZ",
+         "example": "sk_test_<paste-your-key-here>",
          "hint": "Dashboard → Developers → API keys. The one that starts sk_test_.",
          "secret": true},
         {"key": "STRIPE_PUBLISHABLE_KEY", "label": "Stripe publishable key",
@@ -32,7 +32,7 @@
       "hint": "Real cards, real money. Use your live keys.",
       "fields": [
         {"key": "STRIPE_SECRET_KEY", "label": "Stripe secret key",
-         "example": "sk_live_51H8xkLm9QpR2sT4uV6wX8yZ",
+         "example": "sk_live_<paste-your-key-here>",
          "hint": "Dashboard → Developers → API keys, with the test toggle off.",
          "secret": true},
         {"key": "STRIPE_PUBLISHABLE_KEY", "label": "Stripe publishable key",
