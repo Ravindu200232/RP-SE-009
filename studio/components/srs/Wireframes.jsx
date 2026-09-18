@@ -1171,6 +1171,18 @@ function FullPage({ owner, page }) {
   // Cleared by a successful redraw rather than re-read, so the notice goes
   // away when the thing it is about is fixed.
   const [stale, setStale] = useState(Boolean(page.html_stale))
+
+  // `has_html` is a snapshot taken when the grid was listed, so a page drawn
+  // since - by the other view, by another tab, by the run that fills the whole
+  // set - opens here saying "nothing drawn yet" over a page that exists. Ask
+  // the server instead; it is one request and it is the authority.
+  useEffect(() => {
+    let live = true
+    fetch(api.wireframeHtmlUrl(owner, page.route), { method: 'GET' })
+      .then(r => { if (live && r.ok) setStamp(n => n || 1) })
+      .catch(() => {})
+    return () => { live = false }
+  }, [owner, page.route])
   const [picked, setPicked] = useState('')
   const [dirty, setDirty] = useState(false)
   const [typing, setTyping] = useState(false)
