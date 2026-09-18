@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Check, ExternalLink, Loader2, X } from 'lucide-react'
 import { api } from '@/lib/api'
 import { Button, Input, SectionLabel } from '../ui'
@@ -94,6 +94,47 @@ function Github({ deploy, onSave, probe, onRecheck }) {
   const ok = Boolean(deploy?.github_token_set)
   const login = deploy?.github_login || probe?.github_account || ''
 
+  // Signing in rather than pasting: GitHub shows a code, the browser approves
+  // it, and the token is written straight into this person's settings without
+  // passing through a field or a clipboard.
+  const [clientId, setClientId] = useState(deploy?.github_client_id || '')
+  const [flow, setFlow] = useState(null)
+  const [signing, setSigning] = useState(false)
+  const stop = useRef(false)
+
+  useEffect(() => () => { stop.current = true }, [])
+
+  async function signIn() {
+    setSigning(true); setErr(''); setFlow(null)
+    try {
+      if (clientId.trim() && clientId.trim() !== (deploy?.github_client_id || '')) {
+        await onSave({ github_client_id: clientId.trim() })
+      }
+      const started = await api.githubDeviceStart(clientId.trim())
+      setFlow(started)
+      window.open(started.verification_uri, '_blank', 'noopener')
+      stop.current = false
+      const deadline = Date.now() + (started.expires_in || 900) * 1000
+      let wait = (started.interval || 5) * 1000
+      while (!stop.current && Date.now() < deadline) {
+        await new Promise(r => setTimeout(r, wait))
+        const answer = await api.githubDevicePoll(started.flow_id)
+        if (answer.status === 'ready') {
+          setFlow(null)
+          onRecheck?.()
+          return
+        }
+        wait = (answer.interval || 5) * 1000
+      }
+      setErr('That sign-in expired before it was approved.')
+      setFlow(null)
+    } catch (e) {
+      setErr(e.message); setFlow(null)
+    } finally {
+      setSigning(false)
+    }
+  }
+
   async function save() {
     setBusy(true)
     setErr('')
@@ -110,8 +151,49 @@ function Github({ deploy, onSave, probe, onRecheck }) {
          detail={ok ? `connected as ${login || 'your account'}`
                     : 'the deployment creates a private repository under your '
                       + 'account and pushes the workflows that build it'}>
-      <div className="mt-2 w-full space-y-2">
-        <Field label="Personal access token"
+      <div className="mt-2 w-full space-y-3">
+        <Field label="Sign in with GitHub"
+               hint={<>Approved in your browser, the way the AWS console sign-in
+                       is. Needs the <b>Client ID</b> of an OAuth app with
+                       Device Flow enabled — make one at{' '}
+                       <a className="text-accent hover:underline" target="_blank"
+                          rel="noreferrer" href="https://github.com/settings/developers">
+                         github.com/settings/developers
+                       </a>. The Client ID is public; there is no secret to keep.</>}>
+          <Input value={clientId} onChange={e => setClientId(e.target.value)}
+                 placeholder="Iv1.0123456789abcdef" />
+        </Field>
+        {flow ? (
+          <div className="rounded-lg border border-line bg-panel2 p-3">
+            <p className="text-[11px] text-muted">
+              Enter this code on GitHub, then leave this open — it finishes on its own.
+            </p>
+            <p className="my-2 font-mono text-[18px] font-bold tracking-[0.3em] text-ink">
+              {flow.user_code}
+            </p>
+            <a className="text-[11px] text-accent hover:underline" target="_blank"
+               rel="noreferrer" href={flow.verification_uri}>
+              {flow.verification_uri}
+            </a>
+            <p className="mt-2 text-[10.5px] text-muted2">
+              Granting: {flow.scopes}
+            </p>
+          </div>
+        ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" disabled={signing} onClick={signIn}>
+            {signing && <Loader2 className="size-3 animate-spin" />}
+            {ok ? 'Sign in again' : 'Sign in with GitHub'}
+          </Button>
+          {signing && (
+            <Button size="sm" variant="outline"
+                    onClick={() => { stop.current = true; setSigning(false); setFlow(null) }}>
+              Cancel
+            </Button>
+          )}
+        </div>
+
+        <Field label="Or paste a personal access token"
                hint={<>Your own GitHub account, not this machine's — deployments
                        push as you. Create a token with the <b>repo</b> and{' '}
                        <b>workflow</b> scopes at{' '}

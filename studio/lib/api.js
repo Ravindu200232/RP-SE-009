@@ -216,6 +216,11 @@ export const api = {
     : deployJob('POST', path, body),
 
   deployRead: (path, opts) => deployJob('GET', path, null, opts),
+
+  // Signing in to GitHub in the browser. The token is written into this
+  // person's settings by the server; it never comes back through here.
+  githubDeviceStart: (clientId = '') => post('/github/device/start', { client_id: clientId }),
+  githubDevicePoll: (flowId) => post('/github/device/poll', { flow_id: flowId }),
 }
 
 

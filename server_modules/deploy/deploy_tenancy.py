@@ -61,6 +61,7 @@ def deploy_summary_for(user) -> dict:
         "mongodb_uri_hint": _redact_uri(mongo),
         "github_token_set": bool(saved.get("github_token")),
         "github_login": saved.get("github_login", ""),
+        "github_client_id": saved.get("github_client_id", ""),
         "netlify_token_set": bool(saved.get("netlify_token")),
         "azure_credentials_set": bool(saved.get("azure_credentials")),
     }
@@ -81,6 +82,11 @@ def github_login_for(token: str) -> str:
 def save_deploy_settings(user, body: dict) -> dict:
     """Keep what this person typed in their own deployment accounts."""
     patch = {}
+    # A public value, so it is kept beside the region rather than as a secret:
+    # it identifies the OAuth app, it cannot act on its own, and the sign-in
+    # that uses it happens on GitHub.
+    if "github_client_id" in body:
+        patch["github_client_id"] = str(body["github_client_id"]).strip()
     for key in ("aws_region", "aws_start_url", "aws_sso_region"):
         if key in body:
             patch[key] = str(body[key]).strip()

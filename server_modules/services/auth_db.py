@@ -51,7 +51,8 @@ UNREACHABLE = "The account database is not reachable - try again in a moment"
 # The deployment accounts each person keeps for themselves. The secret ones
 # are sealed before they are stored.
 SECRET_KEYS = ("github_token", "vercel_token", "netlify_token", "azure_credentials", "deploy_mongodb_uri")
-PLAIN_KEYS = ("aws_profile", "aws_region", "aws_start_url", "aws_sso_region", "github_login")
+PLAIN_KEYS = ("aws_profile", "aws_region", "aws_start_url", "aws_sso_region",
+              "github_login", "github_client_id")
 
 # What can be owned, and where its owner is written down.
 _KINDS = {"project": ("user_projects", "project_name"), "srs": ("user_specs", "srs_id")}
