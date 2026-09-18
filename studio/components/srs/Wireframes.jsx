@@ -563,6 +563,15 @@ function Pad({ label, onMove }) {
  * Replaces the Revisions aside on the left and the main subtabs viewer on the right.
  */
 export function WireframeEditor({ owner, page, onClose, onSaved }) {
+  // The full drawing lives with the specification agent, so it is offered only
+  // where that agent is the owner. A project reading its mirrored copy has the
+  // blocks and nothing to draw with.
+  //
+  // The switch belongs here rather than in a wrapper: `SrsReview` renders this
+  // editor directly instead of going through `PageEditor`, so a wrapper is the
+  // one place it would never be seen.
+  const canDrawFull = /^prj_/.test(String(owner || ''))
+  const [view, setView] = useState('layout')
   const [blocks, setBlocks] = useState(page.blocks || [])
   const [picked, setPicked] = useState('')
   const [saving, setSaving] = useState(false)
@@ -778,8 +787,11 @@ export function WireframeEditor({ owner, page, onClose, onSaved }) {
 
   return (
     <>
-      {/* Left Column: Edit Tools (Replaces the Revisions Sidebar) */}
-      <aside className="flex w-[290px] shrink-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-xl backdrop-blur-xl">
+      {/* Left Column: Edit Tools (Replaces the Revisions Sidebar).
+          Hidden on the full drawing, which has nothing the tools can move. */}
+      <aside className={cn('flex w-[290px] shrink-0 flex-col overflow-hidden rounded-2xl',
+        'border border-line bg-panel shadow-xl backdrop-blur-xl',
+        view === 'full' && canDrawFull && 'hidden')}>
         <div className="flex items-center gap-2 border-b border-line px-4 py-3">
           <Palette className="size-3.5 text-accent" />
           <span className="font-display text-[12px] font-bold uppercase tracking-wider text-ink">
@@ -1032,6 +1044,22 @@ export function WireframeEditor({ owner, page, onClose, onSaved }) {
                 <RotateCcw className="size-3 mr-1" /> Reset
               </Button>
             )}
+            {canDrawFull && (
+              <div className="mr-1 flex items-center rounded-xl border border-white/10 bg-white/[.05] p-0.5">
+                {[['layout', 'Layout'], ['full', 'Full page']].map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setView(key)}
+                    aria-pressed={view === key}
+                    className={cn('rounded-[10px] px-2.5 py-1 text-[11.5px] font-medium transition',
+                      view === key ? 'bg-white/15 text-white' : 'text-white/60 hover:text-white')}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -1056,7 +1084,12 @@ export function WireframeEditor({ owner, page, onClose, onSaved }) {
           </div>
         </div>
 
-        {/* Scrollable Canvas Viewport */}
+        {view === 'full' && canDrawFull ? (
+          <div className="flex min-h-0 flex-1 flex-col bg-[#0a0d14] p-5">
+            <FullPage owner={owner} page={page} />
+          </div>
+        ) : (
+        /* Scrollable Canvas Viewport */
         <div
           className="flex w-full min-h-0 flex-1 flex-col items-center overflow-y-auto bg-[#0a0d14] p-6 overscroll-contain"
           onMouseDown={() => setPicked('')}
@@ -1113,6 +1146,7 @@ export function WireframeEditor({ owner, page, onClose, onSaved }) {
             />
           </div>
         </div>
+        )}
       </div>
     </>
   )
@@ -1181,12 +1215,8 @@ function FullPage({ owner, page }) {
 }
 
 function PageEditor({ owner, page, onClose, onSaved }) {
-  // The full drawing lives with the specification agent, so it is offered only
-  // where that agent is the owner. A project reading its mirrored copy has the
-  // blocks and nothing to draw with.
-  const canDrawFull = /^prj_/.test(String(owner || ''))
-  const [view, setView] = useState('layout')
-
+  // The Layout / Full page switch lives in `WireframeEditor` itself, because
+  // `SrsReview` renders that editor directly and would never see one put here.
   return (
     <Modal
       onClose={onClose}
@@ -1194,38 +1224,13 @@ function PageEditor({ owner, page, onClose, onSaved }) {
       style={{ maxWidth: 'none', width: '100%', height: '100%', maxHeight: '100%' }}
       className="overflow-hidden rounded-none border-0 p-0"
     >
-      <div className="flex h-full min-h-0 flex-col gap-3 p-5 bg-[#0a0d14]">
-        {canDrawFull ? (
-          <div className="flex shrink-0 items-center gap-1">
-            {[['layout', 'Layout'], ['full', 'Full page']].map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setView(key)}
-                aria-pressed={view === key}
-                className={`rounded-md px-3 py-1.5 text-[11.5px] font-medium transition ${
-                  view === key
-                    ? 'bg-white/10 text-white'
-                    : 'text-muted hover:text-white hover:bg-white/5'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        ) : null}
-        <div className="flex min-h-0 flex-1 gap-4">
-          {view === 'full' && canDrawFull ? (
-            <FullPage owner={owner} page={page} />
-          ) : (
-            <WireframeEditor
-              owner={owner}
-              page={page}
-              onClose={onClose}
-              onSaved={onSaved}
-            />
-          )}
-        </div>
+      <div className="flex h-full min-h-0 gap-4 p-5 bg-[#0a0d14]">
+        <WireframeEditor
+          owner={owner}
+          page={page}
+          onClose={onClose}
+          onSaved={onSaved}
+        />
       </div>
     </Modal>
   )
