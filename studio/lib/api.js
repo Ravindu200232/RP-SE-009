@@ -221,6 +221,13 @@ export const api = {
   // person's settings by the server; it never comes back through here.
   githubDeviceStart: (clientId = '') => post('/github/device/start', { client_id: clientId }),
   githubDevicePoll: (flowId) => post('/github/device/poll', { flow_id: flowId }),
+
+  // Vercel, Netlify and Azure have no device flow, so their own `login`
+  // command drives the browser and the server reads what it leaves behind.
+  cliSigninAvailable: () => post('/cli-signin/available', {}),
+  cliSigninStart: (provider) => post('/cli-signin/start', { provider }),
+  cliSigninPoll: (flowId) => post('/cli-signin/poll', { flow_id: flowId }),
+  cliSigninCancel: (flowId) => post('/cli-signin/cancel', { flow_id: flowId }),
 }
 
 
