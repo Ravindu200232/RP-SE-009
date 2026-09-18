@@ -55,6 +55,17 @@ export default function SrsReview({ projectId, onApproved, onKept, onBack }) {
       setHandoffs(handoff.files || {})
       setState('ready')
     } catch (e) {
+      // A specification this installation does not have is not an error to sit
+      // on - it is a stale id, and the screen it produces has no way out of
+      // itself. The id is kept in localStorage, which is per origin rather
+      // than per installation, so a second AgentForge on the same port opens
+      // holding the first one's project and can only say "Project not found".
+      if (e.status === 404 || /not found/i.test(e.message || '')) {
+        addLog('WARN', 'that specification is no longer on this machine')
+        useStore.getState().resetSrs()
+        onBack?.()
+        return
+      }
       setError(e.message)
       setState('error')
     }
