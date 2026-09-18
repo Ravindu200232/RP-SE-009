@@ -26,11 +26,6 @@ MAX_REQS = 8
 MAX_ENDPOINTS = 8
 MAX_STEPS = 10
 
-# Pages whose functions read like these get the validation rules; a list page
-# has no fields to put helper text under.
-ENTRY_WORDS = ("add", "create", "edit", "submit", "register", "sign up",
-               "sign in", "book", "update", "checkout", "pay")
-
 
 def _clean(value) -> str:
     return " ".join(str(value or "").split())
@@ -276,14 +271,25 @@ def page_context(page: dict, doc: dict) -> str:
     if flows:
         parts.append("WORKFLOWS THAT PASS THROUGH THIS PAGE\n" + "\n".join(flows[:3]))
 
-    spoken = " ".join(functions).lower()
-    if any(word in spoken for word in ENTRY_WORDS):
-        rules = [f"- {_clean(r.get('field'))}: {_clean(r.get('rule'))}"
-                 for r in (doc.get("validation_rules") or [])
-                 if isinstance(r, dict) and _clean(r.get("field")) and _clean(r.get("rule"))]
+    # The rules that govern this page's own data, matched on the table the
+    # document named in each rule. A list of verbs decided this before - "add",
+    # "book", "checkout" - which is one product's vocabulary written into a
+    # generator meant to serve any of them, and it put payment rules on pages
+    # that take no payment. The document already says which table a rule is
+    # about; that is the only thing worth reading.
+    if entity:
+        stem = entity.lower().rstrip("s")
+        rules = []
+        for rule in (doc.get("validation_rules") or []):
+            if not isinstance(rule, dict):
+                continue
+            field, text = _clean(rule.get("field")), _clean(rule.get("rule"))
+            if not (field and text) or stem not in field.lower():
+                continue
+            rules.append(f"- {field.split('.')[-1]}: {text}")
         if rules:
-            parts.append("INPUT RULES (show them as helper text under the fields)\n"
-                         + "\n".join(rules[:8]))
+            parts.append("INPUT RULES for this page's data (show them as helper "
+                         "text under the fields)\n" + "\n".join(rules[:8]))
 
     for row in (doc.get("role_access_matrix") or []):
         if not isinstance(row, dict):

@@ -107,6 +107,22 @@ def adopt_srs(srs_id: str, proj_dir: Path) -> bool:
             (dest / "srs_latest.json").write_text(
                 json.dumps(document.json(), indent=2), encoding="utf-8")
 
+        # The page layouts, into `.agentforge/wireframes/` - the one folder both
+        # agents may read and the folder the project's own SRS tab reads.
+        #
+        # The copy loop above skips `wireframes` on purpose, so that they do not
+        # also land under the copied specification where nothing looks for them.
+        # But the only other caller runs when a build starts, so a project that
+        # has a specification and no build never received them at all, and one
+        # that was built once kept whatever it had on that day. Both showed the
+        # same thing in the workspace: "No pages in the specification yet", on a
+        # specification with ten pages in it.
+        try:
+            from server_modules.builder.site_images import adopt_wireframes
+            adopt_wireframes(srs_id, proj_dir)
+        except Exception as exc:                                     # noqa: BLE001
+            elog("WARN", f"   wireframes were not adopted: {exc}")
+
         d_dir = dest / "diagrams"
         have_diagrams = d_dir.is_dir() and any(d_dir.glob("*.mmd"))
         if not have_diagrams:
