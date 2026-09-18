@@ -501,8 +501,9 @@ function StatusLine({ stats }) {
           {compact(stats.tokens)}/{compact(stats.limit)}
         </span>
       </div>
+      {/* The model is chosen in Settings and is the same for every run, so
+          naming it on every line of every chat said nothing that changed. */}
       <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[9.5px] text-muted2">
-        {stats.model && <span title="model">{stats.model}</span>}
         {stats.requests > 0 && <span title="requests to the model">{stats.requests} req</span>}
         {spent > 0 && (
           <span title="tokens sent / received across the run">
