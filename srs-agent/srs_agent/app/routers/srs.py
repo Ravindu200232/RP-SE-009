@@ -127,6 +127,30 @@ class WireframeHtmlRequest(BaseModel):
     route: str = ""
 
 
+class WireframeHtmlEdit(BaseModel):
+    route: str = Field(min_length=1, max_length=400)
+    html: str = Field(min_length=1, max_length=4_000_000)
+
+
+@router.post("/{project_id}/wireframes/html/edit")
+async def edit_wireframe_html(project_id: str, request: WireframeHtmlEdit):
+    """Keep a page the editor rearranged.
+
+    The tools editor works on the rendered document rather than on a model of
+    it, so what comes back is the page itself - reordered, retyped, with parts
+    removed - and it replaces the drawn one. Stamped with the version it was
+    edited against, so the page still reports itself stale when the
+    specification moves on underneath it.
+    """
+    from ..services import storage
+    if not storage.read_page_html(project_id, request.route):
+        raise HTTPException(404, f"{request.route} has not been drawn yet")
+    srs = await orchestrator.latest_srs(project_id)
+    version = str(((srs or {}).get("srs_document") or {}).get("version") or "")
+    storage.save_page_html(project_id, request.route, request.html, version)
+    return {"saved": request.route, "bytes": len(request.html)}
+
+
 @router.post("/{project_id}/wireframes/html")
 async def draw_wireframe_html(project_id: str, request: WireframeHtmlRequest):
     """The full drawing: one page, or the whole set when no route is named.
@@ -135,7 +159,9 @@ async def draw_wireframe_html(project_id: str, request: WireframeHtmlRequest):
     are what the tools editor moves and are always there; this is a whole page
     of HTML per screen, so it is asked for rather than assumed.
     """
-    from ..agents.wireframe_generator import draft_html_wireframe, draft_html_wireframes
+    from ..agents.wireframe_generator import (draft_html_wireframe,
+                                              draft_html_wireframes,
+                                              handoff_context)
     from ..services import storage
     srs = await orchestrator.latest_srs(project_id)
     if not srs:
@@ -148,10 +174,11 @@ async def draw_wireframe_html(project_id: str, request: WireframeHtmlRequest):
                      if isinstance(p, dict) and p.get("route") == request.route), None)
         if not page:
             raise HTTPException(404, f"no page at {request.route}")
-        storage.save_page_html(project_id, request.route,
-                               await draft_html_wireframe(page, doc), version)
+        storage.save_page_html(
+            project_id, request.route,
+            await draft_html_wireframe(page, doc, handoff_context(project_id)), version)
         return {"drawn": [request.route]}
-    drawn = await draft_html_wireframes(doc)
+    drawn = await draft_html_wireframes(doc, project_id=project_id)
     for page_route, html in drawn.items():
         storage.save_page_html(project_id, page_route, html, version)
     return {"drawn": sorted(drawn)}

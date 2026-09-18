@@ -140,6 +140,9 @@ export const api = {
   // works on those.
   drawWireframeHtml: (srsId, route = '') =>
     api.srs(`/projects/${encodeURIComponent(srsId)}/wireframes/html`, { route }),
+  // What the tools editor rearranged, as the page itself.
+  saveWireframeHtml: (srsId, route, html) =>
+    api.srs(`/projects/${encodeURIComponent(srsId)}/wireframes/html/edit`, { route, html }),
   // Read straight from the agent rather than through a job: it is one page of
   // HTML and it is what the <iframe> loads.
   wireframeHtmlUrl: (srsId, route) =>
