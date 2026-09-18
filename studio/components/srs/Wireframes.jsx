@@ -95,10 +95,14 @@ function Block({
     }
     if (kind === 'text') {
       const lines = Array.isArray(block.lines) ? block.lines : null
-      if (lines && h * px > 16) {
+      // Show the written copy wherever it will fit at all. The old gate needed
+      // 16px of block before it would render a word, so a paragraph the model
+      // had actually written was thrown away and drawn as grey bars - the very
+      // thing the bars are a stand-in for.
+      if (lines?.length && h * px > 9) {
         return (
           <div style={common} className={`flex flex-col justify-center overflow-hidden ${text}`}>
-            {lines.slice(0, 4).map((l, i) => (
+            {lines.slice(0, 6).map((l, i) => (
               <span key={i} className="truncate text-[#555]">{String(l)}</span>
             ))}
           </div>
@@ -1152,26 +1156,46 @@ export function WireframeEditor({ owner, page, onClose, onSaved }) {
   )
 }
 
-/** Fallback modal editor when used in isolation. */
-/* The full drawing of one page: a finished HTML screen in a frame.
+/* The full drawing of one page, and the tools that edit it.
  *
- * Read-only on purpose. The blocks are what the tools move, and there is no
- * way to drag a box in generated HTML - so this view offers the one thing it
- * can honestly offer, which is to draw the page again. */
+ * The page is served from the studio's own origin, so the frame's document is
+ * reachable from here - which is what lets the same kind of tools the blocks
+ * have work on a document instead of on a list: pick a part, move it among its
+ * neighbours, copy it, take it out, retype it. No model is asked anything, and
+ * nothing here touches colour, which a wireframe does not have. */
 function FullPage({ owner, page }) {
   const [drawing, setDrawing] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [problem, setProblem] = useState('')
   const [stamp, setStamp] = useState(page.has_html ? 1 : 0)
   // Cleared by a successful redraw rather than re-read, so the notice goes
   // away when the thing it is about is fixed.
   const [stale, setStale] = useState(Boolean(page.html_stale))
+  const [picked, setPicked] = useState('')
+  const [dirty, setDirty] = useState(false)
+  const [typing, setTyping] = useState(false)
+  const frame = useRef(null)
+  const editor = useRef(null)
+
+  const attach = useCallback(() => {
+    editor.current?.detach?.()
+    import('@/lib/wireframe-html-editor').then(({ attachEditor }) => {
+      editor.current = attachEditor(frame.current, {
+        onSelect: setPicked,
+        onDirty: setDirty,
+      })
+      if (!editor.current) setProblem('This page cannot be edited in place here.')
+    })
+  }, [])
+
+  useEffect(() => () => editor.current?.detach?.(), [])
 
   async function draw() {
     setDrawing(true); setProblem('')
     try {
       await api.drawWireframeHtml(owner, page.route)
       setStamp(n => n + 1)
-      setStale(false)
+      setStale(false); setDirty(false); setPicked(''); setTyping(false)
     } catch (failure) {
       setProblem(failure?.message || 'The page could not be drawn.')
     } finally {
@@ -1179,18 +1203,75 @@ function FullPage({ owner, page }) {
     }
   }
 
+  async function save() {
+    if (!editor.current) return
+    setSaving(true); setProblem('')
+    try {
+      if (typing) { editor.current.editText(false); setTyping(false) }
+      await api.saveWireframeHtml(owner, page.route, editor.current.serialize())
+      editor.current.saved()
+    } catch (failure) {
+      setProblem(failure?.message || 'That layout could not be saved.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const act = (name, ...args) => () => {
+    editor.current?.[name]?.(...args)
+    if (name === 'undo') { setStamp(n => n + 1); setDirty(false); setPicked('') }
+  }
+
+  const Tool = ({ onClick, children, on = false, wide = false }) => (
+    <button type="button" onClick={onClick} disabled={!picked && !wide}
+      className={cn('rounded-md px-2 py-1 text-[11px] font-medium transition',
+        'disabled:opacity-30 disabled:cursor-not-allowed',
+        on ? 'bg-blue-600 text-white' : 'bg-white/[.06] text-white/75 hover:bg-white/[.12] hover:text-white')}>
+      {children}
+    </button>
+  )
+
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col gap-3">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-[11.5px] text-muted">
           {stamp
-            ? 'The page drawn in full, from the specification. Read only — use Layout to move things.'
+            ? 'Click any part of the page to pick it, then use the tools.'
             : 'This page has not been drawn in full yet.'}
         </p>
-        <Button onClick={draw} disabled={drawing}>
-          {drawing ? 'Drawing…' : stamp ? 'Draw again' : 'Draw this page'}
-        </Button>
+        <div className="flex items-center gap-2">
+          {dirty && (
+            <Button variant="solid" onClick={save} disabled={saving}
+              className="bg-blue-600 hover:bg-blue-500">
+              {saving ? 'Saving…' : 'Save page'}
+            </Button>
+          )}
+          <Button variant="outline" onClick={draw} disabled={drawing}>
+            {drawing ? 'Drawing…' : stamp ? 'Draw again' : 'Draw this page'}
+          </Button>
+        </div>
       </div>
+
+      {stamp ? (
+        <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-white/10 bg-white/[.03] px-2 py-1.5">
+          <span className="mr-1 font-mono text-[10px] text-muted2">
+            {picked ? `<${picked}>` : 'nothing picked'}
+          </span>
+          <Tool onClick={act('parent')}>Parent</Tool>
+          <Tool onClick={act('move', -1)}>↑ Up</Tool>
+          <Tool onClick={act('move', 1)}>↓ Down</Tool>
+          <Tool onClick={act('wider', -10)}>Narrower</Tool>
+          <Tool onClick={act('wider', 10)}>Wider</Tool>
+          <Tool onClick={act('duplicate')}>Duplicate</Tool>
+          <Tool onClick={act('remove')}>Remove</Tool>
+          <Tool on={typing} onClick={() => {
+            editor.current?.editText(!typing); setTyping(!typing)
+          }}>{typing ? 'Done typing' : 'Edit text'}</Tool>
+          <span className="flex-1" />
+          <Tool wide onClick={act('undo')}>Undo</Tool>
+        </div>
+      ) : null}
+
       {stale && stamp ? (
         <p className="rounded-md border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-[11.5px] text-amber-200">
           The specification has changed since this page was drawn. What is shown
@@ -1201,6 +1282,8 @@ function FullPage({ owner, page }) {
       {stamp ? (
         <iframe
           key={stamp}
+          ref={frame}
+          onLoad={attach}
           title={`${page.page_name || page.route} wireframe`}
           src={api.wireframeHtmlUrl(owner, page.route)}
           className="min-h-0 flex-1 w-full rounded-lg border border-white/10 bg-white"

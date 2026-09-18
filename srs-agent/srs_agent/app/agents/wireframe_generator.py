@@ -32,50 +32,28 @@ log = logging.getLogger("srs.wireframes")
 # not holding the model's whole queue rather than about finishing quickly.
 LANES = 3
 
-HTML_WIREFRAME_PROMPT = """You are drawing one screen of a classic Low-Fidelity / Mid-Fidelity wireframe
-in Balsamiq / Figma blueprint style: outlined boxes, an X through every image,
-realistic sample data, no colour.
+HTML_WIREFRAME_PROMPT = """Act as a Senior UI/UX Designer and Frontend Architect.
+Generate a complete, self-contained, single-file HTML & Tailwind CSS layout representing a classic Low-Fidelity / Mid-Fidelity Wireframe (Balsamiq / Figma wireframe blueprint style) for:
 
-The document, the browser chrome, the stylesheet and the legend are already
-written and wrap what you return. Write ONLY the page's <section> elements, in
-reading order. No <!DOCTYPE>, no <html>, <head>, <body> or <style>, no <script>,
-and never an <svg> - there is no vector markup in this document at all.
+STRICT WIREFRAME DESIGN SYSTEM & VISUAL RULES:
+1. Palette: Strictly monochrome & grayscale (#FFFFFF background, #000000 borders and text, #F3F4F6 / #E5E7EB neutral fills). No brand colors, gradients, or accent fills.
+2. Image Placeholders: Every single image, banner, avatar, or media container MUST use the authentic architectural wireframe box with an "X" (diagonal crossed lines from corner to corner). Use SVG crossed lines with vector-effect="non-scaling-stroke" and a centered label like "[ Image / Banner Placeholder ]".
+3. Browser Chrome Wrapper: Wrap the entire wireframe inside a realistic browser window mockup (include window traffic light dots [o][o][o], URL address bar, and back/forward navigation arrows).
+4. Typography & Styling:
+- Clean, technical wireframe font (use Monospace or system-ui / Comic Neue / Balsamiq-like sketch style).
+- Sharp corners or subtle 2px border radius, 1px or 2px solid black borders (`border-2 border-black` or `border border-zinc-900`).
+- Buttons should look like wireframe button elements (pill/rectangle with 1.5px black borders, no drop shadows or color fills).
+- Form inputs, dropdowns, and search bars should have clear wireframe outlines and simple placeholder text.
+5. Interactive UX Features:
+- Include a top floating utility bar with:
+* Toggle "Grid / Blueprint Guides" (reveals a light gray 12-column alignment grid overlay).
+* Toggle "UX Annotations / Labels" (shows/hides badges like [NAVBAR], [HERO], [CTA], [CARD-GRID], etc.).
+6. Structure & Content:
+- Provide complete, realistic structural layout with header, navigation, content blocks, cards, sidebar/filters (if applicable), and multi-column wireframe footer.
+- Do NOT use external images (Unsplash/Lorem Picsum). Everything must be drawn using wireframe placeholders and SVG crossed boxes.
 
-Draw the page and nothing about the page. No annotation badges, no section
-name tags, no grid or guide overlay, no "wireframe mode" bar: a reviewer opens
-this to see the screen, not notes written over it.
-
-THE DESIGN SYSTEM, already defined. Use these class names rather than restyling:
-- .wf-box          a 2px black outlined white box. .wf-box-thin is the 1px one.
-- .wf-fill         #F3F4F6 fill. .wf-fill-2 is #E5E7EB, for a heavier band.
-- .wf-img          the image placeholder: a bordered box with a black X corner
-                   to corner, drawn in CSS. Give it a size, e.g.
-                   <div class="wf-img" style="height:320px"></div>, and put
-                   <span class="wf-label">HERO IMAGE 16:9</span> inside it to
-                   say what belongs there. Use it for every image, banner,
-                   avatar, logo, thumbnail, map and chart.
-- .wf-btn          a wireframe button. .wf-btn-fill is the one primary action,
-                   .wf-btn-sm the small one.
-- .wf-input        an outlined input. .wf-label-sm is the small caps label
-                   above it.
-- .sk              a grey bar standing in for a line of body copy; .sk-thin is
-                   the secondary line. Set width inline: style="width:88%".
-                   Use these for paragraphs - never Lorem Ipsum.
-- .wf-tag          a small dashed badge for a status, a count or a pill on a
-                   card - real content, never a label about the design.
-
-Tailwind is loaded, so use its utilities for layout, spacing and type
-(grid, flex, gap, px-8, py-12, text-2xl, font-bold). Never use a Tailwind colour
-utility: the wireframe is black, white and grey by definition. Separate sections
-with border-t-2 border-black.
-
-SAMPLE DATA IS THE POINT. Every table gets real rows, every card a real title
-and figure, every input a plausible typed value, every status one of the values
-the specification listed for that column. A wireframe full of empty boxes tells
-a reviewer nothing about whether the screen is right.
-
-Draw the whole page - all of the sections listed for it, at the depth a real
-screen has. Return the sections only, starting at <section."""
+Ensure the output is production-ready HTML with CDN Tailwind CSS script included in the <head>.
+"""
 
 _SYS = (
     "Act as a Senior UI/UX Designer and Frontend Architect. You lay out application "
@@ -83,6 +61,12 @@ _SYS = (
     "wireframe blueprint style: outlined boxes, an X through every image placeholder, "
     "circles for icons, section rules with the section's name on them.\n"
     "Return JSON {\"canvas\": <height>, \"blocks\": [...]} only.\n\n"
+    "EVERY BLOCK HAS THIS SHAPE. The key naming the kind is \"kind\" - not "
+    "\"type\", not \"component\":\n"
+    "  {\"kind\": \"table\", \"label\": \"Reservations\", \"x\": 4, \"y\": 40, "
+    "\"w\": 92, \"h\": 30,\n"
+    "   \"columns\": [\"Tool\", \"Member\", \"Status\"],\n"
+    "   \"sample\": [[\"Cordless Drill\", \"A. Rivera\", \"Confirmed\"]]}\n\n"
     "THE CANVAS. x, y, w, h are whole numbers on a grid 100 units wide. "
     "\"canvas\" is how many units tall the page is: 100 is one screenful, and a "
     "landing or marketing page that scrolls should be 200-320. Use the height "
@@ -92,7 +76,11 @@ _SYS = (
     f"KINDS: {', '.join(KINDS)}.\n"
     "- heading: a large bold headline. label is the text.\n"
     "- title: a smaller bold page or section title.\n"
-    "- text: body copy. \"lines\": [strings].\n"
+    "- text: body copy. \"lines\" is required and holds 2-4 written-out "
+    "sentences - the paragraph this page would really carry, about this "
+    "product. Placeholder prose is the point: a reviewer needs to see how much "
+    "copy fits and what it says. Never an empty list, and give the block enough "
+    "height for the lines you wrote (roughly 4 units per line).\n"
     "- image: an architectural wireframe box with an \"X\" through it. label like \"[ Image / Banner Placeholder ]\".\n"
     "- icon: a labelled circle. Put several in a row.\n"
     "- divider: a rule across the page with its name in a box on it. Use one "
@@ -114,11 +102,25 @@ _SYS = (
     "1. PALETTE & FIDELITY: Strictly monochrome & grayscale (#FFFFFF background, "
     "#000000 borders and text, #F3F4F6 / #E5E7EB neutral fills). No brand colors or accent fills.\n"
     "2. SAMPLE DATA: Fill every extra with realistic data for this product - real "
-    "names, dates, amounts, tables, stats, and statuses. Never Lorem Ipsum, never empty "
-    "strings. Sample data is what makes a wireframe reviewable.\n"
-    "3. TYPOGRAPHY & HIERARCHY: Clean, technical monospace / system font hierarchy, "
+    "names, dates, amounts, tables, stats, and statuses. Never empty strings. "
+    "Sample data is what makes a wireframe reviewable.\n"
+    "3. WRITE THE WORDS OUT. Placeholder copy stands in for the real thing, the "
+    "way Lorem Ipsum does, but written about this product so it reads as the "
+    "page it will become: every text block carries whole sentences, every "
+    "heading its actual headline, every button its actual verb, every field a "
+    "plausible typed value, every card a title and a line under it. Nothing is "
+    "left as a grey bar for someone to imagine.\n"
+    "4. DEPTH. Draw the page a real product would ship, not a sketch of one. "
+    "Every section the page is said to have, and inside each one the parts it "
+    "needs: a list has its search, its filters, its column headers, its rows, "
+    "its pagination and its empty-state note; a form has its label, its input "
+    "and its helper text per field, and its submit and cancel; a detail page "
+    "has its heading, its image, its facts, its description and its actions. "
+    "20-35 blocks is the usual shape of a page drawn this way - use as many as "
+    "the page needs, and prefer more detail over less.\n"
+    "5. TYPOGRAPHY & HIERARCHY: Clean, technical monospace / system font hierarchy, "
     "crisp borders for structural zones, wireframe pill / rounded buttons, outline inputs.\n"
-    "4. NO COLOUR: The wireframe is black and white by definition, so never mention or set one."
+    "6. NO COLOUR: The wireframe is black and white by definition, so never mention or set one."
 )
 
 
@@ -133,14 +135,20 @@ def _validator(page: dict):
         except (TypeError, ValueError):
             canvas = 100
         blocks = body.get("blocks")
-        if not isinstance(blocks, list) or not 2 <= len(blocks) <= 40:
-            raise ValueError(f"{name} needs between 2 and 40 blocks; got "
+        if not isinstance(blocks, list) or not 2 <= len(blocks) <= 60:
+            raise ValueError(f"{name} needs between 2 and 60 blocks; got "
                              f"{len(blocks) if isinstance(blocks, list) else 'none'}.")
         out = []
         for i, raw in enumerate(blocks):
             if not isinstance(raw, dict):
                 raise ValueError(f"block {i + 1} is not an object")
-            kind = str(raw.get("kind") or "").strip().lower()
+            # "type" is what the model reaches for when the prompt grows and
+            # the one example drifts out of its attention - measured at every
+            # page of a fourteen-page document failing on it, twice each, for a
+            # key name. The word it chose is not ambiguous; refusing it only
+            # loses the page. The prompt states "kind" plainly; this accepts
+            # the near miss rather than spending two model calls rejecting it.
+            kind = str(raw.get("kind") or raw.get("type") or "").strip().lower()
             if kind not in KINDS:
                 raise ValueError(f"block {i + 1} has kind {kind!r}; use one of {', '.join(KINDS)}")
             box = {}
@@ -165,6 +173,17 @@ def _validator(page: dict):
             if kind == "table" and not block.get("sample"):
                 raise ValueError(f"the {block['label'] or 'table'} needs \"sample\" rows; "
                                  "an empty table is not reviewable")
+            # A text block with no lines renders as three grey bars, which is
+            # the thing a reviewer learns nothing from. Asking for the words in
+            # the prompt was not enough on its own - the model dropped them on
+            # the pages it was least sure about, which are the pages that most
+            # needed them - so the same rule that guards an empty table guards
+            # an empty paragraph.
+            if kind == "text" and not block.get("lines"):
+                raise ValueError(
+                    f"the text block {block['label'] or ''!r} at y={box['y']} has no "
+                    "\"lines\"; write the 2-4 sentences this paragraph would really "
+                    "carry, about this product")
             out.append(block)
         return {"canvas": canvas, "blocks": out}
 
@@ -303,39 +322,53 @@ def _fenced(reply) -> str:
     return content.strip()
 
 
-# A model told not to emit a whole document will occasionally emit one anyway.
-# Keeping only what is between the body tags costs nothing and saves the page.
-def _sections_only(html: str) -> str:
-    if "<body" in html.lower():
-        after = html[html.lower().index("<body"):]
-        html = after[after.index(">") + 1:]
-    if "</body>" in html.lower():
-        html = html[:html.lower().index("</body>")]
-    return html.strip()
+def handoff_context(project_id: str) -> str:
+    """The documents the prototype is built from, verbatim.
 
+    `app.md`, `sitemap.md` and `prototype.md` are what the specification already
+    wrote for the agents that draw and build this product: what it is, which
+    pages exist and what belongs on each. Passing them as they are means the
+    wireframe reads the same source the prototype does, and means this module
+    holds no rules about what a page contains - the specification says it, in
+    its own words, for whatever product this happens to be.
 
-async def draft_html_wireframe(page: dict, doc: dict, product: str = "") -> str:
-    """One page as a finished HTML wireframe: our shell around the model's sections.
-
-    The shell is not negotiable and the model never sees a reason to reproduce
-    it, which is what makes `<svg>` impossible here rather than merely
-    forbidden: there is no <style> and no <head> for the model to write into,
-    and the crossed image box already exists as a class it is told to use.
+    `builder.md` is deliberately left out: it is the implementation contract,
+    ten times the size of the rest, and none of it changes how a page looks.
     """
-    body = _sections_only(_fenced(await get_llm().complete(
-        f"{HTML_WIREFRAME_PROMPT}\n\n===\n\n"
-        f"{product or product_context(doc)}\n\n===\n\n{page_context(page, doc)}")))
-    if not body:
-        raise ValueError(f"no sections returned for {page.get('page_name') or page.get('route')}")
-    app = str((doc.get("app_summary") or {}).get("app_name") or doc.get("project_name") or "app")
-    host = "".join(ch for ch in app.lower() if ch.isalnum()) or "app"
-    return page_html(str(page.get("page_name") or "Page"),
-                     f"https://{host}.example.com{page.get('route') or '/'}", body)
+    from ..services.storage import project_dir
+    folder = project_dir(project_id) / "handoff"
+    parts = []
+    for name in ("app.md", "sitemap.md", "prototype.md"):
+        try:
+            text = (folder / name).read_text(encoding="utf-8").strip()
+        except OSError:
+            continue
+        if text:
+            parts.append(f"===== {name} =====\n{text}")
+    return "\n\n".join(parts)
 
 
-async def draft_html_wireframes(doc: dict, *, on_page=None) -> dict[str, str]:
+async def draft_html_wireframe(page: dict, doc: dict, context: str = "") -> str:
+    """One page as a complete, self-contained HTML wireframe document."""
+    name = str(page.get("page_name") or page.get("route") or "the page")
+    html = _fenced(await get_llm().complete_text(
+        system="You return one complete HTML document and nothing else.",
+        user=(f"{HTML_WIREFRAME_PROMPT}\n\n"
+              f"THE PAGE TO DRAW: {name} at {page.get('route') or '/'}\n\n"
+              "Draw this one page of the product described below. Everything you "
+              "need is in these documents; follow them and invent nothing they "
+              "do not say.\n\n"
+              f"{context}"),
+        label="srs_wireframe_html"))
+    if "<" not in html:
+        raise ValueError(f"no HTML returned for {name}")
+    return html
+
+
+async def draft_html_wireframes(doc: dict, *, project_id: str = "",
+                                on_page=None) -> dict[str, str]:
     """Every page as HTML, keyed by route. A page that fails is simply absent."""
-    product = product_context(doc)
+    context = handoff_context(project_id) if project_id else ""
     pages = [p for p in ((doc.get("public_pages") or []) + (doc.get("protected_pages") or []))
              if isinstance(p, dict)]
     lanes = asyncio.Semaphore(LANES)
@@ -345,8 +378,9 @@ async def draft_html_wireframes(doc: dict, *, on_page=None) -> dict[str, str]:
         route = str(page.get("route") or "/")
         try:
             async with lanes:
-                html = await draft_html_wireframe(page, doc, product)
-        except Exception:  # noqa: BLE001 - one page failing is not the set failing
+                html = await draft_html_wireframe(page, doc, context)
+        except Exception as exc:  # noqa: BLE001 - one page is not the set
+            log.warning("no HTML wireframe for %s: %s", route, str(exc)[:200])
             return
         out[route] = html
         if on_page:
