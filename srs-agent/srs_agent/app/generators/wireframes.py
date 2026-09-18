@@ -109,13 +109,17 @@ def _page_blocks(page: dict, tables: list[str], rows: list = (), pairs=()) -> li
     text = _words(page.get("page_name"), page.get("route"), *functions)
     entity = _entity_of(page, tables, pairs)
 
+    # Verbs, and words any product uses about its own screens. Nothing here
+    # names a thing one kind of product stores: "invoice" sat in the export
+    # list, which is a billing product's noun deciding the layout of every
+    # other product's pages.
     listing = _mentions(text, "list", "view", "see", "history", "table", "search",
                         "browse", "manage", "schedule", "day", "portal", "records")
     entry = _mentions(text, "book", "create", "add", "enter", "write", "submit",
                       "pick", "register", "note", "pay", "confirm")
     summary = _mentions(text, "dashboard", "summary", "overview", "kpi", "chart",
                         "trend", "report", "metric")
-    export = _mentions(text, "download", "export", "csv", "pdf", "invoice")
+    export = _mentions(text, "download", "export", "csv", "pdf")
 
     blocks = [_block("title", GUTTER, 5, 52, 8, str(page.get("page_name") or "Page"))]
     if export:
