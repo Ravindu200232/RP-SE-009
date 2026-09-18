@@ -130,6 +130,11 @@ export const api = {
   wireframes: (owner) => (/^prj_/.test(String(owner || ''))
     ? api.srs(`/projects/${encodeURIComponent(owner)}/wireframes`)
     : req(`/project-wireframes/${encodeURIComponent(owner)}`)),
+  // Draw one page, or every page when no route is given. A page is a model
+  // call, so the whole set is minutes - it rides the job queue and survives a
+  // reload like every other slow thing the specification agent does.
+  drawWireframeHtml: (srsId, route = '') =>
+    api.srs(`/projects/${encodeURIComponent(srsId)}/wireframes/html`, { route }),
   // What the tools editor rearranged, as the page itself.
   saveWireframeHtml: (srsId, route, html) =>
     api.srs(`/projects/${encodeURIComponent(srsId)}/wireframes/html/edit`, { route, html }),
@@ -238,6 +243,20 @@ async function digest(text) {
   return Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, '0')).join('')
 }
 async function srsPrefix() { return `agentforge-srs-job:${await digest(getAuthToken())}:` }
+/** Whatever the server said went wrong, as a sentence. */
+function readDetail(job) {
+  const detail = job?.result?.detail ?? job?.result?.error
+  if (!detail) return ''
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) {
+    return detail
+      .map(d => [Array.isArray(d?.loc) ? d.loc.join('.') : d?.loc, d?.msg]
+        .filter(Boolean).join(': '))
+      .filter(Boolean).join('; ')
+  }
+  try { return JSON.stringify(detail) } catch { return String(detail) }
+}
+
 async function pollSrs(id, key, { onWait, signal } = {}) {
   const started = Date.now()
   let failures = 0
@@ -254,7 +273,10 @@ async function pollSrs(id, key, { onWait, signal } = {}) {
     if (job.status === 'running') { onWait?.(job.elapsed); continue }
     try { localStorage.removeItem(key) } catch { }
     if (job.status === 'error') throw new Error(job.error || 'The SRS update failed')
-    if (job.http_status >= 400) throw new Error(job.result?.detail || job.result?.error || `HTTP ${job.http_status}`)
+    // `detail` is a string for our own errors and a list of field problems for
+    // a validation failure, and `new Error(thatList)` reads as "[object
+    // Object]" on screen - which says nothing about what went wrong.
+    if (job.http_status >= 400) throw new Error(readDetail(job) || `HTTP ${job.http_status}`)
     return job.result
   }
   throw new Error('The SRS job is still pending. Reopen this project to continue following it.')
