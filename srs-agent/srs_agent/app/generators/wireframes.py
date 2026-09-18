@@ -70,6 +70,15 @@ def _entity_of(page: dict, tables: list[str], pairs=()) -> str:
     """
     title = _words(page.get("page_name"), page.get("route")).replace(" ", "")
     body = _words(*(page.get("functions") or [])).replace(" ", "")
+    # A page whose own title names a stored thing is about that thing, full
+    # stop. The verb-noun pairing below is for the other kind of page - one
+    # named for an action, like "/book" or "Billing" - and letting it speak
+    # here let a generic verb win an argument it should never have been in:
+    # "Room Management" contains "manag", the workflows pair "manag" with
+    # bookings, and the rooms page was drawn as a bookings page. "Billing
+    # Management" went to patients the same way.
+    spoken = any((stem := re.sub(r"[^a-z]+", "", str(t).lower()).rstrip("s")) and stem in title
+                 for t in tables)
     best, best_score = "", 0
     for table in tables:
         stem = re.sub(r"[^a-z]+", "", str(table).lower()).rstrip("s")
@@ -82,9 +91,10 @@ def _entity_of(page: dict, tables: list[str], pairs=()) -> str:
         # verb acts on, and the specification's own workflows are where that
         # pairing is stated - not in a list of nouns written here, which could
         # only ever hold the vocabulary of one product.
-        for verb, noun in pairs:
-            if verb in title and noun in stem:
-                score = max(score, 3 * len(stem) + 1)
+        if not spoken:
+            for verb, noun in pairs:
+                if verb in title and noun in stem:
+                    score = max(score, 3 * len(stem) + 1)
         if score > best_score:
             best, best_score = str(table), score
     return best or (tables[0] if tables else "records")
@@ -209,11 +219,20 @@ def _verb_noun_pairs(doc: dict, tables: list[str]) -> list[tuple]:
     product's vocabulary. A list written here could only hold one product's.
     """
     stems = {re.sub(r"[^a-z]+", "", t.lower()).rstrip("s"): t for t in tables}
+    # A word that names one of the stored things is a noun, whatever else is in
+    # the workflow's title. Taking every word as a verb produced ("room",
+    # "booking") from a workflow like "Room Booking", and `_entity_of` then read
+    # the page literally called "Room List" as being about bookings - it drew a
+    # New booking form and a Bookings table on the rooms page. The pairing is
+    # only meaningful for a word that is not already the name of a table.
+    nouns = {stem for stem in stems if stem}
+    nouns |= {stem[:5] for stem in nouns}
     pairs = set()
     for flow in (doc.get("business_workflows") or []):
         if not isinstance(flow, dict):
             continue
         verbs = {w[:5] for w in re.findall(r"[a-z]{4,}", str(flow.get("workflow_name") or "").lower())}
+        verbs -= nouns
         said = _words(*(flow.get("steps") or [])).replace(" ", "")
         for stem in stems:
             if stem and stem in said:
