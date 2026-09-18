@@ -70,6 +70,16 @@ async def wireframes(project_id: str):
     return saved
 
 
+class WireframeHtmlRequest(BaseModel):
+    """Which page to draw. Empty means every page of the specification."""
+    route: str = ""
+
+
+class WireframeHtmlEdit(BaseModel):
+    route: str = Field(min_length=1, max_length=400)
+    html: str = Field(min_length=1, max_length=4_000_000)
+
+
 @router.post("/{project_id}/wireframes/html/edit")
 async def edit_wireframe_html(project_id: str, request: WireframeHtmlEdit):
     """Keep a page the editor rearranged.
