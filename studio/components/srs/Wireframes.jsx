@@ -95,10 +95,13 @@ export function WireframeEditor({ owner, page, onClose, onSaved, srsId: given = 
     return () => { live = false }
   }, [srsId, page.route])
 
+  const [parts, setParts] = useState([])
+
   const attach = useCallback(() => {
     editor.current?.detach?.()
-    import('@/lib/wireframe-html-editor').then(({ attachEditor }) => {
+    import('@/lib/wireframe-html-editor').then(({ attachEditor, PARTS }) => {
       editor.current = attachEditor(frame.current, { onSelect: setPicked, onDirty: setDirty })
+      setParts(PARTS)
       if (!editor.current) setProblem('This page cannot be edited in place here.')
     })
   }, [])
@@ -188,8 +191,14 @@ export function WireframeEditor({ owner, page, onClose, onSaved, srsId: given = 
           <Tool onClick={act('parent')}>Parent</Tool>
           <Tool onClick={act('move', -1)}>↑ Up</Tool>
           <Tool onClick={act('move', 1)}>↓ Down</Tool>
+          <span className="mx-1 h-4 w-px bg-white/10" />
+          <Tool onClick={act('align', 'left')}>Left</Tool>
+          <Tool onClick={act('align', 'center')}>Centre</Tool>
+          <Tool onClick={act('align', 'right')}>Right</Tool>
+          <Tool onClick={act('align', 'full')}>Full width</Tool>
           <Tool onClick={act('wider', -10)}>Narrower</Tool>
           <Tool onClick={act('wider', 10)}>Wider</Tool>
+          <span className="mx-1 h-4 w-px bg-white/10" />
           <Tool onClick={act('duplicate')}>Duplicate</Tool>
           <Tool onClick={act('remove')}>Remove</Tool>
           <Tool on={typing} onClick={() => { editor.current?.editText(!typing); setTyping(!typing) }}>
@@ -212,14 +221,42 @@ export function WireframeEditor({ owner, page, onClose, onSaved, srsId: given = 
       ) : null}
 
       {stamp ? (
-        <iframe
-          key={stamp}
-          ref={frame}
-          onLoad={attach}
-          title={`${page.page_name || page.route} wireframe`}
-          src={srsId ? api.wireframeHtmlUrl(srsId, page.route) : 'about:blank'}
-          className="min-h-0 w-full flex-1 border-0 bg-white"
-        />
+        <div className="flex min-h-0 flex-1">
+          {/* The catalogue. A part is inserted after whatever is picked, so
+              building a page is: pick the thing it goes under, then add it. */}
+          <aside className="w-[188px] shrink-0 overflow-y-auto border-r border-white/10 bg-[#0d111a] p-3">
+            <p className="mb-2 font-display text-[10.5px] font-bold uppercase tracking-wider text-white/70">
+              Add components
+            </p>
+            <p className="mb-3 text-[10px] leading-snug text-white/35">
+              {picked ? 'Goes in after the part you picked.' : 'Goes at the end of the page.'}
+            </p>
+            {parts.map(([group, items]) => (
+              <div key={group} className="mb-3">
+                <p className="mb-1.5 text-[9.5px] font-semibold uppercase tracking-wider text-white/35">
+                  {group}
+                </p>
+                <div className="grid grid-cols-2 gap-1">
+                  {items.map(([kind, label]) => (
+                    <button key={kind} type="button" onClick={act('insert', kind)}
+                      className="rounded-md bg-white/[.05] px-2 py-1.5 text-left text-[10.5px]
+                                 text-white/70 transition hover:bg-white/[.12] hover:text-white">
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </aside>
+          <iframe
+            key={stamp}
+            ref={frame}
+            onLoad={attach}
+            title={`${page.page_name || page.route} wireframe`}
+            src={srsId ? api.wireframeHtmlUrl(srsId, page.route) : 'about:blank'}
+            className="min-h-0 min-w-0 flex-1 border-0 bg-white"
+          />
+        </div>
       ) : (
         <div className="flex min-h-0 flex-1 items-center justify-center bg-[#0a0d14] text-[12px] text-muted">
           {srsId ? `Nothing drawn for ${page.route} yet.`
