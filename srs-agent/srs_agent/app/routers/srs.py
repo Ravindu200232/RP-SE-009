@@ -50,23 +50,13 @@ async def srs_json(project_id: str):
     return srs
 
 
-class WireframeEdit(BaseModel):
-    """One page's layout, as the editor left it.
-
-    The route names the only page this may touch. Blocks carry position and
-    size but no colour: a wireframe is black and white by definition, and a
-    palette belongs to the design screen, not here.
-    """
-    route: str = Field(min_length=1, max_length=200)
-    blocks: list[dict] = Field(max_length=120)
-
-
 @router.get("/{project_id}/wireframes")
 async def wireframes(project_id: str):
-    """Every page as a block layout, plus the journeys through them.
+    """Every page of the product, plus the journeys through them.
 
-    Derived on save, so this is a read of what the document already implies -
-    there is nothing to generate here and nothing to wait for.
+    The page list is derived on save, so this is a read of what the document
+    already implies. Each page says whether its drawing exists and whether the
+    specification has moved since it was made.
     """
     from ..services import storage
     saved = storage.read_wireframes(project_id)
@@ -78,58 +68,6 @@ async def wireframes(project_id: str):
         storage.save_wireframes(project_id, srs)
         saved = storage.read_wireframes(project_id)
     return saved
-
-
-@router.post("/{project_id}/wireframes/draw")
-async def draw_wireframes(project_id: str):
-    """Redraw every page properly, with sample data in it.
-
-    Slower than the projection by design: each page is laid out on its own so
-    the model spends a whole answer on it. Hand edits are re-applied afterwards,
-    so redrawing never costs someone the page they arranged themselves.
-    """
-    from ..agents.wireframe_generator import draft_wireframes
-    from ..services import storage
-    srs = await orchestrator.latest_srs(project_id)
-    if not srs:
-        raise HTTPException(404, "no SRS generated yet")
-    doc = srs["srs_document"]
-    return storage.save_drawn_wireframes(project_id, doc, await draft_wireframes(doc))
-
-
-@router.post("/{project_id}/wireframes/edit")
-async def edit_wireframe(project_id: str, request: WireframeEdit):
-    from ..services import storage
-    blocks = []
-    for raw in request.blocks:
-        if not isinstance(raw, dict):
-            continue
-        # Position and size are clamped to the grid the renderer draws on, so a
-        # dragged block cannot be saved outside the frame it is edited in.
-        block = {"id": str(raw.get("id") or "")[:40],
-                 "kind": str(raw.get("kind") or "panel")[:20],
-                 "label": str(raw.get("label") or "")[:120]}
-        for key, cap in (("x", 100), ("y", 100), ("w", 100), ("h", 100)):
-            try:
-                block[key] = max(0, min(cap, int(round(float(raw.get(key, 0))))))
-            except (TypeError, ValueError):
-                block[key] = 0
-        block["w"] = max(4, min(block["w"], 100 - block["x"]))
-        block["h"] = max(3, min(block["h"], 100 - block["y"]))
-        for extra in ("rows", "columns"):
-            if raw.get(extra):
-                block[extra] = raw[extra]
-        blocks.append(block)
-    return storage.save_wireframe_edit(project_id, request.route, blocks)
-
-
-class WireframeHtmlRequest(BaseModel):
-    route: str = ""
-
-
-class WireframeHtmlEdit(BaseModel):
-    route: str = Field(min_length=1, max_length=400)
-    html: str = Field(min_length=1, max_length=4_000_000)
 
 
 @router.post("/{project_id}/wireframes/html/edit")
@@ -153,11 +91,11 @@ async def edit_wireframe_html(project_id: str, request: WireframeHtmlEdit):
 
 @router.post("/{project_id}/wireframes/html")
 async def draw_wireframe_html(project_id: str, request: WireframeHtmlRequest):
-    """The full drawing: one page, or the whole set when no route is named.
+    """Draw one page, or every page when no route is named.
 
-    Separate from `/draw` because the two views cost differently. The blocks
-    are what the tools editor moves and are always there; this is a whole page
-    of HTML per screen, so it is asked for rather than assumed.
+    A page is one model call, so the whole set is minutes rather than seconds.
+    A saved specification starts this on its own; this endpoint is for drawing
+    again after an edit or a change.
     """
     from ..agents.wireframe_generator import (draft_html_wireframe,
                                               draft_html_wireframes,

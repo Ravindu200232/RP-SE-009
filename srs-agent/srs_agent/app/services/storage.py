@@ -74,36 +74,9 @@ def save_wireframes(project_id: str, srs: dict) -> Path | None:
         folder = wireframes_dir(project_id)
         # Hand edits live in their own file and are re-applied on top, so a
         # regeneration never silently discards what someone moved by hand.
-        return write_json(folder / "wireframes.json", _with_edits(folder, payload))
+        return write_json(folder / "wireframes.json", payload)
     except Exception:  # noqa: BLE001 - a missing wireframe must not fail a save
         return None
-
-
-def _with_edits(folder: Path, payload: dict) -> dict:
-    """Lay saved per-page edits back over a freshly derived set."""
-    try:
-        edits = json.loads((folder / "edits.json").read_text(encoding="utf-8"))
-    except Exception:  # noqa: BLE001
-        return payload
-    if not isinstance(edits, dict):
-        return payload
-    for page in payload.get("pages") or []:
-        saved = edits.get(page.get("route"))
-        if isinstance(saved, dict) and saved.get("blocks"):
-            page["blocks"] = saved["blocks"]
-            page["edited"] = True
-    return payload
-
-
-def save_drawn_wireframes(project_id: str, doc: dict, frames: list) -> dict:
-    """Keep a set drawn for quality, hand edits still laid on top."""
-    from ..generators.wireframes import user_journeys_for
-    folder = wireframes_dir(project_id)
-    payload = {"version": str((doc or {}).get("version") or ""),
-               "generated_from": "model", "pages": frames,
-               "journeys": user_journeys_for(doc or {})}
-    write_json(folder / "wireframes.json", _with_edits(folder, payload))
-    return read_wireframes(project_id)
 
 
 def html_dir(project_id: str) -> Path:
@@ -177,31 +150,6 @@ def read_wireframes(project_id: str) -> dict:
                                   and version
                                   and str(versions.get(str(route), "")) != version)
     return payload
-
-
-def save_wireframe_edit(project_id: str, route: str, blocks: list) -> dict:
-    """Keep one page's hand-edited layout, and nothing else.
-
-    Only the page named here is written. The editor opens one wireframe at a
-    time and may not reach any other, so a saved edit cannot disturb a page the
-    person was not looking at.
-    """
-    folder = wireframes_dir(project_id)
-    try:
-        edits = json.loads((folder / "edits.json").read_text(encoding="utf-8"))
-    except Exception:  # noqa: BLE001
-        edits = {}
-    if not isinstance(edits, dict):
-        edits = {}
-    edits[str(route)] = {"blocks": blocks}
-    write_json(folder / "edits.json", edits)
-    current = read_wireframes(project_id)
-    for page in current.get("pages") or []:
-        if page.get("route") == route:
-            page["blocks"] = blocks
-            page["edited"] = True
-    write_json(folder / "wireframes.json", current)
-    return current
 
 
 def save_review_round(project_id: str, round_no: int, payload: dict) -> Path:
