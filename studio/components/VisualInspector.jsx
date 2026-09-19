@@ -27,7 +27,7 @@ export default function VisualInspector({element, doc, project, currentFile, onC
   const [customProperty, setCustomProperty] = useState('')
   const [customValue, setCustomValue] = useState('')
   useEffect(() => { setError(''); setSaved(false); setVersion(v => v + 1) }, [element, doc, project, currentFile])
-  if (!element || !doc) return null
+  if (!element || !doc || !doc.defaultView || element.ownerDocument !== doc) return null
   const editor = editorFor(doc)
   const computed = doc.defaultView.getComputedStyle(element)
   const tag = element.tagName.toLowerCase()

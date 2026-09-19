@@ -157,7 +157,9 @@ def register(registry):
     registry.add(Tool(
         name="browserSnapshot", risk=SAFE, handler=browser_snapshot,
         description="Read the current page's accessibility tree and any diagnostics it produced. "
-                    "This is what a locator resolves against.",
+                    "This is what a locator resolves against. Every form control is shown with "
+                    "what it currently holds, so this answers whether a field was actually "
+                    "filled - ask the page before concluding anything about the product.",
         parameters={"type": "object", "properties": {
             "tabId": {"type": "string"}, "limit": {"type": "integer"}}},
         summarize=lambda a: "snapshot"))

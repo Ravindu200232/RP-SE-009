@@ -291,6 +291,7 @@ export default function PrototypePane({ project, hidden, onBuild }) {
       visualDetachRef.current?.()
       visualDetachRef.current = null
       setInspectedElement(null)
+      setInspectedDoc(null)
     }
     return () => {
       visualDetachRef.current?.()
@@ -321,6 +322,8 @@ export default function PrototypePane({ project, hidden, onBuild }) {
     const onLoad = () => {
       watchFrame(f, project, 'designer')
       syncPath()
+      setInspectedElement(null)
+      setInspectedDoc(null)
       if (pickOn) attach()
       if (visualEditOn) attachVisualInspector()
       if (figmaMoveOn) attachFigmaEditor()

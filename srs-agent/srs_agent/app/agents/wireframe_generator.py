@@ -45,6 +45,23 @@ STRICT WIREFRAME DESIGN SYSTEM & VISUAL RULES:
 Ensure the output is production-ready HTML with CDN Tailwind CSS script included in the <head>.
 """
 
+FROM_PROTOTYPE = """THE PAGE AS IT NOW IS
+
+This page exists in the product's HTML prototype and has just been changed. What
+follows is its structure as built: every section in the order it appears, with
+its headings, controls, fields and its own words. Tags, ids and class names are
+the page's own.
+
+Draw the wireframe of THIS page. Same sections in the same order, same controls
+in the same places, the same words where words are given, and a placeholder box
+wherever the page has an image. Add nothing the outline does not contain and
+leave nothing out of it. The specification documents below are context for what
+the outline does not say - a field's purpose, a page's name - and where they
+disagree with the outline, the outline wins: it is what the product does.
+
+{structure}
+"""
+
 # Retain strong references to background drawing tasks to prevent premature garbage collection.
 _IN_FLIGHT: dict[tuple[str, str], object] = {}
 
@@ -99,6 +116,55 @@ def draw_later(project_id: str, doc: dict) -> None:
         _IN_FLIGHT.pop(key, None)
 
 
+async def redraw_pages(project_id: str, doc: dict, pages) -> list[str]:
+    """Redraw the pages a prototype change actually touched, from their markup.
+
+    Two things separate this from `draw_later`. It draws the pages that
+    changed rather than all of them, because a change to one screen is not a
+    reason to spend seventeen model calls redrawing the other sixteen. And it
+    draws them from the prototype's own structure, so the wireframe shows what
+    the product does rather than what the document says about it - the two drift
+    apart the moment somebody moves a section by hand, and the document is not
+    where that move was recorded.
+
+    Awaited rather than scheduled, unlike `draw_later`: this runs inside the
+    change transaction, and the project adopts the drawings the moment that
+    transaction returns. Scheduling it is how the adopted copy ends up a version
+    behind, every time, for as long as the project lives.
+    """
+    from ..services import storage
+    wanted = {str(page.get("route") or ""): str(page.get("outline") or "")
+              for page in (pages or [])
+              if isinstance(page, dict) and page.get("route") and page.get("outline")}
+    if not doc or not wanted:
+        return []
+    specified = {str(page.get("route")): page
+                 for page in ((doc.get("public_pages") or []) + (doc.get("protected_pages") or []))
+                 if isinstance(page, dict)}
+    version = str(doc.get("version") or "")
+    key = (str(project_id), version + "|" + ",".join(sorted(wanted)))
+    _IN_FLIGHT[key] = object()          # no `done`, so `drawing` reads it as running
+    drawn: list[str] = []
+    try:
+        context = handoff_context(project_id)
+        for route, structure in sorted(wanted.items()):
+            page = specified.get(route)
+            if not page:
+                log.info("%s is drawn in the prototype but not specified; not redrawn", route)
+                continue
+            try:
+                html = await draft_html_wireframe(page, doc, context, structure)
+            except Exception as exc:  # noqa: BLE001 - one page is not the set
+                log.warning("no redrawn wireframe for %s: %s", route, str(exc)[:200])
+                continue
+            storage.save_page_html(project_id, route, html, version)
+            drawn.append(route)
+    finally:
+        _IN_FLIGHT.pop(key, None)
+    log.info("redrew %d changed page(s) of %s from the prototype", len(drawn), project_id)
+    return drawn
+
+
 def _fenced(reply) -> str:
     """The HTML out of a reply that may or may not have fenced it."""
     content = str(reply or "").strip()
@@ -135,16 +201,24 @@ def handoff_context(project_id: str) -> str:
     return "\n\n".join(parts)
 
 
-async def draft_html_wireframe(page: dict, doc: dict, context: str = "") -> str:
-    """One page as a complete, self-contained HTML wireframe document."""
+async def draft_html_wireframe(page: dict, doc: dict, context: str = "",
+                               structure: str = "") -> str:
+    """One page as a complete, self-contained HTML wireframe document.
+
+    `structure` is the page as the prototype actually builds it. Given one,
+    the drawing follows the product; given none it follows the specification,
+    which is all there is to follow before a prototype exists.
+    """
+    drawn_from = (FROM_PROTOTYPE.format(structure=structure) if structure else
+                  "Draw this one page of the product described below. Everything "
+                  "you need is in these documents; follow them and invent nothing "
+                  "they do not say.")
     name = str(page.get("page_name") or page.get("route") or "the page")
     html = _fenced(await get_llm().complete_text(
         system="You return one complete HTML document and nothing else.",
         user=(f"{HTML_WIREFRAME_PROMPT}\n\n"
               f"THE PAGE TO DRAW: {name} at {page.get('route') or '/'}\n\n"
-              "Draw this one page of the product described below. Everything you "
-              "need is in these documents; follow them and invent nothing they "
-              "do not say.\n\n"
+              f"{drawn_from}\n\n"
               f"{context}"),
         label="srs_wireframe_html"))
     if "<" not in html:

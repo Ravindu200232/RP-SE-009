@@ -27,6 +27,59 @@ def run_manual_prototype_change(project, summary):
     finally:
         browser.close()
 
+
+MAX_REDRAWN_PAGES = 12
+
+
+def _as_evidence(change):
+    """A completed change as something to put in the next agent's brief.
+
+    The sentence an agent writes about its own work is a summary of intent.
+    The agent on the other side of the handoff has to reproduce that work, and
+    for it the files are the request: which ones moved, and what in them. Both
+    travel now, the sentence still first, because it is what says why.
+    """
+    from server_modules.services import change_set
+    detail = change_set.brief(change)
+    return ("\n\n" + detail) if detail else ""
+
+
+def _changed_pages(directory, change):
+    """The prototype pages this change rewrote, in the form a drawing reads.
+
+    The wireframe for a screen and the prototype of that screen are the same
+    screen twice, and until now only one of them ever heard about a change: the
+    document was told a sentence, and the drawing was re-derived from the
+    sentence. So a section moved by hand in the prototype left the wireframe
+    showing the old arrangement, with nothing anywhere recording that the two
+    had parted company.
+
+    What travels is the page's structure rather than its markup - see
+    `page_outline` for why - and only for pages the specification actually
+    names. A confirmation screen the document never mentioned has no wireframe
+    to update, and inventing a route for it would put one in the specification.
+    """
+    from server_modules.services import change_set, prototype_routes
+    from server_modules.services.page_outline import outline
+    names = [name for name in change_set.touched(change, under=".agentforge/prototype/")
+             if name.lower().endswith(".html")]
+    routes = prototype_routes.route_for_files(directory, names)
+    pages, seen = [], set()
+    for name in names:
+        route = routes.get(name.rsplit("/", 1)[-1])
+        if not route or route in seen:
+            continue
+        try:
+            structure = outline((directory / name).read_text(encoding="utf-8", errors="replace"))
+        except OSError:
+            continue                       # deleted by the same change; nothing to draw
+        if not structure:
+            continue
+        seen.add(route)
+        pages.append({"route": route, "outline": structure})
+    return pages[:MAX_REDRAWN_PAGES]
+
+
 def _srs_id_of(directory):
     link = json.loads((directory / ".agentforge" / "srs" / "link.json").read_text(encoding="utf-8"))
     return link["srs_id"]
@@ -58,8 +111,38 @@ def _await_srs_job(request_path, request, label, job_id):
     raise RuntimeError("SRS synchronization exceeded 30 minutes; its job remains available for retry")
 
 
+def _drawings_settled(sid, seconds=900):
+    """Wait for the SRS to finish drawing before taking a copy of its pages.
+
+    A page is a model call and there are as many as the specification has
+    pages, so a save schedules the drawing and returns long before it lands.
+    Adopting at that moment copies the previous version's pages - every time,
+    for as long as the project lives, because nothing adopts again afterwards.
+    One project was found nine versions on with its wireframes still stamped
+    1.8.0 while the specification's own copies said 1.9.0.
+
+    Bounded and forgiving: an SRS that cannot answer is not a reason to fail a
+    change, and the pages already on disk are what the studio would have shown
+    anyway.
+    """
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        if SERVER_STOPPING:
+            return
+        try:
+            response = requests.get(f"http://127.0.0.1:{SRS_PORT}/projects/{sid}/wireframes",
+                                    timeout=30)
+            response.raise_for_status()
+            if not response.json().get("drawing"):
+                return
+        except (requests.RequestException, ValueError):
+            return
+        time.sleep(3)
+
+
 def _adopt(sid, directory):
     """Pull the revised documents back into the project, quietly."""
+    _drawings_settled(sid)
     RUN.document_sync = True
     try:
         if not adopt_srs(sid, directory):
@@ -68,14 +151,17 @@ def _adopt(sid, directory):
         RUN.document_sync = False
 
 
-def _sync_parent_documents(directory, request_path, request, label, role, summary):
+def _sync_parent_documents(directory, request_path, request, label, role, summary, pages=()):
     sid = _srs_id_of(directory)
     checkpoint = request.setdefault("srs_jobs", {})
     job_id = checkpoint.get(label)
     if not job_id:
+        body = {"change_id": f"{request_path.stem}-{label}", "source": role,
+                "summary": summary[:12000]}
+        if pages:
+            body["pages"] = list(pages)
         response = requests.post(f"http://127.0.0.1:{SRS_PORT}/jobs", json={
-            "path": f"/projects/{sid}/changes", "method": "POST",
-            "body": {"change_id": f"{request_path.stem}-{label}", "source": role, "summary": summary[:12000]}}, timeout=30)
+            "path": f"/projects/{sid}/changes", "method": "POST", "body": body}, timeout=30)
         response.raise_for_status()
         job_id = checkpoint[label] = response.json()["job_id"]
         atomic_json(request_path, request)
@@ -239,6 +325,11 @@ def _spec_change_stages(project, directory, request_path, prompt, targets):
         said = request.get("spec_diff") or []
         if said:
             brief += "\nWhat the specification now says changed:\n" + "\n".join(f"- {line}" for line in said)
+        if role == "developer":
+            # The drawing went first, so the build is shown what it did rather
+            # than left to infer it from the same sentence a second time.
+            from server_modules.services import change_set
+            brief += _as_evidence(change_set.read(directory, "designer"))
         # Share current queue slot with sibling task to prevent deadlocks and loopbacks.
         RUN_QUEUE.set_agent(role)
         run_chat(directory.name, brief, options.get("model") or default_agent_model(),
@@ -264,6 +355,9 @@ def _spec_change_stages(project, directory, request_path, prompt, targets):
             clear_qa_change(directory)
         checkpoint("complete")
 
+    from server_modules.services import change_set
+    for role in ("designer", "developer"):
+        change_set.clear(directory, role)
     state.update(sync={"status": "completed", "version": request.get("srs_version"), "source": "srs"})
     emit({"type": "sync_state", "project": project, "status": "completed",
           "version": request.get("srs_version")})
@@ -282,6 +376,10 @@ def synchronize_completed_change(directory, request_path, request):
     if source == "designer":
         summary = _with_screen_inventory(directory, summary)
     request["change_summary"] = summary
+    from server_modules.services import change_set
+    # What the run did, rather than what it said about itself. Kept until the
+    # transaction completes, so a resumed one still has it.
+    source_change = change_set.read(directory, source)
 
     def checkpoint(next_stage):
         nonlocal stage
@@ -292,7 +390,8 @@ def synchronize_completed_change(directory, request_path, request):
     emit({"type": "sync_state", "project": directory.name, "status": "running", "source": source})
     state.update(sync={"status": "running", "source": source, "request_id": request_path.stem})
     if stage == "source_completed":
-        result = _sync_parent_documents(directory, request_path, request, "source", source, summary)
+        result = _sync_parent_documents(directory, request_path, request, "source", source, summary,
+                                        _changed_pages(directory, source_change) if source == "designer" else ())
         request["srs_version"] = result.get("version")
         checkpoint("srs_updated")
     # A completed prototype may update an existing build, never start the first build.
@@ -304,7 +403,7 @@ def synchronize_completed_change(directory, request_path, request):
             "The parent SRS has been updated after a completed change in the other agent. "
             "Read the current handoff files and apply this change to your own artifact. "
             "Preserve unrelated behavior. Update only your own files and verify the result.\n\n"
-            + summary)
+            + summary + _as_evidence(source_change))
         # This direct run shares the transaction's queue slot. It has an independent
         # context, and its completion cannot create another sibling transaction.
         RUN_QUEUE.set_agent(sibling)
@@ -319,7 +418,10 @@ def synchronize_completed_change(directory, request_path, request):
     elif stage == "srs_updated":
         checkpoint("qa_pending")
     if stage == "sibling_completed":
-        result = _sync_parent_documents(directory, request_path, request, "mirror", sibling, request["sibling_summary"])
+        mirrored = change_set.read(directory, sibling)
+        result = _sync_parent_documents(directory, request_path, request, "mirror", sibling,
+                                        request["sibling_summary"],
+                                        _changed_pages(directory, mirrored) if sibling == "designer" else ())
         request["srs_version"] = result.get("version")
         checkpoint("qa_pending")
     # Record QA verification only after tested code revisions are committed to document.
@@ -331,6 +433,8 @@ def synchronize_completed_change(directory, request_path, request):
             request["srs_version"] = result.get("version")
             clear_qa_change(directory)
         checkpoint("complete")
+    change_set.clear(directory, source)
+    change_set.clear(directory, sibling)
     state.update(sync={"status": "completed", "version": request.get("srs_version"), "source": source})
     emit({"type": "sync_state", "project": directory.name, "status": "completed", "version": request.get("srs_version")})
 
