@@ -1,18 +1,6 @@
 'use client'
 
-/**
- * A page built out of the choices, so a change is something you can see.
- *
- * Swatches tell you a colour; they do not tell you what the product will look
- * like. This renders a real screen — header, hero, cards, a form, a footer —
- * with the actual tokens, type, corners, spacing, borders and depth applied,
- * so moving from Soft to Square or Compact to Comfortable shows what it does
- * to the product rather than to a chip.
- *
- * It is styled from inline values on purpose. The whole point is that nothing
- * here inherits the studio's own design: what is on screen is the application
- * being described, not the tool describing it.
- */
+/** Renders an interactive live preview of the design theme using inline styles and component tokens. */
 
 const SHADOWS = {
   flat: 'none',

@@ -207,14 +207,7 @@ class GeneratorEc2Mixin:
                       ProtectSystem=strict
                       ProtectHome=true
                       ReadWritePaths=/opt/app /var/log/app
-                      # A file, not only the journal. The deployment agent
-                      # scores 10 "monitoring" points for being able to read
-                      # the application's own log lines back out of
-                      # CloudWatch, and the journal alone never left the box:
-                      # the group was created, the role could write to it, and
-                      # nothing ever shipped a line, so every run finished at
-                      # 90/100 with "the agent has not seen the application
-                      # write anything it can read back".
+                      # Ship application log files to CloudWatch so verification monitors can read emitted logs.
                       StandardOutput=append:/var/log/app/app.log
                       StandardError=append:/var/log/app/app.log
 
@@ -222,9 +215,7 @@ class GeneratorEc2Mixin:
                       WantedBy=multi-user.target
                       UNIT
 
-                      # The group name here has to stay in step with the
-                      # LogGroup resource above and with the monitor, which
-                      # reads /deployment-agent/<slug>.
+                      # Log group name must match the CloudWatch monitor path convention.
                       mkdir -p /opt/aws/amazon-cloudwatch-agent/etc
                       cat > /opt/aws/amazon-cloudwatch-agent/etc/app-logs.json <<'CWAGENT'
                       {
@@ -251,9 +242,7 @@ class GeneratorEc2Mixin:
                       }
                       CWAGENT
 
-                      # Best effort on purpose: a box that cannot ship logs
-                      # should still serve the site. The run loses the 10
-                      # monitoring points rather than the deployment.
+                      # Treat log agent setup as best-effort so logging faults do not block site deployment.
                       /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
                         -a fetch-config -m ec2 -s \
                         -c file:/opt/aws/amazon-cloudwatch-agent/etc/app-logs.json || true

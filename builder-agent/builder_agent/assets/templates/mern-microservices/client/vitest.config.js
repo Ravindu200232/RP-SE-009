@@ -5,9 +5,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'jsdom',
-    // The setup file below extends `expect`, which only exists globally when
-    // this is on. Without it the whole suite fails at collection with
-    // "expect is not defined", pointing at the setup file.
+    // Enable test globals so setup files can extend expect.
     globals: true,
     setupFiles: ['test/setup.js'],
     include: ['test/**/*.test.jsx'],

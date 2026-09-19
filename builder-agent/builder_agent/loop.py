@@ -129,6 +129,24 @@ class Outcome:
                 "plan": self.plan}
 
 
+def _plugin_skills(workspace) -> list[str]:
+    """The skills this project's ticked plugins entitle the model to read.
+
+    Read off the project rather than passed in, because a plugin can be ticked
+    between one message and the next: the chat's plugin icon writes the file
+    and the very next run picks it up, with no rebuild and nothing to restart.
+    """
+    try:
+        import json as _json
+        from pathlib import Path as _Path
+        body = _json.loads((_Path(workspace) / ".agentforge" / "plugins.json")
+                           .read_text(encoding="utf-8"))
+        wanted = {str(name) for name in (body.get("skills") or [])}
+        return sorted(wanted)
+    except Exception:  # noqa: BLE001 - a project with no plugins is the normal case
+        return []
+
+
 class Loop:
     def __init__(self, *, config, registry, router, memory, sandbox, events,
                  processes, browser, cancel=None, verification_kinds=None,
@@ -165,7 +183,8 @@ class Loop:
         self.layout_signature = ""
         self.layout_dirty = True
         self.active_lesson: dict | None = None
-        self.state: dict = {"knowledge": self.knowledge, "skill_reads": {}, "plan": ""}
+        self.state: dict = {"knowledge": self.knowledge, "skill_reads": {}, "plan": "",
+                            "ambiguity_checked": False}
         memory.evidence.bind(str(sandbox.root))
         memory.evidence.enabled_kinds = {
             *(("unit",) if config.unit_tests else ()),
@@ -338,9 +357,7 @@ class Loop:
         self.memory.add_pinned(format_layout(layout), "project-layout")
 
     def _prepare_workspace(self, task: str) -> None:
-        # Before the designer's early return, because below it the agent that
-        # makes the look never received it and every theme came out as the same
-        # page in a different colour.
+        # Install theme prior to designer early-return so custom styling tokens are loaded.
         self._install_theme(task)
         if self.config.extra.get("agent_role") == "designer":
             # Designer owns only the prototype. It must never scaffold app code.
@@ -357,13 +374,16 @@ class Loop:
                              message=f"Stack template not applied: {scaffold.reason}")
 
 
-        if self.config.extra.get("agent_role") == "developer":
+        # Explicitly selected plugins are pinned and installed across all agent roles.
+        forced = _plugin_skills(self.sandbox.root)
+
+        if self.config.extra.get("agent_role") == "developer" and not forced:
             # The SRS owns the product instructions. Do not install category-specific
             # skills or inject a fresh plan/design checklist into an approved build.
             return
 
         pack = install_skill_pack(
-            self.sandbox.root, task, self.config.stack)
+            self.sandbox.root, task, self.config.stack, forced=forced)
         learned = self.knowledge.install_skill(self.sandbox.root, self.config.stack)
         if learned:
             pack.selected = sorted(set(pack.selected) | {learned})
@@ -718,6 +738,7 @@ class Loop:
         self.memory.add_tool_result(call.tool, body, call.call_id, args=args, ok=ok)
         self.events.emit("checkpoint", tool=call.tool)
         self._hint_phase_skills(call.tool)
+        self._hint_ambiguity(call.tool)
         return result
 
     # -- lessons ---------------------------------------------------------
@@ -759,6 +780,32 @@ class Loop:
                 kind="skill-hint")
             for name in wanted:
                 self.state["skill_reads"][f"{name}/"] = True
+
+    # Prompts the model to resolve specification ambiguity early before code generation begins.
+    def _hint_ambiguity(self, tool: str) -> None:
+        """Ask it, once, whether the request actually settled what it is building."""
+        if self.state.get("ambiguity_checked"):
+            return
+        # After it has looked at the project and before it writes anything: any
+        # earlier and it has nothing to judge, any later and the answer arrives
+        # after the code that assumed one.
+        if tool not in ("inspectProject", "listDir", "readFile", "readFiles",
+                        "grepSearch", "globFiles", "search"):
+            return
+        approvals = getattr(self, "approvals", None)
+        if (self.config.review or self.config.plan_only
+                or approvals is None or not approvals.asks("question")):
+            return
+        self.state["ambiguity_checked"] = True
+        self.memory.add_user(
+            "Before you write this feature: does the request contain a requirement with "
+            "two honest readings that would change what gets built - a rule with no "
+            "number in it, a permission with no boundary, a state with no end? If it "
+            "does, call askUser now with the options you can see and the assumption you "
+            "will proceed on. If it does not, say so in one line and carry on. Do not "
+            "ask about anything the request, the specification or the code already "
+            "answers, and do not ask which framework, database or test runner to use.",
+            kind="ambiguity-check")
 
     # -- completion ------------------------------------------------------
     def _completion_block(self) -> str:

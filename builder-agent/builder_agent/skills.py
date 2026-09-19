@@ -94,7 +94,16 @@ def read_manifest() -> dict[str, dict]:
     return entries
 
 
-def select(entries: dict, evidence: str, task: str, stack_id: str) -> list[str]:
+def select(entries: dict, evidence: str, task: str, stack_id: str,
+           forced=()) -> list[str]:
+    """Which skills this build may read.
+
+    `forced` is not evidence and is not matched against anything: it is the set
+    of plugins the person ticked for this project. Somebody who turned Supabase
+    on has said the app uses it, and a request that never happens to contain
+    the word "upload" must not be able to overrule that.
+    """
+
     # The task is always part of what a skill is matched against, since a caller
     # that passed it separately got selection from the project alone.
     corpus = _normalise(task + "\n" + str(evidence or ""))
@@ -107,6 +116,7 @@ def select(entries: dict, evidence: str, task: str, stack_id: str) -> list[str]:
         return bool(item) and (not item["stacks"] or stack.id in item["stacks"]) \
 
     selected = {name for name in stack.skills if available(name)}
+    selected |= {name for name in (forced or ()) if available(name)}
     for item in entries.values():
         if not available(item["name"]):
             continue
@@ -117,6 +127,8 @@ def select(entries: dict, evidence: str, task: str, stack_id: str) -> list[str]:
     # An extra is not part of the stack contract, so the request decides: it is
     # added when mentioned and left out when ruled out.
     for name in stack.extras:
+        if name in (forced or ()):
+            continue
         if available(name) and name in selected and any(
                 _negated(task, term) for term in entries[name]["match"]):
             selected.discard(name)
@@ -135,7 +147,8 @@ def select(entries: dict, evidence: str, task: str, stack_id: str) -> list[str]:
     return sorted(selected)
 
 
-def install_skill_pack(workspace: Path | str, task: str = "", stack_id: str = "") -> SkillPack:
+def install_skill_pack(workspace: Path | str, task: str = "", stack_id: str = "",
+                       forced=()) -> SkillPack:
     """Copy the selected skills into the project, without ever overwriting."""
     pack = SkillPack()
     workspace = Path(workspace)
@@ -148,7 +161,7 @@ def install_skill_pack(workspace: Path | str, task: str = "", stack_id: str = ""
             manifest_text = package.read_text(encoding="utf-8", errors="replace")
         stack = stack_for(stack_id)
         evidence = "\n".join([task, stack.tech, stack.unit_tool, stack.e2e_tool, manifest_text])
-        pack.selected = select(entries, evidence, task, stack_id)
+        pack.selected = select(entries, evidence, task, stack_id, forced=forced)
 
         for name in pack.selected:
             for phase in entries[name]["phases"]:

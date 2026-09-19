@@ -1,20 +1,6 @@
 'use client'
 
-/**
- * The SRS, read end to end.
- *
- * The rule here is one line long: every sentence on this page comes from a
- * field in the document, or it is not on the page. The version this replaced
- * asserted the stack, "<200ms", "100% Traceable", "Zero Dead-Ends", "Implemented"
- * on every requirement and three invented risks, none of which existed in the
- * JSON - while `business_workflows`, `validation_rules`, `integration_requirements`,
- * `assumptions`, `constraints`, `acceptance_criteria` and the traceability matrix
- * were not rendered at all, and requirements stopped at nine.
- *
- * A reader who opens srs_latest.json must find everything they just read. A thin
- * specification will therefore look thin, which is the point: that is a fact
- * about the document, and hiding it behind a green badge helps nobody.
- */
+/** Renders the complete System Requirements Specification (SRS) directly from the project document. */
 
 import { useMemo, useState } from 'react'
 import {
@@ -27,14 +13,7 @@ import DiagramViewer from './DiagramViewer'
 const list = (value) => (Array.isArray(value) ? value : [])
 const text = (value) => (typeof value === 'string' ? value.trim() : '')
 
-/**
- * How accounts come into existence, as a sentence rather than an enum.
- *
- * `registration_mode` is one of open / invite / request / admin_created / none,
- * and reading it straight into the page produced "Accounts are created by
- * open." Each mode also has a role attached to it, which is the part a reader
- * actually wants: who may sign themselves up, or who creates the accounts.
- */
+/** Formats registration configuration mode and roles into a human-readable sentence. */
 function registrationSentence(auth) {
   const mode = text(auth?.registration_mode)
   const joining = text(auth?.registration_role)
@@ -69,15 +48,7 @@ function oneLine(value) {
   return text(value)
 }
 
-/**
- * The readable sentence inside a requirement-shaped object.
- *
- * The document uses a different shape per section - a validation rule is
- * {field, rule}, a notification rule is {event, recipients, channels}, an
- * integration is {name, description}. Without these cases the generic fallback
- * printed raw JSON onto the page, which is how "[object Object]" ends up in
- * front of an examiner.
- */
+/** Formats requirement, validation, or notification objects into readable strings. */
 function sentence(item) {
   if (typeof item === 'string') return item
   if (!item || typeof item !== 'object') return String(item ?? '')
@@ -181,9 +152,7 @@ export default function Overview({ srs, onSelectView }) {
   const verified = useMemo(
     () => trace.filter(r => /verified|passed/i.test(text(r?.verification_status))).length,
     [trace])
-  // "39 of 39 verified" is true and misleading when the document holds 76
-  // requirements and the matrix lost the other 37. Count the gap, not the rows
-  // that happen to be present.
+  // Calculate requirement verification coverage relative to total document requirements.
   const untraced = useMemo(() => {
     const traced = new Set(trace.map(r => text(r?.requirement_id)).filter(Boolean))
     return reqs.filter(r => text(r?.id) && !traced.has(text(r.id))).length

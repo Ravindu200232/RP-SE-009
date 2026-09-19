@@ -225,10 +225,7 @@ function tokenLines(state, theme) {
   return rows
 }
 
-// The theme's own prompt is far longer than anything that belongs in a chat
-// message, so the direction names the theme and the engine reads the file.
-// Everything the user actually changed is spelled out, because an override is
-// only an override if it is stated after the theme it overrides.
+// Formulate design directions by referencing the base theme and explicitly appending user customizations.
 function composeDirection(state, theme) {
   const parts = []
   if (theme) parts.push(`Design theme: ${theme.name} (design-theme:${theme.slug}). ${theme.description}`)
@@ -246,9 +243,7 @@ function composeDirection(state, theme) {
     parts.push('Wireframe layout fidelity: AI Polished. Use wireframes as functional architecture, upgrading with modern UI polish, component hierarchy, and responsive aesthetics.')
   }
 
-  // Only what the user actually set. An unset control is the theme's business,
-  // and listing a default as a choice tells the agent a decision was made when
-  // none was - which is how a direction ends up arguing with its own theme.
+  // Include only explicitly customized controls to avoid conflicting with base theme defaults.
   const chosen = [
     state.appearance && `Appearance: ${state.appearance}.`,
     state.border && `Borders: ${state.border.toLowerCase()}.`,
@@ -780,10 +775,7 @@ export default function DesignCustomize({ projectId, onContinue, onBack }) {
   const [live, setLive] = useState({ slug: '', drawing: false, error: '' })
   const [fontCatalog, setFontCatalog] = useState(POPULAR_FONTS)
 
-  // A page drawn in any earlier session is already cached on disk, and the popup
-  // used to ignore it: every theme opened on "No screenshot for this theme" and
-  // asked for a draw that had already happened. Ask the cache when the popup
-  // opens, so a theme that has a page shows it straight away.
+  // Check disk cache for existing theme preview images when opening the selection popup.
   useEffect(() => {
     const slug = preview?.slug
     if (!slug || live.drawing || live.slug === slug) return

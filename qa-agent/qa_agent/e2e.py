@@ -76,11 +76,7 @@ class Journey:
     flow: str = ""
     stages: list = field(default_factory=list)
     blocked_upstream: bool = False
-    # Pages this journey opened and read for usability: {page, note}, where the
-    # note is "clean" when nothing was wrong. These are observations about a
-    # page, not steps the user took, so they are kept out of `stages` - counted
-    # there they would inflate stage_total and make a journey look longer than
-    # the path it actually walked.
+    # Record usability observations separately from journey stages to avoid inflating step counts.
     ui_quality: list = field(default_factory=list)
 
     def score(self) -> dict:

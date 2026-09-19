@@ -38,9 +38,7 @@ export function useRunData(runId) {
       artifacts: value(artifacts, 'artifacts'),
       evidence: value(evidence, 'evidence'),
       question: details.status === 'fulfilled' ? details.value.pending_question : null,
-      // The whole run record, not just the one field the composer needed. It
-      // carries what was deployed, where, from which repo and how it scored —
-      // everything the Evidence tab has to show beside the captured files.
+      // Retain complete run records including deployment targets, repos, and test scores.
       detail: details.status === 'fulfilled' ? (details.value || null) : null,
     })
 

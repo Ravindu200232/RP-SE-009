@@ -18,9 +18,7 @@ from . import storage
 from .orchestrator import _bump_minor, now_iso, summarize_srs
 
 
-# What each reporter is allowed to change. A developer's completed feature
-# should grow the specification; a test run never should, however many
-# requirement names it mentions.
+# Permitted specification mutation scopes based on the reporting agent's role.
 _SOURCE_RULES = {
     "qa": (
         "\n\nTHIS REPORT IS VERIFICATION EVIDENCE, NOT A CHANGE TO THE PRODUCT. "
@@ -46,6 +44,7 @@ async def synchronize(project_id: str, change_id: str, source: str, summary: str
     if checkpoint.is_file():
         pending = json.loads(checkpoint.read_text(encoding="utf-8"))
         srs, diff, version = pending["srs"], pending["diff"], pending["version"]
+        headline = str(pending.get("headline") or "")
     else:
         srs = copy.deepcopy(latest["srs"])
         prompt = (
@@ -58,27 +57,19 @@ async def synchronize(project_id: str, change_id: str, source: str, summary: str
             "feature merely because it mentions verification or generation."
             + _SOURCE_RULES.get(source, "")
         )
-        # `merge_edit`'s third argument is a *user's editing instruction*: it is
-        # keyword-matched for removal intent, and on a match the patch replaces
-        # the list instead of folding into it. Nothing that reaches here is a
-        # user instruction - it is an agent's report of work it finished - so
-        # none of it may be read as one. A QA report saying "Do NOT add, remove
-        # or reword ..." matched on `remove` and deleted 37 of 76 traceability
-        # rows; a developer's summary mentioning what it dropped does the same.
-        # Removal in this path belongs to the patch's content, which
-        # `_merge_list` folds by identity and never shrinks. The customization
-        # route still passes the user's own words, where "remove" means remove.
+        # Merge agent completion reports additively without interpreting report prose as removal instructions.
         edit_intent = ""
         result = await get_llm().complete_json(
-            system='You maintain the authoritative parent SRS. Return JSON {"srs_document": {changed complete sections only}, "diff_summary": [short changes]}. No new product plan.',
+            system='You maintain the authoritative parent SRS. Return JSON {"srs_document": {changed complete sections only}, "diff_summary": [short changes], "headline": "one short sentence, in the words a customer would use, naming what actually changed"}. No new product plan.',
             user=f"CURRENT SRS:\n{json.dumps(_editable_view(srs), ensure_ascii=False)}\n\n{prompt}",
             validator=lambda body: validate_srs(merge_edit(srs, body.get("srs_document"), edit_intent)),
             label="srs_parent_compare")
         updated = merge_edit(srs, result.get("srs_document"), edit_intent)
         diff = result.get("diff_summary") or []
+        headline = " ".join(str(result.get("headline") or "").split())[:90]
         changed = _editable_view(updated) != _editable_view(srs)
         if not changed:
-            diff = []
+            diff, headline = [], ""
         srs = updated
         version = _bump_minor(latest["version"]) if changed else latest["version"]
         doc = srs["srs_document"]
@@ -90,7 +81,8 @@ async def synchronize(project_id: str, change_id: str, source: str, summary: str
         from ..agents.plan_generator import render_plan_markdown
         doc["approved_plan_markdown"] = render_plan_markdown(plan, app_name=plan.get("app_name") or project.get("title", ""))
         attach_handoff(srs, plan, {}, auth=bool(doc.get("protected_pages")))
-        storage.write_json(checkpoint, {"srs": srs, "diff": diff if changed else [], "version": version})
+        storage.write_json(checkpoint, {"srs": srs, "diff": diff if changed else [],
+                                        "headline": headline, "version": version})
 
     if latest.get("operation_id") != change_id and version != latest["version"]:
         token = CURRENT_JOB.set(change_id)
@@ -101,9 +93,16 @@ async def synchronize(project_id: str, change_id: str, source: str, summary: str
         finally:
             CURRENT_JOB.reset(token)
         storage.save_srs_json(project_id, srs, version)
+        # What happened, not who reported it. "developer update" told a reader
+        # nothing: the model had already written a usable sentence and a list
+        # of the actual changes two steps earlier, and both were thrown away.
+        # The old wording survives only as the last fallback, for a revision
+        # the model described in neither form.
+        label = headline or (str(diff[0])[:90] if diff else f"{source} update")
         await repo.save_version({"id": repo.new_id("ver_"), "project_id": project_id,
-            "version": version, "operation_id": change_id, "label": f"{source} update",
-            "srs": srs, "diff_summary": diff, "created_at": now_iso()})
+            "version": version, "operation_id": change_id, "label": label,
+            "srs": srs, "diff_summary": diff, "source": source,
+            "created_at": now_iso()})
     elif latest.get("operation_id") == change_id:
         srs = latest["srs"]
     elif srs != latest["srs"]:

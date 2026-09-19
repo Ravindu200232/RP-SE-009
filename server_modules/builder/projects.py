@@ -153,10 +153,7 @@ def delete_project(proj_name: str) -> dict:
         PROD_DIR, proj_name, "project name", "project")
     if error:
         return {"error": error}
-    # Nothing may keep talking about a project that is gone - and nothing may
-    # keep writing one back. Disposing the session stops its dev servers; only
-    # a cancellation stops the loop, which had carried on recreating a deleted
-    # project file by file.
+    # Dispose the session and cancel active loops when deleting a project.
     forget_session(name)
     stopped = cancel.request(project=name)
     if stopped.get("ok"):
@@ -198,14 +195,7 @@ def delete_project(proj_name: str) -> dict:
     return {"ok": True, "project": name}
 
 
-# What a drawing is allowed to be made of. It is opened in an iframe, so
-# anything else it asks for is refused rather than guessed at.
-# What a drawing is allowed to serve. `.js` belongs here: the whole point of
-# demo.js is that the flow can be clicked through, and without it the preview
-# refused the one file the skill requires - every drawing ever shown had its
-# script 400 and none of the state, filters or sign-in worked. It got worse with
-# motion, because content that starts at opacity 0 and waits for an observer
-# stays invisible when the observer never loads.
+# Whitelisted file extensions permitted to be served inside the drawing preview iframe.
 PROTOTYPE_TYPES = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
                    ".js": "text/javascript; charset=utf-8",
                    ".mjs": "text/javascript; charset=utf-8",
@@ -529,9 +519,10 @@ def _message_job(msg: dict):
             # Only the token: the files themselves came over HTTP, because this
             # message travels on a socket that refuses a frame their size.
             str(msg.get("attachments") or "").strip(),
+            # Passes prototype_only flag and active plugins with positional stability.
+            bool(msg.get("prototype_only")),
+            [str(name) for name in (msg.get("plugins") or [])][:24],
         )
-        if bool(msg.get("prototype_only")):
-            args += (True,)
         return run_agent_pipeline, args
     if kind == "agent_resume" and project:
         if msg.get("agent") == "designer":

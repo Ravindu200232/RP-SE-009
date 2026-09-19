@@ -1,11 +1,6 @@
 'use client'
 
-/**
- * HTML Prototype Viewer with Element Selection and Pencil Annotation tools.
- *
- * Just like in the Preview pane, clicking an element or drawing with the red pen
- * on the prototype attaches it to the chat composer with a photographed screenshot.
- */
+/** HTML Prototype viewer with element selection, pencil annotations, and interactive Figma positioning tools. */
 
 import { useAgentPreview } from '@/lib/agent-preview'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -13,6 +8,9 @@ import {
   Monitor, Tablet, Smartphone, MousePointerClick, Pencil, RotateCw,
   ExternalLink, Globe, Layers, Eraser, Undo2, ChevronLeft, ChevronRight,
   Sparkles, Rocket, FlaskConical, Loader2, SlidersHorizontal,
+  Move, ArrowUpDown, AlignLeft, AlignCenter, AlignRight, Maximize2,
+  Copy, Trash2, Type, ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
+  RotateCcw as UndoIcon, Save, Check,
 } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { api, API } from '@/lib/api'
@@ -67,6 +65,17 @@ export default function PrototypePane({ project, hidden, onBuild }) {
   const [currentFile, setCurrentFile] = useState('index.html')
   const [protoReady, setProtoReady] = useState(false)
   const [iframeLoading, setIframeLoading] = useState(true)
+
+  // Figma-like Move & Position Tool states
+  const [figmaMoveOn, setFigmaMoveOn] = useState(false)
+  const [figmaPicked, setFigmaPicked] = useState('')
+  const [figmaMetrics, setFigmaMetrics] = useState(null)
+  const [figmaDragMode, setFigmaDragMode] = useState('free')
+  const [figmaDirty, setFigmaDirty] = useState(false)
+  const [savingProto, setSavingProto] = useState(false)
+  const [saveProtoSuccess, setSaveProtoSuccess] = useState(false)
+  const [figmaTyping, setFigmaTyping] = useState(false)
+  const protoEditorRef = useRef(null)
 
   const trail = useRef(['index.html'])
   const at = useRef(0)
@@ -297,10 +306,11 @@ export default function PrototypePane({ project, hidden, onBuild }) {
       syncPath()
       if (pickOn) attach()
       if (visualEditOn) attachVisualInspector()
+      if (figmaMoveOn) attachFigmaEditor()
     }
     f.addEventListener('load', onLoad)
     return () => f.removeEventListener('load', onLoad)
-  }, [pickOn, attach, visualEditOn, attachVisualInspector, syncPath])
+  }, [pickOn, attach, visualEditOn, attachVisualInspector, figmaMoveOn, attachFigmaEditor, syncPath])
 
   useEffect(() => {
     const id = setInterval(syncPath, 500)
@@ -405,12 +415,97 @@ export default function PrototypePane({ project, hidden, onBuild }) {
     }
   }, [pencilOn, point, syncCanvas, clearStrokes, attachShot, viewportOf, project])
 
+  const attachFigmaEditor = useCallback(() => {
+    protoEditorRef.current?.detach?.()
+    protoEditorRef.current = null
+    const f = frameRef.current
+    if (!f) return
+    import('@/lib/wireframe-html-editor').then(({ attachEditor }) => {
+      protoEditorRef.current = attachEditor(f, {
+        onSelect: setFigmaPicked,
+        onDirty: setFigmaDirty,
+        onMetrics: setFigmaMetrics,
+      })
+      if (protoEditorRef.current) {
+        protoEditorRef.current.setDragMode(figmaDragMode)
+      }
+    })
+  }, [figmaDragMode])
+
+  useEffect(() => () => { protoEditorRef.current?.detach?.() }, [])
+
+  function toggleFigmaMove() {
+    if (!project) return addLog('WARN', 'Open a project first')
+    if (!figmaMoveOn) {
+      setPickOn(false)
+      setPencilOn(false)
+      setVisualEditOn(false)
+      setInspectedElement(null)
+      attachFigmaEditor()
+    } else {
+      protoEditorRef.current?.detach?.()
+      protoEditorRef.current = null
+      setFigmaPicked('')
+      setFigmaMetrics(null)
+      setFigmaDirty(false)
+    }
+    setFigmaMoveOn(v => !v)
+  }
+
+  const setProtoMode = mode => {
+    setFigmaDragMode(mode)
+    protoEditorRef.current?.setDragMode?.(mode)
+  }
+
+  async function savePrototypeFigma() {
+    if (!protoEditorRef.current || !project) return
+    setSavingProto(true)
+    setSaveProtoSuccess(false)
+    try {
+      if (figmaTyping) {
+        protoEditorRef.current.editText(false)
+        setFigmaTyping(false)
+      }
+      const base = baseFileName(currentFile)
+      const serializedHtml = protoEditorRef.current.serialize()
+      await api.saveFile(
+        project,
+        `.agentforge/prototype/${base || 'index.html'}`,
+        serializedHtml,
+        `Figma layout edit in ${base || 'index.html'}`
+      )
+      protoEditorRef.current.saved()
+      setFigmaDirty(false)
+      setSaveProtoSuccess(true)
+      addLog?.('SUCCESS', `Saved ${base || 'index.html'} directly to prototype HTML`)
+      setTimeout(() => setSaveProtoSuccess(false), 3000)
+    } catch (err) {
+      addLog?.('WARN', `Could not save prototype: ${err.message}`)
+    } finally {
+      setSavingProto(false)
+    }
+  }
+
+  const protoAct = (name, ...args) => () => {
+    protoEditorRef.current?.[name]?.(...args)
+    if (name === 'undo') {
+      setFigmaDirty(false)
+      setFigmaPicked('')
+      setFigmaMetrics(null)
+    }
+  }
+
   function togglePick() {
     if (!project) return addLog('WARN', 'Open a project first')
     if (!pickOn) {
       setPencilOn(false)
       setVisualEditOn(false)
       setInspectedElement(null)
+      if (figmaMoveOn) {
+        protoEditorRef.current?.detach?.()
+        protoEditorRef.current = null
+        setFigmaMoveOn(false)
+      }
     }
     setPickOn(v => !v)
   }
@@ -421,6 +516,11 @@ export default function PrototypePane({ project, hidden, onBuild }) {
       setPickOn(false)
       setVisualEditOn(false)
       setInspectedElement(null)
+      if (figmaMoveOn) {
+        protoEditorRef.current?.detach?.()
+        protoEditorRef.current = null
+        setFigmaMoveOn(false)
+      }
     }
     setPencilOn(v => { if (v) clearStrokes(); return !v })
   }
@@ -430,6 +530,11 @@ export default function PrototypePane({ project, hidden, onBuild }) {
     if (!visualEditOn) {
       setPickOn(false)
       setPencilOn(false)
+      if (figmaMoveOn) {
+        protoEditorRef.current?.detach?.()
+        protoEditorRef.current = null
+        setFigmaMoveOn(false)
+      }
     } else {
       setInspectedElement(null)
     }
@@ -565,7 +670,172 @@ export default function PrototypePane({ project, hidden, onBuild }) {
             <SlidersHorizontal className={cn("size-3.5", visualEditOn ? "text-white" : "text-emerald-600 dark:text-emerald-400")} />
           </Cell>
         </div>
+
+        {/* Figma Move & Position Tool (Zero-LLM Direct Canvas Positioning) */}
+        <div className="flex items-center gap-1 rounded-full border border-[#0D99FF]/40 bg-[#0D99FF]/[0.08] p-1 shadow-sm">
+          <Cell
+            tip="Figma Move Tool: Drag elements with cursor, resize handles, nudge with arrows, position like Figma"
+            side="left"
+            on={figmaMoveOn}
+            onClick={toggleFigmaMove}
+            disabled={!protoReady || isBusy}
+            className={cn("rounded-full", figmaMoveOn && "!bg-[#0D99FF] !text-white shadow-sm")}
+          >
+            <Move className={cn("size-3.5", figmaMoveOn ? "text-white" : "text-[#0D99FF]")} />
+          </Cell>
+        </div>
       </div>
+
+      {/* Figma Design & Position Toolbar */}
+      {figmaMoveOn && (
+        <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-white/10 bg-[#0d111a]/95 px-3.5 py-2 select-none z-30 shadow-md backdrop-blur-md">
+          {/* Mode Switcher: Move (Free Drag) vs Flow (Reorder) */}
+          <div className="flex items-center rounded-lg bg-black/40 p-0.5 border border-white/10">
+            <button
+              type="button"
+              onClick={() => setProtoMode('free')}
+              title="Move Tool (V): Drag with cursor to freely position anywhere"
+              className={cn('flex items-center gap-1 rounded-md px-2 py-1 text-[10.5px] font-medium transition cursor-pointer',
+                figmaDragMode === 'free' ? 'bg-[#0D99FF] text-white font-semibold shadow-sm' : 'text-white/60 hover:text-white')}
+            >
+              <Move className="size-3" />
+              <span>Move</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setProtoMode('flow')}
+              title="Reorder Tool: Drag with cursor to drop between elements"
+              className={cn('flex items-center gap-1 rounded-md px-2 py-1 text-[10.5px] font-medium transition cursor-pointer',
+                figmaDragMode === 'flow' ? 'bg-[#0D99FF] text-white font-semibold shadow-sm' : 'text-white/60 hover:text-white')}
+            >
+              <ArrowUpDown className="size-3" />
+              <span>Reorder</span>
+            </button>
+          </div>
+
+          <span className="mx-1 h-4 w-px bg-white/10" />
+
+          {figmaPicked ? (
+            <>
+              {/* Selected Tag & Dimensions */}
+              <span className="flex items-center gap-1 rounded-md bg-white/[.07] px-2 py-1 font-mono text-[10.5px] text-white/90 border border-white/10">
+                <span className="text-[#0D99FF] font-semibold">&lt;{figmaPicked}&gt;</span>
+                {figmaMetrics && (
+                  <span className="text-white/50 text-[10px] ml-1">
+                    {figmaMetrics.w}×{figmaMetrics.h}px
+                  </span>
+                )}
+              </span>
+
+              {/* Position Steppers (X, Y) */}
+              <div className="flex items-center gap-1 rounded-md bg-black/30 px-1.5 py-0.5 border border-white/10 font-mono text-[10px]">
+                <span className="text-white/40 uppercase font-semibold text-[9.5px]">X:</span>
+                <button type="button" onClick={() => protoEditorRef.current?.nudge?.(-5, 0)} className="px-1 text-white/70 hover:text-white hover:bg-white/10 rounded">-</button>
+                <span className="text-white font-medium min-w-[28px] text-center">{figmaMetrics?.x ?? 0}px</span>
+                <button type="button" onClick={() => protoEditorRef.current?.nudge?.(5, 0)} className="px-1 text-white/70 hover:text-white hover:bg-white/10 rounded">+</button>
+              </div>
+
+              <div className="flex items-center gap-1 rounded-md bg-black/30 px-1.5 py-0.5 border border-white/10 font-mono text-[10px]">
+                <span className="text-white/40 uppercase font-semibold text-[9.5px]">Y:</span>
+                <button type="button" onClick={() => protoEditorRef.current?.nudge?.(0, -5)} className="px-1 text-white/70 hover:text-white hover:bg-white/10 rounded">-</button>
+                <span className="text-white font-medium min-w-[28px] text-center">{figmaMetrics?.y ?? 0}px</span>
+                <button type="button" onClick={() => protoEditorRef.current?.nudge?.(0, 5)} className="px-1 text-white/70 hover:text-white hover:bg-white/10 rounded">+</button>
+              </div>
+
+              {figmaMetrics?.hasOffset && (
+                <button
+                  type="button"
+                  onClick={() => protoEditorRef.current?.resetPos?.()}
+                  title="Reset Position to 0,0"
+                  className="rounded-md bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 px-1.5 py-1 text-[10px] font-medium transition cursor-pointer"
+                >
+                  Reset Pos
+                </button>
+              )}
+
+              {/* Nudge D-Pad */}
+              <div className="flex items-center rounded-md bg-white/[.05] p-0.5 border border-white/10">
+                <button type="button" onClick={() => protoEditorRef.current?.nudge?.(-1, 0)} title="Nudge Left (1px)" className="p-1 hover:bg-white/10 rounded text-white/70 hover:text-white">
+                  <ArrowLeft className="size-2.5" />
+                </button>
+                <button type="button" onClick={() => protoEditorRef.current?.nudge?.(0, -1)} title="Nudge Up (1px)" className="p-1 hover:bg-white/10 rounded text-white/70 hover:text-white">
+                  <ArrowUp className="size-2.5" />
+                </button>
+                <button type="button" onClick={() => protoEditorRef.current?.nudge?.(0, 1)} title="Nudge Down (1px)" className="p-1 hover:bg-white/10 rounded text-white/70 hover:text-white">
+                  <ArrowDown className="size-2.5" />
+                </button>
+                <button type="button" onClick={() => protoEditorRef.current?.nudge?.(1, 0)} title="Nudge Right (1px)" className="p-1 hover:bg-white/10 rounded text-white/70 hover:text-white">
+                  <ArrowRight className="size-2.5" />
+                </button>
+              </div>
+
+              <span className="mx-1 h-4 w-px bg-white/10" />
+
+              {/* Alignments */}
+              <button type="button" onClick={protoAct('align', 'left')} title="Align Left" className="p-1 hover:bg-white/10 rounded text-white/75 hover:text-white cursor-pointer"><AlignLeft className="size-3" /></button>
+              <button type="button" onClick={protoAct('align', 'center')} title="Align Centre" className="p-1 hover:bg-white/10 rounded text-white/75 hover:text-white cursor-pointer"><AlignCenter className="size-3" /></button>
+              <button type="button" onClick={protoAct('align', 'right')} title="Align Right" className="p-1 hover:bg-white/10 rounded text-white/75 hover:text-white cursor-pointer"><AlignRight className="size-3" /></button>
+              <button type="button" onClick={protoAct('align', 'full')} title="Full Width" className="p-1 hover:bg-white/10 rounded text-white/75 hover:text-white cursor-pointer"><Maximize2 className="size-3" /></button>
+
+              <span className="mx-1 h-4 w-px bg-white/10" />
+
+              {/* Hierarchy */}
+              <button type="button" onClick={protoAct('parent')} title="Select Parent Container" className="px-1.5 py-1 text-[10px] hover:bg-white/10 rounded text-white/75 hover:text-white font-medium cursor-pointer">Parent</button>
+              <button type="button" onClick={protoAct('move', -1)} title="Move Up in DOM" className="p-1 hover:bg-white/10 rounded text-white/75 hover:text-white text-[11px] font-medium cursor-pointer">↑</button>
+              <button type="button" onClick={protoAct('move', 1)} title="Move Down in DOM" className="p-1 hover:bg-white/10 rounded text-white/75 hover:text-white text-[11px] font-medium cursor-pointer">↓</button>
+
+              {/* Size */}
+              <button type="button" onClick={protoAct('wider', -10)} title="Narrower (-10%)" className="px-1.5 py-1 text-[10px] hover:bg-white/10 rounded text-white/75 hover:text-white font-medium cursor-pointer">-10%</button>
+              <button type="button" onClick={protoAct('wider', 10)} title="Wider (+10%)" className="px-1.5 py-1 text-[10px] hover:bg-white/10 rounded text-white/75 hover:text-white font-medium cursor-pointer">+10%</button>
+
+              <span className="mx-1 h-4 w-px bg-white/10" />
+
+              {/* Actions */}
+              <button type="button" onClick={protoAct('duplicate')} title="Duplicate Element" className="p-1 hover:bg-white/10 rounded text-white/75 hover:text-white cursor-pointer"><Copy className="size-3" /></button>
+              <button type="button" onClick={protoAct('remove')} title="Delete Element" className="p-1 hover:bg-white/10 rounded text-rose-300 hover:text-rose-200 cursor-pointer"><Trash2 className="size-3" /></button>
+              <button type="button" onClick={() => { protoEditorRef.current?.editText(!figmaTyping); setFigmaTyping(!figmaTyping) }} title="Edit Text Directly" className={cn("inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10.5px] font-medium transition cursor-pointer", figmaTyping ? "bg-emerald-600 text-white" : "bg-white/[.06] text-white/75 hover:bg-white/[.12]")}>
+                <Type className="size-3" />
+                <span>{figmaTyping ? 'Done typing' : 'Text'}</span>
+              </button>
+            </>
+          ) : (
+            <span className="flex items-center gap-1.5 font-mono text-[11px] text-white/45">
+              <Move className="size-3 text-[#0D99FF]" />
+              <span>Click or drag any element to position freely with cursor · Drag corner handles to resize · Arrow keys to nudge</span>
+            </span>
+          )}
+
+          <span className="flex-1" />
+
+          {/* Save Button */}
+          {figmaDirty && (
+            <button
+              type="button"
+              onClick={savePrototypeFigma}
+              disabled={savingProto}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-emerald-500 disabled:opacity-50 transition cursor-pointer"
+            >
+              {savingProto ? <><Loader2 className="size-3 animate-spin" /> Saving…</> : <><Save className="size-3" /> Save to HTML</>}
+            </button>
+          )}
+
+          {saveProtoSuccess && (
+            <span className="flex items-center gap-1 font-mono text-[11px] text-emerald-400">
+              <Check className="size-3" /> Saved!
+            </span>
+          )}
+
+          <button
+            type="button"
+            onClick={protoAct('undo')}
+            title="Undo last change (Ctrl+Z)"
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition cursor-pointer bg-white/[.06] text-white/75 hover:bg-white/[.12] hover:text-white"
+          >
+            <UndoIcon className="size-3" />
+            <span>Undo</span>
+          </button>
+        </div>
+      )}
 
       {/* Frame Container */}
       <div className="relative min-h-0 flex-1 overflow-hidden bg-canvas">

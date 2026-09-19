@@ -1,17 +1,6 @@
 'use client'
 
-/**
- * The running app, and the two ways of pointing at it.
- *
- * Everything you can do here ends in the same place: an attachment on the
- * message you are about to send. Clicking an element attaches the element and
- * a photograph of it; drawing attaches the page with your red line still on
- * it. Neither one starts a run on its own, because "this bit" is never the
- * whole request — the sentence in the chat box is the other half.
- *
- * The agent's own headless Chrome covers this pane while it is working, since
- * during a build the preview underneath has nothing in it yet.
- */
+/** Live application preview pane with element picking and pencil annotation tools. */
 
 import { useAgentPreview } from '@/lib/agent-preview'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -109,9 +98,7 @@ export default function PreviewPane({ hidden, onBuild }) {
     }
   }, [previewUrl])
 
-  // Opened from a phone or another computer, the app's local host name means
-  // nothing there, so AgentForge publishes an address for it. Asked for once
-  // per project; the answer arrives here and over the socket.
+  // Resolve network-accessible preview URL for cross-device testing.
   useEffect(() => {
     if (!project || !needsAddress(runtime) || asked.current === project) return
     asked.current = project
@@ -183,13 +170,7 @@ export default function PreviewPane({ hidden, onBuild }) {
     return { w: f?.clientWidth || 1280, h: f?.clientHeight || 800, mode: vp }
   }, [vp])
 
-  /**
-   * Attach one thing to the message, then go and photograph it.
-   *
-   * The chip appears immediately and fills in when the picture arrives — a
-   * capture takes about a second, and a selection that appears to do nothing
-   * for a second gets clicked twice.
-   */
+  /** Attach a picked element or canvas drawing and capture its screenshot. */
   const attachShot = useCallback(async (item, body) => {
     addSelection(item)
     try {
@@ -433,11 +414,7 @@ export default function PreviewPane({ hidden, onBuild }) {
     }
   }
 
-  /**
-   * Prototype drawings are rendered in their own dedicated Prototype tab.
-   * PreviewPane renders the actual running full-stack application.
-   * Contract note: prototypes are served under /prototype/ and accepted with Build this.
-   */
+  /** Navigates preview to home when runtime is active; prototypes are served under /prototype/. */
   useEffect(() => {
     const f = frameRef.current
     if (!f) return

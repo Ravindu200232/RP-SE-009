@@ -5,7 +5,7 @@ export const ROLES = ['designer', 'developer']
 export function emptySession() {
   return { logs: [], chat: [], runStats: null, agentState: '', reasoning: false, busy: false,
     steps: {}, phases: [], files: {}, fileHistory: {}, readFiles: {}, activeFile: null, liveFile: null, liveBuf: '',
-    progress: emptyProgress(), selection: [], approval: null, drawing: null,
+    progress: emptyProgress(), selection: [], approval: null, ask: null, drawing: null,
     browserFrame: null, browserConsole: [], question: null, undo: null, previewRoute: '/', draft: '',
     tests: { running: false, attempt: 0, rows: [], fixing: [], pass: 0, fail: 0, warn: 0 },
     e2eLive: null, qaReport: null, e2eParallel: { active: false, lanes: [] },
@@ -66,8 +66,17 @@ export function reduceSession(session, event) {
     case 'stream_start': next.liveFile = event.file; next.liveBuf = ''; break
     case 'stream': next.liveBuf = (s.liveBuf + (event.token || '')).slice(-200000); break
     case 'stream_end': next.files = { ...s.files, [event.file]: event.content || '' }; next.liveFile = null; next.liveBuf = ''; break
-    case 'approval': next.approval = event; break
-    case 'approval_resolved': next.approval = null; next.drawing = null; break
+    // Each question goes where it is answered: a free-form question is a turn
+    // in the chat, a drawing is looked at in the preview, and everything else
+    // is a dialog. The same split as `route()` in lib/ws.js, which is what
+    // recovers one after a reload - when the two disagreed, a question shown
+    // live and a question recovered went to different places.
+    case 'approval':
+      if (event.kind === 'question') next.ask = event
+      else if (event.kind === 'prototype') next.drawing = event
+      else next.approval = event
+      break
+    case 'approval_resolved': next.approval = null; next.ask = null; next.drawing = null; break
     case 'browser_frame': next.browserFrame = event.frame ? event : null; break
     case 'undo_point': next.undo = event; break
     case 'ask': next.question = event; break
@@ -102,7 +111,8 @@ export function reduceSession(session, event) {
     }
     case 'done': case 'error': case 'cancelled':
       next.busy = false; next.agentState = ''; next.liveFile = null; next.liveBuf = ''
-      next.browserFrame = null; next.approval = null; next.tests = { ...s.tests, running: false }
+      next.browserFrame = null; next.approval = null; next.ask = null
+      next.tests = { ...s.tests, running: false }
       next.e2eParallel = { ...s.e2eParallel, active: false }; next.reasoning = false
       next.workflowStatus = event.type === 'done' ? 'completed' : event.type === 'cancelled' ? 'paused' : 'failed'
       if (event.type !== 'done') chat({ role: 'assistant', tone: 'bad', title: event.type === 'cancelled' ? 'Paused' : 'Run failed',

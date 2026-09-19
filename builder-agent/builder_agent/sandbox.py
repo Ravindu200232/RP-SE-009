@@ -26,9 +26,7 @@ IGNORED_DIRS = frozenset({
     ".vscode", "vendor", ".agent", ".terraform",
 })
 
-# Dot-directories that are the agent's own work and must stay findable, since
-# ignoring `.agentforge` hid the drawing from the pass that had just written it
-# and a run spent its whole phase searching for a class that was there.
+# Internal dot-directories that remain searchable by agent tools.
 VISIBLE_DOT_DIRS = frozenset({".agentforge"})
 
 BINARY_SUFFIXES = frozenset({
@@ -106,9 +104,7 @@ class Sandbox:
         handoff = relative.startswith(".agentforge/handoff/") and target.suffix.lower() == ".md"
         prototype = relative == ".agentforge/prototype" or relative.startswith(".agentforge/prototype/")
         own = relative == f".agentforge/agents/{self.role}" or relative.startswith(f".agentforge/agents/{self.role}/")
-        # The customer's own uploads and wireframes: readable by either role and
-        # writable by neither, because a path the agent is refused reads as a file
-        # that is missing and a layout it is refused is one it invents instead.
+        # Expose uploaded images and wireframes as read-only assets across all agent roles.
         given = any(relative == f".agentforge/{name}" or relative.startswith(f".agentforge/{name}/")
                     for name in ("images", "uploads", "wireframes"))
         skills = (relative == ".agents/skills" or relative.startswith(".agents/skills/")

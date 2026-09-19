@@ -29,11 +29,7 @@ HASH_HINTS = re.compile(r"bcrypt|argon2|scrypt|pbkdf2|createHash|hashSync|hash\(
 UNSAFE_HTML = re.compile(r"dangerouslySetInnerHTML")
 SAFE_HTML_HINTS = re.compile(r"badge|icon|svg|sanitize|purif|escape|renderStatus|<svg", re.I)
 
-# A file that runs in the browser. It has no datastore to put a password in, so
-# reading one out of a form there is the sign-in form doing its job - and
-# `const password = form.elements.password.value` matched PASSWORD_ASSIGN and
-# failed a whole build for it. Storage happens on the server, where this check
-# still applies.
+# Allow client-side form input handling while restricting hard-coded credential checks to backend code.
 CLIENT_COMPONENT = re.compile(r"""^\s*['"]use client['"]""", re.M)
 INJECTION = re.compile(r"\$where|\bnew\s+Function\b|eval\s*\(", re.I)
 

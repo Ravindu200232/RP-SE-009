@@ -1,17 +1,6 @@
 'use client'
 
-/**
- * The revisions panel, for a project that has already been built.
- *
- * The workspace knows a project by its folder name; the specification agent
- * knows it by the `prj_…` id it was generated under. `link.json` is the only
- * record joining the two, and `read_srs_results` already surfaces it — so the
- * id is one call away from data this screen fetches anyway.
- *
- * A revision here does not stop at the document. The prototype and the code
- * were built from it, so once the specification changes they disagree with it
- * until someone says otherwise — which is what the dialog asks.
- */
+/** SRS revisions panel for already built projects, coordinating document changes with prototypes and code. */
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { useStore } from '@/lib/store'
@@ -79,9 +68,7 @@ export default function SrsRevisionsPanel() {
   const project = useStore(s => s.project)
   const srsStamp = useStore(s => s.srsStamp[s.project])
   const addLog = useStore(s => s.addLog)
-  // The change is not finished when the document changes — it is finished when
-  // what was built from it agrees again. The server says so on the same
-  // `sync_state` events the SRS tab already listens to.
+  // Track revision completion via sync_state events until built artifacts reconcile.
   const sync = useStore(s => s.projectSync[s.project])
   const carrying = sync?.status === 'running' && sync?.source === 'srs'
   const [link, setLink] = useState(null)

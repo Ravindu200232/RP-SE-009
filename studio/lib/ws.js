@@ -19,10 +19,7 @@ let retry = null
 let heartbeat = null
 let lastEdit = null
 
-// A socket with nothing on it is closed by whatever sits in the middle — a
-// tunnel, a proxy — after a minute or two of silence, and a studio watching a
-// build that is thinking looks like a studio that lost the server. A word
-// every half a minute is enough to keep it open.
+// Send periodic heartbeat pings to keep WebSocket connections alive through proxies and tunnels.
 const HEARTBEAT_MS = 25000
 
 let streamPending = ''
@@ -62,15 +59,27 @@ export function answerQuestion(prompt) {
   return true
 }
 
-/**
- * Send the drawing back for another round with what they just typed.
- *
- * There is no dialog to type into, on purpose: the drawing fills the preview
- * so it can be walked and marked up, and the chat box is where changes to it
- * are asked for — the same box that asks for changes to everything else.
- * Returns false when no drawing is waiting, so the message goes where it
- * normally would.
- */
+/** Sends the user's typed response to answer a pending agent question. */
+export function answerAsk(reply) {
+  const ask = useStore.getState().ask
+  if (!ask) return false
+  useStore.getState().setAsk(null)
+  api.decide({ id: ask.id, decision: 'answer', reply })
+     .catch(e => useStore.getState().addLog('WARN', `Could not send that answer — ${e.message}`))
+  return true
+}
+
+/** Hand the decision back to the agent, which then says what it assumed. */
+export function declineAsk() {
+  const ask = useStore.getState().ask
+  if (!ask) return false
+  useStore.getState().setAsk(null)
+  api.decide({ id: ask.id, decision: 'default' })
+     .catch(e => useStore.getState().addLog('WARN', `Could not send that — ${e.message}`))
+  return true
+}
+
+/** Sends feedback to request a revision for the current wireframe drawing. */
 export function reviseDrawing(feedback) {
   const drawing = useStore.getState().drawing
   if (!drawing) return false
@@ -82,31 +91,16 @@ export function reviseDrawing(feedback) {
 
 function wsUrl() {
   if (typeof location === 'undefined') return 'ws://127.0.0.1:7825'
-  // Through the studio's own address rather than the backend's port: one
-  // address to publish, and a wss:// feed when the studio is served over
-  // HTTPS. next.config.js sends this path to the socket.
+  // Route WebSocket connections through the studio host address.
   const scheme = location.protocol === 'https:' ? 'wss' : 'ws'
   return `${scheme}://${location.host}/__agentforge/ws`
 }
 
-/**
- * Ask the backend what it is waiting on.
- *
- * A question is announced once, over a socket. A studio that reloaded, or that
- * connected a second late, never hears it — and the run then waits out its
- * whole timeout on a question nobody was shown.
- */
-/**
- * Put a decision where it is answered.
- *
- * A drawing goes to the preview, where it can be walked and marked up;
- * everything else is a dialog. Both the announcement and the recovery below go
- * through here, because when they disagreed a drawing recovered after a reload
- * went to the dialog that no longer renders one, and disappeared.
- */
+/** Dispatches incoming questions and decisions to their appropriate UI handlers. */
 function route(question) {
   const store = useStore.getState()
   if (question?.kind === 'prototype') store.setDrawing(question)
+  else if (question?.kind === 'question') store.setAsk(question)
   else if (question?.kind === 'plan') {
     api.decide({ id: question.id, decision: 'accept' }).catch(() => {})
   }
@@ -118,7 +112,7 @@ async function recoverPendingDecision() {
     const { pending } = await api.decisions()
     const question = (pending || [])[0]
     const store = useStore.getState()
-    if (question && question.project === store.project && (!question.agent || question.agent === store.agentRole) && !store.approval && !store.drawing) route(question)
+    if (question && question.project === store.project && (!question.agent || question.agent === store.agentRole) && !store.approval && !store.ask && !store.drawing) route(question)
   } catch {
     // An older backend has no such endpoint; the announcement is all there is.
   }
@@ -203,12 +197,7 @@ export function disconnect() {
   resetStreamQueue()
 }
 
-/**
- * Write down what this project has said.
- *
- * Called when a run ends, which is when the account of it is complete and
- * when losing it would cost the most.
- */
+/** Persists accumulated chat messages and execution logs to the server. */
 function keepStream(project) {
   const s = useStore.getState()
   const name = project || s.project
@@ -252,18 +241,7 @@ export function send(obj) {
   })
 }
 
-/**
- * Is this message about the project on screen?
- *
- * A run keeps going while you look elsewhere, and its output used to land in
- * whichever feed happened to be open: another project's npm commands
- * appearing in this one's stream. A message that names a project is only for
- * that project; one that names none is about the server and is for everyone.
- *
- * A build announces the name it has just been given through `project`, and
- * ends through `done` or `cancelled`, so those three arrive before - or after
- * - it is the project on screen and are always let through.
- */
+/** Determines whether an incoming WebSocket message belongs to the currently active project. */
 function meantForMe(m) {
   const mine = useStore.getState().project
   if (!m?.project || !mine) return true

@@ -360,6 +360,12 @@ def _why_needed(topic: topics.Topic, item: dict) -> str:
         "page_functions": "This defines the actions a public visitor must be able to complete.",
         "data_tables": "This determines the business information that must persist between visits.",
         "table_entities": f"These details define what one {subject or 'record'} contains and what forms and validation need.",
+        "payments": "This decides whether the product needs a checkout, an order record and "
+                    "a payment trail at all. Which gateway does the work is settled later, "
+                    "when the app is built.",
+        "notifications": "This decides whether the product needs somewhere to send from and a "
+                         "record of what it sent. Which service delivers it is settled later, "
+                         "when the app is built.",
         "images": "This tells the builder whether the pages carry photographs at all.",
         "image_source": "This decides where every picture on the finished pages comes from.",
         "extra_notes": "This is the final chance to capture a rule, exception or expectation not covered earlier.",
@@ -381,6 +387,10 @@ def _fallback_question(topic: topics.Topic, item: dict) -> str:
         "data_tables": "Which kinds of business information must still be there when someone comes back later?",
         "table_entities": (f"What information must be stored for one {subject}?" if subject
                            else "What information must be stored for one record?"),
+        "payments": "Does this product have to take money from anyone - a payment, a deposit, "
+                    "a subscription?",
+        "notifications": "Does this product have to send anyone an email or a text message - a "
+                         "confirmation, a receipt, a reminder, an alert?",
         "pos_payments": "Which payment methods must a cashier be able to accept during a sale?",
         "pos_receipt": "After a sale is completed, what receipt or confirmation should the customer receive?",
         "pos_stock_rules": "When a sale or stock change happens, which inventory rules must the system enforce automatically?",

@@ -70,9 +70,7 @@ def _normalise_evidence(item: dict) -> tuple[list[str], bool]:
     mapped = [_evidence_kind(v) for v in values]
     unknown = any(m is None for m in mapped)
     kinds = list(dict.fromkeys(m for m in mapped if m))
-    # Unknown or missing model vocabulary must never weaken verification: the
-    # three execution layers are the conservative fallback. Visual stays
-    # explicit, because it is opt-in.
+    # Fall back to standard execution verification layers when model vocabulary is unmapped.
     if not kinds or unknown:
         for kind in KINDS:
             if kind not in kinds:
@@ -320,9 +318,7 @@ class Evidence:
             if not ident:
                 continue
             if ident not in known:
-                # Some models decorate a known id with the evidence kind
-                # ("checkout/e2e"). Accept an unambiguous base plus a matching
-                # suffix; anything else stays an error.
+                # Strip redundant kind suffixes from requirement IDs when recording evidence.
                 decorated = re.fullmatch(r"(.*?)[/:#|]\s*(unit|e2e|runtime|visual)", ident, re.I)
                 if decorated and decorated.group(1) in known:
                     if decorated.group(2).lower() != kind:
@@ -337,11 +333,7 @@ class Evidence:
             requirement = next((r for r in self.scope["requirements"] if r["id"] == ident), None)
             if not requirement:
                 raise ToolError(f"Unknown verification requirement: {ident}")
-            # Runtime is required of every run whatever the requirements say, so
-            # it must be recordable against any of them. Refusing it left runs
-            # in a corner: the completion gate demanded runtime evidence, the
-            # ledger refused to accept it, and widening the requirement was
-            # refused as well.
+            # Allow runtime health evidence to be recorded against any requirement.
             if kind != "runtime" and kind not in requirement["evidence"]:
                 raise ToolError(f"Requirement {ident} does not call for {kind} evidence.")
         return clean
@@ -389,15 +381,7 @@ class Evidence:
             raise ToolError("External evidence status must be passed or failed.")
         covered = self.validate_covers(kind, covers)
         record = self._record(kind, suite)
-        # A journey the engine ran is already recorded, with the steps it
-        # actually executed. Re-recording it by hand replaces that trace with a
-        # sentence - measured: nine passing journeys came back as "no
-        # measurable browser stages" and the run reported no pass rate at all,
-        # because the engine's record had been overwritten by a description of
-        # what the journey was for. The trace is evidence; a summary is a claim.
-        #
-        # The engine itself reruns a suite freely: that is what a repair is, and
-        # each rerun carries a new trace of its own.
+        # Retain detailed journey step execution traces rather than replacing them with text summaries.
         if (not engine and kind == "e2e" and record.get("journeyFingerprint")
                 and record.get("revision") == self.revision):
             raise ToolError(
@@ -562,10 +546,7 @@ class Evidence:
                 and not any(v["status"] == "passed" for v in visuals):
             regression.append("visual")
 
-        # A floor only gates the layers this run actually has to produce. When
-        # unit evidence is switched off there is no coverage report to measure,
-        # and demanding one would block every such run on a file that was never
-        # going to exist.
+        # Gate coverage thresholds only for verification layers active in the current run.
         e2e_ok = e2e["status"] == "passed" or "e2e" not in required
 
         return {

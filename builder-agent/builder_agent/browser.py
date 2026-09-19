@@ -37,9 +37,7 @@ CONNECT_TIMEOUT = 15
 CALL_TIMEOUT = 25
 MAX_STEPS = 80
 
-# Network errors that mean "this request was called off", not "this app is
-# broken". Route prefetches, an aborted fetch on navigation and a client-side
-# block all land here, and none of them is a defect in the product.
+# Harmless aborted or cancelled network request codes that do not represent application errors.
 CANCELLED_ERRORS = frozenset({
     "net::ERR_ABORTED",
     "net::ERR_BLOCKED_BY_CLIENT",
@@ -219,6 +217,49 @@ class Cdp:
         except RuntimeError:                 # the loop is closing; so is the run
             pass
 
+    def ask(self, method: str, params: dict | None = None, session: str | None = None,
+            then=None) -> None:
+        """Send a call and hand its reply to `then`, without waiting for it.
+
+        `post` sends and forgets, which is no use when the reply is the point;
+        `send` blocks the caller for a whole round trip. This is the third
+        case: a call whose result matters but whose latency must not be on
+        anybody's critical path - a screenshot after every journey step, where
+        a measured 60 ms per capture is 29% of a twelve-step journey if the
+        journey waits for it.
+
+        Ordering is not luck. Chrome processes commands on a session in the
+        order they arrive, so a capture queued here is taken before the next
+        step's input events, and the frame is genuinely of the page as the step
+        left it. `then` runs on the socket thread, so it must be short and it
+        must not raise.
+        """
+        if self.closed or self._ws is None:
+            return
+        message = {"id": self._next_id(), "method": method, "params": params or {}}
+        if session:
+            message["sessionId"] = session
+
+        async def _call():
+            future = self._loop.create_future()
+            self._pending[message["id"]] = future
+            try:
+                await self._ws.send(json.dumps(message))
+                reply = await asyncio.wait_for(future, CALL_TIMEOUT)
+            except Exception:  # noqa: BLE001 - a lost frame is not a failed run
+                self._pending.pop(message["id"], None)
+                return
+            if then and not reply.get("error"):
+                try:
+                    then(reply.get("result") or {})
+                except Exception:  # noqa: BLE001
+                    pass
+
+        try:
+            asyncio.run_coroutine_threadsafe(_call(), self._loop)
+        except RuntimeError:                 # the loop is closing; so is the run
+            pass
+
     def send(self, method: str, params: dict | None = None, session: str | None = None,
              timeout: float = CALL_TIMEOUT) -> dict:
         if self.closed or self._ws is None:
@@ -267,10 +308,7 @@ class Page:
         self.target_id = target_id
         self.session = session
         self.diagnostics: list[dict] = []
-        # Last known address, updated on navigation. A screencast frame arrives
-        # on the socket thread, and asking the page for its URL from there
-        # would block that thread on a reply it is itself responsible for
-        # reading.
+        # Cache active URL on navigation events to avoid deadlocking the socket reader thread.
         self.url_cached = ""
         self._install_listeners()
 
@@ -299,12 +337,7 @@ class Page:
         def failed(params, session):
             if session != self.session:
                 return
-            # A cancelled request is not a broken one. A framework that
-            # prefetches routes cancels those prefetches on every navigation,
-            # so counting them as defects fails every journey on every app and
-            # the repair loop can never converge. CDP says so itself with
-            # `canceled`; the error text is the backstop for the cases where
-            # it does not.
+            # Ignore cancelled prefetch requests so navigation changes are not misidentified as defects.
             self._note(request_outcome(params), str(params.get("errorText", "")),
                        params.get("url", ""))
 
@@ -334,9 +367,7 @@ class Page:
         def frame(params, session):
             if session != self.session:
                 return
-            # This runs on the socket's own thread. The acknowledgement is
-            # posted, never sent: waiting for its reply here would block the
-            # reader that has to deliver it.
+            # Asynchronously post screencast frame acknowledgements to avoid blocking socket reception.
             self.cdp.post("Page.screencastFrameAck",
                           {"sessionId": params.get("sessionId")}, self.session)
             data = params.get("data") or ""
@@ -583,17 +614,72 @@ class Page:
                           self.session)
         self.settle(cap=0.2)
 
-    def screenshot(self, path: Path, width: int = 1280, height: int = 800) -> Path:
-        self.cdp.send("Emulation.setDeviceMetricsOverride",
-                      {"width": width, "height": height, "deviceScaleFactor": 1,
-                       "mobile": width <= 600}, self.session)
+    def frame(self, path: Path, quality: int = 55, scale: float = 0.5) -> None:
+        """Photograph the page without making anybody wait for it.
+
+        For a timeline: one after every step of a journey, looked at in a strip
+        rather than reviewed. So it is half size, it sets no device-metrics
+        override, and it waits for nothing - the step it follows has already
+        settled, and the reply is written on the socket thread when it arrives.
+        Measured at 60 ms of browser time per capture, none of which the
+        journey now spends.
+        """
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        def keep(result):
+            data = result.get("data") or ""
+            if data:
+                path.write_bytes(base64.b64decode(data))
+
+        self.cdp.ask("Page.captureScreenshot",
+                     {"format": "jpeg", "quality": int(quality),
+                      "captureBeyondViewport": False,
+                      "optimizeForSpeed": True,
+                      **({"clip": {**self._viewport(), "scale": scale}} if scale != 1 else {})},
+                     self.session, then=keep)
+
+    def _viewport(self) -> dict:
+        """The visible area, for a clip that scales it. Cheap and cached."""
+        if not getattr(self, "_view", None):
+            metrics = self.cdp.send("Page.getLayoutMetrics", {}, self.session) or {}
+            box = metrics.get("cssVisualViewport") or metrics.get("layoutViewport") or {}
+            self._view = {"x": 0, "y": 0,
+                          "width": int(box.get("clientWidth") or box.get("width") or 1280),
+                          "height": int(box.get("clientHeight") or box.get("height") or 800)}
+        return dict(self._view)
+
+    def screenshot(self, path: Path, width: int = 1280, height: int = 800,
+                   fmt: str = "png", quality: int = 0, settle: bool = True,
+                   resize: bool = True) -> Path:
+        """One picture of the page.
+
+        The arguments exist for the difference between evidence and a record of
+        what happened. Evidence is a full PNG at a named width, and it pays for
+        a device-metrics override and a reflow to get that width honestly.
+
+        A frame taken after every step of a journey is not that. It is a
+        timeline, its only job is to show what the page looked like when the
+        step finished, and it is taken at whatever size the page already is -
+        so it sets no override and waits for nothing, because the step it
+        follows has already settled. `resize=False, settle=False, fmt="jpeg"`
+        is what makes one affordable per step instead of per journey.
+        """
+        if resize:
+            self.cdp.send("Emulation.setDeviceMetricsOverride",
+                          {"width": width, "height": height, "deviceScaleFactor": 1,
+                           "mobile": width <= 600}, self.session)
         # The resize has to reflow and paint before the capture is of anything.
-        self.settle(cap=0.4)
-        data = self.cdp.send("Page.captureScreenshot", {"format": "png"}, self.session,
+        if settle:
+            self.settle(cap=0.4)
+        shot = {"format": fmt}
+        if fmt == "jpeg" and quality:
+            shot["quality"] = int(quality)
+        data = self.cdp.send("Page.captureScreenshot", shot, self.session,
                              timeout=45).get("data", "")
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(base64.b64decode(data))
-        self.cdp.send("Emulation.clearDeviceMetricsOverride", {}, self.session)
+        if resize:
+            self.cdp.send("Emulation.clearDeviceMetricsOverride", {}, self.session)
         return path
 
 
@@ -669,9 +755,7 @@ class Browser:
         session = self.cdp.send("Target.attachToTarget",
                                 {"targetId": target, "flatten": True})["sessionId"]
         page = Page(self.cdp, target, session)
-        # A tab created at a URL never goes through `navigate`, so this is the
-        # only place its address is recorded — and the address is what the
-        # studio labels the stream with.
+        # Record initial page URL when creating a new browser tab.
         page.url_cached = "" if url == "about:blank" else str(url)
         self.pages[target] = page
         self.active = target

@@ -64,10 +64,7 @@ def read_file(args, ctx):
     truncated = len(body) > MAX_READ_CHARS
     if truncated:
         body = body[:MAX_READ_CHARS]
-    # Naming one call that finishes the file, rather than inviting "again with
-    # a larger offset": a build paged one 607-line stylesheet under nine
-    # different windows - two of them a single line apart - and never wrote
-    # anything.
+    # Suggest completing file reads in one bounded call rather than repeated tiny slices.
     tail = ""
     shown_to = offset + len(window)
     if truncated:

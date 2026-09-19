@@ -43,11 +43,21 @@ build the one that was chosen, and read its file and no other.
 - **Cloudinary** - `readSkill("image-uploads", "cloudinary.md")`
 - **Supabase Storage** - `readSkill("image-uploads", "supabase.md")`
 - **ImageBoss** - `readSkill("image-uploads", "imageboss.md")`
+- **An S3 bucket** (Amazon S3, Cloudflare R2, DigitalOcean Spaces, Wasabi,
+  Backblaze B2) - `readSkill("image-uploads", "s3.md")`
 
-Their settings are already in `.env.local` under the names the question used.
-Read them from `process.env`; never write one into source. If nobody answered,
-the names are in `.env.example` - build against `process.env` anyway and fail
-with a message naming the missing variable rather than uploading into nowhere.
+Their settings are already in `.env.local` under the names the question used,
+or under the names of the plugin the user ticked - the two arrive the same way
+and mean the same thing. **The environment is what tells you which provider it
+is**: whichever provider's names are present is the one that was chosen. If
+none of them are present, keep the files on this machine under
+`public/uploads`, make the app work, and say in your report that nothing
+survives a redeploy until a storage plugin is configured.
+
+Read them from `process.env`; never write one into source. Where a name is in
+`.env.example` but not in the environment, build against `process.env` anyway
+and fail with a message naming the missing variable rather than uploading into
+nowhere.
 
 ## What has to be true
 

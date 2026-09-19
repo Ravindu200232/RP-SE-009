@@ -16,14 +16,7 @@ function describeFile(file) {
 
 export function useAttachments() {
   const [items, setItems] = useState([])
-  // What was picked, readable without going through React.
-  //
-  // Both senders below used to learn their queue inside a `setItems` updater,
-  // which is a side effect in a place React only promises to call while the
-  // component is mounted. Starting a build unmounts the home screen before the
-  // upload runs, so the updater never ran, the queue stayed empty, and the
-  // files were silently dropped — the build then searched its own workspace
-  // for a PDF that had never left the browser.
+  // Synchronously store picked attachments in a ref so unmounting does not drop upload queues.
   const current = useRef([])
   current.current = items
 
@@ -107,13 +100,7 @@ export function useAttachments() {
     }
   }, [patch])
 
-  /** Hold everything for a build, which has no project to send it to yet.
-   *
-   * The specification agent needs a project id before it will take a file; a
-   * build has no project until it starts one. So the same picked files reach a
-   * build through the builder's own staging, and are read into the project the
-   * moment it exists.
-   */
+  /** Stages attachments temporarily using a staging token prior to project creation. */
   const stage = useCallback(async token => {
     if (!token || uploading.current) return { staged: 0, failed: 0 }
     uploading.current = true

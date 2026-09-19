@@ -82,9 +82,7 @@ class AgentPassTests(unittest.TestCase):
 
         self.agent.plan("build a hotel booking site")
 
-        # A plan is written by reading, not by building. The file tools that
-        # change the project are not on the table, so a call to one is answered
-        # with a correction instead of quietly writing the file.
+        # Ensure planning pass rejects mutating file tools with corrective feedback.
         self.assertNotIn("writeFile", router.offered[0])
         self.assertNotIn("patchFile", router.offered[0])
         self.assertIn("readFile", router.offered[0])
@@ -107,9 +105,7 @@ class AgentPassTests(unittest.TestCase):
         self.assertNotIn("TEST-DRIVEN COMPLETION", system)
         self.assertNotIn("PHASE DISCIPLINE", system)
 
-        # One skill is read during planning, because it is about how to read a
-        # request rather than about how to build anything. Every other skill
-        # still belongs to execution.
+        # Ensure only planning-specific guidance is loaded during the initial planning pass.
         self.assertIn("readSkill('planning')", task)
         self.assertIn("Read no skill but `planning`", task)
         self.assertIn("Read the `planning` skill first", system)
@@ -479,10 +475,7 @@ class PrototypePassTests(unittest.TestCase):
         # How to draw it is the skill's, and the prompt sends them there.
         self.assertIn("html-prototype", task)
         self.assertIn("READ THE", task)
-        # Said once: the page rules are not restated in the instruction, they
-        # are in the skill it was just told to read. Two of them used to
-        # disagree - the skill asking for the drawing's own CSS while this
-        # dictated a Tailwind head - and the instruction won in silence.
+        # Defer CSS styling rules to the loaded skill rather than overriding in prompt instructions.
         self.assertNotIn("FULL SIZE", task.upper())
         self.assertNotIn("loremflickr", task)
         skill = (Path("builder-agent/builder_agent/assets/skills/html-prototype")
@@ -850,3 +843,46 @@ class TheWholeApplicationTests(unittest.TestCase):
     def test_the_build_is_asked_first(self):
         first = self._agent()._with_prototype("BUILD IT").lstrip().splitlines()[0]
         self.assertTrue(first.startswith("THE WHOLE APPLICATION, NOT HALF OF IT"), first)
+
+
+class AmbiguityCheckTests(unittest.TestCase):
+    """The one question a build is asked about itself.
+
+    The system prompt says to resolve a material ambiguity before building it
+    in, and measured against two models it did nothing: on "members can cancel
+    a booking", with no cutoff written anywhere, both went five turns straight
+    into implementation and neither reached for askUser. Asked as a user turn
+    after the first investigation, both asked on the next move - and both
+    stayed silent on the same brief with the cutoff spelled out. So the nudge
+    is the mechanism, and what has to hold is when it fires.
+    """
+
+    def _loop(self, *, gates):
+        agent = BuilderAgent(
+            Config(workspace=Path(tempfile.mkdtemp()), model="scripted",
+                   unit_tests=False, e2e_tests=False, extra={"gates": gates}),
+            events=Events(), client=object())
+        loop = agent._loop(agent.registry)
+        loop.memory.add_user = lambda text, kind="": loop.memory.__dict__.setdefault(
+            "nudges", []).append((kind, text))
+        return loop
+
+    def nudges(self, loop):
+        return loop.memory.__dict__.get("nudges", [])
+
+    def test_it_is_put_once_after_the_project_has_been_looked_at(self):
+        loop = self._loop(gates=("setup", "question"))
+        loop._hint_ambiguity("writeFile")
+        self.assertEqual(self.nudges(loop), [], "asked before it had anything to judge")
+        loop._hint_ambiguity("inspectProject")
+        self.assertEqual(len(self.nudges(loop)), 1)
+        self.assertEqual(self.nudges(loop)[0][0], "ambiguity-check")
+        self.assertIn("two honest readings", self.nudges(loop)[0][1])
+        loop._hint_ambiguity("readFiles")
+        self.assertEqual(len(self.nudges(loop)), 1, "asked twice in one run")
+
+    def test_a_surface_that_cannot_answer_is_not_asked(self):
+        """A CLI run has nobody to answer, so the question is only noise."""
+        loop = self._loop(gates=False)
+        loop._hint_ambiguity("inspectProject")
+        self.assertEqual(self.nudges(loop), [])

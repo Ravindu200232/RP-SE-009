@@ -1,4 +1,2 @@
-// The runner-specific entry. Importing '@testing-library/jest-dom' instead
-// requires a global `expect`, which is exactly the mismatch that makes a
-// client suite collect zero tests.
+// Runner-specific jest-dom entry point compatible with vitest expectations.
 import '@testing-library/jest-dom/vitest';

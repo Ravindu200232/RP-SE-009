@@ -70,9 +70,7 @@ class CloudModelRoutingTests(unittest.TestCase):
         self.assertEqual(daemon.hit("tags"), 0)
 
     def test_a_known_cloud_model_is_cloud_before_it_has_been_pulled(self):
-        # `bjoernb/gemma4-31b-fast:latest` proxies to ollama.com but carries no
-        # -cloud suffix, so the name test alone called it local and would have
-        # handed it the small local window on its very first use.
+        # Detect remote proxy models that omit standard cloud naming suffixes.
         daemon = FakeDaemon()
 
         with fake_ollama(daemon):

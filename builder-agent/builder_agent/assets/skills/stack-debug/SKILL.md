@@ -12,6 +12,18 @@ Reading the same source file again does not tell you anything the first read did
 not. When an error repeats, the next thing to open is the page that defines the
 rule it names - not the file.
 
+## What to run, and in what order
+
+`npm run build` first - before the dev server, and whether or not the dev
+server complained. It type-checks and bundles every route in one pass, so one
+run names every error in the project instead of the one route you opened. Fix
+what it names, build again, and only then start the dev server and **read the
+browser console**: a build passes on code that throws on first render, hydrates
+differently, or fetches a 404, and the console says all three plainly. A page
+that renders is not a page that works.
+
+The full procedure is in `build-error-resolver.md`.
+
 ## Start here
 
 - **`build-error-resolver.md`** — The procedure: read the error, locate the true cause, apply the smallest diff that fixes it, re-run. Use on any build, type or lint failure.

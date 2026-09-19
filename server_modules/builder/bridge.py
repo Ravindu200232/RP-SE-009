@@ -15,10 +15,7 @@ occupies a band and the studio's own model creeps within it.
 PHASE_BAND = {
     "plan": (4, 20),
     "design": (20, 24),
-    # Drawing the application had no band, no place in the phase list and no
-    # step of its own, so it fell through every default and the studio showed a
-    # build - while the pass the user is meant to watch and approve was the one
-    # running. It is a phase like the others now.
+    # Drawing is a distinct phase so the studio displays it separately from code builds.
     "prototype": (24, 40),
     "build": (40, 74),
     "unit": (74, 86),
@@ -50,10 +47,7 @@ class StudioBridge:
                  think: bool = False):
         self.events = events
         self.kind = kind
-        # Whether the model was actually asked to think, as opposed to the feed
-        # merely having nothing to say between one tool call and the next. The
-        # studio said "Thinking" for both, so a run with thinking switched off
-        # looked exactly like one with it on.
+        # Distinguish actual model reasoning from idle intervals between tool calls.
         self.think = bool(think)
         self.phases = list(phases)
         self.phase = self.phases[0] if self.phases else "build"
@@ -137,15 +131,10 @@ class StudioBridge:
               "done" if status == "done" else "error")
 
     def on_iteration(self, p):
-        # The bar has to move while a long phase runs, but the engine has no
-        # step count to divide by. A settling curve is honest about that: it
-        # approaches the top of the band without ever claiming to reach it.
+        # Advance progress using an asymptotic curve when total step count is unknown.
         step = int(p.get("iteration") or 1)
         self._stats(iterations=step)
-        # The model is composing its next move. Between here and the tool call
-        # that follows there is nothing to log, and an empty feed reads as a
-        # stall. `thinking` says whether it is genuinely reasoning or just
-        # composing, so the studio can stop calling both of them thinking.
+        # Log when the model is generating its next move to avoid appearing stalled.
         emit({"type": "agent_state", "state": "thinking", "iteration": step,
               "thinking": self.think})
         eprog(_phase_label(self.phase), self._band(1 - 0.94 ** step))
@@ -175,10 +164,7 @@ class StudioBridge:
             efile(name, 0, "", note="deleted")
             elog("INFO", f"   removed {name}")
             return
-        # The studio's code pane follows a file as it lands. The engine writes
-        # a file at once rather than a token at a time, so the stream is opened
-        # and closed around the finished text: the pane still jumps to the file
-        # being worked on, which is the part anyone actually watches.
+        # Stream file writes in a burst so the studio editor pane jumps to active files.
         estream_start(name)
         estream_end(name, content)
         efile(name, len(content), content, note=note, old_content=old_content)

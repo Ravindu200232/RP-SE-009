@@ -138,9 +138,7 @@ export function Modal({ onClose, children, className, style, overlayClassName })
     return () => document.removeEventListener('keydown', key)
   }, [onClose])
   return (
-  // Keep tall dialogs reachable within the viewport.
-    // `overlayClassName` is how a dialog asks to fill the window: the padding
-    // and the blur behind it are what leave a border around a "full screen" one.
+  // Keep tall dialogs bounded within viewport dimensions.
     <div onClick={onClose}
          className={cn(`fixed inset-0 z-[600] flex items-center justify-center
                     overscroll-contain bg-black/75 backdrop-blur-sm p-4`, overlayClassName)}>

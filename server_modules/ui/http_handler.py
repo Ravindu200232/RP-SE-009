@@ -289,13 +289,26 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
             self._json({"stream": read_stream(path[8:].strip("/"))})
         elif path.startswith("/session/"):
             self._json({"stats": session_stats(path[9:].strip("/"))})
+        elif path == "/plugins":
+            # Returns plugin catalog, category groups, and masked credentials summary for current user.
+            from server_modules.builder.plugins import catalog, groups, summary_for
+            user = acting() or {}
+            self._json({"plugins": catalog(), "groups": groups(),
+                        "saved": summary_for(user.get("id", "")) if user else []})
+        elif path.startswith("/plugins/project/"):
+            from server_modules.builder.plugins import enabled_for
+            _, project_dir, error = _owned_dir(PROD_DIR, path[17:].strip("/"),
+                                               "project name", "project")
+            self._json({"error": error}, 404) if error else \
+                self._json({"enabled": enabled_for(project_dir)})
         elif path == "/decisions":
             self._json({"pending": pending_decisions()})
         elif path.startswith("/qa-screenshot/"):
             query = parse_qs(urlsplit(self.path).query)
             try:
-                data = read_qa_screenshot(unquote(path[15:].strip("/")), query.get("path", [""])[0])
-                self._plain(200, data, "image/png", extra=(("Cache-Control", "no-cache"),))
+                data, kind = read_qa_screenshot(unquote(path[15:].strip("/")),
+                                                query.get("path", [""])[0])
+                self._plain(200, data, kind, extra=(("Cache-Control", "no-cache"),))
             except (OSError, ValueError):
                 self._json({"error": "Screenshot not found"}, 404)
         elif path.startswith("/site-image/"):
@@ -833,17 +846,37 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
         elif path == "/cli-signin/available":
             from server_modules.deploy.cli_signin import SIGNINS
             self._json({"providers": SIGNINS.available()})
+        elif path in ("/plugins/save", "/plugins/forget"):
+            # Saves or forgets user-level plugin credentials and returns a masked summary.
+            from server_modules.builder.plugins import forget, save
+            body = self._body()
+            user = acting() or {}
+            if not user:
+                return self._json({"error": "sign in to continue", "auth": "required"}, 401)
+            try:
+                if path.endswith("/forget"):
+                    saved = forget(user["id"], str(body.get("plugin", "")))
+                else:
+                    saved = save(user["id"], str(body.get("plugin", "")),
+                                 str(body.get("mode", "")), body.get("values") or {})
+                self._json({"saved": saved})
+            except ValueError as error:
+                self._json({"error": str(error)}, 400)
+        elif path == "/plugins/project":
+            # Which plugins one app uses. Writing this is the whole opt-in: the
+            # next run merges their settings into that project's .env.local and
+            # the model is given their skill pages to read.
+            from server_modules.builder.plugins import set_enabled
+            body = self._body()
+            _, project_dir, error = _owned_dir(PROD_DIR, str(body.get("project", "")),
+                                               "project name", "project")
+            if error:
+                return self._json({"error": error}, 404)
+            enabled = set_enabled(project_dir, body.get("enabled") or [])
+            _write_plugin_env(project_dir)
+            self._json({"enabled": enabled})
         elif path in ("/github/device/start", "/github/device/poll"):
-            # Signing in to GitHub the way the AWS console sign-in already
-            # works: a code approved in the browser, rather than a personal
-            # access token pasted into a field. The token never reaches the
-            # studio - it is saved straight into this person's own settings.
-            # `github_device` is self-contained and imports normally.
-            # `deploy_settings_for` and `save_deploy_settings` are not imported:
-            # the deploy parts are exec'd into the shared runtime namespace and
-            # are already in scope here. Importing them as a module gives them
-            # fresh globals without `auth_db`, and the first call raises
-            # NameError - which is how this route failed the first time.
+            # Initiates or polls GitHub device authorization flow and persists resulting credentials.
             from server_modules.deploy.github_device import FLOWS
             body = self._body()
             user = acting() or {}
@@ -1027,10 +1060,7 @@ class UIHandler(PreviewHTTPMixin, SimpleHTTPRequestHandler):
             answer = visible_srs_list(answer, user)
         elif method == "POST":
             body = self._body()
-            # A POST to /projects creates a specification; only a GET to that
-            # path is a listing.  Keeping these flags exclusive matters because
-            # srs_job_answered handles listings before it claims newly-created
-            # specifications for their owner.
+            # Differentiates specification creation requests from project listing operations.
             inner_path = str(body.get("path") or "").split("?")[0]
             inner_method = str(body.get("method") or "POST").upper()
             srs_job_started(

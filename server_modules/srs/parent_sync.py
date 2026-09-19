@@ -190,10 +190,7 @@ def run_spec_change(project, prompt, targets):
     except Exception as error:                                   # noqa: BLE001
         if SERVER_STOPPING:
             return                  # a resumable transaction, not a failed one
-        # This kind runs its own transaction, so the bookkeeping `work()` does
-        # for the other direction has to be done here - including the
-        # `sync_error` marker, without which the journal is deleted on the way
-        # out and there is nothing left for Retry to pick up.
+        # Record sync state and error markers for retry tracking in standalone transactions.
         request = json.loads(request_path.read_text(encoding="utf-8"))
         request["sync_error"] = str(error)
         atomic_json(request_path, request)
@@ -242,10 +239,7 @@ def _spec_change_stages(project, directory, request_path, prompt, targets):
         said = request.get("spec_diff") or []
         if said:
             brief += "\nWhat the specification now says changed:\n" + "\n".join(f"- {line}" for line in said)
-        # Shares this transaction's queue slot, exactly as the sibling run does.
-        # Going through `start_run` would queue behind the slot this call still
-        # holds, and would give each child a journal of its own - which is how a
-        # change that started here would be posted straight back up again.
+        # Share current queue slot with sibling task to prevent deadlocks and loopbacks.
         RUN_QUEUE.set_agent(role)
         run_chat(directory.name, brief, options.get("model") or default_agent_model(),
                  "/prototype" if role == "designer" else "/__builder",
@@ -328,10 +322,7 @@ def synchronize_completed_change(directory, request_path, request):
         result = _sync_parent_documents(directory, request_path, request, "mirror", sibling, request["sibling_summary"])
         request["srs_version"] = result.get("version")
         checkpoint("qa_pending")
-    # QA last, and only after the code it tested is in the document: verification
-    # recorded against an earlier version would say a requirement passed before
-    # the change that rewrote it. A missing digest is the normal case for a
-    # prototype-only change, and simply skips.
+    # Record QA verification only after tested code revisions are committed to document.
     if stage == "qa_pending":
         digest = read_qa_change(directory)
         if digest.get("summary_text"):

@@ -508,11 +508,34 @@ TOPICS: list[Topic] = [
         coverage=("data_entities",),
     ),
 
-    # This build never draws its own artwork, so asking which pictures to
-    # *generate* promised something nothing downstream delivers - and a plan
-    # written from that answer pointed <img> tags at files no one would ever
-    # create. What is worth knowing is whether the product needs photographs at
-    # all, and if so where they are to come from.
+    # Whether the product takes money and whether it sends mail - never which
+    # company does either. A gateway and a mail provider are build-time
+    # settings: the user picks the plugin, its credentials go to .env.local,
+    # and the specification only has to say that the capability is required.
+    # Asking "Stripe or PayHere?" here produced an answer the document could
+    # not act on and the build asked again anyway.
+    Topic(
+        key="payments", kind="yes_no", label="Payments",
+        intent="Whether the product itself has to take money from anyone.",
+        # Only where nothing else already asks. The till and the shop ask which
+        # payment methods they accept and the SaaS asks about its plans, so all
+        # three answer this on the way past; asking again would spend one of
+        # the twenty-five for nothing.
+        profiles=("dashboard", "landing", "other", "portfolio", "utility"),
+        fallback_options=_yes_no(),
+        srs_fields=("integration_requirements", "functional_requirements"),
+        coverage=("payments_billing",),
+    ),
+    Topic(
+        key="notifications", kind="yes_no", label="Email and messages",
+        intent="Whether the product has to send anyone an email or a text "
+               "message - a confirmation, a receipt, a reminder, an alert.",
+        fallback_options=_yes_no(),
+        srs_fields=("integration_requirements", "notification_rules"),
+        coverage=("notifications",),
+    ),
+
+    # Inquire whether images are needed and their source, rather than promising artwork generation.
     Topic(
         key="images", kind="yes_no", label="Images",
         intent="Whether the product's pages need real photographs or pictures.",

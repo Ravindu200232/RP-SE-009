@@ -198,9 +198,7 @@ class ImageAgent:
 
         raw = self._first_image(data)
         if not raw:
-            # Three different faults used to land here as one sentence: a
-            # response shape we could not read, a file that never became
-            # readable, and a failed download all said "returned no image".
+            # Handle image generation errors with specific diagnostic details.
             why = self._fetch_error or "no image field in the Fooocus response"
             self._log("WARN", f"   ⚠ {out_path.name} — {why}")
             return False

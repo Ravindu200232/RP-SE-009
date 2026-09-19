@@ -1,17 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { api } from '@/lib/api'
 import { Badge, Button, Empty, Modal } from '../ui'
 
-/**
- * What the journeys noticed about the pages while they were open.
- *
- * The browser already loaded every page a journey visits, so its usability was
- * read off it there rather than in a pass of its own. The findings travel as
- * journey steps, which is why they are read back out of the stages here instead
- * of from a record of their own.
- */
+/** Displays UI usability and quality findings recorded during journey execution. */
 function UiQuality({ qa }) {
   const rows = []
   for (const flow of (qa?.report?.e2e || {}).flows || []) {
@@ -23,6 +16,16 @@ function UiQuality({ qa }) {
       const found = String(stage.label || stage.name || '').match(/^ui-quality\s+(\S+):\s*(.+)$/)
       if (found) rows.push({ journey: flow.title, page: found[1], note: found[2] })
     }
+  }
+  // Every page the specification names, read after the build on the runtime
+  // that was already up. Without this the panel only ever described the pages
+  // a journey happened to write a navigate step for — which on a thirteen-page
+  // specification is a minority of the application.
+  for (const row of qa?.ui_sweep || []) {
+    rows.push({ journey: 'every page',
+                page: row.route || row.page,
+                note: row.error ? `could not be opened — ${row.error}`
+                                : (row.note || 'clean') })
   }
   // One row per page: a page opened by four journeys was checked four times and
   // is still one page. A finding anywhere outranks a clean reading elsewhere.
@@ -36,15 +39,16 @@ function UiQuality({ qa }) {
   if (!pages.length) {
     return (
       <p className="rounded-panel border border-line bg-panel px-4 py-3 text-[11.5px] text-muted">
-        No page was read for usability — the journeys recorded no check.
+        No page was read for usability — no journey recorded a check, and the
+        page sweep found no routes to open.
       </p>
     )
   }
   return (
     <div className="space-y-2">
       <p className="text-[11.5px] text-muted">
-        {pages.length} page{pages.length === 1 ? '' : 's'} checked while the journeys had them
-        open — {flagged.length
+        {pages.length} page{pages.length === 1 ? '' : 's'} read — every page the
+        specification names, plus whatever the journeys had open — {flagged.length
           ? `${flagged.length} with findings, ${pages.length - flagged.length} clean`
           : 'all clean: no unnamed control, missing alt text, broken image, dead link or sideways scroll'}.
       </p>
@@ -65,11 +69,59 @@ function UiQuality({ qa }) {
   )
 }
 
+/** Renders a visual chronological filmstrip of journey step screenshots. */
+function Timeline({ frames, url, onPick }) {
+  const suites = useMemo(() => {
+    const groups = new Map()
+    for (const frame of frames) {
+      if (!groups.has(frame.suite)) groups.set(frame.suite, [])
+      groups.get(frame.suite).push(frame)
+    }
+    for (const rows of groups.values()) rows.sort((a, b) => a.step - b.step)
+    return [...groups.entries()]
+  }, [frames])
+
+  if (!suites.length) return null
+  return (
+    <div className="space-y-3">
+      {suites.map(([suite, rows]) => (
+        <section key={suite} className="rounded-panel border border-line bg-panel p-3">
+          <p className="mb-2 flex items-baseline gap-2">
+            <span className="text-[12px] font-semibold text-ink">{suite}</span>
+            <span className="text-[10.5px] text-muted2">
+              {rows.length} step{rows.length === 1 ? '' : 's'}
+            </span>
+          </p>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {rows.map(frame => (
+              <button key={frame.path} onClick={() => onPick(frame)}
+                      title={`Step ${frame.step} — ${frame.action}`}
+                      className="group w-[132px] shrink-0 overflow-hidden rounded-lg border border-line bg-panel2 text-left hover:border-accent">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url(frame)} alt={`step ${frame.step}`} loading="lazy"
+                     className="h-[80px] w-full border-b border-line object-cover object-top" />
+                <span className="flex items-baseline gap-1.5 px-2 py-1.5">
+                  <span className="font-mono text-[9.5px] text-accent">{frame.step}</span>
+                  <span className="truncate text-[10px] text-muted">{frame.action}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  )
+}
+
 export default function Screenshots({ qa }) {
   const [selected, setSelected] = useState(null)
-  const shots = qa?.screenshots || []
+  const all = qa?.screenshots || []
   const url = shot => api.qaScreenshotUrl(qa.project, shot.path, shot.at)
-  if (!shots.length) {
+  // A frame is a record of a step; a shot is evidence somebody asked for. They
+  // are read differently, so they are shown differently.
+  const frames = all.filter(shot => shot.frame)
+  const shots = all.filter(shot => !shot.frame)
+  if (!all.length) {
     return (
       <div className="space-y-4">
         <UiQuality qa={qa} />
@@ -80,7 +132,10 @@ export default function Screenshots({ qa }) {
   return (
     <div className="space-y-4">
       <UiQuality qa={qa} />
-      <p className="text-[11.5px] text-muted">{shots.length} saved screenshots · Select a capture to inspect it at full size.</p>
+      <Timeline frames={frames} url={url} onPick={setSelected} />
+      {shots.length > 0 && (
+        <p className="text-[11.5px] text-muted">{shots.length} saved screenshots · Select a capture to inspect it at full size.</p>
+      )}
       <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(230px,1fr))]">
         {shots.map(shot => (
           <button key={shot.path} onClick={() => setSelected(shot)} className="overflow-hidden rounded-panel border border-line bg-panel text-left hover:border-accent">
@@ -102,7 +157,12 @@ export default function Screenshots({ qa }) {
             <h3 className="break-all text-sm font-semibold text-ink">{selected.name}</h3>
             <Button onClick={() => setSelected(null)}>Close screenshot</Button>
           </div>
-          <p className="mb-3 text-[11px] text-muted">{selected.width} × {selected.height} · {selected.findings}</p>
+          <p className="mb-3 text-[11px] text-muted">
+            {selected.width} × {selected.height}
+            {selected.frame
+              ? ` · step ${selected.step} of ${selected.suite}, after ${selected.action}`
+              : selected.findings ? ` · ${selected.findings}` : ''}
+          </p>
           <img src={url(selected)} alt={selected.name} className="h-auto w-full" />
         </div>
       </Modal>}

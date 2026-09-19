@@ -12,10 +12,7 @@ BPMN_STANDARD = "OMG BPMN 2.0.2"
 ERD_NOTATION = "Crow's Foot ERD"
 DFD_NOTATION = "Yourdon/DeMarco-style DFD"
 
-# Concise, reader-facing guidance derived from the named standards and the
-# diagramming conventions used by professional modelling tools.  This is also
-# a generation contract: a diagram must begin with these elements and must not
-# invent relationships that the approved SRS does not support.
+# Modeling standards and notation conventions for generating compliant system architecture diagrams.
 DIAGRAM_GUIDANCE = {
     "use_case": {
         "question": "What is a Use Case Diagram?",

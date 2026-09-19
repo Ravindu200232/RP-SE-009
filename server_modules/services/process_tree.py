@@ -80,9 +80,7 @@ def stop_owned(proc):
             try:
                 if not kernel.TerminateJobObject(handle, 0):
                     raise ctypes.WinError(ctypes.get_last_error())
-                # Termination is asynchronous. Waiting only for the original
-                # shell returns too early when it has already exited, leaving
-                # a short bind race with its terminating children.
+                # Wait for child process tree termination to prevent port bind collisions.
                 deadline = time.monotonic() + 5
                 accounting = Accounting()
                 while time.monotonic() < deadline:

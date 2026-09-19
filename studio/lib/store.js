@@ -179,9 +179,7 @@ export const useStore = create((set, get) => ({
   deployRunId: '',
   setDeployRunId: (deployRunId) => set({ deployRunId: deployRunId || '' }),
 
-  // Starred and recently opened are this browser's, not the server's: nothing
-  // about them belongs to the project on disk, and an account here never sees
-  // another account's work anyway.
+  // Store starred and recently opened project IDs in browser local storage.
   starred: readList(KEYS.starred),
   recent: readList(KEYS.recent),
   // Which shelf the Projects screen is showing, set from the sidebar.
@@ -253,12 +251,13 @@ export const useStore = create((set, get) => ({
   approval: null,
   setApproval: (approval) => set({ approval }),
 
-  // The drawing waiting to be approved.
-  //
-  // Kept apart from `approval` because it is not answered in a dialog: it is
-  // shown in the preview, where the select and pencil tools already work, and
-  // walked by clicking its own navigation. A popup over the top of it would
-  // hide the thing being judged.
+  // A question the agent stopped to ask, shown in the chat stream rather than
+  // over the top of it. The deployment agent has always asked this way and it
+  // reads as the agent waiting on you; a dialog reads as the app interrupting.
+  ask: null,
+  setAsk: (ask) => set({ ask }),
+
+  // Prototype drawing state displayed in preview for interactive user approval.
   drawing: null,
   setDrawing: (drawing) => set({ drawing }),
 
@@ -267,9 +266,7 @@ export const useStore = create((set, get) => ({
   browserFrame: null,
   setBrowserFrame: (browserFrame) => set({ browserFrame }),
 
-  // What the user has pointed at for the message they are still writing:
-  // elements they clicked, regions they drew on. Each one carries its own
-  // screenshot, so the attachment is a picture and not just a selector.
+  // Visual attachments for pending messages, including element selections and annotated screenshots.
   selection: [],
   addSelection: (item) => set(s => (
     s.selection.some(x => x.key === item.key)
@@ -290,13 +287,7 @@ export const useStore = create((set, get) => ({
     chat: [...s.chat.slice(-200), { at: Date.now(), ...entry }],
   })),
 
-  // What was said while the agent was still working.
-  //
-  // The box used to lock itself for the length of a run and tell you to come
-  // back later, which is the one moment you most want to say something - the
-  // next thing to do usually occurs to you while you are watching the last
-  // thing happen. Only one run may touch a project at a time, so what is typed
-  // waits here and goes the moment the run ends, in the order it was typed.
+  // Queue messages entered while a run is in progress to be sent automatically once it finishes.
   queue: [],
   enqueue: (entry) => set(s => ({
     queue: [...s.queue, { id: `q-${Date.now()}-${s.queue.length}`, at: Date.now(), ...entry }],
@@ -384,13 +375,24 @@ export const useStore = create((set, get) => ({
   toggleTheme: () => {},
   persist: (key, value) => { try { LS?.setItem(key, value) } catch { } },
 
-  /**
-   * Every project's own stream, kept while you are looking at another one.
-   *
-   * Switching projects used to empty the feed: the work carried on, and the
-   * account of it was gone. What one project has said belongs to that project,
-   * so it is set aside on the way out and handed back on the way in.
-   */
+  /** Agent roles that adopt the globally selected language model. */
+  ROLE_MODELS: ['agent', 'planner', 'design', 'builder', 'qa', 'srs', 'deploy'],
+
+  applyModel: (model) => {
+    const chosen = String(model || '').trim()
+    if (!chosen) return []
+    const roles = useStore.getState().ROLE_MODELS
+    set(state => ({
+      models: { ...state.models,
+                ...Object.fromEntries(roles.map(role => [role, chosen])) },
+    }))
+    for (const role of roles) {
+      try { LS?.setItem(KEYS[role], chosen) } catch { }
+    }
+    return roles
+  },
+
+  /** Persisted chat and log streams cached per project across workspace navigation. */
   streams: {},
 
   // The project a run belongs to, which is not always the one on screen: you
@@ -398,21 +400,13 @@ export const useStore = create((set, get) => ({
   busyProject: '',
   setBusyProject: (busyProject) => set({ busyProject }),
 
-  /**
-   * Put a project's saved stream back, behind anything that has arrived since.
-   *
-   * The fetch that reads it races the socket that is already reporting: a run
-   * started the moment the project opened would otherwise have its first lines
-   * overwritten by a record written before they happened.
-   */
+  /** Merges restored historical project stream events behind any live incoming socket messages. */
   adoptStream: (stream) => set(state => ({
     logs: [...(stream.logs || []), ...state.logs],
     chat: [...(stream.chat || []), ...state.chat],
   })),
 
-      // Set this project's stream aside, and take up the next one's. What is
-      // set aside is also written down, because a tab that is closed next
-      // takes the in-memory copy with it.
+      // Persist active project chat stream when switching project context.
   reset: (project) => set(state => {
     const sessions = { ...state.projectSessions }
     if (state.project) sessions[state.project] = { ...sessions[state.project], [state.agentRole]: captureSession(state) }
@@ -427,6 +421,7 @@ export const useStore = create((set, get) => ({
     activeFile: null, liveFile: null, liveBuf: '', follow: true,
     progress: emptyProgress(),
     tests: emptyTests(),
+    ask: null,
     question: null,
     qaReport: null,
     undo: null,

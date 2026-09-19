@@ -43,12 +43,7 @@ LANDMARK = re.compile(r"<(?:header|footer|main|nav|aside)\b", re.I)
 IMAGE = re.compile(r"<img\b|<Image\b|<picture\b|background-image\s*:\s*url\(", re.I)
 LINK = re.compile(r"<a\b[^>]*\bhref=|<Link\b[^>]*\bhref=", re.I)
 ROW = re.compile(r"<tr\b", re.I)
-# Bytes a page gets for free, which is why they are not counted. Tailwind moved
-# the styling into the markup: a `<style type="text/tailwindcss">` theme block is
-# ~1,000 bytes on every page before a word is written, and utility classes ran to
-# 15-19% of a hand-written drawing and go far higher on a Tailwind one. Counted,
-# a three-section page clears a nine-kilobyte floor while staying a three-section
-# page - which is the one thing this file exists to catch.
+# Exclude boilerplate styling and theme blocks from page content byte measurements.
 CLASS_ATTR = re.compile(r'''\s(?:class|className)\s*=\s*(?:"[^"]*"|'[^']*')''', re.I)
 
 FIELD = re.compile(r"<(?:input|select|textarea)\b", re.I)
@@ -57,17 +52,12 @@ HEADING = re.compile(r"<h[1-6]\b", re.I)
 HEADER = re.compile(r"<header\b.*?</header>", re.S | re.I)
 FOOTER = re.compile(r"<footer\b.*?</footer>", re.S | re.I)
 
-# A container with an id and nothing inside it is only a problem when the script
-# is what fills it: with demo.js deleted that is a blank rectangle, and none of
-# the links that should have been inside it exist. A `<div id="preloader">` is
-# not that, and the reference has one on every page.
+# Detect script-dependent empty containers while ignoring standard structural preloaders.
 HOLLOW = re.compile(
     r"<(div|ul|ol|tbody|section|main|table)\b[^>]*\bid\s*=\s*[\"']([^\"']+)[\"'][^>]*>\s*</\1>",
     re.I)
 
-# Anything that tells the reader they are looking at a toy. The drawing is the
-# product as it will be; the only thing it cannot do is store data, and that is
-# invisible.
+# Patterns identifying placeholder or prototype tells that detract from realism.
 DISCLAIMER = re.compile(
     r"\b(?:prototype|mock[- ]?up|mockup|wireframe|demo only|for demo|"
     r"coming soon|not implemented|sample data only|this is a demo|"
@@ -77,12 +67,7 @@ DISCLAIMER = re.compile(
 # product is fake, it just says nothing. Reported separately.
 FILLER = re.compile(r"\b(?:lorem ipsum|dolor sit amet|placeholder text|your text here)\b", re.I)
 
-# The three things a working screen keeps leaving out. A table with no figures
-# above it, nothing to narrow it by, and no empty state is the thin admin page,
-# and all three were absent from a drawn dashboard that passed every other line
-# of the checklist.
-# The trailing \b matters: without it "stat" matches every `class="status-paid"`
-# badge in a table and a screen with no figures at all reports seventeen.
+# Verify presence of metric summaries, filters, and empty states on dashboard screens.
 FIGURES = re.compile(r'class="[^"]*\b(?:stat|kpi|metric|figure|summary|total)s?\b', re.I)
 CONTROLS = re.compile(r'<select\b|type="(?:date|search)"|class="[^"]*\b(?:filter|search|tabs?)\b', re.I)
 EMPTY = re.compile(r'class="[^"]*\bempty\b|>\s*(?:No |Nothing |None )', re.I)
@@ -100,15 +85,11 @@ def measure(html: str) -> dict:
     shell = sum(len(LINK.findall(m.group(0))) for m in (header, footer) if m)
 
     return {
-        # What is left once the styling is taken away: the page's own content.
-        # This is the number judged, so a page cannot pass by wearing more
-        # classes. raw_bytes stays reported - it is what a browser downloads.
+        # Evaluate content density by measuring markup stripped of CSS classes and styling.
         "bytes": len(CLASS_ATTR.sub("", visible).encode("utf-8")),
         "raw_bytes": len(html.encode("utf-8")),
         "sections": len(SECTION.findall(body)) + len(LANDMARK.findall(body)),
-        # The page's own sections, without the shell landmarks. A drawing wears
-        # its header and footer in every file; a built app has them once. Only
-        # this count is comparable between the two.
+        # Count main content sections excluding shared header and footer landmarks.
         "own_sections": len(SECTION.findall(body)),
         "images": len(IMAGE.findall(body)),
         "links": len(LINK.findall(body)),
@@ -126,23 +107,7 @@ def measure(html: str) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
-# What a page of each kind should be
-# ---------------------------------------------------------------------------
-# Measured off every page of Mentor-1.0.0, not off its best one. What that
-# reference holds constant across all nine pages is the shell and the section
-# count - every page has at least 6 sections and at least 39 links, of which
-# ~37 come from the header nav and the footer sitemap. That is the density the
-# drawing is missing: ours has 11 links on the whole page.
-#
-# What varies by page is the content: images, words and rows belong to what the
-# page is for, so they are judged per kind and the floors are the reference's
-# own minimums.
-# The byte floors are content bytes, not what a browser downloads. They were
-# set as raw bytes - 9,000 / 12,000 / 15,000 - and are carried across at the
-# 0.80 that styling accounted for on the hand-written drawings they were
-# measured against (raw 7,147 -> content 5,706, and raw 3,836 -> 3,212). Same
-# page, same verdict; a page cannot now reach the floor by wearing classes.
+# Threshold standards per page type governing content size, link counts, and section density.
 EVERY_PAGE = {"bytes": 7200, "sections": 6, "links": 35, "shell": 30}
 
 TARGETS = {
@@ -153,12 +118,7 @@ TARGETS = {
     "form":    {**EVERY_PAGE, "words": 150, "fields": 3},
 }
 
-# The name is the only thing available before the page is read, and it is
-# enough: a file called login.html is a form whatever it contains.
-#
-# What it must not do is confuse a list with the detail page under it. A route
-# is a detail page because it has a dynamic segment - /rooms/[slug] - not
-# because the word "room" appears in it, which is equally true of /rooms.
+# Infer page type from filename while distinguishing dynamic detail routes from collection lists.
 KINDS = (
     ("form", ("login", "signin", "sign-in", "signup", "register", "contact",
               "checkout", "book", "new", "edit", "settings", "profile")),
@@ -180,11 +140,7 @@ def kind_of(name: str, got: dict | None = None) -> str:
     correctly does not have.
     """
     named = _by_name(name)
-    # An admin route with a form on it and no table is a staff sign-in, not a
-    # dashboard. That is the one call the name reliably gets wrong; everywhere
-    # else the name wins, because a content page with an enquiry form on it is
-    # still a content page and a detail page with a booking panel is still a
-    # detail page.
+    # Classify admin routes containing forms without tables as authentication screens.
     if got and named == "admin" and got.get("rows", 0) == 0 and got.get("fields", 0) >= 1:
         return "form"
     return named
@@ -221,9 +177,7 @@ def working_gaps(row: dict) -> str:
     state. A dashboard drawn as a table with two paragraphs around it passed
     every other line of the checklist.
     """
-    # Only a screen that shows a collection. A sign-in page has no figures to
-    # put above nothing and no filters to narrow two fields by, and flagging it
-    # for them is a false alarm that teaches you to ignore the real ones.
+    # Apply collection screen validation checks only to collection and dashboard pages.
     if row.get("kind") != "admin":
         return ""
     missing = [name for name, key in
@@ -339,9 +293,7 @@ def screen_files(page: Path, root: Path, seen: set | None = None) -> list[Path]:
     return files
 
 
-# A page imports its data layer as well as its components. `lib/db.js` and
-# `models/Booking.js` are not part of the screen, and counting them would credit
-# a thin page with the weight of its database code.
+# Exclude database and backend models when measuring UI page bundle weights.
 def renders_ui(path: Path) -> bool:
     text = path.read_text(encoding="utf-8", errors="replace")
     return bool(re.search(r"<[A-Za-z][\w.-]*[\s/>]", text))
@@ -394,11 +346,7 @@ def report_app(root: Path) -> dict:
         parts = screen_files(page, root)
         got = merge([measure(f.read_text(encoding="utf-8", errors="replace"))
                      for f in parts])
-        # A drawing repeats the shell into every file, so its links land in the
-        # page's own count. A built app has the shell once, in the layout, so
-        # the page file legitimately carries only its own links - judging it on
-        # the drawing's total would count the same nav twice and fail a page
-        # that is fine.
+        # Adjust page link expectations between standalone prototype files and root layout architectures.
         got["shell"] = shell
         got["links"] += shell
         kind, short = judge("index" if route == "/" else route, got)

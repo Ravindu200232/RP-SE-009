@@ -146,11 +146,7 @@ def _strays(text: str):
         attributes = hit.group(1)
         if attributes is None:                       # a closing tag
             depth = max(0, depth - 1)
-            # Which of several closing tags is the stray one cannot be settled
-            # by pairing - both sit in legal positions, and only the code
-            # decides. So every closing tag is offered, except the one that
-            # completes a `<script src=...></script>`: that pair is always
-            # matched, and breaking it lets the include swallow the page.
+            # Offer closing tag candidates for repair while preserving script include tag integrity.
             before = tags[index - 1] if index else None
             if before is not None and before.group(1) and "src=" in before.group(1).lower():
                 continue
@@ -212,9 +208,7 @@ def static_validate(root: Path) -> list[dict]:
     findings: list[dict] = []
     scripts = []
     for path in sorted(folder.rglob("*.js")):
-        # Bundled vendor assets are not generated page logic.  Skipping them
-        # keeps the deterministic pass fast and avoids parsing a large copied
-        # library when only the prototype's own scripts can be repaired.
+        # Skip bundled third-party vendor libraries during script syntax verification.
         parts = {part.lower() for part in path.relative_to(folder).parts}
         try:
             size = path.stat().st_size
@@ -250,9 +244,7 @@ def static_validate(root: Path) -> list[dict]:
             "text": "The page has no usable linked stylesheet.",
         })
 
-    # Catch links that can never resolve before spending a browser visit on
-    # them.  External URLs and browser-only references are intentionally left
-    # alone; only local files in the prototype are deterministic here.
+    # Validate local prototype file link targets statically before launching browser checks.
     pages = sorted(folder.rglob("*.html"))[:MAX_PAGES]
     known = {path.resolve() for path in folder.rglob("*") if path.is_file()}
     for page in pages:
@@ -345,9 +337,7 @@ def validate_all(root: Path, browser: Browser | None = None) -> list[dict]:
 def repair_prompt(findings: list[dict]) -> str:
     """Turn bounded browser findings into a concise model repair instruction."""
     rows = []
-    # Keep every finding in the one repair request so all pages are repaired
-    # together. The browser pass itself is bounded to MAX_PAGES, so this
-    # remains a predictable amount of context even for a large drawing.
+    # Consolidate issues across all inspected pages into a single grouped repair request.
     for finding in findings[:MAX_PAGES]:
         page = finding.get("page") or "prototype"
         kind = finding.get("kind") or "browser diagnostic"

@@ -16,8 +16,10 @@ class DesignerAgent(BuilderAgent):
         config.unit_tests = config.e2e_tests = False
         super().__init__(config, **kwargs)
         self.sandbox = Sandbox(config.workspace, role="designer")
+        # Enables askUser in the designer tool subset to resolve prototype ambiguities early.
         self.registry = self.registry.subset(("readFile", "readFiles", "writeFile", "patchFile", "editFile",
-                                             "deleteFile", "listDir", "globFiles", "grepSearch", "search"))
+                                             "deleteFile", "listDir", "globFiles", "grepSearch", "search",
+                                             "askUser"))
 
     def run(self, task: str) -> Outcome:
         root = Path(self.config.workspace) / ".agentforge" / "prototype"
@@ -70,10 +72,7 @@ class DesignerAgent(BuilderAgent):
         if outcome.status == "completed":
             if not any(root.rglob('*.html')):
                 return Outcome(status='incomplete', result='No HTML pages were generated. The conversation is saved.')
-            # Static syntax/style checks and the bounded page-open pass are
-            # collected together before the model is asked to touch anything.
-            # There is exactly one automatic grouped repair request for this
-            # generated version, followed by one verification pass.
+            # Aggregate static checks and page-open results into a single grouped repair request.
             findings = validate_prototype_all(root)
             real_findings = [row for row in findings
                              if row.get("kind") != "browser unavailable"]
@@ -90,10 +89,7 @@ class DesignerAgent(BuilderAgent):
                                      verification_kinds=[],
                                      max_iterations=self.MAX_PROTOTYPE_REPAIR_ITERATIONS).run(
                                          prototype_repair_prompt(real_findings))
-                # A repair that ran out of turns is judged the same way as one
-                # that said it finished: by re-opening the pages. "It used its
-                # turns" is not a verdict on the drawing, and reporting it as a
-                # failed run hid a prototype that was already correct.
+                # Verify prototype pages directly on iteration exhaustion to inspect resulting quality.
                 if outcome.status in ("completed", "max_iterations"):
                     remaining = validate_prototype_all(root)
                     remaining_real = remaining

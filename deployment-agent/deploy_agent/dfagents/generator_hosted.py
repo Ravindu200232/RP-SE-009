@@ -37,10 +37,7 @@ class GeneratorHostedMixin:
                 "app-name": "${{ vars.AZURE_WEBAPP_NAME }}", "package": package,
             }})
             if service.framework != "nextjs":
-                # An App Service runs one command. A workspace of services needs
-                # every one of them up, so it starts the whole tree rather than
-                # the gateway alone - which would proxy to ports nobody is
-                # listening on. On EC2 this is a systemd unit per service.
+                # Start all workspace services concurrently from a single startup command in App Service.
                 steps.append({"name": "Start every service, not just the gateway", "run": 'az webapp config set --name "$AZURE_WEBAPP_NAME" --resource-group "$AZURE_RESOURCE_GROUP" --startup-file "npm run start:all" --output none'})
             steps.append({"name": "Record deployed commit", "run": 'az webapp config appsettings set --name "$AZURE_WEBAPP_NAME" --resource-group "$AZURE_RESOURCE_GROUP" --settings AGENTFORGE_COMMIT_SHA="$GITHUB_SHA" --output none'})
             env = {"AZURE_WEBAPP_NAME": "${{ vars.AZURE_WEBAPP_NAME }}", "AZURE_RESOURCE_GROUP": "${{ vars.AZURE_RESOURCE_GROUP }}"}

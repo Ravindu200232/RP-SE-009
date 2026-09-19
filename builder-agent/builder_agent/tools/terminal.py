@@ -118,9 +118,7 @@ def register(registry):
         summarize=lambda a: str(a.get("command", ""))[:70]))
 
     registry.add(Tool(
-        # Observing a process is read-only, and a pass that may start commands
-        # must be able to wait for them: told to call this without being given
-        # it, a planner used `echo` as a sleep a thousand times over.
+        # Allow background process inspection and completion waiting for command-starting roles.
         name="waitForProcess", risk=SAFE, review_safe=True, handler=wait_for_process,
         description="Wait for a process started earlier and read its exit code and output. "
                     "This is how you wait - never spin on a no-op command to pass the time.",

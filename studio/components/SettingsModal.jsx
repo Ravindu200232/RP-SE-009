@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import {
   Check, Cpu, Database, Keyboard,
-  LayoutGrid, Loader2, Palette, SlidersHorizontal, X, Link2,
+  LayoutGrid, Loader2, Palette, Plug, SlidersHorizontal, X, Link2,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { Modal } from './ui'
@@ -12,27 +12,23 @@ import { useStore } from '@/lib/store'
 import { useAuthStore } from '@/lib/auth'
 import { modelLabel } from '@/lib/models'
 import DeployAccounts from './deploy/DeployAccounts'
+import PluginAccounts from './PluginAccounts'
 
-/**
- * One model for every role, chosen from what this machine can actually reach.
- *
- * The tab used to list six roles read-only and say the choice was made "in the
- * build panel", which meant the only place to change it was a tier button
- * beside the composer that mapped to a model nobody could see. Here the models
- * are the ones Ollama reports - installed locally, or available in the cloud
- * account - and the one that is picked is the one every build uses.
- */
+/** Model picker interface for selecting and configuring LLM models across all agent roles. */
 function ModelPicker({ meta, onSaved }) {
   const [catalog, setCatalog] = useState(null)
   const [chosen, setChosen] = useState('')
   const [think, setThink] = useState(true)
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState('')
+  // Server-synced state to track whether chosen model settings have been saved.
+  const [saved, setSaved] = useState({ model: '', think: true })
 
   useEffect(() => {
     if (!meta) return
     setChosen(meta.agent_model || '')
     setThink(meta.agent_think !== false)
+    setSaved({ model: meta.agent_model || '', think: meta.agent_think !== false })
   }, [meta])
 
   useEffect(() => {
@@ -41,14 +37,21 @@ function ModelPicker({ meta, onSaved }) {
     return () => { alive = false }
   }, [])
 
-  async function save(model, thinking) {
+  async function save() {
     setBusy(true); setNote('')
     try {
-      await api.saveSettings({ agent_model: model, agent_think: thinking })
-      setNote('saved')
+      await api.saveSettings({ agent_model: chosen, agent_think: think })
+      // The server's `agent_model` is only a fallback: the studio keeps a
+      // model per role and sends it on every run, so without this the saved
+      // choice would lose to whatever those roles already held.
+      const roles = useStore.getState().applyModel(chosen)
+      setSaved({ model: chosen, think })
+      setNote(`saved — ${roles.length} agents now use it`)
       onSaved?.()
     } catch (failure) { setNote(failure.message) } finally { setBusy(false) }
   }
+
+  const dirty = chosen !== saved.model || think !== saved.think
 
   const groups = [
     ['On this machine', catalog?.local_models || []],
@@ -66,7 +69,7 @@ function ModelPicker({ meta, onSaved }) {
             specification agent never uses it.
           </p>
         </div>
-        <button type="button" disabled={busy} onClick={() => { setThink(!think); save(chosen, !think) }}
+        <button type="button" disabled={busy} onClick={() => { setThink(!think); setNote('') }}
           aria-pressed={think}
           className={cn('h-6 w-11 shrink-0 rounded-full border transition-colors',
             think ? 'border-accent bg-accent/80' : 'border-line bg-panel2')}>
@@ -93,7 +96,7 @@ function ModelPicker({ meta, onSaved }) {
                 const picked = id === chosen
                 return (
                   <button key={id} type="button" disabled={busy}
-                    onClick={() => { setChosen(id); save(id, think) }}
+                    onClick={() => { setChosen(id); setNote('') }}
                     className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-panel2">
                     <span className={cn('grid size-4 shrink-0 place-items-center rounded-full border',
                       picked ? 'border-accent bg-accent' : 'border-line')}>
@@ -115,9 +118,20 @@ function ModelPicker({ meta, onSaved }) {
           </div>
         ))}
       </div>
-      <p className="text-[11px] text-muted">
-        {busy ? 'Saving…' : note || 'Every build, prototype and repair uses this model.'}
-      </p>
+      <div className="flex items-center gap-3">
+        <p className="min-w-0 flex-1 text-[11px] text-muted">
+          {busy ? 'Saving…'
+                : note
+                || (dirty ? 'Not saved yet — nothing uses this until you save it.'
+                          : 'Every build, prototype, specification, test and deployment '
+                            + 'uses this model.')}
+        </p>
+        <button type="button" disabled={busy || !chosen || !dirty} onClick={save}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-[11.5px] font-semibold text-white transition-colors hover:bg-press disabled:opacity-40">
+          {busy ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
+          Save
+        </button>
+      </div>
     </div>
   )
 }
@@ -126,6 +140,9 @@ export default function SettingsModal({ onClose, onSaved }) {
   const theme = useStore(s => s.theme)
   const setTheme = useStore(s => s.setTheme)
   const user = useAuthStore(s => s.user)
+  // The open project, so the Plugins tab can offer to tick them for it rather
+  // than only hold the credentials.
+  const project = useStore(s => s.project)
 
   const [activeTab, setActiveTab] = useState('general')
 
@@ -190,6 +207,7 @@ export default function SettingsModal({ onClose, onSaved }) {
     { id: 'models',       label: 'Models',       Icon: Cpu },
     { id: 'appearance',   label: 'Appearance',   Icon: Palette },
     { id: 'integrations', label: 'Integrations', Icon: Link2 },
+    { id: 'plugins',      label: 'Plugins',      Icon: Plug },
     { id: 'shortcuts',    label: 'Shortcuts',    Icon: Keyboard },
   ]
 
@@ -253,6 +271,7 @@ export default function SettingsModal({ onClose, onSaved }) {
                : activeTab === 'models'       ? 'AI Models'
                : activeTab === 'appearance'   ? 'Appearance'
                : activeTab === 'integrations' ? 'Integrations'
+               : activeTab === 'plugins'      ? 'Plugins'
                : 'Keyboard Shortcuts'}
               </h2>
               <p className="text-[10.5px] sm:text-[11px] text-muted mt-0.5 truncate">
@@ -262,11 +281,14 @@ export default function SettingsModal({ onClose, onSaved }) {
                   : activeTab === 'application'
                   ? 'Running services and database status.'
                   : activeTab === 'models'
-                  ? 'Active AI models for each build role.'
+                  ? isAdmin ? 'One model, used by every agent. Choose it, then save.'
+                            : 'The model every agent uses on this machine.'
                   : activeTab === 'appearance'
                   ? 'Studio visual theme.'
                   : activeTab === 'integrations'
                   ? 'Connect GitHub, AWS, Vercel, Netlify, Azure and your production database.'
+                  : activeTab === 'plugins'
+                  ? 'Stripe, Resend, Supabase, Google and the rest — set up once, used by any app you tick.'
                   : 'Key bindings active in AgentForge Studio.'}
               </p>
             </div>
@@ -401,7 +423,22 @@ export default function SettingsModal({ onClose, onSaved }) {
             )}
 
             {/* ── MODELS ── */}
-            {activeTab === 'models' && <ModelPicker meta={meta} onSaved={onSaved} />}
+            {activeTab === 'models' && (
+              isAdmin
+                ? <ModelPicker meta={meta} onSaved={onSaved} />
+                : <div className="max-w-[700px] space-y-4">
+                    <p className="rounded-2xl border border-line bg-panel px-4 py-3 text-[12px] text-muted">
+                      The model every agent uses is shared by everyone on this
+                      machine, so only its admin changes it. It is currently{' '}
+                      <b className="text-ink">
+                        {meta?.agent_model ? (modelLabel ? modelLabel(meta.agent_model)
+                                                         : meta.agent_model)
+                                           : 'whatever Ollama reports as largest'}
+                      </b>
+                      {meta?.agent_think === false ? ', with thinking off.' : '.'}
+                    </p>
+                  </div>
+            )}
 
             {/* ── APPEARANCE ── */}
             {activeTab === 'appearance' && (
@@ -438,6 +475,14 @@ export default function SettingsModal({ onClose, onSaved }) {
                   api.settings().then(setMeta).catch(() => {})
                   onSaved?.()
                 }} />
+              </div>
+            )}
+
+            {/* ── PLUGINS ── */}
+            {/* Global plugin account configuration and per-project plugin activation. */}
+            {activeTab === 'plugins' && (
+              <div className="max-w-[700px]">
+                <PluginAccounts project={project} />
               </div>
             )}
 

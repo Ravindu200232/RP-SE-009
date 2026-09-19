@@ -94,9 +94,7 @@ def summary_text(digest: dict) -> str:
         "QA VERIFICATION REPORT - TRACEABILITY ONLY. No new capability was built.",
         "",
         "Update ONLY requirement_traceability_matrix entries and acceptance criteria status.",
-        # Phrased without removal verbs on purpose. This text is also read as an
-        # edit instruction, and a "do not remove" sentence matched the removal
-        # keywords, which turned the merge into a wholesale replace.
+        # Use additive instructions to avoid triggering deletion keywords during merges.
         "Every functional requirement, table, role, page and workflow stays exactly as it is.",
         "Keep every row already in the matrix; a row this report does not mention keeps its "
         "current status.",

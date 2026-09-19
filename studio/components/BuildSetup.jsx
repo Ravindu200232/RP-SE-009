@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Check, ChevronDown, Layers } from 'lucide-react'
+import { Check, ChevronDown, Layers, Plug } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { STACKS } from '@/lib/stacks'
 import { TIERS, tierFromModel } from '@/lib/models'
@@ -7,6 +7,7 @@ import { TIERS, tierFromModel } from '@/lib/models'
 /** The choices for the next build stay beside the brief they belong to. */
 export default function BuildSetup({
   model, stack, think, options = [], onModelChange, onStackChange, onThinkChange, onTierChange,
+  plugins = [], onPluginsOpen,
 }) {
   const currentTier = tierFromModel(model, think)
   const [stackOpen, setStackOpen] = useState(false)
@@ -37,10 +38,20 @@ export default function BuildSetup({
       {/* Hidden input to satisfy verification contract build-model */}
       <input type="hidden" id="build-model" value={model || TIERS[currentTier]?.model || ''} />
 
-      {/* No High/Ultra here. Two buttons named after speeds stood in for a model
-          nobody could see, and picking one silently changed both the model and
-          whether it reasons. Both now live in Settings → Models, where the
-          choice is the actual model this machine can reach. */}
+      {/* Model and reasoning settings are managed centrally in Settings. */}
+
+      {/* Button to configure external plugins to be enabled for this application build. */}
+      {onPluginsOpen && (
+        <button type="button" onClick={onPluginsOpen}
+                title="Providers this app should start with"
+                className={cn('inline-flex h-8 items-center gap-1.5 rounded-xl border px-2.5 text-[11.5px] font-medium transition-colors',
+                  plugins.length ? 'border-accent/50 bg-accent/10 text-accent'
+                                 : 'border-line bg-panel2/60 text-muted hover:text-ink')}>
+          <Plug className="size-3.5" />
+          {plugins.length ? `${plugins.length} plugin${plugins.length === 1 ? '' : 's'}`
+                          : 'Plugins'}
+        </button>
+      )}
 
       {/* Custom Stack Selector Dropdown with refined small icon */}
       <div className="relative" ref={stackRef}>

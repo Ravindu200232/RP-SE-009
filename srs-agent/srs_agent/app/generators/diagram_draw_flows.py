@@ -189,9 +189,7 @@ def _dfd(doc: dict, W: float) -> Drawing:
     case_label={c["id"]:c["label"] for c in cases}
     raw_modules=[_process_name(str(m)) for m in (doc.get("main_modules") or []) if str(m).strip()]
     modules=[]
-    # Actor goals are business processes; page/module names are only a fallback.
-    # Taking the first five UI modules produced a control-flow-looking DFD and
-    # sent later roles into unrelated processes.
+    # Derive DFD processes primarily from actor goals, using UI module names as fallback.
     for actor in actors:
         goals=[case_label.get(uid,"") for uid in actor.get("does",[]) if case_label.get(uid,"")]
         if goals and goals[0] not in modules: modules.append(goals[0])
@@ -248,9 +246,7 @@ def _dfd(doc: dict, W: float) -> Drawing:
         score,pi=max(scores,default=(0,min(i,len(modules)-1)))
         if score==0: pi=min(i,len(modules)-1)
         store_candidates.append((t,pi,score))
-    # A compact level-1 DFD becomes unreadable when every related table fans out
-    # from the same process. Keep the strongest store relationship per process
-    # (two when the diagram itself has only one or two processes).
+    # Restrict data store links per process to keep level-1 DFD diagrams clean and legible.
     store_limit=2 if len(modules)<=2 else 1
     selected=[]
     for pi in range(len(modules)):

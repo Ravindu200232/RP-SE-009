@@ -41,9 +41,7 @@ def adopt_srs(srs_id: str, proj_dir: Path) -> bool:
         if staging.is_dir():
             for src in staging.rglob("*"):
                 parts = src.relative_to(staging).parts if src.is_file() else ()
-                # `site-images` is the customer's own pictures, adopted straight
-                # into `.agentforge/images` where the pages look for them. Copied
-                # here as well they would be a second, stale set nothing serves.
+                # Adopt customer images directly into .agentforge/images/.
                 if (not src.is_file() or src.name.endswith("-checkpoint.json") or
                         any(part.startswith(".") for part in parts)
                         or "changes" in parts or "site-images" in parts
@@ -107,22 +105,7 @@ def adopt_srs(srs_id: str, proj_dir: Path) -> bool:
             (dest / "srs_latest.json").write_text(
                 json.dumps(document.json(), indent=2), encoding="utf-8")
 
-        # The page layouts, into `.agentforge/wireframes/` - the one folder both
-        # agents may read and the folder the project's own SRS tab reads.
-        #
-        # The copy loop above skips `wireframes` on purpose, so that they do not
-        # also land under the copied specification where nothing looks for them.
-        # But the only other caller runs when a build starts, so a project that
-        # has a specification and no build never received them at all, and one
-        # that was built once kept whatever it had on that day. Both showed the
-        # same thing in the workspace: "No pages in the specification yet", on a
-        # specification with ten pages in it.
-        # `adopt_wireframes` is not imported: `site_images` is one of the
-        # runtime parts, exec'd into this same namespace, so the name is
-        # already here. Importing it as a module hands it fresh globals
-        # without `Path`, and the first line of it raises NameError - which is
-        # exactly what happened, and was reported as "wireframes were not
-        # adopted: name 'Path' is not defined".
+        # Adopt wireframes into .agentforge/wireframes/ so both agents and the SRS tab can access them.
         try:
             adopt_wireframes(srs_id, proj_dir)
         except Exception as exc:                                     # noqa: BLE001
@@ -640,10 +623,7 @@ def _srs_brief(proj_dir: Path, model: str = "") -> str:
 
     text = "\n".join(parts)
 
-    # How much of the window a specification may occupy before it crowds out
-    # the conversation it is meant to inform. A share, not a fixed number of
-    # characters: the same brief is comfortable on a 256K model and fatal on
-    # an 8K one.
+    # Proportional token budget allocated for specification context.
     SPEC_SHARE, CHARS_PER_TOKEN = 0.35, 3
     ctx = max_context(model)
     budget = int(ctx * SPEC_SHARE * CHARS_PER_TOKEN)
@@ -709,9 +689,7 @@ def read_srs_results(proj_name: str) -> dict:
             return default
 
     out = {"project": proj_name, "have": {}}
-    # What a change to this specification could be carried into. Answered from
-    # the same two tests the transaction itself uses, so what the studio offers
-    # and what the server will accept can never disagree.
+    # Determine valid target phases that can receive changes from this specification.
     out["targets"] = {role: artifact_exists(proj_dir, role) for role in ("designer", "developer")}
     if not srs_dir.is_dir():
 
@@ -735,12 +713,7 @@ def read_srs_results(proj_name: str) -> dict:
     out["interview"] = load(srs_dir / "interview.json", {}) or {}
     out["have"]["interview"] = bool(out["interview"].get("transcript"))
 
-    # The document already carries each diagram's narrative - the generator
-    # writes business_summary, flow_explanation and key_takeaways onto every
-    # artifact. Rebuilding rows from the .mmd files alone dropped all of it, so
-    # the SRS tab fell back to four canned sentences about a customer accessing
-    # an interface, the same four for every project. Disk owns the drawing;
-    # the document owns the words.
+    # Merge diagram files on disk with descriptive narrative text from the SRS document.
     narrative = {}
     for artifact in (out["document"].get("diagrams") or []):
         if isinstance(artifact, dict):
@@ -776,11 +749,7 @@ def read_srs_results(proj_name: str) -> dict:
     out["diagrams"] = diagrams
     out["have"]["diagrams"] = bool(diagrams)
 
-    # The pages that actually exist on disk. This used to come from
-    # `document.prototype_evidence`, written by a separate sync that
-    # `adopt_srs` overwrote after every change - so the list was accurate until
-    # the next revision and then silently stale. A directory listing cannot go
-    # out of date, and it cannot invent a screen that was never drawn.
+    # Inspect on-disk wireframe files to reflect actual existing page layouts.
     pages = []
     proto_dir = proj_dir / ".agentforge" / "prototype"
     if proto_dir.is_dir():

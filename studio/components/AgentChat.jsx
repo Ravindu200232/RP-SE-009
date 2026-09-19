@@ -1,23 +1,12 @@
 'use client'
 
-/**
- * The conversation with the agent, beside the work.
- *
- * This replaced a terminal drawer, twice over. A terminal is the right tool
- * when you are debugging the backend and the wrong one when you are watching
- * an app get built: the interesting line scrolls past between two hundred npm
- * warnings. And a drawer, however good its contents, covers the preview it is
- * describing — so you close it, and then you cannot see the agent.
- *
- * A column solves both. The stream, the plan, the design and the run's context
- * are always visible on the left; the preview, code, tests and deployment keep
- * the whole right-hand side.
- */
+/** Conversation stream and control column alongside active preview, code, and tests. */
 
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowDown, Check, CheckCircle2, ChevronDown, ChevronRight, CircleAlert, CircleCheck, Clock, Copy, ExternalLink, Eye, FileCode2, FlaskConical, ListChecks, Loader2,
-  MessageSquare, MousePointerClick, Palette, Pencil, Search, Send, Sparkles,
+  MessageCircleQuestion, MessageSquare, MousePointerClick, Palette, Pencil, Plug, Search,
+  Send, SkipForward, Sparkles,
   Square, Terminal, Wrench, X,
 } from 'lucide-react'
 
@@ -29,9 +18,11 @@ import { useStore } from '@/lib/store'
 import { useRunData } from '@/lib/use-run-data'
 import DeployActivity from './deploy/DeployActivity'
 import { useEditAttachments } from '@/lib/use-edit-attachments'
-import { answerQuestion, reviseDrawing, send } from '@/lib/ws'
+import { answerAsk, answerQuestion, declineAsk, reviseDrawing, send } from '@/lib/ws'
 import { cn } from '@/lib/utils'
 import EditAttach from './EditAttach'
+import PluginAccounts from './PluginAccounts'
+import { Modal } from './ui'
 import SrsRevisionsPanel from './srs/SrsRevisionsPanel'
 
 const ICONS = {
@@ -46,13 +37,7 @@ const KIND_TONE = {
   done: 'bg-ok-tint text-ok',
 }
 
-/**
- * The deployment agent's conversation, in the same place as the other two.
- *
- * It reads the run the Deploy panel published to the store rather than
- * fetching the deployment state again, so both show the same run and answering
- * here is answering there.
- */
+/** Deployment agent chat interface showing the synchronized deployment run stream. */
 function DeployChat() {
   const runId = useStore(s => s.deployRunId)
   const run = useRunData(runId)
@@ -88,6 +73,7 @@ export default function AgentChat() {
   const onSrs = useStore(s => s.view === 'srs')
   const switchAgent = useStore(s => s.switchAgent)
   const question = useStore(s => s.question)
+  const ask = useStore(s => s.ask)
   const drawing = useStore(s => s.drawing)
   const stats = useStore(s => s.runStats)
   const agentState = useStore(s => s.agentState)
@@ -158,6 +144,14 @@ export default function AgentChat() {
     const typed = text.trim()
     if (!typed || !project || reading) return
 
+    // A question the agent stopped to ask is answered by the next thing they
+    // type. It is first because it is the one the run is actually blocked on.
+    if (ask && answerAsk(typed)) {
+      pushChat({ role: 'user', text: typed, at: Date.now() })
+      setText('')
+      return
+    }
+
     // A paused scope question is answered by the next thing they type.
     if (question && answerQuestion(typed)) {
       pushChat({ role: 'user', text: typed, at: Date.now() })
@@ -219,15 +213,7 @@ export default function AgentChat() {
     setText('')
   }
 
-  /**
-   * Say it, and it goes.
-   *
-   * A dialog used to open here first, offering a reworded version of the
-   * sentence and asking whether that was what you meant. It was answering a
-   * question nobody had: pasting a stack trace and being asked to approve a
-   * paraphrase of it is a step between you and the agent, not a help. What
-   * you typed is what the agent gets.
-   */
+  /** Say it, and it goes: sends typed prompts and attachments directly to the agent. */
   function fire(payload, body, shown, shots = []) {
     const s = useStore.getState()
     // The server journals and echoes the message, including queued requests.
@@ -316,7 +302,8 @@ export default function AgentChat() {
             <Turn key={turn.id || `${turn.at}-${i}`} turn={turn}
                   live={busy && i === turns.length - 1} />
           ))}
-          {busy && agentState === 'thinking' && <Thinking reasoning={reasoning} />}
+          {busy && agentState === 'thinking' && !ask && <Thinking reasoning={reasoning} />}
+          {ask && <Asked ask={ask} onPick={said => { setText(said); box.current?.focus() }} />}
           {queued.map(item => (
             <Queued key={item.id} item={item}
                     onDrop={() => useStore.getState().dropQueued(item.id)} />
@@ -346,7 +333,9 @@ export default function AgentChat() {
             aria-label="Continue this project"
             value={text} rows={2}
             disabled={!project || reading}
-            placeholder={question
+            placeholder={ask
+              ? 'Answer it here, or say it in your own words…'
+              : question
               ? 'Answer the question above…'
               : drawing ? 'Say what to change about the drawing…'
               : busy ? 'Say what is next — it goes when this finishes'
@@ -361,8 +350,11 @@ export default function AgentChat() {
             className="w-full resize-none bg-transparent px-2 py-1 text-[13px] leading-relaxed text-ink outline-none placeholder:text-muted2 disabled:opacity-45" />
           <div className="mt-1 flex items-center justify-between border-t border-line/40 pt-1.5 px-1">
             {project ? (
-              <EditAttach attach={attach} project={project}
-                      onSpoken={said => setText((text ? text.trimEnd() + ' ' : '') + said)} disabled={reading} />
+              <span className="flex min-w-0 items-center gap-1">
+                <EditAttach attach={attach} project={project}
+                        onSpoken={said => setText((text ? text.trimEnd() + ' ' : '') + said)} disabled={reading} />
+                <PluginPicker project={project} />
+              </span>
             ) : <span />}
             <button onClick={submit}
                     disabled={!project || reading || !text.trim()}
@@ -380,14 +372,7 @@ export default function AgentChat() {
   )
 }
 
-/**
- * What is riding along with the message being written.
- *
- * A click in the preview and a stroke of the pencil both land here, each with
- * its own photograph, and stay until the message is sent. Seeing them stack up
- * is the only way to know that three clicks attached three things — and the
- * cross on each one is how you take back the one you did not mean.
- */
+/** Visual chips showing picked elements and canvas pencil drawings attached to the message. */
 function Attached({ items, onRemove }) {
   if (!items.length) return null
   return (
@@ -430,13 +415,7 @@ function shortLabel(label) {
   return text.length > 34 ? text.slice(0, 33) + '…' : text || 'Element'
 }
 
-/**
- * Stopping the run, from the one place that is always on screen.
- *
- * This used to live on the build screen, which is gone; the chat header is
- * where someone looks when they want a run to stop, because it is what they
- * are already watching.
- */
+/** Prompts confirmation and halts the current active agent run. */
 function CancelRun() {
   const [asking, setAsking] = useState(false)
   const [sending, setSending] = useState(false)
@@ -476,14 +455,7 @@ function CancelRun() {
   )
 }
 
-/**
- * What the run is costing, along the bottom.
- *
- * The context bar is the number that decides whether a long build survives:
- * when it fills, older history is summarised and the model works from a
- * checkpoint instead of the transcript. Watching it fill is how you know that
- * is about to happen, so it is a bar rather than a percentage in a tooltip.
- */
+/** Footer status bar displaying context window usage and cumulative run metrics. */
 function StatusLine({ stats }) {
   if (!stats) return null
   const percent = Math.max(0, Math.min(100, Number(stats.percent) || 0))
@@ -562,22 +534,7 @@ const Row = ({ label, value }) => (
   </div>
 )
 
-/**
- * The model composing its next move.
- *
- * Between a request going out and the tool call coming back there is nothing
- * to log, and an empty feed for twenty seconds reads as a stall. The word and
- * the animation are the whole message: the reasoning text itself is the
- * model's working, not the user's.
- */
-/**
- * The agent is between one tool call and the next.
- *
- * Which is not the same as the model reasoning, and this said "Thinking" for
- * both — so a run with the thinking switch off looked exactly like one with it
- * on, and there was no way to tell from the screen which you had. The engine
- * now says which it is and the label follows it.
- */
+/** Animated indicator showing when the agent is reasoning or working between tool calls. */
 function Thinking({ reasoning = false }) {
   return (
     <div className="flex items-center gap-2.5 py-0.5">
@@ -594,6 +551,84 @@ function Thinking({ reasoning = false }) {
                 style={{ animationDelay: `${i * 140}ms`, animationDuration: '900ms' }} />
         ))}
       </span>
+    </div>
+  )
+}
+
+/** Modal picker to configure and toggle third-party plugins for the current project. */
+function PluginPicker({ project }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button onClick={() => setOpen(true)} title="Plugins this app uses"
+              className="grid size-8 shrink-0 place-items-center rounded-xl text-muted transition-colors hover:bg-accent/10 hover:text-accent">
+        <Plug className="size-3.5" />
+      </button>
+      {open && (
+        <Modal onClose={() => setOpen(false)} className="max-w-[620px]">
+          <header className="mb-4 flex items-center gap-2.5">
+            <span className="grid size-8 place-items-center rounded-xl bg-accent/10 text-accent">
+              <Plug className="size-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-[14px] font-bold tracking-tight text-ink">Plugins</h2>
+              <p className="mt-0.5 text-[11px] text-muted">
+                Set one up once and tick it for any app, whenever you need it.
+              </p>
+            </div>
+          </header>
+          <div className="max-h-[62vh] overflow-y-auto pr-1">
+            <PluginAccounts project={project} />
+          </div>
+        </Modal>
+      )}
+    </>
+  )
+}
+
+/** In-stream interactive question prompt allowing the user to select or customize an option. */
+function Asked({ ask, onPick }) {
+  const options = ask.options || []
+  return (
+    <div className="flex gap-2.5 my-1">
+      <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-accent/12 text-accent">
+        <MessageCircleQuestion className="size-3" />
+      </span>
+      <div className="min-w-0 flex-1 rounded-2xl rounded-tl-sm border border-accent/30 bg-accent/[.06] px-3.5 py-3">
+        <p className="mb-1 text-[10px] font-semibold uppercase tracking-[.12em] text-muted2">
+          Waiting for you
+        </p>
+        <p className="whitespace-pre-wrap break-words text-[13px] font-medium leading-relaxed text-ink">
+          {ask.question}
+        </p>
+        {ask.why && (
+          <p className="mt-1.5 text-[11.5px] leading-relaxed text-muted">{ask.why}</p>
+        )}
+        {options.length > 0 && (
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {options.map(option => (
+              <button key={option.id} onClick={() => onPick(option.label)}
+                      title={option.hint || 'Put this in the box below'}
+                      className="rounded-xl border border-line2 bg-panel px-2.5 py-1.5 text-left
+                                 text-[11.5px] font-semibold text-ink transition-colors
+                                 hover:border-accent hover:text-accent">
+                {option.label}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="mt-2.5 flex items-center gap-2 border-t border-accent/15 pt-2">
+          <span className="min-w-0 flex-1 truncate text-[10.5px] leading-relaxed text-muted2">
+            {ask.assumption ? `No answer: it will ${ask.assumption}`
+                            : 'No answer: it decides and says what it assumed.'}
+          </span>
+          <button onClick={declineAsk} title="Let the agent decide this one"
+                  className="inline-flex shrink-0 items-center gap-1 text-[10.5px] font-semibold
+                             text-muted transition-colors hover:text-ink">
+            <SkipForward className="size-3" /> You decide
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -791,15 +826,7 @@ function FileActionCard({ turn, live }) {
   )
 }
 
-/**
- * One row of the feed.
- *
- * Memoised because the feed is rebuilt whenever a line arrives and the rows
- * behind the newest one have not changed: a build writes several lines a
- * second, and each of them was re-rendering the whole visible history to add
- * one row to the end of it. The turns themselves are stable objects, so this
- * compares by identity and almost always skips.
- */
+/** Memoized conversation turn row rendering messages, tool events, and plans. */
 const Turn = memo(function Turn({ turn, live }) {
   if (turn.role === 'user') {
     return (

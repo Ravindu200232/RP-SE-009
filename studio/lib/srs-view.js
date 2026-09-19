@@ -1,10 +1,7 @@
 import { api } from '@/lib/api'
 import { guideForDiagram } from '@/lib/diagram-guide'
 
-// One normaliser for both shapes of diagram row: the sidecar's artifacts
-// (`source`, `business_summary`, `png_path`) and the server's disk rows
-// (`mermaid`, `businessSummary`, `png`). The SRS tab and the review screen
-// render the same component, so they must agree on the row it receives.
+// Normalize diagram artifacts across sidecar outputs and on-disk server representations.
 export function diagramRows(rows) {
   return (rows || [])
     .filter(d => d && (d.source || d.mermaid || d.svg))

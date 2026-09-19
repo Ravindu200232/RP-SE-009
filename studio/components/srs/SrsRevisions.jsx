@@ -1,18 +1,6 @@
 'use client'
 
-/**
- * The specification's revision history, and the box that adds to it.
- *
- * This used to be welded into the review screen, which exists only before
- * approval — so the moment a project was built, its specification became
- * read-only. It is the same panel in both places: the versions that have been
- * written, what was said to produce them, and somewhere to ask for the next one.
- *
- * The host decides what a revision means. Before approval nothing else has been
- * built yet, so reloading the screen is the whole of it; in a built project the
- * change still has to reach the prototype and the code, which is why `onRevised`
- * hands the result back rather than acting on it here.
- */
+/** Displays SRS revision history and provides prompt input to request document revisions. */
 import { useEffect, useRef, useState } from 'react'
 import { ArrowUp, History, Loader2 } from 'lucide-react'
 import { api } from '@/lib/api'
@@ -94,8 +82,30 @@ export function SrsRevisions({ srsId, onRevised, onPickVersion, current, classNa
                 ? 'border-blue-500/40 bg-blue-500/15 text-white shadow-sm'
                 : 'border-transparent bg-white/[.02] text-white/70',
               onPickVersion && 'hover:bg-white/[.05] hover:text-white')}>
-            <span className="font-mono text-[10.5px] font-semibold text-blue-400">v{v.version}</span>
+            <span className="flex items-baseline gap-2">
+              <span className="font-mono text-[10.5px] font-semibold text-blue-400">v{v.version}</span>
+              {v.source && (
+                <span className="text-[9.5px] uppercase tracking-wider text-white/35">
+                  {v.source}
+                </span>
+              )}
+            </span>
             <span className="mt-0.5 block text-[11.5px] leading-snug">{v.label || 'Revision'}</span>
+            {/* Summarized change bullets recorded for this revision. */}
+            {(v.diff_summary || []).length > 0 && (
+              <span className="mt-1 block space-y-0.5">
+                {v.diff_summary.slice(0, 4).map((line, n) => (
+                  <span key={n} className="block text-[10.5px] leading-snug text-white/45">
+                    · {line}
+                  </span>
+                ))}
+                {v.diff_summary.length > 4 && (
+                  <span className="block text-[10px] text-white/30">
+                    and {v.diff_summary.length - 4} more
+                  </span>
+                )}
+              </span>
+            )}
           </button>
         ))}
 

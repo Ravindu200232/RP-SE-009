@@ -131,10 +131,7 @@ class DeploymentGitMixin:
                 identity = json.loads(run_command(["gh", "api", "user"], check=True).stdout)
                 login, account_id = identity["login"], identity["id"]
                 author_args = ["-c", f"user.name={login}", "-c", f"user.email={account_id}+{login}@users.noreply.github.com"]
-            # What the customer typed wins. Otherwise the model reads the
-            # staged diff and writes the subject, because the template said
-            # only that a deployment happened - the same sentence on every
-            # deployment of that target, differing by a run id.
+            # Prioritize user-provided commit message, otherwise generating one from staged git diffs.
             subject = answers.get("commit_message")
             if not subject:
                 from deployment_agent.commit_message import write as write_subject

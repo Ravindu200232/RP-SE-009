@@ -173,13 +173,7 @@ _REQUEST_LOCK = threading.RLock()
 _DURABLE_TARGETS = {"run_agent_pipeline", "run_chat", "run_feature", "run_element_edit",
                     "run_manual_prototype_change", "run_spec_change"}
 
-# Kinds that bring their own SRS transaction. The block below turns a finished
-# run into a change that flows up to the specification and across to the other
-# agent; a change that *started* at the specification is already in it, so
-# running that block would post it back up, run the sibling a second time, and
-# bump the version for work nobody asked for. It would fire unconditionally,
-# too: the role falls through to "developer", and on a built project the
-# developer is already "completed".
+# Run kinds originating from SRS changes that manage their own transaction lifecycle.
 _OWN_TRANSACTION = {"run_spec_change"}
 SERVER_STOPPING = False
 
@@ -200,9 +194,7 @@ def start_run(target, args, *, project=None, user=None, replay_path=None) -> Non
         kind = getattr(target, "__name__", "")
         role = "designer" if (kind == "run_manual_prototype_change" or (kind == "run_agent_pipeline" and len(args) > 9 and args[9]) or
               (kind == "run_chat" and len(args) > 7 and args[7] == "designer") or
-              # A specification change that only reaches the drawing is the
-              # designer's; labelling it "developer" would show the wrong pane
-              # working and overwrite that agent's completed status.
+              # Attribute drawing-only changes to the designer role.
               (kind == "run_spec_change" and len(args) > 2 and "developer" not in set(args[2] or ())) or
               (kind == "run_element_edit" and len(args) > 7 and str(args[7]).startswith("/prototype"))) else "developer"
         RUN.agent = role
@@ -242,16 +234,10 @@ def start_run(target, args, *, project=None, user=None, replay_path=None) -> Non
                 nonlocal started
                 started = True
                 if journal is not None:
-                    # Saved here, with the machine in hand, and not on joining
-                    # the line. A run that never started left nothing half done
-                    # to pick up, and saving the whole line meant every restart
-                    # replayed builds nobody was waiting for any more - ahead of
-                    # whatever the studio asked for next.
+                    # Save journal checkpoints only once active execution starts.
                     atomic_json(request_path, journal)
                 if kind in _OWN_TRANSACTION:
-                    # Its own stage machine checkpoints into this journal, and
-                    # owns its own failure handling, because the block below
-                    # would otherwise overwrite both.
+                    # Stage machine manages checkpoints and failure handling directly in this journal.
                     RUN.request_path = request_path
                     return target(*args)
                 request = json.loads(request_path.read_text(encoding="utf-8")) if request_path else {}

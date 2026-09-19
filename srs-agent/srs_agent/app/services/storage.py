@@ -135,9 +135,7 @@ def read_wireframes(project_id: str) -> dict:
                              .read_text(encoding="utf-8"))
     except Exception:  # noqa: BLE001
         return {"pages": [], "journeys": []}
-    # Tell the editor which pages have the full drawing, so it can offer the
-    # view rather than opening an empty frame and finding out - and which of
-    # those were drawn from an older version of the document.
+    # Report completed wireframe drawing status and version freshness to the editor.
     folder = wireframes_dir(project_id) / "html"
     version = str(payload.get("version") or "")
     versions = _html_versions(project_id) if folder.is_dir() else {}

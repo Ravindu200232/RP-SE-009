@@ -1,26 +1,11 @@
 'use client'
 
-/**
- * The agent's own Chrome, in the preview.
- *
- * The engine drives a real headless Chrome — it opens pages, fills forms and
- * photographs screens — and headless means none of that is visible. A looping
- * illustration used to sit here instead, which looked like progress without
- * being any of it.
- *
- * So this is the window onto that browser: a screencast of the tab the agent
- * is actually on, streamed frame by frame over the same socket as the chat. It
- * covers the preview only while frames are arriving; the moment the run ends
- * the preview underneath is the interesting thing again.
- */
+/** Displays a live screencast of the agent's headless browser while active in the preview. */
 
 import { useEffect, useState } from 'react'
 import { useStore } from '@/lib/store'
 
-// The browser says when it closes, and the run says when it ends, so this is
-// only the backstop for a stream that dies without either. It is generous on
-// purpose: Chrome sends a frame when the page changes, and a journey reading
-// a static page can be quiet for a while without being over.
+// Fallback timeout to terminate browser stream if disconnected without a close event.
 const STALE_MS = 45000
 
 export default function AgentBrowser() {

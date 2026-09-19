@@ -19,34 +19,85 @@ def timestamp(path):
     return datetime.fromtimestamp(path.stat().st_mtime, timezone.utc).isoformat()
 
 
+# Maps supported artifact screenshot and journey frame extensions to their MIME types.
+SHOT_KINDS = {".png": "image/png", ".jpg": "image/jpeg"}
+# `checkout-07-click.jpg`
+FRAME_NAME = re.compile(r"^(?P<suite>.+)-(?P<index>\d{2})-(?P<action>[a-z]+)$")
+
+
 def screenshot_path(root, relative):
     root = Path(root).resolve()
     path = (root / relative).resolve()
-    if (not path.is_relative_to(root) or path.suffix.lower() != ".png"
+    if (not path.is_relative_to(root) or path.suffix.lower() not in SHOT_KINDS
             or not any(path.is_relative_to((root / folder).resolve())
                        for folder in (".agent/screenshots", ".agentforge/screenshots"))):
         raise ValueError("Not a project screenshot")
     return path
 
 
+def screenshot_type(relative) -> str:
+    """The media type to serve one with, read off its own extension."""
+    return SHOT_KINDS.get(Path(str(relative)).suffix.lower(), "image/png")
+
+
+def _size(path):
+    """Width and height out of the file's own header, or None.
+
+    Reading the header rather than decoding the image: a PNG says so in its
+    first 24 bytes, and a JPEG says so in whichever frame header comes first.
+    Neither needs a library, and the studio only wants the numbers to caption
+    the picture with.
+    """
+    with path.open("rb") as stream:
+        head = stream.read(24)
+        if head[:8] == b"\x89PNG\r\n\x1a\n":
+            return struct.unpack(">II", head[16:24])
+        if head[:2] != b"\xff\xd8":
+            return None
+        stream.seek(2)
+        while True:
+            marker = stream.read(2)
+            if len(marker) < 2 or marker[0] != 0xFF:
+                return None
+            if 0xC0 <= marker[1] <= 0xCF and marker[1] not in (0xC4, 0xC8, 0xCC):
+                stream.read(3)
+                height, width = struct.unpack(">HH", stream.read(4))
+                return width, height
+            block = stream.read(2)
+            if len(block) < 2:
+                return None
+            stream.seek(struct.unpack(">H", block)[0] - 2, 1)
+
+
 def screenshots(root, visuals=()):
     rows = []
     for folder in (".agent/screenshots", ".agentforge/screenshots"):
-        for candidate in sorted((root / folder).glob("*.png")):
+        directory = root / folder
+        for candidate in sorted(directory.iterdir() if directory.is_dir() else []):
+            if candidate.suffix.lower() not in SHOT_KINDS:
+                continue
             try:
                 path = screenshot_path(root, candidate.relative_to(root))
-                with path.open("rb") as stream:
-                    header = stream.read(24)
-                if header[:8] != b"\x89PNG\r\n\x1a\n":
+                size = _size(path)
+                if not size:
                     continue
-                width, height = struct.unpack(">II", header[16:24])
+                width, height = size
                 relative = path.relative_to(root.resolve()).as_posix()
                 review = next((v for v in visuals if str(v.get("filePath", "")).replace("\\", "/")
                                in (relative, path.as_posix())), {})
-                rows.append({"path": relative, "name": candidate.stem,
-                             "width": width, "height": height, "at": timestamp(path),
-                             "status": review.get("status", "captured"),
-                             "findings": review.get("findings", "No saved visual review.")})
+                row = {"path": relative, "name": candidate.stem,
+                       "width": width, "height": height, "at": timestamp(path),
+                       "status": review.get("status", "captured"),
+                       "findings": review.get("findings", "No saved visual review.")}
+                frame = (FRAME_NAME.match(candidate.stem)
+                         if candidate.suffix.lower() == ".jpg" else None)
+                if frame:
+                    # A timeline frame has no visual review to be missing, so
+                    # it does not claim one is outstanding.
+                    row.update({"suite": frame["suite"], "step": int(frame["index"]),
+                                "action": frame["action"], "frame": True,
+                                "status": "", "findings": ""})
+                rows.append(row)
             except (OSError, ValueError, struct.error):
                 continue
     return rows
@@ -76,9 +127,7 @@ def saved_vitest(root):
                     "these are historical results, not a new test run."} if rows else None
 
 
-# `router.get('/:slug', ...)` or `app.post('/orders', ...)`. Route modules are
-# found by the shape of what they declare, not by where a particular framework
-# happens to put them.
+# Detect route modules by HTTP endpoint declaration patterns.
 _DECLARED_ROUTE = re.compile(
     r"\b(?:router|app)\.(get|post|put|patch|delete|head|options)\s*\(\s*['\"]([^'\"]+)['\"]",
     re.I)

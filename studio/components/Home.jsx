@@ -8,12 +8,13 @@ import {
 import { useStore, KEYS } from '@/lib/store'
 import { send } from '@/lib/ws'
 import { api } from '@/lib/api'
-import { TextArea } from './ui'
+import { Modal, TextArea } from './ui'
 import { cn } from '@/lib/utils'
 import { useAttachments } from '@/lib/use-attachments'
 import { AttachButtons, AttachList } from './srs/Attachments'
 import LogoPanel from './LogoPanel'
 import BuildSetup from './BuildSetup'
+import PluginAccounts from './PluginAccounts'
 import DesignCustomize from './DesignCustomize'
 import Interview from './srs/Interview'
 import PlanReview from './srs/PlanReview'
@@ -78,6 +79,11 @@ export default function Home({
   const [langOpen, setLangOpen] = useState(false)
   const [langSearch, setLangSearch] = useState('')
   const [stack, setStack] = useState('')
+  // Providers this build should start with. Held here because the app they
+  // belong to does not exist yet, and the sheet is here rather than in
+  // BuildSetup because that row opens no dialog of its own.
+  const [plugins, setPlugins] = useState([])
+  const [pluginsOpen, setPluginsOpen] = useState(false)
   const [languageOptions, setLanguageOptions] = useState(SRS_LANGUAGES)
   const box = useRef(null)
   const langRef = useRef(null)
@@ -157,16 +163,9 @@ export default function Home({
     startBuild(p, '', srs, null, config, prototypeOnly)
   }
 
-  function chooseModel(model) {
-    const roles = ['agent', 'planner', 'design', 'builder']
-    useStore.setState(state => ({
-      models: {
-        ...state.models,
-        ...Object.fromEntries(roles.map(role => [role, model])),
-      },
-    }))
-    for (const role of roles) s.persist(KEYS[role], model)
-  }
+  // One implementation, shared with Settings, so a model chosen in either
+  // place reaches the same set of agents.
+  const chooseModel = model => useStore.getState().applyModel(model)
 
   function chooseThinking(value) {
     useStore.setState({ think: value })
@@ -226,6 +225,9 @@ export default function Home({
       uploads: uploads && Object.keys(uploads).length ? uploads : undefined,
       prototype_only: Boolean(prototypeOnly),
       agent: prototypeOnly ? 'designer' : 'developer',
+      // There is no project yet to tick these against, so they travel with the
+      // request and are written onto the workspace the moment it is made.
+      plugins: plugins.length ? plugins : undefined,
     })
   }
 
@@ -424,6 +426,8 @@ export default function Home({
                   onModelChange={chooseModel}
                   onStackChange={setStack}
                   onThinkChange={chooseThinking}
+                  plugins={plugins}
+                  onPluginsOpen={() => setPluginsOpen(true)}
                 />
               </div>
 
@@ -625,6 +629,26 @@ export default function Home({
           </>
         )}
       </div>
+
+      {/* The plugins this build starts with. There is no project yet to tick
+          them against, so the picks are held here and travel with the request;
+          the workspace records them the moment it is made. After that the
+          chat's own plugin icon is where they change. */}
+      {pluginsOpen && (
+        <Modal onClose={() => setPluginsOpen(false)} className="max-w-[620px]">
+          <header className="mb-4">
+            <h2 className="text-[14px] font-bold tracking-tight text-ink">Plugins</h2>
+            <p className="mt-0.5 text-[11px] leading-relaxed text-muted">
+              Set a provider up once and tick it for this build. Their settings are
+              written into the new app’s environment before it is written, and the
+              agent is given each provider’s own page to build against.
+            </p>
+          </header>
+          <div className="max-h-[60vh] overflow-y-auto pr-1">
+            <PluginAccounts pending={plugins} onPending={setPlugins} />
+          </div>
+        </Modal>
+      )}
 
       {logoFor && (
         <LogoPanel

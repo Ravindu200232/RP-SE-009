@@ -25,15 +25,7 @@ function conversation(events) {
   return rows
 }
 
-/**
- * How one event should read.
- *
- * The repair stage is the interesting one: it is the agent finding something
- * broken and fixing it, and as plain grey text it read like every other log
- * line. A deployment that repaired itself twice and went live is a different
- * story from one that sailed through, and the person watching should be able to
- * see which they got.
- */
+/** Formats and styles a deployment event row based on its type and repair status. */
 function look(event) {
   const failed = event.type === 'error' || event.status === 'failed'
   const fixing = event.stage === 'repair'
@@ -45,14 +37,7 @@ function look(event) {
   return { Icon: Bot, tone: 'text-blue-400', box: 'border-white/10 bg-white/[.025]', text: 'text-white/80', label: event.stage || 'Deployment agent' }
 }
 
-/**
- * The question, asked where it was raised.
- *
- * It used to be a panel of its own, far above the stream that had just asked
- * it, so the conversation stopped with no visible reason and the answer box was
- * somewhere else on the page. Asked in the thread, it reads as the agent
- * waiting on you.
- */
+/** Renders interactive deployment agent questions directly within the event timeline. */
 function Ask({ question, onPick, picked }) {
   return (
     <article className="flex items-start gap-2.5">
@@ -78,20 +63,11 @@ function Ask({ question, onPick, picked }) {
   )
 }
 
-// Where the destination is decided is the picker, and only the picker: it is
-// the thing that knows a workspace of services cannot go to Netlify. A chat
-// message that moved it would walk straight past that.
+// Validate deployment targets through the destination picker according to architecture capabilities.
 const TARGET_TALK = /\b(vercel|netlify|azure|aws|ec2|ecs|fargate)\b/i
 const CHANGE_TALK = /\b(deploy|change|switch|move|use|instead|rather|host|put)\b/i
 
-/**
- * One input for the deployment conversation.
- *
- * It sends through the question the agent is waiting on, because that is the
- * only thing the run actually listens to - there is no free-form channel into a
- * deployment, and a box that swallowed messages nobody reads would be worse
- * than no box. When nothing is pending it says so rather than pretending.
- */
+/** Input composer allowing the user to respond to active deployment agent questions. */
 function Composer({ question, runId, onAnswered, answer, setAnswer }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -149,9 +125,7 @@ export default function DeployActivity({ events = [], running, question, runId, 
   }, [events.length, question?.id])
 
   return (
-    // `fill` is for the chat panel, where this is the whole column: the log
-    // takes the height that is there instead of a fixed 340px with dead space
-    // under it. Inside the deploy panel it stays a band of its own.
+    // Expand activity log to occupy full column height in the chat panel.
     <section aria-label="Deployment agent activity"
              className={'border-t border-white/10 bg-[#121622] px-4 py-3'
                + (fill ? ' flex min-h-0 flex-1 flex-col' : '')}>

@@ -25,9 +25,7 @@ TEMPLATE_ROOT = ASSET_ROOT / "templates"
 # project's own runner discovering the template's suites. Scaffolding strips it.
 TEMPLATE_SUFFIX = ".tpl"
 
-# The engine's own files do not make a workspace non-empty, and leaving
-# `.env.example` off this list cost a whole stack: any build that was asked a
-# setup question arrived with one file, was called a project, and got no template.
+# Files ignored when determining whether a target directory is clean for scaffolding.
 ENGINE_ENTRIES = frozenset({".agent", ".agents", ".agentforge", ".git", ".gitignore",
                             ".env", ".env.local", ".env.example",
                             ".vscode", ".idea", "node_modules"})

@@ -155,9 +155,7 @@ def _accept(state: AgentState, status: str, detail: str = "", verdict: dict | No
     srs = state.get("srs") or {}
     doc = srs.get("srs_document") if isinstance(srs, dict) else None
     if isinstance(doc, dict):
-        # Nested inside a field the handoff already knows about. A new top-level
-        # key would become a new "## ..." section in app.md, silently changing
-        # the contract the builder reads.
+        # Nest custom fields within existing handoff structures to preserve the builder contract schema.
         review = doc.setdefault("requirements_quality_review", {})
         if isinstance(review, dict):
             review["reviewer"] = {

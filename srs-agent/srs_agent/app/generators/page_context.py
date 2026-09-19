@@ -107,9 +107,7 @@ def product_context(doc: dict) -> str:
     if modules:
         parts.append("MODULES: " + ", ".join(modules[:16]))
 
-    # Every page, so the top bar of the page being drawn links to screens that
-    # exist. Without this the model invents a navigation of its own and each
-    # page of one product ends up advertising a different site.
+    # Provide complete screen list so layout navigation headers link only to existing pages.
     pages = []
     for page in _pages_of(doc)[:MAX_PAGES]:
         name = _clean(page.get("page_name"))
@@ -222,9 +220,7 @@ def page_context(page: dict, doc: dict) -> str:
     """This page's own slice of the specification."""
     route = _clean(page.get("route")) or "/"
     name = _clean(page.get("page_name")) or route
-    # `allowed_roles` on the specification's page, `roles` on the projected
-    # frame the drawing pass merges over it. Reading only the first lost the
-    # audience for every page whose frame won the merge.
+    # Check both allowed_roles and frame role definitions when determining audience.
     seen_by = [_clean(r) for r in (page.get("allowed_roles") or page.get("roles") or [])
                if _clean(r)]
 
@@ -271,12 +267,7 @@ def page_context(page: dict, doc: dict) -> str:
     if flows:
         parts.append("WORKFLOWS THAT PASS THROUGH THIS PAGE\n" + "\n".join(flows[:3]))
 
-    # The rules that govern this page's own data, matched on the table the
-    # document named in each rule. A list of verbs decided this before - "add",
-    # "book", "checkout" - which is one product's vocabulary written into a
-    # generator meant to serve any of them, and it put payment rules on pages
-    # that take no payment. The document already says which table a rule is
-    # about; that is the only thing worth reading.
+    # Filter page business rules by matching tables explicitly referenced in each requirement.
     if entity:
         stem = entity.lower().rstrip("s")
         rules = []

@@ -64,9 +64,7 @@ def _where(name: str) -> str:
     roots += [HOME / ".npm-global" / "bin", HOME / ".local" / "bin",
               Path("/usr/local/bin"), Path("/opt/homebrew/bin"),
               Path("/opt/az/bin"), Path("C:/Program Files/Microsoft SDKs/Azure/CLI2/wbin")]
-    # On Windows the runnable file is the one with the extension: npm also
-    # leaves an extensionless shell script beside it, and handing that to
-    # Popen fails with "not a valid application".
+    # Select Windows-compatible binary executable with file extension.
     suffixes = (os.environ.get("PATHEXT", ".COM;.EXE;.BAT;.CMD").split(";") + [""]
                 if os.name == "nt" else [""])
     for root in roots:

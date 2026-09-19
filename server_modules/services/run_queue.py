@@ -57,9 +57,7 @@ class RunQueue:
                     on_wait(ahead)
                 entry["turn"].wait()
             except BaseException:
-                # Whatever went wrong, this run is not going to start - and a
-                # place in the line with nobody standing in it is never given
-                # up again, so everything behind it would wait for a restart.
+                # Release queue slot on startup errors to avoid stalling subsequent runs.
                 self._abandon(entry)
                 raise
             if entry["left"]:

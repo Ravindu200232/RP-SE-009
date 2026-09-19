@@ -147,9 +147,7 @@ class PreviewHTTPMixin:
                     directives.append(f"script-src 'self' 'nonce-{nonce}'")
                 value = "; ".join(directives)
             if lower == "set-cookie":
-                # Local frames have distinct origins. Partitioned cookies keep
-                # app authentication working inside Studio with third-party
-                # cookie blocking, without changing the generated deployment.
+                # Use partitioned cookies to maintain session authentication across Studio preview iframes.
                 value = re.sub(r";\s*(?:SameSite|Domain)=[^;]*", "", value, flags=re.I)
                 if not re.search(r";\s*Secure(?:;|$)", value, re.I):
                     value += "; Secure"

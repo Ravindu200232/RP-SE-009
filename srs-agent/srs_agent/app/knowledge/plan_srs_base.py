@@ -267,10 +267,7 @@ def _requirements_from_plan(plan: dict, tables: list[dict], auth: bool,
     if auth:
         add("Authentication",
             "The system shall let a person sign in with an email address and password")
-        # Stated as a server-side rule on purpose. "Show only the screens their
-        # role allows" describes hiding links, which a builder satisfies with a
-        # conditional render while every endpoint stays open - the exact defect
-        # the reviewer kept raising against this requirement.
+        # Enforce role-based access control rules at the API and server endpoint layer.
         add("Authorization",
             "The system shall check the signed-in person's role on the server for every request "
             "and refuse any read or write their role does not allow, returning 403, "
@@ -363,9 +360,7 @@ def build_branding(session: dict, pack: dict, app_name: str) -> dict:
         entry = answers.get(key)
         return default if entry is None else entry.get("value", default)
 
-    # Nothing here draws a logo, so nothing here may promise one. The customer's
-    # own mark arrives as an upload on the design screen, which is the only
-    # source that produces a file the pages can actually point at.
+    # Brand assets and logos are sourced exclusively from user uploads on the design screen.
     source = "upload" if str(ans("image_source") or "").strip().lower() == "upload" else "none"
 
     palette_name = _resolve_palette(ans("color_palette"), pack)
@@ -379,9 +374,7 @@ def build_branding(session: dict, pack: dict, app_name: str) -> dict:
         "theme": theme,
         "palette": palette_name,
         "primary_color": palette.get("primary", "#6366F1"),
-        # Where every picture on the pages comes from: "web" to source them
-        # online, "upload" for the customer's own files, "none" for a design
-        # that carries no photographs at all.
+        # Image sourcing strategy options: web, upload, or none.
         "image_source": str(ans("image_source") or "none").strip().lower(),
     }
 
