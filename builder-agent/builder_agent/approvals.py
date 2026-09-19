@@ -46,22 +46,32 @@ class Approvals:
 
     def __init__(self, events, enabled=False, timeout: float = 300.0) -> None:
         self.events = events
-        # Off unless a surface that can actually answer turns it on - and then
-        # only for the questions that surface actually wants. The studio has its
-        # own plan review and design picker, so asking those again in the chat
-        # would be the same decision twice, each holding the build for ten
-        # minutes. `True` means every kind; a set names the ones to ask.
+        # Enable approval gates selectively according to the requesting surface's capabilities.
         self.enabled = enabled if isinstance(enabled, bool) else frozenset(enabled or ())
         self.timeout = timeout
         self.pending: dict[str, Decision] = {}
+        # How many of each kind this run has already put to them. A question is
+        # worth asking; being asked six of them is an interview, and the person
+        # came here to watch something get built.
+        self.counts: dict[str, int] = {}
         self._lock = threading.Lock()
 
     def asks(self, kind: str) -> bool:
         return bool(self.enabled) and (self.enabled is True or kind in self.enabled)
 
+    def asked(self, kind: str) -> int:
+        """How many of this kind have been put to them so far in this run."""
+        with self._lock:
+            return int(self.counts.get(kind, 0))
+
     def ask(self, kind: str, payload: dict, default: dict,
             timeout: float | None = None, cancel=None) -> dict:
         """Publish a question and wait, or return `default`."""
+        # Counted before the gate, not after it: a surface that cannot answer
+        # still must not be asked the same thing forty times, and a budget that
+        # only applied when somebody was watching would be no budget at all.
+        with self._lock:
+            self.counts[kind] = self.counts.get(kind, 0) + 1
         if not self.asks(kind):
             return dict(default, decision=default.get("decision", "default"), asked=False)
 

@@ -17,16 +17,7 @@ export default function EditAttach({ attach, disabled, className, project, onSpo
   const [hearing, setHearing] = useState(false)
   const [heard, setHeard] = useState('')
 
-  /**
-   * Speaking is typing, not attaching.
-   *
-   * The recording used to be added to the request as a file, which meant the
-   * words only existed inside the prompt the agent received - you could not
-   * read them, fix a misheard name, or add a sentence before sending. It is
-   * transcribed here and put in the box instead, where it is text like any
-   * other. The transcription is the same one an attached recording gets; only
-   * where the result lands is different.
-   */
+  /** Transcribes recorded voice audio directly into the chat input box. */
   const recorder = useRecorder(async file => {
     if (!onSpoken) return attach.add([file])
     setHearing(true); setHeard('')

@@ -9,6 +9,7 @@ nowhere else.
 from __future__ import annotations
 
 import json
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -201,30 +202,97 @@ class AskingToolTests(unittest.TestCase):
             self.call("askForSetup", {"purpose": "keys",
                                       "fields": [{"key": "A_KEY", "example": "x"}]})
 
+    def test_a_run_may_only_stop_to_ask_so_many_times(self):
+        """A model with no budget turns a build into an interview."""
+        from builder_agent.approvals import Approvals
+        from builder_agent.tools.setup import MAX_QUESTIONS
+        self.context.approvals = Approvals(self.events, enabled=False)
+        for number in range(MAX_QUESTIONS):
+            out = self.call("askUser", {"question": f"Which reading of requirement {number}?",
+                                        "assumption": "the narrower one"})
+            self.assertTrue(out["ok"])
+        with self.assertRaises(ToolError) as refused:
+            self.call("askUser", {"question": "And one more thing entirely?"})
+        self.assertIn("budget", str(refused.exception))
+
+    def test_the_budget_holds_even_where_nobody_can_answer(self):
+        """A CLI run resolves every question to its default; that is not a licence."""
+        from builder_agent.approvals import Approvals
+        approvals = Approvals(self.events, enabled=False)
+        for _ in range(3):
+            approvals.ask("question", {"question": "?"}, {"decision": "default"})
+        self.assertEqual(approvals.asked("question"), 3)
+        self.assertEqual(approvals.asked("setup"), 0)
+
+
+class DesignerToolTests(unittest.TestCase):
+    """What the prototype agent is allowed to reach for."""
+
+    def test_the_prototype_agent_can_ask_rather_than_guess(self):
+        """A drawing is where an ambiguity is cheapest to settle, so it may ask."""
+        source = (Path(__file__).resolve().parents[3]
+                  / "builder-agent" / "builder_agent" / "designer.py"
+                  ).read_text(encoding="utf-8")
+        self.assertIn('"askUser"', source)
+
 
 class SkillFileTests(unittest.TestCase):
-    """Each provider's detail is its own file, so only the chosen one is read."""
+    """Each provider's detail is its own file, so only the chosen one is read.
+
+    Derived from the skills rather than listed here. The list version covered
+    three skills and silently ignored every one added afterwards, which is how
+    a skill came to tell the model to read four pages that did not exist.
+    """
+
+    # `readSkill("maps", "mapbox.md")` and `resourcePath="mapbox.md"` both.
+    NAMES = re.compile(r'resourcePath="([^"]+\.md)"'
+                       r"|readSkill\(\s*[\"']([^\"']+)[\"']\s*,\s*[\"']([^\"']+\.md)[\"']")
+
+    def skills(self):
+        """Every bundled skill that has a page of its own."""
+        return sorted(d.name for d in SKILL_ROOT.iterdir()
+                      if d.is_dir() and (d / "SKILL.md").is_file())
+
+    def named_by(self, skill):
+        """The files a skill tells the model it can read."""
+        body = (SKILL_ROOT / skill / "SKILL.md").read_text(encoding="utf-8")
+        found = set()
+        for direct, _owner, referenced in self.NAMES.findall(body):
+            name = direct or referenced
+            # `<entry>.md` in an index is a placeholder, not a file.
+            if name and "<" not in name:
+                found.add(name)
+        return found
 
     def test_every_provider_named_by_a_skill_has_a_file_to_read(self):
-        for skill, files in (("payments", ("stripe.md", "payhere.md")),
-                             ("image-uploads", ("cloudinary.md", "supabase.md", "imageboss.md")),
-                             ("notifications", ("resend.md", "twilio.md"))):
-            body = (SKILL_ROOT / skill / "SKILL.md").read_text(encoding="utf-8")
-            for name in files:
+        for skill in self.skills():
+            for name in sorted(self.named_by(skill)):
                 with self.subTest(skill=skill, file=name):
-                    self.assertTrue((SKILL_ROOT / skill / name).is_file())
-                    self.assertIn(name, body)
+                    self.assertTrue((SKILL_ROOT / skill / name).is_file(),
+                                    f"{skill}/SKILL.md sends the model to {name}, "
+                                    "which is not there")
 
     def test_a_declared_option_matches_a_file_the_skill_points_at(self):
-        """The question and the guidance cannot drift apart silently."""
-        for skill, expected in (("payments", ("stripe", "payhere")),
-                                ("image-uploads", ("cloudinary", "supabase", "imageboss")),
-                                ("notifications", ("resend", "twilio"))):
-            declared = json.loads((SKILL_ROOT / skill / "setup.json").read_text(encoding="utf-8"))
-            ids = " ".join(option["id"] for option in declared["choices"])
-            for provider in expected:
-                with self.subTest(skill=skill, provider=provider):
-                    self.assertIn(provider, ids)
+        """The question and the guidance cannot drift apart silently.
+
+        Every option that asks for credentials is a provider somebody will
+        build against, so the skill has to have something to say about it.
+        `none`, `local` and `log-only` ask for nothing and need no page.
+        """
+        for skill in self.skills():
+            declaration = SKILL_ROOT / skill / "setup.json"
+            if not declaration.is_file():
+                continue
+            pages = self.named_by(skill)
+            for option in json.loads(declaration.read_text(encoding="utf-8"))["choices"]:
+                if not option.get("fields"):
+                    continue
+                with self.subTest(skill=skill, provider=option["id"]):
+                    stem = option["id"].split("-")[0]
+                    self.assertTrue(
+                        any(stem in page for page in pages),
+                        f"{skill} offers {option['id']} and its SKILL.md names no "
+                        f"page about it; it has {sorted(pages)}")
 
 
 if __name__ == "__main__":

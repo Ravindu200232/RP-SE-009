@@ -58,8 +58,57 @@ required = {
     "the answers reach the plan": ("../builder-agent/builder_agent/agent.py", "ALREADY SETTLED"),
     "the agent can ask rather than decide alone":
         ("../builder-agent/builder_agent/tools/setup.py", "def ask_user"),
-    "and the studio puts the question to them":
-        ("components/AgentDecision.jsx", "function AskDecision"),
+    "and the studio puts the question to them, in the stream":
+        ("components/AgentChat.jsx", "function Asked"),
+    "and it is answered in the box that sends everything else":
+        ("components/AgentChat.jsx", "if (ask && answerAsk(typed))"),
+    "a question the agent cannot answer for itself has a budget":
+        ("../builder-agent/builder_agent/tools/setup.py", "MAX_QUESTIONS"),
+    "and it is prompted to look for one at all":
+        ("../builder-agent/builder_agent/loop.py", "def _hint_ambiguity"),
+    "a bug is built before it is previewed":
+        ("../builder-agent/builder_agent/assets/skills/stack-debug/SKILL.md",
+         "`npm run build` first"),
+    "and the console is read once it builds":
+        ("../builder-agent/builder_agent/assets/skills/stack-debug/build-error-resolver.md",
+         "Read the Browser Console"),
+    # A model chosen in Settings used to lose to the per-role models the studio
+    # keeps in localStorage and sends on every run, so the tab displayed a
+    # preference rather than setting one.
+    "the chosen model is applied rather than auto-saved":
+        ("components/SettingsModal.jsx", "const dirty = chosen !== saved.model"),
+    "and it reaches every agent that takes one":
+        ("lib/store.js", "applyModel:"),
+    "every page is read, not only the ones a journey opened":
+        ("../qa-agent/qa_agent/ui_sweep.py", "def sweep"),
+    "and the studio shows what the sweep found":
+        ("components/testing/Screenshots.jsx", "qa?.ui_sweep"),
+    "a frame after every journey step":
+        ("../builder-agent/builder_agent/journeys.py", "def _frame"),
+    "that the journey does not wait for":
+        ("../builder-agent/builder_agent/browser.py", "def ask"),
+    "and a strip to read them in":
+        ("components/testing/Screenshots.jsx", "function Timeline"),
+    "plugins are set up once and ticked per app":
+        ("components/PluginAccounts.jsx", "export default function PluginAccounts"),
+    "reachable from the chat, not only at build time":
+        ("components/AgentChat.jsx", "function PluginPicker"),
+    "and their settings reach the app they were ticked for":
+        ("../server_modules/builder/pipeline.py", "def _write_plugin_env"),
+    "a revision says what changed":
+        ("../srs-agent/srs_agent/app/services/parent_sync.py", "headline or"),
+    "the specification asks whether payment is needed":
+        ("../srs-agent/srs_agent/app/knowledge/topics_catalog.py", 'key="payments"'),
+    # Approving a specification schedules a model call per page and waits for
+    # none of them, so the list arrives complete and every drawing is missing.
+    "the wait for the drawings is shown rather than left blank":
+        ("components/srs/Wireframes.jsx", "Drawing the pages"),
+    "and the panel keeps looking until they land":
+        ("components/srs/Wireframes.jsx", "if (!waiting) return"),
+    "because the read says whether one is running":
+        ("../srs-agent/srs_agent/app/agents/wireframe_generator.py", "def drawing"),
+    "the prototype agent can ask too":
+        ("../builder-agent/builder_agent/designer.py", '"askUser"'),
     "an unanswered question still has an answer":
         ("../builder-agent/builder_agent/tools/setup.py", "Nobody answered in time"),
     "the whole catalogue is offered": ("components/AgentDecision.jsx", 'label="Voice"'),
@@ -85,10 +134,8 @@ required = {
     "the live step is animated": ("components/AgentChat.jsx", "live ? <Loader2"),
     "the last row is the live one": ("components/AgentChat.jsx", "live={busy && i === turns.length - 1}"),
     "thinking is shown as thinking": ("components/AgentChat.jsx", "function Thinking"),
-    "thinking is actually rendered": ("components/AgentChat.jsx", "agentState === 'thinking' && <Thinking"),
-    # And says which of the two it is. The indicator meant "between tool calls"
-    # and was labelled "Thinking", so a run with the switch off was
-    # indistinguishable on screen from one with it on.
+    "thinking is actually rendered": ("components/AgentChat.jsx", "agentState === 'thinking' && !ask && <Thinking"),
+    # Verify that UI indicators distinguish active model reasoning from tool transitions.
     "the indicator distinguishes reasoning from working":
         ("components/AgentChat.jsx", "reasoning ? 'Thinking' : 'Working'"),
     "the engine says whether it is really reasoning":
@@ -155,6 +202,13 @@ required = {
 }
 
 forbidden = {
+    # Which gateway and which mail service are build-time settings, chosen by
+    # the plugin the user ticked. The interview asked and could not act on the
+    # answer, and the build asked again anyway.
+    "a provider question in the interview":
+        ("components/srs/Interview.jsx", "Which payment provider"),
+    "a notification provider question":
+        ("components/srs/Interview.jsx", "Which notification service"),
     # Asked once, in the dialog that starts the build — not left in a sidebar
     # where it looks like a setting that applies to something already running.
     "a second model picker": ("components/Sidebar.jsx", 'label="Model"'),
@@ -193,6 +247,9 @@ missing = {
     "its activity mapper": "lib/activity.js",
     "its contract check": "scripts/verify_activity.mjs",
     "the rewording dialog": "components/TunePrompt.jsx",
+    # A complete form over the skills' setup.json that nothing ever imported.
+    # The plugin cards replaced what it was for.
+    "the unused interview integrations form": "components/srs/InterviewIntegrations.jsx",
 }
 
 failed = []

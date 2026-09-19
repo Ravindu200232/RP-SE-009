@@ -35,9 +35,7 @@ from server_modules.services.project_state import ProjectState, atomic_json
 
 from server_modules.services.mongo_common import db_name_for  # noqa: E402
 
-# `StudioBridge`, `fill_missing_images`, `cancel` and the emit helpers come from
-# the runtime parts executed before this one, not from an import: these files
-# are one program sharing one namespace.
+# StudioBridge, fill_missing_images, and emit helpers are injected into the shared runtime namespace.
 
 BUILD_PHASES = ("build", "unit", "e2e")
 EDIT_PHASES = ("build", "unit", "e2e")
@@ -69,22 +67,62 @@ def project_name_for(prompt: str) -> str:
 
 
 def _write_env(proj_dir: Path) -> None:
-    """Give the app its database connection before it is asked to connect.
+    """Give the app its database connection and its plugins' settings.
 
     A generated app that has to invent its own connection string either
     hard-codes one or guesses a database name that collides with the last
     project's collections. Writing it here makes both impossible.
+
+    The plugin settings arrive the same way and for the same reason. They
+    belong to the person, not to this project, so they are kept once against
+    their account and written in here every time the workspace is prepared -
+    which means ticking Supabase on a project that already exists is enough,
+    with no rebuild and nothing to paste again.
     """
     target = proj_dir / ".env.local"
     wanted = f"MONGODB_URI={MONGO.uri_for(proj_dir.name)}"
     try:
         existing = target.read_text("utf-8") if target.is_file() else ""
-        if "MONGODB_URI=" in existing:
-            return
-        target.write_text((existing + "\n" if existing.strip() else "") + wanted + "\n",
-                          encoding="utf-8")
+        if "MONGODB_URI=" not in existing:
+            target.write_text((existing + "\n" if existing.strip() else "") + wanted + "\n",
+                              encoding="utf-8")
     except OSError as error:
         elog("WARN", f"   ⚠ .env.local could not be written: {error}")
+    _write_plugin_env(proj_dir)
+
+
+def _adopt_plugins(proj_dir: Path, plugin_ids) -> None:
+    """Record the build screen's picks on the new workspace, then fill its env."""
+    try:
+        from server_modules.builder.plugins import set_enabled
+        chosen = set_enabled(proj_dir, list(plugin_ids))
+        if chosen:
+            elog("INFO", f"   plugins for this app: {', '.join(chosen)}")
+        _write_plugin_env(proj_dir)
+    except Exception as error:                                       # noqa: BLE001
+        elog("WARN", f"   plugin choices were not applied: {error}")
+
+
+def _write_plugin_env(proj_dir: Path) -> None:
+    """Merge in whatever this project's ticked plugins contribute.
+
+    Names only in the log. A value that reaches a log line reaches the saved
+    stream and the transcript, which is every place a key must not be. The
+    agent never sees one either: its file tools refuse every `.env*` path but
+    `.env.example`, so the model reads them from `process.env` at run time.
+    """
+    try:
+        from server_modules.builder.plugins import enabled_for, env_for
+        if not enabled_for(proj_dir):
+            return
+        values = env_for((acting() or {}).get("id", ""), proj_dir)
+        if not values:
+            return
+        from builder_agent.setup import merge_env
+        merge_env(proj_dir / ".env.local", values)
+        elog("INFO", f"   plugins configured: {', '.join(sorted(values))}")
+    except Exception as error:                                       # noqa: BLE001
+        elog("WARN", f"   plugin settings were not written: {error}")
 
 
 def _prepare_workspace(prompt: str, project: str, srs_id: str) -> Path:
@@ -98,10 +136,7 @@ def _prepare_workspace(prompt: str, project: str, srs_id: str) -> Path:
                 raise RuntimeError("Could not load the approved specification")
             _adopt_customer_assets(srs_id, proj_dir)
         return proj_dir
-    # With an approved SRS the prompt is the design direction, not the product:
-    # "Design theme: Clean (design-theme:clean)..." named the folder
-    # `designthemeclean` for a build of CareBridge Clinics. The specification
-    # knows what the customer called it, so ask it first.
+    # Use the project name from the approved SRS rather than the design prompt.
     name = project_name_for(_srs_app_name(srs_id) or prompt)
     proj_dir = PROD_DIR / name
     proj_dir.mkdir(parents=True, exist_ok=True)
@@ -133,10 +168,7 @@ def _adopt_customer_assets(srs_id: str, proj_dir: Path) -> None:
 
 def _brief(proj_dir: Path, prompt: str, model: str = "") -> str:
     """The request, plus whatever the approved specification already settled."""
-    # The customer's chosen name goes above everything, which is what
-    # `_srs_name_line` was written for and never got: it was defined and never
-    # called, so the one part of the spec the customer typed themselves reached
-    # no build. Empty whenever the interview produced no usable name.
+    # Prioritize the customer's chosen SRS name when available.
     parts = [_srs_name_line(proj_dir) + prompt.strip()]
     try:
         spec = _srs_brief(proj_dir, model)
@@ -144,16 +176,12 @@ def _brief(proj_dir: Path, prompt: str, model: str = "") -> str:
         spec = ""
     if spec:
         parts += ["", "APPROVED SPECIFICATION (build to this):", spec]
-    # The per-project database keeps generated apps out of each other's
-    # collections, and the URI reaches the app through its environment so
-    # nothing has to be hard-coded into the source.
+    # Provide an isolated per-project database URI via environment variables.
     if getattr(RUN, "agent", "") != "designer" and not _prototype_only(proj_dir):
         parts += ["", f"This project's database is "
                       f"`{db_name_for(proj_dir.name)}`. Read the connection string from "
                       "MONGODB_URI in the environment; never hard-code one."]
-    # The customer's own photographs, put where the pages can load them before
-    # the agent is told they exist - a brief that names a file the run cannot
-    # open is worse than no brief, because the agent writes the <img> anyway.
+    # Stage customer-supplied images into public assets before briefing the agent.
     try:
         publish_site_images(proj_dir)
         pictures = site_images_brief(proj_dir)
@@ -161,9 +189,7 @@ def _brief(proj_dir: Path, prompt: str, model: str = "") -> str:
         pictures = ""
     if pictures:
         parts += ["", pictures.strip()]
-    # The page layouts the specification implies. Named for the drawing pass,
-    # which otherwise arranges each page from scratch and disagrees with the
-    # wireframe the customer just approved.
+    # Provide the approved wireframe layout structure for the drawing pass.
     try:
         layouts = wireframe_brief(proj_dir)
     except Exception:                                                # noqa: BLE001
@@ -173,16 +199,11 @@ def _brief(proj_dir: Path, prompt: str, model: str = "") -> str:
     return "\n".join(parts)
 
 
-# How long a question waits for the studio before the build carries on with
-# what it would have done anyway. Long enough to read a plan; short enough that
-# a closed browser does not strand a run.
+# Timeout for awaiting user answers in the studio before continuing with defaults.
 GATE_TIMEOUT = 600
 
 
-# The one question the studio wants asked in the build rather than up front: a
-# skill that needs an account says so in its own setup.json, and the answer is
-# only useful once there is a workspace to write the value into. Plan, design
-# and prototype are decided on their own screens, so they are not in this set.
+# Build-time setup questions for skills requiring credentials once workspace exists.
 BUILD_GATES = ("setup",)
 
 
@@ -207,9 +228,7 @@ def _cancelled() -> bool:
 # --------------------------------------------------------------------------
 # Answering a question the run asked
 # --------------------------------------------------------------------------
-# A run blocks on its own thread, so the HTTP handler needs a way to reach the
-# registry it is waiting on. Runs are rare and short-lived, so a list of the
-# live ones is simpler than a lookup table nothing else would use.
+# Track active agent runs so HTTP request handlers can route answers back to them.
 _LIVE_APPROVALS = []
 _APPROVALS_LOCK = threading.Lock()
 
@@ -318,8 +337,7 @@ def restore_snapshot(project: str, snap_id: str) -> dict:
 # --------------------------------------------------------------------------
 # The runs
 # --------------------------------------------------------------------------
-# One live agent per project, so the next thing said in the chat is the next
-# thing said in the same conversation.
+# Maintain one persistent agent instance per project across conversation turns.
 _SESSIONS: dict[str, dict] = {}
 _SESSIONS_LOCK = threading.Lock()
 
@@ -487,9 +505,7 @@ def restore_conversation(proj_dir: Path, agent) -> bool:
     except FileNotFoundError:
         if role == "designer":
             return False
-        # Older versions saved visible chat and counters, but not tool turns.
-        # Recover that partial account without pretending the missing context
-        # or verification evidence survived.
+        # Recover partial chat history from legacy runs without assuming full tool context.
         turns = read_stream(proj_dir.name).get("chat") or []
         transcript = [f"{turn.get('role', 'message')}: {turn.get('text', '')}"
                       for turn in turns if isinstance(turn, dict) and turn.get("text")]
@@ -626,12 +642,7 @@ def _agent_for(proj_dir: Path, brief: str, model: str, think, stack: str,
         # its own phase list and its own report writer.
         agent.events.clear()
 
-    # The studio is the surface, and it is in front of an edit exactly as much
-    # as in front of a build. Whether a run may ask anything used to be tied to
-    # whether it had a planning pass, so a question during an edit fell
-    # straight through to its own default and the user was never shown it.
-    # Set on the agent rather than only in its config, because a reused session
-    # was constructed by an earlier run under the older rule.
+    # Allow interactive questions during edits as well as builds.
     agent.approvals.enabled = True
     agent.plan_approval = False
     agent.design_approval = False
@@ -717,10 +728,7 @@ def _verify(proj_dir: Path, project: str, model: str, think, qa_model: str, *, m
                  host=ollama.host, events=events, think=bool(think),
                  cancel=_cancelled, memory=memory)
     try:
-        # Verification reaches the SRS through the change transaction now, with
-        # per-requirement evidence (server_modules/srs/qa_change.py). What used
-        # to be here stamped VERIFIED on every requirement in the document
-        # regardless of what had been tested.
+        # Record requirement verification evidence via change transactions.
         return report
     finally:
         qa.dispose()
@@ -763,17 +771,46 @@ def _serve(proj_dir: Path, agent=None) -> str:
     return ""
 
 
-def _record_verification(proj_dir: Path, project: str, agent, outcome):
+def _ui_sweep(proj_dir: Path, project: str, agent, url: str) -> list:
+    """Read every page the specification names, on the runtime that is up.
+
+    The in-journey check only ever runs where a journey wrote a `navigate`
+    step, so a page reached by clicking was never read and a page no journey
+    visits was never read at all. This is the rest of the application.
+
+    It runs after the build, against the preview that is already serving, and
+    it cannot fail anything: a reading that could fail a build is a reading
+    somebody turns off.
+    """
+    if not url:
+        return []
+    try:
+        from qa_agent.ui_sweep import routes_for, summarise, sweep
+        pages = routes_for(proj_dir)
+        if not pages:
+            return []
+        rows = sweep(agent.browser, url, pages,
+                     shots_dir=Path(agent.sandbox.state_dir("screenshots")),
+                     events=agent.events)
+        said = summarise(rows)
+        if said:
+            elog("INFO", f"   UI check: {said}")
+        return rows
+    except Exception as error:                                       # noqa: BLE001
+        elog("WARN", f"   the UI check did not run: {error}")
+        return []
+
+
+def _record_verification(proj_dir: Path, project: str, agent, outcome, url: str = ""):
     """Keep the builder's real results; E2E does not start another QA cycle."""
     evidence = agent.memory.evidence.summary()
     security = {"findings": qa_security.scan(proj_dir), "audit": {}}
     record = qa_report.from_evidence(
         project=project, project_dir=proj_dir, evidence=evidence, security=security,
-        complete=outcome.status == "completed")
+        complete=outcome.status == "completed",
+        ui_sweep=_ui_sweep(proj_dir, project, agent, url))
     path = qa_report.write(proj_dir, record)
-    # Left for synchronize_completed_change to post once the build's own sync
-    # has landed. Writing it here rather than posting here keeps this function a
-    # publisher, and keeps QA from racing the developer's change transaction.
+    # Save the change artifact for synchronize_completed_change to post after the build finishes.
     try:
         from server_modules.srs.qa_change import write_change
         write_change(proj_dir, evidence, record)
@@ -807,13 +844,16 @@ def _finish(project: str, url: str, outcome, qa_outcome=None) -> bool:
 def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
                        project: str = "", logo: str = "", srs_id: str = "",
                        stack: str = "", attachments: str = "",
-                       prototype_only: bool = False) -> None:
+                       prototype_only: bool = False, plugins=()) -> None:
     """Build an application from a request, then prove it works."""
     started = time.time()
     runtime = None
     cancel.begin()
     try:
         proj_dir = _prepare_workspace(prompt, project, srs_id)
+        # Applies build-configured plugins to newly prepared workspaces.
+        if plugins:
+            _adopt_plugins(proj_dir, plugins)
         name = proj_dir.name
         working_on(name)
         RUN.agent = "designer" if prototype_only else "developer"
@@ -824,9 +864,7 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
             runtime = RUNTIMES.get(proj_dir, stack)
             RUNTIMES.begin_work(runtime)
         cancel.note(project=name, srs_id=srs_id)
-        # A specification or prototype that was kept has a project directory and no code in
-        # it. Told to "continue", the agent would look for work in progress
-        # that was never started; this is a first build, and says so.
+        # Treat empty kept projects as initial builds rather than resumptions.
         first = not prompt and (_spec_only(proj_dir) or _prototype_only(proj_dir))
         resuming = bool(project) and not first
         elog("INFO", f"🏗️  {'Resuming' if resuming else 'Building'} {name}")
@@ -869,12 +907,10 @@ def run_agent_pipeline(prompt: str, model: str, think=None, qa_model: str = "",
             return
 
         fill_missing_images(proj_dir, "the build")
-        # Again, now the scaffold exists: the first pass ran before there was a
-        # `client/public` to copy into, and a deployed build carries whatever is
-        # in its static root at this moment.
+        # Re-copy public assets now that the application scaffold directory exists.
         publish_site_images(proj_dir)
         url = _serve(proj_dir, agent)
-        qa_outcome = _record_verification(proj_dir, name, agent, outcome)
+        qa_outcome = _record_verification(proj_dir, name, agent, outcome, url)
         if _finish(name, url, outcome, qa_outcome):
             elog("SUCCESS", f"✅ {name} finished in {int(time.time() - started)}s")
     except cancel.BuildCancelled:
@@ -1017,7 +1053,7 @@ def _edit_run(project: str, prompt: str, model, think, qa_model: str, console: s
 
         fill_missing_images(proj_dir, "the edit")
         url = _serve(proj_dir, agent)
-        qa_outcome = _record_verification(proj_dir, proj_dir.name, agent, outcome)
+        qa_outcome = _record_verification(proj_dir, proj_dir.name, agent, outcome, url)
         _finish(proj_dir.name, url, outcome, qa_outcome)
     except cancel.BuildCancelled:
         ecancel({"project": project})

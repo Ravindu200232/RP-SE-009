@@ -22,7 +22,11 @@ that was chosen, and read its file and no other.
   no provider file to read: write the record, log it, and make the app say
   plainly that it is not sending.
 - **Resend** - `readSkill("notifications", "resend.md")`
+- **SendGrid** - `readSkill("notifications", "sendgrid.md")`
+- **Mailgun** - `readSkill("notifications", "mailgun.md")`
 - **Twilio (SMS)** - `readSkill("notifications", "twilio.md")`
+
+The settings arrive either from the question or from a plugin the user ticked; both land in the same place and mean the same thing, and whichever provider's names are present in the environment is the one that was chosen.
 
 Their keys are already in `.env.local` under the names the question used. Read
 them from `process.env` and never write one into source: a key in a file goes

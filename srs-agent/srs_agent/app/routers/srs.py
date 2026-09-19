@@ -57,7 +57,13 @@ async def wireframes(project_id: str):
     The page list is derived on save, so this is a read of what the document
     already implies. Each page says whether its drawing exists and whether the
     specification has moved since it was made.
+
+    `drawing` says whether the pages are being drawn at this moment. Generating
+    a specification schedules them and does not wait, so for the first half
+    minute after approval the list is real and every drawing is missing -
+    which, without this flag, looks exactly like a project whose pages failed.
     """
+    from ..agents.wireframe_generator import drawing as drawing_now
     from ..services import storage
     saved = storage.read_wireframes(project_id)
     if not saved.get("pages"):
@@ -67,7 +73,7 @@ async def wireframes(project_id: str):
             raise HTTPException(404, "no SRS generated yet")
         storage.save_wireframes(project_id, srs)
         saved = storage.read_wireframes(project_id)
-    return saved
+    return {**saved, "drawing": drawing_now(project_id)}
 
 
 class WireframeHtmlRequest(BaseModel):

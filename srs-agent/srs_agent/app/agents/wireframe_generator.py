@@ -45,10 +45,22 @@ STRICT WIREFRAME DESIGN SYSTEM & VISUAL RULES:
 Ensure the output is production-ready HTML with CDN Tailwind CSS script included in the <head>.
 """
 
-# Draws in flight, so one version is never drawn twice at once, and the tasks
-# themselves, because asyncio keeps only a weak reference to a bare task and
-# will collect one mid-flight.
+# Retain strong references to background drawing tasks to prevent premature garbage collection.
 _IN_FLIGHT: dict[tuple[str, str], object] = {}
+
+
+def drawing(project_id: str) -> bool:
+    """Is a drawing running for this project right now?
+
+    A page is a model call and there are as many as the specification has
+    pages, so the gap between "the specification is ready" and "the pages are
+    drawn" is real - tens of seconds, sometimes more. Without this the studio
+    could not tell that gap from a project whose pages simply failed, and it
+    showed "not drawn yet" on every card as though nothing were happening.
+    """
+    wanted = str(project_id)
+    return any(project == wanted and not getattr(task, "done", bool)()
+               for (project, _version), task in list(_IN_FLIGHT.items()))
 
 
 def draw_later(project_id: str, doc: dict) -> None:

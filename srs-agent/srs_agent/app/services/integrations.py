@@ -62,8 +62,13 @@ def save(project_id: str, answers: list) -> list:
                 configured.append(key)
         metadata.append({"id": question["id"], "provider": choice["id"], "label": choice["label"],
                          "configured": configured, "required": [field["key"] for field in fields if field.get("required", True)]})
-    if len(metadata) != len(KINDS) or set(item["id"] for item in metadata) != set(KINDS):
-        raise ValueError("Answer email, payment and image-upload integration questions")
+    # Whatever was answered is saved; nothing is required. The specification's
+    # business is whether the product needs to take money or send mail, not
+    # which company does it - the provider is settled at build time, by the
+    # plugin the user picked, and an interview that insisted on all three was
+    # asking two questions it had no way to act on.
+    if len(set(item["id"] for item in metadata)) != len(metadata):
+        raise ValueError("Each integration may only be answered once")
     # JSON quoting is compatible with dotenv and preserves # and whitespace in keys.
     existing.update({key: json.dumps(value, ensure_ascii=False) for key, value in values.items()})
     storage.write_text(path, "".join(f"{key}={value}\n" for key, value in existing.items()))

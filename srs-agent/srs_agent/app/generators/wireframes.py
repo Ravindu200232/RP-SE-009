@@ -41,12 +41,7 @@ def _verb_noun_pairs(doc: dict, tables: list[str]) -> list[tuple]:
     product's vocabulary. A list written here could only hold one product's.
     """
     stems = {re.sub(r"[^a-z]+", "", t.lower()).rstrip("s"): t for t in tables}
-    # A word that names one of the stored things is a noun, whatever else is in
-    # the workflow's title. Taking every word as a verb produced ("room",
-    # "booking") from a workflow like "Room Booking", and `_entity_of` then read
-    # the page literally called "Room List" as being about bookings - it drew a
-    # New booking form and a Bookings table on the rooms page. The pairing is
-    # only meaningful for a word that is not already the name of a table.
+    # Disambiguate workflow nouns against existing data entities to assign accurate wireframe UI components.
     nouns = {stem for stem in stems if stem}
     nouns |= {stem[:5] for stem in nouns}
     pairs = set()

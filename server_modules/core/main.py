@@ -101,9 +101,7 @@ async def main():
     print(f"  🏗️  Build       :  {DEFAULT_BUILD}")
     print(f"  📝 Local development mode")
     print(f"{'━'*46}\n")
-    # Kept alive on purpose. Reached through a tunnel, a socket with nothing on
-    # it is closed by whatever is in the middle after a minute or two, and the
-    # studio then reconnects every time the build it is watching goes quiet.
+    # Send periodic keep-alive pings over SSE tunnels to prevent connection timeouts.
     async with websockets.serve(ws_handler, bind_host(), WS_PORT,
                                 ping_interval=20, ping_timeout=60):
         await asyncio.Future()

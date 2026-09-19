@@ -25,9 +25,7 @@ export default function Overview({ qa, live }) {
   if (!last && !r && !v) {
     return <Empty>Nothing has been recorded for this project yet.</Empty>
   }
-  // A record is written as each stage finishes, so what is on screen can be a
-  // verification that is still running — or one that was stopped part way. The
-  // numbers are real either way; what they do not yet cover is worth saying.
+  // Display real-time verification metrics for both active and completed test runs.
   const partial = qa && qa.complete === false
   const ran = qa?.stages || []
 
@@ -72,10 +70,7 @@ export default function Overview({ qa, live }) {
           </div>
         </Card>
 
-        {/* "as it stands", not "the last full run": a feature's stage only runs
-            the tests for what it changed, and those results are merged into this
-            report rather than replacing it — so this is the whole suite, with
-            the files that were just re-run showing their new result. */}
+        {/* Test results are incrementally merged into the overall suite report. */}
         <Card title="The suite now" hint="every test file, at its latest result" icon={Layers}>
           {qa.unitEvidenceStatus === 'outdated' && (
             <p className="mb-2.5 rounded-lg border border-amber-500/20 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-300">

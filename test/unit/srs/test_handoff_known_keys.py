@@ -21,9 +21,7 @@ from test import _support  # noqa: F401 - puts the agent packages on the path
 from srs_agent.app.generators.agent_handoff import _KNOWN_KEYS
 from srs_agent.app.schemas.srs import SrsDocument
 
-# Keys the document grows at run time rather than declaring on the schema.
-# Each one needs a reason, because each one is a section that would otherwise
-# appear in app.md.
+# Dynamic schema keys added at runtime that map to specific document sections.
 RUNTIME_KEYS = {
     # A projection of the SRS the studio reads; the agents get the same content
     # through `approved_plan` and `approved_plan_markdown`, which are rendered.

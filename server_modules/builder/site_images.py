@@ -1,23 +1,11 @@
-# The customer's own pictures: kept once, described once, copied where needed.
-#
-# Nothing in this system draws artwork, so every real photograph on a finished
-# page arrives here - uploaded on the design screen, captioned by the person who
-# knows what it is for. One folder holds the files and one manifest holds what
-# each is for; `images.md` is written from that manifest so the designer and the
-# builder read the same description, and the files are copied into the drawing
-# and into the built app's `public/` so an `<img>` resolves in both.
-#
-# Imported rather than leaned on: every other name here is defined by an earlier
-# runtime part, but this one arrives with a part loaded after this file.
+# Manages customer-uploaded pictures, generating manifests and copying assets to drawings and public roots.
 from server_modules.services.project_state import atomic_json
 
 SITE_IMAGE_DIRNAME = "images"
 SITE_IMAGE_EXT = (".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".avif", ".ico")
 SITE_IMAGE_BRIEF = "images.md"
 SITE_IMAGE_MANIFEST = "manifest.json"
-# What the pages reference. Relative, because the drawing is served from its own
-# folder and the built app from `public/` - an absolute path would be right in
-# exactly one of them.
+# Use relative URL paths so images resolve in both drawing previews and built applications.
 SITE_IMAGE_WEB_DIR = "images"
 
 
@@ -25,11 +13,7 @@ def _site_dir(proj_dir: Path) -> Path:
     return proj_dir / ".agentforge" / SITE_IMAGE_DIRNAME
 
 
-# Where pictures wait when there is no project yet. The design screen runs
-# between an approved specification and the first build, so the only identity
-# that exists at that moment is the specification's - the same staging folder
-# the interview already writes to, and the same one `adopt_srs` reads when the
-# project is finally created.
+# Staging path for uploaded images before project creation.
 SITE_IMAGE_STAGE = "site-images"
 
 
@@ -165,9 +149,7 @@ def _site_rows(folder: Path) -> list:
     captions = {str(row.get("file")): str(row.get("purpose") or "")
                 for row in saved if isinstance(row, dict) and row.get("file")}
     order = [str(row.get("file")) for row in saved if isinstance(row, dict)]
-    # The folder is the truth about which files exist; the manifest is the truth
-    # about what they are for. A file deleted by hand should stop being listed,
-    # and one dropped in by hand should still show up - uncaptioned.
+    # Reconcile disk files against the metadata manifest.
     on_disk = sorted(item.name for item in folder.glob("*")
                      if item.is_file() and item.suffix.lower() in SITE_IMAGE_EXT)
     ranked = sorted(on_disk, key=lambda name: (order.index(name) if name in order else len(order), name))
@@ -348,11 +330,7 @@ def publish_site_images(proj_dir: Path) -> int:
         return 0
 
     targets = [proj_dir / ".agentforge" / "prototype" / SITE_IMAGE_WEB_DIR]
-    # Where the built app serves static files from depends on what was
-    # scaffolded, and on a first build nothing has been scaffolded yet - so
-    # publish to every static root that exists and to `public/` regardless,
-    # which is the static root for Next.js, Vite and CRA alike. Call this again
-    # once the scaffold is on disk to catch a client that appeared in between.
+    # Copy images to all discovered static asset roots in the project.
     for static_root in (proj_dir / "public", proj_dir / "client" / "public",
                         proj_dir / "packages" / "client" / "public"):
         if static_root.is_dir() or static_root == proj_dir / "public":

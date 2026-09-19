@@ -10,9 +10,7 @@ FIELDS = {
     "custom_domain",
 }
 IDENTIFIER = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,62}$")
-# A hostname, not an identifier: labels separated by dots, no underscore, and
-# long enough for a real one. `IDENTIFIER` would accept `my_site` and stop at
-# 63 characters, which is one label's limit rather than a domain's.
+# Regex matching valid fully-qualified domain hostnames.
 DOMAIN = re.compile(r"^(?=.{4,253}$)(?!-)[a-zA-Z0-9-]{1,63}(?<!-)"
                     r"(\.(?!-)[a-zA-Z0-9-]{1,63}(?<!-))+$")
 

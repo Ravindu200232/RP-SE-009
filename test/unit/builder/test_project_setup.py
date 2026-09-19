@@ -61,9 +61,7 @@ class SkillPackTests(unittest.TestCase):
         self.assertNotIn("payments", without)
 
     def test_the_sinhala_forms_studio_users_type_are_understood(self):
-        # "payments nathuwa" and "payments epa" both mean "without payments";
-        # the studio's users write them, and ignoring that installs guidance the
-        # user has just asked not to have.
+        # Ensure Sinhala negative phrases ('nathuwa', 'epa') correctly exclude matching skills.
         for phrase in ("a shop with payments nathuwa", "a shop with payments epa"):
             self.assertNotIn("payments", select(self.entries, "", phrase, "nextjs-mongo"),
                              phrase)

@@ -131,15 +131,7 @@ def _retry_assert(page, step: dict) -> tuple[bool, str]:
     budget = max(0.1, min(STEP_TIMEOUT, float(step.get("timeoutMs", 5000)) / 1000))
     deadline = time.time() + budget
     passed, detail = _assert(page, step)
-    # Polling on a tight beat rather than backing off. The backoff here assumed
-    # a poll was expensive; measured, it is not - a full accessibility tree on a
-    # list page is 6.5ms and a selector lookup 2ms, so a 20ms beat spends about
-    # a third of a core and nothing else. The backoff's cost was latency: it
-    # slept 50, then 100, then 200, then 400ms, so a state that arrived at 200ms
-    # was not seen until 350, and one arriving at 400ms not until 750. On a
-    # journey of eighty steps that is seconds of waiting for something already
-    # true. Past a second the state is genuinely slow, and a 50ms beat is plenty.
-    # The tree is never cached between polls; re-reading it is the point.
+    # Poll accessibility and selector status on a fast fixed interval to minimize journey step latency.
     beat, slow_after = 0.02, time.time() + 1.0
     while not passed and time.time() < deadline:
         time.sleep(min(beat, max(0.0, deadline - time.time())))
@@ -314,6 +306,21 @@ def ui_quality_note(sample: dict | None) -> str:
     return "; ".join(said) or "clean"
 
 
+# Captures an asynchronous visual screenshot frame after each journey step without blocking execution.
+FRAME_QUALITY = 55
+FRAME_SCALE = 0.5
+
+
+def _frame(page, sandbox, suite: str, index: int, action: str) -> None:
+    """Photograph the page as the step left it. Never fails, never waits."""
+    try:
+        name = re.sub(r"[^a-z0-9]+", "-", f"{suite}-{index:02d}-{action or 'assert'}".lower())
+        page.frame(Path(sandbox.state_dir("screenshots")) / f"{name}.jpg",
+                   quality=FRAME_QUALITY, scale=FRAME_SCALE)
+    except Exception:  # noqa: BLE001 - a missing frame is not a failed journey
+        pass
+
+
 def run_journey(browser, sandbox, evidence, *, suite: str, covers, steps,
                 start_url: str | None = None, fresh_session: bool = True,
                 tab_id: str | None = None, events=None) -> dict:
@@ -360,10 +367,7 @@ def run_journey(browser, sandbox, evidence, *, suite: str, covers, steps,
             if action == "navigate":
                 page.navigate(str(step["url"]), timeout=NAVIGATION_TIMEOUT)
                 trace.append(f"{label} -> {page.url}")
-                # The page is open and settled right here, so its usability costs
-                # one DOM walk rather than a second pass over the whole app.
-                # Every page that was read is recorded, clean or not, so the
-                # studio can list what was checked and not only what was wrong.
+                # Record page usability checks directly from the open page to avoid additional DOM passes.
                 note = ui_quality_note(capture_ui_quality(page))
                 if note:
                     trace.append(f"{index}. ui-quality {page.url.rsplit('/', 1)[-1] or '/'}: {note}")
@@ -400,10 +404,15 @@ def run_journey(browser, sandbox, evidence, *, suite: str, covers, steps,
                 trace.append(f"{label} {step.get('type')}: {detail}")
                 if not passed:
                     failed = f"Step {index} failed: {detail}"
+                    _frame(page, sandbox, suite, index, action)
                     break
+            _frame(page, sandbox, suite, index, action)
         except ToolError as error:
             failed = f"Step {index} failed: {error}"
             trace.append(f"{label} -> {error}")
+            # The picture of the step that broke is the most useful one in the
+            # whole run, so it is taken before the loop leaves.
+            _frame(page, sandbox, suite, index, action)
             break
 
     if not failed:
@@ -423,9 +432,7 @@ def run_journey(browser, sandbox, evidence, *, suite: str, covers, steps,
 
     body = "\n".join(trace)
     if failed:
-        # Preserve the diagnostics with the durable E2E record, rather than
-        # only in the tool error sent to the agent. This lets Testing retain
-        # console, network and page-error evidence after a reload.
+        # Persist browser diagnostics in durable test records across page reloads.
         diagnostics = diagnostics_report(page)
         evidence.record_external(kind="e2e", suite=suite, source="direct-CDP journey", engine=True,
                                  covers=covered, status="failed",
@@ -476,9 +483,7 @@ def run_journeys(browser, sandbox, evidence, *, suites, events=None) -> dict:
             results.append({"suite": suite, "status": "passed",
                             "detail": result.get("content", "")})
         except ToolError as error:
-            # run_journey already persisted the detailed failure evidence.
-            # Keep the batch alive and return a compact combined report to the
-            # model so it can repair all owners in one pass.
+            # Return a consolidated failure summary to enable multi-step repairs in a single pass.
             results.append({"suite": suite, "status": "failed",
                             "detail": str(error)[:1200]})
 

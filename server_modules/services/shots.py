@@ -71,9 +71,7 @@ class _Warm:
 _WARM = _Warm()
 
 
-# The drawing is replayed onto the real page before the photograph, so what the
-# model sees is the annotation over the live layout rather than a canvas the
-# studio composited on top of an iframe it cannot read.
+# Overlay drawing annotations on live layout before capturing screenshots.
 _INK_JS = """
 (strokes) => {
   const old = document.getElementById('__af_ink'); if (old) old.remove();

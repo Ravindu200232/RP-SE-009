@@ -38,10 +38,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 
 
-# Each agent is its own package beside this file. Adding them to the path here
-# keeps every import below a plain one, and keeps the server from caring where
-# on disk they sit. `__file__` is the repository root: these runtime parts are
-# executed into one shared namespace by server_runtime.py.
+# Add agent package roots to sys.path for direct module imports.
 _REPO_ROOT = Path(__file__).resolve().parent
 for _agent_root in ("srs-agent", "builder-agent", "qa-agent", "deployment-agent"):
     _path = str(_REPO_ROOT / _agent_root)
@@ -201,9 +198,7 @@ def default_agent_model() -> str:
     return DEFAULT_BUILD
 
 
-# Which project the thread emitting a message is working on. A run has its own
-# thread, so this is per-run without anything having to be threaded through
-# every call that reports something.
+# Thread-local storage holding current project context for log emission.
 RUN = threading.local()
 
 

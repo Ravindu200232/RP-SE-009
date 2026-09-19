@@ -82,9 +82,7 @@ def github_login_for(token: str) -> str:
 def save_deploy_settings(user, body: dict) -> dict:
     """Keep what this person typed in their own deployment accounts."""
     patch = {}
-    # A public value, so it is kept beside the region rather than as a secret:
-    # it identifies the OAuth app, it cannot act on its own, and the sign-in
-    # that uses it happens on GitHub.
+    # OAuth client ID stored alongside non-secret deployment configuration.
     if "github_client_id" in body:
         patch["github_client_id"] = str(body["github_client_id"]).strip()
     for key in ("aws_region", "aws_start_url", "aws_sso_region"):
@@ -142,9 +140,7 @@ def deploy_request_for(user, method: str, path: str, body):
                                 "error": f"no {provider.title()} credentials saved"}
         body["token"] = token
     elif route.startswith("/api/aws/") or route.startswith("/api/runs/"):
-        # Only this person's AWS sign-ins - and never none, which to boto3 means
-        # this machine's own credentials. A vault reference is never taken from
-        # a request: each profile already knows its own (aws_onboarding.py).
+        # Restrict AWS profile selection strictly to user-configured profiles.
         body.pop("credential_reference", None)
         default = ("deployment-agent" if route == "/api/aws/sso/select"
                    else deploy_settings_for(user).get("aws_profile") or "console")

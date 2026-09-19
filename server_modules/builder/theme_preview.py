@@ -22,19 +22,12 @@ if str(BUILDER) not in sys.path:
 
 CACHE = ROOT / "design-previews"
 SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
-# No truncation. The window is a million tokens and the longest theme prompt is
-# 25KB; cutting it removed the component and motion rules, which are most of
-# what makes one theme look different from another.
+# Send complete theme prompts without truncation so all component styling rules are retained.
 MAX_PROMPT = 1_000_000
-# Flash, not pro: drawing a page from a design system that is already written is
-# transcription, and pro costs more for it. The ":cloud" suffix is not optional,
-# and /api/tags does not prove a tag exists either way - only a request does.
-# The configured model is a fallback for a host without this one.
+# Fast cloud model configured for rendering theme preview layouts.
 PREVIEW_MODEL = "deepseek-v4-flash:cloud"
 
-# Asking for "no frameworks, no external JavaScript" produced a thin page: these
-# design systems are written in Tailwind classes, so denying Tailwind made the
-# model translate every rule by hand and run out of room before the markup.
+# Allow standard Tailwind utility classes in theme previews.
 BRIEF = """html page create
 
 Build one complete, self-contained landing page that shows this design system in

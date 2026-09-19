@@ -112,9 +112,7 @@ export default function ProjectsView({
   const [filterTag, setFilterTag] = useState('all') // 'all', 'app', 'prototype', 'srs'
   const [confirmDelete, setConfirmDelete] = useState('')
 
-  // The shelf the sidebar asked for, if any. It sits outside the tag filter
-  // because it answers a different question: not what kind of thing this is,
-  // but whether you marked it or opened it.
+  // Filter projects by active sidebar shelf selection.
   const shelf = useStore(s => s.projectFilter)
   const setShelf = useStore(s => s.setProjectFilter)
   const starred = useStore(s => s.starred)

@@ -1,22 +1,26 @@
 'use client'
 
-/**
- * The wireframes, and the journeys that run through them.
- *
- * A wireframe here is an HTML page: black and white, drawn from the
- * specification's own handoff documents, with real sample data in it. It is
- * edited in place - pick a part, move it, copy it, retype it - because the
- * page is served from this origin and its document is therefore reachable.
- *
- * There used to be a second representation: blocks on a 0-100 grid, projected
- * from the specification and then redrawn by a model. It is gone. It could not
- * say what a row looked like, so every table came out as grey bars, and the
- * model pass that was meant to fix that failed a page at a time on a JSON
- * contract the endpoint would not enforce. The page itself has no such
- * contract to miss.
- */
+/** Renders and edits in-place HTML wireframes and their associated user journeys. */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import {
+  Loader2,
+  Move,
+  ArrowUpDown,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Maximize2,
+  RotateCcw,
+  Copy,
+  Trash2,
+  Type,
+  Layers,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  RotateCcw as ResetIcon,
+} from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { Button, Empty, Modal } from '../ui'
@@ -39,11 +43,16 @@ function useSrsId(owner) {
 }
 
 /** One page, rendered small and not interactive. */
-function Thumbnail({ srsId, page }) {
+function Thumbnail({ srsId, page, waiting }) {
   if (!srsId || !page.has_html) {
+    // "not drawn yet" is true of a page that failed and of a page whose turn
+    // has not come, and those are not the same news. While a drawing is
+    // running the card says so, and stops as soon as it is not.
     return (
-      <span className="flex h-full items-center justify-center text-[11px] text-muted2">
-        not drawn yet
+      <span className="flex h-full flex-col items-center justify-center gap-1.5 text-[11px] text-muted2">
+        {waiting
+          ? <><Loader2 className="size-3.5 animate-spin text-accent" /> drawing…</>
+          : 'not drawn yet'}
       </span>
     )
   }
@@ -62,12 +71,7 @@ function Thumbnail({ srsId, page }) {
   )
 }
 
-/* One page, full size, with the tools that edit it.
- *
- * The page is served from the studio's own origin, so the frame's document is
- * reachable from here: pick a part, move it among its neighbours, copy it,
- * take it out, retype it. No model is asked anything, and nothing touches
- * colour, which a wireframe does not have. */
+/* Interactive full-size wireframe editor canvas with Figma positioning and editing tools. */
 export function WireframeEditor({ owner, page, onClose, onSaved, srsId: given = '' }) {
   const resolved = useSrsId(owner)
   const srsId = given || resolved
@@ -80,12 +84,12 @@ export function WireframeEditor({ owner, page, onClose, onSaved, srsId: given = 
   const [picked, setPicked] = useState('')
   const [dirty, setDirty] = useState(false)
   const [typing, setTyping] = useState(false)
+  const [metrics, setMetrics] = useState(null)
+  const [dragMode, setDragMode] = useState('free')
   const frame = useRef(null)
   const editor = useRef(null)
 
-  // `has_html` is a snapshot taken when the grid was listed, so a page drawn
-  // since opens saying "nothing drawn yet" over a page that exists. The server
-  // is the authority, and asking it costs one request.
+  // Query server directly for current wireframe HTML existence.
   useEffect(() => {
     if (!srsId) return
     let live = true
@@ -100,7 +104,11 @@ export function WireframeEditor({ owner, page, onClose, onSaved, srsId: given = 
   const attach = useCallback(() => {
     editor.current?.detach?.()
     import('@/lib/wireframe-html-editor').then(({ attachEditor, PARTS }) => {
-      editor.current = attachEditor(frame.current, { onSelect: setPicked, onDirty: setDirty })
+      editor.current = attachEditor(frame.current, {
+        onSelect: setPicked,
+        onDirty: setDirty,
+        onMetrics: setMetrics,
+      })
       setParts(PARTS)
       if (!editor.current) setProblem('This page cannot be edited in place here.')
     })
@@ -113,7 +121,7 @@ export function WireframeEditor({ owner, page, onClose, onSaved, srsId: given = 
     try {
       await api.drawWireframeHtml(srsId, page.route)
       setStamp(n => n + 1)
-      setStale(false); setDirty(false); setPicked(''); setTyping(false)
+      setStale(false); setDirty(false); setPicked(''); setTyping(false); setMetrics(null)
     } catch (failure) {
       setProblem(failure?.message || 'The page could not be drawn.')
     } finally {
@@ -138,14 +146,24 @@ export function WireframeEditor({ owner, page, onClose, onSaved, srsId: given = 
 
   const act = (name, ...args) => () => {
     editor.current?.[name]?.(...args)
-    if (name === 'undo') { setStamp(n => n + 1); setDirty(false); setPicked('') }
+    if (name === 'undo') {
+      setStamp(n => n + 1)
+      setDirty(false)
+      setPicked('')
+      setMetrics(null)
+    }
   }
 
-  const Tool = ({ onClick, children, on = false, always = false }) => (
-    <button type="button" onClick={onClick} disabled={!picked && !always}
-      className={cn('rounded-md px-2 py-1 text-[11px] font-medium transition',
+  const setMode = mode => {
+    setDragMode(mode)
+    editor.current?.setDragMode?.(mode)
+  }
+
+  const Tool = ({ onClick, children, on = false, always = false, title }) => (
+    <button type="button" onClick={onClick} disabled={!picked && !always} title={title}
+      className={cn('inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition cursor-pointer',
         'disabled:opacity-30 disabled:cursor-not-allowed',
-        on ? 'bg-blue-600 text-white'
+        on ? 'bg-blue-600 text-white shadow-sm'
            : 'bg-white/[.06] text-white/75 hover:bg-white/[.12] hover:text-white')}>
       {children}
     </button>
@@ -184,28 +202,128 @@ export function WireframeEditor({ owner, page, onClose, onSaved, srsId: given = 
       </div>
 
       {stamp ? (
-        <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-white/10 bg-white/[.03] px-4 py-2">
-          <span className="mr-1 font-mono text-[10px] text-white/40">
-            {picked ? `<${picked}>` : 'click a part of the page'}
-          </span>
-          <Tool onClick={act('parent')}>Parent</Tool>
-          <Tool onClick={act('move', -1)}>↑ Up</Tool>
-          <Tool onClick={act('move', 1)}>↓ Down</Tool>
+        <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-white/10 bg-white/[.03] px-3.5 py-2 select-none">
+          {/* Tool Mode: Free Move (Figma Canvas) vs Flow Reorder */}
+          <div className="flex items-center rounded-lg bg-black/40 p-0.5 border border-white/10">
+            <button
+              type="button"
+              onClick={() => setMode('free')}
+              title="Move Tool (V): Drag with cursor to freely position anywhere"
+              className={cn('flex items-center gap-1 rounded-md px-2 py-1 text-[10.5px] font-medium transition cursor-pointer',
+                dragMode === 'free' ? 'bg-[#0D99FF] text-white font-semibold shadow-sm' : 'text-white/60 hover:text-white')}
+            >
+              <Move className="size-3" />
+              <span>Move</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('flow')}
+              title="Reorder Tool: Drag with cursor to drop between elements"
+              className={cn('flex items-center gap-1 rounded-md px-2 py-1 text-[10.5px] font-medium transition cursor-pointer',
+                dragMode === 'flow' ? 'bg-[#0D99FF] text-white font-semibold shadow-sm' : 'text-white/60 hover:text-white')}
+            >
+              <ArrowUpDown className="size-3" />
+              <span>Reorder</span>
+            </button>
+          </div>
+
           <span className="mx-1 h-4 w-px bg-white/10" />
-          <Tool onClick={act('align', 'left')}>Left</Tool>
-          <Tool onClick={act('align', 'center')}>Centre</Tool>
-          <Tool onClick={act('align', 'right')}>Right</Tool>
-          <Tool onClick={act('align', 'full')}>Full width</Tool>
-          <Tool onClick={act('wider', -10)}>Narrower</Tool>
-          <Tool onClick={act('wider', 10)}>Wider</Tool>
-          <span className="mx-1 h-4 w-px bg-white/10" />
-          <Tool onClick={act('duplicate')}>Duplicate</Tool>
-          <Tool onClick={act('remove')}>Remove</Tool>
-          <Tool on={typing} onClick={() => { editor.current?.editText(!typing); setTyping(!typing) }}>
-            {typing ? 'Done typing' : 'Edit text'}
-          </Tool>
+
+          {picked ? (
+            <>
+              {/* Selected Tag & Dimensions */}
+              <span className="flex items-center gap-1 rounded-md bg-white/[.07] px-2 py-1 font-mono text-[10.5px] text-white/90 border border-white/10">
+                <span className="text-[#0D99FF] font-semibold">&lt;{picked}&gt;</span>
+                {metrics && (
+                  <span className="text-white/50 text-[10px] ml-1">
+                    {metrics.w}×{metrics.h}px
+                  </span>
+                )}
+              </span>
+
+              {/* Position Steppers (X, Y) */}
+              <div className="flex items-center gap-1 rounded-md bg-black/30 px-1.5 py-0.5 border border-white/10 font-mono text-[10px]">
+                <span className="text-white/40 uppercase font-semibold text-[9.5px]">X:</span>
+                <button type="button" onClick={() => editor.current?.nudge?.(-5, 0)} className="px-1 text-white/70 hover:text-white hover:bg-white/10 rounded">-</button>
+                <span className="text-white font-medium min-w-[28px] text-center">{metrics?.x ?? 0}px</span>
+                <button type="button" onClick={() => editor.current?.nudge?.(5, 0)} className="px-1 text-white/70 hover:text-white hover:bg-white/10 rounded">+</button>
+              </div>
+
+              <div className="flex items-center gap-1 rounded-md bg-black/30 px-1.5 py-0.5 border border-white/10 font-mono text-[10px]">
+                <span className="text-white/40 uppercase font-semibold text-[9.5px]">Y:</span>
+                <button type="button" onClick={() => editor.current?.nudge?.(0, -5)} className="px-1 text-white/70 hover:text-white hover:bg-white/10 rounded">-</button>
+                <span className="text-white font-medium min-w-[28px] text-center">{metrics?.y ?? 0}px</span>
+                <button type="button" onClick={() => editor.current?.nudge?.(0, 5)} className="px-1 text-white/70 hover:text-white hover:bg-white/10 rounded">+</button>
+              </div>
+
+              {metrics?.hasOffset && (
+                <button
+                  type="button"
+                  onClick={() => editor.current?.resetPos?.()}
+                  title="Reset Position to 0,0"
+                  className="rounded-md bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 px-1.5 py-1 text-[10px] font-medium transition cursor-pointer"
+                >
+                  Reset Pos
+                </button>
+              )}
+
+              {/* Nudge D-Pad */}
+              <div className="flex items-center rounded-md bg-white/[.05] p-0.5 border border-white/10">
+                <button type="button" onClick={() => editor.current?.nudge?.(-1, 0)} title="Nudge Left (1px)" className="p-1 hover:bg-white/10 rounded text-white/70 hover:text-white">
+                  <ArrowLeft className="size-2.5" />
+                </button>
+                <button type="button" onClick={() => editor.current?.nudge?.(0, -1)} title="Nudge Up (1px)" className="p-1 hover:bg-white/10 rounded text-white/70 hover:text-white">
+                  <ArrowUp className="size-2.5" />
+                </button>
+                <button type="button" onClick={() => editor.current?.nudge?.(0, 1)} title="Nudge Down (1px)" className="p-1 hover:bg-white/10 rounded text-white/70 hover:text-white">
+                  <ArrowDown className="size-2.5" />
+                </button>
+                <button type="button" onClick={() => editor.current?.nudge?.(1, 0)} title="Nudge Right (1px)" className="p-1 hover:bg-white/10 rounded text-white/70 hover:text-white">
+                  <ArrowRight className="size-2.5" />
+                </button>
+              </div>
+
+              <span className="mx-1 h-4 w-px bg-white/10" />
+
+              {/* Alignments */}
+              <Tool onClick={act('align', 'left')} title="Align Left"><AlignLeft className="size-3" /></Tool>
+              <Tool onClick={act('align', 'center')} title="Align Centre"><AlignCenter className="size-3" /></Tool>
+              <Tool onClick={act('align', 'right')} title="Align Right"><AlignRight className="size-3" /></Tool>
+              <Tool onClick={act('align', 'full')} title="Full Width"><Maximize2 className="size-3" /></Tool>
+
+              <span className="mx-1 h-4 w-px bg-white/10" />
+
+              {/* Hierarchy */}
+              <Tool onClick={act('parent')} title="Select Parent Container"><Layers className="size-3 mr-0.5" /> Parent</Tool>
+              <Tool onClick={act('move', -1)} title="Move Up in DOM">↑</Tool>
+              <Tool onClick={act('move', 1)} title="Move Down in DOM">↓</Tool>
+
+              {/* Size */}
+              <Tool onClick={act('wider', -10)} title="Narrower">-10%</Tool>
+              <Tool onClick={act('wider', 10)} title="Wider">+10%</Tool>
+
+              <span className="mx-1 h-4 w-px bg-white/10" />
+
+              {/* Actions */}
+              <Tool onClick={act('duplicate')} title="Duplicate Element"><Copy className="size-3" /></Tool>
+              <Tool onClick={act('remove')} title="Delete Element"><Trash2 className="size-3 text-rose-300" /></Tool>
+              <Tool on={typing} onClick={() => { editor.current?.editText(!typing); setTyping(!typing) }} title="Edit Text Directly">
+                <Type className="size-3" />
+                <span>{typing ? 'Done typing' : 'Text'}</span>
+              </Tool>
+            </>
+          ) : (
+            <span className="flex items-center gap-1.5 font-mono text-[11px] text-white/45">
+              <Move className="size-3 text-[#0D99FF]" />
+              <span>Click any element to drag with cursor · Drag corner handles to resize · Arrow keys to nudge</span>
+            </span>
+          )}
+
           <span className="flex-1" />
-          <Tool always onClick={act('undo')}>Undo</Tool>
+          <Tool always onClick={act('undo')} title="Undo last change (Ctrl+Z)">
+            <RotateCcw className="size-3" />
+            <span>Undo</span>
+          </Tool>
         </div>
       ) : null}
 
@@ -301,6 +419,14 @@ export function Wireframes({ srs, onEditPage }) {
 
   useEffect(() => { load() }, [load])
 
+  /** Poll wireframes status periodically while page drawings are being generated. */
+  const waiting = Boolean(data?.drawing)
+  useEffect(() => {
+    if (!waiting) return
+    const again = setInterval(load, 4000)
+    return () => clearInterval(again)
+  }, [waiting, load])
+
   /** Draw every page that has no drawing yet, and redraw the rest. */
   async function drawAll() {
     if (!srsId) return
@@ -324,6 +450,18 @@ export function Wireframes({ srs, onEditPage }) {
 
   return (
     <div className="space-y-3">
+      {/* Visual progress indicator displayed while wireframe pages are being drawn. */}
+      {waiting && (
+        <p className="flex items-center gap-2.5 rounded-xl border border-accent/30 bg-accent/[.06]
+                      px-3.5 py-2.5 text-[11.5px] leading-relaxed text-ink">
+          <Loader2 className="size-3.5 shrink-0 animate-spin text-accent" />
+          <span>
+            Drawing the pages — each one is drawn on its own, so they appear as
+            they finish. {drawn} of {pages.length} so far. You can carry on; this
+            keeps going without you.
+          </span>
+        </p>
+      )}
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <p className="text-[11.5px] text-muted">
           {pages.length} page{pages.length === 1 ? '' : 's'}, black and white, with sample data.
@@ -332,9 +470,10 @@ export function Wireframes({ srs, onEditPage }) {
             ? ' All drawn.'
             : ` ${drawn} of ${pages.length} drawn so far.`}
         </p>
-        <Button variant="outline" disabled={drawing || !srsId} onClick={drawAll}>
-          {drawing ? <><Loader2 className="mr-1 size-3 animate-spin" /> Drawing…</>
-                   : drawn ? 'Draw them again' : 'Draw every page'}
+        <Button variant="outline" disabled={drawing || waiting || !srsId} onClick={drawAll}>
+          {drawing || waiting
+            ? <><Loader2 className="mr-1 size-3 animate-spin" /> Drawing…</>
+            : drawn ? 'Draw them again' : 'Draw every page'}
         </Button>
       </div>
       <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]">
@@ -343,7 +482,7 @@ export function Wireframes({ srs, onEditPage }) {
             onClick={() => (onEditPage ? onEditPage(page) : setOpen(page))}
             className="group overflow-hidden rounded-xl border border-line text-left transition hover:border-accent cursor-pointer">
             <span className="block aspect-[16/11] overflow-hidden border-b border-line bg-white">
-              <Thumbnail srsId={srsId} page={page} />
+              <Thumbnail srsId={srsId} page={page} waiting={waiting} />
             </span>
             <span className="block space-y-1 p-3">
               <span className="truncate block text-[12px] font-medium text-ink">{page.page_name}</span>

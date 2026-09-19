@@ -33,9 +33,7 @@ class Settings(BaseSettings):
     llm_allow_offline_fallback: bool = True
 
     llm_max_repair_attempts: int = 2
-    # How many times the reviewer may send the SRS back to be rewritten.
-    # Two means at most three drafts. The reviewer stops earlier on its own
-    # when a round makes no progress; this is the ceiling, not the plan.
+    # Maximum review revision cycles permitted for specification refinement.
     srs_review_max_iterations: int = 2
 
     mongodb_uri: str = ""

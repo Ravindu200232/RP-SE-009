@@ -121,18 +121,11 @@ export const api = {
       post('/image-upload', { ...body, filename: file.name, data_base64 }))
   }),
 
-  // The customer's own pictures for the product's pages. Kept under their own
-  // names beside the project, captioned one by one, and copied next to the
-  // drawing and the built app so the same <img> resolves in both.
-  // Wireframes live with the specification while it is being reviewed, and
-  // with the project once one exists. The id tells them apart: a specification
-  // id is what the SRS agent answers to, a project name is not.
+  // Manage customer pictures and wireframes across specification review and active projects.
   wireframes: (owner) => (/^prj_/.test(String(owner || ''))
     ? api.srs(`/projects/${encodeURIComponent(owner)}/wireframes`)
     : req(`/project-wireframes/${encodeURIComponent(owner)}`)),
-  // Draw one page, or every page when no route is given. A page is a model
-  // call, so the whole set is minutes - it rides the job queue and survives a
-  // reload like every other slow thing the specification agent does.
+  // Queue asynchronous prototype drawing jobs for specific routes or entire specifications.
   drawWireframeHtml: (srsId, route = '') =>
     api.srs(`/projects/${encodeURIComponent(srsId)}/wireframes/html`, { route }),
   // What the tools editor rearranged, as the page itself.
@@ -228,6 +221,20 @@ export const api = {
   cliSigninStart: (provider) => post('/cli-signin/start', { provider }),
   cliSigninPoll: (flowId) => post('/cli-signin/poll', { flow_id: flowId }),
   cliSigninCancel: (flowId) => post('/cli-signin/cancel', { flow_id: flowId }),
+
+  // The providers this person has an account with. `plugins()` answers with the
+  // catalogue and, for each one, which settings are saved and the last four
+  // characters of each — never a value, because a browser that can read a key
+  // back is a browser that can leak one.
+  plugins: () => req('/plugins'),
+  savePlugin: (plugin, mode, values) => post('/plugins/save', { plugin, mode, values }),
+  forgetPlugin: (plugin) => post('/plugins/forget', { plugin }),
+
+  // Which plugins one app uses. Saving this is the whole opt-in: the next run
+  // merges their settings into that project's .env.local and hands the model
+  // their skill pages to read.
+  projectPlugins: (project) => req(`/plugins/project/${encodeURIComponent(project)}`),
+  setProjectPlugins: (project, enabled) => post('/plugins/project', { project, enabled }),
 }
 
 
@@ -285,9 +292,7 @@ async function pollSrs(id, key, { onWait, signal } = {}) {
     if (job.status === 'running') { onWait?.(job.elapsed); continue }
     try { localStorage.removeItem(key) } catch { }
     if (job.status === 'error') throw new Error(job.error || 'The SRS update failed')
-    // `detail` is a string for our own errors and a list of field problems for
-    // a validation failure, and `new Error(thatList)` reads as "[object
-    // Object]" on screen - which says nothing about what went wrong.
+    // Format validation error detail lists into human-readable error messages.
     if (job.http_status >= 400) throw new Error(readDetail(job) || `HTTP ${job.http_status}`)
     return job.result
   }
@@ -341,9 +346,7 @@ function fileToBase64(file) {
   })
 }
 
-// Everything the engine can actually read. A document or an archive used to be
-// unpickable here and unreadable there, so the one format most requirements
-// arrive in — a Word file — could not be attached at all.
+// Supported document and media upload file extensions.
 export const ACCEPT_UPLOAD =
   '.pdf,.png,.jpg,.jpeg,.webp,.gif,.bmp,.wav,.mp3,.m4a,.ogg,.webm,.flac,'
   + '.doc,.docx,.pptx,.xlsx,.rtf,.zip,.txt,.md,.csv,.tsv,.json,.yaml,.yml,.html,.xml,'

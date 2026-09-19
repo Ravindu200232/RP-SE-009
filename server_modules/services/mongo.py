@@ -189,9 +189,7 @@ class MongoManagerLifecycleMixin:
             try:
                 ok = self.start(timeout=min(90, max(10, int(deadline - time.time()))))
                 if not ok and not self.is_port_open():
-                    # A hard kill leaves a lock behind, and an unclean shutdown
-                    # needs a second run to recover, so every failed start that
-                    # is not fighting a live server gets one clean retry.
+                    # Retry daemon launch once to recover from unclean shutdowns and stale lockfiles.
                     self._clear_stale_lock()
                     ok = self.start(timeout=45)
             except Exception as e:

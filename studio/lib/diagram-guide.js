@@ -1,6 +1,4 @@
-// Reader guidance for saved revisions created before diagram metadata became
-// part of the SRS artifact. New revisions receive the same fields from the SRS
-// service; these fallbacks keep the current and historical UI equally useful.
+// Fallback metadata reader guidance for legacy diagram revisions.
 export const DIAGRAM_GUIDE = {
   use_case: {
     question: 'What is a Use Case Diagram?',

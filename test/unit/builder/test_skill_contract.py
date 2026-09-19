@@ -41,9 +41,7 @@ DRAWING = [
     ("depth from the palette", r"shadow"),
     ("one thing that is yours", r"One thing that is yours|memorable"),
     ("thirty links across the shell", r"30 or more"),
-    # The checklist is the last thing read, so a count only stated in the prose
-    # is a count that gets rounded down: one drawing built a 7-link header while
-    # clearing the 30 total, because 30 was the only number in the table.
+    # Ensure header and footer link counts are explicitly verified against checklist tables.
     ("the header carries its own twelve", r"links in the header \| \*\*12 or more"),
     ("so does the footer", r"links in the footer \| \*\*12 or more"),
     ("every link is a real anchor", r"real `<a href"),
@@ -70,17 +68,7 @@ DRAWING = [
 
 
 
-# Read on every build, and re-read inside the phases that own them, so their
-# length is paid for every time. Each was measured, cut and re-measured.
-#
-# The ceiling is the size it came out at, rounded up to the next 500 — headroom
-# for a rule to be worded better, not for the prose to grow back. A rounder,
-# more generous number would only be an invitation to fill it, which is exactly
-# what the page-size rule this file removes turned out to be.
-#
-# `full-app-builder`, `vitest` and `page-composition` were split into the
-# `stack-*` skills and are no longer on disk, so their rule lists went with
-# them. The new skills carry no content contract yet.
+# Maximum character size thresholds and content contracts enforced across builder skills.
 CONTRACTS = [
     ("html-prototype", DRAWING, 18_000),      # 17,615, was 29,512
 ]
@@ -147,13 +135,7 @@ class TheSkillContractTests(unittest.TestCase):
                     text, r"wrong reader",
                     f"{skill} never says what `/` follows from")
 
-    # Two skills saying the same thing is how they come to disagree, and this
-    # used to pin four phrases to the skill that owned them. All four pairs
-    # named `vitest`, `browser-e2e` or `full-app-builder`, none of which ship
-    # any more. The `stack-*` skills that replaced them do share resource files
-    # - `build-error-resolver.md` sits in both stack-debug and stack-testing,
-    # `api-security-hardening.md` in both stack-security and stack-mern - so
-    # this is worth pinning again once it is settled which of them owns what.
+    # Skill rule uniqueness checks will re-pin shared guidance once stack-* ownership settles.
 
 
 if __name__ == "__main__":

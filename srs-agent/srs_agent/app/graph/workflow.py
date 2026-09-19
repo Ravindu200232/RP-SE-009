@@ -74,14 +74,7 @@ async def _checkpointed(kind: str, state: AgentState, steps) -> AgentState:
     if saved.get("input") == fingerprint:
         state = saved["state"]
         index = saved["next"]
-    # An index-driven walk rather than a for-range, so a step can ask to go back
-    # to an earlier one by returning `_goto`. That is the whole of the reviewer's
-    # enhance loop. The checkpoint format does not change - `next` was already an
-    # index, it may simply now decrease - so a job interrupted mid-generation
-    # still resumes where it stopped.
-    #
-    # The cap lives in the node that asks, not here: a loop that cannot run away
-    # regardless of what a node returns is worth more than a second counter.
+    # Step-index execution loop supporting backwards jumps via _goto for reviewer refinement cycles.
     names = [getattr(step, "__name__", str(position)) for position, step in enumerate(steps)]
     while index < len(steps):
         state = {**state, **await steps[index](state)}

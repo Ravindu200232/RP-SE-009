@@ -192,9 +192,7 @@ IMAGE_EXT = (".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp")
 AUDIO_EXT = (".wav", ".mp3", ".m4a", ".ogg", ".webm", ".flac")
 ATTACH_TEXT_CAP = 6000
 
-# Documents and archives are read by the same package that reads PDFs, so
-# there is one implementation of each format and the specification agent gets
-# it too.
+# Shared document readers for PDFs and archives across builder and specification agents.
 DOCUMENT_EXT = (".docx", ".pptx", ".xlsx", ".rtf", ".doc")
 
 
@@ -217,14 +215,9 @@ def _keep_picture(proj_dir: Path | None):
     return keep
 
 
-# Where a file attached to a chat is kept, inside the project the chat is
-# about, so the agent's own file tools can open it. Under `.agentforge/` because
-# it belongs to the session, not to the product's source.
+# Store chat attachments under .agentforge/ so builder tools can access session files.
 CHAT_UPLOAD_DIR = "uploads"
-# How much of a text file travels in the prompt. The file itself is on disk, so
-# this is an opening, not the content: enough to see what was sent and decide
-# whether to read the rest, rather than six thousand characters of a file the
-# agent could have opened for itself.
+# Maximum excerpt size for attached text files included directly in the prompt.
 CHAT_TEXT_HEAD = 1200
 
 
@@ -312,10 +305,7 @@ def read_attachment(filename: str, data_b64: str, proj_dir: Path = None) -> dict
 
         out["text"] = (res.get("text") or "").strip()
         out["note"] = res.get("warning") or res.get("error") or ""
-        # A document, a recording and an archive have no other reading than the
-        # one just made, so all of it travels. Source and data do: the file is
-        # on disk, and the agent reads it there rather than through a window
-        # this function chose for it.
+        # Include full content for media and archives while directing source code to disk reads.
         if out["kind"] == "text" and out["path"] and len(out["text"]) > CHAT_TEXT_HEAD:
             out["text"] = out["text"][:CHAT_TEXT_HEAD].rstrip()
             out["truncated"] = True

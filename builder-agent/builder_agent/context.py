@@ -15,14 +15,7 @@ from .llm import estimate_tokens
 # One bounded native tool call, whole. Below this a cut-off answer is certain.
 OUTPUT_FLOOR = 2048
 
-# How full the usable window gets before the transcript is compacted. This used
-# to be a flat 64,000 whatever the model could hold, on the reasoning that a big
-# window is capacity rather than licence to resend everything. Measured against a
-# 1,048,576-token model that was backwards: compaction evicts the files the run
-# is working from, the model reads them again, and the window refills. One build
-# read `styles.css` forty-nine times and wrote nothing in twelve minutes. A
-# re-read costs a round trip and seven to nine seconds; carrying a file already
-# in the window costs prompt the model would have paid to fetch it anyway.
+# Trigger transcript compaction based on total context window capacity rather than an arbitrary token limit.
 COMPACT_AT = max(0.1, min(0.95, float(os.environ.get("AGENTFORGE_COMPACT_AT", "0.75"))))
 
 
@@ -95,10 +88,7 @@ class ContextBudget:
             reserve=self.reserve,
             used_percent=min(100, round(prompt_tokens * 100 / input_limit)),
             near_limit=prompt_tokens >= input_limit,
-            # Follows the window: a 1M model compacts near 1M, a 32k model near
-            # 32k. `input_limit` has already had the output reserve and the
-            # safety margin taken out of it, so this fraction is of room the
-            # request can genuinely use.
+            # Scale compaction threshold proportionally to the model's usable input limit.
             should_compact=prompt_tokens >= int(input_limit * COMPACT_AT),
         )
 

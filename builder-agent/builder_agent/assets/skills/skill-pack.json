@@ -133,6 +133,24 @@
       "verificationPhases": []
     },
     {
+      "name": "social-signin",
+      "match": [
+        "google sign in",
+        "google signin",
+        "sign in with google",
+        "github sign in",
+        "sign in with github",
+        "facebook login",
+        "sign in with facebook",
+        "microsoft sign in",
+        "entra",
+        "social login",
+        "oauth",
+        "single sign on",
+        "sso"
+      ]
+    },
+    {
       "name": "notifications",
       "match": [
         "email",
@@ -166,6 +184,41 @@
       "verificationPhases": [
         "unit",
         "e2e"
+      ]
+    },
+    {
+      "name": "maps",
+      "match": [
+        "map",
+        "maps",
+        "google map",
+        "google maps",
+        "mapbox",
+        "location",
+        "locations",
+        "geocode",
+        "geocoding",
+        "directions",
+        "nearby",
+        "address search",
+        "pin on a map",
+        "branch locator",
+        "store locator"
+      ]
+    },
+    {
+      "name": "analytics",
+      "match": [
+        "analytics",
+        "google analytics",
+        "posthog",
+        "plausible",
+        "tracking",
+        "page views",
+        "funnel",
+        "conversion tracking",
+        "usage statistics",
+        "measure usage"
       ]
     }
   ]

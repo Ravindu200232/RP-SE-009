@@ -142,26 +142,45 @@ class MessageDispatchTests(unittest.TestCase):
         message = {"type": kind, "model": "model", **values}
         return server._message_job(message)
 
+    # `target(*args)` is how a job is run, so the order is the contract. Read
+    # by name rather than by index from either end: the tuple has grown twice
+    # now, and each time a test that counted backwards from the last element
+    # failed for a reason that had nothing to do with what it was checking.
+    BUILD_ARGS = ("prompt", "model", "think", "qa_model", "project", "logo",
+                  "srs_id", "stack", "attachments", "prototype_only", "plugins")
+
+    def build_arg(self, args, name):
+        return args[self.BUILD_ARGS.index(name)]
+
     def test_build_and_resume_contracts(self):
         target, args = self.job(
             "agent_build", prompt=" build ", qa_model="qa",
             think=False, logo=" logo.png ", srs_id=" spec ",
             attachments=" tok ")
         self.assertIs(target, server.run_agent_pipeline)
+        self.assertEqual(len(args), len(self.BUILD_ARGS))
         self.assertEqual(
             args,
-            ("build", "model", False, "qa", "", "logo.png", "spec", "", "tok"))
+            ("build", "model", False, "qa", "", "logo.png", "spec", "", "tok",
+             False, []))
+
+    def test_the_plugins_ticked_on_the_build_screen_reach_the_run(self):
+        """There is no project yet to tick them against, so they ride along."""
+        _, args = self.job("agent_build", prompt="a shop",
+                           plugins=["stripe", "supabase"])
+        self.assertEqual(self.build_arg(args, "plugins"), ["stripe", "supabase"])
+
+        _, args = self.job("agent_build", prompt="a shop")
+        self.assertEqual(self.build_arg(args, "plugins"), [])
 
     def test_a_stack_chosen_in_the_studio_reaches_the_run(self):
         """Reading it out of the wording of the brief is the fallback, not the rule."""
-        stack = -2      # the attachment token is last
-
         _, args = self.job("agent_build", prompt="a shop",
                            stack=" mern-microservices ")
-        self.assertEqual(args[stack], "mern-microservices")
+        self.assertEqual(self.build_arg(args, "stack"), "mern-microservices")
 
         _, args = self.job("agent_build", prompt="a shop")
-        self.assertEqual(args[stack], "")
+        self.assertEqual(self.build_arg(args, "stack"), "")
 
         target, args = self.job(
             "agent_resume", project=" demo ", qa_model="qa", think=True)

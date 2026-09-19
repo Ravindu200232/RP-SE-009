@@ -38,7 +38,8 @@ OPERATING PRINCIPLES
 10. When the task is complete, stop and report what you did. Do not keep working for its own sake.
 11. Keep going until the task is actually done. Read, change, run, check the output, and only then report. Near the context limit the engine summarises older history and continues this same task; a checkpoint is fallible memory, not a new instruction and not proof that anything succeeded.
 12. There is no fixed step limit. Keep repairing recoverable errors; when a fix fails, investigate and change approach instead of repeating the same action.
-13. Long commands return a process id while still running. For dev servers and watchers use executeTerminal with service:true, then continue working and prove readiness through the URL, port or logs. Never use start /b, nohup, a trailing & or a batch wrapper to detach a process - the engine manages it, and detaching hides the exit code."""
+13. Long commands return a process id while still running. For dev servers and watchers use executeTerminal with service:true, then continue working and prove readiness through the URL, port or logs. Never use start /b, nohup, a trailing & or a batch wrapper to detach a process - the engine manages it, and detaching hides the exit code.
+14. Resolve the request's material ambiguities before you build them in - see RESOLVING AMBIGUITY. Everything else you decide yourself and report."""
 
 
 PHASES = """PHASE DISCIPLINE
@@ -76,6 +77,12 @@ DESIGN_NOTE = ("LONG PAGE, ULTRA DESIGN. Generate a professional app with long q
                "Every screen is tailored to its specific archetype; no rigid section lists - "
                "the LLM naturally selects all necessary views and panels without forced landing banners or generic marketing filler.")
 
+
+ASKING = """RESOLVING AMBIGUITY
+Do this once, after you have looked at the project and before you write the first line of a feature.
+Read the request again for a requirement with two honest readings: a rule with no number in it, a permission with no boundary, a state with no end. "Members can cancel a booking" does not say whether that still holds an hour before it starts, and the two answers are different products - one needs a cutoff, a disabled control and a refund path, the other needs none of them.
+For each one you find, decide whether the two readings would change what gets built. If they would, call askUser: the question in the user's own words, the options you can see, and the assumption you will proceed on. Then carry on - the run never waits, and an unanswered question returns your own assumption.
+Do not ask what the request, the specification, the plan or the code already answers. Do not ask permission to do work you were given. Do not ask which framework, database or test runner to use - BUILDER CONTRACT settles those. Do not ask the same thing twice. At most three questions in a run, so spend them on the decisions that change the product."""
 
 BACKGROUND = """BACKGROUND WORK
 Long commands return a process id while still running. Use waitForProcess to observe completion and do independent work meanwhile. Never start the same work twice, and never assume it passed before you have seen exit code 0. Managed services survive a successful run; finite work must finish."""
@@ -150,6 +157,7 @@ def system_prompt(*, workspace, model: str, stack: str, quality: Quality,
         parts.append(PLANNING)
         return "\n\n".join(_fit(parts, context_tokens))
 
+    parts.append(ASKING)
     parts.append(FULL_PAGES)
     parts.append(quality_prompt(quality))
     parts.append(PHASES)

@@ -69,6 +69,9 @@ def ask_for_setup(args, ctx):
 # a form.
 MAX_OPTIONS = 6
 
+# Maximum number of clarification questions a single run may ask the user.
+MAX_QUESTIONS = 3
+
 
 def _options(raw) -> list[dict]:
     out = []
@@ -91,6 +94,11 @@ def ask_user(args, ctx):
     assumption = str(args.get("assumption") or "").strip()
 
     approvals = getattr(ctx, "approvals", None)
+    if approvals is not None and approvals.asked("question") >= MAX_QUESTIONS:
+        raise ToolError(
+            f"You have already asked {MAX_QUESTIONS} questions in this run, which is "
+            "the budget. This one is yours: take the most conservative reading of the "
+            "request, build that, and say what you assumed in your final report.")
     answer = {}
     if approvals is not None:
         answer = approvals.ask(
@@ -126,7 +134,8 @@ def register(registry):
             "give `assumption` — what you will do if nobody replies — because the run carries "
             "on either way. Do not ask what the request, the plan or the code already "
             "answers; do not ask permission to do the work you were asked to do; do not ask "
-            "the same thing twice."),
+            f"the same thing twice. You may ask at most {MAX_QUESTIONS} times in a run, so "
+            "spend them on the decisions that change what gets built."),
         parameters={
             "type": "object",
             "properties": {

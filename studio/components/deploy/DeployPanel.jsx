@@ -136,11 +136,7 @@ export default function DeployPanel({ onSettings, accountsRevision = 0 }) {
     return () => { ok = false }
   }, [accountsRevision])
 
-  // A workspace of services needs a host that can run more than one process.
-  // AWS puts each service under its own systemd unit; an Azure App Service
-  // starts them together from one startup command. Vercel and Netlify each run
-  // a single app, so they are shown and refused rather than quietly missing -
-  // "where did Netlify go" is a worse question than "why can't I pick it".
+  // Disable single-app deployment providers for multi-service architectures with explanatory tooltips.
   const services = mine?.stack === 'mern-microservices'
   const refusal = t => (services && !t.id.startsWith('aws_') && t.id !== 'azure'
     ? `${t.label} runs one app, not a workspace of services.` : '')

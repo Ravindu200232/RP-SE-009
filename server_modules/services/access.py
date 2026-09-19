@@ -14,28 +14,31 @@ from urllib.parse import unquote
 
 # Anyone who is signed in. The settings answer each person with their own.
 USER_GET = {"/projects", "/models", "/srs-status", "/deploy-status", "/settings",
-            "/image-check", "/mongo"}
+            "/image-check", "/mongo",
+            # The plugin catalogue is the same for everyone; what comes back
+            # about each person is which keys they have set, never a value.
+            "/plugins"}
 # The design theme library: the same seventy pages for everyone.
 USER_GET_PREFIX = ("/design-theme-preview/",)
 USER_POST = {"/logo-prompt", "/tune", "/build-attach", "/upload-project", "/jobs",
              "/build/cancel", "/settings", "/design-theme-preview",
-             # Signing in to a deployment account in the browser. Each person's
-             # own accounts, so signed in is the whole requirement - nothing
-             # here is admin's.
+             # Account sign-in flow verified through active authentication status.
              "/github/device/start", "/github/device/poll",
              "/cli-signin/start", "/cli-signin/poll", "/cli-signin/cancel",
-             "/cli-signin/available"}
+             "/cli-signin/available",
+             # A person's own provider settings, sealed against their account.
+             "/plugins/save", "/plugins/forget"}
 # The run in progress, which is one person's at a time.
 RUN_GET = {"/decisions"}
 RUN_POST = {"/decision"}
 # One project, named in the path.
 PROJECT_GET = ("/workflow/", "/runtime/", "/files/", "/stream/", "/session/", "/qa-screenshot/",
                "/prototype/", "/qa/", "/srs-results/", "/qa-pdf/", "/srs-pdf/",
-               "/deploy-results/")
+               "/deploy-results/", "/plugins/project/")
 # One project, named in the body.
 PROJECT_POST = {"/sync/retry", "/resume", "/delete-project", "/save-file", "/element-edit", "/feature",
                 "/agent-update", "/stream", "/shot", "/undo", "/deploy-start",
-                "/projects/assign", "/preview-link", "/spec-change"}
+                "/projects/assign", "/preview-link", "/spec-change", "/plugins/project"}
 # One project if the body names one, otherwise nobody's in particular.
 MAYBE_PROJECT_POST = {"/attach", "/image", "/image-upload"}
 # One specification, named in the body.

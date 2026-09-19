@@ -14,13 +14,7 @@ for source_root in (ROOT, ROOT / "srs-agent", ROOT / "deployment-agent",
         sys.path.insert(0, value)
 
 
-# --------------------------------------------------------------------------
-# Ollama test double
-#
-# The suite must not need a running daemon, and `is_cloud_model()` reaches the
-# module-level default client, so a test that forgets to replace it would make
-# a real HTTP call. `fake_ollama` swaps both the transport and that default.
-# --------------------------------------------------------------------------
+# Mock Ollama transport and default client for running tests without an Ollama daemon.
 import contextlib
 import json as _json
 import os

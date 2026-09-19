@@ -161,10 +161,7 @@ def carry_unit(saved: dict | None, current: dict | None,
     old = (saved or {}).get("testResults")
     new = (current or {}).get("testResults")
     if not isinstance(old, list) or not old:
-        # Whichever says more, not whichever is newer. A run recorded without a
-        # reportPath carries totals only, and taking it because it is current
-        # replaced the per-case detail with "37 passing, 0 failing, 3 files" -
-        # true, and unable to name a single test.
+        # Prefer detailed per-case test results over summary-only reports.
         return max(current or {}, saved or {}, key=_size) or None
     if not isinstance(new, list) or not new:
         # Nothing at file granularity to merge into; keep whichever says more.
@@ -225,7 +222,7 @@ def _widest_unit_run(rows: list) -> dict:
 
 
 def from_evidence(*, project: str, project_dir: Path, evidence: dict,
-                  security: dict, complete: bool) -> dict:
+                  security: dict, complete: bool, ui_sweep=()) -> dict:
     """Publish checks the builder already ran; never start a model or a test."""
     from . import harness
     from .e2e import E2EResult, journeys_from_evidence
@@ -264,9 +261,7 @@ def from_evidence(*, project: str, project_dir: Path, evidence: dict,
         # A scan the project has already had is not undone by a run that did
         # not repeat it.
         security = ((saved.get("report") or {}).get("security")) or None
-    # What this run proved, plus what earlier runs already had. A stage the
-    # project has been through is real evidence even when today's edit did not
-    # repeat it.
+    # Aggregate current verification evidence with cumulative proofs from previous runs.
     proved = {row.get("kind") for row in suites
               if row.get("status") in ("passed", "failed")}
     proved |= set(saved.get("stages") or [])
@@ -279,6 +274,8 @@ def from_evidence(*, project: str, project_dir: Path, evidence: dict,
                     manifest={}, tests=harness.collect_test_sources(project_dir),
                     history=[], performance=perf, stages=stages, complete=complete)
     data["timeline"] = evidence.get("history", [])
+    # Retains UI quality sweep results across pages that were not opened by journeys.
+    data["ui_sweep"] = list(ui_sweep) or (saved.get("ui_sweep") or [])
     data["unitEvidenceStatus"] = latest.get("status")
     # Older results remain inspectable, but never become current test status.
     if not unit_report:

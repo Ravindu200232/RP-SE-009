@@ -105,3 +105,71 @@ class ParentDocumentTests(unittest.IsolatedAsyncioTestCase):
         latest = await repo.latest_version('spec')
         self.assertEqual(json.loads((self.root / 'spec/srs_latest.json').read_text(encoding='utf-8')), latest['srs'])
         self.assertNotIn('OLD', json.dumps(latest['srs']))
+
+
+class RevisionLabelTests(unittest.IsolatedAsyncioTestCase):
+    """What a revision row says it was.
+
+    "developer update" named who reported the change and nothing about the
+    change, and the model had already written a usable sentence and a list of
+    the actual edits - both saved, neither shown. So the label is the sentence,
+    the bullets are rendered under it, and the old wording survives only for a
+    revision the model described in neither form.
+    """
+
+    async def asyncSetUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        for patcher in (patch.object(settings, "storage_dir", str(self.root)),
+                        patch.object(db, "_store", db.MemoryStore())):
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        await repo.create_project({"id": "spec", "title": "Observatory",
+                                   "stack": "mern-microservices", "status": "approved",
+                                   "raw_idea": "Record observations"})
+        await repo.save_version({"id": "v1", "project_id": "spec", "version": "1.0.0",
+                                 "created_at": "2000-01-01", "srs": specification()})
+
+    async def label_for(self, answer, change_id):
+        async def compare(**kwargs):
+            kwargs["validator"](answer)
+            return answer
+        llm = Mock(complete_json=AsyncMock(side_effect=compare))
+
+        async def diagrams(label, state, nodes):
+            return state
+        with patch.object(parent_sync, "get_llm", return_value=llm), \
+             patch("srs_agent.app.graph.workflow._checkpointed", side_effect=diagrams), \
+             patch.object(parent_sync, "generate_pdf", new=AsyncMock()):
+            await parent_sync.synchronize("spec", change_id, "developer", "did a thing")
+        return (await repo.latest_version("spec"))
+
+    CHANGE = {"public_pages": [{"page_name": "Observations", "route": "/observations"},
+                               {"page_name": "Search", "route": "/search"}]}
+
+    async def test_the_label_is_what_the_model_said_happened(self):
+        row = await self.label_for(
+            {"srs_document": self.CHANGE, "diff_summary": ["Added a search page"],
+             "headline": "Observations can now be searched"}, "c1")
+        self.assertEqual(row["label"], "Observations can now be searched")
+        self.assertEqual(row["diff_summary"], ["Added a search page"])
+        self.assertEqual(row["source"], "developer")
+
+    async def test_without_a_headline_the_first_real_change_is_the_label(self):
+        row = await self.label_for(
+            {"srs_document": self.CHANGE, "diff_summary": ["Added a search page"]}, "c2")
+        self.assertEqual(row["label"], "Added a search page")
+
+    async def test_a_revision_described_in_neither_form_still_says_something(self):
+        row = await self.label_for({"srs_document": self.CHANGE}, "c3")
+        self.assertEqual(row["label"], "developer update")
+
+    async def test_a_headline_is_one_line_however_it_arrives(self):
+        """A paragraph in a list row is a paragraph nobody reads."""
+        row = await self.label_for(
+            {"srs_document": self.CHANGE, "diff_summary": ["x"],
+             "headline": "  Observations\ncan now\tbe searched  " + "y" * 200}, "c4")
+        self.assertNotIn("\n", row["label"])
+        self.assertLessEqual(len(row["label"]), 90)
+        self.assertTrue(row["label"].startswith("Observations can now be searched"))

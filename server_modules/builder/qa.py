@@ -19,11 +19,18 @@ def read_qa_results(proj_name: str) -> dict:
 
 
 def read_qa_screenshot(project, relative):
-    from qa_agent.artifacts import screenshot_path
+    """The bytes, and the type to serve them as.
+
+    The type is returned rather than assumed, because a journey's per-step
+    frames are JPEGs: sending one with `image/png` works in a browser and is
+    still a lie in the response.
+    """
+    from qa_agent.artifacts import screenshot_path, screenshot_type
     root = (PROD_DIR / project).resolve()
     if root.parent != PROD_DIR.resolve() or not project:
         raise ValueError("No such project")
-    return screenshot_path(root, relative).read_bytes()
+    path = screenshot_path(root, relative)
+    return path.read_bytes(), screenshot_type(path)
 
 
 def build_qa_pdf(qa: dict, out, project: str = ""):

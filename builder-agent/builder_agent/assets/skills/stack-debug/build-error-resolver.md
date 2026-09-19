@@ -11,6 +11,24 @@ updated: 2026-03-26
 
 Get the build green fast with minimal, targeted fixes. No architectural changes — just fix what's broken.
 
+## What to run, and in what order
+
+A dev server is forgiving in exactly the ways that hide a bug. It compiles a
+page at a time, on demand, and recovers from things the production build
+refuses - so a project that looks fine under `npm run dev` can be one that
+cannot be built at all, and the first you hear of it is a blank preview.
+
+1. **`npm run build` first.** Not after the dev server, and not only when the
+   dev server complains. One pass type-checks and bundles every route, so it
+   names every error in the project rather than the one route you happened to
+   open. Read the output literally, top error first - a later failure is
+   usually the same cause reported again.
+2. **Fix what it names**, smallest diff, then build again. Repeat until it
+   exits clean. A build that does not pass is not a project with a display
+   problem.
+3. **Then** start the dev server, open the page, and read the console.
+4. Only then is the bug fixed.
+
 ## Overview
 
 This skill is a **surgical fix tool**, not a refactoring tool. It:
@@ -23,8 +41,8 @@ This skill is a **surgical fix tool**, not a refactoring tool. It:
 
 ## When to Use
 
-- `pnpm build` fails with TypeScript errors
-- `pnpm lint` reports violations
+- `npm run build` fails with TypeScript errors
+- `npm run lint` reports violations
 - CI/CD pipeline fails on type checking
 - Import resolution errors after dependency changes
 - Type mismatches after schema or API changes
@@ -36,13 +54,13 @@ This skill is a **surgical fix tool**, not a refactoring tool. It:
 
 ```bash
 # TypeScript build
-pnpm tsc --noEmit 2>&1 | head -50
+npx tsc --noEmit 2>&1 | head -50
 
 # Next.js build
-pnpm build 2>&1 | tail -50
+npm run build 2>&1 | tail -50
 
 # Lint
-pnpm lint 2>&1 | head -30
+npm run lint 2>&1 | head -30
 ```
 
 ### Step 2: Classify the Error
@@ -54,7 +72,7 @@ pnpm lint 2>&1 | head -30
 | `TS2339: Property 'X' does not exist on type 'Y'` | Missing property | Add to interface or fix access |
 | `TS2345: Argument of type 'X' not assignable to 'Y'` | Wrong argument type | Fix the argument or parameter type |
 | `TS7006: Parameter 'X' implicitly has 'any' type` | Missing type annotation | Add type annotation |
-| `TS2307: Cannot find module 'X'` | Missing dependency | `pnpm add X` or fix import path |
+| `TS2307: Cannot find module 'X'` | Missing dependency | `npm install X` or fix import path |
 | `TS18047: 'X' is possibly 'null'` | Null safety | Add null check or assertion |
 | `Module not found` | Import path wrong | Fix relative/absolute path |
 | `ESLint: 'X' is defined but never used` | Unused code | Remove or prefix with `_` |
@@ -85,15 +103,31 @@ const id = String(numericId);
 
 ```bash
 # Re-run the same command that failed
-pnpm tsc --noEmit
+npx tsc --noEmit
+
+# The whole project, not the one route you were looking at
+npm run build
 
 # If clean, run tests to ensure no regressions
-pnpm test -- --run
+npm test -- --run
 ```
 
 ### Step 5: Repeat for Remaining Errors
 
 Process errors **one at a time**, top to bottom. Earlier fixes often resolve later errors.
+
+### Step 6: Read the Browser Console
+
+A clean build is not a working page. The build cannot see a component that
+throws on first render, a hook called in the wrong place, markup that hydrates
+differently on the client, or a fetch to a URL that 404s — and every one of
+those is written plainly in the console the moment the page opens.
+
+So once the build passes: start the dev server, open the page the bug was
+reported on, and read the console and the network log before calling it fixed.
+Treat a console error as a failure even when the page looks right, because a
+browser journey's `noDiagnostics` assertion will fail on it and you will be
+back here with less information.
 
 ## Common Patterns
 
@@ -102,7 +136,7 @@ Process errors **one at a time**, top to bottom. Earlier fixes often resolve lat
 ```bash
 # Error: Breaking API changes
 # Fix: Check migration guide
-pnpm outdated  # See what changed
+npm outdated  # See what changed
 # Then read the changelog for the updated package
 ```
 
@@ -111,7 +145,7 @@ pnpm outdated  # See what changed
 ```bash
 # Error: Conflicting types from merged code
 # Fix: Run type check, resolve type conflicts
-pnpm tsc --noEmit 2>&1 | grep "error TS"
+npx tsc --noEmit 2>&1 | grep "error TS"
 # Fix each error, prioritizing shared types/interfaces first
 ```
 

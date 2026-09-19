@@ -44,15 +44,10 @@ from .skills import select as select_skills
 from .sandbox import Sandbox
 from .tools import build_registry, review_registry
 
-# How many times a rejected plan may be sent back before the build proceeds
-# anyway. A plan nobody accepts after this many tries is not going to be
-# accepted, and the alternative is a build that never starts.
+# Maximum revision retries for a rejected plan before proceeding with the build.
 MAX_PLAN_REVISIONS = 3
 
-# What the drawing is asked at. The build stays at the config's own setting,
-# which is low on purpose: code is judged by whether it runs. A drawing is
-# judged by whether anyone likes looking at it, and two drawings of the same
-# product should not be the same drawing.
+# Temperature setting for drawing generation to encourage diverse visual design.
 DRAWING_TEMPERATURE = 0.8
 
 # Work that genuinely has no user interface. A design contract for a cron job
@@ -127,13 +122,7 @@ def _title_of(name: str) -> str:
 class BuilderAgent:
     """The builder agent: plans, designs, builds and proves one application."""
 
-    # No cap by default, like every other run (`Config.max_iterations = 0`).
-    # A bounded repair sounds prudent and reads as a failure: a drawing that
-    # needed a thirteenth turn stopped at "Stopped at the configured iteration
-    # limit" and failed the run, with the pages already written and possibly
-    # fine. What ends this loop is the validation passing or the loop's own
-    # convergence guards - a repeated action, a repeated failure, a repeated
-    # read - not a turn count. Set AGENTFORGE_MAX_PROTOTYPE_REPAIR to bound it.
+    # Terminate repair loops via convergence guards or validation success rather than an arbitrary turn cap.
     MAX_PROTOTYPE_REPAIR_ITERATIONS = int(
         os.environ.get("AGENTFORGE_MAX_PROTOTYPE_REPAIR", "0"))
 
@@ -163,9 +152,7 @@ class BuilderAgent:
         # The screens the design step agreed, and the drawing made of them.
         self.screens: list[dict] = []
         self.prototype_dir: Path | None = None
-        # Which screens exist and what reaches what. Built from the plan, folded
-        # onto what the drawing actually wrote, handed to both passes. Never
-        # shown to the user - they approved a plan and will look at a drawing.
+        # Internal sitemap mapping discovered screen routes and transitions between passes.
         self.sitemap: list[dict] = []
         # What the user settled before planning: which provider, which mode,
         # which names are configured. Never the values themselves.
@@ -241,9 +228,7 @@ class BuilderAgent:
                 {key: question[key] for key in ("purpose", "question", "choices", "fields")},
                 default={"decision": "later"}, timeout=ASK_TIMEOUT, cancel=self.cancel)
             applied = apply_answer(self.sandbox.root, question, answer)
-            # Names only. A value that reaches an event reaches the log, the
-            # saved stream and the transcript, which is every place a secret
-            # must not be.
+            # Log secret keys by name only to prevent leaking credential values.
             self.events.emit("setup", purpose=question["purpose"], choice=applied["label"],
                              saved=applied["saved"], missing=applied["missing"])
             notes.append(applied["note"])
@@ -297,10 +282,7 @@ class BuilderAgent:
         """Decide the look, offer it for adjustment, and write it as a contract."""
         if not wants_design(task, plan):
             return None
-        # The plan names the screens and the domain far more precisely than the
-        # request does, so it is part of what the design is chosen from.
-        # The task sets the mood; the plan names the screens. They are read
-        # separately because only one of them has been approved.
+        # Derive visual design themes from the approved plan screens and domain.
         form = form_payload(f"{task}\n{plan}"[:8000], plan=plan)
         if not getattr(self, "design_approval", True):
             answer = {"decision": "apply", "selection": form["chosen"]}
@@ -341,16 +323,12 @@ class BuilderAgent:
         return written
 
 
-    # The tools a drawing needs: read the project, read the skill, write files.
-    # Nothing that installs, serves, tests or drives a browser - a prototype is
-    # HTML on disk, and a pass that can run npm will find a reason to.
+    # Restrict drawing pass tools strictly to workspace inspection and file writes.
     PROTOTYPE_TOOLS = ("readFile", "readFiles", "writeFile", "patchFile", "editFile", "listDir",
                        "globFiles", "grepSearch", "readSkill", "listSkills",
                        "inspectProject")
 
-    # How many times the user may send the drawing back before the build starts
-    # anyway. Each round is a re-render, which is cheap; an unbounded loop with
-    # nobody answering is not.
+    # Maximum user feedback rounds allowed for drawing revisions.
     MAX_PROTOTYPE_ROUNDS = 8
 
     def prototype(self, task: str, plan: str = "") -> dict | None:
@@ -391,9 +369,7 @@ class BuilderAgent:
                 return None
 
             drawn = self._drawn_pages(root)
-            # A redraw adds pages, removes them and re-points the navigation, so
-            # the map is folded again after every round rather than once at the
-            # end. The build reads it, and reads it after the last change.
+            # Refresh sitemap navigation graph after each drawing revision.
             self.sitemap = sitemap_of.from_drawing(root, self.sitemap)
             sitemap_of.save(self.sandbox.root, self.sitemap)
             self.events.emit("prototype", pages=drawn, round=round_number + 1,
@@ -404,10 +380,7 @@ class BuilderAgent:
                                          "from the design contract alone.")
                 break
 
-            # A script that does not parse takes the whole flow with it, and the
-            # page still looks finished, so nobody finds out until they click.
-            # Every drawing of a twenty-screen product broke this way - the model
-            # patches demo.js repeatedly and leaves a duplicated tail behind.
+            # Verify demo.js syntax so syntax errors and duplicated patch tails do not break navigation.
             broken = _script_error(root / "demo.js")
             if broken and round_number + 1 < self.MAX_PROTOTYPE_ROUNDS:
                 self.events.emit("notice", level="warn",
@@ -580,17 +553,12 @@ class BuilderAgent:
         try:
             plan_outcome = self.plan(task)
             if plan_outcome.status not in ("completed",):
-                # A planning pass that could not finish is not fatal: the build
-                # can still proceed from the request itself, and saying so is
-                # more useful than refusing to start.
+                # Fall back to building directly from user instructions if planning cannot complete.
                 self.events.emit("notice", level="warn",
                                  message="Planning did not complete; building from the request "
                                          "directly.")
                 self.plan_text = ""
-            # What the agreed plan needs an account for - a card processor, a
-            # mail service, somewhere to put an upload - asked between the plan
-            # and the design, because the plan is what says which of them the
-            # product actually has.
+            # Prompt for external service credentials required by features in the approved plan.
             self.settings(task, plan=self.plan_text)
             self.apply_design(task, plan=self.plan_text)
             # Drawn, changed until they are happy with it, and only then built.

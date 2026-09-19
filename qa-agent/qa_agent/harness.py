@@ -99,9 +99,7 @@ def prepare(root: Path, run) -> dict:
         config.write_text(VITEST_CONFIG, encoding="utf-8")
         actions.append("wrote vitest.config.js")
     elif "coverage" not in config.read_text(encoding="utf-8", errors="replace"):
-        # A config without a coverage reporter cannot produce the machine
-        # report the floor is measured from, and the stage would fail on a
-        # missing file rather than on the code.
+        # Ensure test runner configuration includes coverage reporter output.
         config.write_text(VITEST_CONFIG, encoding="utf-8")
         actions.append("added coverage reporting to vitest.config.js")
 

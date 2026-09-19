@@ -94,9 +94,7 @@ function Github({ deploy, onSave, probe, onRecheck }) {
   const ok = Boolean(deploy?.github_token_set)
   const login = deploy?.github_login || probe?.github_account || ''
 
-  // Signing in rather than pasting: GitHub shows a code, the browser approves
-  // it, and the token is written straight into this person's settings without
-  // passing through a field or a clipboard.
+  // Sign in to GitHub via OAuth device flow directly to user settings.
   const [clientId, setClientId] = useState(deploy?.github_client_id || '')
   const [flow, setFlow] = useState(null)
   const [signing, setSigning] = useState(false)
@@ -482,11 +480,7 @@ function Aws({ deploy, onSave, probe, onRecheck }) {
 }
 
 
-/* Signing in through a provider's own command line tool.
- *
- * Vercel, Netlify and Azure have no device flow, so their `login` command is
- * what drives the browser. Azure prints a code to type and the other two open
- * a tab by themselves, which is why the code only appears when there is one. */
+/* Handles interactive sign-in workflows through provider CLI tools. */
 function CliSignIn({ provider, onDone }) {
   const [state, setState] = useState(null)   // { flow_id, shows_code }
   const [code, setCode] = useState(null)
@@ -648,15 +642,7 @@ function Vercel({ deploy, onSave }) {
 }
 
 
-/**
- * A hosted provider, signed in to rather than pasted at.
- *
- * This was a password box and a Save button: a wrong token was stored as
- * happily as a working one, and the first anyone heard of it was a deployment
- * that failed. It now asks the provider who the credential belongs to - the
- * same thing the Vercel row does - so "saved" and "works" stop being the same
- * word.
- */
+/** Validates and saves API credentials directly against hosted deployment providers. */
 function HostedCredential({ title, provider, setting, saved, label, hint, href, onSave }) {
   const [value, setValue] = useState('')
   const [busy, setBusy] = useState('')

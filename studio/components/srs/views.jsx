@@ -1643,12 +1643,7 @@ function Interview({ srs }) {
 }
 
 function PrototypeFlow({ srs }) {
-  // The pages the server found on disk. This used to read
-  // `document.prototype_evidence`, written by a separate sync whose file was
-  // overwritten after every change - so the list was right until the next
-  // revision and then quietly wrong. When there is nothing, the page says so
-  // rather than inventing a "Main Application Interface" with three made-up
-  // controls on it.
+  // Display prototype pages discovered on disk, showing empty states when none exist.
   const pages = list(srs?.prototype?.pages)
   const screenshot = Boolean(srs?.prototype?.screenshot)
   const routes = list((srs.document || {}).screens)

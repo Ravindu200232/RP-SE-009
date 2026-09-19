@@ -131,9 +131,7 @@ def ensure_model(model: str) -> bool:
 
     if is_cloud_model(model):
 
-        # No weights to fetch, but the daemon only proxies a cloud model it
-        # has been asked for, so an unregistered one is registered first. With
-        # an API key has_model() is already true and nothing is pulled.
+        # Register proxy endpoints for cloud models before issuing queries.
         if not ollama.has_model(model):
             elog("INFO", f"   ☁️  Registering cloud model {model} "
                          f"(no download — cloud models carry no weights)…")

@@ -93,9 +93,7 @@ def is_self_explanatory(text: str, options=None) -> bool:
     if raw.casefold().strip(" .!?,") in _FILLER:
         return True
 
-    # Any meaningful text (names, numbers, phone numbers, entities) is self-explanatory.
-    # We do not require >= 3 words, which previously triggered fake confirmation loops
-    # like "You wrote 'hotel indoora'. Which of these did you mean?".
+    # Accept concise entity responses without forcing multi-word confirmation loops.
     return any(ch.isalnum() for ch in raw)
 
 
