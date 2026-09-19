@@ -60,7 +60,8 @@ MAX_SAME_FAILURE = 3
 MAX_SAME_READ = 3
 # One directory per stack - an index plus a file per entry - so a build opens
 # the index and then only what it needs.
-STACK_PACKS = {"nextjs-mongo": "stack-nextjs", "mern-microservices": "stack-mern"}
+STACK_PACKS = {"nextjs-mongo": "stack-nextjs", "mern-microservices": "stack-mern",
+               "remix-mongo": "stack-remix"}
 # Every build needs these two, so their indexes go in the prompt rather than
 # being discovered.
 SHARED_PACKS = ("stack-testing", "stack-debug")

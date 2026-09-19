@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   FolderUp, Settings, Download, ExternalLink, Search, Play, Trash2,
   PanelLeftClose, PanelLeftOpen, Home, LayoutGrid, Star, Clock,
-  BookOpen, FileText, Activity, ChevronDown, Gift, CreditCard, LogOut,
+  BookOpen, FileText, Activity, ChevronDown, CreditCard, LogOut,
   X, Menu,
 } from 'lucide-react'
 import { useStore, KEYS } from '@/lib/store'
@@ -255,17 +255,6 @@ export default function Sidebar({
 
       {/* Spacer */}
       <div className="flex-1" />
-
-      {/* Earn $50 referral banner */}
-      <div className="border-t border-line p-2">
-        <div className="flex items-center justify-between rounded-xl bg-[#1877F2]/10 border border-[#1877F2]/20 px-3 py-2 text-[12px] text-[#1877F2]">
-          <div className="flex items-center gap-2">
-            <Gift className="size-3.5" />
-            <span className="font-semibold">Earn $50</span>
-          </div>
-          <span className="size-2 rounded-full bg-[#1877F2] animate-pulse" />
-        </div>
-      </div>
 
       {/* User Account Row */}
       <div className="relative border-t border-line px-3 py-2.5" ref={accountMenuRef}>

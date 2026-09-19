@@ -45,6 +45,21 @@
       ]
     },
     {
+      "name": "stack-remix",
+      "match": [
+        "remix",
+        "remix.run",
+        "loader",
+        "action",
+        "useLoaderData",
+        "route module",
+        "nested routes"
+      ],
+      "stacks": [
+        "remix-mongo"
+      ]
+    },
+    {
       "name": "stack-testing",
       "match": [
         "test",
