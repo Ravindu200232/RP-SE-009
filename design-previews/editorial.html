@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editorial — The Publishing Platform for Modern Editorial Teams</title>
+    <meta name="description" content="Editorial is a publishing platform designed for modern editorial teams. Built on typographic excellence and structured grids.">
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gelasio:ital,wght@0,100..900;1,100..900&family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#111111',
+                        secondary: '#f1f1f1',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                        surface: '#FFFFFF',
+                        text: '#111827',
+                    },
+                    fontFamily: {
+                        serif: ['Gelasio', 'serif'],
+                        mono: ['Ubuntu Mono', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        :focus-visible {
+            outline: 2px solid #111111;
+            outline-offset: 2px;
+        }
+        .bg-primary :focus-visible,
+        .bg-primary:focus-visible {
+            outline-color: #FFFFFF;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+        details[open] .faq-chevron {
+            transform: rotate(180deg);
+        }
+        .faq-chevron {
+            transition: transform 0.2s ease;
+        }
+    </style>
+</head>
+<body class="bg-surface text-text font-serif antialiased">
+    <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-primary focus:text-surface focus:px-4 focus:py-2 focus:text-sm focus:font-mono">Skip to main content</a>
+
+    <!-- Navigation -->
+    <header class="sticky top-0 z-50 bg-surface border-b border-primary/10">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between" aria-label="Main navigation">
+            <a href="#" class="flex items-center gap-2 min-h-[44px] focus-ring" aria-label="Editorial home">
+                <span class="w-6 h-6 bg-primary inline-block" aria-hidden="true"></span>
+                <span class="font-serif text-[24px] font-bold tracking-tight text-primary">Editorial</span>
+            </a>
+
+            <div class="hidden md:flex items-center gap-8">
+                <a href="#features" class="text-[16px] text-text hover:text-primary min-h-[44px] flex items-center font-mono text-[14px] uppercase tracking-wider">Features</a>
+                <a href="#process" class="text-[16px] text-text hover:text-primary min-h-[44px] flex items-center font-mono text-[14px] uppercase tracking-wider">Process</a>
+                <a href="#pricing" class="text-[16px] text-text hover:text-primary min-h-[44px] flex items-center font-mono text-[14px] uppercase tracking-wider">Pricing</a>
+                <a href="#faq" class="text-[16px] text-text hover:text-primary min-h-[44px] flex items-center font-mono text-[14px] uppercase tracking-wider">FAQ</a>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <a href="#" class="hidden md:inline-flex items-center justify-center bg-primary text-surface text-[14px] font-mono uppercase tracking-wider px-6 min-h-[44px] hover:bg-text transition-colors focus-ring">
+                    Get Started
+                </a>
+                <button id="nav-toggle" class="md:hidden p-2 min-h-[44px] min-w-[44px] flex items-center justify-center focus-ring" aria-expanded="false" aria-controls="mobile-nav" aria-label="Toggle navigation menu">
+                    <i data-lucide="menu" class="w-6 h-6 text-primary"></i>
+                </button>
+            </div>
+        </nav>
+        <div id="mobile-nav" class="hidden md:hidden border-t border-primary/10 px-4 py-4 bg-surface">
+            <div class="flex flex-col gap-2">
+                <a href="#features" class="py-3 text-[16px] text-text hover:text-primary font-mono text-[14px] uppercase tracking-wider">Features</a>
+                <a href="#process" class="py-3 text-[16px] text-text hover:text-primary font-mono text-[14px] uppercase tracking-wider">Process</a>
+                <a href="#pricing" class="py-3 text-[16px] text-text hover:text-primary font-mono text-[14px] uppercase tracking-wider">Pricing</a>
+                <a href="#faq" class="py-3 text-[16px] text-text hover:text-primary font-mono text-[14px] uppercase tracking-wider">FAQ</a>
+                <a href="#" class="py-3 text-[16px] bg-primary text-surface text-center font-mono text-[14px] uppercase tracking-wider">Get Started</a>
+            </div>
+        </div>
+    </header>
+
+    <main id="main">
+        <!-- Hero -->
+        <section class="relative overflow-hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-32">
+                <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                    <div>
+                        <p class="font-mono text-[14px] uppercase tracking-[0.2em] text-primary mb-6">Editorial — Design System</p>
+                        <h1 class="font-serif text-[40px] leading-[1.1] font-bold text-primary mb-6">Craft stories worth reading.</h1>
+                        <p class="text-[18px] leading-relaxed text-text mb-8 max-w-md">A publishing platform designed for modern editorial teams. Built on a foundation of typographic excellence and structured grids.</p>
+                        <div class="flex flex-wrap gap-4">
+                            <a href="#pricing" class="inline-flex items-center justify-center bg-primary text-surface text-[14px] font-mono uppercase tracking-wider px-8 min-h-[48px] hover:bg-text transition-colors focus-ring">
+                                Start Publishing
+                            </a>
+                            <a href="#features" class="inline-flex items-center justify-center border border-primary text-primary text-[14px] font-mono uppercase tracking-wider px-8 min-h-[48px] hover:bg-secondary transition-colors focus-ring">
+                                View Features
+                            </a>
+                        </div>
+                    </div>
+                    <div class="hidden lg:block">
+                        <svg viewBox="0 0 560 420" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto" role="img" aria-label="Abstract editorial artwork showing geometric shapes in brand colors">
+                            <rect width="560" height="420" fill="#f1f1f1"/>
+                            <rect x="40" y="40" width="320" height="220" fill="#111111"/>
+                            <rect x="380" y="40" width="140" height="100" fill="#D97706"/>
+                            <circle cx="450" cy="220" r="70" stroke="#111111" stroke-width="2"/>
+                            <rect x="40" y="290" width="480" height="2" fill="#111111" opacity="0.3"/>
+                            <rect x="40" y="310" width="360" height="2" fill="#111111" opacity="0.2"/>
+                            <rect x="40" y="330" width="420" height="2" fill="#111111" opacity="0.2"/>
+                            <rect x="40" y="360" width="120" height="24" fill="#16A34A"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats -->
+        <section class="bg-primary text-surface" aria-label="Key statistics">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="text-center lg:text-left">
+                        <p class="font-mono text-[40px] font-bold text-surface">250+</p>
+                        <p class="font-mono text-[14px] uppercase tracking-wider text-surface/70 mt-2">Articles monthly</p>
+                    </div>
+                    <div class="text-center lg:text-left">
+                        <p class="font-mono text-[40px] font-bold text-surface">98%</p>
+                        <p class="font-mono text-[14px] uppercase tracking-wider text-surface/70 mt-2">Reader retention</p>
+                    </div>
+                    <div class="text-center lg:text-left">
+                        <p class="font-mono text-[40px] font-bold text-surface">40+</p>
+                        <p class="font-mono text-[14px] uppercase tracking-wider text-surface/70 mt-2">Countries served</p>
+                    </div>
+                    <div class="text-center lg:text-left">
+                        <p class="font-mono text-[40px] font-bold text-surface">12</p>
+                        <p class="font-mono text-[14px] uppercase tracking-wider text-surface/70 mt-2">Industry awards</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features -->
+        <section id="features" class="py-24">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="max-w-2xl mb-16">
+                    <p class="font-mono text-[14px] uppercase tracking-[0.2em] text-primary mb-4">Features</p>
+                    <h2 class="font-serif text-[32px] font-bold text-primary mb-4">Everything you need to publish beautifully.</h2>
+                    <p class="text-[16px] leading-relaxed text-text">Each feature is designed with intention, grounded in editorial best practices and accessible by default.</p>
+                </div>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="border border-primary/10 p-8 hover:border-primary/30 transition-colors">
+                        <i data-lucide="type" class="w-8 h-8 text-primary mb-6" aria-hidden="true"></i>
+                        <h3 class="font-serif text-[24px] font-semibold text-primary mb-2">Editorial Typography</h3>
+                        <p class="text-[16px] leading-relaxed text-text">Refined serif typefaces with optical sizing for every reading experience.</p>
+                    </div>
+                    <div class="border border-primary/10 p-8 hover:border-primary/30 transition-colors">
+                        <i data-lucide="layout-grid" class="w-8 h-8 text-primary mb-6" aria-hidden="true"></i>
+                        <h3 class="font-serif text-[24px] font-semibold text-primary mb-2">Structured Grids</h3>
+                        <p class="text-[16px] leading-relaxed text-text">An 8pt baseline grid keeps every layout perfectly aligned and rhythmically consistent.</p>
+                    </div>
+                    <div class="border border-primary/10 p-8 hover:border-primary/30 transition-colors">
+                        <i data-lucide="palette" class="w-8 h-8 text-primary mb-6" aria-hidden="true"></i>
+                        <h3 class="font-serif text-[24px] font-semibold text-primary mb-2">Color Discipline</h3>
+                        <p class="text-[16px] leading-relaxed text-text">A purposeful palette with semantic meaning and WCAG AA contrast built in.</p>
+                    </div>
+                    <div class="border border-primary/10 p-8 hover:border-primary/30 transition-colors">
+                        <i data-lucide="accessibility" class="w-8 h-8 text-primary mb-6" aria-hidden="true"></i>
+                        <h3 class="font-serif text-[24px] font-semibold text-primary mb-2">Accessible by Default</h3>
+                        <p class="text-[16px] leading-relaxed text-text">Keyboard-first interactions and screen-reader tested components for every user.</p>
+                    </div>
+                    <div class="border border-primary/10 p-8 hover:border-primary/30 transition-colors">
+                        <i data-lucide="smartphone" class="w-8 h-8 text-primary mb-6" aria-hidden="true"></i>
+                        <h3 class="font-serif text-[24px] font-semibold text-primary mb-2">Responsive Layouts</h3>
+                        <p class="text-[16px] leading-relaxed text-text">From 400px mobile to widescreen desktop, every layout adapts seamlessly.</p>
+                    </div>
+                    <div class="border border-primary/10 p-8 hover:border-primary/30 transition-colors">
+                        <i data-lucide="zap" class="w-8 h-8 text-primary mb-6" aria-hidden="true"></i>
+                        <h3 class="font-serif text-[24px] font-semibold text-primary mb-2">Performance First</h3>
+                        <p class="text-[16px] leading-relaxed text-text">Lightweight output with no unnecessary dependencies. Fast on every connection.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Process -->
+        <section id="process" class="bg-secondary py-24">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="max-w-2xl mb-16">
+                    <p class="font-mono text-[14px] uppercase tracking-[0.2em] text-primary mb-4">Process</p>
+                    <h2 class="font-serif text-[32px] font-bold text-primary mb-4">A proven workflow for editorial excellence.</h2>
+                    <p class="text-[16px] leading-relaxed text-text">Four disciplined phases take you from concept to published masterpiece.</p>
+                </div>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="relative">
+                        <p class="font-mono text-[40px] font-bold text-primary/20 mb-4">01</p>
+                        <h3 class="font-serif text-[24px] font-semibold text-primary mb-2">Discover</h3>
+                        <p class="text-[16px] leading-relaxed text-text">We audit your content and audience to define the editorial direction.</p>
+                    </div>
+                    <div class="relative">
+                        <p class="font-mono text-[40px] font-bold text-primary/20 mb-4">02</p>
+                        <h3 class="font-serif text-[24px] font-semibold text-primary mb-2">Design</h3>
+                        <p class="text-[16px] leading-relaxed text-text">Wireframes and prototypes establish the visual language and layout system.</p>
+                    </div>
+                    <div class="relative">
+                        <p class="font-mono text-[40px] font-bold text-primary/20 mb-4">03</p>
+                        <h3 class="font-serif text-[24px] font-semibold text-primary mb-2">Build</h3>
+                        <p class="text-[16px] leading-relaxed text-text">Implementation with semantic HTML and accessible components.</p>
+                    </div>
+                    <div class="relative">
+                        <p class="font-mono text-[40px] font-bold text-primary/20 mb-4">04</p>
+                        <h3 class="font-serif text-[24px] font-semibold text-primary mb-2">Refine</h3>
+                        <p class="text-[16px] leading-relaxed text-text">Testing, iteration, and polish to ensure every detail meets the standard.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Benefits -->
+        <section id="benefits" class="py-24">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid lg:grid-cols-2 gap-16 items-start">
+                    <div>
+                        <p class="font-mono text-[14px] uppercase tracking-[0.2em] text-primary mb-4">Benefits</p>
+                        <h2 class="font-serif text-[32px] font-bold text-primary mb-6">Why teams choose Editorial.</h2>
+                        <p class="text-[16px] leading-relaxed text-text mb-8">The result of disciplined design is a platform that feels effortless for writers, editors, and readers alike.</p>
+                        <div class="hidden lg:block">
+                            <svg viewBox="0 0 480 360" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto" role="img" aria-label="Abstract geometric composition in brand colors">
+                                <rect width="480" height="360" fill="#f1f1f1"/>
+                                <rect x="30" y="30" width="200" height="140" fill="#111111"/>
+                                <rect x="250" y="30" width="200" height="80" fill="#16A34A"/>
+                                <circle cx="350" cy="200" r="60" stroke="#111111" stroke-width="2"/>
+                                <rect x="30" y="200" width="200" height="100" fill="none" stroke="#111111" stroke-width="1"/>
+                                <rect x="30" y="320" width="420" height="2" fill="#111111" opacity="0.3"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <ul class="space-y-6">
+                            <li class="flex gap-4">
+                                <i data-lucide="check" class="w-6 h-6 text-success flex-shrink-0 mt-1" aria-hidden="true"></i>
+                                <div>
+                                    <h3 class="font-serif text-[18px] font-semibold text-primary mb-1">Clear visual hierarchy</h3>
+                                    <p class="text-[16px] leading-relaxed text-text">Readers instinctively know where to look, guided by typographic weight and spacing.</p>
+                                </div>
+                            </li>
+                            <li class="flex gap-4">
+                                <i data-lucide="check" class="w-6 h-6 text-success flex-shrink-0 mt-1" aria-hidden="true"></i>
+                                <div>
+                                    <h3 class="font-serif text-[18px] font-semibold text-primary mb-1">Consistent spacing rhythm</h3>
+                                    <p class="text-[16px] leading-relaxed text-text">The 8pt grid creates a predictable cadence across every page and component.</p>
+                                </div>
+                            </li>
+                            <li class="flex gap-4">
+                                <i data-lucide="check" class="w-6 h-6 text-success flex-shrink-0 mt-1" aria-hidden="true"></i>
+                                <div>
+                                    <h3 class="font-serif text-[18px] font-semibold text-primary mb-1">Accessible to all users</h3>
+                                    <p class="text-[16px] leading-relaxed text-text">WCAG 2.2 AA compliance means your content reaches everyone, without exception.</p>
+                                </div>
+                            </li>
+                            <li class="flex gap-4">
+                                <i data-lucide="check" class="w-6 h-6 text-success flex-shrink-0 mt-1" aria-hidden="true"></i>
+                                <div>
+                                    <h3 class="font-serif text-[18px] font-semibold text-primary mb-1">Faster design iterations</h3>
+                                    <p class="text-[16px] leading-relaxed text-text">Reusable components and tokens let your team ship changes in minutes, not days.</p>
+                                </div>
+                            </li>
+                            <li class="flex gap-4">
+                                <i data-lucide="check" class="w-6 h-6 text-success flex-shrink-0 mt-1" aria-hidden="true"></i>
+                                <div>
+                                    <h3 class="font-serif text-[18px] font-semibold text-primary mb-1">Improved reader engagement</h3>
+                                    <p class="text-[16px] leading-relaxed text-text">Beautiful, readable layouts keep readers on the page longer and coming back.</p>
+                                </div>
+                            </li>
+                            <li class="flex gap-4">
+                                <i data-lucide="check" class="w-6 h-6 text-success flex-shrink-0 mt-1" aria-hidden="true"></i>
+                                <div>
+                                    <h3 class="font-serif text-[18px] font-semibold text-primary mb-1">Scalable from blog to publication</h3>
+                                    <p class="text-[16px] leading-relaxed text-text">Start with a single publication and grow to a full editorial operation.</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials -->
+        <section id="testimonials" class="bg-secondary py-24">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="max-w-2xl mb-16">
+                    <p class="font-mono text-[14px] uppercase tracking-[0.2em] text-primary mb-4">Testimonials</p>
+                    <h2 class="font-serif text-[32px] font-bold text-primary mb-4">Loved by editorial teams worldwide.</h2>
+                </div>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="bg-surface border border-primary/10 p-8 flex flex-col">
+                        <i data-lucide="quote" class="w-8 h-8 text-primary mb-6" aria-hidden="true"></i>
+                        <blockquote class="text-[16px] leading-relaxed text-text flex-1 mb-6">"Editorial transformed our publishing workflow. The typography alone is worth it — our readers notice the difference immediately."</blockquote>
+                        <figcaption>
+                            <p class="font-serif text-[18px] font-semibold text-primary">Sarah Chen</p>
+                            <p class="font-mono text-[14px] text-text/60">Editor-in-Chief, The Daily</p>
+                        </figcaption>
+                    </div>
+                    <div class="bg-surface border border-primary/10 p-8 flex flex-col">
+                        <i data-lucide="quote" class="w-8 h-8 text-primary mb-6" aria-hidden="true"></i>
+                        <blockquote class="text-[16px] leading-relaxed text-text flex-1 mb-6">"The most accessible publishing platform we've used. Keyboard navigation is flawless and our screen-reader users are thriving."</blockquote>
+                        <figcaption>
+                            <p class="font-serif text-[18px] font-semibold text-primary">Marcus Rodriguez</p>
+                            <p class="font-mono text-[14px] text-text/60">Digital Director, Verge Media</p>
+                        </figcaption>
+                    </div>
+                    <div class="bg-surface border border-primary/10 p-8 flex flex-col">
+                        <i data-lucide="quote" class="w-8 h-8 text-primary mb-6" aria-hidden="true"></i>
+                        <blockquote class="text-[16px] leading-relaxed text-text flex-1 mb-6">"Beautiful, consistent, and fast. Editorial is the gold standard for digital publishing platforms."</blockquote>
+                        <figcaption>
+                            <p class="font-serif text-[18px] font-semibold text-primary">Emma Thompson</p>
+                            <p class="font-mono text-[14px] text-text/60">Content Lead, Atlas Quarterly</p>
+                        </figcaption>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing -->
+        <section id="pricing" class="py-24">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="max-w-2xl mb-16">
+                    <p class="font-mono text-[14px] uppercase tracking-[0.2em] text-primary mb-4">Pricing</p>
+                    <h2 class="font-serif text-[32px] font-bold text-primary mb-4">Simple pricing that scales with you.</h2>
+                    <p class="text-[16px] leading-relaxed text-text">Start free, upgrade when you're ready. No hidden fees, no surprises.</p>
+                </div>
+                <div class="grid lg:grid-cols-3 gap-8">
+                    <!-- Starter -->
+                    <div class="border border-primary/10 p-8 flex flex-col">
+                        <h3 class="font-serif text-[24px] font-semibold text-primary mb-2">Starter</h3>
+                        <p class="font-mono text-[40px] font-bold text-primary mb-2">$29<span class="text-[16px] font-normal text-text/60">/mo</span></p>
+                        <p class="text-[14px] text-text/60 mb-8">For individual writers</p>
+                        <ul class="space-y-4 mb-8 flex-1">
+                            <li class="flex gap-3">
+                                <i data-lucide="check" class="w-5 h-5 text-success flex-shrink-0" aria-hidden="true"></i>
+                                <span class="text-[16px] text-text">1 publication</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <i data-lucide="check" class="w-5 h-5 text-success flex-shrink-0" aria-hidden="true"></i>
+                                <span class="text-[16px] text-text">10,000 monthly readers</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <i data-lucide="check" class="w-5 h-5 text-success flex-shrink-0" aria-hidden="true"></i>
+                                <span class="text-[16px] text-text">Basic analytics</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <i data-lucide="check" class="w-5 h-5 text-success flex-shrink-0" aria-hidden="true"></i>
+                                <span class="text-[16px] text-text">Community support</span>
+                            </li>
+                        </ul>
+                        <a href="#" class="inline-flex items-center justify-center border border-primary text-primary text-[14px] font-mono uppercase tracking-wider px-6 min-h-[48px] hover:bg-secondary transition-colors focus-ring">
+                            Choose Starter
+                        </a>
+                    </div>
+                    <!-- Professional -->
+                    <div class="bg-primary text-surface p-8 flex flex-col relative">
+                        <p class="font-mono text-[14px] uppercase tracking-wider bg-warning text-primary px-3 py-1 inline-block self-start mb-4">Most Popular</p>
+                        <h3 class="font-serif text-[24px] font-semibold text-surface mb-2">Professional</h3>
+                        <p class="font-mono text-[40px] font-bold text-surface mb-2">$79<span class="text-[16px] font-normal text-surface/60">/mo</span></p>
+                        <p class="text-[14px] text-surface/60 mb-8">For growing teams</p>
+                        <ul class="space-y-4 mb-8 flex-1">
+                            <li class="flex gap-3">
+                                <i data-lucide="check" class="w-5 h-5 text-success flex-shrink-0" aria-hidden="true"></i>
+                                <span class="text-[16px] text-surface">5 publications</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <i data-lucide="check" class="w-5 h-5 text-success flex-shrink-0" aria-hidden="true"></i>
+                                <span class="text-[16px] text-surface">100,000 monthly readers</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <i data-lucide="check" class="w-5 h-5 text-success flex-shrink-0" aria-hidden="true"></i>
+                                <span class="text-[16px] text-surface">Advanced analytics</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <i data-lucide="check" class="w-5 h-5 text-success flex-shrink-0" aria-hidden="true"></i>
+                                <span class="text-[16px] text-surface">Priority support</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <i data-lucide="check" class="w-5 h-5 text-success flex-shrink-0" aria-hidden="true"></i>
+                                <span class="text-[16px] text-surface">Custom domains</span>
+                            </li>
+                        </ul>
+                        <a href="#" class="inline-flex items-center justify-center bg-surface text-primary text-[14px] font-mono uppercase tracking-wider px-6 min-h-[48px] hover:bg-secondary transition-colors focus-ring">
+                            Choose Professional
+                        </a>
+                    </div>
+                    <!-- Enterprise -->
+                    <div class="border border-primary/10 p-8 flex flex-col">
+                        <h3 class="font-serif text-[24px] font-semibold text-primary mb-2">Enterprise</h3>
+                        <p class="font-mono text-[40px] font-bold text-primary mb-2">Custom</p>
+                        <p class="text-[14px] text-text/60 mb-8">For large organizations</p>
+                        <ul class="space-y-4 mb-8 flex-1">
+                            <li class="flex gap-3">
+                                <i data-lucide="check" class="w-5 h-5 text-success flex-shrink-0" aria-hidden="true"></i>
+                                <span class="text-[16px] text-text">Unlimited publications</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <i data-lucide="check" class="w-5 h-5 text-success flex-shrink-0" aria-hidden="true"></i>
+                                <span class="text-[16px] text-text">Unlimited readers</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <i data-lucide="check" class="w-5 h-5 text-success flex-shrink-0" aria-hidden="true"></i>
+                                <span class="text-[16px] text-text">Dedicated support</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <i data-lucide="check" class="w-5 h-5 text-success flex-shrink-0" aria-hidden="true"></i>
+                                <span class="text-[16px] text-text">SLA &amp; security review</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <i data-lucide="check" class="w-5 h-5 text-success flex-shrink-0" aria-hidden="true"></i>
+                                <span class="text-[16px] text-text">Custom integrations</span>
+                            </li>
+                        </ul>
+                        <a href="#" class="inline-flex items-center justify-center border border-primary text-primary text-[14px] font-mono uppercase tracking-wider px-6 min-h-[48px] hover:bg-secondary transition-colors focus-ring">
+                            Contact Sales
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section id="faq" class="bg-secondary py-24">
+            <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <p class="font-mono text-[14px] uppercase tracking-[0.2em] text-primary mb-4">FAQ</p>
+                    <h2 class="font-serif text-[32px] font-bold text-primary mb-4">Frequently asked questions.</h2>
+                </div>
+                <div class="space-y-4">
+                    <details class="bg-surface border border-primary/10" open>
+                        <summary class="flex items-center justify-between p-6 cursor-pointer min-h-[44px] focus-ring list-none">
+                            <span class="font-serif text-[18px] font-semibold text-primary">What makes Editorial different from other publishing platforms?</span>
+                            <i data-lucide="chevron-down" class="w-5 h-5 text-primary flex-shrink-0 faq-chevron" aria-hidden="true"></i>
+                        </summary>
+                        <div class="px-6 pb-6">
+                            <p class="text-[16px] leading-relaxed text-text">Editorial is built on a foundation of typographic excellence and structured grids. Every component is designed with accessibility and editorial best practices in mind, giving you a platform that produces beautiful, readable content out of the box.</p>
+                        </div>
+                    </details>
+                    <details class="bg-surface border border-primary/10">
+                        <summary class="flex items-center justify-between p-6 cursor-pointer min-h-[44px] focus-ring list-none">
+                            <span class="font-serif text-[18px] font-semibold text-primary">Can I migrate my existing content?</span>
+                            <i data-lucide="chevron-down" class="w-5 h-5 text-primary flex-shrink-0 faq-chevron" aria-hidden="true"></i>
+                        </summary>
+                        <div class="px-6 pb-6">
+                            <p class="text-[16px] leading-relaxed text-text">Yes. We provide migration tools and a dedicated migration guide that works with WordPress, Medium, Substack, and most other publishing platforms. Our team can also assist with complex migrations on the Enterprise plan.</p>
+                        </div>
+                    </details>
+                    <details class="bg-surface border border-primary/10">
+                        <summary class="flex items-center justify-between p-6 cursor-pointer min-h-[44px] focus-ring list-none">
+                            <span class="font-serif text-[18px] font-semibold text-primary">Do you offer a free trial?</span>
+                            <i data-lucide="chevron-down" class="w-5 h-5 text-primary flex-shrink-0 faq-chevron" aria-hidden="true"></i>
+                        </summary>
+                        <div class="px-6 pb-6">
+                            <p class="text-[16px] leading-relaxed text-text">Yes. Every plan includes a 14-day free trial with full access to all features. No credit card required. You can upgrade, downgrade, or cancel at any time.</p>
+                        </div>
+                    </details>
+                    <details class="bg-surface border border-primary/10">
+                        <summary class="flex items-center justify-between p-6 cursor-pointer min-h-[44px] focus-ring list-none">
+                            <span class="font-serif text-[18px] font-semibold text-primary">Is Editorial accessible?</span>
+                            <i data-lucide="chevron-down" class="w-5 h-5 text-primary flex-shrink-0 faq-chevron" aria-hidden="true"></i>
+                        </summary>
+                        <div class="px-6 pb-6">
+                            <p class="text-[16px] leading-relaxed text-text">Absolutely. Editorial is built to WCAG 2.2 AA standards. We use semantic HTML, keyboard-first interactions, visible focus states, and screen-reader tested components. Accessibility is not an afterthought — it's a core design principle.</p>
+                        </div>
+                    </details>
+                    <details class="bg-surface border border-primary/10">
+                        <summary class="flex items-center justify-between p-6 cursor-pointer min-h-[44px] focus-ring list-none">
+                            <span class="font-serif text-[18px] font-semibold text-primary">Can I customize the design?</span>
+                            <i data-lucide="chevron-down" class="w-5 h-5 text-primary flex-shrink-0 faq-chevron" aria-hidden="true"></i>
+                        </summary>
+                        <div class="px-6 pb-6">
+                            <p class="text-[16px] leading-relaxed text-text">Yes. Editorial uses a token-based design system. You can customize colors, typography, spacing, and layout through the theme editor. For advanced customization, custom CSS is available on Professional and Enterprise plans.</p>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- CTA band -->
+                <div class="mt-16 bg-primary text-surface p-8 sm:p-12 text-center">
+                    <h2 class="font-serif text-[24px] sm:text-[32px] font-bold text-surface mb-4">Ready to start publishing?</h2>
+                    <p class="text-[16px] text-surface/70 mb-8 max-w-md mx-auto">Join thousands of editorial teams who publish with Editorial every day.</p>
+                    <a href="#" class="inline-flex items-center justify-center bg-surface text-primary text-[14px] font-mono uppercase tracking-wider px-8 min-h-[48px] hover:bg-secondary transition-colors focus-ring">
+                        Get Started Free
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-primary text-surface">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-12 mb-16">
+                <div>
+                    <div class="flex items-center gap-2 mb-6">
+                        <span class="w-6 h-6 bg-surface inline-block" aria-hidden="true"></span>
+                        <span class="font-serif text-[24px] font-bold text-surface">Editorial</span>
+                    </div>
+                    <p class="text-[14px] text-surface/60 leading-relaxed">The publishing platform for modern editorial teams.</p>
+                </div>
+                <div>
+                    <h3 class="font-mono text-[14px] uppercase tracking-wider text-surface/50 mb-4">Product</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#features" class="text-[14px] text-surface/80 hover:text-surface min-h-[44px] inline-flex items-center focus-ring">Features</a></li>
+                        <li><a href="#pricing" class="text-[14px] text-surface/80 hover:text-surface min-h-[44px] inline-flex items-center focus-ring">Pricing</a></li>
+                        <li><a href="#faq" class="text-[14px] text-surface/80 hover:text-surface min-h-[44px] inline-flex items-center focus-ring">FAQ</a></li>
+                        <li><a href="#" class="text-[14px] text-surface/80 hover:text-surface min-h-[44px] inline-flex items-center focus-ring">Changelog</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-mono text-[14px] uppercase tracking-wider text-surface/50 mb-4">Company</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-[14px] text-surface/80 hover:text-surface min-h-[44px] inline-flex items-center focus-ring">About</a></li>
+                        <li><a href="#" class="text-[14px] text-surface/80 hover:text-surface min-h-[44px] inline-flex items-center focus-ring">Careers</a></li>
+                        <li><a href="#" class="text-[14px] text-surface/80 hover:text-surface min-h-[44px] inline-flex items-center focus-ring">Press</a></li>
+                        <li><a href="#" class="text-[14px] text-surface/80 hover:text-surface min-h-[44px] inline-flex items-center focus-ring">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-mono text-[14px] uppercase tracking-wider text-surface/50 mb-4">Resources</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-[14px] text-surface/80 hover:text-surface min-h-[44px] inline-flex items-center focus-ring">Documentation</a></li>
+                        <li><a href="#" class="text-[14px] text-surface/80 hover:text-surface min-h-[44px] inline-flex items-center focus-ring">Blog</a></li>
+                        <li><a href="#" class="text-[14px] text-surface/80 hover:text-surface min-h-[44px] inline-flex items-center focus-ring">Community</a></li>
+                        <li><a href="#" class="text-[14px] text-surface/80 hover:text-surface min-h-[44px] inline-flex items-center focus-ring">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-surface/10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="text-[14px] text-surface/50 font-mono">&copy; 2024 Editorial. All rights reserved.</p>
+                <div class="flex gap-6">
+                    <a href="#" class="text-[14px] text-surface/50 hover:text-surface min-h-[44px] inline-flex items-center focus-ring">Privacy</a>
+                    <a href="#" class="text-[14px] text-surface/50 hover:text-surface min-h-[44px] inline-flex items-center focus-ring">Terms</a>
+                    <a href="#" class="text-[14px] text-surface/50 hover:text-surface min-h-[44px] inline-flex items-center focus-ring">Cookies</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Mobile nav toggle
+        const navToggle = document.getElementById('nav-toggle');
+        const mobileNav = document.getElementById('mobile-nav');
+        if (navToggle && mobileNav) {
+            navToggle.addEventListener('click', () => {
+                const isExpanded = navToggle.getAttribute('aria-expanded') === 'true';
+                navToggle.setAttribute('aria-expanded', String(!isExpanded));
+                mobileNav.classList.toggle('hidden');
+                // Toggle icon
+                const icon = navToggle.querySelector('i');
+                if (icon) {
+                    icon.setAttribute('data-lucide', isExpanded ? 'menu' : 'x');
+                    lucide.createIcons();
+                }
+            });
+        }
+
+        // Close mobile nav when clicking a link
+        const mobileLinks = mobileNav ? mobileNav.querySelectorAll('a') : [];
+        mobileLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                mobileNav.classList.add('hidden');
+                navToggle.setAttribute('aria-expanded', 'false');
+                const icon = navToggle.querySelector('i');
+                if (icon) {
+                    icon.setAttribute('data-lucide', 'menu');
+                    lucide.createIcons();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

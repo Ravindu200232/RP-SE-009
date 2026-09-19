@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enterprise — Cloud Platform</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { font-family: 'IBM Plex Sans', sans-serif; }
+    .glass { background: rgba(9,9,11,0.7); backdrop-filter: blur(12px); }
+    .grid-bg {
+      background-image: 
+        linear-gradient(rgba(12,92,171,0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(12,92,171,0.08) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    .glow { box-shadow: 0 0 40px rgba(12,92,171,0.3); }
+    .gradient-text {
+      background: linear-gradient(135deg, #fafafa 0%, #0C5CAB 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .focus-ring:focus-visible {
+      outline: 2px solid #0C5CAB;
+      outline-offset: 2px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-[#09090b] text-[#fafafa] antialiased min-h-screen">
+
+  <!-- Navigation -->
+  <nav class="fixed top-0 w-full z-50 glass border-b border-white/10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 bg-[#0C5CAB] rounded-lg flex items-center justify-center">
+            <i data-lucide="box" class="w-5 h-5"></i>
+          </div>
+          <span class="text-xl font-bold tracking-tight">Enterprise</span>
+        </div>
+        <div class="hidden md:flex items-center gap-8">
+          <a href="#features" class="text-sm text-white/70 hover:text-white transition-colors focus-ring rounded px-2 py-1">Features</a>
+          <a href="#process" class="text-sm text-white/70 hover:text-white transition-colors focus-ring rounded px-2 py-1">Process</a>
+          <a href="#pricing" class="text-sm text-white/70 hover:text-white transition-colors focus-ring rounded px-2 py-1">Pricing</a>
+          <a href="#faq" class="text-sm text-white/70 hover:text-white transition-colors focus-ring rounded px-2 py-1">FAQ</a>
+        </div>
+        <div class="flex items-center gap-4">
+          <a href="#" class="text-sm text-white/70 hover:text-white transition-colors focus-ring rounded px-2 py-1 hidden sm:block">Sign in</a>
+          <a href="#" class="bg-[#0C5CAB] hover:bg-[#0a4a8a] transition-colors text-white text-sm font-medium px-4 py-2 rounded-lg focus-ring">Get Started</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8 grid-bg">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center max-w-4xl mx-auto">
+        <div class="inline-flex items-center gap-2 bg-[#0C5CAB]/10 border border-[#0C5CAB]/30 rounded-full px-4 py-1.5 mb-8">
+          <span class="w-2 h-2 bg-[#10b981] rounded-full animate-pulse"></span>
+          <span class="text-sm text-white/80">All systems operational</span>
+        </div>
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
+          Build faster with<br>
+          <span class="gradient-text">Enterprise Cloud</span>
+        </h1>
+        <p class="text-lg sm:text-xl text-white/60 max-w-2xl mx-auto mb-10">
+          Deploy, scale, and monitor your applications with enterprise-grade infrastructure. 
+          Built for teams that need reliability without compromise.
+        </p>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <a href="#" class="bg-[#0C5CAB] hover:bg-[#0a4a8a] transition-colors text-white font-medium px-8 py-3 rounded-lg focus-ring w-full sm:w-auto text-center">
+            Start Free Trial
+          </a>
+          <a href="#" class="border border-white/20 hover:border-white/40 transition-colors text-white font-medium px-8 py-3 rounded-lg focus-ring w-full sm:w-auto text-center">
+            View Documentation
+          </a>
+        </div>
+      </div>
+      <!-- Hero Visual -->
+      <div class="mt-20 max-w-5xl mx-auto">
+        <div class="glass rounded-xl border border-white/10 glow p-6">
+          <div class="flex items-center gap-2 mb-6">
+            <div class="w-3 h-3 rounded-full bg-[#ef4444]"></div>
+            <div class="w-3 h-3 rounded-full bg-[#f59e0b]"></div>
+            <div class="w-3 h-3 rounded-full bg-[#10b981]"></div>
+            <div class="ml-4 flex-1 h-8 bg-white/5 rounded flex items-center px-3">
+              <span class="text-xs text-white/50">app.enterprise.io/dashboard</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white/5 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-4">
+                <span class="text-sm text-white/50">CPU Usage</span>
+                <i data-lucide="cpu" class="w-4 h-4 text-[#0C5CAB]"></i>
+              </div>
+              <div class="text-3xl font-bold mb-2">42%</div>
+              <div class="h-2 bg-white/10 rounded-full overflow-hidden">
+                <div class="h-full w-[42%] bg-[#0C5CAB] rounded-full"></div>
+              </div>
+            </div>
+            <div class="bg-white/5 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-4">
+                <span class="text-sm text-white/50">Requests/min</span>
+                <i data-lucide="activity" class="w-4 h-4 text-[#10b981]"></i>
+              </div>
+              <div class="text-3xl font-bold mb-2">2,847</div>
+              <div class="h-2 bg-white/10 rounded-full overflow-hidden">
+                <div class="h-full w-[78%] bg-[#10b981] rounded-full"></div>
+              </div>
+            </div>
+            <div class="bg-white/5 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-4">
+                <span class="text-sm text-white/50">Error Rate</span>
+                <i data-lucide="shield-check" class="w-4 h-4 text-[#f59e0b]"></i>
+              </div>
+              <div class="text-3xl font-bold mb-2">0.02%</div>
+              <div class="h-2 bg-white/10 rounded-full overflow-hidden">
+                <div class="h-full w-[2%] bg-[#f59e0b] rounded-full"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <section class="py-16 px-4 sm:px-6 lg:px-8 border-y border-white/10 bg-white/[0.02]">
+    <div class="max-w-7xl mx-auto">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div class="text-center">
+          <div class="text-4xl font-bold text-[#0C5CAB] mb-2">99.99%</div>
+          <div class="text-sm text-white/60">Uptime SLA</div>
+        </div>
+        <div class="text-center">
+          <div class="text-4xl font-bold text-[#0C5CAB] mb-2">10ms</div>
+          <div class="text-sm text-white/60">Avg. Latency</div>
+        </div>
+        <div class="text-center">
+          <div class="text-4xl font-bold text-[#0C5CAB] mb-2">120+</div>
+          <div class="text-sm text-white/60">Global Regions</div>
+        </div>
+        <div class="text-center">
+          <div class="text-4xl font-bold text-[#0C5CAB] mb-2">SOC 2</div>
+          <div class="text-sm text-white/60">Compliant</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="py-20 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl sm:text-4xl font-bold mb-4">Everything you need to ship</h2>
+        <p class="text-white/60 max-w-2xl mx-auto">Powerful features that help your team deploy faster, scale effortlessly, and stay ahead of issues.</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Feature 1 -->
+        <div class="bg-white/[0.03] border border-white/10 rounded-xl p-6 hover:border-[#0C5CAB]/50 transition-colors">
+          <div class="w-12 h-12 bg-[#0C5CAB]/10 rounded-lg flex items-center justify-center mb-4">
+            <i data-lucide="zap" class="w-6 h-6 text-[#0C5CAB]"></i>
+          </div>
+          <h3 class="text-lg font-semibold mb-2">Instant Deploys</h3>
+          <p class="text-sm text-white/60">Push to deploy. Your code goes live in seconds with zero downtime and automatic rollbacks.</p>
+        </div>
+        <!-- Feature 2 -->
+        <div class="bg-white/[0.03] border border-white/10 rounded-xl p-6 hover:border-[#0C5CAB]/50 transition-colors">
+          <div class="w-12 h-12 bg-[#0C5CAB]/10 rounded-lg flex items-center justify-center mb-4">
+            <i data-lucide="scale" class="w-6 h-6 text-[#0C5CAB]"></i>
+          </div>
+          <h3 class="text-lg font-semibold mb-2">Auto Scaling</h3>
+          <p class="text-sm text-white/60">Scale from zero to millions of users automatically. Pay only for what you use.</p>
+        </div>
+        <!-- Feature 3 -->
+        <div class="bg-white/[0.03] border border-white/10 rounded-xl p-6 hover:border-[#0C5CAB]/50 transition-colors">
+          <div class="w-12 h-12 bg-[#0C5CAB]/10 rounded-lg flex items-center justify-center mb-4">
+            <i data-lucide="shield" class="w-6 h-6 text-[#0C5CAB]"></i>
+          </div>
+          <h3 class="text-lg font-semibold mb-2">Enterprise Security</h3>
+          <p class="text-sm text-white/60">SOC 2 Type II, GDPR, and HIPAA compliant. SSO, SAML, and audit logs included.</p>
+        </div>
+        <!-- Feature 4 -->
+        <div class="bg-white/[0.03] border border-white/10 rounded-xl p-6 hover:border-[#0C5CAB]/50 transition-colors">
+          <div class="w-12 h-12 bg-[#0C5CAB]/10 rounded-lg flex items-center justify-center mb-4">
+            <i data-lucide="globe" class="w-6 h-6 text-[#0C5CAB]"></i>
+          </div>
+          <h3 class="text-lg font-semibold mb-2">Global Edge</h3>
+          <p class="text-sm text-white/60">Deploy to 120+ regions worldwide. Your users get the fastest experience anywhere.</p>
+        </div>
+        <!-- Feature 5 -->
+        <div class="bg-white/[0.03] border border-white/10 rounded-xl p-6 hover:border-[#0C5CAB]/50 transition-colors">
+          <div class="w-12 h-12 bg-[#0C5CAB]/10 rounded-lg flex items-center justify-center mb-4">
+            <i data-lucide="bar-chart-3" class="w-6 h-6 text-[#0C5CAB]"></i>
+          </div>
+          <h3 class="text-lg font-semibold mb-2">Real-time Analytics</h3>
+          <p class="text-sm text-white/60">Monitor performance, errors, and user behavior in real-time with custom dashboards.</p>
+        </div>
+        <!-- Feature 6 -->
+        <div class="bg-white/[0.03] border border-white/10 rounded-xl p-6 hover:border-[#0C5CAB]/50 transition-colors">
+          <div class="w-12 h-12 bg-[#0C5CAB]/10 rounded-lg flex items-center justify-center mb-4">
+            <i data-lucide="workflow" class="w-6 h-6 text-[#0C5CAB]"></i>
+          </div>
+          <h3 class="text-lg font-semibold mb-2">CI/CD Pipeline</h3>
+          <p class="text-sm text-white/60">Built-in continuous integration and delivery. Test, build, and deploy automatically.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Process -->
+  <section id="process" class="py-20 px-4 sm:px-6 lg:px-8 bg-[#0C5CAB]/5 border-y border-white/10">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl sm:text-4xl font-bold mb-4">From idea to production in minutes</h2>
+        <p class="text-white/60 max-w-2xl mx-auto">A simple, streamlined workflow that gets your team shipping faster.</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <!-- Step 1 -->
+        <div class="relative">
+          <div class="text-5xl font-bold text-[#0C5CAB]/20 mb-4">01</div>
+          <div class="w-12 h-12 bg-[#0C5CAB] rounded-lg flex items-center justify-center mb-4">
+            <i data-lucide="git-branch" class="w-6 h-6 text-white"></i>
+          </div>
+          <h3 class="text-lg font-semibold mb-2">Connect</h3>
+          <p class="text-sm text-white/60">Link your GitHub, GitLab, or Bitbucket repository in one click.</p>
+        </div>
+        <!-- Step 2 -->
+        <div class="relative">
+          <div class="text-5xl font-bold text-[#0C5CAB]/20 mb-4">02</div>
+          <div class="w-12 h-12 bg-[#0C5CAB] rounded-lg flex items-center justify-center mb-4">
+            <i data-lucide="settings" class="w-6 h-6 text-white"></i>
+          </div>
+          <h3 class="text-lg font-semibold mb-2">Configure</h3>
+          <p class="text-sm text-white/60">Set your environment variables, build settings, and scaling rules.</p>
+        </div>
+        <!-- Step 3 -->
+        <div class="relative">
+          <div class="text-5xl font-bold text-[#0C5CAB]/20 mb-4">03</div>
+          <div class="w-12 h-12 bg-[#0C5CAB] rounded-lg flex items-center justify-center mb-4">
+            <i data-lucide="rocket" class="w-6 h-6 text-white"></i>
+          </div>
+          <h3 class="text-lg font-semibold mb-2">Deploy</h3>
+          <p class="text-sm text-white/60">Push to deploy. Your app goes live automatically with zero downtime.</p>
+        </div>
+        <!-- Step 4 -->
+        <div class="relative">
+          <div class="text-5xl font-bold text-[#0C5CAB]/20 mb-4">04</div>
+          <div class="w-12 h-12 bg-[#0C5CAB] rounded-lg flex items-center justify-center mb-4">
+            <i data-lucide="trending-up" class="w-6 h-6 text-white"></i>
+          </div>
+          <h3 class="text-lg font-semibold mb-2">Monitor</h3>
+          <p class="text-sm text-white/60">Track performance, errors, and user behavior in real-time.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Benefits -->
+  <section class="py-20 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div>
+          <h2 class="text-3xl sm:text-4xl font-bold mb-6">Why teams choose Enterprise</h2>
+          <div class="space-y-6">
+            <div class="flex gap-4">
+              <div class="flex-shrink-0 w-8 h-8 bg-[#10b981]/10 rounded-lg flex items-center justify-center">
+                <i data-lucide="check" class="w-4 h-4 text-[#10b981]"></i>
+              </div>
+              <div>
+                <h3 class="font-semibold mb-1">Reduce infrastructure costs by 60%</h3>
+                <p class="text-sm text-white/60">Our auto-scaling and efficient resource allocation means you never overpay for unused capacity.</p>
+              </div>
+            </div>
+            <div class="flex gap-4">
+              <div class="flex-shrink-0 w-8 h-8 bg-[#10b981]/10 rounded-lg flex items-center justify-center">
+                <i data-lucide="check" class="w-4 h-4 text-[#10b981]"></i>
+              </div>
+              <div>
+                <h3 class="font-semibold mb-1">Deploy 10x faster</h3>
+                <p class="text-sm text-white/60">Streamlined CI/CD and instant rollbacks mean your team ships features in hours, not weeks.</p>
+              </div>
+            </div>
+            <div class="flex gap-4">
+              <div class="flex-shrink-0 w-8 h-8 bg-[#10b981]/10 rounded-lg flex items-center justify-center">
+                <i data-lucide="check" class="w-4 h-4 text-[#10b981]"></i>
+              </div>
+              <div>
+                <h3 class="font-semibold mb-1">99.99% uptime guarantee</h3>
+                <p class="text-sm text-white/60">Multi-region redundancy and automatic failover keep your apps running around the clock.</p>
+              </div>
+            </div>
+            <div class="flex gap-4">
+              <div class="flex-shrink-0 w-8 h-8 bg-[#10b981]/10 rounded-lg flex items-center justify-center">
+                <i data-lucide="check" class="w-4 h-4 text-[#10b981]"></i>
+              </div>
+              <div>
+                <h3 class="font-semibold mb-1">Enterprise-grade security</h3>
+                <p class="text-sm text-white/60">SOC 2 Type II, GDPR, and HIPAA compliance. SSO, SAML, and audit logs included.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Visual -->
+        <div class="glass rounded-xl border border-white/10 p-8">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="font-semibold">Cost Comparison</h3>
+            <span class="text-xs text-[#10b981] bg-[#10b981]/10 px-2 py-1 rounded">Save 60%</span>
+          </div>
+          <div class="space-y-4">
+            <div>
+              <div class="flex justify-between text-sm mb-2">
+                <span class="text-white/60">Traditional Cloud</span>
+                <span>$4,200/mo</span>
+              </div>
+              <div class="h-4 bg-white/10 rounded overflow-hidden">
+                <div class="h-full w-full bg-[#ef4444]/60 rounded"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-sm mb-2">
+                <span class="text-white/60">Enterprise</span>
+                <span>$1,680/mo</span>
+              </div>
+              <div class="h-4 bg-white/10 rounded overflow-hidden">
+                <div class="h-full w-[40%] bg-[#10b981]/60 rounded"></div>
+              </div>
+            </div>
+          </div>
+          <div class="mt-8 p-4 bg-[#0C5CAB]/10 border border-[#0C5CAB]/30 rounded-lg">
+            <div class="flex items-center gap-2 mb-2">
+              <i data-lucide="trending-up" class="w-4 h-4 text-[#0C5CAB]"></i>
+              <span class="text-sm font-medium">Growth Impact</span>
+            </div>
+            <p class="text-sm text-white/60">Teams using Enterprise report 3.2x faster feature delivery and 45% higher developer satisfaction.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section class="py-20 px-4 sm:px-6 lg:px-8 bg-white/[0.02] border-y border-white/10">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl sm:text-4xl font-bold mb-4">Loved by engineering teams</h2>
+        <p class="text-white/60 max-w-2xl mx-auto">Join thousands of companies that trust Enterprise to power their most critical applications.</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Testimonial 1 -->
+        <div class="bg-white/[0.03] border border-white/10 rounded-xl p-6">
+          <div class="flex gap-1 mb-4">
+            <i data-lucide="star" class="w-4 h-4 fill-[#f59e0b] text-[#f59e0b]"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-[#f59e0b] text-[#f59e0b]"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-[#f59e0b] text-[#f59e0b]"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-[#f59e0b] text-[#f59e0b]"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-[#f59e0b] text-[#f59e0b]"></i>
+          </div>
+          <p class="text-sm text-white/80 mb-6">"Enterprise transformed our deployment process. We went from weekly releases to multiple deploys per day. The auto-scaling has saved us thousands in infrastructure costs."</p>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-[#0C5CAB]/20 rounded-full flex items-center justify-center">
+              <span class="text-sm font-bold text-[#0C5CAB]">SK</span>
+            </div>
+            <div>
+              <div class="text-sm font-medium">Sarah Kim</div>
+              <div class="text-xs text-white/50">CTO, TechFlow</div>
+            </div>
+          </div>
+        </div>
+        <!-- Testimonial 2 -->
+        <div class="bg-white/[0.03] border border-white/10 rounded-xl p-6">
+          <div class="flex gap-1 mb-4">
+            <i data-lucide="star" class="w-4 h-4 fill-[#f59e0b] text-[#f59e0b]"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-[#f59e0b] text-[#f59e0b]"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-[#f59e0b] text-[#f59e0b]"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-[#f59e0b] text-[#f59e0b]"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-[#f59e0b] text-[#f59e0b]"></i>
+          </div>
+          <p class="text-sm text-white/80 mb-6">"The monitoring and analytics are incredible. We caught a critical bug before it affected our users. The real-time dashboards give us complete visibility into our stack."</p>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-[#0C5CAB]/20 rounded-full flex items-center justify-center">
+              <span class="text-sm font-bold text-[#0C5CAB]">MR</span>
+            </div>
+            <div>
+              <div class="text-sm font-medium">Marcus Rodriguez</div>
+              <div class="text-xs text-white/50">VP Engineering, DataSync</div>
+            </div>
+          </div>
+        </div>
+        <!-- Testimonial 3 -->
+        <div class="bg-white/[0.03] border border-white/10 rounded-xl p-6">
+          <div class="flex gap-1 mb-4">
+            <i data-lucide="star" class="w-4 h-4 fill-[#f59e0b] text-[#f59e0b]"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-[#f59e0b] text-[#f59e0b]"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-[#f59e0b] text-[#f59e0b]"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-[#f59e0b] text-[#f59e0b]"></i>
+            <i data-lucide="star" class="w-4 h-4 fill-[#f59e0b] text-[#f59e0b]"></i>
+          </div>
+          <p class="text-sm text-white/80 mb-6">"We migrated our entire infrastructure to Enterprise in less than a week. The documentation is excellent, and the support team is incredibly responsive. Highly recommended."</p>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-[#0C5CAB]/20 rounded-full flex items-center justify-center">
+              <span class="text-sm font-bold text-[#0C5CAB]">AL</span>
+            </div>
+            <div>
+              <div class="text-sm font-medium">Anna Liu</div>
+              <div class="text-xs text-white/50">Head of Platform, CloudNative</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section id="pricing" class="py-20 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl sm:text-4xl font-bold mb-4">Simple, transparent pricing</h2>
+        <p class="text-white/60 max-w-2xl mx-auto">Start free. Scale as you grow. No hidden fees, cancel anytime.</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <!-- Starter -->
+        <div class="bg-white/[0.03] border border-white/10 rounded-xl p-8 flex flex-col">
+          <h3 class="text-lg font-semibold mb-2">Starter</h3>
+          <p class="text-sm text-white/60 mb-6">Perfect for side projects and small apps.</p>
+          <div class="mb-6">
+            <span class="text-4xl font-bold">$0</span>
+            <span class="text-white/60">/mo</span>
+          </div>
+          <ul class="space-y-3 mb-8 flex-grow">
+            <li class="flex items-center gap-2 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-[#10b981]"></i>
+              1 project
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-[#10b981]"></i>
+              10GB storage
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-[#10b981]"></i>
+              100K requests/mo
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-[#10b981]"></i>
+              Community support
+            </li>
+          </ul>
+          <a href="#" class="border border-white/20 hover:border-white/40 transition-colors text-center font-medium px-4 py-2.5 rounded-lg focus-ring">Get Started</a>
+        </div>
+        <!-- Pro -->
+        <div class="bg-[#0C5CAB]/10 border-2 border-[#0C5CAB] rounded-xl p-8 flex flex-col relative">
+          <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-[#0C5CAB] text-white text-xs font-medium px-3 py-1 rounded-full">Most Popular</div>
+          <h3 class="text-lg font-semibold mb-2">Pro</h3>
+          <p class="text-sm text-white/60 mb-6">For growing teams that need more power.</p>
+          <div class="mb-6">
+            <span class="text-4xl font-bold">$49</span>
+            <span class="text-white/60">/mo</span>
+          </div>
+          <ul class="space-y-3 mb-8 flex-grow">
+            <li class="flex items-center gap-2 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-[#10b981]"></i>
+              Unlimited projects
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-[#10b981]"></i>
+              100GB storage
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-[#10b981]"></i>
+              10M requests/mo
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-[#10b981]"></i>
+              Auto-scaling
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-[#10b981]"></i>
+              Priority support
+            </li>
+          </ul>
+          <a href="#" class="bg-[#0C5CAB] hover:bg-[#0a4a8a] transition-colors text-center font-medium px-4 py-2.5 rounded-lg focus-ring">Start Free Trial</a>
+        </div>
+        <!-- Enterprise -->
+        <div class="bg-white/[0.03] border border-white/10 rounded-xl p-8 flex flex-col">
+          <h3 class="text-lg font-semibold mb-2">Enterprise</h3>
+          <p class="text-sm text-white/60 mb-6">For organizations with advanced needs.</p>
+          <div class="mb-6">
+            <span class="text-4xl font-bold">Custom</span>
+          </div>
+          <ul class="space-y-3 mb-8 flex-grow">
+            <li class="flex items-center gap-2 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-[#10b981]"></i>
+              Dedicated infrastructure
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-[#10b981]"></i>
+              Custom SLAs
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-[#10b981]"></i>
+              SSO &amp; SAML
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-[#10b981]"></i>
+              Audit logs
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-[#10b981]"></i>
+              24/7 dedicated support
+            </li>
+          </ul>
+          <a href="#" class="border border-white/20 hover:border-white/40 transition-colors text-center font-medium px-4 py-2.5 rounded-lg focus-ring">Contact Sales</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="py-20 px-4 sm:px-6 lg:px-8 bg-white/[0.02] border-t border-white/10">
+    <div class="max-w-3xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl sm:text-4xl font-bold mb-4">Frequently asked questions</h2>
+        <p class="text-white/60">Everything you need to know about Enterprise.</p>
+      </div>
+      <div class="space-y-4">
+        <!-- FAQ 1 -->
+        <details class="bg-white/[0.03] border border-white/10 rounded-lg p-6 group">
+          <summary class="flex items-center justify-between cursor-pointer font-medium focus-ring rounded">
+            <span>How does the free trial work?</span>
+            <i data-lucide="chevron-down" class="w-5 h-5 text-white/60 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <p class="mt-4 text-sm text-white/60">Start your 14-day free trial on the Pro plan with full access to all features. No credit card required. After the trial, you can choose to continue with a paid plan or downgrade to the free Starter plan.</p>
+        </details>
+        <!-- FAQ 2 -->
+        <details class="bg-white/[0.03] border border-white/10 rounded-lg p-6 group">
+          <summary class="flex items-center justify-between cursor-pointer font-medium focus-ring rounded">
+            <span>Can I switch plans at any time?</span>
+            <i data-lucide="chevron-down" class="w-5 h-5 text-white/60 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <p class="mt-4 text-sm text-white/60">Yes, you can upgrade or downgrade your plan at any time. Upgrades take effect immediately with prorated billing. Downgrades take effect at the start of your next billing cycle.</p>
+        </details>
+        <!-- FAQ 3 -->
+        <details class="bg-white/[0.03] border border-white/10 rounded-lg p-6 group">
+          <summary class="flex items-center justify-between cursor-pointer font-medium focus-ring rounded">
+            <span>What kind of support do you offer?</span>
+            <i data-lucide="chevron-down" class="w-5 h-5 text-white/60 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <p class="mt-4 text-sm text-white/60">All plans include access to our documentation and community forum. Pro plans include priority email support with a 4-hour response time. Enterprise plans include 24/7 dedicated support with a 1-hour response time.</p>
+        </details>
+        <!-- FAQ 4 -->
+        <details class="bg-white/[0.03] border border-white/10 rounded-lg p-6 group">
+          <summary class="flex items-center justify-between cursor-pointer font-medium focus-ring rounded">
+            <span>Is my data secure?</span>
+            <i data-lucide="chevron-down" class="w-5 h-5 text-white/60 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <p class="mt-4 text-sm text-white/60">Absolutely. We're SOC 2 Type II, GDPR, and HIPAA compliant. All data is encrypted in transit and at rest. We offer SSO, SAML, and detailed audit logs on Enterprise plans.</p>
+        </details>
+        <!-- FAQ 5 -->
+        <details class="bg-white/[0.03] border border-white/10 rounded-lg p-6 group">
+          <summary class="flex items-center justify-between cursor-pointer font-medium focus-ring rounded">
+            <span>Can I migrate from another platform?</span>
+            <i data-lucide="chevron-down" class="w-5 h-5 text-white/60 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <p class="mt-4 text-sm text-white/60">Yes! We provide comprehensive migration guides and tools for popular platforms like AWS, Heroku, and Vercel. Our support team can also assist with complex migrations on Enterprise plans.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="py-20 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto text-center">
+      <div class="glass rounded-2xl border border-white/10 p-12 glow">
+        <h2 class="text-3xl sm:text-4xl font-bold mb-4">Ready to build something amazing?</h2>
+        <p class="text-white/60 text-lg mb-8">Join thousands of teams shipping faster with Enterprise.</p>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <a href="#" class="bg-[#0C5CAB] hover:bg-[#0a4a8a] transition-colors text-white font-medium px-8 py-3 rounded-lg focus-ring w-full sm:w-auto">
+            Start Free Trial
+          </a>
+          <a href="#" class="border border-white/20 hover:border-white/40 transition-colors text-white font-medium px-8 py-3 rounded-lg focus-ring w-full sm:w-auto">
+            Talk to Sales
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-16 px-4 sm:px-6 lg:px-8 border-t border-white/10 bg-white/[0.02]">
+    <div class="max-w-7xl mx-auto">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+        <div>
+          <div class="flex items-center gap-2 mb-4">
+            <div class="w-6 h-6 bg-[#0C5CAB] rounded flex items-center justify-center">
+              <i data-lucide="box" class="w-3 h-3 text-white"></i>
+            </div>
+            <span class="font-bold">Enterprise</span>
+          </div>
+          <p class="text-sm text-white/50">The cloud platform for modern teams.</p>
+        </div>
+        <div>
+          <h4 class="text-sm font-semibold mb-4">Product</h4>
+          <ul class="space-y-2 text-sm text-white/50">
+            <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">Features</a></li>
+            <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">Pricing</a></li>
+            <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">Integrations</a></li>
+            <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">Changelog</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-sm font-semibold mb-4">Company</h4>
+          <ul class="space-y-2 text-sm text-white/50">
+            <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">About</a></li>
+            <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">Blog</a></li>
+            <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">Careers</a></li>
+            <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">Contact</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-sm font-semibold mb-4">Resources</h4>
+          <ul class="space-y-2 text-sm text-white/50">
+            <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">Documentation</a></li>
+            <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">API Reference</a></li>
+            <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">Status</a></li>
+            <li><a href="#" class="hover:text-white transition-colors focus-ring rounded">Community</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="flex flex-col sm:flex-row items-center justify-between pt-8 border-t border-white/10">
+        <p class="text-sm text-white/50 mb-4 sm:mb-0">© 2024 Enterprise Cloud. All rights reserved.</p>
+        <div class="flex items-center gap-6">
+          <a href="#" class="text-white/50 hover:text-white transition-colors focus-ring rounded" aria-label="Twitter">
+            <i data-lucide="twitter" class="w-5 h-5"></i>
+          </a>
+          <a href="#" class="text-white/50 hover:text-white transition-colors focus-ring rounded" aria-label="GitHub">
+            <i data-lucide="github" class="w-5 h-5"></i>
+          </a>
+          <a href="#" class="text-white/50 hover:text-white transition-colors focus-ring rounded" aria-label="LinkedIn">
+            <i data-lucide="linkedin" class="w-5 h-5"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

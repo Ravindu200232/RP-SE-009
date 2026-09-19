@@ -35,6 +35,17 @@ def _candidate_auth_files() -> list[Path]:
     return candidates
 
 
+def _token(supplied: str = "") -> str:
+    """The token given, else the run's owner's; the machine's CLI login only when
+    this agent deploys for nobody in particular (owner_credentials.py)."""
+    from . import owner_credentials
+
+    token = str(supplied or "").strip() or str(owner_credentials.current().get("vercel_token") or "")
+    if not token and not owner_credentials.active():
+        token = read_vercel_token()
+    return token
+
+
 def read_vercel_token() -> str:
     """The first non-empty token found, or "" when the CLI is not signed in."""
     for path in _candidate_auth_files():
@@ -49,7 +60,7 @@ def read_vercel_token() -> str:
 
 
 def require_vercel_token(supplied: str = "") -> str:
-    token = str(supplied or "").strip() or read_vercel_token()
+    token = _token(supplied)
     if not token:
         raise ValueError(SIGN_IN_HINT)
     return token
@@ -78,7 +89,7 @@ def vercel_identity(token: str) -> dict[str, Any]:
 
 def connection_status(supplied: str = "") -> dict[str, Any]:
     """Non-throwing summary for the dashboard."""
-    token = str(supplied or "").strip() or read_vercel_token()
+    token = _token(supplied)
     if not token:
         return {"connected": False, "source": "", "message": SIGN_IN_HINT}
     source = "pasted token" if supplied else "vercel CLI"

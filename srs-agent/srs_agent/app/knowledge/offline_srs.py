@@ -51,16 +51,44 @@ def _answer_texts(answers: list[dict], session: dict | None) -> list[str]:
     return out
 
 
-def _flags_from(brief: str, answer_texts: list[str]) -> dict[str, bool]:
+def _said_yes(answers: list[dict], question_id: str):
+    """What they actually answered, or None when they were never asked.
+
+    A keyword scan is a guess about a brief; a yes/no answer is the customer
+    saying so. Where both exist the answer wins, and a plain "no" has to be
+    able to turn a flag off - otherwise asking the question changes nothing and
+    a brief that merely says "email us" builds an outbox nobody wanted.
+    """
+    for answer in answers or []:
+        if str(answer.get("question_id") or "") != question_id:
+            continue
+        value = answer.get("value")
+        if isinstance(value, bool):
+            return value
+        said = str(value or "").strip().lower()
+        if said in ("yes", "true", "1"):
+            return True
+        if said in ("no", "false", "0"):
+            return False
+    return None
+
+
+def _flags_from(brief: str, answer_texts: list[str],
+                answers: list[dict] | None = None) -> dict[str, bool]:
     blob = (brief + " " + " ".join(answer_texts)).lower()
 
     def has(*words: str) -> bool:
         return any(w in blob for w in words)
 
+    def asked(question_id: str, *words: str) -> bool:
+        said = _said_yes(answers or [], question_id)
+        return has(*words) if said is None else said
+
     return {
-        "payments": has("pay", "payment", "billing", "invoice", "checkout", "gateway"),
+        "payments": asked("payments", "pay", "payment", "billing", "invoice",
+                          "checkout", "gateway"),
         "reports": has("report", "analytics", "dashboard", "insight", "kpi"),
-        "notifications": has("notif", "email", "sms", "alert", "remind"),
+        "notifications": asked("notifications", "notif", "email", "sms", "alert", "remind"),
         "uploads": has("upload", "file", "document", "image", "photo", "attachment"),
         "multilang": has("language", "multilingual", "sinhala", "tamil", "spanish", "bilingual", "i18n"),
         "mobile": has("mobile", "pwa", "android", "ios", "phone", "app"),
@@ -80,7 +108,7 @@ def build_offline_srs(
     domain = get_domain(domain_key)
     language = project.get("language", "English")
     answer_texts = _answer_texts(answers or [], session)
-    flags = _flags_from(brief or project.get("raw_idea", ""), answer_texts)
+    flags = _flags_from(brief or project.get("raw_idea", ""), answer_texts, answers or [])
 
     project_name = _project_name(project.get("title", ""), domain)
     roles = [dict(r) for r in domain["roles"]]

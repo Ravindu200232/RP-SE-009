@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern — Ship Software Peacefully</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#553F83',
+                        secondary: '#111111',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                    },
+                    fontFamily: {
+                        serif: ['"IBM Plex Serif"', 'serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js">
+    </script>
+    <style>
+        * {
+            border-radius: 0 !important;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        .faq-icon {
+            transition: transform 0.2s ease;
+        }
+        .faq-question[aria-expanded="true"] .faq-icon {
+            transform: rotate(180deg);
+        }
+        .grid-pattern {
+            background-image: linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+    </style>
+</head>
+<body class="bg-secondary text-white font-serif antialiased">
+
+    <!-- Navigation -->
+    <nav class="bg-secondary border-b border-white/5 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-8 py-4 flex items-center justify-between">
+            <a href="#" class="font-serif text-2xl font-bold tracking-tight">Modern</a>
+            <div class="hidden md:flex items-center gap-8">
+                <a href="#features" class="font-mono text-xs text-white/60 hover:text-white transition-colors">FEATURES</a>
+                <a href="#process" class="font-mono text-xs text-white/60 hover:text-white transition-colors">PROCESS</a>
+                <a href="#pricing" class="font-mono text-xs text-white/60 hover:text-white transition-colors">PRICING</a>
+                <a href="#faq" class="font-mono text-xs text-white/60 hover:text-white transition-colors">FAQ</a>
+            </div>
+            <a href="#pricing" class="bg-primary text-white font-mono text-xs px-4 py-2 hover:bg-opacity-90 transition-colors">Get Started</a>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="bg-primary text-white grid-pattern">
+        <div class="max-w-7xl mx-auto px-8 py-24 md:py-32 flex flex-col lg:flex-row items-center gap-16">
+            <div class="flex-1">
+                <p class="font-mono text-xs text-white/60 mb-4 tracking-widest">DESIGN SYSTEM — V2.0</p>
+                <h1 class="font-serif text-4xl md:text-6xl font-bold leading-tight mb-6">
+                    Ship software<br>peacefully.
+                </h1>
+                <div class="w-16 h-px bg-white/30 mb-6"></div>
+                <p class="font-serif text-lg md:text-xl text-white/80 mb-8 max-w-md leading-relaxed">
+                    A modern design system for teams who value clarity, craft, and calm.
+                </p>
+                <div class="flex flex-wrap gap-4">
+                    <a href="#pricing" class="bg-white text-primary font-mono text-sm px-6 py-3 hover:bg-white/90 transition-colors">Get Started</a>
+                    <a href="#features" class="border border-white/30 text-white font-mono text-sm px-6 py-3 hover:bg-white/10 transition-colors">View Features</a>
+                </div>
+            </div>
+            <div class="flex-1 flex justify-center">
+                <svg viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full max-w-md h-auto">
+                    <rect x="0" y="0" width="400" height="400" fill="white" fill-opacity="0.02"/>
+                    <rect x="30" y="30" width="180" height="180" fill="white" fill-opacity="0.08"/>
+                    <rect x="150" y="100" width="120" height="120" fill="white" fill-opacity="0.15"/>
+                    <rect x="260" y="40" width="50" height="50" fill="white" fill-opacity="0.25"/>
+                    <circle cx="320" cy="320" r="70" fill="white" fill-opacity="0.1"/>
+                    <rect x="80" y="250" width="40" height="40" fill="white" fill-opacity="0.3"/>
+                    <rect x="200" y="250" width="80" height="80" stroke="white" stroke-opacity="0.3" stroke-width="2"/>
+                    <line x1="20" y1="380" x2="380" y2="20" stroke="white" stroke-opacity="0.15" stroke-width="1"/>
+                    <circle cx="100" cy="100" r="10" fill="white" fill-opacity="0.2"/>
+                </svg>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="bg-secondary text-white border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-8 py-16 md:py-24">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div class="text-center md:text-left">
+                    <p class="font-serif text-4xl md:text-5xl font-bold text-primary mb-2">99.9%</p>
+                    <p class="font-mono text-xs text-white/50">UPTIME</p>
+                </div>
+                <div class="text-center md:text-left">
+                    <p class="font-serif text-4xl md:text-5xl font-bold text-primary mb-2">12k+</p>
+                    <p class="font-mono text-xs text-white/50">TEAMS</p>
+                </div>
+                <div class="text-center md:text-left">
+                    <p class="font-serif text-4xl md:text-5xl font-bold text-primary mb-2">4.9</p>
+                    <p class="font-mono text-xs text-white/50">RATING</p>
+                </div>
+                <div class="text-center md:text-left">
+                    <p class="font-serif text-4xl md:text-5xl font-bold text-primary mb-2">50M+</p>
+                    <p class="font-mono text-xs text-white/50">DEPLOYS</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="bg-secondary text-white">
+        <div class="max-w-7xl mx-auto px-8 py-16 md:py-24">
+            <div class="mb-16">
+                <p class="font-mono text-xs text-primary mb-2 tracking-widest">FEATURES</p>
+                <h2 class="font-serif text-3xl md:text-4xl font-bold mb-4">Everything you need.<br>Nothing you don't.</h2>
+                <div class="w-12 h-px bg-primary mt-4"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="border border-white/10 p-8 hover:border-primary/50 transition-colors">
+                    <i data-lucide="box" class="w-8 h-8 text-primary mb-4"></i>
+                    <h3 class="font-serif text-xl font-semibold mb-2">Component Library</h3>
+                    <p class="font-serif text-sm text-white/60 leading-relaxed">Reusable components for every UI need. Built with consistency in mind.</p>
+                </div>
+                <div class="border border-white/10 p-8 hover:border-primary/50 transition-colors">
+                    <i data-lucide="palette" class="w-8 h-8 text-primary mb-4"></i>
+                    <h3 class="font-serif text-xl font-semibold mb-2">Design Tokens</h3>
+                    <p class="font-serif text-sm text-white/60 leading-relaxed">Semantic tokens for color, spacing, and typography. Change once, update everywhere.</p>
+                </div>
+                <div class="border border-white/10 p-8 hover:border-primary/50 transition-colors">
+                    <i data-lucide="accessibility" class="w-8 h-8 text-primary mb-4"></i>
+                    <h3 class="font-serif text-xl font-semibold mb-2">Accessibility</h3>
+                    <p class="font-serif text-sm text-white/60 leading-relaxed">WCAG 2.2 AA compliant by default. Keyboard-first interactions.</p>
+                </div>
+                <div class="border border-white/10 p-8 hover:border-primary/50 transition-colors">
+                    <i data-lucide="sun" class="w-8 h-8 text-primary mb-4"></i>
+                    <h3 class="font-serif text-xl font-semibold mb-2">Theming</h3>
+                    <p class="font-serif text-sm text-white/60 leading-relaxed">Light and dark themes built in. Customize with ease.</p>
+                </div>
+                <div class="border border-white/10 p-8 hover:border-primary/50 transition-colors">
+                    <i data-lucide="book-open" class="w-8 h-8 text-primary mb-4"></i>
+                    <h3 class="font-serif text-xl font-semibold mb-2">Documentation</h3>
+                    <p class="font-serif text-sm text-white/60 leading-relaxed">Comprehensive guides, examples, and API references.</p>
+                </div>
+                <div class="border border-white/10 p-8 hover:border-primary/50 transition-colors">
+                    <i data-lucide="terminal" class="w-8 h-8 text-primary mb-4"></i>
+                    <h3 class="font-serif text-xl font-semibold mb-2">CLI Tools</h3>
+                    <p class="font-serif text-sm text-white/60 leading-relaxed">Generate components and tokens from the command line.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Process -->
+    <section id="process" class="bg-primary text-white grid-pattern">
+        <div class="max-w-7xl mx-auto px-8 py-16 md:py-24">
+            <div class="mb-16">
+                <p class="font-mono text-xs text-white/60 mb-2 tracking-widest">PROCESS</p>
+                <h2 class="font-serif text-3xl md:text-4xl font-bold mb-4">From idea to production.</h2>
+                <div class="w-12 h-px bg-white/30 mt-4"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="border border-white/20 p-8">
+                    <p class="font-mono text-4xl font-bold text-white/30 mb-4">01</p>
+                    <i data-lucide="search" class="w-6 h-6 text-white mb-4"></i>
+                    <h3 class="font-serif text-lg font-semibold mb-2">Discover</h3>
+                    <p class="font-serif text-sm text-white/70 leading-relaxed">Understand your users, their needs, and the problem you're solving.</p>
+                </div>
+                <div class="border border-white/20 p-8">
+                    <p class="font-mono text-4xl font-bold text-white/30 mb-4">02</p>
+                    <i data-lucide="pen-tool" class="w-6 h-6 text-white mb-4"></i>
+                    <h3 class="font-serif text-lg font-semibold mb-2">Design</h3>
+                    <p class="font-serif text-sm text-white/70 leading-relaxed">Create interfaces using our components, tokens, and patterns.</p>
+                </div>
+                <div class="border border-white/20 p-8">
+                    <p class="font-mono text-4xl font-bold text-white/30 mb-4">03</p>
+                    <i data-lucide="code" class="w-6 h-6 text-white mb-4"></i>
+                    <h3 class="font-serif text-lg font-semibold mb-2">Build</h3>
+                    <p class="font-serif text-sm text-white/70 leading-relaxed">Implement with semantic tokens and accessible patterns.</p>
+                </div>
+                <div class="border border-white/20 p-8">
+                    <p class="font-mono text-4xl font-bold text-white/30 mb-4">04</p>
+                    <i data-lucide="rocket" class="w-6 h-6 text-white mb-4"></i>
+                    <h3 class="font-serif text-lg font-semibold mb-2">Ship</h3>
+                    <p class="font-serif text-sm text-white/70 leading-relaxed">Deploy with confidence. Iterate with ease.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits -->
+    <section class="bg-secondary text-white">
+        <div class="max-w-7xl mx-auto px-8 py-16 md:py-24">
+            <div class="mb-16">
+                <p class="font-mono text-xs text-primary mb-2 tracking-widest">BENEFITS</p>
+                <h2 class="font-serif text-3xl md:text-4xl font-bold mb-4">Why teams choose Modern.</h2>
+                <div class="w-12 h-px bg-primary mt-4"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="flex gap-6 p-8 border border-white/10">
+                    <i data-lucide="zap" class="w-6 h-6 text-primary flex-shrink-0 mt-1"></i>
+                    <div>
+                        <h3 class="font-serif text-lg font-semibold mb-2">Faster Development</h3>
+                        <p class="font-serif text-sm text-white/60 leading-relaxed">Teams ship 40% faster with pre-built components and tokens.</p>
+                    </div>
+                </div>
+                <div class="flex gap-6 p-8 border border-white/10">
+                    <i data-lucide="grid" class="w-6 h-6 text-primary flex-shrink-0 mt-1"></i>
+                    <div>
+                        <h3 class="font-serif text-lg font-semibold mb-2">Consistent UI</h3>
+                        <p class="font-serif text-sm text-white/60 leading-relaxed">Every screen looks and feels the same. No more design drift.</p>
+                    </div>
+                </div>
+                <div class="flex gap-6 p-8 border border-white/10">
+                    <i data-lucide="eye" class="w-6 h-6 text-primary flex-shrink-0 mt-1"></i>
+                    <div>
+                        <h3 class="font-serif text-lg font-semibold mb-2">Better Accessibility</h3>
+                        <p class="font-serif text-sm text-white/60 leading-relaxed">WCAG 2.2 AA compliance built into every component.</p>
+                    </div>
+                </div>
+                <div class="flex gap-6 p-8 border border-white/10">
+                    <i data-lucide="trending-up" class="w-6 h-6 text-primary flex-shrink-0 mt-1"></i>
+                    <div>
+                        <h3 class="font-serif text-lg font-semibold mb-2">Scalable Design</h3>
+                        <p class="font-serif text-sm text-white/60 leading-relaxed">From startup to enterprise, Modern scales with your team.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="bg-secondary text-white border-t border-white/5">
+        <div class="max-w-7xl mx-auto px-8 py-16 md:py-24">
+            <div class="mb-16">
+                <p class="font-mono text-xs text-primary mb-2 tracking-widest">TESTIMONIALS</p>
+                <h2 class="font-serif text-3xl md:text-4xl font-bold mb-4">Loved by developers.</h2>
+                <div class="w-12 h-px bg-primary mt-4"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="border border-white/10 p-8 flex flex-col">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-current"></i>
+                    </div>
+                    <p class="font-serif text-sm text-white/80 leading-relaxed flex-1 mb-6">"Modern transformed our design workflow. We went from inconsistent UI to a cohesive product in weeks."</p>
+                    <div class="border-t border-white/10 pt-4">
+                        <p class="font-serif text-sm font-semibold">Sarah Chen</p>
+                        <p class="font-mono text-xs text-white/50">DESIGN LEAD, ACME</p>
+                    </div>
+                </div>
+                <div class="border border-white/10 p-8 flex flex-col">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-current"></i>
+                    </div>
+                    <p class="font-serif text-sm text-white/80 leading-relaxed flex-1 mb-6">"The best design system we've used. The accessibility features alone are worth it."</p>
+                    <div class="border-t border-white/10 pt-4">
+                        <p class="font-serif text-sm font-semibold">Marcus Johnson</p>
+                        <p class="font-mono text-xs text-white/50">FRONTEND ENGINEER, CORP</p>
+                    </div>
+                </div>
+                <div class="border border-white/10 p-8 flex flex-col">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-current"></i>
+                    </div>
+                    <p class="font-serif text-sm text-white/80 leading-relaxed flex-1 mb-6">"Accessibility first, always. Modern made it easy to build inclusive products."</p>
+                    <div class="border-t border-white/10 pt-4">
+                        <p class="font-serif text-sm font-semibold">Priya Patel</p>
+                        <p class="font-mono text-xs text-white/50">PRODUCT MANAGER, STARTUP</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section id="pricing" class="bg-primary text-white grid-pattern">
+        <div class="max-w-7xl mx-auto px-8 py-16 md:py-24">
+            <div class="mb-16">
+                <p class="font-mono text-xs text-white/60 mb-2 tracking-widest">PRICING</p>
+                <h2 class="font-serif text-3xl md:text-4xl font-bold mb-4">Simple, transparent pricing.</h2>
+                <div class="w-12 h-px bg-white/30 mt-4"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="border border-white/20 p-8 flex flex-col">
+                    <h3 class="font-serif text-xl font-semibold mb-2">Starter</h3>
+                    <p class="font-mono text-xs text-white/50 mb-4">FOR INDIVIDUALS</p>
+                    <p class="font-serif text-4xl font-bold mb-6">$0<span class="text-sm text-white/50 font-normal">/mo</span></p>
+                    <ul class="flex-1 space-y-3 mb-8">
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-4 h-4 text-white/70"></i><span class="font-serif text-sm text-white/80">1 project</span></li>
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-4 h-4 text-white/70"></i><span class="font-serif text-sm text-white/80">3 team members</span></li>
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-4 h-4 text-white/70"></i><span class="font-serif text-sm text-white/80">Basic analytics</span></li>
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-4 h-4 text-white/70"></i><span class="font-serif text-sm text-white/80">Community support</span></li>
+                    </ul>
+                    <a href="#" class="border border-white/30 text-white font-mono text-sm px-6 py-3 text-center hover:bg-white/10 transition-colors">Get Started</a>
+                </div>
+                <div class="border border-white/50 bg-white/5 p-8 flex flex-col relative">
+                    <p class="font-mono text-xs text-white bg-white/10 px-3 py-1 inline-block self-start mb-4">MOST POPULAR</p>
+                    <h3 class="font-serif text-xl font-semibold mb-2">Pro</h3>
+                    <p class="font-mono text-xs text-white/50 mb-4">FOR GROWING TEAMS</p>
+                    <p class="font-serif text-4xl font-bold mb-6">$24<span class="text-sm text-white/50 font-normal">/mo</span></p>
+                    <ul class="flex-1 space-y-3 mb-8">
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-4 h-4 text-white"></i><span class="font-serif text-sm text-white">10 projects</span></li>
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-4 h-4 text-white"></i><span class="font-serif text-sm text-white">25 team members</span></li>
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-4 h-4 text-white"></i><span class="font-serif text-sm text-white">Advanced analytics</span></li>
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-4 h-4 text-white"></i><span class="font-serif text-sm text-white">Priority support</span></li>
+                    </ul>
+                    <a href="#" class="bg-white text-primary font-mono text-sm px-6 py-3 text-center hover:bg-white/90 transition-colors">Get Started</a>
+                </div>
+                <div class="border border-white/20 p-8 flex flex-col">
+                    <h3 class="font-serif text-xl font-semibold mb-2">Enterprise</h3>
+                    <p class="font-mono text-xs text-white/50 mb-4">FOR LARGE ORGS</p>
+                    <p class="font-serif text-4xl font-bold mb-6">Custom</p>
+                    <ul class="flex-1 space-y-3 mb-8">
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-4 h-4 text-white/70"></i><span class="font-serif text-sm text-white/80">Unlimited projects</span></li>
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-4 h-4 text-white/70"></i><span class="font-serif text-sm text-white/80">Unlimited members</span></li>
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-4 h-4 text-white/70"></i><span class="font-serif text-sm text-white/80">Custom analytics</span></li>
+                        <li class="flex items-center gap-3"><i data-lucide="check" class="w-4 h-4 text-white/70"></i><span class="font-serif text-sm text-white/80">Dedicated support</span></li>
+                    </ul>
+                    <a href="#" class="border border-white/30 text-white font-mono text-sm px-6 py-3 text-center hover:bg-white/10 transition-colors">Contact Us</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="bg-secondary text-white">
+        <div class="max-w-3xl mx-auto px-8 py-16 md:py-24">
+            <div class="mb-16 text-center">
+                <p class="font-mono text-xs text-primary mb-2 tracking-widest">FAQ</p>
+                <h2 class="font-serif text-3xl md:text-4xl font-bold mb-4">Frequently asked questions.</h2>
+                <div class="w-12 h-px bg-primary mx-auto mt-4"></div>
+            </div>
+            <div class="space-y-0">
+                <div class="faq-item border-b border-white/10">
+                    <button class="faq-question flex justify-between items-center py-6 w-full text-left" aria-expanded="false">
+                        <span class="font-serif text-lg text-white">What is Modern?</span>
+                        <i data-lucide="chevron-down" class="faq-icon w-5 h-5 text-white/60 flex-shrink-0"></i>
+                    </button>
+                    <div class="faq-answer hidden pb-6">
+                        <p class="font-serif text-sm text-white/60 leading-relaxed">Modern is a comprehensive design system that provides components, design tokens, and guidelines for building accessible, consistent digital products.</p>
+                    </div>
+                </div>
+                <div class="faq-item border-b border-white/10">
+                    <button class="faq-question flex justify-between items-center py-6 w-full text-left" aria-expanded="false">
+                        <span class="font-serif text-lg text-white">How does pricing work?</span>
+                        <i data-lucide="chevron-down" class="faq-icon w-5 h-5 text-white/60 flex-shrink-0"></i>
+                    </button>
+                    <div class="faq-answer hidden pb-6">
+                        <p class="font-serif text-sm text-white/60 leading-relaxed">Our pricing is simple. Start with the free Starter plan, upgrade to Pro for $24/month, or contact us for Enterprise. No hidden fees.</p>
+                    </div>
+                </div>
+                <div class="faq-item border-b border-white/10">
+                    <button class="faq-question flex justify-between items-center py-6 w-full text-left" aria-expanded="false">
+                        <span class="font-serif text-lg text-white">Can I cancel anytime?</span>
+                        <i data-lucide="chevron-down" class="faq-icon w-5 h-5 text-white/60 flex-shrink-0"></i>
+                    </button>
+                    <div class="faq-answer hidden pb-6">
+                        <p class="font-serif text-sm text-white/60 leading-relaxed">Yes, you can cancel your subscription at any time. Your access remains active until the end of the billing period.</p>
+                    </div>
+                </div>
+                <div class="faq-item border-b border-white/10">
+                    <button class="faq-question flex justify-between items-center py-6 w-full text-left" aria-expanded="false">
+                        <span class="font-serif text-lg text-white">Do you offer discounts?</span>
+                        <i data-lucide="chevron-down" class="faq-icon w-5 h-5 text-white/60 flex-shrink-0"></i>
+                    </button>
+                    <div class="faq-answer hidden pb-6">
+                        <p class="font-serif text-sm text-white/60 leading-relaxed">We offer discounts for startups, non-profits, and educational institutions. Contact us to learn more.</p>
+                    </div>
+                </div>
+                <div class="faq-item border-b border-white/10">
+                    <button class="faq-question flex justify-between items-center py-6 w-full text-left" aria-expanded="false">
+                        <span class="font-serif text-lg text-white">How do I get started?</span>
+                        <i data-lucide="chevron-down" class="faq-icon w-5 h-5 text-white/60 flex-shrink-0"></i>
+                    </button>
+                    <div class="faq-answer hidden pb-6">
+                        <p class="font-serif text-sm text-white/60 leading-relaxed">Sign up for a free account, install the CLI, and start building. Our documentation will guide you through every step.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-secondary text-white border-t border-white/5">
+        <div class="max-w-7xl mx-auto px-8 py-16">
+            <div class="flex flex-col md:flex-row justify-between items-start gap-12">
+                <div>
+                    <a href="#" class="font-serif text-2xl font-bold tracking-tight">Modern</a>
+                    <p class="font-serif text-sm text-white/50 mt-4 max-w-xs leading-relaxed">Ship software peacefully. A modern design system for teams who value clarity, craft, and calm.</p>
+                </div>
+                <div class="flex gap-16">
+                    <div>
+                        <p class="font-mono text-xs text-white/50 mb-4 tracking-widest">PRODUCT</p>
+                        <ul class="space-y-2">
+                            <li><a href="#features" class="font-serif text-sm text-white/70 hover:text-white transition-colors">Features</a></li>
+                            <li><a href="#process" class="font-serif text-sm text-white/70 hover:text-white transition-colors">Process</a></li>
+                            <li><a href="#pricing" class="font-serif text-sm text-white/70 hover:text-white transition-colors">Pricing</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <p class="font-mono text-xs text-white/50 mb-4 tracking-widest">RESOURCES</p>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="font-serif text-sm text-white/70 hover:text-white transition-colors">Documentation</a></li>
+                            <li><a href="#" class="font-serif text-sm text-white/70 hover:text-white transition-colors">GitHub</a></li>
+                            <li><a href="#faq" class="font-serif text-sm text-white/70 hover:text-white transition-colors">FAQ</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-white/5 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="font-mono text-xs text-white/40">© 2024 MODERN DESIGN SYSTEM</p>
+                <div class="flex gap-4">
+                    <a href="#" class="text-white/40 hover:text-white transition-colors"><i data-lucide="github" class="w-4 h-4"></i></a>
+                    <a href="#" class="text-white/40 hover:text-white transition-colors"><i data-lucide="twitter" class="w-4 h-4"></i></a>
+                    <a href="#" class="text-white/40 hover:text-white transition-colors"><i data-lucide="linkedin" class="w-4 h-4"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // FAQ accordion
+        document.querySelectorAll('.faq-question').forEach(button => {
+            button.addEventListener('click', () => {
+                const answer = button.nextElementSibling;
+                const isOpen = button.getAttribute('aria-expanded') === 'true';
+
+                // Close all
+                document.querySelectorAll('.faq-question').forEach(b => {
+                    b.setAttribute('aria-expanded', 'false');
+                    b.nextElementSibling.classList.add('hidden');
+                });
+
+                // Open this one
+                if (!isOpen) {
+                    button.setAttribute('aria-expanded', 'true');
+                    answer.classList.remove('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

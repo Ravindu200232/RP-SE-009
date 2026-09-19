@@ -7,7 +7,8 @@ import { api, uploadMode } from './api'
 
 let seq = 0
 
-const KIND = { pdf: 'document', image: 'picture', voice: 'recording', text: 'file' }
+const KIND = { pdf: 'document', image: 'picture', voice: 'recording', text: 'file',
+               document: 'document', archive: 'archive' }
 
 function describeFile(file) {
   return KIND[uploadMode(file)] || 'file'
@@ -15,6 +16,9 @@ function describeFile(file) {
 
 export function useAttachments() {
   const [items, setItems] = useState([])
+  // Synchronously store picked attachments in a ref so unmounting does not drop upload queues.
+  const current = useRef([])
+  current.current = items
 
   const patch = useCallback((key, fields) => {
     setItems(list => list.map(it => (it.key === key ? { ...it, ...fields } : it)))
@@ -60,18 +64,12 @@ export function useAttachments() {
     uploading.current = true
 
     try {
-      let queue = []
-      const already = []
-      setItems(list => {
-        // Assignment, not append.
-        queue = list.filter(it => it.sentTo !== projectId)
-        already.length = 0
-        already.push(...list.filter(it => it.sentTo === projectId && it.sourceId)
-                         .map(it => it.sourceId))
-        return list.map(it => (it.sentTo === projectId
-          ? it : { ...it, state: 'reading', note: '' }))
-      })
-      await Promise.resolve()   // let the "reading" paint land before the first await
+      const held = current.current
+      const queue = held.filter(it => it.sentTo !== projectId)
+      const already = held.filter(it => it.sentTo === projectId && it.sourceId)
+                          .map(it => it.sourceId)
+      setItems(list => list.map(it => (it.sentTo === projectId
+        ? it : { ...it, state: 'reading', note: '' })))
 
       const ids = [...already]
       let failed = 0
@@ -102,6 +100,32 @@ export function useAttachments() {
     }
   }, [patch])
 
+  /** Stages attachments temporarily using a staging token prior to project creation. */
+  const stage = useCallback(async token => {
+    if (!token || uploading.current) return { staged: 0, failed: 0 }
+    uploading.current = true
+    try {
+      const queue = current.current.slice()
+      setItems(list => list.map(it => ({ ...it, state: 'reading', note: '' })))
+
+      let staged = 0
+      let failed = 0
+      for (const it of queue) {
+        try {
+          await api.buildAttach(token, it.file, { purpose: it.purpose || '' })
+          staged++
+          patch(it.key, { state: 'done', note: '' })
+        } catch (e) {
+          failed++
+          patch(it.key, { state: 'failed', note: e.message || 'could not be sent' })
+        }
+      }
+      return { staged, failed }
+    } finally {
+      uploading.current = false
+    }
+  }, [patch])
+
   return {
     items,
     add,
@@ -109,6 +133,7 @@ export function useAttachments() {
     remove,
     reset,
     upload,
+    stage,
     busy: items.some(it => it.state === 'reading'),
     waiting: items.filter(it => it.state === 'waiting').length,
   }

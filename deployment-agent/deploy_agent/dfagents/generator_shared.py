@@ -3,6 +3,7 @@ from __future__ import annotations
 import difflib
 import json
 import re
+import shlex
 import textwrap
 from dataclasses import replace
 from pathlib import Path

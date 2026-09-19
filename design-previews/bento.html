@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bento · modular grid</title>
+  <!-- Tailwind via CDN, Google Fonts, Lucide icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Bento design tokens (from skill) -->
+  <style>
+    :root {
+      --primary: #FAD4C0;
+      --secondary: #80A1C1;
+      --success: #16A34A;
+      --warning: #D97706;
+      --danger: #DC2626;
+      --surface: #FFF5E6;
+      --text: #111827;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--surface);
+      color: var(--text);
+      font-weight: 400;
+    }
+    .font-display { font-family: 'Inter', sans-serif; } /* display = Inter */
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    /* sharp corners everywhere – no rounded corners */
+    * { border-radius: 0 !important; }
+    /* focus visible – high contrast */
+    :focus-visible {
+      outline: 3px solid var(--secondary);
+      outline-offset: 2px;
+    }
+    /* consistent spacing rhythm */
+    .section-pad { padding: 4rem 1.5rem; }
+    @media (min-width: 768px) { .section-pad { padding: 5rem 2rem; } }
+    /* card-like blocks with subtle contrast */
+    .bento-card {
+      background-color: #FFFFFF;
+      border: 1px solid #E5E7EB;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+      padding: 1.5rem;
+      transition: box-shadow 0.2s ease, transform 0.1s ease;
+    }
+    .bento-card:hover {
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    }
+    /* colour-blocked sections (as per bento style) */
+    .colour-block-primary { background-color: var(--primary); }
+    .colour-block-secondary { background-color: var(--secondary); }
+    .colour-block-surface { background-color: var(--surface); }
+    .colour-block-white { background-color: #FFFFFF; }
+    /* text helpers */
+    .text-token { color: var(--text); }
+    .text-secondary { color: #4B5563; }
+    .text-accent { color: #1E3A5F; } /* derived from secondary */
+  </style>
+</head>
+<body class="antialiased">
+
+  <!-- ======= NAVIGATION ======= -->
+  <header class="colour-block-surface border-b border-gray-200 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto flex items-center justify-between px-4 py-4 md:px-6">
+      <a href="#" class="flex items-center gap-2 font-display font-extrabold text-xl tracking-tight">
+        <span class="inline-block w-6 h-6 bg-[var(--primary)] border-2 border-[var(--text)]"></span>
+        bento<span class="text-[var(--secondary)]">.</span>
+      </a>
+      <nav class="hidden md:flex items-center gap-8 font-medium text-sm">
+        <a href="#features" class="hover:text-[var(--secondary)] transition">Features</a>
+        <a href="#process" class="hover:text-[var(--secondary)] transition">Process</a>
+        <a href="#benefits" class="hover:text-[var(--secondary)] transition">Benefits</a>
+        <a href="#pricing" class="hover:text-[var(--secondary)] transition">Pricing</a>
+        <a href="#faq" class="hover:text-[var(--secondary)] transition">FAQ</a>
+      </nav>
+      <a href="#pricing" class="bg-[var(--text)] text-white px-4 py-2 text-sm font-semibold hover:bg-[var(--secondary)] transition">
+        Get started
+      </a>
+    </div>
+  </header>
+
+  <!-- ======= HERO ======= -->
+  <section class="colour-block-primary section-pad">
+    <div class="max-w-7xl mx-auto grid md:grid-cols-2 gap-10 items-center">
+      <div>
+        <p class="font-mono text-sm mb-4 text-[#4A2C1A]">⧉ modular grid · bento box</p>
+        <h1 class="font-display font-extrabold text-4xl md:text-5xl leading-tight tracking-tight">
+          Organised chaos,<br>beautifully structured.
+        </h1>
+        <p class="mt-6 text-lg text-[#3E2A1A] max-w-md">
+          A design system built on bento grids – clear hierarchy, soft contrast, and scannable blocks.
+        </p>
+        <div class="mt-8 flex flex-wrap gap-4">
+          <a href="#pricing" class="bg-[var(--text)] text-white px-6 py-3 font-semibold hover:bg-[#2D3748] transition">Start free</a>
+          <a href="#features" class="border-2 border-[var(--text)] px-6 py-3 font-semibold hover:bg-[var(--text)] hover:text-white transition">Explore</a>
+        </div>
+      </div>
+      <!-- CSS shape / gradient imagery (no photos) -->
+      <div class="relative h-64 md:h-80 w-full">
+        <div class="absolute inset-0 bg-gradient-to-br from-[#FFF5E6] to-[#FAD4C0] border-2 border-[var(--text)]"></div>
+        <div class="absolute top-6 left-6 w-24 h-24 bg-[var(--secondary)] opacity-80"></div>
+        <div class="absolute bottom-6 right-6 w-32 h-32 bg-[var(--primary)] border-2 border-[var(--text)]"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-white border-2 border-[var(--text)] flex items-center justify-center">
+          <span class="font-mono text-sm font-semibold">grid·box</span>
+        </div>
+        <div class="absolute top-8 right-10 w-12 h-12 bg-[var(--success)]"></div>
+        <div class="absolute bottom-10 left-8 w-16 h-16 bg-[var(--warning)]"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= STATS ======= -->
+  <section class="colour-block-white section-pad">
+    <div class="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div class="bento-card text-center">
+        <p class="font-display font-extrabold text-4xl">99.9%</p>
+        <p class="mt-2 text-sm text-secondary">uptime</p>
+      </div>
+      <div class="bento-card text-center">
+        <p class="font-display font-extrabold text-4xl">120+</p>
+        <p class="mt-2 text-sm text-secondary">components</p>
+      </div>
+      <div class="bento-card text-center">
+        <p class="font-display font-extrabold text-4xl">4.9</p>
+        <p class="mt-2 text-sm text-secondary">user rating</p>
+      </div>
+      <div class="bento-card text-center">
+        <p class="font-display font-extrabold text-4xl">2.5k</p>
+        <p class="mt-2 text-sm text-secondary">teams</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= FEATURES ======= -->
+  <section id="features" class="colour-block-surface section-pad">
+    <div class="max-w-7xl mx-auto">
+      <h2 class="font-display font-extrabold text-3xl md:text-4xl tracking-tight">Features that fit</h2>
+      <p class="mt-3 text-secondary max-w-2xl">Every block is modular, accessible, and consistent.</p>
+      <div class="mt-12 grid md:grid-cols-3 gap-6">
+        <div class="bento-card">
+          <i data-lucide="layout-grid" class="w-8 h-8 text-[var(--secondary)]"></i>
+          <h3 class="font-display font-bold text-xl mt-4">Grid flexibility</h3>
+          <p class="mt-2 text-secondary text-sm">Mix 1x1, 2x2, and wide blocks – layout adapts to content.</p>
+        </div>
+        <div class="bento-card">
+          <i data-lucide="palette" class="w-8 h-8 text-[var(--secondary)]"></i>
+          <h3 class="font-display font-bold text-xl mt-4">Token-based</h3>
+          <p class="mt-2 text-secondary text-sm">Semantic colors, spacing, and typography – no hard-coded values.</p>
+        </div>
+        <div class="bento-card">
+          <i data-lucide="accessibility" class="w-8 h-8 text-[var(--secondary)]"></i>
+          <h3 class="font-display font-bold text-xl mt-4">AA compliant</h3>
+          <p class="mt-2 text-secondary text-sm">Keyboard-first, visible focus, and high contrast by default.</p>
+        </div>
+        <div class="bento-card">
+          <i data-lucide="monitor" class="w-8 h-8 text-[var(--secondary)]"></i>
+          <h3 class="font-display font-bold text-xl mt-4">Responsive</h3>
+          <p class="mt-2 text-secondary text-sm">From 400px to 4K – blocks reflow without losing hierarchy.</p>
+        </div>
+        <div class="bento-card">
+          <i data-lucide="type" class="w-8 h-8 text-[var(--secondary)]"></i>
+          <h3 class="font-display font-bold text-xl mt-4">Inter & JetBrains Mono</h3>
+          <p class="mt-2 text-secondary text-sm">Loaded via Google Fonts – crisp, modern, and readable.</p>
+        </div>
+        <div class="bento-card">
+          <i data-lucide="sparkles" class="w-8 h-8 text-[var(--secondary)]"></i>
+          <h3 class="font-display font-bold text-xl mt-4">No images</h3>
+          <p class="mt-2 text-secondary text-sm">Pure CSS shapes and SVG – lightweight and scalable.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= PROCESS ======= -->
+  <section id="process" class="colour-block-secondary section-pad">
+    <div class="max-w-7xl mx-auto">
+      <h2 class="font-display font-extrabold text-3xl md:text-4xl tracking-tight text-[#0F1A2E]">How it works</h2>
+      <div class="mt-12 grid md:grid-cols-4 gap-6">
+        <div class="bento-card">
+          <span class="font-mono text-2xl font-semibold text-[var(--secondary)]">01</span>
+          <h3 class="font-display font-bold text-lg mt-3">Define</h3>
+          <p class="text-sm mt-2 text-secondary">Set your grid and tokens – spacing, color, type.</p>
+        </div>
+        <div class="bento-card">
+          <span class="font-mono text-2xl font-semibold text-[var(--secondary)]">02</span>
+          <h3 class="font-display font-bold text-lg mt-3">Compose</h3>
+          <p class="text-sm mt-2 text-secondary">Arrange blocks – hierarchy, contrast, rhythm.</p>
+        </div>
+        <div class="bento-card">
+          <span class="font-mono text-2xl font-semibold text-[var(--secondary)]">03</span>
+          <h3 class="font-display font-bold text-lg mt-3">Test</h3>
+          <p class="text-sm mt-2 text-secondary">Keyboard, zoom, contrast – meet AA.</p>
+        </div>
+        <div class="bento-card">
+          <span class="font-mono text-2xl font-semibold text-[var(--secondary)]">04</span>
+          <h3 class="font-display font-bold text-lg mt-3">Ship</h3>
+          <p class="text-sm mt-2 text-secondary">Consistent, accessible, and ready for production.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= BENEFITS ======= -->
+  <section id="benefits" class="colour-block-white section-pad">
+    <div class="max-w-7xl mx-auto grid md:grid-cols-2 gap-10 items-center">
+      <div class="grid grid-cols-2 gap-4">
+        <div class="bento-card bg-[var(--primary)] border-0">
+          <i data-lucide="shield-check" class="w-8 h-8 text-[var(--text)]"></i>
+          <p class="font-display font-bold mt-3">Accessible first</p>
+        </div>
+        <div class="bento-card bg-[var(--secondary)] border-0">
+          <i data-lucide="zap" class="w-8 h-8 text-[var(--text)]"></i>
+          <p class="font-display font-bold mt-3">Fast to build</p>
+        </div>
+        <div class="bento-card bg-[var(--surface)] border-0">
+          <i data-lucide="repeat" class="w-8 h-8 text-[var(--text)]"></i>
+          <p class="font-display font-bold mt-3">Reusable blocks</p>
+        </div>
+        <div class="bento-card bg-[var(--primary)] border-0">
+          <i data-lucide="pen-tool" class="w-8 h-8 text-[var(--text)]"></i>
+          <p class="font-display font-bold mt-3">Designer approved</p>
+        </div>
+      </div>
+      <div>
+        <h2 class="font-display font-extrabold text-3xl md:text-4xl tracking-tight">Why teams switch</h2>
+        <p class="mt-4 text-secondary text-lg">Bento reduces design debt and makes every interface feel cohesive.</p>
+        <ul class="mt-6 space-y-3">
+          <li class="flex items-start gap-3"><i data-lucide="check-circle" class="w-5 h-5 text-[var(--success)] mt-1"></i><span>Clear hierarchy without custom CSS</span></li>
+          <li class="flex items-start gap-3"><i data-lucide="check-circle" class="w-5 h-5 text-[var(--success)] mt-1"></i><span>Spacing and color tokens enforced</span></li>
+          <li class="flex items-start gap-3"><i data-lucide="check-circle" class="w-5 h-5 text-[var(--success)] mt-1"></i><span>Built-in accessibility checks</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= TESTIMONIALS ======= -->
+  <section class="colour-block-surface section-pad">
+    <div class="max-w-7xl mx-auto">
+      <h2 class="font-display font-extrabold text-3xl md:text-4xl tracking-tight">Loved by teams</h2>
+      <div class="mt-12 grid md:grid-cols-3 gap-6">
+        <div class="bento-card">
+          <div class="flex gap-1 text-[var(--warning)]"><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i></div>
+          <p class="mt-4 text-sm">“Bento gave us a consistent, accessible UI in days. The grid system is genius.”</p>
+          <p class="mt-4 font-semibold text-sm">— Amara Chen, Lead Engineer</p>
+        </div>
+        <div class="bento-card">
+          <div class="flex gap-1 text-[var(--warning)]"><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i></div>
+          <p class="mt-4 text-sm">“Finally a system that respects both aesthetics and WCAG. Our audit passed.”</p>
+          <p class="mt-4 font-semibold text-sm">— Marcus Reid, Product Designer</p>
+        </div>
+        <div class="bento-card">
+          <div class="flex gap-1 text-[var(--warning)]"><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i></div>
+          <p class="mt-4 text-sm">“No more inconsistent spacing. The tokens are a lifesaver.”</p>
+          <p class="mt-4 font-semibold text-sm">— Yuki Tanaka, Frontend Dev</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= PRICING ======= -->
+  <section id="pricing" class="colour-block-primary section-pad">
+    <div class="max-w-7xl mx-auto">
+      <h2 class="font-display font-extrabold text-3xl md:text-4xl tracking-tight">Simple pricing</h2>
+      <div class="mt-12 grid md:grid-cols-3 gap-6">
+        <div class="bento-card bg-white">
+          <h3 class="font-display font-bold text-xl">Starter</h3>
+          <p class="font-display font-extrabold text-4xl mt-4">$0</p>
+          <p class="text-sm text-secondary mt-2">For side projects</p>
+          <ul class="mt-6 space-y-2 text-sm">
+            <li>· 3 projects</li>
+            <li>· Core components</li>
+            <li>· Community support</li>
+          </ul>
+          <a href="#" class="mt-8 block text-center border-2 border-[var(--text)] py-2 font-semibold hover:bg-[var(--text)] hover:text-white transition">Start free</a>
+        </div>
+        <div class="bento-card bg-[var(--text)] text-white border-0">
+          <h3 class="font-display font-bold text-xl">Pro</h3>
+          <p class="font-display font-extrabold text-4xl mt-4">$24</p>
+          <p class="text-sm mt-2 text-gray-300">For professionals</p>
+          <ul class="mt-6 space-y-2 text-sm">
+            <li>· Unlimited projects</li>
+            <li>· Advanced patterns</li>
+            <li>· Priority support</li>
+          </ul>
+          <a href="#" class="mt-8 block text-center bg-[var(--primary)] text-[var(--text)] py-2 font-semibold hover:bg-[var(--secondary)] transition">Choose Pro</a>
+        </div>
+        <div class="bento-card bg-white">
+          <h3 class="font-display font-bold text-xl">Team</h3>
+          <p class="font-display font-extrabold text-4xl mt-4">$49</p>
+          <p class="text-sm text-secondary mt-2">For teams</p>
+          <ul class="mt-6 space-y-2 text-sm">
+            <li>· Everything in Pro</li>
+            <li>· Collaboration tools</li>
+            <li>· SSO & audit logs</li>
+          </ul>
+          <a href="#" class="mt-8 block text-center border-2 border-[var(--text)] py-2 font-semibold hover:bg-[var(--text)] hover:text-white transition">Contact sales</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= FAQ ======= -->
+  <section id="faq" class="colour-block-white section-pad">
+    <div class="max-w-4xl mx-auto">
+      <h2 class="font-display font-extrabold text-3xl md:text-4xl tracking-tight text-center">FAQ</h2>
+      <div class="mt-10 space-y-4">
+        <details class="bento-card group">
+          <summary class="font-semibold cursor-pointer list-none flex justify-between items-center">What is Bento? <i data-lucide="chevron-down" class="w-5 h-5 group-open:rotate-180 transition"></i></summary>
+          <p class="mt-3 text-secondary text-sm">A modular grid design system focused on clarity, accessibility, and consistency.</p>
+        </details>
+        <details class="bento-card group">
+          <summary class="font-semibold cursor-pointer list-none flex justify-between items-center">Is it WCAG compliant? <i data-lucide="chevron-down" class="w-5 h-5 group-open:rotate-180 transition"></i></summary>
+          <p class="mt-3 text-secondary text-sm">Yes, built to meet WCAG 2.2 AA with keyboard-first interactions and visible focus.</p>
+        </details>
+        <details class="bento-card group">
+          <summary class="font-semibold cursor-pointer list-none flex justify-between items-center">Can I use it with Tailwind? <i data-lucide="chevron-down" class="w-5 h-5 group-open:rotate-180 transition"></i></summary>
+          <p class="mt-3 text-secondary text-sm">Absolutely – tokens map directly to Tailwind utilities or custom CSS.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= FOOTER ======= -->
+  <footer class="colour-block-secondary section-pad">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-8">
+      <div>
+        <p class="font-display font-extrabold text-2xl">bento<span class="text-[var(--primary)]">.</span></p>
+        <p class="mt-2 text-sm max-w-xs text-[#1A2B3C]">Modular grid, accessible by default.</p>
+      </div>
+      <div class="flex gap-16">
+        <div>
+          <p class="font-semibold text-sm">Product</p>
+          <ul class="mt-3 space-y-2 text-sm text-[#1A2B3C]">
+            <li><a href="#" class="hover:underline">Features</a></li>
+            <li><a href="#" class="hover:underline">Pricing</a></li>
+            <li><a href="#" class="hover:underline">Changelog</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="font-semibold text-sm">Resources</p>
+          <ul class="mt-3 space-y-2 text-sm text-[#1A2B3C]">
+            <li><a href="#" class="hover:underline">Docs</a></li>
+            <li><a href="#" class="hover:underline">Support</a></li>
+            <li><a href="#" class="hover:underline">Status</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="max-w-7xl mx-auto mt-12 pt-6 border-t border-[#1A2B3C]/30 flex flex-col md:flex-row justify-between text-sm text-[#1A2B3C]">
+      <p>© 2025 Bento Systems. All rights reserved.</p>
+      <div class="flex gap-6 mt-2 md:mt-0">
+        <a href="#" class="hover:underline">Privacy</a>
+        <a href="#" class="hover:underline">Terms</a>
+        <a href="#" class="hover:underline">Accessibility</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- lucide icons -->
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

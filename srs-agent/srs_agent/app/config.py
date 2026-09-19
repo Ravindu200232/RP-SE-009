@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     llm_allow_offline_fallback: bool = True
 
     llm_max_repair_attempts: int = 2
+    # Maximum review revision cycles permitted for specification refinement.
+    srs_review_max_iterations: int = 2
 
     mongodb_uri: str = ""
     mongodb_db: str = SRS_DB

@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dithered — Retro Design System</title>
+    <!-- Tailwind via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Open Sans, Space Grotesk, IBM Plex Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Dithered design system custom styles */
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #FFFFFF;
+            color: #111827;
+        }
+        .font-display { font-family: 'Space Grotesk', sans-serif; }
+        .font-mono { font-family: 'IBM Plex Mono', monospace; }
+        
+        /* Dither pattern background */
+        .dither-bg {
+            background-image: radial-gradient(#111827 1px, transparent 1px);
+            background-size: 8px 8px;
+            opacity: 0.05;
+        }
+        .dither-bg-dark {
+            background-image: radial-gradient(#FFFFFF 1px, transparent 1px);
+            background-size: 8px 8px;
+            opacity: 0.08;
+        }
+        
+        /* Focus states */
+        *:focus-visible {
+            outline: 3px solid #3B82F6;
+            outline-offset: 2px;
+        }
+        
+        /* Button hover transitions */
+        .btn-transition {
+            transition: all 0.15s ease-in-out;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #F3F4F6; }
+        ::-webkit-scrollbar-thumb { background: #3B82F6; }
+    </style>
+</head>
+<body class="antialiased">
+    <!-- Navigation -->
+    <nav class="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo -->
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-primary dither-bg-dark rounded-sm flex items-center justify-center" style="background-color: #3B82F6;">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5z"/>
+                        </svg>
+                    </div>
+                    <span class="font-display font-bold text-xl text-gray-900">Dithered</span>
+                </div>
+                
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Features</a>
+                    <a href="#process" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Process</a>
+                    <a href="#pricing" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Pricing</a>
+                    <a href="#faq" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">FAQ</a>
+                </div>
+                
+                <!-- CTA Button -->
+                <div class="hidden md:flex items-center gap-4">
+                    <a href="#" class="text-sm font-semibold text-gray-700 hover:text-gray-900">Sign in</a>
+                    <a href="#" class="bg-primary text-white px-4 py-2 rounded-sm font-semibold text-sm btn-transition hover:opacity-90" style="background-color: #3B82F6;">Get Started</a>
+                </div>
+                
+                <!-- Mobile Menu Button -->
+                <button class="md:hidden p-2 text-gray-600 hover:text-gray-900" aria-label="Open menu">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative overflow-hidden bg-gray-50">
+        <div class="absolute inset-0 dither-bg"></div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <p class="font-mono text-sm text-primary mb-4" style="color: #3B82F6;">// RETRO-GRADE DESIGN SYSTEM</p>
+                    <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
+                        Pixel-perfect<br>retro aesthetics,<br>modern performance
+                    </h1>
+                    <p class="text-lg text-gray-600 mb-8 max-w-lg">
+                        Build interfaces with the nostalgic charm of dot-matrix displays and the reliability of modern web standards. Dithered brings retro-gaming vibes to production-ready applications.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="#" class="bg-primary text-white px-8 py-3 rounded-sm font-semibold text-center btn-transition hover:opacity-90" style="background-color: #3B82F6;">
+                            Start Building Free
+                        </a>
+                        <a href="#" class="border-2 border-gray-300 text-gray-700 px-8 py-3 rounded-sm font-semibold text-center btn-transition hover:border-gray-400 hover:text-gray-900">
+                            View Documentation
+                        </a>
+                    </div>
+                    <p class="font-mono text-xs text-gray-500 mt-6">No credit card required · Free forever for personal use</p>
+                </div>
+                
+                <!-- Hero Visual - Dither Pattern Art -->
+                <div class="relative hidden lg:block">
+                    <div class="bg-white p-8 rounded-sm shadow-lg border border-gray-200">
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                            </div>
+                            <div class="bg-gray-900 p-4 rounded-sm">
+                                <div class="font-mono text-xs text-green-400 space-y-2">
+                                    <p>&gt; init dither-system</p>
+                                    <p>&gt; loading patterns...</p>
+                                    <p class="text-blue-400">✓ 256 shades generated</p>
+                                    <p class="text-yellow-400">✓ retro mode enabled</p>
+                                    <p>&gt; ready for deployment</p>
+                                    <p class="text-green-400 animate-pulse">▋</p>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-4 gap-2">
+                                <div class="h-8 rounded-sm" style="background-color: #3B82F6;"></div>
+                                <div class="h-8 rounded-sm" style="background-color: #8B5CF6;"></div>
+                                <div class="h-8 rounded-sm" style="background-color: #16A34A;"></div>
+                                <div class="h-8 rounded-sm" style="background-color: #D97706;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="bg-gray-900 text-white py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <p class="font-display text-4xl font-bold text-white mb-2">10K+</p>
+                    <p class="font-mono text-sm text-gray-400">Developers</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-display text-4xl font-bold text-white mb-2">500+</p>
+                    <p class="font-mono text-sm text-gray-400">Components</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-display text-4xl font-bold text-white mb-2">99.9%</p>
+                    <p class="font-mono text-sm text-gray-400">Uptime</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-display text-4xl font-bold text-white mb-2">4.9/5</p>
+                    <p class="font-mono text-sm text-gray-400">Rating</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="font-mono text-sm text-primary mb-3" style="color: #3B82F6;">// FEATURES</p>
+                <h2 class="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Everything you need to build retro-modern interfaces</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">From dithering algorithms to accessibility-first components, we've got you covered.</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="bg-gray-50 p-6 rounded-sm border border-gray-200 hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-primary rounded-sm flex items-center justify-center mb-4" style="background-color: #3B82F6;">
+                        <i data-lucide="grid-3x3" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-semibold text-gray-900 mb-2">Dither Engine</h3>
+                    <p class="text-gray-600 text-sm">Advanced algorithms for generating retro-style dot patterns with configurable density and palette.</p>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="bg-gray-50 p-6 rounded-sm border border-gray-200 hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-secondary rounded-sm flex items-center justify-center mb-4" style="background-color: #8B5CF6;">
+                        <i data-lucide="palette" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-semibold text-gray-900 mb-2">Retro Palette</h3>
+                    <p class="text-gray-600 text-sm">Curated color schemes inspired by classic gaming consoles and early web design.</p>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="bg-gray-50 p-6 rounded-sm border border-gray-200 hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-success rounded-sm flex items-center justify-center mb-4" style="background-color: #16A34A;">
+                        <i data-lucide="accessibility" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-semibold text-gray-900 mb-2">WCAG 2.2 AA</h3>
+                    <p class="text-gray-600 text-sm">Every component meets accessibility standards with keyboard-first interactions and visible focus states.</p>
+                </div>
+                
+                <!-- Feature 4 -->
+                <div class="bg-gray-50 p-6 rounded-sm border border-gray-200 hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-warning rounded-sm flex items-center justify-center mb-4" style="background-color: #D97706;">
+                        <i data-lucide="zap" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-semibold text-gray-900 mb-2">Lightning Fast</h3>
+                    <p class="text-gray-600 text-sm">Optimized CSS and SVG rendering for smooth animations and instant interactions.</p>
+                </div>
+                
+                <!-- Feature 5 -->
+                <div class="bg-gray-50 p-6 rounded-sm border border-gray-200 hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-danger rounded-sm flex items-center justify-center mb-4" style="background-color: #DC2626;">
+                        <i data-lucide="code-2" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-semibold text-gray-900 mb-2">TypeScript First</h3>
+                    <p class="text-gray-600 text-sm">Fully typed components with comprehensive API documentation and examples.</p>
+                </div>
+                
+                <!-- Feature 6 -->
+                <div class="bg-gray-50 p-6 rounded-sm border border-gray-200 hover:shadow-lg transition-shadow">
+                    <div class="w-12 h-12 bg-primary rounded-sm flex items-center justify-center mb-4" style="background-color: #3B82F6;">
+                        <i data-lucide="smartphone" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-semibold text-gray-900 mb-2">Fully Responsive</h3>
+                    <p class="text-gray-600 text-sm">Perfectly adapts from mobile to desktop with consistent spacing and readability.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Process Section -->
+    <section id="process" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="font-mono text-sm text-primary mb-3" style="color: #3B82F6;">// PROCESS</p>
+                <h2 class="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-4">From concept to production in 4 steps</h2>
+            </div>
+            
+            <div class="grid md:grid-cols-4 gap-8">
+                <!-- Step 1 -->
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-primary rounded-sm flex items-center justify-center mx-auto mb-4" style="background-color: #3B82F6;">
+                        <span class="font-display text-2xl font-bold text-white">01</span>
+                    </div>
+                    <h3 class="font-display text-lg font-semibold text-gray-900 mb-2">Design</h3>
+                    <p class="text-gray-600 text-sm">Sketch your interface with our Figma kit and design tokens.</p>
+                </div>
+                
+                <!-- Step 2 -->
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-secondary rounded-sm flex items-center justify-center mx-auto mb-4" style="background-color: #8B5CF6;">
+                        <span class="font-display text-2xl font-bold text-white">02</span>
+                    </div>
+                    <h3 class="font-display text-lg font-semibold text-gray-900 mb-2">Develop</h3>
+                    <p class="text-gray-600 text-sm">Use our React/Vue components with TypeScript support out of the box.</p>
+                </div>
+                
+                <!-- Step 3 -->
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-success rounded-sm flex items-center justify-center mx-auto mb-4" style="background-color: #16A34A;">
+                        <span class="font-display text-2xl font-bold text-white">03</span>
+                    </div>
+                    <h3 class="font-display text-lg font-semibold text-gray-900 mb-2">Test</h3>
+                    <p class="text-gray-600 text-sm">Run automated accessibility checks and visual regression tests.</p>
+                </div>
+                
+                <!-- Step 4 -->
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-warning rounded-sm flex items-center justify-center mx-auto mb-4" style="background-color: #D97706;">
+                        <span class="font-display text-2xl font-bold text-white">04</span>
+                    </div>
+                    <h3 class="font-display text-lg font-semibold text-gray-900 mb-2">Deploy</h3>
+                    <p class="text-gray-600 text-sm">Ship to production with optimized bundles and zero configuration.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section class="py-20 bg-gray-900 text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <p class="font-mono text-sm text-blue-400 mb-3">// WHY DITHERED</p>
+                    <h2 class="font-display text-3xl sm:text-4xl font-bold mb-6">Why teams choose Dithered</h2>
+                    <p class="text-gray-400 mb-8">Join thousands of developers who've embraced the retro-modern aesthetic without sacrificing quality or accessibility.</p>
+                    
+                    <div class="space-y-6">
+                        <div class="flex gap-4">
+                            <i data-lucide="check-circle" class="w-6 h-6 text-green-400 flex-shrink-0"></i>
+                            <div>
+                                <h3 class="font-semibold mb-1">Faster Development</h3>
+                                <p class="text-gray-400 text-sm">Pre-built components reduce development time by up to 60%.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <i data-lucide="check-circle" class="w-6 h-6 text-green-400 flex-shrink-0"></i>
+                            <div>
+                                <h3 class="font-semibold mb-1">Consistent Design</h3>
+                                <p class="text-gray-400 text-sm">Design tokens ensure visual consistency across all your projects.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <i data-lucide="check-circle" class="w-6 h-6 text-green-400 flex-shrink-0"></i>
+                            <div>
+                                <h3 class="font-semibold mb-1">Accessibility Built-in</h3>
+                                <p class="text-gray-400 text-sm">WCAG 2.2 AA compliance is baked into every single component.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visual representation -->
+                <div class="bg-white p-6 rounded-sm shadow-xl">
+                    <div class="font-mono text-xs text-gray-500 mb-4">// performance metrics</div>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm text-gray-600">Bundle Size</span>
+                                <span class="font-mono text-sm text-gray-900">32KB</span>
+                            </div>
+                            <div class="h-2 bg-gray-200 rounded-sm">
+                                <div class="h-full bg-primary rounded-sm" style="width: 85%; background-color: #3B82F6;"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm text-gray-600">Load Time</span>
+                                <span class="font-mono text-sm text-gray-900">0.8s</span>
+                            </div>
+                            <div class="h-2 bg-gray-200 rounded-sm">
+                                <div class="h-full bg-secondary rounded-sm" style="width: 92%; background-color: #8B5CF6;"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm text-gray-600">Accessibility Score</span>
+                                <span class="font-mono text-sm text-gray-900">100%</span>
+                            </div>
+                            <div class="h-2 bg-gray-200 rounded-sm">
+                                <div class="h-full bg-success rounded-sm" style="width: 100%; background-color: #16A34A;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="font-mono text-sm text-primary mb-3" style="color: #3B82F6;">// TESTIMONIALS</p>
+                <h2 class="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Loved by developers worldwide</h2>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Testimonial 1 -->
+                <div class="bg-gray-50 p-6 rounded-sm border border-gray-200">
+                    <div class="flex items-center gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-yellow-500 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-yellow-500 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-yellow-500 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-yellow-500 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-yellow-500 fill-current"></i>
+                    </div>
+                    <p class="text-gray-700 mb-4 text-sm">"Dithered completely transformed our retro-themed gaming platform. The components are incredibly well-crafted and the accessibility features are top-notch."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-primary rounded-sm flex items-center justify-center" style="background-color: #3B82F6;">
+                            <span class="font-display font-bold text-white">JD</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900 text-sm">Jane Doe</p>
+                            <p class="text-gray-500 text-xs">CTO, PixelArcade</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Testimonial 2 -->
+                <div class="bg-gray-50 p-6 rounded-sm border border-gray-200">
+                    <div class="flex items-center gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-yellow-500 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-yellow-500 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-yellow-500 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-yellow-500 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-yellow-500 fill-current"></i>
+                    </div>
+                    <p class="text-gray-700 mb-4 text-sm">"The dithering engine is pure magic. We were able to create stunning retro visuals in minutes that would have taken weeks to build from scratch."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-secondary rounded-sm flex items-center justify-center" style="background-color: #8B5CF6;">
+                            <span class="font-display font-bold text-white">MS</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900 text-sm">Mike Smith</p>
+                            <p class="text-gray-500 text-xs">Lead Developer, RetroSoft</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Testimonial 3 -->
+                <div class="bg-gray-50 p-6 rounded-sm border border-gray-200">
+                    <div class="flex items-center gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-yellow-500 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-yellow-500 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-yellow-500 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-yellow-500 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-yellow-500 fill-current"></i>
+                    </div>
+                    <p class="text-gray-700 mb-4 text-sm">"Finally a design system that takes accessibility seriously while still looking amazing. Our Lighthouse scores have never been better."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-success rounded-sm flex items-center justify-center" style="background-color: #16A34A;">
+                            <span class="font-display font-bold text-white">AR</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900 text-sm">Alice Rodriguez</p>
+                            <p class="text-gray-500 text-xs">Product Designer, WebCraft</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="font-mono text-sm text-primary mb-3" style="color: #3B82F6;">// PRICING</p>
+                <h2 class="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Simple, transparent pricing</h2>
+                <p class="text-gray-600">Start free. Upgrade when you're ready.</p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <!-- Free Plan -->
+                <div class="bg-white p-8 rounded-sm border border-gray-200 flex flex-col">
+                    <h3 class="font-display text-xl font-bold text-gray-900 mb-2">Starter</h3>
+                    <p class="text-gray-600 text-sm mb-6">For personal projects</p>
+                    <div class="mb-6">
+                        <span class="font-display text-4xl font-bold text-gray-900">$0</span>
+                        <span class="text-gray-500">/month</span>
+                    </div>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <i data-lucide="check" class="w-4 h-4 text-green-500"></i>
+                            Up to 3 projects
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <i data-lucide="check" class="w-4 h-4 text-green-500"></i>
+                            Basic components
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <i data-lucide="check" class="w-4 h-4 text-green-500"></i>
+                            Community support
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <i data-lucide="check" class="w-4 h-4 text-green-500"></i>
+                            Dither engine (basic)
+                        </li>
+                    </ul>
+                    <a href="#" class="border-2 border-gray-300 text-gray-700 px-6 py-3 rounded-sm font-semibold text-center btn-transition hover:border-gray-400">
+                        Get Started
+                    </a>
+                </div>
+                
+                <!-- Pro Plan (Highlighted) -->
+                <div class="bg-gray-900 text-white p-8 rounded-sm flex flex-col relative">
+                    <div class="absolute top-0 right-0 bg-primary text-white text-xs font-semibold px-3 py-1 rounded-bl-sm" style="background-color: #3B82F6;">
+                        POPULAR
+                    </div>
+                    <h3 class="font-display text-xl font-bold mb-2">Pro</h3>
+                    <p class="text-gray-400 text-sm mb-6">For growing teams</p>
+                    <div class="mb-6">
+                        <span class="font-display text-4xl font-bold">$29</span>
+                        <span class="text-gray-400">/month</span>
+                    </div>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-green-400"></i>
+                            Unlimited projects
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-green-400"></i>
+                            All components
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-green-400"></i>
+                            Priority support
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-green-400"></i>
+                            Advanced dither engine
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-green-400"></i>
+                            Custom palettes
+                        </li>
+                    </ul>
+                    <a href="#" class="bg-primary text-white px-6 py-3 rounded-sm font-semibold text-center btn-transition hover:opacity-90" style="background-color: #3B82F6;">
+                        Start Pro Trial
+                    </a>
+                </div>
+                
+                <!-- Enterprise Plan -->
+                <div class="bg-white p-8 rounded-sm border border-gray-200 flex flex-col">
+                    <h3 class="font-display text-xl font-bold text-gray-900 mb-2">Enterprise</h3>
+                    <p class="text-gray-600 text-sm mb-6">For large organizations</p>
+                    <div class="mb-6">
+                        <span class="font-display text-4xl font-bold text-gray-900">Custom</span>
+                    </div>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <i data-lucide="check" class="w-4 h-4 text-green-500"></i>
+                            Everything in Pro
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <i data-lucide="check" class="w-4 h-4 text-green-500"></i>
+                            SSO / SAML
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <i data-lucide="check" class="w-4 h-4 text-green-500"></i>
+                            Dedicated support
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-700">
+                            <i data-lucide="check" class="w-4 h-4 text-green-500"></i>
+                            Custom contracts
+                        </li>
+                    </ul>
+                    <a href="#" class="border-2 border-gray-300 text-gray-700 px-6 py-3 rounded-sm font-semibold text-center btn-transition hover:border-gray-400">
+                        Contact Sales
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="py-20 bg-white">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="font-mono text-sm text-primary mb-3" style="color: #3B82F6;">// FAQ</p>
+                <h2 class="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Frequently asked questions</h2>
+            </div>
+            
+            <div class="space-y-4">
+                <!-- FAQ Item 1 -->
+                <div class="border border-gray-200 rounded-sm">
+                    <button class="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors" aria-expanded="false">
+                        <span class="font-semibold text-gray-900">What is Dithered?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-gray-500"></i>
+                    </button>
+                    <div class="px-4 pb-4 text-gray-600 text-sm">
+                        Dithered is a design system that combines retro dot-matrix aesthetics with modern web standards. It provides components, patterns, and tools for building nostalgic yet production-ready interfaces.
+                    </div>
+                </div>
+                
+                <!-- FAQ Item 2 -->
+                <div class="border border-gray-200 rounded-sm">
+                    <button class="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors" aria-expanded="false">
+                        <span class="font-semibold text-gray-900">Is Dithered free to use?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-gray-500"></i>
+                    </button>
+                    <div class="px-4 pb-4 text-gray-600 text-sm">
+                        Yes! The Starter plan is free forever for personal projects. For commercial use, we offer affordable Pro and Enterprise plans with additional features and support.
+                    </div>
+                </div>
+                
+                <!-- FAQ Item 3 -->
+                <div class="border border-gray-200 rounded-sm">
+                    <button class="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors" aria-expanded="false">
+                        <span class="font-semibold text-gray-900">Does Dithered support React and Vue?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-gray-500"></i>
+                    </button>
+                    <div class="px-4 pb-4 text-gray-600 text-sm">
+                        Absolutely! We provide first-class support for React, Vue, and vanilla JavaScript. All components are fully typed with TypeScript and include comprehensive documentation.
+                    </div>
+                </div>
+                
+                <!-- FAQ Item 4 -->
+                <div class="border border-gray-200 rounded-sm">
+                    <button class="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors" aria-expanded="false">
+                        <span class="font-semibold text-gray-900">How accessible is Dithered?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-gray-500"></i>
+                    </button>
+                    <div class="px-4 pb-4 text-gray-600 text-sm">
+                        Every component is built to meet WCAG 2.2 AA standards. We include keyboard-first interactions, visible focus states, proper ARIA labels, and comprehensive screen reader support.
+                    </div>
+                </div>
+                
+                <!-- FAQ Item 5 -->
+                <div class="border border-gray-200 rounded-sm">
+                    <button class="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors" aria-expanded="false">
+                        <span class="font-semibold text-gray-900">Can I customize the dither patterns?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-gray-500"></i>
+                    </button>
+                    <div class="px-4 pb-4 text-gray-600 text-sm">
+                        Yes! Our dither engine is highly configurable. You can adjust pattern density, color palettes, and even create custom dithering algorithms using our API.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8 mb-12">
+                <!-- Brand -->
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-primary rounded-sm flex items-center justify-center" style="background-color: #3B82F6;">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5z"/>
+                            </svg>
+                        </div>
+                        <span class="font-display font-bold text-xl">Dithered</span>
+                    </div>
+                    <p class="text-gray-400 text-sm">Retro-grade design system for modern web applications.</p>
+                </div>
+                
+                <!-- Product Links -->
+                <div>
+                    <h4 class="font-semibold mb-4 text-sm uppercase tracking-wider text-gray-300">Product</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Features</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Pricing</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Documentation</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Changelog</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Resources -->
+                <div>
+                    <h4 class="font-semibold mb-4 text-sm uppercase tracking-wider text-gray-300">Resources</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Blog</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Community</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">GitHub</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Support</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Legal -->
+                <div>
+                    <h4 class="font-semibold mb-4 text-sm uppercase tracking-wider text-gray-300">Legal</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Privacy Policy</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Terms of Service</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Cookie Policy</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Licenses</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-800 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <p class="text-gray-500 text-sm">© 2024 Dithered. All rights reserved.</p>
+                <div class="flex gap-4">
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors" aria-label="Twitter">
+                        <i data-lucide="twitter" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors" aria-label="GitHub">
+                        <i data-lucide="github" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors" aria-label="Discord">
+                        <i data-lucide="message-circle" class="w-5 h-5"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Initialize Lucide Icons -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

@@ -29,6 +29,18 @@ class TargetProfile:
 
 
 TARGET_PROFILES: dict[DeploymentTarget, TargetProfile] = {
+    DeploymentTarget.NETLIFY: TargetProfile(
+        target=DeploymentTarget.NETLIFY, label="Netlify", required_tools=("git", "gh", "netlify"),
+        required_artifacts=(".github/workflows/ci.yml", ".github/workflows/deploy.yml", "deploy/netlify-environment.json"),
+        artifact_kind="netlify", runtime_strategy="netlify-managed", requires_oidc_permissions=False,
+        supports_teardown=True, commit_subject="chore(deploy): deploy Netlify update {run}", pr_title="Netlify deployment update",
+    ),
+    DeploymentTarget.AZURE: TargetProfile(
+        target=DeploymentTarget.AZURE, label="Azure App Service", required_tools=("git", "gh", "az"),
+        required_artifacts=(".github/workflows/ci.yml", ".github/workflows/deploy.yml", "deploy/azure-environment.json"),
+        artifact_kind="azure", runtime_strategy="azure-node", requires_oidc_permissions=False,
+        supports_teardown=True, commit_subject="chore(deploy): deploy Azure update {run}", pr_title="Azure deployment update",
+    ),
     DeploymentTarget.AWS_EC2: TargetProfile(
         target=DeploymentTarget.AWS_EC2,
         label="AWS EC2",

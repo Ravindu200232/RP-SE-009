@@ -2,6 +2,18 @@
 SRS_API = {"state": "off", "port": SRS_PORT, "error": ""}
 
 
+def wait_for_srs_startup(timeout: float = 30) -> bool:
+    """Recovery must not race the sidecar's database and job-journal startup."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline and not SERVER_STOPPING:
+        if _srs_get("/", timeout=1) is not None:
+            return True
+        if SRS_API.get("state") in ("import-failed", "crashed", "stopped"):
+            return False
+        time.sleep(0.5)
+    return False
+
+
 def start_srs_api():
     """
     Run the SRS agent's FastAPI app. Intended as a daemon thread's target.

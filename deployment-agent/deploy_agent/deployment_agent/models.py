@@ -13,6 +13,7 @@ class RunState(str, Enum):
     CI_RUNNING = "CI_RUNNING"
     DEPLOYING = "DEPLOYING"
     VALIDATING = "VALIDATING"
+    REPAIRING = "REPAIRING"
     LIVE = "LIVE"
     FAILED = "FAILED"
     ROLLED_BACK = "ROLLED_BACK"
@@ -26,6 +27,7 @@ ACTIVE_STATES = frozenset({
     RunState.CI_RUNNING.value,
     RunState.DEPLOYING.value,
     RunState.VALIDATING.value,
+    RunState.REPAIRING.value,
 })
 
 
@@ -34,6 +36,8 @@ class DeploymentTarget(str, Enum):
     VERCEL = "vercel"
 
     AWS_ECS = "aws_ecs"
+    NETLIFY = "netlify"
+    AZURE = "azure"
 
 
 class GateStatus(str, Enum):
@@ -135,6 +139,16 @@ class ProjectSpec:
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ProjectSpec:
+        services = []
+        for entry in data.get("services", []):
+            raw = dict(entry)
+            raw["environment"] = [EnvironmentVariable(**item) for item in raw.get("environment", [])]
+            services.append(ServiceSpec(**raw))
+        return cls(data["name"], data["source_path"], data["staged_path"], services,
+                   RepositorySpec(**data["repository"]), data.get("warnings", []))
+
 
 @dataclass
 class DeploymentPlan:
@@ -164,6 +178,7 @@ class DeploymentPlan:
     model_used: bool = False
     target: str = DeploymentTarget.AWS_EC2.value
     environment: dict[str, Any] = field(default_factory=dict)
+    customization: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

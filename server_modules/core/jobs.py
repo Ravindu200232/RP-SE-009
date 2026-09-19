@@ -19,13 +19,15 @@ def _jobs_reap():
             _JOBS.pop(jid, None)
 
 
-def _job_run(job_id: str, method: str, path: str, body):
+def _job_run(job_id: str, method: str, path: str, body, headers=None):
     job = _JOBS[job_id]
     try:
+        # Asked of this server again, as the person who started the job; a
+        # request with no sign-in is refused.
         r = requests.request(
             method, f"http://127.0.0.1:{UI_PORT}{AGENTFORGE_PREFIX}/api{path}",
             json=body if method != "GET" else None,
-
+            headers=headers or None,
             timeout=(5, None))
         job["http_status"] = r.status_code
         try:
@@ -41,7 +43,7 @@ def _job_run(job_id: str, method: str, path: str, body):
         job["finished"] = time.time()
 
 
-def job_start(method: str, path: str, body) -> dict:
+def job_start(method: str, path: str, body, headers=None) -> dict:
     """Begin the work and answer immediately."""
     path = str(path or "")
     if not path.startswith("/"):
@@ -53,8 +55,9 @@ def job_start(method: str, path: str, body) -> dict:
         job_id = "job_" + uuid.uuid4().hex[:20]
         _JOBS[job_id] = {"status": "running", "path": path,
                          "started": time.time(), "finished": None,
-                         "http_status": None, "result": None, "error": ""}
-    threading.Thread(target=_job_run, args=(job_id, method, path, body),
+                         "http_status": None, "result": None, "error": "",
+                         "user": (acting() or {}).get("id", "")}
+    threading.Thread(target=_job_run, args=(job_id, method, path, body, headers),
                      daemon=True).start()
     return {"job_id": job_id, "status": "running", "path": path}
 

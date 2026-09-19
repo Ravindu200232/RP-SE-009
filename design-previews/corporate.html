@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corporate — Enterprise Design System</title>
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Open Sans (primary), Poppins (display), IBM Plex Mono (mono) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&family=Poppins:wght@100;200;300;400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Design System Tokens */
+        :root {
+            --color-primary: #3B82F6;
+            --color-secondary: #8B5CF6;
+            --color-success: #16A34A;
+            --color-warning: #D97706;
+            --color-danger: #DC2626;
+            --color-surface: #FFFFFF;
+            --color-text: #111827;
+            --font-primary: 'Open Sans', sans-serif;
+            --font-display: 'Poppins', sans-serif;
+            --font-mono: 'IBM Plex Mono', monospace;
+            --spacing-1: 8px;
+            --spacing-2: 16px;
+            --spacing-3: 24px;
+            --spacing-4: 32px;
+            --spacing-5: 40px;
+            --spacing-6: 48px;
+            --spacing-7: 56px;
+            --spacing-8: 64px;
+            --spacing-9: 72px;
+            --spacing-10: 80px;
+            --spacing-11: 88px;
+            --spacing-12: 96px;
+        }
+
+        /* Base styles */
+        body {
+            font-family: var(--font-primary);
+            color: var(--color-text);
+            background-color: var(--color-surface);
+            font-weight: 400;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .font-display {
+            font-family: var(--font-display);
+        }
+
+        .font-mono {
+            font-family: var(--font-mono);
+        }
+
+        /* Sharp corners everywhere */
+        * {
+            border-radius: 0 !important;
+        }
+
+        /* High-contrast focus states */
+        *:focus-visible {
+            outline: 3px solid var(--color-primary);
+            outline-offset: 2px;
+        }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* 44px+ touch targets */
+        .touch-target {
+            min-height: 44px;
+            min-width: 44px;
+        }
+
+        /* Skip link */
+        .skip-link {
+            position: absolute;
+            left: -9999px;
+            top: 0;
+            background: var(--color-primary);
+            color: white;
+            padding: 8px 16px;
+            z-index: 100;
+            font-weight: 600;
+        }
+        .skip-link:focus {
+            left: 0;
+        }
+
+        /* Custom utilities */
+        .text-balance {
+            text-wrap: balance;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- NAVIGATION -->
+    <nav class="bg-white border-b border-gray-200 sticky top-0 z-50" aria-label="Main navigation">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo -->
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-primary flex items-center justify-center" aria-hidden="true">
+                        <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="M2 17l10 5 10-5"/>
+                            <path d="M2 12l10 5 10-5"/>
+                        </svg>
+                    </div>
+                    <span class="font-display font-bold text-xl text-text">Corporate</span>
+                </div>
+
+                <!-- Desktop menu -->
+                <div class="hidden md:flex items-center gap-8" role="navigation" aria-label="Primary">
+                    <a href="#features" class="text-sm font-medium text-gray-700 hover:text-primary transition-colors">Features</a>
+                    <a href="#process" class="text-sm font-medium text-gray-700 hover:text-primary transition-colors">Process</a>
+                    <a href="#benefits" class="text-sm font-medium text-gray-700 hover:text-primary transition-colors">Benefits</a>
+                    <a href="#testimonials" class="text-sm font-medium text-gray-700 hover:text-primary transition-colors">Testimonials</a>
+                    <a href="#pricing" class="text-sm font-medium text-gray-700 hover:text-primary transition-colors">Pricing</a>
+                    <a href="#faq" class="text-sm font-medium text-gray-700 hover:text-primary transition-colors">FAQ</a>
+                </div>
+
+                <!-- CTA + Mobile toggle -->
+                <div class="flex items-center gap-4">
+                    <a href="#pricing" class="hidden sm:inline-flex touch-target items-center px-4 py-2 bg-primary text-white text-sm font-semibold hover:bg-blue-700 transition-colors">
+                        Get Started
+                    </a>
+                    <button class="md:hidden touch-target p-2 text-gray-700 hover:text-primary" aria-label="Open menu" aria-expanded="false" onclick="toggleMobileMenu()">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-200">
+            <div class="px-4 py-4 space-y-3">
+                <a href="#features" class="block py-2 text-gray-700 hover:text-primary font-medium">Features</a>
+                <a href="#process" class="block py-2 text-gray-700 hover:text-primary font-medium">Process</a>
+                <a href="#benefits" class="block py-2 text-gray-700 hover:text-primary font-medium">Benefits</a>
+                <a href="#testimonials" class="block py-2 text-gray-700 hover:text-primary font-medium">Testimonials</a>
+                <a href="#pricing" class="block py-2 text-gray-700 hover:text-primary font-medium">Pricing</a>
+                <a href="#faq" class="block py-2 text-gray-700 hover:text-primary font-medium">FAQ</a>
+                <a href="#pricing" class="block py-2 px-4 bg-primary text-white text-center font-semibold">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <main id="main-content">
+        <!-- HERO -->
+        <section class="bg-gradient-to-br from-blue-50 via-white to-purple-50 py-16 md:py-24" aria-labelledby="hero-heading">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid lg:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <p class="font-mono text-sm text-primary mb-4">// Enterprise Design System v2.0</p>
+                        <h1 id="hero-heading" class="font-display font-bold text-4xl md:text-5xl lg:text-6xl text-text leading-tight text-balance">
+                            Build premium digital experiences with consistency
+                        </h1>
+                        <p class="mt-6 text-lg text-gray-600 max-w-xl">
+                            A comprehensive design system for enterprise applications. Structured grids, minimalist layouts, and AI-driven personalization — all in one cohesive framework.
+                        </p>
+                        <div class="mt-8 flex flex-col sm:flex-row gap-4">
+                            <a href="#pricing" class="touch-target inline-flex items-center justify-center px-6 py-3 bg-primary text-white font-semibold hover:bg-blue-700 transition-colors">
+                                Start Building
+                                <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+                            </a>
+                            <a href="#features" class="touch-target inline-flex items-center justify-center px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold hover:border-primary hover:text-primary transition-colors">
+                                Explore Features
+                            </a>
+                        </div>
+                        <div class="mt-8 flex items-center gap-4">
+                            <div class="flex -space-x-2" aria-hidden="true">
+                                <div class="w-10 h-10 bg-primary flex items-center justify-center text-white font-bold text-sm border-2 border-white">A</div>
+                                <div class="w-10 h-10 bg-secondary flex items-center justify-center text-white font-bold text-sm border-2 border-white">B</div>
+                                <div class="w-10 h-10 bg-success flex items-center justify-center text-white font-bold text-sm border-2 border-white">C</div>
+                                <div class="w-10 h-10 bg-warning flex items-center justify-center text-white font-bold text-sm border-2 border-white">D</div>
+                            </div>
+                            <p class="text-sm text-gray-600"><span class="font-semibold">4,000+</span> teams trust Corporate</p>
+                        </div>
+                    </div>
+
+                    <!-- Hero visual: CSS shapes + SVG -->
+                    <div class="relative h-96 lg:h-[500px]" aria-hidden="true">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <!-- Grid pattern background -->
+                            <svg class="w-full h-full opacity-10" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" stroke-width="1"/>
+                                    </pattern>
+                                </defs>
+                                <rect width="400" height="400" fill="url(#grid)" className="text-primary"/>
+                            </svg>
+                            
+                            <!-- Floating cards -->
+                            <div class="absolute top-10 left-0 w-64 bg-white shadow-lg p-6 border-l-4 border-primary">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-primary bg-opacity-10 flex items-center justify-center">
+                                        <i data-lucide="trending-up" class="w-5 h-5 text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-mono text-xs text-gray-500">Revenue</p>
+                                        <p class="font-display font-bold text-xl">+248%</p>
+                                    </div>
+                                </div>
+                                <div class="mt-4 h-2 bg-gray-100">
+                                    <div class="h-full bg-primary w-3/4"></div>
+                                </div>
+                            </div>
+
+                            <div class="absolute bottom-10 right-0 w-72 bg-white shadow-lg p-6 border-t-4 border-secondary">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-secondary bg-opacity-10 flex items-center justify-center">
+                                        <i data-lucide="users" class="w-5 h-5 text-secondary"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-mono text-xs text-gray-500">Active Users</p>
+                                        <p class="font-display font-bold text-xl">12,847</p>
+                                    </div>
+                                </div>
+                                <div class="mt-4 flex gap-1 items-end">
+                                    <div class="w-6 h-8 bg-secondary bg-opacity-30"></div>
+                                    <div class="w-6 h-12 bg-secondary bg-opacity-50"></div>
+                                    <div class="w-6 h-10 bg-secondary bg-opacity-40"></div>
+                                    <div class="w-6 h-16 bg-secondary"></div>
+                                    <div class="w-6 h-14 bg-secondary bg-opacity-80"></div>
+                                    <div class="w-6 h-20 bg-secondary"></div>
+                                </div>
+                            </div>
+
+                            <!-- Center geometric shape -->
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="w-48 h-48 bg-gradient-to-br from-primary to-secondary opacity-20 rotate-45"></div>
+                                <div class="absolute w-32 h-32 bg-gradient-to-br from-primary to-secondary opacity-30 rotate-45"></div>
+                                <div class="absolute w-16 h-16 bg-primary rotate-45"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- STATS -->
+        <section class="bg-gray-50 py-16" aria-label="Key statistics">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="text-center">
+                        <p class="font-display font-bold text-4xl text-primary">99.9%</p>
+                        <p class="mt-2 text-sm text-gray-600 font-medium">Uptime SLA</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="font-display font-bold text-4xl text-primary">4.9/5</p>
+                        <p class="mt-2 text-sm text-gray-600 font-medium">Customer Rating</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="font-display font-bold text-4xl text-primary">12k+</p>
+                        <p class="mt-2 text-sm text-gray-600 font-medium">Active Teams</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="font-display font-bold text-4xl text-primary">50ms</p>
+                        <p class="mt-2 text-sm text-gray-600 font-medium">Response Time</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FEATURES -->
+        <section id="features" class="py-20" aria-labelledby="features-heading">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-3xl mx-auto">
+                    <p class="font-mono text-sm text-primary mb-4">// Features</p>
+                    <h2 id="features-heading" class="font-display font-bold text-3xl md:text-4xl text-text text-balance">Everything you need to scale</h2>
+                    <p class="mt-4 text-lg text-gray-600">Comprehensive tools designed for enterprise workflows, with AI-driven personalization built in.</p>
+                </div>
+
+                <div class="mt-16 grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Feature 1 -->
+                    <div class="bg-white border border-gray-200 p-8 hover:border-primary transition-colors group">
+                        <div class="w-12 h-12 bg-primary bg-opacity-10 flex items-center justify-center group-hover:bg-primary group-hover:bg-opacity-20 transition-colors">
+                            <i data-lucide="layout-grid" class="w-6 h-6 text-primary"></i>
+                        </div>
+                        <h3 class="mt-6 font-display font-semibold text-xl">Structured Grids</h3>
+                        <p class="mt-3 text-gray-600">Consistent 8pt baseline grid system that scales from mobile to desktop with precision.</p>
+                        <a href="#" class="mt-4 inline-flex items-center text-sm font-semibold text-primary hover:text-blue-700">
+                            Learn more <i data-lucide="arrow-right" class="w-4 h-4 ml-1"></i>
+                        </a>
+                    </div>
+
+                    <!-- Feature 2 -->
+                    <div class="bg-white border border-gray-200 p-8 hover:border-secondary transition-colors group">
+                        <div class="w-12 h-12 bg-secondary bg-opacity-10 flex items-center justify-center group-hover:bg-secondary group-hover:bg-opacity-20 transition-colors">
+                            <i data-lucide="sparkles" class="w-6 h-6 text-secondary"></i>
+                        </div>
+                        <h3 class="mt-6 font-display font-semibold text-xl">AI Personalization</h3>
+                        <p class="mt-3 text-gray-600">Adaptive interfaces that learn user preferences and optimize workflows automatically.</p>
+                        <a href="#" class="mt-4 inline-flex items-center text-sm font-semibold text-secondary hover:text-purple-700">
+                            Learn more <i data-lucide="arrow-right" class="w-4 h-4 ml-1"></i>
+                        </a>
+                    </div>
+
+                    <!-- Feature 3 -->
+                    <div class="bg-white border border-gray-200 p-8 hover:border-success transition-colors group">
+                        <div class="w-12 h-12 bg-success bg-opacity-10 flex items-center justify-center group-hover:bg-success group-hover:bg-opacity-20 transition-colors">
+                            <i data-lucide="shield-check" class="w-6 h-6 text-success"></i>
+                        </div>
+                        <h3 class="mt-6 font-display font-semibold text-xl">Enterprise Security</h3>
+                        <p class="mt-3 text-gray-600">SOC 2 Type II certified with role-based access control and audit logging built-in.</p>
+                        <a href="#" class="mt-4 inline-flex items-center text-sm font-semibold text-success hover:text-green-700">
+                            Learn more <i data-lucide="arrow-right" class="w-4 h-4 ml-1"></i>
+                        </a>
+                    </div>
+
+                    <!-- Feature 4 -->
+                    <div class="bg-white border border-gray-200 p-8 hover:border-warning transition-colors group">
+                        <div class="w-12 h-12 bg-warning bg-opacity-10 flex items-center justify-center group-hover:bg-warning group-hover:bg-opacity-20 transition-colors">
+                            <i data-lucide="bar-chart-3" class="w-6 h-6 text-warning"></i>
+                        </div>
+                        <h3 class="mt-6 font-display font-semibold text-xl">Advanced Analytics</h3>
+                        <p class="mt-3 text-gray-600">Real-time dashboards with custom reporting and export capabilities for stakeholders.</p>
+                        <a href="#" class="mt-4 inline-flex items-center text-sm font-semibold text-warning hover:text-amber-700">
+                            Learn more <i data-lucide="arrow-right" class="w-4 h-4 ml-1"></i>
+                        </a>
+                    </div>
+
+                    <!-- Feature 5 -->
+                    <div class="bg-white border border-gray-200 p-8 hover:border-danger transition-colors group">
+                        <div class="w-12 h-12 bg-danger bg-opacity-10 flex items-center justify-center group-hover:bg-danger group-hover:bg-opacity-20 transition-colors">
+                            <i data-lucide="workflow" class="w-6 h-6 text-danger"></i>
+                        </div>
+                        <h3 class="mt-6 font-display font-semibold text-xl">Workflow Automation</h3>
+                        <p class="mt-3 text-gray-600">Visual workflow builder with 200+ integrations to streamline operations.</p>
+                        <a href="#" class="mt-4 inline-flex items-center text-sm font-semibold text-danger hover:text-red-700">
+                            Learn more <i data-lucide="arrow-right" class="w-4 h-4 ml-1"></i>
+                        </a>
+                    </div>
+
+                    <!-- Feature 6 -->
+                    <div class="bg-white border border-gray-200 p-8 hover:border-primary transition-colors group">
+                        <div class="w-12 h-12 bg-primary bg-opacity-10 flex items-center justify-center group-hover:bg-primary group-hover:bg-opacity-20 transition-colors">
+                            <i data-lucide="globe" class="w-6 h-6 text-primary"></i>
+                        </div>
+                        <h3 class="mt-6 font-display font-semibold text-xl">Global Scale</h3>
+                        <p class="mt-3 text-gray-600">Deploy across 30+ regions with edge caching and multi-language support.</p>
+                        <a href="#" class="mt-4 inline-flex items-center text-sm font-semibold text-primary hover:text-blue-700">
+                            Learn more <i data-lucide="arrow-right" class="w-4 h-4 ml-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PROCESS -->
+        <section id="process" class="bg-gray-50 py-20" aria-labelledby="process-heading">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-3xl mx-auto">
+                    <p class="font-mono text-sm text-primary mb-4">// Process</p>
+                    <h2 id="process-heading" class="font-display font-bold text-3xl md:text-4xl text-text text-balance">From idea to production in 4 steps</h2>
+                    <p class="mt-4 text-lg text-gray-600">Our proven methodology ensures quality at every stage.</p>
+                </div>
+
+                <div class="mt-16 grid md:grid-cols-4 gap-8">
+                    <!-- Step 1 -->
+                    <div class="relative">
+                        <div class="bg-white border border-gray-200 p-8 h-full">
+                            <p class="font-mono text-sm text-primary">01</p>
+                            <div class="mt-4 w-12 h-12 bg-primary bg-opacity-10 flex items-center justify-center">
+                                <i data-lucide="search" class="w-6 h-6 text-primary"></i>
+                            </div>
+                            <h3 class="mt-6 font-display font-semibold text-lg">Discover</h3>
+                            <p class="mt-3 text-sm text-gray-600">We analyze your requirements, user needs, and existing systems to define clear objectives.</p>
+                        </div>
+                        <div class="hidden md:block absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2 text-gray-300" aria-hidden="true">
+                            <i data-lucide="chevron-right" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="relative">
+                        <div class="bg-white border border-gray-200 p-8 h-full">
+                            <p class="font-mono text-sm text-secondary">02</p>
+                            <div class="mt-4 w-12 h-12 bg-secondary bg-opacity-10 flex items-center justify-center">
+                                <i data-lucide="pen-tool" class="w-6 h-6 text-secondary"></i>
+                            </div>
+                            <h3 class="mt-6 font-display font-semibold text-lg">Design</h3>
+                            <p class="mt-3 text-sm text-gray-600">Our designers create wireframes and prototypes following the Corporate design system.</p>
+                        </div>
+                        <div class="hidden md:block absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2 text-gray-300" aria-hidden="true">
+                            <i data-lucide="chevron-right" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="relative">
+                        <div class="bg-white border border-gray-200 p-8 h-full">
+                            <p class="font-mono text-sm text-success">03</p>
+                            <div class="mt-4 w-12 h-12 bg-success bg-opacity-10 flex items-center justify-center">
+                                <i data-lucide="code-2" class="w-6 h-6 text-success"></i>
+                            </div>
+                            <h3 class="mt-6 font-display font-semibold text-lg">Develop</h3>
+                            <p class="mt-3 text-sm text-gray-600">Agile development sprints with continuous integration and automated testing.</p>
+                        </div>
+                        <div class="hidden md:block absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2 text-gray-300" aria-hidden="true">
+                            <i data-lucide="chevron-right" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div>
+                        <div class="bg-white border border-gray-200 p-8 h-full">
+                            <p class="font-mono text-sm text-warning">04</p>
+                            <div class="mt-4 w-12 h-12 bg-warning bg-opacity-10 flex items-center justify-center">
+                                <i data-lucide="rocket" class="w-6 h-6 text-warning"></i>
+                            </div>
+                            <h3 class="mt-6 font-display font-semibold text-lg">Launch</h3>
+                            <p class="mt-3 text-sm text-gray-600">Deploy with confidence, monitor performance, and iterate based on real user feedback.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- BENEFITS -->
+        <section id="benefits" class="py-20" aria-labelledby="benefits-heading">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid lg:grid-cols-2 gap-16 items-center">
+                    <div>
+                        <p class="font-mono text-sm text-primary mb-4">// Benefits</p>
+                        <h2 id="benefits-heading" class="font-display font-bold text-3xl md:text-4xl text-text text-balance">Why teams choose Corporate</h2>
+                        <p class="mt-4 text-lg text-gray-600">Proven results that drive business value and user satisfaction.</p>
+
+                        <div class="mt-10 space-y-6">
+                            <!-- Benefit 1 -->
+                            <div class="flex gap-4">
+                                <div class="flex-shrink-0 w-10 h-10 bg-success bg-opacity-10 flex items-center justify-center">
+                                    <i data-lucide="check" class="w-5 h-5 text-success"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-display font-semibold text-lg">Faster Time-to-Market</h3>
+                                    <p class="mt-1 text-gray-600">Reduce development time by 40% with reusable components and pre-built patterns.</p>
+                                </div>
+                            </div>
+
+                            <!-- Benefit 2 -->
+                            <div class="flex gap-4">
+                                <div class="flex-shrink-0 w-10 h-10 bg-success bg-opacity-10 flex items-center justify-center">
+                                    <i data-lucide="check" class="w-5 h-5 text-success"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-display font-semibold text-lg">Consistent Brand Experience</h3>
+                                    <p class="mt-1 text-gray-600">Every touchpoint follows the same design language, building trust with users.</p>
+                                </div>
+                            </div>
+
+                            <!-- Benefit 3 -->
+                            <div class="flex gap-4">
+                                <div class="flex-shrink-0 w-10 h-10 bg-success bg-opacity-10 flex items-center justify-center">
+                                    <i data-lucide="check" class="w-5 h-5 text-success"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-display font-semibold text-lg">Accessibility First</h3>
+                                    <p class="mt-1 text-gray-600">WCAG 2.2 AA compliant by default, ensuring inclusivity for all users.</p>
+                                </div>
+                            </div>
+
+                            <!-- Benefit 4 -->
+                            <div class="flex gap-4">
+                                <div class="flex-shrink-0 w-10 h-10 bg-success bg-opacity-10 flex items-center justify-center">
+                                    <i data-lucide="check" class="w-5 h-5 text-success"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-display font-semibold text-lg">Scalable Architecture</h3>
+                                    <p class="mt-1 text-gray-600">Built to handle enterprise-level traffic and complex workflows with ease.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visual: CSS shapes -->
+                    <div class="relative h-96 lg:h-[500px]" aria-hidden="true">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <!-- Concentric squares -->
+                            <div class="w-72 h-72 bg-primary bg-opacity-5 rotate-45"></div>
+                            <div class="absolute w-56 h-56 bg-primary bg-opacity-10 rotate-45"></div>
+                            <div class="absolute w-40 h-40 bg-primary bg-opacity-20 rotate-45"></div>
+                            <div class="absolute w-24 h-24 bg-primary rotate-45"></div>
+                            
+                            <!-- Floating stat cards -->
+                            <div class="absolute top-0 left-0 bg-white shadow-lg p-4 border-b-4 border-success">
+                                <p class="font-mono text-xs text-gray-500">Efficiency</p>
+                                <p class="font-display font-bold text-2xl">+40%</p>
+                            </div>
+                            <div class="absolute bottom-0 right-0 bg-white shadow-lg p-4 border-b-4 border-primary">
+                                <p class="font-mono text-xs text-gray-500">Adoption</p>
+                                <p class="font-display font-bold text-2xl">98%</p>
+                            </div>
+                            <div class="absolute top-1/2 -left-4 bg-white shadow-lg p-4 border-l-4 border-warning">
+                                <p class="font-mono text-xs text-gray-500">Satisfaction</p>
+                                <p class="font-display font-bold text-2xl">4.9/5</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TESTIMONIALS -->
+        <section id="testimonials" class="bg-gray-50 py-20" aria-labelledby="testimonials-heading">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-3xl mx-auto">
+                    <p class="font-mono text-sm text-primary mb-4">// Testimonials</p>
+                    <h2 id="testimonials-heading" class="font-display font-bold text-3xl md:text-4xl text-text text-balance">Trusted by industry leaders</h2>
+                </div>
+
+                <div class="mt-16 grid md:grid-cols-3 gap-8">
+                    <!-- Testimonial 1 -->
+                    <figure class="bg-white border border-gray-200 p-8 flex flex-col">
+                        <div class="flex gap-1 text-warning" aria-label="5 out of 5 stars">
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        </div>
+                        <blockquote class="mt-4 text-gray-700 flex-grow">
+                            "Corporate transformed our design workflow. The consistency across all our products is remarkable. We shipped our new platform in half the time."
+                        </blockquote>
+                        <figcaption class="mt-6 flex items-center gap-4">
+                            <div class="w-12 h-12 bg-primary flex items-center justify-center text-white font-bold text-lg" aria-hidden="true">S</div>
+                            <div>
+                                <p class="font-semibold">Sarah Chen</p>
+                                <p class="text-sm text-gray-500">VP of Design, TechFlow</p>
+                            </div>
+                        </figcaption>
+                    </figure>
+
+                    <!-- Testimonial 2 -->
+                    <figure class="bg-white border border-gray-200 p-8 flex flex-col">
+                        <div class="flex gap-1 text-warning" aria-label="5 out of 5 stars">
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        </div>
+                        <blockquote class="mt-4 text-gray-700 flex-grow">
+                            "The accessibility features are outstanding. We passed our WCAG audit with zero issues. The design system just works."
+                        </blockquote>
+                        <figcaption class="mt-6 flex items-center gap-4">
+                            <div class="w-12 h-12 bg-secondary flex items-center justify-center text-white font-bold text-lg" aria-hidden="true">M</div>
+                            <div>
+                                <p class="font-semibold">Michael Rodriguez</p>
+                                <p class="text-sm text-gray-500">CTO, DataCore</p>
+                            </div>
+                        </figcaption>
+                    </figure>
+
+                    <!-- Testimonial 3 -->
+                    <figure class="bg-white border border-gray-200 p-8 flex flex-col">
+                        <div class="flex gap-1 text-warning" aria-label="5 out of 5 stars">
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        </div>
+                        <blockquote class="mt-4 text-gray-700 flex-grow">
+                            "The AI personalization features are game-changing. Our users love how the interface adapts to their workflow."
+                        </blockquote>
+                        <figcaption class="mt-6 flex items-center gap-4">
+                            <div class="w-12 h-12 bg-success flex items-center justify-center text-white font-bold text-lg" aria-hidden="true">A</div>
+                            <div>
+                                <p class="font-semibold">Amanda Patel</p>
+                                <p class="text-sm text-gray-500">Head of Product, CloudScale</p>
+                            </div>
+                        </figcaption>
+                    </figure>
+                </div>
+            </div>
+        </section>
+
+        <!-- PRICING -->
+        <section id="pricing" class="py-20" aria-labelledby="pricing-heading">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-3xl mx-auto">
+                    <p class="font-mono text-sm text-primary mb-4">// Pricing</p>
+                    <h2 id="pricing-heading" class="font-display font-bold text-3xl md:text-4xl text-text text-balance">Simple, transparent pricing</h2>
+                    <p class="mt-4 text-lg text-gray-600">Start free, scale as you grow. No hidden fees.</p>
+                </div>
+
+                <div class="mt-16 grid md:grid-cols-3 gap-8">
+                    <!-- Starter -->
+                    <div class="bg-white border border-gray-200 p-8 flex flex-col">
+                        <h3 class="font-display font-semibold text-lg">Starter</h3>
+                        <p class="mt-2 text-sm text-gray-500">For small teams getting started</p>
+                        <p class="mt-6 font-display font-bold text-4xl">$0</p>
+                        <p class="mt-1 text-sm text-gray-500">per month</p>
+                        <ul class="mt-8 space-y-4 flex-grow">
+                            <li class="flex items-center gap-3">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                                <span class="text-sm">Up to 5 team members</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                                <span class="text-sm">Core components</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                                <span class="text-sm">Community support</span>
+                            </li>
+                        </ul>
+                        <a href="#" class="mt-8 touch-target inline-flex items-center justify-center px-4 py-2 border-2 border-gray-300 text-gray-700 font-semibold hover:border-primary hover:text-primary transition-colors">
+                            Start Free
+                        </a>
+                    </div>
+
+                    <!-- Pro (Featured) -->
+                    <div class="bg-primary text-white p-8 flex flex-col relative">
+                        <p class="absolute top-4 right-4 font-mono text-xs bg-white bg-opacity-20 px-2 py-1">POPULAR</p>
+                        <h3 class="font-display font-semibold text-lg">Pro</h3>
+                        <p class="mt-2 text-sm text-blue-100">For growing teams</p>
+                        <p class="mt-6 font-display font-bold text-4xl">$49</p>
+                        <p class="mt-1 text-sm text-blue-100">per month</p>
+                        <ul class="mt-8 space-y-4 flex-grow">
+                            <li class="flex items-center gap-3">
+                                <i data-lucide="check" class="w-4 h-4 text-white flex-shrink-0"></i>
+                                <span class="text-sm">Unlimited team members</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <i data-lucide="check" class="w-4 h-4 text-white flex-shrink-0"></i>
+                                <span class="text-sm">All components + AI features</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <i data-lucide="check" class="w-4 h-4 text-white flex-shrink-0"></i>
+                                <span class="text-sm">Priority support</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <i data-lucide="check" class="w-4 h-4 text-white flex-shrink-0"></i>
+                                <span class="text-sm">Advanced analytics</span>
+                            </li>
+                        </ul>
+                        <a href="#" class="mt-8 touch-target inline-flex items-center justify-center px-4 py-2 bg-white text-primary font-semibold hover:bg-blue-50 transition-colors">
+                            Get Started
+                        </a>
+                    </div>
+
+                    <!-- Enterprise -->
+                    <div class="bg-white border border-gray-200 p-8 flex flex-col">
+                        <h3 class="font-display font-semibold text-lg">Enterprise</h3>
+                        <p class="mt-2 text-sm text-gray-500">For large organizations</p>
+                        <p class="mt-6 font-display font-bold text-4xl">Custom</p>
+                        <p class="mt-1 text-sm text-gray-500">tailored to you</p>
+                        <ul class="mt-8 space-y-4 flex-grow">
+                            <li class="flex items-center gap-3">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                                <span class="text-sm">Custom SLAs</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                                <span class="text-sm">Dedicated support</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                                <span class="text-sm">On-premise deployment</span>
+                            </li>
+                        </ul>
+                        <a href="#" class="mt-8 touch-target inline-flex items-center justify-center px-4 py-2 border-2 border-gray-300 text-gray-700 font-semibold hover:border-primary hover:text-primary transition-colors">
+                            Contact Sales
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section id="faq" class="bg-gray-50 py-20" aria-labelledby="faq-heading">
+            <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <p class="font-mono text-sm text-primary mb-4">// FAQ</p>
+                    <h2 id="faq-heading" class="font-display font-bold text-3xl md:text-4xl text-text text-balance">Frequently asked questions</h2>
+                </div>
+
+                <div class="mt-12 space-y-4">
+                    <!-- FAQ Item 1 -->
+                    <details class="bg-white border border-gray-200 group">
+                        <summary class="flex items-center justify-between p-6 cursor-pointer touch-target font-semibold hover:text-primary transition-colors">
+                            What is the Corporate design system?
+                            <i data-lucide="chevron-down" class="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform"></i>
+                        </summary>
+                        <div class="px-6 pb-6 text-gray-600">
+                            Corporate is a comprehensive design system for enterprise applications. It includes design tokens, reusable components, and guidelines for creating consistent, accessible, and scalable user interfaces.
+                        </div>
+                    </details>
+
+                    <!-- FAQ Item 2 -->
+                    <details class="bg-white border border-gray-200 group">
+                        <summary class="flex items-center justify-between p-6 cursor-pointer touch-target font-semibold hover:text-primary transition-colors">
+                            How does AI personalization work?
+                            <i data-lucide="chevron-down" class="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform"></i>
+                        </summary>
+                        <div class="px-6 pb-6 text-gray-600">
+                            Our AI engine analyzes user behavior and preferences to automatically adjust layouts, prioritize content, and suggest workflow optimizations. This creates a personalized experience for each user while maintaining brand consistency.
+                        </div>
+                    </details>
+
+                    <!-- FAQ Item 3 -->
+                    <details class="bg-white border border-gray-200 group">
+                        <summary class="flex items-center justify-between p-6 cursor-pointer touch-target font-semibold hover:text-primary transition-colors">
+                            Is the design system WCAG compliant?
+                            <i data-lucide="chevron-down" class="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform"></i>
+                        </summary>
+                        <div class="px-6 pb-6 text-gray-600">
+                            Yes, all components are built to meet WCAG 2.2 AA standards. We include keyboard navigation, screen reader support, high contrast modes, and reduced motion support out of the box.
+                        </div>
+                    </details>
+
+                    <!-- FAQ Item 4 -->
+                    <details class="bg-white border border-gray-200 group">
+                        <summary class="flex items-center justify-between p-6 cursor-pointer touch-target font-semibold hover:text-primary transition-colors">
+                            Can I customize the design tokens?
+                            <i data-lucide="chevron-down" class="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform"></i>
+                        </summary>
+                        <div class="px-6 pb-6 text-gray-600">
+                            Absolutely. All design tokens are exposed as CSS variables, allowing you to easily customize colors, typography, spacing, and other design decisions to match your brand while maintaining system consistency.
+                        </div>
+                    </details>
+
+                    <!-- FAQ Item 5 -->
+                    <details class="bg-white border border-gray-200 group">
+                        <summary class="flex items-center justify-between p-6 cursor-pointer touch-target font-semibold hover:text-primary transition-colors">
+                            What kind of support is included?
+                            <i data-lucide="chevron-down" class="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform"></i>
+                        </summary>
+                        <div class="px-6 pb-6 text-gray-600">
+                            All plans include access to our documentation and community forum. Pro and Enterprise plans include priority email support with guaranteed response times. Enterprise customers get a dedicated support engineer.
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-gray-900 text-gray-300 py-16" role="contentinfo">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-12">
+                <!-- Brand -->
+                <div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-primary flex items-center justify-center" aria-hidden="true">
+                            <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                                <path d="M2 17l10 5 10-5"/>
+                                <path d="M2 12l10 5 10-5"/>
+                            </svg>
+                        </div>
+                        <span class="font-display font-bold text-xl text-white">Corporate</span>
+                    </div>
+                    <p class="mt-4 text-sm text-gray-400">Enterprise design system for building premium digital experiences.</p>
+                    <div class="mt-6 flex gap-4">
+                        <a href="#" class="touch-target w-10 h-10 bg-gray-800 flex items-center justify-center hover:bg-primary transition-colors" aria-label="Twitter">
+                            <i data-lucide="twitter" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" class="touch-target w-10 h-10 bg-gray-800 flex items-center justify-center hover:bg-primary transition-colors" aria-label="LinkedIn">
+                            <i data-lucide="linkedin" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" class="touch-target w-10 h-10 bg-gray-800 flex items-center justify-center hover:bg-primary transition-colors" aria-label="GitHub">
+                            <i data-lucide="github" class="w-5 h-5"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Product -->
+                <nav aria-label="Product links">
+                    <h3 class="font-display font-semibold text-white">Product</h3>
+                    <ul class="mt-4 space-y-3">
+                        <li><a href="#features" class="text-sm hover:text-white transition-colors">Features</a></li>
+                        <li><a href="#pricing" class="text-sm hover:text-white transition-colors">Pricing</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Changelog</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Roadmap</a></li>
+                    </ul>
+                </nav>
+
+                <!-- Resources -->
+                <nav aria-label="Resource links">
+                    <h3 class="font-display font-semibold text-white">Resources</h3>
+                    <ul class="mt-4 space-y-3">
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Documentation</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">API Reference</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Design Tokens</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Community</a></li>
+                    </ul>
+                </nav>
+
+                <!-- Company -->
+                <nav aria-label="Company links">
+                    <h3 class="font-display font-semibold text-white">Company</h3>
+                    <ul class="mt-4 space-y-3">
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">About Us</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Careers</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Contact</a></li>
+                        <li><a href="#" class="text-sm hover:text-white transition-colors">Privacy Policy</a></li>
+                    </ul>
+                </nav>
+            </div>
+
+            <div class="mt-12 pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="text-sm text-gray-500">© 2026 Corporate Design System. All rights reserved.</p>
+                <p class="font-mono text-xs text-gray-500">v2.0.0</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Initialize Lucide icons -->
+    <script>
+        lucide.createIcons();
+        
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            const button = document.querySelector('[aria-label="Open menu"]');
+            const isOpen = !menu.classList.contains('hidden');
+            
+            menu.classList.toggle('hidden');
+            button.setAttribute('aria-expanded', String(!isOpen));
+            button.setAttribute('aria-label', isOpen ? 'Open menu' : 'Close menu');
+            
+            // Swap icon
+            const icon = button.querySelector('i');
+            if (isOpen) {
+                icon.setAttribute('data-lucide', 'menu');
+            } else {
+                icon.setAttribute('data-lucide', 'x');
+            }
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>

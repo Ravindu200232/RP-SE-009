@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neumorphism Club — Build. Monetize. Market. With AI.</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Space Mono', 'monospace'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        primary: '#006666',
+                        secondary: '#F1F2F5',
+                        success: '#00A63D',
+                        warning: '#FE9900',
+                        danger: '#FF2157',
+                        surface: '#E7E5E4',
+                        text: '#1E2938',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; }
+        body { background: #E7E5E4; }
+        .neo {
+            background: #E7E5E4;
+            box-shadow: 8px 8px 16px #c8c6c5, -8px -8px 16px #ffffff;
+        }
+        .neo-md {
+            background: #E7E5E4;
+            box-shadow: 6px 6px 12px #c8c6c5, -6px -6px 12px #ffffff;
+        }
+        .neo-sm {
+            background: #E7E5E4;
+            box-shadow: 4px 4px 8px #c8c6c5, -4px -4px 8px #ffffff;
+        }
+        .neo-inset {
+            background: #E7E5E4;
+            box-shadow: inset 3px 3px 6px #c8c6c5, inset -3px -3px 6px #ffffff;
+        }
+        .neo-inset-sm {
+            background: #E7E5E4;
+            box-shadow: inset 2px 2px 4px #c8c6c5, inset -2px -2px 4px #ffffff;
+        }
+        .neo-primary {
+            background: #006666;
+            box-shadow: 4px 4px 8px #c8c6c5, -4px -4px 8px #ffffff;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+        .neo-primary:hover {
+            box-shadow: 6px 6px 12px #c8c6c5, -6px -6px 12px #ffffff;
+            transform: translateY(-1px);
+        }
+        .neo-primary:active {
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.2), inset -2px -2px 4px rgba(255,255,255,0.1);
+            transform: translateY(0);
+        }
+        .neo-hover {
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+        .neo-hover:hover {
+            box-shadow: 10px 10px 20px #c8c6c5, -10px -10px 20px #ffffff;
+            transform: translateY(-2px);
+        }
+        .neo-hover:active {
+            box-shadow: inset 2px 2px 4px #c8c6c5, inset -2px -2px 4px #ffffff;
+            transform: translateY(0);
+        }
+        .faq-answer {
+            display: none;
+        }
+        .faq-item.active .faq-answer {
+            display: block;
+        }
+        .faq-item.active .faq-icon {
+            transform: rotate(45deg);
+        }
+        .faq-icon {
+            transition: transform 0.3s ease;
+        }
+        .nav-link {
+            transition: color 0.2s ease;
+        }
+        .nav-link:hover {
+            color: #006666;
+        }
+        .bar {
+            border-radius: 4px;
+            background: #E7E5E4;
+            box-shadow: inset 2px 2px 4px #c8c6c5, inset -2px -2px 4px #ffffff;
+        }
+        .bar-fill {
+            border-radius: 4px;
+            background: #006666;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.1), -1px -1px 2px rgba(255,255,255,0.3);
+        }
+        .pricing-card-popular {
+            box-shadow: 8px 8px 16px #c8c6c5, -8px -8px 16px #ffffff, 0 0 0 2px #006666;
+        }
+        @media (max-width: 768px) {
+            .mobile-menu {
+                display: none;
+            }
+            .mobile-menu.open {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body class="bg-surface text-text font-sans antialiased">
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 neo">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="#" class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl neo-inset-sm flex items-center justify-center">
+                        <i data-lucide="hexagon" class="w-4 h-4 text-primary"></i>
+                    </div>
+                    <span class="text-lg font-bold tracking-tight">N◉CLUB</span>
+                </a>
+                <div class="hidden md:flex items-center gap-6">
+                    <a href="#features" class="nav-link text-sm font-medium">Features</a>
+                    <a href="#process" class="nav-link text-sm font-medium">Process</a>
+                    <a href="#pricing" class="nav-link text-sm font-medium">Pricing</a>
+                    <a href="#faq" class="nav-link text-sm font-medium">FAQ</a>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="#pricing" class="neo-primary text-white text-sm font-bold px-4 py-2 rounded-full">Join Now</a>
+                    <button id="mobile-menu-btn" class="md:hidden neo-sm w-10 h-10 rounded-xl flex items-center justify-center">
+                        <i data-lucide="menu" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="mobile-menu md:hidden neo border-t border-black/5">
+            <div class="px-4 py-4 space-y-3">
+                <a href="#features" class="block text-sm font-medium py-2 px-3 neo-inset-sm rounded-xl">Features</a>
+                <a href="#process" class="block text-sm font-medium py-2 px-3 neo-inset-sm rounded-xl">Process</a>
+                <a href="#pricing" class="block text-sm font-medium py-2 px-3 neo-inset-sm rounded-xl">Pricing</a>
+                <a href="#faq" class="block text-sm font-medium py-2 px-3 neo-inset-sm rounded-xl">FAQ</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="pt-28 pb-16 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="inline-flex items-center gap-2 neo-sm px-4 py-2 rounded-full mb-6">
+                        <span class="w-2 h-2 rounded-full bg-success"></span>
+                        <span class="text-xs font-medium tracking-wider">NOW ACCEPTING MEMBERS</span>
+                    </div>
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6">
+                        Build. Monetize.<br>
+                        <span class="text-primary">Market.</span> With AI.
+                    </h1>
+                    <p class="text-base sm:text-lg text-text/70 mb-8 max-w-md leading-relaxed">
+                        The private club where founders, builders, and creators turn AI into revenue. Join 2,400+ members building the future.
+                    </p>
+                    <div class="flex flex-wrap gap-4">
+                        <a href="#pricing" class="neo-primary text-white font-bold px-6 py-3 rounded-full inline-flex items-center gap-2">
+                            Join the Club
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </a>
+                        <a href="#features" class="neo-sm font-medium px-6 py-3 rounded-full inline-flex items-center gap-2 neo-hover">
+                            <i data-lucide="play" class="w-4 h-4 text-primary"></i>
+                            Explore Features
+                        </a>
+                    </div>
+                </div>
+                <!-- Hero Visual: Neumorphic Dashboard -->
+                <div class="neo rounded-3xl p-6 sm:p-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex gap-2">
+                            <span class="w-3 h-3 rounded-full bg-danger/70"></span>
+                            <span class="w-3 h-3 rounded-full bg-warning/70"></span>
+                            <span class="w-3 h-3 rounded-full bg-success/70"></span>
+                        </div>
+                        <span class="text-xs font-mono text-text/50">AI_DASHBOARD v2.4</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 mb-6">
+                        <div class="neo-inset rounded-2xl p-4 text-center">
+                            <p class="text-2xl font-bold text-primary">24K</p>
+                            <p class="text-xs text-text/50 mt-1">Users</p>
+                        </div>
+                        <div class="neo-inset rounded-2xl p-4 text-center">
+                            <p class="text-2xl font-bold text-primary">180</p>
+                            <p class="text-xs text-text/50 mt-1">Products</p>
+                        </div>
+                        <div class="neo-inset rounded-2xl p-4 text-center">
+                            <p class="text-2xl font-bold text-primary">$12M</p>
+                            <p class="text-xs text-text/50 mt-1">Revenue</p>
+                        </div>
+                    </div>
+                    <div class="neo-inset rounded-2xl p-4 mb-6">
+                        <p class="text-xs font-mono text-text/50 mb-3">REVENUE_TREND</p>
+                        <div class="flex items-end gap-2 h-24">
+                            <div class="flex-1 bar h-1/4"><div class="bar-fill h-full w-full"></div></div>
+                            <div class="flex-1 bar h-1/3"><div class="bar-fill h-full w-full"></div></div>
+                            <div class="flex-1 bar h-1/2"><div class="bar-fill h-full w-full"></div></div>
+                            <div class="flex-1 bar h-2/5"><div class="bar-fill h-full w-full"></div></div>
+                            <div class="flex-1 bar h-3/5"><div class="bar-fill h-full w-full"></div></div>
+                            <div class="flex-1 bar h-3/4"><div class="bar-fill h-full w-full"></div></div>
+                            <div class="flex-1 bar h-full"><div class="bar-fill h-full w-full"></div></div>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <div class="neo-sm rounded-xl px-4 py-2 text-xs font-bold text-primary flex items-center gap-1">
+                            <i data-lucide="rocket" class="w-3 h-3"></i> Launch
+                        </div>
+                        <div class="neo-inset-sm rounded-xl px-4 py-2 text-xs font-medium text-text/60 flex items-center gap-1">
+                            <i data-lucide="bar-chart-3" class="w-3 h-3"></i> Analytics
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="py-16 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                <div class="neo-inset rounded-2xl p-6 text-center">
+                    <p class="text-3xl sm:text-4xl font-bold text-primary">2,400+</p>
+                    <p class="text-xs sm:text-sm text-text/60 mt-2">Members</p>
+                </div>
+                <div class="neo-inset rounded-2xl p-6 text-center">
+                    <p class="text-3xl sm:text-4xl font-bold text-primary">180+</p>
+                    <p class="text-xs sm:text-sm text-text/60 mt-2">Products Launched</p>
+                </div>
+                <div class="neo-inset rounded-2xl p-6 text-center">
+                    <p class="text-3xl sm:text-4xl font-bold text-primary">$12M+</p>
+                    <p class="text-xs sm:text-sm text-text/60 mt-2">Revenue Generated</p>
+                </div>
+                <div class="neo-inset rounded-2xl p-6 text-center">
+                    <p class="text-3xl sm:text-4xl font-bold text-primary">94%</p>
+                    <p class="text-xs sm:text-sm text-text/60 mt-2">Retention Rate</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="py-16 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl sm:text-4xl font-bold mb-4">Everything You Need to <span class="text-primary">Win</span></h2>
+                <p class="text-text/60 max-w-xl mx-auto">Six pillars of the club, designed to take you from idea to revenue.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="neo rounded-2xl p-6 neo-hover">
+                    <div class="w-12 h-12 rounded-xl neo-inset-sm flex items-center justify-center mb-4">
+                        <i data-lucide="brain" class="w-6 h-6 text-primary"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">AI Playbooks</h3>
+                    <p class="text-sm text-text/60 leading-relaxed">Step-by-step playbooks for building AI products that actually ship.</p>
+                </div>
+                <div class="neo rounded-2xl p-6 neo-hover">
+                    <div class="w-12 h-12 rounded-xl neo-inset-sm flex items-center justify-center mb-4">
+                        <i data-lucide="users" class="w-6 h-6 text-primary"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Private Community</h3>
+                    <p class="text-sm text-text/60 leading-relaxed">A vetted network of AI builders, founders, and operators.</p>
+                </div>
+                <div class="neo rounded-2xl p-6 neo-hover">
+                    <div class="w-12 h-12 rounded-xl neo-inset-sm flex items-center justify-center mb-4">
+                        <i data-lucide="file-text" class="w-6 h-6 text-primary"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Templates</h3>
+                    <p class="text-sm text-text/60 leading-relaxed">Production-ready templates for your next AI product launch.</p>
+                </div>
+                <div class="neo rounded-2xl p-6 neo-hover">
+                    <div class="w-12 h-12 rounded-xl neo-inset-sm flex items-center justify-center mb-4">
+                        <i data-lucide="bar-chart-3" class="w-6 h-6 text-primary"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Growth Analytics</h3>
+                    <p class="text-sm text-text/60 leading-relaxed">Track what works with built-in analytics and insights.</p>
+                </div>
+                <div class="neo rounded-2xl p-6 neo-hover">
+                    <div class="w-12 h-12 rounded-xl neo-inset-sm flex items-center justify-center mb-4">
+                        <i data-lucide="dollar-sign" class="w-6 h-6 text-primary"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Monetization Lab</h3>
+                    <p class="text-sm text-text/60 leading-relaxed">Pricing and revenue strategies that actually work.</p>
+                </div>
+                <div class="neo rounded-2xl p-6 neo-hover">
+                    <div class="w-12 h-12 rounded-xl neo-inset-sm flex items-center justify-center mb-4">
+                        <i data-lucide="trending-up" class="w-6 h-6 text-primary"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">AI Marketing</h3>
+                    <p class="text-sm text-text/60 leading-relaxed">Automated growth loops that scale with you.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Process -->
+    <section id="process" class="py-16 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl sm:text-4xl font-bold mb-4">From Zero to <span class="text-primary">Launch</span></h2>
+                <p class="text-text/60 max-w-xl mx-auto">A proven five-step process that takes you from application to scale.</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div class="neo rounded-2xl p-6 text-center neo-hover">
+                    <div class="w-14 h-14 rounded-full neo-inset-sm flex items-center justify-center mx-auto mb-4">
+                        <span class="text-xl font-bold text-primary">01</span>
+                    </div>
+                    <h3 class="font-bold mb-2">Apply</h3>
+                    <p class="text-xs text-text/60">Submit your application in minutes.</p>
+                </div>
+                <div class="neo rounded-2xl p-6 text-center neo-hover">
+                    <div class="w-14 h-14 rounded-full neo-inset-sm flex items-center justify-center mx-auto mb-4">
+                        <span class="text-xl font-bold text-primary">02</span>
+                    </div>
+                    <h3 class="font-bold mb-2">Onboard</h3>
+                    <p class="text-xs text-text/60">Get access to the club and community.</p>
+                </div>
+                <div class="neo rounded-2xl p-6 text-center neo-hover">
+                    <div class="w-14 h-14 rounded-full neo-inset-sm flex items-center justify-center mx-auto mb-4">
+                        <span class="text-xl font-bold text-primary">03</span>
+                    </div>
+                    <h3 class="font-bold mb-2">Build</h3>
+                    <p class="text-xs text-text/60">Use playbooks and templates to ship fast.</p>
+                </div>
+                <div class="neo rounded-2xl p-6 text-center neo-hover">
+                    <div class="w-14 h-14 rounded-full neo-inset-sm flex items-center justify-center mx-auto mb-4">
+                        <span class="text-xl font-bold text-primary">04</span>
+                    </div>
+                    <h3 class="font-bold mb-2">Launch</h3>
+                    <p class="text-xs text-text/60">Go live with confidence.</p>
+                </div>
+                <div class="neo rounded-2xl p-6 text-center neo-hover">
+                    <div class="w-14 h-14 rounded-full neo-inset-sm flex items-center justify-center mx-auto mb-4">
+                        <span class="text-xl font-bold text-primary">05</span>
+                    </div>
+                    <h3 class="font-bold mb-2">Scale</h3>
+                    <p class="text-xs text-text/60">Grow with AI-powered strategies.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits -->
+    <section class="py-16 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h2 class="text-3xl sm:text-4xl font-bold mb-4">Why Join the <span class="text-primary">Club?</span></h2>
+                    <p class="text-text/60 mb-8">More than a community — it's your unfair advantage in the AI economy.</p>
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3 neo-sm rounded-xl px-4 py-3">
+                            <i data-lucide="check-circle-2" class="w-5 h-5 text-success shrink-0"></i>
+                            <span class="text-sm font-medium">Weekly AI strategy calls</span>
+                        </div>
+                        <div class="flex items-center gap-3 neo-sm rounded-xl px-4 py-3">
+                            <i data-lucide="check-circle-2" class="w-5 h-5 text-success shrink-0"></i>
+                            <span class="text-sm font-medium">Access to private AI tools</span>
+                        </div>
+                        <div class="flex items-center gap-3 neo-sm rounded-xl px-4 py-3">
+                            <i data-lucide="check-circle-2" class="w-5 h-5 text-success shrink-0"></i>
+                            <span class="text-sm font-medium">Co-founder matching</span>
+                        </div>
+                        <div class="flex items-center gap-3 neo-sm rounded-xl px-4 py-3">
+                            <i data-lucide="check-circle-2" class="w-5 h-5 text-success shrink-0"></i>
+                            <span class="text-sm font-medium">Investor introductions</span>
+                        </div>
+                        <div class="flex items-center gap-3 neo-sm rounded-xl px-4 py-3">
+                            <i data-lucide="check-circle-2" class="w-5 h-5 text-success shrink-0"></i>
+                            <span class="text-sm font-medium">Lifetime access to all playbooks</span>
+                        </div>
+                        <div class="flex items-center gap-3 neo-sm rounded-xl px-4 py-3">
+                            <i data-lucide="check-circle-2" class="w-5 h-5 text-success shrink-0"></i>
+                            <span class="text-sm font-medium">Member-only discounts</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="neo rounded-3xl p-8">
+                    <div class="neo-inset rounded-2xl p-6 mb-6">
+                        <p class="text-xs font-mono text-text/50 mb-2">MEMBER_SPOTLIGHT</p>
+                        <p class="text-sm leading-relaxed text-text/80">"I joined with zero AI experience. Six months later, my AI-powered SaaS is generating $8K MRR."</p>
+                        <div class="flex items-center gap-3 mt-4">
+                            <div class="w-10 h-10 rounded-full neo-sm flex items-center justify-center">
+                                <span class="text-xs font-bold text-primary">JD</span>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold">James D.</p>
+                                <p class="text-xs text-text/50">Product Builder</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="neo-inset-sm rounded-xl p-4 text-center">
+                            <p class="text-xl font-bold text-primary">$8K</p>
+                            <p class="text-xs text-text/50">MRR</p>
+                        </div>
+                        <div class="neo-inset-sm rounded-xl p-4 text-center">
+                            <p class="text-xl font-bold text-primary">6 mo</p>
+                            <p class="text-xs text-text/50">To Launch</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="py-16 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl sm:text-4xl font-bold mb-4">Members <span class="text-primary">Love</span> the Club</h2>
+                <p class="text-text/60 max-w-xl mx-auto">Real stories from real members building with AI.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="neo rounded-2xl p-6 neo-hover">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-sm leading-relaxed mb-4">"The playbooks alone are worth 10x the membership. I shipped my first AI product in 3 weeks."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full neo-inset-sm flex items-center justify-center">
+                            <span class="text-xs font-bold text-primary">SC</span>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold">Sarah Chen</p>
+                            <p class="text-xs text-text/50">Founder, AI SaaS</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="neo rounded-2xl p-6 neo-hover">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-sm leading-relaxed mb-4">"The community is unreal. Found my co-founder here and we're now generating $50K MRR."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full neo-inset-sm flex items-center justify-center">
+                            <span class="text-xs font-bold text-primary">MR</span>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold">Marcus Rodriguez</p>
+                            <p class="text-xs text-text/50">Co-founder, AI Startup</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="neo rounded-2xl p-6 neo-hover">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-sm leading-relaxed mb-4">"I've been in many clubs. This is the only one that actually helps you build and monetize."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full neo-inset-sm flex items-center justify-center">
+                            <span class="text-xs font-bold text-primary">PP</span>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold">Priya Patel</p>
+                            <p class="text-xs text-text/50">Indie Hacker</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section id="pricing" class="py-16 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl sm:text-4xl font-bold mb-4">Simple <span class="text-primary">Pricing</span></h2>
+                <p class="text-text/60 max-w-xl mx-auto">Start free, upgrade when you're ready. Cancel anytime.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Starter -->
+                <div class="neo rounded-2xl p-6 flex flex-col">
+                    <h3 class="text-lg font-bold mb-1">Starter</h3>
+                    <p class="text-xs text-text/50 mb-4">For curious builders</p>
+                    <p class="text-3xl font-bold mb-6">$29<span class="text-sm text-text/50 font-normal">/mo</span></p>
+                    <ul class="space-y-2 mb-8 flex-1">
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            Community access
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            2 playbooks
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            Monthly calls
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            Basic templates
+                        </li>
+                    </ul>
+                    <a href="#" class="neo-sm font-bold text-center px-4 py-3 rounded-full neo-hover">Get Started</a>
+                </div>
+                <!-- Pro -->
+                <div class="pricing-card-popular rounded-2xl p-6 flex flex-col relative">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 neo-primary text-white text-xs font-bold px-4 py-1 rounded-full">MOST POPULAR</div>
+                    <h3 class="text-lg font-bold mb-1">Pro</h3>
+                    <p class="text-xs text-text/50 mb-4">For serious builders</p>
+                    <p class="text-3xl font-bold mb-6">$99<span class="text-sm text-text/50 font-normal">/mo</span></p>
+                    <ul class="space-y-2 mb-8 flex-1">
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            Everything in Starter
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            All playbooks
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            Weekly calls
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            All templates
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            Analytics
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            Co-founder matching
+                        </li>
+                    </ul>
+                    <a href="#" class="neo-primary text-white font-bold text-center px-4 py-3 rounded-full">Join Pro</a>
+                </div>
+                <!-- Enterprise -->
+                <div class="neo rounded-2xl p-6 flex flex-col">
+                    <h3 class="text-lg font-bold mb-1">Enterprise</h3>
+                    <p class="text-xs text-text/50 mb-4">For teams &amp; funds</p>
+                    <p class="text-3xl font-bold mb-6">$299<span class="text-sm text-text/50 font-normal">/mo</span></p>
+                    <ul class="space-y-2 mb-8 flex-1">
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            Everything in Pro
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            1:1 coaching
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            Investor intros
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            Custom AI tools
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            Priority support
+                        </li>
+                    </ul>
+                    <a href="#" class="neo-sm font-bold text-center px-4 py-3 rounded-full neo-hover">Contact Us</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="py-16 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-3xl mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl sm:text-4xl font-bold mb-4">Frequently Asked <span class="text-primary">Questions</span></h2>
+                <p class="text-text/60">Everything you need to know before joining.</p>
+            </div>
+            <div class="space-y-4">
+                <div class="faq-item neo rounded-2xl p-5">
+                    <button class="faq-toggle flex items-center justify-between w-full text-left">
+                        <span class="font-bold text-sm sm:text-base">Who is the club for?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-primary shrink-0"></i>
+                    </button>
+                    <div class="faq-answer mt-3 pt-3 border-t border-black/5">
+                        <p class="text-sm text-text/60 leading-relaxed">The club is for founders, builders, creators, and operators who want to build, monetize, and market products with AI. Whether you're a beginner or experienced, there's a place for you.</p>
+                    </div>
+                </div>
+                <div class="faq-item neo rounded-2xl p-5">
+                    <button class="faq-toggle flex items-center justify-between w-full text-left">
+                        <span class="font-bold text-sm sm:text-base">How long does the application take?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-primary shrink-0"></i>
+                    </button>
+                    <div class="faq-answer mt-3 pt-3 border-t border-black/5">
+                        <p class="text-sm text-text/60 leading-relaxed">The application takes about 5 minutes. We review applications within 48 hours and notify you via email.</p>
+                    </div>
+                </div>
+                <div class="faq-item neo rounded-2xl p-5">
+                    <button class="faq-toggle flex items-center justify-between w-full text-left">
+                        <span class="font-bold text-sm sm:text-base">Can I cancel anytime?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-primary shrink-0"></i>
+                    </button>
+                    <div class="faq-answer mt-3 pt-3 border-t border-black/5">
+                        <p class="text-sm text-text/60 leading-relaxed">Yes, you can cancel your membership at any time. No questions asked. Your access remains until the end of your billing period.</p>
+                    </div>
+                </div>
+                <div class="faq-item neo rounded-2xl p-5">
+                    <button class="faq-toggle flex items-center justify-between w-full text-left">
+                        <span class="font-bold text-sm sm:text-base">What if I'm new to AI?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-primary shrink-0"></i>
+                    </button>
+                    <div class="faq-answer mt-3 pt-3 border-t border-black/5">
+                        <p class="text-sm text-text/60 leading-relaxed">Perfect. Our playbooks are designed for beginners. You'll learn everything from fundamentals to advanced strategies, with support from the community.</p>
+                    </div>
+                </div>
+                <div class="faq-item neo rounded-2xl p-5">
+                    <button class="faq-toggle flex items-center justify-between w-full text-left">
+                        <span class="font-bold text-sm sm:text-base">Do you offer refunds?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-primary shrink-0"></i>
+                    </button>
+                    <div class="faq-answer mt-3 pt-3 border-t border-black/5">
+                        <p class="text-sm text-text/60 leading-relaxed">Yes, we offer a 14-day money-back guarantee. If you don't find value, we'll refund your first month, no questions asked.</p>
+                    </div>
+                </div>
+                <div class="faq-item neo rounded-2xl p-5">
+                    <button class="faq-toggle flex items-center justify-between w-full text-left">
+                        <span class="font-bold text-sm sm:text-base">What makes this different from other communities?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-primary shrink-0"></i>
+                    </button>
+                    <div class="faq-answer mt-3 pt-3 border-t border-black/5">
+                        <p class="text-sm text-text/60 leading-relaxed">We're action-oriented. Every playbook, template, and call is designed to help you ship and monetize. We don't just talk — we build.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Banner -->
+    <section class="py-16 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="neo rounded-3xl p-8 sm:p-12 text-center">
+                <h2 class="text-3xl sm:text-4xl font-bold mb-4">Ready to Build Your <span class="text-primary">AI Empire?</span></h2>
+                <p class="text-text/60 max-w-lg mx-auto mb-8">Join the private club where people are building, monetizing, and marketing products with AI.</p>
+                <a href="#pricing" class="neo-primary text-white font-bold px-8 py-4 rounded-full inline-flex items-center gap-2">
+                    Join the Club Now
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="neo rounded-2xl p-8">
+                <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div>
+                        <div class="flex items-center gap-2 mb-4">
+                            <div class="w-8 h-8 rounded-xl neo-inset-sm flex items-center justify-center">
+                                <i data-lucide="hexagon" class="w-4 h-4 text-primary"></i>
+                            </div>
+                            <span class="text-lg font-bold">N◉CLUB</span>
+                        </div>
+                        <p class="text-xs text-text/50 leading-relaxed">The private club where people build, monetize, and market products with AI.</p>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold mb-3">Product</h4>
+                        <ul class="space-y-2">
+                            <li><a href="#features" class="text-xs text-text/60 hover:text-primary">Features</a></li>
+                            <li><a href="#pricing" class="text-xs text-text/60 hover:text-primary">Pricing</a></li>
+                            <li><a href="#process" class="text-xs text-text/60 hover:text-primary">Process</a></li>
+                            <li><a href="#faq" class="text-xs text-text/60 hover:text-primary">FAQ</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold mb-3">Company</h4>
+                        <ul class="space-y-2">
+                            <li><a href="#" class="text-xs text-text/60 hover:text-primary">About</a></li>
+                            <li><a href="#" class="text-xs text-text/60 hover:text-primary">Blog</a></li>
+                            <li><a href="#" class="text-xs text-text/60 hover:text-primary">Careers</a></li>
+                            <li><a href="#" class="text-xs text-text/60 hover:text-primary">Contact</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold mb-3">Follow</h4>
+                        <div class="flex gap-3">
+                            <a href="#" class="neo-sm w-10 h-10 rounded-xl flex items-center justify-center neo-hover">
+                                <i data-lucide="twitter" class="w-4 h-4"></i>
+                            </a>
+                            <a href="#" class="neo-sm w-10 h-10 rounded-xl flex items-center justify-center neo-hover">
+                                <i data-lucide="github" class="w-4 h-4"></i>
+                            </a>
+                            <a href="#" class="neo-sm w-10 h-10 rounded-xl flex items-center justify-center neo-hover">
+                                <i data-lucide="linkedin" class="w-4 h-4"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-black/5 mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <p class="text-xs text-text/40">© 2024 Neumorphism Club. All rights reserved.</p>
+                    <div class="flex gap-4">
+                        <a href="#" class="text-xs text-text/40 hover:text-primary">Privacy</a>
+                        <a href="#" class="text-xs text-text/40 hover:text-primary">Terms</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Mobile menu toggle
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('open');
+            const icon = mobileMenuBtn.querySelector('i');
+            if (mobileMenu.classList.contains('open')) {
+                icon.setAttribute('data-lucide', 'x');
+            } else {
+                icon.setAttribute('data-lucide', 'menu');
+            }
+            lucide.createIcons();
+        });
+
+        // FAQ accordion
+        document.querySelectorAll('.faq-toggle').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const item = btn.closest('.faq-item');
+                const isActive = item.classList.contains('active');
+                // Close all
+                document.querySelectorAll('.faq-item').forEach(i => {
+                    i.classList.remove('active');
+                    const icon = i.querySelector('.faq-icon');
+                    icon.setAttribute('data-lucide', 'plus');
+                });
+                // Toggle clicked
+                if (!isActive) {
+                    item.classList.add('active');
+                    const icon = item.querySelector('.faq-icon');
+                    icon.setAttribute('data-lucide', 'plus');
+                }
+                lucide.createIcons();
+            });
+        });
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    // Close mobile menu if open
+                    if (mobileMenu.classList.contains('open')) {
+                        mobileMenu.classList.remove('open');
+                        const icon = mobileMenuBtn.querySelector('i');
+                        icon.setAttribute('data-lucide', 'menu');
+                        lucide.createIcons();
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refined — Minimal Design System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#8B5CF6',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                        surface: '#FFFFFF',
+                        ink: '#111827',
+                    },
+                    fontFamily: {
+                        serif: ['Playfair Display', 'serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    spacing: {
+                        '0': '0px',
+                        '1': '4px',
+                        '2': '8px',
+                        '3': '12px',
+                        '4': '16px',
+                        '6': '24px',
+                        '8': '32px',
+                    },
+                    boxShadow: {
+                        'refined': '0 1px 3px rgba(17, 24, 39, 0.08), 0 4px 12px rgba(17, 24, 39, 0.04)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Playfair Display', serif;
+            background-color: #FFFFFF;
+            color: #111827;
+            -webkit-font-smoothing: antialiased;
+        }
+        .font-mono-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        .focus-ring:focus-visible {
+            outline: 2px solid #3B82F6;
+            outline-offset: 2px;
+        }
+        .card-hover {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(17, 24, 39, 0.08);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .bg-grid {
+            background-image: 
+                linear-gradient(rgba(17, 24, 39, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(17, 24, 39, 0.04) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+        .bg-dots {
+            background-image: radial-gradient(rgba(17, 24, 39, 0.08) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .stat-card {
+            border-left: 2px solid #3B82F6;
+        }
+        .pricing-featured {
+            border: 2px solid #3B82F6;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
+        }
+        .faq-item summary::-webkit-details-marker {
+            display: none;
+        }
+        .faq-item summary {
+            list-style: none;
+            cursor: pointer;
+        }
+        .faq-item[open] .faq-icon {
+            transform: rotate(45deg);
+        }
+        .faq-icon {
+            transition: transform 0.2s ease;
+        }
+    </style>
+</head>
+<body class="bg-surface text-ink antialiased">
+
+    <!-- Navigation -->
+    <header class="sticky top-0 z-50 bg-surface/95 backdrop-blur-sm border-b border-ink/10">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between" aria-label="Main navigation">
+            <a href="#" class="flex items-center gap-2 focus-ring rounded-sm" aria-label="Refined home">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <rect x="2" y="2" width="24" height="24" stroke="#3B82F6" stroke-width="2"/>
+                    <circle cx="14" cy="14" r="6" fill="#3B82F6"/>
+                    <circle cx="14" cy="14" r="2" fill="#FFFFFF"/>
+                </svg>
+                <span class="font-serif text-xl font-bold tracking-tight">Refined</span>
+            </a>
+            <div class="hidden md:flex items-center gap-8">
+                <a href="#features" class="font-mono-label text-ink/70 hover:text-ink focus-ring rounded-sm py-2">Features</a>
+                <a href="#process" class="font-mono-label text-ink/70 hover:text-ink focus-ring rounded-sm py-2">Process</a>
+                <a href="#benefits" class="font-mono-label text-ink/70 hover:text-ink focus-ring rounded-sm py-2">Benefits</a>
+                <a href="#pricing" class="font-mono-label text-ink/70 hover:text-ink focus-ring rounded-sm py-2">Pricing</a>
+                <a href="#faq" class="font-mono-label text-ink/70 hover:text-ink focus-ring rounded-sm py-2">FAQ</a>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="#" class="hidden sm:inline-flex font-mono-label text-ink/70 hover:text-ink focus-ring rounded-sm py-2 px-3">Sign in</a>
+                <a href="#pricing" class="inline-flex items-center justify-center bg-primary text-white font-mono-label px-4 py-2 rounded-sm hover:bg-primary/90 focus-ring transition-colors">Get Started</a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Hero -->
+    <section class="relative overflow-hidden bg-grid">
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent via-surface/50 to-surface pointer-events-none" aria-hidden="true"></div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+            <div class="max-w-3xl">
+                <p class="font-mono-label text-primary mb-6 flex items-center gap-2">
+                    <span class="inline-block w-2 h-2 bg-primary rounded-full"></span>
+                    Design System v2.0
+                </p>
+                <h1 class="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight">
+                    Crafted with<br>
+                    <span class="gradient-text">precision & clarity</span>
+                </h1>
+                <p class="mt-6 text-lg sm:text-xl text-ink/70 leading-relaxed max-w-2xl">
+                    A modern, minimal design system built on thoughtful typography, 
+                    semantic tokens, and accessible patterns. Every component is 
+                    engineered for consistency and scale.
+                </p>
+                <div class="mt-10 flex flex-col sm:flex-row gap-4">
+                    <a href="#pricing" class="inline-flex items-center justify-center bg-primary text-white font-mono-label px-6 py-3 rounded-sm hover:bg-primary/90 focus-ring transition-colors">
+                        Explore Pricing
+                        <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5-5 5M6 12h12"/>
+                        </svg>
+                    </a>
+                    <a href="#features" class="inline-flex items-center justify-center border border-ink/20 text-ink font-mono-label px-6 py-3 rounded-sm hover:border-ink/40 hover:bg-ink/5 focus-ring transition-colors">
+                        View Features
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="border-y border-ink/10 bg-ink/[0.02]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <dl class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="stat-card pl-4">
+                    <dt class="font-mono-label text-ink/60 text-xs">Components</dt>
+                    <dd class="mt-2 font-serif text-3xl sm:text-4xl font-bold text-primary">120+</dd>
+                    <dd class="mt-1 text-sm text-ink/60">Production ready</dd>
+                </div>
+                <div class="stat-card pl-4">
+                    <dt class="font-mono-label text-ink/60 text-xs">Design Tokens</dt>
+                    <dd class="mt-2 font-serif text-3xl sm:text-4xl font-bold text-secondary">340+</dd>
+                    <dd class="mt-1 text-sm text-ink/60">Semantic & scalable</dd>
+                </div>
+                <div class="stat-card pl-4">
+                    <dt class="font-mono-label text-ink/60 text-xs">Accessibility</dt>
+                    <dd class="mt-2 font-serif text-3xl sm:text-4xl font-bold text-success">WCAG AA</dd>
+                    <dd class="mt-1 text-sm text-ink/60">Certified compliant</dd>
+                </div>
+                <div class="stat-card pl-4">
+                    <dt class="font-mono-label text-ink/60 text-xs">Team Adoption</dt>
+                    <dd class="mt-2 font-serif text-3xl sm:text-4xl font-bold text-warning">98%</dd>
+                    <dd class="mt-1 text-sm text-ink/60">Developer satisfaction</dd>
+                </div>
+            </dl>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="py-20 lg:py-28">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-2xl mb-16">
+                <p class="font-mono-label text-primary mb-4">Features</p>
+                <h2 class="font-serif text-3xl sm:text-4xl font-bold tracking-tight">Everything you need, nothing you don't</h2>
+                <p class="mt-4 text-lg text-ink/70">A complete toolkit for building consistent, accessible interfaces with minimal effort.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Feature 1 -->
+                <div class="p-6 border border-ink/10 rounded-sm card-hover bg-surface">
+                    <div class="w-12 h-12 bg-primary/10 rounded-sm flex items-center justify-center mb-4">
+                        <i data-lucide="type" class="w-6 h-6 text-primary"></i>
+                    </div>
+                    <h3 class="font-serif text-xl font-semibold mb-2">Typography System</h3>
+                    <p class="text-ink/70 leading-relaxed">Playfair Display paired with JetBrains Mono creates a distinctive, editorial feel with clear hierarchy across all breakpoints.</p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="p-6 border border-ink/10 rounded-sm card-hover bg-surface">
+                    <div class="w-12 h-12 bg-secondary/10 rounded-sm flex items-center justify-center mb-4">
+                        <i data-lucide="palette" class="w-6 h-6 text-secondary"></i>
+                    </div>
+                    <h3 class="font-serif text-xl font-semibold mb-2">Semantic Tokens</h3>
+                    <p class="text-ink/70 leading-relaxed">Every color, spacing unit, and shadow is defined as a semantic token, ensuring consistency and easy theming.</p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="p-6 border border-ink/10 rounded-sm card-hover bg-surface">
+                    <div class="w-12 h-12 bg-success/10 rounded-sm flex items-center justify-center mb-4">
+                        <i data-lucide="accessibility" class="w-6 h-6 text-success"></i>
+                    </div>
+                    <h3 class="font-serif text-xl font-semibold mb-2">Accessible by Default</h3>
+                    <p class="text-ink/70 leading-relaxed">WCAG 2.2 AA compliance built into every component. Keyboard navigation, focus states, and ARIA patterns included.</p>
+                </div>
+                <!-- Feature 4 -->
+                <div class="p-6 border border-ink/10 rounded-sm card-hover bg-surface">
+                    <div class="w-12 h-12 bg-warning/10 rounded-sm flex items-center justify-center mb-4">
+                        <i data-lucide="layout-grid" class="w-6 h-6 text-warning"></i>
+                    </div>
+                    <h3 class="font-serif text-xl font-semibold mb-2">Responsive Grid</h3>
+                    <p class="text-ink/70 leading-relaxed">Fluid layouts built on a 4px spacing scale. Components adapt seamlessly from 400px mobile to widescreen desktop.</p>
+                </div>
+                <!-- Feature 5 -->
+                <div class="p-6 border border-ink/10 rounded-sm card-hover bg-surface">
+                    <div class="w-12 h-12 bg-danger/10 rounded-sm flex items-center justify-center mb-4">
+                        <i data-lucide="shield-check" class="w-6 h-6 text-danger"></i>
+                    </div>
+                    <h3 class="font-serif text-xl font-semibold mb-2">Quality Gates</h3>
+                    <p class="text-ink/70 leading-relaxed">Every component passes automated checks for contrast, spacing rhythm, and interaction states before release.</p>
+                </div>
+                <!-- Feature 6 -->
+                <div class="p-6 border border-ink/10 rounded-sm card-hover bg-surface">
+                    <div class="w-12 h-12 bg-primary/10 rounded-sm flex items-center justify-center mb-4">
+                        <i data-lucide="code-2" class="w-6 h-6 text-primary"></i>
+                    </div>
+                    <h3 class="font-serif text-xl font-semibold mb-2">Developer Experience</h3>
+                    <p class="text-ink/70 leading-relaxed">Clear APIs, comprehensive documentation, and zero-config setup. Ship faster with confidence.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Process -->
+    <section id="process" class="py-20 lg:py-28 bg-ink/[0.02] border-y border-ink/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-2xl mb-16">
+                <p class="font-mono-label text-primary mb-4">Process</p>
+                <h2 class="font-serif text-3xl sm:text-4xl font-bold tracking-tight">A proven workflow</h2>
+                <p class="mt-4 text-lg text-ink/70">From design tokens to production components, our process ensures quality at every step.</p>
+            </div>
+            <ol class="grid md:grid-cols-4 gap-8">
+                <li class="relative">
+                    <div class="flex items-center mb-4">
+                        <span class="font-mono text-primary text-sm font-medium">01</span>
+                        <div class="flex-1 h-px bg-primary/20 ml-4"></div>
+                    </div>
+                    <h3 class="font-serif text-lg font-semibold mb-2">Define Tokens</h3>
+                    <p class="text-ink/70 text-sm leading-relaxed">Establish semantic color, typography, and spacing tokens that reflect your brand's visual language.</p>
+                </li>
+                <li class="relative">
+                    <div class="flex items-center mb-4">
+                        <span class="font-mono text-primary text-sm font-medium">02</span>
+                        <div class="flex-1 h-px bg-primary/20 ml-4"></div>
+                    </div>
+                    <h3 class="font-serif text-lg font-semibold mb-2">Build Components</h3>
+                    <p class="text-ink/70 text-sm leading-relaxed">Construct components using tokens exclusively. No hardcoded values, no exceptions.</p>
+                </li>
+                <li class="relative">
+                    <div class="flex items-center mb-4">
+                        <span class="font-mono text-primary text-sm font-medium">03</span>
+                        <div class="flex-1 h-px bg-primary/20 ml-4"></div>
+                    </div>
+                    <h3 class="font-serif text-lg font-semibold mb-2">Test Accessibility</h3>
+                    <p class="text-ink/70 text-sm leading-relaxed">Run automated checks for contrast, keyboard navigation, and screen reader compatibility.</p>
+                </li>
+                <li class="relative">
+                    <div class="flex items-center mb-4">
+                        <span class="font-mono text-primary text-sm font-medium">04</span>
+                        <div class="flex-1 h-px bg-primary/20 ml-4"></div>
+                    </div>
+                    <h3 class="font-serif text-lg font-semibold mb-2">Ship & Iterate</h3>
+                    <p class="text-ink/70 text-sm leading-relaxed">Release with confidence. Collect feedback, iterate, and continuously refine the system.</p>
+                </li>
+            </ol>
+        </div>
+    </section>
+
+    <!-- Benefits -->
+    <section id="benefits" class="py-20 lg:py-28">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-16 items-center">
+                <div>
+                    <p class="font-mono-label text-primary mb-4">Benefits</p>
+                    <h2 class="font-serif text-3xl sm:text-4xl font-bold tracking-tight">Why teams choose Refined</h2>
+                    <p class="mt-4 text-lg text-ink/70">A design system that pays for itself through consistency, speed, and accessibility.</p>
+                    <ul class="mt-8 space-y-4">
+                        <li class="flex items-start gap-3">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-success mt-0.5 flex-shrink-0"></i>
+                            <div>
+                                <h3 class="font-serif font-semibold">Faster Delivery</h3>
+                                <p class="text-ink/70 text-sm mt-1">Teams ship 40% faster with pre-built, tested components.</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-success mt-0.5 flex-shrink-0"></i>
+                            <div>
+                                <h3 class="font-serif font-semibold">Consistent UX</h3>
+                                <p class="text-ink/70 text-sm mt-1">Every screen looks and behaves the same, building user trust.</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-success mt-0.5 flex-shrink-0"></i>
+                            <div>
+                                <h3 class="font-serif font-semibold">Accessibility Included</h3>
+                                <p class="text-ink/70 text-sm mt-1">WCAG 2.2 AA compliance without extra effort from your team.</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-success mt-0.5 flex-shrink-0"></i>
+                            <div>
+                                <h3 class="font-serif font-semibold">Easy Maintenance</h3>
+                                <p class="text-ink/70 text-sm mt-1">Update tokens once, see changes everywhere. No more hunting.</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                <div class="relative">
+                    <div class="bg-dots absolute inset-0 rounded-sm" aria-hidden="true"></div>
+                    <div class="relative bg-surface border border-ink/10 rounded-sm shadow-refined p-8 m-4">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-10 h-10 bg-primary/10 rounded-sm flex items-center justify-center">
+                                <i data-lucide="trending-up" class="w-5 h-5 text-primary"></i>
+                            </div>
+                            <div>
+                                <p class="font-mono-label text-ink/60 text-xs">Impact Report</p>
+                                <p class="font-serif font-semibold">Q1 2025</p>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm text-ink/70">Design time saved</span>
+                                    <span class="font-mono text-sm font-medium">45%</span>
+                                </div>
+                                <div class="h-2 bg-ink/5 rounded-full overflow-hidden">
+                                    <div class="h-full bg-primary rounded-full" style="width: 45%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm text-ink/70">Dev velocity increase</span>
+                                    <span class="font-mono text-sm font-medium">38%</span>
+                                </div>
+                                <div class="h-2 bg-ink/5 rounded-full overflow-hidden">
+                                    <div class="h-full bg-secondary rounded-full" style="width: 38%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm text-ink/70">Accessibility issues</span>
+                                    <span class="font-mono text-sm font-medium text-success">-72%</span>
+                                </div>
+                                <div class="h-2 bg-ink/5 rounded-full overflow-hidden">
+                                    <div class="h-full bg-success rounded-full" style="width: 72%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-6 pt-6 border-t border-ink/10">
+                            <p class="text-sm text-ink/60">Based on 120+ teams using Refined</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="py-20 lg:py-28 bg-ink/[0.02] border-y border-ink/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-2xl mb-16">
+                <p class="font-mono-label text-primary mb-4">Testimonials</p>
+                <h2 class="font-serif text-3xl sm:text-4xl font-bold tracking-tight">Loved by design & engineering teams</h2>
+            </div>
+            <div class="grid md:grid-cols-3 gap-6">
+                <figure class="p-6 border border-ink/10 rounded-sm bg-surface card-hover">
+                    <div class="flex gap-1 mb-4" aria-label="5 out of 5 stars">
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                    </div>
+                    <blockquote class="text-ink/80 leading-relaxed">
+                        "Refined transformed how we build. The token system is brilliant — we rebranded in days, not months."
+                    </blockquote>
+                    <figcaption class="mt-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                            <span class="font-serif font-semibold text-primary">SK</span>
+                        </div>
+                        <div>
+                            <p class="font-serif font-semibold text-sm">Sarah Kim</p>
+                            <p class="font-mono-label text-xs text-ink/60">Design Lead, Northwind</p>
+                        </div>
+                    </figcaption>
+                </figure>
+                <figure class="p-6 border border-ink/10 rounded-sm bg-surface card-hover">
+                    <div class="flex gap-1 mb-4" aria-label="5 out of 5 stars">
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                    </div>
+                    <blockquote class="text-ink/80 leading-relaxed">
+                        "The accessibility features are second to none. Our audit passed with zero issues on the first try."
+                    </blockquote>
+                    <figcaption class="mt-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-secondary/10 rounded-full flex items-center justify-center">
+                            <span class="font-serif font-semibold text-secondary">MR</span>
+                        </div>
+                        <div>
+                            <p class="font-serif font-semibold text-sm">Marcus Rivera</p>
+                            <p class="font-mono-label text-xs text-ink/60">Eng Manager, Vertex</p>
+                        </div>
+                    </figcaption>
+                </figure>
+                <figure class="p-6 border border-ink/10 rounded-sm bg-surface card-hover">
+                    <div class="flex gap-1 mb-4" aria-label="5 out of 5 stars">
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                    </div>
+                    <blockquote class="text-ink/80 leading-relaxed">
+                        "Finally a design system that respects both design and engineering. The documentation is exceptional."
+                    </blockquote>
+                    <figcaption class="mt-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-success/10 rounded-full flex items-center justify-center">
+                            <span class="font-serif font-semibold text-success">EL</span>
+                        </div>
+                        <div>
+                            <p class="font-serif font-semibold text-sm">Elena Liu</p>
+                            <p class="font-mono-label text-xs text-ink/60">Product Designer, Atlas</p>
+                        </div>
+                    </figcaption>
+                </figure>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section id="pricing" class="py-20 lg:py-28">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-2xl mx-auto text-center mb-16">
+                <p class="font-mono-label text-primary mb-4">Pricing</p>
+                <h2 class="font-serif text-3xl sm:text-4xl font-bold tracking-tight">Simple, transparent pricing</h2>
+                <p class="mt-4 text-lg text-ink/70">Start free, scale as you grow. No hidden fees, cancel anytime.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                <!-- Starter -->
+                <div class="p-8 border border-ink/10 rounded-sm bg-surface flex flex-col">
+                    <h3 class="font-serif text-xl font-semibold">Starter</h3>
+                    <p class="mt-2 text-sm text-ink/60">For individuals & side projects</p>
+                    <p class="mt-6 flex items-baseline gap-1">
+                        <span class="font-serif text-4xl font-bold">$0</span>
+                        <span class="text-ink/60 text-sm">/month</span>
+                    </p>
+                    <ul class="mt-8 space-y-3 flex-1">
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                            Core components (120+)
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                            Community support
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                            Basic tokens
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-ink/40">
+                            <i data-lucide="x" class="w-4 h-4 flex-shrink-0"></i>
+                            Advanced theming
+                        </li>
+                    </ul>
+                    <a href="#" class="mt-8 inline-flex items-center justify-center border border-ink/20 text-ink font-mono-label px-4 py-2 rounded-sm hover:border-ink/40 hover:bg-ink/5 focus-ring transition-colors">Start Free</a>
+                </div>
+                <!-- Pro -->
+                <div class="p-8 pricing-featured rounded-sm bg-surface flex flex-col relative">
+                    <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white font-mono-label text-xs px-3 py-1 rounded-sm">Most Popular</span>
+                    <h3 class="font-serif text-xl font-semibold">Pro</h3>
+                    <p class="mt-2 text-sm text-ink/60">For growing teams</p>
+                    <p class="mt-6 flex items-baseline gap-1">
+                        <span class="font-serif text-4xl font-bold">$49</span>
+                        <span class="text-ink/60 text-sm">/month</span>
+                    </p>
+                    <ul class="mt-8 space-y-3 flex-1">
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                            Everything in Starter
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                            Advanced theming
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                            Priority support
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                            Figma library
+                        </li>
+                    </ul>
+                    <a href="#" class="mt-8 inline-flex items-center justify-center bg-primary text-white font-mono-label px-4 py-2 rounded-sm hover:bg-primary/90 focus-ring transition-colors">Get Pro</a>
+                </div>
+                <!-- Enterprise -->
+                <div class="p-8 border border-ink/10 rounded-sm bg-surface flex flex-col">
+                    <h3 class="font-serif text-xl font-semibold">Enterprise</h3>
+                    <p class="mt-2 text-sm text-ink/60">For large organizations</p>
+                    <p class="mt-6 flex items-baseline gap-1">
+                        <span class="font-serif text-4xl font-bold">Custom</span>
+                    </p>
+                    <ul class="mt-8 space-y-3 flex-1">
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                            Everything in Pro
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                            SSO & SAML
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                            Dedicated support
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0"></i>
+                            Custom contracts
+                        </li>
+                    </ul>
+                    <a href="#" class="mt-8 inline-flex items-center justify-center border border-ink/20 text-ink font-mono-label px-4 py-2 rounded-sm hover:border-ink/40 hover:bg-ink/5 focus-ring transition-colors">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="py-20 lg:py-28 bg-ink/[0.02] border-y border-ink/10">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="font-mono-label text-primary mb-4">FAQ</p>
+                <h2 class="font-serif text-3xl sm:text-4xl font-bold tracking-tight">Frequently asked questions</h2>
+            </div>
+            <div class="space-y-4">
+                <details class="faq-item group border border-ink/10 rounded-sm bg-surface">
+                    <summary class="flex items-center justify-between p-6 focus-ring rounded-sm">
+                        <span class="font-serif font-semibold">What exactly is included in the design system?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-primary flex-shrink-0"></i>
+                    </summary>
+                    <div class="px-6 pb-6 text-ink/70 leading-relaxed">
+                        <p>Refined includes 120+ production-ready components, a complete token system (colors, typography, spacing, shadows), Figma libraries, and comprehensive documentation. All components are WCAG 2.2 AA compliant and tested across modern browsers.</p>
+                    </div>
+                </details>
+                <details class="faq-item group border border-ink/10 rounded-sm bg-surface">
+                    <summary class="flex items-center justify-between p-6 focus-ring rounded-sm">
+                        <span class="font-serif font-semibold">How does the theming system work?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-primary flex-shrink-0"></i>
+                    </summary>
+                    <div class="px-6 pb-6 text-ink/70 leading-relaxed">
+                        <p>Our theming system is built entirely on CSS custom properties. Change a token value once, and it propagates throughout your entire application. We support light, dark, and custom themes out of the box.</p>
+                    </div>
+                </details>
+                <details class="faq-item group border border-ink/10 rounded-sm bg-surface">
+                    <summary class="flex items-center justify-between p-6 focus-ring rounded-sm">
+                        <span class="font-serif font-semibold">Can I use Refined with my existing tech stack?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-primary flex-shrink-0"></i>
+                    </summary>
+                    <div class="px-6 pb-6 text-ink/70 leading-relaxed">
+                        <p>Absolutely. Refined is framework-agnostic. We provide vanilla CSS, React, Vue, and Angular implementations. The token system works with any CSS-in-JS solution or preprocessor.</p>
+                    </div>
+                </details>
+                <details class="faq-item group border border-ink/10 rounded-sm bg-surface">
+                    <summary class="flex items-center justify-between p-6 focus-ring rounded-sm">
+                        <span class="font-serif font-semibold">How often is the design system updated?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-primary flex-shrink-0"></i>
+                    </summary>
+                    <div class="px-6 pb-6 text-ink/70 leading-relaxed">
+                        <p>We release updates monthly, with major versions twice a year. Each release includes new components, improvements, and accessibility enhancements. You'll always have access to our changelog and migration guides.</p>
+                    </div>
+                </details>
+                <details class="faq-item group border border-ink/10 rounded-sm bg-surface">
+                    <summary class="flex items-center justify-between p-6 focus-ring rounded-sm">
+                        <span class="font-serif font-semibold">What support options are available?</span>
+                        <i data-lucide="plus" class="faq-icon w-5 h-5 text-primary flex-shrink-0"></i>
+                    </summary>
+                    <div class="px-6 pb-6 text-ink/70 leading-relaxed">
+                        <p>Starter plan includes community support via GitHub Discussions. Pro adds priority email support with 24-hour response time. Enterprise includes a dedicated support engineer and SLA-backed response times.</p>
+                    </div>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Banner -->
+    <section class="py-20 lg:py-28 bg-primary relative overflow-hidden">
+        <div class="absolute inset-0 bg-grid opacity-10" aria-hidden="true"></div>
+        <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight">
+                Ready to build something refined?
+            </h2>
+            <p class="mt-4 text-lg text-white/80">
+                Join 120+ teams shipping better products with Refined.
+            </p>
+            <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#pricing" class="inline-flex items-center justify-center bg-white text-primary font-mono-label px-6 py-3 rounded-sm hover:bg-white/90 focus-ring transition-colors">
+                    Get Started Free
+                </a>
+                <a href="#" class="inline-flex items-center justify-center border border-white/30 text-white font-mono-label px-6 py-3 rounded-sm hover:bg-white/10 focus-ring transition-colors">
+                    Book a Demo
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-ink text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="grid md:grid-cols-4 gap-12">
+                <div class="md:col-span-2">
+                    <a href="#" class="flex items-center gap-2 mb-4" aria-label="Refined home">
+                        <svg width="24" height="24" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <rect x="2" y="2" width="24" height="24" stroke="#3B82F6" stroke-width="2"/>
+                            <circle cx="14" cy="14" r="6" fill="#3B82F6"/>
+                            <circle cx="14" cy="14" r="2" fill="#FFFFFF"/>
+                        </svg>
+                        <span class="font-serif text-xl font-bold">Refined</span>
+                    </a>
+                    <p class="text-white/60 text-sm leading-relaxed max-w-sm">
+                        A modern, minimal design system built on thoughtful typography, semantic tokens, and accessible patterns.
+                    </p>
+                    <div class="flex gap-4 mt-6">
+                        <a href="#" class="text-white/60 hover:text-white focus-ring rounded-sm p-1" aria-label="Twitter">
+                            <i data-lucide="twitter" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" class="text-white/60 hover:text-white focus-ring rounded-sm p-1" aria-label="GitHub">
+                            <i data-lucide="github" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" class="text-white/60 hover:text-white focus-ring rounded-sm p-1" aria-label="LinkedIn">
+                            <i data-lucide="linkedin" class="w-5 h-5"></i>
+                        </a>
+                        <a href="#" class="text-white/60 hover:text-white focus-ring rounded-sm p-1" aria-label="Dribbble">
+                            <i data-lucide="dribbble" class="w-5 h-5"></i>
+                        </a>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-mono-label text-white/40 text-xs mb-4">Product</h3>
+                    <ul class="space-y-3">
+                        <li><a href="#features" class="text-white/70 hover:text-white text-sm focus-ring rounded-sm">Features</a></li>
+                        <li><a href="#pricing" class="text-white/70 hover:text-white text-sm focus-ring rounded-sm">Pricing</a></li>
+                        <li><a href="#" class="text-white/70 hover:text-white text-sm focus-ring rounded-sm">Changelog</a></li>
+                        <li><a href="#" class="text-white/70 hover:text-white text-sm focus-ring rounded-sm">Documentation</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-mono-label text-white/40 text-xs mb-4">Company</h3>
+                    <ul class="space-y-3">
+                        <li><a href="#" class="text-white/70 hover:text-white text-sm focus-ring rounded-sm">About</a></li>
+                        <li><a href="#" class="text-white/70 hover:text-white text-sm focus-ring rounded-sm">Blog</a></li>
+                        <li><a href="#" class="text-white/70 hover:text-white text-sm focus-ring rounded-sm">Careers</a></li>
+                        <li><a href="#" class="text-white/70 hover:text-white text-sm focus-ring rounded-sm">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-12 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="text-white/40 text-sm">© 2025 Refined Design System. All rights reserved.</p>
+                <div class="flex gap-6">
+                    <a href="#" class="text-white/40 hover:text-white text-sm focus-ring rounded-sm">Privacy</a>
+                    <a href="#" class="text-white/40 hover:text-white text-sm focus-ring rounded-sm">Terms</a>
+                    <a href="#" class="text-white/40 hover:text-white text-sm focus-ring rounded-sm">Cookies</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>

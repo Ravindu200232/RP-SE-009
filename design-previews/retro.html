@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro — Design System in Action</title>
+    <!-- Tailwind via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Macondo (primary/display), JetBrains Mono (mono) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Macondo&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Design system tokens */
+        :root {
+            --color-primary: #3B82F6;
+            --color-secondary: #8B5CF6;
+            --color-success: #16A34A;
+            --color-warning: #D97706;
+            --color-danger: #DC2626;
+            --color-surface: #FFFFFF;
+            --color-text: #111827;
+            --font-display: 'Macondo', cursive;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+        body {
+            font-family: var(--font-mono);
+            color: var(--color-text);
+            background-color: var(--color-surface);
+            letter-spacing: -0.02em;
+        }
+        .font-display {
+            font-family: var(--font-display);
+        }
+        /* Retro texture overlay */
+        .retro-grid {
+            background-image: 
+                linear-gradient(rgba(59, 130, 246, 0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.08) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .retro-noise {
+            position: relative;
+        }
+        .retro-noise::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            pointer-events: none;
+        }
+        /* Sharp corners everywhere */
+        * {
+            border-radius: 0 !important;
+        }
+        /* Focus states */
+        :focus-visible {
+            outline: 3px solid var(--color-primary);
+            outline-offset: 2px;
+        }
+        /* Custom scrollbar for retro feel */
+        ::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--color-primary);
+            border: 2px solid #f3f4f6;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--color-secondary);
+        }
+        /* Marquee animation for retro ticker */
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .marquee-track {
+            animation: marquee 20s linear infinite;
+        }
+        /* Blinking cursor for terminal effect */
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        .blink {
+            animation: blink 1s step-end infinite;
+        }
+        /* Hover effects */
+        .retro-btn {
+            transition: all 0.15s ease;
+            position: relative;
+        }
+        .retro-btn:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 4px 4px 0 0 var(--color-text);
+        }
+        .retro-btn:active {
+            transform: translate(0px, 0px);
+            box-shadow: 0px 0px 0 0 var(--color-text);
+        }
+        .retro-card {
+            transition: all 0.15s ease;
+        }
+        .retro-card:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 4px 4px 0 0 var(--color-text);
+        }
+    </style>
+</head>
+<body class="retro-noise min-h-screen">
+    <!-- Skip link for accessibility -->
+    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-white focus:px-4 focus:py-2 focus:border-2 focus:border-black">Skip to main content</a>
+
+    <!-- ===== NAVIGATION ===== -->
+    <nav class="sticky top-0 z-50 bg-white border-b-2 border-black" aria-label="Main navigation">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo -->
+                <a href="#" class="flex items-center gap-2 group">
+                    <div class="w-8 h-8 bg-primary border-2 border-black flex items-center justify-center">
+                        <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    </div>
+                    <span class="font-display text-2xl font-bold tracking-tight">Retro<span class="text-primary">.</span></span>
+                </a>
+
+                <!-- Desktop menu -->
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="text-sm font-medium hover:text-primary transition-colors">Features</a>
+                    <a href="#process" class="text-sm font-medium hover:text-primary transition-colors">Process</a>
+                    <a href="#benefits" class="text-sm font-medium hover:text-primary transition-colors">Benefits</a>
+                    <a href="#testimonials" class="text-sm font-medium hover:text-primary transition-colors">Testimonials</a>
+                    <a href="#pricing" class="text-sm font-medium hover:text-primary transition-colors">Pricing</a>
+                    <a href="#faq" class="text-sm font-medium hover:text-primary transition-colors">FAQ</a>
+                </div>
+
+                <!-- CTA button -->
+                <div class="flex items-center gap-4">
+                    <a href="#pricing" class="hidden sm:inline-flex retro-btn bg-primary text-white px-4 py-2 text-sm font-bold border-2 border-black">
+                        Get Started
+                    </a>
+                    <!-- Mobile menu button -->
+                    <button class="md:hidden p-2 border-2 border-black retro-btn" aria-label="Open menu" aria-expanded="false" onclick="toggleMobileMenu()">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile menu -->
+        <div id="mobile-menu" class="hidden md:hidden border-t-2 border-black bg-white">
+            <div class="px-4 py-4 space-y-3">
+                <a href="#features" class="block py-2 text-sm font-medium hover:text-primary">Features</a>
+                <a href="#process" class="block py-2 text-sm font-medium hover:text-primary">Process</a>
+                <a href="#benefits" class="block py-2 text-sm font-medium hover:text-primary">Benefits</a>
+                <a href="#testimonials" class="block py-2 text-sm font-medium hover:text-primary">Testimonials</a>
+                <a href="#pricing" class="block py-2 text-sm font-medium hover:text-primary">Pricing</a>
+                <a href="#faq" class="block py-2 text-sm font-medium hover:text-primary">FAQ</a>
+                <a href="#pricing" class="block py-2 text-sm font-bold text-primary">Get Started →</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== HERO ===== -->
+    <header id="main" class="relative overflow-hidden retro-grid">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <!-- Left content -->
+                <div>
+                    <div class="inline-flex items-center gap-2 bg-secondary/10 border-2 border-secondary px-3 py-1 mb-6">
+                        <span class="w-2 h-2 bg-secondary inline-block"></span>
+                        <span class="text-xs font-bold uppercase tracking-widest">v2.0 — Now with Retro Mode</span>
+                    </div>
+                    <h1 class="font-display text-5xl sm:text-6xl lg:text-7xl font-bold leading-tight mb-6">
+                        Build interfaces<br>
+                        <span class="text-primary">with</span> <span class="text-secondary">character</span>
+                    </h1>
+                    <p class="text-lg text-gray-600 mb-8 max-w-xl">
+                        A design system that celebrates the bold, the loud, and the memorable. 
+                        Sharp corners, high contrast, and typography that demands attention.
+                    </p>
+                    <div class="flex flex-wrap gap-4">
+                        <a href="#pricing" class="retro-btn bg-primary text-white px-6 py-3 font-bold border-2 border-black">
+                            Start Building
+                        </a>
+                        <a href="#features" class="retro-btn bg-white text-black px-6 py-3 font-bold border-2 border-black">
+                            See Features
+                        </a>
+                    </div>
+                    <!-- Terminal-style hint -->
+                    <div class="mt-8 font-mono text-sm bg-black text-green-400 p-4 border-2 border-black">
+                        <p><span class="text-white">$</span> npm install retro-ui</p>
+                        <p class="blink">▊</p>
+                    </div>
+                </div>
+                <!-- Right visual (CSS shapes) -->
+                <div class="relative h-64 sm:h-80 lg:h-96">
+                    <!-- Retro geometric composition -->
+                    <div class="absolute top-0 right-0 w-40 h-40 bg-primary border-4 border-black transform rotate-12"></div>
+                    <div class="absolute top-8 right-24 w-32 h-32 bg-secondary border-4 border-black transform -rotate-6"></div>
+                    <div class="absolute bottom-0 left-0 w-48 h-48 bg-warning border-4 border-black transform -rotate-12"></div>
+                    <div class="absolute bottom-8 left-16 w-24 h-24 bg-success border-4 border-black transform rotate-45"></div>
+                    <div class="absolute top-1/2 left-1/2 w-16 h-16 bg-danger border-4 border-black transform -translate-x-1/2 -translate-y-1/2 rotate-45"></div>
+                    <!-- Retro sun -->
+                    <div class="absolute top-4 left-4 w-20 h-20 rounded-full bg-warning border-4 border-black flex items-center justify-center">
+                        <svg class="w-10 h-10 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+                    </div>
+                    <!-- Retro cassette -->
+                    <div class="absolute bottom-4 right-4 w-32 h-20 bg-white border-4 border-black p-2">
+                        <div class="flex gap-1 mb-1">
+                            <div class="w-8 h-8 bg-primary border-2 border-black"></div>
+                            <div class="w-8 h-8 bg-secondary border-2 border-black"></div>
+                        </div>
+                        <div class="w-full h-2 bg-gray-300 border border-black"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Marquee ticker -->
+        <div class="bg-black text-white py-3 overflow-hidden border-t-2 border-black">
+            <div class="marquee-track flex whitespace-nowrap">
+                <span class="mx-4 font-mono text-sm">✦ RETRO DESIGN SYSTEM</span>
+                <span class="mx-4 font-mono text-sm">✦ SHARP CORNERS</span>
+                <span class="mx-4 font-mono text-sm">✦ HIGH CONTRAST</span>
+                <span class="mx-4 font-mono text-sm">✦ BOLD TYPOGRAPHY</span>
+                <span class="mx-4 font-mono text-sm">✦ RETRO DESIGN SYSTEM</span>
+                <span class="mx-4 font-mono text-sm">✦ SHARP CORNERS</span>
+                <span class="mx-4 font-mono text-sm">✦ HIGH CONTRAST</span>
+                <span class="mx-4 font-mono text-sm">✦ BOLD TYPOGRAPHY</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== STATS ===== -->
+    <section class="border-b-2 border-black bg-white" aria-label="Statistics">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <p class="font-display text-4xl sm:text-5xl font-bold text-primary">99.9%</p>
+                    <p class="mt-2 text-sm font-medium text-gray-600">Uptime</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-display text-4xl sm:text-5xl font-bold text-secondary">10k+</p>
+                    <p class="mt-2 text-sm font-medium text-gray-600">Components</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-display text-4xl sm:text-5xl font-bold text-success">4.9/5</p>
+                    <p class="mt-2 text-sm font-medium text-gray-600">Rating</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-display text-4xl sm:text-5xl font-bold text-warning">24/7</p>
+                    <p class="mt-2 text-sm font-medium text-gray-600">Support</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FEATURES ===== -->
+    <section id="features" class="py-20 bg-gray-50 border-b-2 border-black">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-4xl sm:text-5xl font-bold mb-4">Features that <span class="text-primary">pop</span></h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">Everything you need to build interfaces that stand out from the crowd.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="retro-card bg-white border-2 border-black p-6">
+                    <div class="w-12 h-12 bg-primary border-2 border-black flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    </div>
+                    <h3 class="font-display text-2xl font-bold mb-2">Bold Components</h3>
+                    <p class="text-gray-600">Every component is designed with sharp corners, strong borders, and high-contrast colors that demand attention.</p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="retro-card bg-white border-2 border-black p-6">
+                    <div class="w-12 h-12 bg-secondary border-2 border-black flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    </div>
+                    <h3 class="font-display text-2xl font-bold mb-2">Expressive Type</h3>
+                    <p class="text-gray-600">Macondo brings character to headlines while JetBrains Mono keeps your code and data readable.</p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="retro-card bg-white border-2 border-black p-6">
+                    <div class="w-12 h-12 bg-success border-2 border-black flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                    </div>
+                    <h3 class="font-display text-2xl font-bold mb-2">Accessible</h3>
+                    <p class="text-gray-600">WCAG 2.2 AA compliant with keyboard-first interactions and visible focus states on every element.</p>
+                </div>
+                <!-- Feature 4 -->
+                <div class="retro-card bg-white border-2 border-black p-6">
+                    <div class="w-12 h-12 bg-warning border-2 border-black flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    </div>
+                    <h3 class="font-display text-2xl font-bold mb-2">Lightning Fast</h3>
+                    <p class="text-gray-600">Zero runtime dependencies. Pure CSS and SVG. Your pages load faster than a retro arcade game.</p>
+                </div>
+                <!-- Feature 5 -->
+                <div class="retro-card bg-white border-2 border-black p-6">
+                    <div class="w-12 h-12 bg-danger border-2 border-black flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                    </div>
+                    <h3 class="font-display text-2xl font-bold mb-2">Themeable</h3>
+                    <p class="text-gray-600">CSS custom properties make it trivial to adjust colors, spacing, and typography to match your brand.</p>
+                </div>
+                <!-- Feature 6 -->
+                <div class="retro-card bg-white border-2 border-black p-6">
+                    <div class="w-12 h-12 bg-primary border-2 border-black flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    </div>
+                    <h3 class="font-display text-2xl font-bold mb-2">Customizable</h3>
+                    <p class="text-gray-600">Every component accepts variants and custom classes. Make it yours without fighting the system.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PROCESS ===== -->
+    <section id="process" class="py-20 bg-white border-b-2 border-black">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-4xl sm:text-5xl font-bold mb-4">How it <span class="text-secondary">works</span></h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">A simple, four-step process to get your retro interface up and running.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Step 1 -->
+                <div class="relative">
+                    <div class="retro-card bg-gray-50 border-2 border-black p-6 h-full">
+                        <div class="font-display text-6xl font-bold text-primary mb-4">01</div>
+                        <h3 class="font-display text-xl font-bold mb-2">Install</h3>
+                        <p class="text-gray-600 text-sm">Install the package via npm or yarn. No configuration needed.</p>
+                    </div>
+                    <div class="hidden lg:block absolute top-1/2 -right-4 text-2xl text-gray-400">→</div>
+                </div>
+                <!-- Step 2 -->
+                <div class="relative">
+                    <div class="retro-card bg-gray-50 border-2 border-black p-6 h-full">
+                        <div class="font-display text-6xl font-bold text-secondary mb-4">02</div>
+                        <h3 class="font-display text-xl font-bold mb-2">Import</h3>
+                        <p class="text-gray-600 text-sm">Import the components you need. Tree-shaking keeps your bundle small.</p>
+                    </div>
+                    <div class="hidden lg:block absolute top-1/2 -right-4 text-2xl text-gray-400">→</div>
+                </div>
+                <!-- Step 3 -->
+                <div class="relative">
+                    <div class="retro-card bg-gray-50 border-2 border-black p-6 h-full">
+                        <div class="font-display text-6xl font-bold text-success mb-4">03</div>
+                        <h3 class="font-display text-xl font-bold mb-2">Compose</h3>
+                        <p class="text-gray-600 text-sm">Combine components to build your interface. Customize with variants.</p>
+                    </div>
+                    <div class="hidden lg:block absolute top-1/2 -right-4 text-2xl text-gray-400">→</div>
+                </div>
+                <!-- Step 4 -->
+                <div>
+                    <div class="retro-card bg-gray-50 border-2 border-black p-6 h-full">
+                        <div class="font-display text-6xl font-bold text-warning mb-4">04</div>
+                        <h3 class="font-display text-xl font-bold mb-2">Deploy</h3>
+                        <p class="text-gray-600 text-sm">Ship to production. Your retro interface is ready to impress.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== BENEFITS ===== -->
+    <section id="benefits" class="py-20 bg-primary text-white border-b-2 border-black">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h2 class="font-display text-4xl sm:text-5xl font-bold mb-6">Why choose <span class="text-warning">Retro</span>?</h2>
+                    <p class="text-lg text-white/90 mb-8">We've thought through the details so you don't have to. Here's what you get:</p>
+                    <ul class="space-y-4">
+                        <li class="flex items-start gap-3">
+                            <svg class="w-6 h-6 text-warning flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                            <span><strong class="font-bold">Consistent</strong> — Every component follows the same design language.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <svg class="w-6 h-6 text-warning flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                            <span><strong class="font-bold">Accessible</strong> — WCAG 2.2 AA compliance built into every component.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <svg class="w-6 h-6 text-warning flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                            <span><strong class="font-bold">Fast</strong> — No runtime dependencies, pure CSS and SVG.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <svg class="w-6 h-6 text-warning flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                            <span><strong class="font-bold">Flexible</strong> — Customize with CSS variables and variants.</span>
+                        </li>
+                    </ul>
+                </div>
+                <!-- Visual: retro TV -->
+                <div class="relative">
+                    <div class="bg-black border-4 border-white p-4 max-w-md mx-auto">
+                        <div class="bg-gray-900 p-4 border-2 border-gray-700">
+                            <div class="flex items-center gap-2 mb-4">
+                                <span class="w-3 h-3 bg-danger"></span>
+                                <span class="w-3 h-3 bg-warning"></span>
+                                <span class="w-3 h-3 bg-success"></span>
+                            </div>
+                            <div class="bg-black p-4">
+                                <p class="font-mono text-green-400 text-sm mb-2">$ retro init</p>
+                                <p class="font-mono text-green-400 text-sm mb-2">✓ Creating project...</p>
+                                <p class="font-mono text-green-400 text-sm mb-2">✓ Installing dependencies...</p>
+                                <p class="font-mono text-green-400 text-sm">✓ Done! Your retro interface is ready.</p>
+                            </div>
+                        </div>
+                        <!-- TV legs -->
+                        <div class="flex justify-between mt-2">
+                            <div class="w-2 h-8 bg-white"></div>
+                            <div class="w-2 h-8 bg-white"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== TESTIMONIALS ===== -->
+    <section id="testimonials" class="py-20 bg-gray-50 border-b-2 border-black">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-4xl sm:text-5xl font-bold mb-4">Loved by <span class="text-primary">developers</span></h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">Join thousands of teams who've made the switch to Retro.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Testimonial 1 -->
+                <figure class="retro-card bg-white border-2 border-black p-6">
+                    <div class="flex gap-1 mb-4 text-warning">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    </div>
+                    <blockquote class="text-gray-700 mb-4">"Retro completely changed how our product looks. The sharp corners and bold colors make us stand out in a sea of boring SaaS interfaces."</blockquote>
+                    <figcaption class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-primary border-2 border-black flex items-center justify-center font-bold text-white">JD</div>
+                        <div>
+                            <p class="font-bold text-sm">Jane Doe</p>
+                            <p class="text-xs text-gray-500">CTO, TechStart</p>
+                        </div>
+                    </figcaption>
+                </figure>
+                <!-- Testimonial 2 -->
+                <figure class="retro-card bg-white border-2 border-black p-6">
+                    <div class="flex gap-1 mb-4 text-warning">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    </div>
+                    <blockquote class="text-gray-700 mb-4">"The accessibility features are top-notch. We passed our WCAG audit with zero issues. The focus states are beautiful and functional."</blockquote>
+                    <figcaption class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-secondary border-2 border-black flex items-center justify-center font-bold text-white">JS</div>
+                        <div>
+                            <p class="font-bold text-sm">John Smith</p>
+                            <p class="text-xs text-gray-500">Lead Engineer, DesignCo</p>
+                        </div>
+                    </figcaption>
+                </figure>
+                <!-- Testimonial 3 -->
+                <figure class="retro-card bg-white border-2 border-black p-6">
+                    <div class="flex gap-1 mb-4 text-warning">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    </div>
+                    <blockquote class="text-gray-700 mb-4">"We redesigned our entire marketing site in a weekend. The components are so well thought out. Our conversion rate is up 40%."</blockquote>
+                    <figcaption class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-success border-2 border-black flex items-center justify-center font-bold text-white">AR</div>
+                        <div>
+                            <p class="font-bold text-sm">Alex Rivera</p>
+                            <p class="text-xs text-gray-500">Product Manager, GrowthLab</p>
+                        </div>
+                    </figcaption>
+                </figure>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PRICING ===== -->
+    <section id="pricing" class="py-20 bg-white border-b-2 border-black">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-4xl sm:text-5xl font-bold mb-4">Simple <span class="text-primary">pricing</span></h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">Start free. Upgrade when you're ready. No hidden fees.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Free plan -->
+                <div class="retro-card bg-gray-50 border-2 border-black p-6 flex flex-col">
+                    <h3 class="font-display text-2xl font-bold mb-2">Starter</h3>
+                    <p class="text-gray-600 mb-4">For personal projects</p>
+                    <p class="font-display text-5xl font-bold mb-6">$0<span class="text-lg text-gray-500">/mo</span></p>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                            <span class="text-sm">Up to 3 projects</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                            <span class="text-sm">All core components</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                            <span class="text-sm">Community support</span>
+                        </li>
+                    </ul>
+                    <a href="#" class="retro-btn bg-white text-black border-2 border-black px-4 py-2 text-center font-bold">Get Started</a>
+                </div>
+                <!-- Pro plan (featured) -->
+                <div class="retro-card bg-primary text-white border-2 border-black p-6 flex flex-col relative">
+                    <div class="absolute top-0 right-0 bg-warning text-black px-3 py-1 text-xs font-bold border-b-2 border-l-2 border-black">POPULAR</div>
+                    <h3 class="font-display text-2xl font-bold mb-2">Pro</h3>
+                    <p class="text-white/80 mb-4">For growing teams</p>
+                    <p class="font-display text-5xl font-bold mb-6">$29<span class="text-lg text-white/70">/mo</span></p>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                            <span class="text-sm">Unlimited projects</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                            <span class="text-sm">All components & variants</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                            <span class="text-sm">Priority support</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                            <span class="text-sm">Design tokens export</span>
+                        </li>
+                    </ul>
+                    <a href="#" class="retro-btn bg-warning text-black border-2 border-black px-4 py-2 text-center font-bold">Start Free Trial</a>
+                </div>
+                <!-- Enterprise plan -->
+                <div class="retro-card bg-gray-50 border-2 border-black p-6 flex flex-col">
+                    <h3 class="font-display text-2xl font-bold mb-2">Enterprise</h3>
+                    <p class="text-gray-600 mb-4">For large organizations</p>
+                    <p class="font-display text-5xl font-bold mb-6">Custom</p>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                            <span class="text-sm">Everything in Pro</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                            <span class="text-sm">SSO/SAML</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                            <span class="text-sm">Dedicated support</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                            <span class="text-sm">Custom SLAs</span>
+                        </li>
+                    </ul>
+                    <a href="#" class="retro-btn bg-white text-black border-2 border-black px-4 py-2 text-center font-bold">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section id="faq" class="py-20 bg-gray-50 border-b-2 border-black">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-4xl sm:text-5xl font-bold mb-4">Frequently asked <span class="text-primary">questions</span></h2>
+                <p class="text-lg text-gray-600">Everything you need to know about Retro.</p>
+            </div>
+            <div class="space-y-4">
+                <!-- FAQ Item 1 -->
+                <details class="retro-card bg-white border-2 border-black p-6 group">
+                    <summary class="flex justify-between items-center cursor-pointer font-bold text-lg">
+                        <span>Is Retro really free to use?</span>
+                        <svg class="w-6 h-6 transform group-open:rotate-45 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                    </summary>
+                    <p class="mt-4 text-gray-600">Yes! The Starter plan is completely free forever. It includes all core components and is perfect for personal projects. Upgrade to Pro when you need more.</p>
+                </details>
+                <!-- FAQ Item 2 -->
+                <details class="retro-card bg-white border-2 border-black p-6 group">
+                    <summary class="flex justify-between items-center cursor-pointer font-bold text-lg">
+                        <span>Can I customize the colors?</span>
+                        <svg class="w-6 h-6 transform group-open:rotate-45 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                    </summary>
+                    <p class="mt-4 text-gray-600">Absolutely! Every color is defined as a CSS custom property. Override them in your own stylesheet to match your brand perfectly.</p>
+                </details>
+                <!-- FAQ Item 3 -->
+                <details class="retro-card bg-white border-2 border-black p-6 group">
+                    <summary class="flex justify-between items-center cursor-pointer font-bold text-lg">
+                        <span>Does Retro work with React?</span>
+                        <svg class="w-6 h-6 transform group-open:rotate-45 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                    </summary>
+                    <p class="mt-4 text-gray-600">Yes! Retro is framework-agnostic. It works with React, Vue, Svelte, or plain HTML. The components are just CSS and SVG.</p>
+                </details>
+                <!-- FAQ Item 4 -->
+                <details class="retro-card bg-white border-2 border-black p-6 group">
+                    <summary class="flex justify-between items-center cursor-pointer font-bold text-lg">
+                        <span>How accessible is Retro?</span>
+                        <svg class="w-6 h-6 transform group-open:rotate-45 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                    </summary>
+                    <p class="mt-4 text-gray-600">Retro is built to WCAG 2.2 AA standards. All components have keyboard support, visible focus states, and proper ARIA attributes where needed.</p>
+                </details>
+                <!-- FAQ Item 5 -->
+                <details class="retro-card bg-white border-2 border-black p-6 group">
+                    <summary class="flex justify-between items-center cursor-pointer font-bold text-lg">
+                        <span>Can I use Retro for commercial projects?</span>
+                        <svg class="w-6 h-6 transform group-open:rotate-45 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                    </summary>
+                    <p class="mt-4 text-gray-600">Yes! Retro is MIT licensed. Use it in commercial projects, client work, or anything else. Just keep the license file intact.</p>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="bg-black text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8 mb-8">
+                <!-- Brand -->
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-primary border-2 border-white flex items-center justify-center">
+                            <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        </div>
+                        <span class="font-display text-2xl font-bold">Retro<span class="text-primary">.</span></span>
+                    </div>
+                    <p class="text-sm text-gray-400">Building interfaces with character since 2024.</p>
+                </div>
+                <!-- Product -->
+                <div>
+                    <h3 class="font-bold mb-4 text-sm uppercase tracking-wider">Product</h3>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#features" class="hover:text-white transition-colors">Features</a></li>
+                        <li><a href="#pricing" class="hover:text-white transition-colors">Pricing</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Changelog</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Roadmap</a></li>
+                    </ul>
+                </div>
+                <!-- Resources -->
+                <div>
+                    <h3 class="font-bold mb-4 text-sm uppercase tracking-wider">Resources</h3>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Documentation</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Tutorials</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Blog</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Community</a></li>
+                    </ul>
+                </div>
+                <!-- Legal -->
+                <div>
+                    <h3 class="font-bold mb-4 text-sm uppercase tracking-wider">Legal</h3>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Privacy</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Terms</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">License</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Security</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t-2 border-gray-800 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <p class="text-sm text-gray-400">© 2024 Retro Design System. All rights reserved.</p>
+                <div class="flex gap-4">
+                    <a href="#" aria-label="GitHub" class="text-gray-400 hover:text-white transition-colors">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                    </a>
+                    <a href="#" aria-label="Twitter" class="text-gray-400 hover:text-white transition-colors">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    </a>
+                    <a href="#" aria-label="LinkedIn" class="text-gray-400 hover:text-white transition-colors">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Mobile menu toggle script -->
+    <script>
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            const button = document.querySelector('[aria-label="Open menu"]');
+            const isExpanded = button.getAttribute('aria-expanded') === 'true';
+            menu.classList.toggle('hidden');
+            button.setAttribute('aria-expanded', String(!isExpanded));
+            button.setAttribute('aria-label', isExpanded ? 'Open menu' : 'Close menu');
+        }
+    </script>
+
+    <!-- Initialize Lucide icons -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

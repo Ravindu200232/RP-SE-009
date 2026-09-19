@@ -7,9 +7,10 @@ from .generator_workflows import GeneratorWorkflowMixin
 from .generator_ecs import GeneratorEcsMixin
 from .generator_ec2 import GeneratorEc2Mixin
 from .generator_review import GeneratorReviewMixin
+from .generator_hosted import GeneratorHostedMixin
 
 
-class ArtifactGeneratorAgent(GeneratorCommonMixin, GeneratorRuntimeMixin, GeneratorWorkflowMixin, GeneratorEcsMixin, GeneratorEc2Mixin, GeneratorReviewMixin):
+class ArtifactGeneratorAgent(GeneratorCommonMixin, GeneratorRuntimeMixin, GeneratorWorkflowMixin, GeneratorEcsMixin, GeneratorEc2Mixin, GeneratorReviewMixin, GeneratorHostedMixin):
     def __init__(self, emit: Callable[..., object] | None = None):
         self.emit = emit or (lambda *args, **kwargs: None)
     def generate(
@@ -22,6 +23,13 @@ class ArtifactGeneratorAgent(GeneratorCommonMixin, GeneratorRuntimeMixin, Genera
         contract: EnvironmentContract | None = None,
     ) -> list[ArtifactRecord]:
         service = self._render_service(spec.services[0], plan)
+        companions = self._companions(spec)
+        if target == DeploymentTarget.VERCEL and service.framework != "nextjs":
+            raise ValueError("Vercel deploys Next.js only. Deploy this Node.js workspace to AWS EC2 or AWS ECS.")
+        if target == DeploymentTarget.NETLIFY and service.framework != "nextjs":
+            raise ValueError("Netlify requires a Next.js app for this managed runtime; choose AWS for the service workspace")
+        if target == DeploymentTarget.AZURE and companions:
+            raise ValueError("Azure App Service deploys one Node process; choose AWS EC2/ECS for this multi-service workspace")
         contract = contract or EnvironmentContractResolver.discover(
             service,
             staged_root / service.root if service.root else staged_root,
@@ -51,6 +59,8 @@ class ArtifactGeneratorAgent(GeneratorCommonMixin, GeneratorRuntimeMixin, Genera
             deploy_workflow = self._deploy_workflow(service, spec, plan)
         elif target == DeploymentTarget.AWS_ECS:
             deploy_workflow = self._ecs_deploy_workflow(service, spec, plan)
+        elif target in (DeploymentTarget.NETLIFY, DeploymentTarget.AZURE):
+            deploy_workflow = self._hosted_deploy_workflow(service, spec, plan, target)
         else:
             deploy_workflow = self._vercel_deploy_workflow(service, spec, plan)
         records.append(
@@ -71,7 +81,8 @@ class ArtifactGeneratorAgent(GeneratorCommonMixin, GeneratorRuntimeMixin, Genera
                         json.dumps(self._parameters_example(spec, plan, service), indent=2) + "\n",
                         "aws",
                     ),
-                    self._write(spec, staged_root, "deploy/release.sh", self._release_script(service, contract), "aws"),
+                    self._write(spec, staged_root, "deploy/release.sh",
+                                self._release_script(service, contract, companions), "aws"),
                 ]
             )
             self.emit(run_id, "step", "aws", "complete", 70, "AWS EC2 artifacts generated")
@@ -98,12 +109,18 @@ class ArtifactGeneratorAgent(GeneratorCommonMixin, GeneratorRuntimeMixin, Genera
                         spec,
                         staged_root,
                         "deploy/task-definition.json",
-                        json.dumps(self._task_definition(service, plan, contract), indent=2) + "\n",
+                        json.dumps(self._task_definition(service, plan, contract, companions), indent=2) + "\n",
                         "aws",
                     ),
                 ]
             )
             self.emit(run_id, "step", "aws", "complete", 70, "AWS ECS artifacts generated")
+        elif target in (DeploymentTarget.NETLIFY, DeploymentTarget.AZURE):
+            records.append(self._write(spec, staged_root, f"deploy/{target.value}-environment.json",
+                                       json.dumps(self._vercel_environment(contract), indent=2) + "\n", target.value))
+            if target == DeploymentTarget.NETLIFY and not (staged_root / prefix / "netlify.toml").exists():
+                records.append(self._write(spec, staged_root, f"{prefix}netlify.toml", self._netlify_config(service), "netlify"))
+            self.emit(run_id, "step", "provider", "complete", 70, f"{target.value.title()} artifacts generated")
         else:
             self.emit(run_id, "step", "provider", "running", 60, "Generating Vercel artifacts")
             records.append(
@@ -127,6 +144,8 @@ class ArtifactGeneratorAgent(GeneratorCommonMixin, GeneratorRuntimeMixin, Genera
                 )
             self.emit(run_id, "step", "provider", "complete", 70, "Vercel artifacts generated")
 
+        if plan.customization.get("readme"):
+            records.append(self._write(spec, staged_root, "README.md", plan.customization["readme"] + "\n", "documentation"))
         readiness = self._initial_readiness(records, target)
         report = self._report(spec, plan, readiness, target)
         records.append(self._write(spec, staged_root, "deployment-report.md", report, "report"))

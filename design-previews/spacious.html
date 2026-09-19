@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spacious — Breathe Room Into Your Product</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&family=Montserrat:wght@300;400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest">
+    </script>
+    <script>
+        tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            primary: '#3B82F6',
+                            secondary: '#8B5CF6',
+                            success: '#16A34A',
+                            warning: '#D97706',
+                            danger: '#DC2626',
+                            surface: '#FFFFFF',
+                            ink: '#111827',
+                        },
+                        fontFamily: {
+                            sans: ['Open Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                            display: ['Montserrat', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                            mono: ['IBM Plex Mono', 'ui-monospace', 'monospace'],
+                        },
+                    },
+                },
+            };
+    </script>
+    <style>
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+        :focus-visible {
+            outline: 2px solid #3B82F6;
+            outline-offset: 2px;
+        }
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+        details[open] .faq-icon {
+            transform: rotate(45deg);
+        }
+        .faq-icon {
+            transition: transform 0.2s ease;
+        }
+        .hero-grid-bg {
+            background-image: linear-gradient(rgba(59, 130, 246, 0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.06) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+    </style>
+</head>
+
+<body class="font-sans bg-white text-ink antialiased">
+    <!-- Skip link -->
+    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-primary focus:text-white focus:px-6 focus:py-3 focus:rounded-lg focus:text-sm focus:font-semibold">Skip to main content</a>
+
+    <!-- Navigation -->
+    <header class="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-gray-100">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" aria-label="Main navigation">
+            <div class="flex items-center justify-between h-16">
+                <a href="#" class="flex items-center gap-2 font-display font-bold text-lg text-ink" aria-label="Spacious home">
+                    <span class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                        <i data-lucide="layers" class="w-4 h-4 text-white"></i>
+                    </span>
+                    Spacious
+                </a>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="text-sm font-medium text-gray-600 hover:text-ink transition-colors py-2">Features</a>
+                    <a href="#process" class="text-sm font-medium text-gray-600 hover:text-ink transition-colors py-2">Process</a>
+                    <a href="#benefits" class="text-sm font-medium text-gray-600 hover:text-ink transition-colors py-2">Benefits</a>
+                    <a href="#pricing" class="text-sm font-medium text-gray-600 hover:text-ink transition-colors py-2">Pricing</a>
+                    <a href="#faq" class="text-sm font-medium text-gray-600 hover:text-ink transition-colors py-2">FAQ</a>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="#pricing" class="hidden sm:inline-flex items-center justify-center min-h-[44px] px-6 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors">
+                        Get Started
+                    </a>
+                    <button id="mobile-menu-button" class="md:hidden inline-flex items-center justify-center w-[44px] h-[44px] rounded-lg text-gray-600 hover:bg-gray-100 transition-colors" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">
+                        <i data-lucide="menu" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+        <!-- Mobile menu -->
+        <div id="mobile-menu" class="hidden md:hidden border-t border-gray-100 bg-white">
+            <div class="px-4 py-4 space-y-1">
+                <a href="#features" class="block px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg">Features</a>
+                <a href="#process" class="block px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg">Process</a>
+                <a href="#benefits" class="block px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg">Benefits</a>
+                <a href="#pricing" class="block px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg">Pricing</a>
+                <a href="#faq" class="block px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg">FAQ</a>
+                <a href="#pricing" class="block px-4 py-3 text-sm font-semibold text-white bg-primary rounded-lg text-center mt-2">Get Started</a>
+            </div>
+        </div>
+    </header>
+
+    <main id="main">
+        <!-- Hero -->
+        <section class="relative overflow-hidden">
+            <div class="absolute inset-0 hero-grid-bg pointer-events-none"></div>
+            <div class="absolute inset-0 bg-gradient-to-b from-blue-50/40 via-white to-white pointer-events-none"></div>
+            <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+                <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                    <div>
+                        <p class="font-mono text-xs text-primary font-medium tracking-wider uppercase mb-4">Design System v2.0</p>
+                        <h1 class="font-display font-bold text-4xl sm:text-5xl leading-tight text-ink mb-6">
+                            Breathe room into your product.
+                        </h1>
+                        <p class="text-lg text-gray-600 leading-relaxed mb-8 max-w-md">
+                            Spacious is a design system built on generous whitespace, clear hierarchy, and calm interfaces. Give your users space to think, focus, and act.
+                        </p>
+                        <div class="flex flex-wrap gap-4">
+                            <a href="#pricing" class="inline-flex items-center justify-center min-h-[44px] px-6 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors">
+                                Get Started
+                                <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+                            </a>
+                            <a href="#features" class="inline-flex items-center justify-center min-h-[44px] px-6 rounded-full border border-gray-300 text-ink text-sm font-semibold hover:bg-gray-50 transition-colors">
+                                View Features
+                            </a>
+                        </div>
+                    </div>
+                    <!-- Hero visual -->
+                    <div class="relative">
+                        <div class="absolute -inset-4 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-3xl blur-2xl"></div>
+                        <div class="relative bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden">
+                            <div class="flex items-center gap-2 px-4 py-3 bg-gray-50 border-b border-gray-100">
+                                <div class="w-3 h-3 rounded-full bg-red-400"></div>
+                                <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+                                <div class="w-3 h-3 rounded-full bg-green-400"></div>
+                                <div class="ml-4 flex-1 max-w-xs mx-auto bg-white rounded-md px-3 py-1">
+                                    <p class="text-xs text-gray-400 font-mono text-center">app.spacious.dev</p>
+                                </div>
+                            </div>
+                            <div class="flex">
+                                <div class="w-40 bg-gray-50 p-4 border-r border-gray-100 hidden sm:block">
+                                    <div class="space-y-2">
+                                        <div class="h-8 bg-primary/10 rounded-md flex items-center px-3">
+                                            <span class="text-xs text-primary font-medium">Dashboard</span>
+                                        </div>
+                                        <div class="h-8 bg-gray-100 rounded-md"></div>
+                                        <div class="h-8 bg-gray-100 rounded-md"></div>
+                                        <div class="h-8 bg-gray-100 rounded-md"></div>
+                                        <div class="h-8 bg-gray-100 rounded-md"></div>
+                                    </div>
+                                </div>
+                                <div class="flex-1 p-5">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <div class="h-3 w-24 bg-gray-200 rounded"></div>
+                                        <div class="h-6 w-16 bg-primary rounded-md"></div>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-3 mb-4">
+                                        <div class="p-3 bg-gray-50 rounded-lg">
+                                            <div class="h-2 w-12 bg-gray-200 rounded mb-1"></div>
+                                            <div class="h-4 w-14 bg-gray-300 rounded"></div>
+                                        </div>
+                                        <div class="p-3 bg-gray-50 rounded-lg">
+                                            <div class="h-2 w-12 bg-gray-200 rounded mb-1"></div>
+                                            <div class="h-4 w-14 bg-gray-300 rounded"></div>
+                                        </div>
+                                        <div class="p-3 bg-gray-50 rounded-lg">
+                                            <div class="h-2 w-12 bg-gray-200 rounded mb-1"></div>
+                                            <div class="h-4 w-14 bg-gray-300 rounded"></div>
+                                        </div>
+                                    </div>
+                                    <div class="bg-gray-50 rounded-lg p-4">
+                                        <div class="flex items-end gap-2 h-24">
+                                            <div class="flex-1 bg-primary/20 rounded-t" style="height:40%"></div>
+                                            <div class="flex-1 bg-primary/30 rounded-t" style="height:55%"></div>
+                                            <div class="flex-1 bg-primary/40 rounded-t" style="height:35%"></div>
+                                            <div class="flex-1 bg-primary/50 rounded-t" style="height:70%"></div>
+                                            <div class="flex-1 bg-primary/60 rounded-t" style="height:50%"></div>
+                                            <div class="flex-1 bg-primary/70 rounded-t" style="height:80%"></div>
+                                            <div class="flex-1 bg-primary rounded-t" style="height:65%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats -->
+        <section class="border-y border-gray-100 bg-gray-50/50" aria-label="Key statistics">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="text-center">
+                        <p class="font-display font-bold text-3xl text-ink">99.9%</p>
+                        <p class="text-sm text-gray-500 mt-1">Uptime</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="font-display font-bold text-3xl text-ink">12k+</p>
+                        <p class="text-sm text-gray-500 mt-1">Teams</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="font-display font-bold text-3xl text-ink">4.9/5</p>
+                        <p class="text-sm text-gray-500 mt-1">Rating</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="font-display font-bold text-3xl text-ink">40%</p>
+                        <p class="text-sm text-gray-500 mt-1">Faster</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features -->
+        <section id="features" class="py-16 lg:py-24 scroll-mt-20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-2xl mx-auto mb-16">
+                    <p class="font-mono text-xs text-primary font-medium tracking-wider uppercase mb-3">Features</p>
+                    <h2 class="font-display font-bold text-3xl sm:text-4xl text-ink mb-4">Everything you need to build calm interfaces</h2>
+                    <p class="text-base text-gray-600 leading-relaxed">Every component, token, and pattern is designed to give your product room to breathe.</p>
+                </div>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+                    <article class="bg-white rounded-xl border border-gray-100 shadow-sm p-8 hover:shadow-md transition-shadow">
+                        <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                            <i data-lucide="layout" class="w-5 h-5 text-primary"></i>
+                        </div>
+                        <h3 class="font-display font-semibold text-lg text-ink mb-2">Spacious Grid</h3>
+                        <p class="text-sm text-gray-600 leading-relaxed">An 8pt baseline grid that gives every layout room to breathe. Consistent padding, clear alignment, and harmonious rhythm.</p>
+                    </article>
+                    <article class="bg-white rounded-xl border border-gray-100 shadow-sm p-8 hover:shadow-md transition-shadow">
+                        <div class="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center mb-4">
+                            <i data-lucide="palette" class="w-5 h-5 text-secondary"></i>
+                        </div>
+                        <h3 class="font-display font-semibold text-lg text-ink mb-2">Semantic Tokens</h3>
+                        <p class="text-sm text-gray-600 leading-relaxed">Design tokens that keep your entire product in sync. Change one value, update every screen.</p>
+                    </article>
+                    <article class="bg-white rounded-xl border border-gray-100 shadow-sm p-8 hover:shadow-md transition-shadow">
+                        <div class="w-12 h-12 bg-success/10 rounded-lg flex items-center justify-center mb-4">
+                            <i data-lucide="accessibility" class="w-5 h-5 text-success"></i>
+                        </div>
+                        <h3 class="font-display font-semibold text-lg text-ink mb-2">Accessible by Default</h3>
+                        <p class="text-sm text-gray-600 leading-relaxed">WCAG 2.2 AA compliance built into every component. Keyboard-first, screen-reader tested, and focus-visible ready.</p>
+                    </article>
+                    <article class="bg-white rounded-xl border border-gray-100 shadow-sm p-8 hover:shadow-md transition-shadow">
+                        <div class="w-12 h-12 bg-warning/10 rounded-lg flex items-center justify-center mb-4">
+                            <i data-lucide="wind" class="w-5 h-5 text-warning"></i>
+                        </div>
+                        <h3 class="font-display font-semibold text-lg text-ink mb-2">Motion with Purpose</h3>
+                        <p class="text-sm text-gray-600 leading-relaxed">Subtle animations that guide attention, never distract. Respects prefers-reduced-motion automatically.</p>
+                    </article>
+                    <article class="bg-white rounded-xl border border-gray-100 shadow-sm p-8 hover:shadow-md transition-shadow">
+                        <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                            <i data-lucide="box" class="w-5 h-5 text-primary"></i>
+                        </div>
+                        <h3 class="font-display font-semibold text-lg text-ink mb-2">Component Library</h3>
+                        <p class="text-sm text-gray-600 leading-relaxed">40+ production-ready components for any interface. Buttons, cards, forms, modals, and more.</p>
+                    </article>
+                    <article class="bg-white rounded-xl border border-gray-100 shadow-sm p-8 hover:shadow-md transition-shadow">
+                        <div class="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center mb-4">
+                            <i data-lucide="sun" class="w-5 h-5 text-secondary"></i>
+                        </div>
+                        <h3 class="font-display font-semibold text-lg text-ink mb-2">Themeable</h3>
+                        <p class="text-sm text-gray-600 leading-relaxed">Light, dark, and custom themes with a single token swap. Your brand, your colors, your rules.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- Process -->
+        <section id="process" class="py-16 lg:py-24 bg-gray-50/50 scroll-mt-20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-2xl mx-auto mb-16">
+                    <p class="font-mono text-xs text-primary font-medium tracking-wider uppercase mb-3">Process</p>
+                    <h2 class="font-display font-bold text-3xl sm:text-4xl text-ink mb-4">From audit to launch in four steps</h2>
+                    <p class="text-base text-gray-600 leading-relaxed">A proven workflow that brings spacious design to your product.</p>
+                </div>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+                    <div class="relative">
+                        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-8 h-full">
+                            <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                                <span class="font-display font-bold text-sm text-primary">01</span>
+                            </div>
+                            <h3 class="font-display font-semibold text-base text-ink mb-2">Discover</h3>
+                            <p class="text-sm text-gray-600 leading-relaxed">We audit your current interface and identify spacing, hierarchy, and accessibility gaps.</p>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-8 h-full">
+                            <div class="w-10 h-10 bg-secondary/10 rounded-full flex items-center justify-center mb-4">
+                                <span class="font-display font-bold text-sm text-secondary">02</span>
+                            </div>
+                            <h3 class="font-display font-semibold text-base text-ink mb-2">Design</h3>
+                            <p class="text-sm text-gray-600 leading-relaxed">We create wireframes and high-fidelity mockups using the 8pt grid and semantic tokens.</p>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-8 h-full">
+                            <div class="w-10 h-10 bg-success/10 rounded-full flex items-center justify-center mb-4">
+                                <span class="font-display font-bold text-sm text-success">03</span>
+                            </div>
+                            <h3 class="font-display font-semibold text-base text-ink mb-2">Build</h3>
+                            <p class="text-sm text-gray-600 leading-relaxed">We ship production-ready components with semantic tokens and full documentation.</p>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-8 h-full">
+                            <div class="w-10 h-10 bg-warning/10 rounded-full flex items-center justify-center mb-4">
+                                <span class="font-display font-bold text-sm text-warning">04</span>
+                            </div>
+                            <h3 class="font-display font-semibold text-base text-ink mb-2">Ship</h3>
+                            <p class="text-sm text-gray-600 leading-relaxed">We launch with confidence, backed by automated accessibility checks and performance budgets.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Benefits -->
+        <section id="benefits" class="py-16 lg:py-24 scroll-mt-20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                    <div>
+                        <p class="font-mono text-xs text-primary font-medium tracking-wider uppercase mb-3">Benefits</p>
+                        <h2 class="font-display font-bold text-3xl sm:text-4xl text-ink mb-6">Why teams switch to Spacious</h2>
+                        <p class="text-base text-gray-600 leading-relaxed mb-8">Spacious isn't just a design system — it's a competitive advantage. Here's what changes when you adopt it.</p>
+                        <ul class="space-y-4">
+                            <li class="flex items-start gap-3">
+                                <span class="w-6 h-6 bg-success/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <i data-lucide="check" class="w-3.5 h-3.5 text-success"></i>
+                                </span>
+                                <span class="text-sm text-gray-700 leading-relaxed">Faster design-to-development handoff with semantic tokens and clear specs.</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span class="w-6 h-6 bg-success/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <i data-lucide="check" class="w-3.5 h-3.5 text-success"></i>
+                                </span>
+                                <span class="text-sm text-gray-700 leading-relaxed">Consistent spacing across every screen, every breakpoint, every platform.</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span class="w-6 h-6 bg-success/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <i data-lucide="check" class="w-3.5 h-3.5 text-success"></i>
+                                </span>
+                                <span class="text-sm text-gray-700 leading-relaxed">Built-in accessibility compliance that passes WCAG 2.2 AA out of the box.</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span class="w-6 h-6 bg-success/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <i data-lucide="check" class="w-3.5 h-3.5 text-success"></i>
+                                </span>
+                                <span class="text-sm text-gray-700 leading-relaxed">Reduced design debt with a single source of truth for your UI.</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span class="w-6 h-6 bg-success/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <i data-lucide="check" class="w-3.5 h-3.5 text-success"></i>
+                                </span>
+                                <span class="text-sm text-gray-700 leading-relaxed">Scalable from MVP to enterprise with theming and custom tokens.</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- Visual: 8pt grid demonstration -->
+                    <div class="relative">
+                        <div class="bg-gray-50 rounded-xl p-8 border border-gray-100">
+                            <p class="font-mono text-xs text-gray-400 mb-6">8pt grid in action</p>
+                            <div class="grid grid-cols-4 gap-4">
+                                <div class="col-span-2 h-20 bg-primary/20 rounded-lg flex items-center justify-center">
+                                    <span class="text-xs text-primary font-medium">8pt</span>
+                                </div>
+                                <div class="col-span-1 h-20 bg-primary/30 rounded-lg"></div>
+                                <div class="col-span-1 h-20 bg-primary/20 rounded-lg"></div>
+                                <div class="col-span-1 h-20 bg-secondary/20 rounded-lg"></div>
+                                <div class="col-span-3 h-20 bg-secondary/30 rounded-lg"></div>
+                                <div class="col-span-4 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
+                                    <span class="text-xs text-gray-400 font-mono">consistent rhythm</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 mt-6">
+                                <div class="w-4 h-4 bg-primary/20 rounded"></div>
+                                <span class="text-xs text-gray-500 font-mono">8px</span>
+                                <div class="w-4 h-4 bg-primary/40 rounded ml-4"></div>
+                                <span class="text-xs text-gray-500 font-mono">16px</span>
+                                <div class="w-4 h-4 bg-primary/60 rounded ml-4"></div>
+                                <span class="text-xs text-gray-500 font-mono">24px</span>
+                                <div class="w-4 h-4 bg-primary rounded ml-4"></div>
+                                <span class="text-xs text-gray-500 font-mono">32px</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials -->
+        <section id="testimonials" class="py-16 lg:py-24 bg-gray-50/50 scroll-mt-20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-2xl mx-auto mb-16">
+                    <p class="font-mono text-xs text-primary font-medium tracking-wider uppercase mb-3">Testimonials</p>
+                    <h2 class="font-display font-bold text-3xl sm:text-4xl text-ink mb-4">Loved by teams who value clarity</h2>
+                    <p class="text-base text-gray-600 leading-relaxed">See what product teams say about working with Spacious.</p>
+                </div>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+                    <article class="bg-white rounded-xl border border-gray-100 shadow-sm p-8 flex flex-col">
+                        <div class="flex items-center gap-1 mb-4" aria-label="5 out of 5 stars">
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        </div>
+                        <blockquote class="text-sm text-gray-700 leading-relaxed flex-1">
+                            "Spacious transformed our product. The 8pt grid brought a level of consistency we never had before. Our design reviews are faster and our users notice the difference."
+                        </blockquote>
+                        <div class="flex items-center gap-3 mt-6">
+                            <div class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
+                                <span class="font-display font-bold text-sm text-primary">SC</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-ink">Sarah Chen</p>
+                                <p class="text-xs text-gray-500">Product Designer, Acme</p>
+                            </div>
+                        </div>
+                    </article>
+                    <article class="bg-white rounded-xl border border-gray-100 shadow-sm p-8 flex flex-col">
+                        <div class="flex items-center gap-1 mb-4" aria-label="5 out of 5 stars">
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        </div>
+                        <blockquote class="text-sm text-gray-700 leading-relaxed flex-1">
+                            "The accessibility features alone saved us months of work. Every component is WCAG 2.2 AA compliant out of the box. It's rare to find a design system that takes accessibility this seriously."
+                        </blockquote>
+                        <div class="flex items-center gap-3 mt-6">
+                            <div class="w-10 h-10 bg-secondary/20 rounded-full flex items-center justify-center">
+                                <span class="font-display font-bold text-sm text-secondary">MJ</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-ink">Marcus Johnson</p>
+                                <p class="text-xs text-gray-500">Frontend Lead, Globex</p>
+                            </div>
+                        </div>
+                    </article>
+                    <article class="bg-white rounded-xl border border-gray-100 shadow-sm p-8 flex flex-col">
+                        <div class="flex items-center gap-1 mb-4" aria-label="5 out of 5 stars">
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        </div>
+                        <blockquote class="text-sm text-gray-700 leading-relaxed flex-1">
+                            "Our users noticed the difference immediately. The interface feels calmer and more professional. Spacious gave us the visual polish we'd been missing."
+                        </blockquote>
+                        <div class="flex items-center gap-3 mt-6">
+                            <div class="w-10 h-10 bg-success/20 rounded-full flex items-center justify-center">
+                                <span class="font-display font-bold text-sm text-success">ER</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-ink">Elena Rodriguez</p>
+                                <p class="text-xs text-gray-500">VP of Product, Initech</p>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing -->
+        <section id="pricing" class="py-16 lg:py-24 scroll-mt-20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-2xl mx-auto mb-16">
+                    <p class="font-mono text-xs text-primary font-medium tracking-wider uppercase mb-3">Pricing</p>
+                    <h2 class="font-display font-bold text-3xl sm:text-4xl text-ink mb-4">Simple, transparent pricing</h2>
+                    <p class="text-base text-gray-600 leading-relaxed">Start free. Scale when you're ready.</p>
+                </div>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto">
+                    <!-- Starter -->
+                    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-8 flex flex-col">
+                        <h3 class="font-display font-semibold text-lg text-ink mb-1">Starter</h3>
+                        <p class="text-sm text-gray-500 mb-4">For side projects and prototypes</p>
+                        <p class="font-display font-bold text-4xl text-ink mb-6">$0<span class="text-base text-gray-400 font-normal">/mo</span></p>
+                        <ul class="space-y-3 mb-8 flex-1">
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0 mt-0.5"></i>
+                                <span class="text-sm text-gray-700">3 projects</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0 mt-0.5"></i>
+                                <span class="text-sm text-gray-700">Core components</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0 mt-0.5"></i>
+                                <span class="text-sm text-gray-700">Community support</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0 mt-0.5"></i>
+                                <span class="text-sm text-gray-700">8pt grid foundation</span>
+                            </li>
+                        </ul>
+                        <a href="#" class="inline-flex items-center justify-center min-h-[44px] px-6 rounded-full border border-gray-300 text-ink text-sm font-semibold hover:bg-gray-50 transition-colors w-full">
+                            Start Free
+                        </a>
+                    </div>
+                    <!-- Pro -->
+                    <div class="bg-white rounded-xl border-2 border-primary shadow-lg p-8 flex flex-col relative">
+                        <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-semibold px-3 py-1 rounded-full">Most Popular</span>
+                        <h3 class="font-display font-semibold text-lg text-ink mb-1">Pro</h3>
+                        <p class="text-sm text-gray-500 mb-4">For growing teams</p>
+                        <p class="font-display font-bold text-4xl text-ink mb-6">$24<span class="text-base text-gray-400 font-normal">/mo</span></p>
+                        <ul class="space-y-3 mb-8 flex-1">
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0 mt-0.5"></i>
+                                <span class="text-sm text-gray-700">Unlimited projects</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0 mt-0.5"></i>
+                                <span class="text-sm text-gray-700">All 40+ components</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0 mt-0.5"></i>
+                                <span class="text-sm text-gray-700">Priority support</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0 mt-0.5"></i>
+                                <span class="text-sm text-gray-700">Design tokens export</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0 mt-0.5"></i>
+                                <span class="text-sm text-gray-700">Figma plugin</span>
+                            </li>
+                        </ul>
+                        <a href="#" class="inline-flex items-center justify-center min-h-[44px] px-6 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors w-full">
+                            Get Started
+                        </a>
+                    </div>
+                    <!-- Enterprise -->
+                    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-8 flex flex-col">
+                        <h3 class="font-display font-semibold text-lg text-ink mb-1">Enterprise</h3>
+                        <p class="text-sm text-gray-500 mb-4">For large organizations</p>
+                        <p class="font-display font-bold text-4xl text-ink mb-6">Custom</p>
+                        <ul class="space-y-3 mb-8 flex-1">
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0 mt-0.5"></i>
+                                <span class="text-sm text-gray-700">Everything in Pro</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0 mt-0.5"></i>
+                                <span class="text-sm text-gray-700">SSO/SAML</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0 mt-0.5"></i>
+                                <span class="text-sm text-gray-700">Dedicated support</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0 mt-0.5"></i>
+                                <span class="text-sm text-gray-700">Custom theming</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success flex-shrink-0 mt-0.5"></i>
+                                <span class="text-sm text-gray-700">SLA guarantee</span>
+                            </li>
+                        </ul>
+                        <a href="#" class="inline-flex items-center justify-center min-h-[44px] px-6 rounded-full border border-gray-300 text-ink text-sm font-semibold hover:bg-gray-50 transition-colors w-full">
+                            Contact Sales
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section id="faq" class="py-16 lg:py-24 bg-gray-50/50 scroll-mt-20">
+            <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-2xl mx-auto mb-16">
+                    <p class="font-mono text-xs text-primary font-medium tracking-wider uppercase mb-3">FAQ</p>
+                    <h2 class="font-display font-bold text-3xl sm:text-4xl text-ink mb-4">Frequently asked questions</h2>
+                    <p class="text-base text-gray-600 leading-relaxed">Everything you need to know about Spacious.</p>
+                </div>
+                <div class="space-y-4">
+                    <details class="bg-white rounded-xl border border-gray-100 shadow-sm">
+                        <summary class="flex items-center justify-between px-6 py-5 cursor-pointer min-h-[44px]">
+                            <span class="text-sm font-semibold text-ink">What is Spacious?</span>
+                            <span class="faq-icon flex-shrink-0 w-6 h-6 flex items-center justify-center">
+                                <i data-lucide="plus" class="w-4 h-4 text-gray-400"></i>
+                            </span>
+                        </summary>
+                        <div class="px-6 pb-5">
+                            <p class="text-sm text-gray-600 leading-relaxed">Spacious is a design system built on generous whitespace, clear hierarchy, and calm interfaces. It provides design tokens, components, and guidelines to help teams build consistent, accessible, and beautiful products.</p>
+                        </div>
+                    </details>
+                    <details class="bg-white rounded-xl border border-gray-100 shadow-sm">
+                        <summary class="flex items-center justify-between px-6 py-5 cursor-pointer min-h-[44px]">
+                            <span class="text-sm font-semibold text-ink">How does the 8pt grid work?</span>
+                            <span class="faq-icon flex-shrink-0 w-6 h-6 flex items-center justify-center">
+                                <i data-lucide="plus" class="w-4 h-4 text-gray-400"></i>
+                            </span>
+                        </summary>
+                        <div class="px-6 pb-5">
+                            <p class="text-sm text-gray-600 leading-relaxed">The 8pt grid uses 8-pixel increments for all spacing, padding, and layout measurements. This creates a consistent visual rhythm across your interface, making it easier to align elements and maintain harmony at every breakpoint.</p>
+                        </div>
+                    </details>
+                    <details class="bg-white rounded-xl border border-gray-100 shadow-sm">
+                        <summary class="flex items-center justify-between px-6 py-5 cursor-pointer min-h-[44px]">
+                            <span class="text-sm font-semibold text-ink">Can I use Spacious with my existing design tools?</span>
+                            <span class="faq-icon flex-shrink-0 w-6 h-6 flex items-center justify-center">
+                                <i data-lucide="plus" class="w-4 h-4 text-gray-400"></i>
+                            </span>
+                        </summary>
+                        <div class="px-6 pb-5">
+                            <p class="text-sm text-gray-600 leading-relaxed">Yes. Spacious provides design tokens that export to Figma, Sketch, and Adobe XD, plus a Figma plugin for seamless syncing. On the development side, tokens work with CSS, Tailwind, and styled-components.</p>
+                        </div>
+                    </details>
+                    <details class="bg-white rounded-xl border border-gray-100 shadow-sm">
+                        <summary class="flex items-center justify-between px-6 py-5 cursor-pointer min-h-[44px]">
+                            <span class="text-sm font-semibold text-ink">Is Spacious accessible?</span>
+                            <span class="faq-icon flex-shrink-0 w-6 h-6 flex items-center justify-center">
+                                <i data-lucide="plus" class="w-4 h-4 text-gray-400"></i>
+                            </span>
+                        </summary>
+                        <div class="px-6 pb-5">
+                            <p class="text-sm text-gray-600 leading-relaxed">Absolutely. Every component is built to meet WCAG 2.2 AA standards, including keyboard navigation, visible focus states, screen-reader compatibility, and reduced-motion support. Accessibility is a core requirement, not an afterthought.</p>
+                        </div>
+                    </details>
+                    <details class="bg-white rounded-xl border border-gray-100 shadow-sm">
+                        <summary class="flex items-center justify-between px-6 py-5 cursor-pointer min-h-[44px]">
+                            <span class="text-sm font-semibold text-ink">How do I migrate from my current design system?</span>
+                            <span class="faq-icon flex-shrink-0 w-6 h-6 flex items-center justify-center">
+                                <i data-lucide="plus" class="w-4 h-4 text-gray-400"></i>
+                            </span>
+                        </summary>
+                        <div class="px-6 pb-5">
+                            <p class="text-sm text-gray-600 leading-relaxed">We provide a migration guide that walks you through the process step by step. Our team can also assist with automated token mapping and component replacement to minimize disruption to your workflow.</p>
+                        </div>
+                    </details>
+                    <details class="bg-white rounded-xl border border-gray-100 shadow-sm">
+                        <summary class="flex items-center justify-between px-6 py-5 cursor-pointer min-h-[44px]">
+                            <span class="text-sm font-semibold text-ink">Do you offer enterprise support?</span>
+                            <span class="faq-icon flex-shrink-0 w-6 h-6 flex items-center justify-center">
+                                <i data-lucide="plus" class="w-4 h-4 text-gray-400"></i>
+                            </span>
+                        </summary>
+                        <div class="px-6 pb-5">
+                            <p class="text-sm text-gray-600 leading-relaxed">Yes. Enterprise plans include dedicated support, SSO/SAML authentication, custom theming, SLA guarantees, and priority access to our engineering team for any questions or issues.</p>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-ink text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+                <div>
+                    <a href="#" class="flex items-center gap-2 font-display font-bold text-lg mb-4">
+                        <span class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                            <i data-lucide="layers" class="w-4 h-4 text-white"></i>
+                        </span>
+                        Spacious
+                    </a>
+                    <p class="text-sm text-gray-400 leading-relaxed">Breathe room into your product. A design system built on generosity and clarity.</p>
+                </div>
+                <div>
+                    <h3 class="font-display font-semibold text-sm text-white mb-4">Product</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#features" class="text-sm text-gray-400 hover:text-white transition-colors">Features</a></li>
+                        <li><a href="#pricing" class="text-sm text-gray-400 hover:text-white transition-colors">Pricing</a></li>
+                        <li><a href="#faq" class="text-sm text-gray-400 hover:text-white transition-colors">FAQ</a></li>
+                        <li><a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">Documentation</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-display font-semibold text-sm text-white mb-4">Company</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">About</a></li>
+                        <li><a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">Blog</a></li>
+                        <li><a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">Careers</a></li>
+                        <li><a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-display font-semibold text-sm text-white mb-4">Resources</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">Figma Plugin</a></li>
+                        <li><a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">GitHub</a></li>
+                        <li><a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">Design Tokens</a></li>
+                        <li><a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">Component Docs</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="text-xs text-gray-500">© 2025 Spacious. All rights reserved.</p>
+                <div class="flex items-center gap-4">
+                    <a href="#" class="w-[44px] h-[44px] flex items-center justify-center text-gray-400 hover:text-white transition-colors" aria-label="Twitter">
+                        <i data-lucide="twitter" class="w-4 h-4"></i>
+                    </a>
+                    <a href="#" class="w-[44px] h-[44px] flex items-center justify-center text-gray-400 hover:text-white transition-colors" aria-label="GitHub">
+                        <i data-lucide="github" class="w-4 h-4"></i>
+                    </a>
+                    <a href="#" class="w-[44px] h-[44px] flex items-center justify-center text-gray-400 hover:text-white transition-colors" aria-label="LinkedIn">
+                        <i data-lucide="linkedin" class="w-4 h-4"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile menu toggle
+        const menuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        if (menuButton && mobileMenu) {
+            menuButton.addEventListener('click', () => {
+                const isExpanded = menuButton.getAttribute('aria-expanded') === 'true';
+                menuButton.setAttribute('aria-expanded', String(!isExpanded));
+                mobileMenu.classList.toggle('hidden');
+            });
+            // Close menu when clicking a link
+            mobileMenu.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                    menuButton.setAttribute('aria-expanded', 'false');
+                });
+            });
+        }
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>

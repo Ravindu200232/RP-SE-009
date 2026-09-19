@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Artistic · high-contrast design system</title>
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Limelight (display/primary) + JetBrains Mono (mono) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Limelight&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* design tokens – artistic / high-contrast */
+    :root {
+      --font-display: 'Limelight', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --color-primary: #3B82F6;
+      --color-secondary: #8B5CF6;
+      --color-success: #16A34A;
+      --color-warning: #D97706;
+      --color-danger: #DC2626;
+      --color-surface: #FFFFFF;
+      --color-text: #111827;
+      --spacing-1: 4px; --spacing-2: 8px; --spacing-3: 12px; --spacing-4: 16px;
+      --spacing-5: 24px; --spacing-6: 32px;
+      --radius: 0px; /* sharp corners – mandatory */
+    }
+    body {
+      font-family: var(--font-mono);
+      background: var(--color-surface);
+      color: var(--color-text);
+      font-weight: 400;
+      line-height: 1.5;
+    }
+    .font-display {
+      font-family: var(--font-display);
+      font-weight: 400;
+      letter-spacing: 0.01em;
+    }
+    /* high-contrast, sharp edges, no rounded corners */
+    .sharp { border-radius: 0 !important; }
+    .border-thick { border: 2px solid var(--color-text); }
+    .bg-primary { background-color: var(--color-primary); }
+    .bg-secondary { background-color: var(--color-secondary); }
+    .bg-success { background-color: var(--color-success); }
+    .bg-warning { background-color: var(--color-warning); }
+    .bg-danger { background-color: var(--color-danger); }
+    .text-primary { color: var(--color-primary); }
+    .text-secondary { color: var(--color-secondary); }
+    .text-success { color: var(--color-success); }
+    .text-warning { color: var(--color-warning); }
+    .text-danger { color: var(--color-danger); }
+    .bg-surface { background-color: var(--color-surface); }
+    .text-ink { color: var(--color-text); }
+    .border-ink { border-color: var(--color-text); }
+    /* focus visible – high contrast */
+    *:focus-visible {
+      outline: 3px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+    /* reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+    /* custom geometric shapes – no photos */
+    .shape-triangle {
+      width: 0; height: 0;
+      border-left: 24px solid transparent;
+      border-right: 24px solid transparent;
+      border-bottom: 40px solid var(--color-secondary);
+    }
+    .shape-diamond {
+      width: 32px; height: 32px;
+      background: var(--color-primary);
+      transform: rotate(45deg);
+    }
+    .shape-circle {
+      width: 40px; height: 40px;
+      background: var(--color-warning);
+      border-radius: 50%; /* exception: shape itself, but component edges stay sharp */
+    }
+    .grid-pattern {
+      background-image: 
+        linear-gradient(var(--color-text) 1px, transparent 1px),
+        linear-gradient(90deg, var(--color-text) 1px, transparent 1px);
+      background-size: 24px 24px;
+      opacity: 0.08;
+    }
+    .card-art {
+      border: 2px solid var(--color-text);
+      background: var(--color-surface);
+      transition: none;
+    }
+    .card-art:hover {
+      background: #f0f4ff;
+    }
+    /* 44px touch targets */
+    .touch-target { min-height: 44px; min-width: 44px; }
+  </style>
+</head>
+<body class="antialiased">
+
+  <!-- ========== NAVIGATION ========== -->
+  <header class="border-b-2 border-ink bg-surface sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+      <!-- logo / wordmark -->
+      <div class="flex items-center gap-2">
+        <div class="shape-diamond"></div>
+        <span class="font-display text-2xl tracking-tight">ARTISTIC</span>
+      </div>
+      <!-- desktop nav -->
+      <nav class="hidden md:flex items-center gap-6 text-sm font-medium" aria-label="Main navigation">
+        <a href="#features" class="hover:text-primary transition-none">Features</a>
+        <a href="#process" class="hover:text-primary transition-none">Process</a>
+        <a href="#testimonials" class="hover:text-primary transition-none">Stories</a>
+        <a href="#pricing" class="hover:text-primary transition-none">Pricing</a>
+        <a href="#faq" class="hover:text-primary transition-none">FAQ</a>
+      </nav>
+      <a href="#pricing" class="touch-target inline-flex items-center justify-center bg-primary text-white px-4 py-2 border-2 border-ink font-bold text-sm hover:bg-secondary transition-none">
+        START PROJECT
+      </a>
+    </div>
+  </header>
+
+  <main>
+    <!-- ========== HERO ========== -->
+    <section class="relative bg-surface border-b-2 border-ink">
+      <div class="absolute inset-0 grid-pattern pointer-events-none"></div>
+      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28 grid lg:grid-cols-2 gap-12 items-center">
+        <div>
+          <p class="inline-block bg-secondary text-white px-3 py-1 border-2 border-ink text-xs font-bold uppercase tracking-wider mb-4">New · expressive system</p>
+          <h1 class="font-display text-5xl sm:text-6xl lg:text-7xl leading-[1.1] tracking-tight text-ink">
+            Design that<br/>shouts clearly.
+          </h1>
+          <p class="mt-6 text-lg max-w-xl text-ink/80">
+            High-contrast, sharp-edged, and unapologetically bold. A visual language built on geometric shapes, monospace rhythm, and zero rounded corners.
+          </p>
+          <div class="mt-8 flex flex-wrap gap-4">
+            <a href="#pricing" class="touch-target inline-flex items-center gap-2 bg-primary text-white border-2 border-ink px-6 py-3 font-bold hover:bg-secondary transition-none">
+              SEE PRICING <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </a>
+            <a href="#features" class="touch-target inline-flex items-center gap-2 bg-surface text-ink border-2 border-ink px-6 py-3 font-bold hover:bg-warning hover:text-ink transition-none">
+              EXPLORE <i data-lucide="layers" class="w-4 h-4"></i>
+            </a>
+          </div>
+        </div>
+        <!-- abstract shape composition (no photos) -->
+        <div class="relative h-64 sm:h-80 lg:h-96 flex items-center justify-center">
+          <div class="shape-triangle absolute top-4 left-8"></div>
+          <div class="shape-diamond absolute top-10 right-16"></div>
+          <div class="shape-circle absolute bottom-8 left-16"></div>
+          <div class="w-40 h-40 bg-primary border-4 border-ink rotate-12"></div>
+          <div class="w-32 h-32 bg-secondary border-4 border-ink -rotate-6 absolute right-4 top-8"></div>
+          <div class="absolute bottom-4 right-10 font-display text-4xl text-ink/90">✦</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== STATS ========== -->
+    <section class="bg-ink text-surface border-b-2 border-ink">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div class="border-2 border-surface p-4">
+          <p class="font-display text-4xl">120+</p>
+          <p class="text-sm mt-1 text-surface/70">components</p>
+        </div>
+        <div class="border-2 border-surface p-4">
+          <p class="font-display text-4xl">0px</p>
+          <p class="text-sm mt-1 text-surface/70">border radius</p>
+        </div>
+        <div class="border-2 border-surface p-4">
+          <p class="font-display text-4xl">AA</p>
+          <p class="text-sm mt-1 text-surface/70">contrast rating</p>
+        </div>
+        <div class="border-2 border-surface p-4">
+          <p class="font-display text-4xl">24/7</p>
+          <p class="text-sm mt-1 text-surface/70">support</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== FEATURES ========== -->
+    <section id="features" class="bg-surface py-20 border-b-2 border-ink">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="font-display text-4xl sm:text-5xl mb-12">Built on sharp rules</h2>
+        <div class="grid md:grid-cols-3 gap-6">
+          <!-- feature 1 -->
+          <div class="card-art p-6">
+            <i data-lucide="bold" class="w-8 h-8 text-primary mb-4"></i>
+            <h3 class="font-display text-2xl mb-2">High contrast</h3>
+            <p class="text-sm leading-relaxed">Pure #111827 on #FFFFFF, with primary accents. Every text meets WCAG AA.</p>
+          </div>
+          <!-- feature 2 -->
+          <div class="card-art p-6">
+            <i data-lucide="square" class="w-8 h-8 text-secondary mb-4"></i>
+            <h3 class="font-display text-2xl mb-2">Zero radius</h3>
+            <p class="text-sm leading-relaxed">Sharp corners everywhere. No rounded edges, no compromise.</p>
+          </div>
+          <!-- feature 3 -->
+          <div class="card-art p-6">
+            <i data-lucide="type" class="w-8 h-8 text-success mb-4"></i>
+            <h3 class="font-display text-2xl mb-2">Mono + Display</h3>
+            <p class="text-sm leading-relaxed">Limelight for statements, JetBrains Mono for everything else.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== PROCESS ========== -->
+    <section id="process" class="bg-warning py-20 border-b-2 border-ink">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="font-display text-4xl sm:text-5xl mb-12 text-ink">Process · no fluff</h2>
+        <div class="grid md:grid-cols-4 gap-6">
+          <div class="border-2 border-ink p-6 bg-surface">
+            <span class="font-display text-5xl text-primary">01</span>
+            <h3 class="text-lg font-bold mt-3">Discover</h3>
+            <p class="text-sm mt-2">Audit, define tokens, set contrast targets.</p>
+          </div>
+          <div class="border-2 border-ink p-6 bg-surface">
+            <span class="font-display text-5xl text-secondary">02</span>
+            <h3 class="text-lg font-bold mt-3">Design</h3>
+            <p class="text-sm mt-2">Sharp components, geometric imagery, mono grid.</p>
+          </div>
+          <div class="border-2 border-ink p-6 bg-surface">
+            <span class="font-display text-5xl text-success">03</span>
+            <h3 class="text-lg font-bold mt-3">Build</h3>
+            <p class="text-sm mt-2">Semantic HTML, keyboard-first, 44px targets.</p>
+          </div>
+          <div class="border-2 border-ink p-6 bg-surface">
+            <span class="font-display text-5xl text-danger">04</span>
+            <h3 class="text-lg font-bold mt-3">Ship</h3>
+            <p class="text-sm mt-2">Test with screen readers, iterate, maintain.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== BENEFITS ========== -->
+    <section class="bg-primary py-20 border-b-2 border-ink">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
+        <div>
+          <h2 class="font-display text-4xl sm:text-5xl text-white">Why artistic?</h2>
+          <p class="mt-6 text-lg text-white/90 max-w-md">Every decision is intentional. We trade decoration for clarity, and the result is an interface that feels both bold and accessible.</p>
+        </div>
+        <ul class="space-y-4 text-white">
+          <li class="flex gap-3 items-start"><i data-lucide="check-circle" class="w-6 h-6 mt-0.5"></i><span><strong>Accessible by default</strong> — AA contrast, focus-visible, reduced motion.</span></li>
+          <li class="flex gap-3 items-start"><i data-lucide="check-circle" class="w-6 h-6 mt-0.5"></i><span><strong>Consistent rhythm</strong> — 4px spacing scale, mono type.</span></li>
+          <li class="flex gap-3 items-start"><i data-lucide="check-circle" class="w-6 h-6 mt-0.5"></i><span><strong>No surprises</strong> — sharp corners, explicit states.</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ========== TESTIMONIALS ========== -->
+    <section id="testimonials" class="bg-surface py-20 border-b-2 border-ink">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="font-display text-4xl sm:text-5xl mb-12">Voices</h2>
+        <div class="grid md:grid-cols-3 gap-6">
+          <div class="card-art p-6">
+            <div class="flex gap-1 text-warning mb-4"><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i></div>
+            <p class="text-sm">“Finally a system that respects sharp edges and still feels human. The contrast is unreal.”</p>
+            <p class="mt-4 font-bold text-primary">— Maya Chen, design lead</p>
+          </div>
+          <div class="card-art p-6">
+            <div class="flex gap-1 text-warning mb-4"><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i></div>
+            <p class="text-sm">“We migrated from a rounded UI. The new system made our product instantly more distinctive.”</p>
+            <p class="mt-4 font-bold text-secondary">— Jonas Weber, frontend architect</p>
+          </div>
+          <div class="card-art p-6">
+            <div class="flex gap-1 text-warning mb-4"><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i></div>
+            <p class="text-sm">“Accessibility is not an afterthought here. It’s the core. And it looks fantastic.”</p>
+            <p class="mt-4 font-bold text-success">— Priya Sharma, product manager</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== PRICING ========== -->
+    <section id="pricing" class="bg-secondary py-20 border-b-2 border-ink">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="font-display text-4xl sm:text-5xl mb-12 text-white">Pricing</h2>
+        <div class="grid md:grid-cols-3 gap-6">
+          <!-- basic -->
+          <div class="bg-surface border-2 border-ink p-6 flex flex-col">
+            <h3 class="font-display text-2xl">STARTER</h3>
+            <p class="text-4xl font-bold mt-4">$0</p>
+            <p class="text-sm mt-1">forever</p>
+            <ul class="mt-6 space-y-2 text-sm flex-1">
+              <li>• 3 components</li>
+              <li>• Community support</li>
+              <li>• MIT license</li>
+            </ul>
+            <a href="#" class="touch-target mt-6 inline-flex justify-center items-center border-2 border-ink px-4 py-2 font-bold hover:bg-primary hover:text-white transition-none">GET STARTED</a>
+          </div>
+          <!-- pro (highlighted) -->
+          <div class="bg-ink text-surface border-2 border-ink p-6 flex flex-col relative">
+            <p class="absolute -top-4 left-4 bg-warning text-ink px-3 py-1 border-2 border-ink text-xs font-bold">MOST POPULAR</p>
+            <h3 class="font-display text-2xl">PRO</h3>
+            <p class="text-4xl font-bold mt-4">$24</p>
+            <p class="text-sm mt-1">per month</p>
+            <ul class="mt-6 space-y-2 text-sm flex-1">
+              <li>• All components</li>
+              <li>• Priority support</li>
+              <li>• Design tokens</li>
+              <li>• Figma library</li>
+            </ul>
+            <a href="#" class="touch-target mt-6 inline-flex justify-center items-center bg-primary text-white border-2 border-white px-4 py-2 font-bold hover:bg-secondary transition-none">START PRO</a>
+          </div>
+          <!-- enterprise -->
+          <div class="bg-surface border-2 border-ink p-6 flex flex-col">
+            <h3 class="font-display text-2xl">STUDIO</h3>
+            <p class="text-4xl font-bold mt-4">$99</p>
+            <p class="text-sm mt-1">per month</p>
+            <ul class="mt-6 space-y-2 text-sm flex-1">
+              <li>• Everything in Pro</li>
+              <li>• Custom tokens</li>
+              <li>• Design review</li>
+            </ul>
+            <a href="#" class="touch-target mt-6 inline-flex justify-center items-center border-2 border-ink px-4 py-2 font-bold hover:bg-primary hover:text-white transition-none">CONTACT US</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== FAQ ========== -->
+    <section id="faq" class="bg-surface py-20 border-b-2 border-ink">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="font-display text-4xl sm:text-5xl mb-10">FAQ</h2>
+        <div class="space-y-4">
+          <details class="border-2 border-ink p-5" open>
+            <summary class="font-bold cursor-pointer touch-target flex items-center justify-between">Why no rounded corners? <i data-lucide="chevron-down" class="w-5 h-5"></i></summary>
+            <p class="mt-3 text-sm">Sharp corners are part of the artistic identity — they create a distinctive, high-contrast visual rhythm that aligns with our accessibility-first approach.</p>
+          </details>
+          <details class="border-2 border-ink p-5">
+            <summary class="font-bold cursor-pointer touch-target flex items-center justify-between">Can I use your tokens in my project? <i data-lucide="chevron-down" class="w-5 h-5"></i></summary>
+            <p class="mt-3 text-sm">Absolutely. The system is MIT licensed, and all tokens are documented in the style guide.</p>
+          </details>
+          <details class="border-2 border-ink p-5">
+            <summary class="font-bold cursor-pointer touch-target flex items-center justify-between">Is it really WCAG 2.2 AA? <i data-lucide="chevron-down" class="w-5 h-5"></i></summary>
+            <p class="mt-3 text-sm">Yes. Every component is tested with automated and manual checks. We maintain a 4.5:1 contrast ratio minimum for normal text.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="bg-ink text-surface">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col sm:flex-row justify-between items-center gap-6">
+      <div class="flex items-center gap-2">
+        <div class="shape-diamond bg-warning"></div>
+        <span class="font-display text-2xl">ARTISTIC</span>
+      </div>
+      <nav class="flex flex-wrap gap-6 text-sm" aria-label="Footer navigation">
+        <a href="#features" class="hover:text-warning transition-none">Features</a>
+        <a href="#process" class="hover:text-warning transition-none">Process</a>
+        <a href="#pricing" class="hover:text-warning transition-none">Pricing</a>
+        <a href="#faq" class="hover:text-warning transition-none">FAQ</a>
+      </nav>
+      <p class="text-xs text-surface/60">© 2025 Artistic · sharp by design</p>
+    </div>
+  </footer>
+
+  <!-- init lucide icons -->
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

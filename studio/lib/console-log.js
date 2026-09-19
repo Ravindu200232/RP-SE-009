@@ -1,9 +1,10 @@
+import { useStore } from './store'
+import { captureFrameConsole } from './console-capture'
 
 /** Capture preview browser evidence for bug reports. */
 
 const MAX_ENTRIES = 80
 const MAX_REPORT_CHARS = 6000
-const MAX_BODY = 300
 const MAX_TEXT = 400
 
 
@@ -16,97 +17,54 @@ const NOISE = new RegExp([
 ].join('|'), 'i')
 
 
-let entries = []
+function owner(project, role) {
+  const state = useStore.getState()
+  return { project: project || state.project, role: role || state.agentRole, epoch: state.accountEpoch }
+}
+function entriesFor(scope) {
+  const state = useStore.getState()
+  if (scope.epoch !== state.accountEpoch) return []
+  return (state.project === scope.project && state.agentRole === scope.role
+    ? state.browserConsole : state.projectSessions[scope.project]?.[scope.role]?.browserConsole) || []
+}
+let observer = null
+
+export function observeConsole(callback) { observer = callback }
+export function recordConsole(kind, text, project, role) { push(kind, text, owner(project, role)) }
 
 
-function push(kind, text) {
+function push(kind, text, scope = owner()) {
+  if (scope.epoch !== useStore.getState().accountEpoch) return
+  let entries = entriesFor(scope)
   const line = String(text || '').replace(/\s+/g, ' ').trim().slice(0, MAX_TEXT)
   if (!line || NOISE.test(line)) return
+  observer?.(kind, line)
 
   const last = entries[entries.length - 1]
   if (last && last.kind === kind && last.text === line) {
-    last.count += 1
-    return
-  }
-  entries.push({ kind, text: line, count: 1, at: Date.now() })
-  if (entries.length > MAX_ENTRIES) entries = entries.slice(-MAX_ENTRIES)
-}
-
-
-function say(value) {
-  if (typeof value === 'string') return value
-
-  // Duck-typed, NOT `instanceof Error`.
-  if (value && typeof value.stack === 'string') return value.stack
-  if (value && typeof value.message === 'string') return value.message
-
-  try { return JSON.stringify(value) } catch { return String(value) }
+    entries = [...entries.slice(0, -1), { ...last, count: last.count + 1 }]
+  } else entries = [...entries.slice(-(MAX_ENTRIES - 1)), { kind, text: line, count: 1, at: Date.now() }]
+  useStore.getState().patchAgentSession(scope.project, scope.role, { browserConsole: entries })
 }
 
 
 /** Start recording in this frame's document. */
-export function watchFrame(frame) {
-  let w
-  try { w = frame && frame.contentWindow } catch { return }
-  if (!w) return
-  try {
-    if (w.__agentforgeWatched) return
-    w.__agentforgeWatched = true
-  } catch { return }
-
-  try {
-    for (const level of ['error', 'warn']) {
-      const original = w.console[level].bind(w.console)
-      w.console[level] = (...args) => {
-        try { push(level, args.map(say).join(' ')) } catch { }
-        original(...args)
-      }
-    }
-
-    w.addEventListener('error', (e) => {
-      const where = e.filename
-        ? ` (${String(e.filename).split('/').pop()}:${e.lineno})` : ''
-      push('uncaught', (e.error && e.error.stack) || e.message + where)
-    })
-
-    w.addEventListener('unhandledrejection', (e) => {
-      const r = e.reason
-      push('uncaught', 'in a promise: ' + ((r && r.stack) || say(r)))
-    })
-
-    // The requests are the half `console` cannot give.
-    const fetch0 = w.fetch
-    if (typeof fetch0 === 'function') {
-      w.fetch = async function (...args) {
-        const res = await fetch0.apply(this, args)
-        try {
-          if (!res.ok) {
-            const url = (args[0] && args[0].url) || String(args[0] || '')
-            const method = ((args[1] && args[1].method)
-              || (args[0] && args[0].method) || 'GET').toUpperCase()
-            let body = ''
-            try { body = (await res.clone().text()).slice(0, MAX_BODY) } catch { }
-            push('request', `${method} ${url} → ${res.status}`
-                          + (body ? ` — ${body}` : ''))
-          }
-        } catch { }
-        return res
-      }
-    }
-  } catch {
-    // Ignore frames that navigate or become cross-origin.
-  }
+export function watchFrame(frame, project, role) {
+  const scope = owner(project, role)
+  captureFrameConsole(frame, (kind, text) => push(kind, text, scope))
 }
 
 
 /** Clear evidence before the next run. */
 export function forgetConsole() {
-  entries = []
+  const scope = owner()
+  useStore.getState().patchAgentSession(scope.project, scope.role, { browserConsole: [] })
 }
 
 
 /** The evidence as prose, or "" when the browser saw nothing wrong. */
 export function consoleReport() {
+  const entries = entriesFor(owner())
   if (!entries.length) return ''
 
   const line = (e) => `  ${e.text}${e.count > 1 ? `  (×${e.count})` : ''}`

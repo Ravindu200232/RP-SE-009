@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RetroTech — Vintage Design System</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest">
+    </script>
+    <script>
+        tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            primary: '#008080',
+                            secondary: '#C0C0C0',
+                            success: '#16A34A',
+                            warning: '#D97706',
+                            danger: '#DC2626',
+                            surface: '#C0C0C0',
+                            text: '#000000',
+                        },
+                        fontFamily: {
+                            display: ['Silkscreen', 'cursive'],
+                            body: ['JetBrains Mono', 'monospace'],
+                        },
+                    }
+                }
+            }
+    </script>
+    <style>
+        * {
+            border-radius: 0 !important;
+        }
+        .grain-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.06;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+        }
+        .pixel-border {
+            border: 2px solid #000;
+            box-shadow: 4px 4px 0 0 rgba(0, 0, 0, 0.85);
+        }
+        .pixel-border-sm {
+            border: 2px solid #000;
+            box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.85);
+        }
+        .pixel-border-white {
+            border: 2px solid #fff;
+            box-shadow: 4px 4px 0 0 rgba(255, 255, 255, 0.4);
+        }
+        .checkerboard {
+            background-image: linear-gradient(45deg, #000 25%, transparent 25%),
+                linear-gradient(-45deg, #000 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #000 75%),
+                linear-gradient(-45deg, transparent 75%, #000 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+        }
+        .checkerboard-white {
+            background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.15) 75%),
+                linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.15) 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+        }
+        .btn-press {
+            transition: transform 0.05s, box-shadow 0.05s;
+        }
+        .btn-press:active {
+            transform: translate(4px, 4px);
+            box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.85);
+        }
+        .btn-press-sm:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.85);
+        }
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+        details[open] .faq-icon {
+            transform: rotate(45deg);
+        }
+        .faq-icon {
+            transition: transform 0.2s;
+        }
+    </style>
+</head>
+<body class="font-body bg-surface text-text antialiased">
+
+    <div class="grain-overlay"></div>
+
+    <!-- ===== NAVIGATION ===== -->
+    <nav class="bg-surface border-b-2 border-black sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <a href="#" class="font-display text-xl font-bold tracking-tight flex items-center gap-2">
+                <span class="w-4 h-4 bg-primary inline-block pixel-border-sm"></span>
+                RetroTech
+            </a>
+            <div class="hidden md:flex items-center gap-8 text-sm font-bold">
+                <a href="#features" class="hover:text-primary transition-colors">Features</a>
+                <a href="#process" class="hover:text-primary transition-colors">Process</a>
+                <a href="#pricing" class="hover:text-primary transition-colors">Pricing</a>
+                <a href="#faq" class="hover:text-primary transition-colors">FAQ</a>
+            </div>
+            <a href="#" class="bg-primary text-white px-4 py-2 pixel-border-sm btn-press-sm font-bold text-sm">Get Started</a>
+        </div>
+    </nav>
+
+    <!-- ===== HERO ===== -->
+    <section class="bg-primary text-white relative overflow-hidden">
+        <div class="checkerboard-white absolute inset-0 opacity-40"></div>
+        <div class="max-w-6xl mx-auto px-4 py-20 md:py-28 relative">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <p class="font-display text-sm mb-4 inline-block bg-black text-white px-3 py-1 pixel-border-sm">v2.0 Released</p>
+                    <h1 class="font-display text-3xl md:text-5xl font-bold leading-tight mb-6">Build Retro.<br>Ship Modern.</h1>
+                    <p class="text-base md:text-lg mb-8 max-w-md leading-relaxed">The vintage design system for pixel-perfect digital experiences. Skeuomorphic, grainy, and unapologetically retro.</p>
+                    <div class="flex flex-wrap gap-4">
+                        <a href="#" class="bg-white text-black px-6 py-3 pixel-border btn-press font-bold text-sm">Get Started</a>
+                        <a href="#" class="border-2 border-white px-6 py-3 text-white font-bold text-sm hover:bg-white hover:text-black transition-colors">View Docs</a>
+                    </div>
+                </div>
+                <div class="flex justify-center">
+                    <svg viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg" class="w-full max-w-md pixel-border bg-secondary">
+                        <rect x="20" y="10" width="200" height="130" fill="#C0C0C0" stroke="#000" stroke-width="3"/>
+                        <rect x="35" y="25" width="170" height="95" fill="#008080" stroke="#000" stroke-width="2"/>
+                        <g fill="#fff">
+                            <rect x="105" y="40" width="10" height="10"/>
+                            <rect x="115" y="40" width="10" height="10"/>
+                            <rect x="95" y="50" width="10" height="10"/>
+                            <rect x="125" y="50" width="10" height="10"/>
+                            <rect x="85" y="60" width="10" height="10"/>
+                            <rect x="135" y="60" width="10" height="10"/>
+                            <rect x="95" y="70" width="10" height="10"/>
+                            <rect x="125" y="70" width="10" height="10"/>
+                            <rect x="105" y="80" width="10" height="10"/>
+                            <rect x="115" y="80" width="10" height="10"/>
+                        </g>
+                        <rect x="100" y="140" width="40" height="15" fill="#C0C0C0" stroke="#000" stroke-width="2"/>
+                        <rect x="80" y="155" width="80" height="10" fill="#C0C0C0" stroke="#000" stroke-width="2"/>
+                        <rect x="210" y="125" width="8" height="8" fill="#16A34A" stroke="#000" stroke-width="1"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== STATS ===== -->
+    <section class="bg-surface py-16 border-b-2 border-black">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div class="text-center pixel-border bg-white p-6">
+                    <p class="font-display text-3xl font-bold text-primary">10K+</p>
+                    <p class="text-sm mt-2 font-bold">Users</p>
+                </div>
+                <div class="text-center pixel-border bg-white p-6">
+                    <p class="font-display text-3xl font-bold text-primary">500+</p>
+                    <p class="text-sm mt-2 font-bold">Components</p>
+                </div>
+                <div class="text-center pixel-border bg-white p-6">
+                    <p class="font-display text-3xl font-bold text-primary">99.9%</p>
+                    <p class="text-sm mt-2 font-bold">Uptime</p>
+                </div>
+                <div class="text-center pixel-border bg-white p-6">
+                    <p class="font-display text-3xl font-bold text-primary">4.9/5</p>
+                    <p class="text-sm mt-2 font-bold">Rating</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FEATURES ===== -->
+    <section id="features" class="bg-white py-20 border-b-2 border-black">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-3xl font-bold mb-4">Features</h2>
+                <p class="text-sm max-w-lg mx-auto text-gray-600">Everything you need to build authentic retro interfaces.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="pixel-border bg-surface p-6">
+                    <div class="w-10 h-10 bg-primary flex items-center justify-center mb-4 pixel-border-sm">
+                        <i data-lucide="grid" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-bold mb-2">Pixel Grids</h3>
+                    <p class="text-sm leading-relaxed">Perfectly aligned grid systems with pixel-level precision for crisp retro layouts.</p>
+                </div>
+                <div class="pixel-border bg-surface p-6">
+                    <div class="w-10 h-10 bg-primary flex items-center justify-center mb-4 pixel-border-sm">
+                        <i data-lucide="palette" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-bold mb-2">Retro Tokens</h3>
+                    <p class="text-sm leading-relaxed">Curated color tokens inspired by 80s terminals and 90s web design.</p>
+                </div>
+                <div class="pixel-border bg-surface p-6">
+                    <div class="w-10 h-10 bg-primary flex items-center justify-center mb-4 pixel-border-sm">
+                        <i data-lucide="layers" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-bold mb-2">Skeuomorphism</h3>
+                    <p class="text-sm leading-relaxed">Physical affordances with bevels, shadows, and tactile feedback built in.</p>
+                </div>
+                <div class="pixel-border bg-surface p-6">
+                    <div class="w-10 h-10 bg-primary flex items-center justify-center mb-4 pixel-border-sm">
+                        <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-bold mb-2">Grainy Textures</h3>
+                    <p class="text-sm leading-relaxed">Film grain and noise overlays that add warmth and depth to every pixel.</p>
+                </div>
+                <div class="pixel-border bg-surface p-6">
+                    <div class="w-10 h-10 bg-primary flex items-center justify-center mb-4 pixel-border-sm">
+                        <i data-lucide="layout" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-bold mb-2">Responsive</h3>
+                    <p class="text-sm leading-relaxed">Fluid layouts that scale from 400px to 4K without breaking the retro vibe.</p>
+                </div>
+                <div class="pixel-border bg-surface p-6">
+                    <div class="w-10 h-10 bg-primary flex items-center justify-center mb-4 pixel-border-sm">
+                        <i data-lucide="accessibility" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-lg font-bold mb-2">Accessible</h3>
+                    <p class="text-sm leading-relaxed">WCAG 2.2 AA compliant with keyboard-first interactions and visible focus.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PROCESS ===== -->
+    <section id="process" class="bg-primary text-white py-20 border-b-2 border-black">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-3xl font-bold mb-4">How It Works</h2>
+                <p class="text-sm max-w-lg mx-auto opacity-80">Four simple steps from concept to launch.</p>
+            </div>
+            <div class="grid md:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-white text-primary flex items-center justify-center mx-auto mb-4 pixel-border font-display text-2xl font-bold">1</div>
+                    <h3 class="font-display text-base font-bold mb-2">Design</h3>
+                    <p class="text-sm opacity-80">Sketch wireframes with retro grids and tokens.</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-white text-primary flex items-center justify-center mx-auto mb-4 pixel-border font-display text-2xl font-bold">2</div>
+                    <h3 class="font-display text-base font-bold mb-2">Build</h3>
+                    <p class="text-sm opacity-80">Assemble components with pixel-perfect precision.</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-white text-primary flex items-center justify-center mx-auto mb-4 pixel-border font-display text-2xl font-bold">3</div>
+                    <h3 class="font-display text-base font-bold mb-2">Test</h3>
+                    <p class="text-sm opacity-80">Verify accessibility and responsive behavior.</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-white text-primary flex items-center justify-center mx-auto mb-4 pixel-border font-display text-2xl font-bold">4</div>
+                    <h3 class="font-display text-base font-bold mb-2">Ship</h3>
+                    <p class="text-sm opacity-80">Deploy with confidence and retro style.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== BENEFITS ===== -->
+    <section class="bg-surface py-20 border-b-2 border-black">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-3xl font-bold mb-4">Why RetroTech</h2>
+                <p class="text-sm max-w-lg mx-auto text-gray-700">The vintage advantage for modern teams.</p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="pixel-border bg-white p-6 text-center">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mx-auto mb-4 pixel-border-sm">
+                        <i data-lucide="zap" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-base font-bold mb-2">Faster Dev</h3>
+                    <p class="text-sm">Pre-built components cut build time by 60%.</p>
+                </div>
+                <div class="pixel-border bg-white p-6 text-center">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mx-auto mb-4 pixel-border-sm">
+                        <i data-lucide="shield" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-base font-bold mb-2">Consistent</h3>
+                    <p class="text-sm">Every pixel follows the same design language.</p>
+                </div>
+                <div class="pixel-border bg-white p-6 text-center">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mx-auto mb-4 pixel-border-sm">
+                        <i data-lucide="star" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-base font-bold mb-2">Memorable</h3>
+                    <p class="text-sm">Stand out with a distinctive retro identity.</p>
+                </div>
+                <div class="pixel-border bg-white p-6 text-center">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mx-auto mb-4 pixel-border-sm">
+                        <i data-lucide="heart" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-display text-base font-bold mb-2">Inclusive</h3>
+                    <p class="text-sm">Accessible by default, usable by everyone.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== TESTIMONIALS ===== -->
+    <section class="bg-white py-20 border-b-2 border-black">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-3xl font-bold mb-4">Loved by Developers</h2>
+                <p class="text-sm max-w-lg mx-auto text-gray-600">Join thousands of teams building with RetroTech.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="pixel-border bg-surface p-6">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                    </div>
+                    <p class="text-sm leading-relaxed mb-4">"RetroTech completely transformed our design workflow. The pixel-perfect components are a joy to use."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-primary pixel-border-sm flex items-center justify-center text-white font-display text-xs">JD</div>
+                        <div>
+                            <p class="font-display text-xs font-bold">Jane Doe</p>
+                            <p class="text-xs text-gray-600">Frontend Lead, PixelWorks</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="pixel-border bg-surface p-6">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                    </div>
+                    <p class="text-sm leading-relaxed mb-4">"The retro aesthetic is perfect for our brand. It's distinctive, memorable, and our users love it."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-primary pixel-border-sm flex items-center justify-center text-white font-display text-xs">MK</div>
+                        <div>
+                            <p class="font-display text-xs font-bold">Mike Kim</p>
+                            <p class="text-xs text-gray-600">Product Designer, RetroApp</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="pixel-border bg-surface p-6">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                    </div>
+                    <p class="text-sm leading-relaxed mb-4">"Accessibility is baked in. We passed WCAG 2.2 AA with zero extra work. Incredible."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-primary pixel-border-sm flex items-center justify-center text-white font-display text-xs">SL</div>
+                        <div>
+                            <p class="font-display text-xs font-bold">Sarah Lee</p>
+                            <p class="text-xs text-gray-600">Accessibility Engineer, A11yFirst</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PRICING ===== -->
+    <section id="pricing" class="bg-surface py-20 border-b-2 border-black">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-3xl font-bold mb-4">Pricing</h2>
+                <p class="text-sm max-w-lg mx-auto text-gray-700">Simple plans that scale with you.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="pixel-border bg-white p-8 text-center">
+                    <h3 class="font-display text-lg font-bold mb-2">Starter</h3>
+                    <p class="font-display text-3xl font-bold mb-4">$0</p>
+                    <p class="text-sm mb-6">For personal projects</p>
+                    <ul class="text-sm space-y-2 mb-8 text-left">
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Core components</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Community support</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> MIT license</li>
+                    </ul>
+                    <a href="#" class="block bg-surface text-black px-6 py-3 pixel-border-sm btn-press-sm font-bold text-sm">Start Free</a>
+                </div>
+                <div class="pixel-border bg-primary text-white p-8 text-center relative">
+                    <span class="absolute top-4 right-4 bg-warning text-black px-2 py-1 pixel-border-sm font-display text-xs font-bold">POPULAR</span>
+                    <h3 class="font-display text-lg font-bold mb-2">Pro</h3>
+                    <p class="font-display text-3xl font-bold mb-4">$19<span class="text-sm font-normal">/mo</span></p>
+                    <p class="text-sm mb-6">For growing teams</p>
+                    <ul class="text-sm space-y-2 mb-8 text-left">
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-white"></i> All Starter features</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-white"></i> Advanced components</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-white"></i> Priority support</li>
+                    </ul>
+                    <a href="#" class="block bg-white text-black px-6 py-3 pixel-border-sm btn-press-sm font-bold text-sm">Get Pro</a>
+                </div>
+                <div class="pixel-border bg-white p-8 text-center">
+                    <h3 class="font-display text-lg font-bold mb-2">Enterprise</h3>
+                    <p class="font-display text-3xl font-bold mb-4">$49<span class="text-sm font-normal">/mo</span></p>
+                    <p class="text-sm mb-6">For large organizations</p>
+                    <ul class="text-sm space-y-2 mb-8 text-left">
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> All Pro features</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Custom tokens</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i> Dedicated support</li>
+                    </ul>
+                    <a href="#" class="block bg-surface text-black px-6 py-3 pixel-border-sm btn-press-sm font-bold text-sm">Contact Us</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section id="faq" class="bg-white py-20 border-b-2 border-black">
+        <div class="max-w-3xl mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-3xl font-bold mb-4">FAQ</h2>
+                <p class="text-sm max-w-lg mx-auto text-gray-600">Got questions? We've got answers.</p>
+            </div>
+            <div class="space-y-4">
+                <details class="pixel-border bg-surface">
+                    <summary class="flex items-center justify-between cursor-pointer p-5 font-display text-sm font-bold">
+                        Is RetroTech compatible with modern frameworks?
+                        <span class="faq-icon text-xl leading-none">+</span>
+                    </summary>
+                    <div class="px-5 pb-5 text-sm leading-relaxed">
+                        Yes! RetroTech works with React, Vue, Svelte, and plain HTML. The components are framework-agnostic and can be dropped into any project.
+                    </div>
+                </details>
+                <details class="pixel-border bg-surface">
+                    <summary class="flex items-center justify-between cursor-pointer p-5 font-display text-sm font-bold">
+                        Can I customize the color palette?
+                        <span class="faq-icon text-xl leading-none">+</span>
+                    </summary>
+                    <div class="px-5 pb-5 text-sm leading-relaxed">
+                        Absolutely. All colors are exposed as CSS variables, so you can override them in your theme file. The design system is built to be extended.
+                    </div>
+                </details>
+                <details class="pixel-border bg-surface">
+                    <summary class="flex items-center justify-between cursor-pointer p-5 font-display text-sm font-bold">
+                        Does it support dark mode?
+                        <span class="faq-icon text-xl leading-none">+</span>
+                    </summary>
+                    <div class="px-5 pb-5 text-sm leading-relaxed">
+                        The vintage aesthetic is inherently dark-mode friendly. All components include dark mode variants out of the box.
+                    </div>
+                </details>
+                <details class="pixel-border bg-surface">
+                    <summary class="flex items-center justify-between cursor-pointer p-5 font-display text-sm font-bold">
+                        How do I install RetroTech?
+                        <span class="faq-icon text-xl leading-none">+</span>
+                    </summary>
+                    <div class="px-5 pb-5 text-sm leading-relaxed">
+                        Run <code class="bg-black text-white px-2 py-0.5 text-xs">npm install retro-tech</code> or use the CDN link. Full installation docs are available in the getting started guide.
+                    </div>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="bg-black text-white py-12">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="grid md:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <span class="w-4 h-4 bg-primary inline-block pixel-border-sm"></span>
+                        <span class="font-display text-lg font-bold">RetroTech</span>
+                    </div>
+                    <p class="text-xs text-gray-400 leading-relaxed">The vintage design system for modern web experiences.</p>
+                </div>
+                <div>
+                    <h4 class="font-display text-xs font-bold mb-4 text-primary">Product</h4>
+                    <ul class="text-xs space-y-2 text-gray-400">
+                        <li><a href="#features" class="hover:text-white">Features</a></li>
+                        <li><a href="#pricing" class="hover:text-white">Pricing</a></li>
+                        <li><a href="#" class="hover:text-white">Changelog</a></li>
+                        <li><a href="#" class="hover:text-white">Roadmap</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-display text-xs font-bold mb-4 text-primary">Resources</h4>
+                    <ul class="text-xs space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white">Documentation</a></li>
+                        <li><a href="#" class="hover:text-white">Components</a></li>
+                        <li><a href="#" class="hover:text-white">Templates</a></li>
+                        <li><a href="#" class="hover:text-white">Blog</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-display text-xs font-bold mb-4 text-primary">Company</h4>
+                    <ul class="text-xs space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white">About</a></li>
+                        <li><a href="#" class="hover:text-white">Careers</a></li>
+                        <li><a href="#" class="hover:text-white">Contact</a></li>
+                        <li><a href="#" class="hover:text-white">Press</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t-2 border-gray-800 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+                <p class="text-xs text-gray-500">© 2024 RetroTech. All rights reserved.</p>
+                <div class="flex gap-4">
+                    <a href="#" class="text-gray-400 hover:text-white" aria-label="GitHub">
+                        <i data-lucide="github" class="w-4 h-4"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white" aria-label="Twitter">
+                        <i data-lucide="twitter" class="w-4 h-4"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white" aria-label="Discord">
+                        <i data-lucide="message-circle" class="w-4 h-4"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

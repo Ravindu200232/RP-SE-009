@@ -1,5 +1,7 @@
 watchdog>=3.0.0
 requests>=2.31.0
+# Each person's deployment tokens, encrypted at rest (server_modules/services/secret_box.py).
+cryptography>=42
 
 # The deployment agent (deployment-agent/deploy_agent). Its own copy of this
 # list is at deployment-agent/requirements.txt; these are the ones AgentForge's

@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expressive — design system in motion</title>
+    <!-- Tailwind via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: IBM Plex Mono (all weights) -->
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+    <!-- Lucide icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* design system tokens — expressive */
+        :root {
+            --primary: #db2777;
+            --secondary: #2563eb;
+            --success: #16A34A;
+            --warning: #D97706;
+            --danger: #DC2626;
+            --surface: #FFFFFF;
+            --text: #111827;
+            --spacing-1: 4px;
+            --spacing-2: 8px;
+            --spacing-3: 12px;
+            --spacing-4: 16px;
+            --spacing-5: 24px;
+            --spacing-6: 32px;
+            --spacing-7: 40px;
+            --font-mono: 'IBM Plex Mono', monospace;
+        }
+
+        /* base */
+        body {
+            font-family: var(--font-mono);
+            background-color: var(--surface);
+            color: var(--text);
+            font-weight: 400;
+            line-height: 1.5;
+            font-size: 16px;
+        }
+
+        /* sharp corners everywhere — no rounded corners */
+        * {
+            border-radius: 0 !important;
+        }
+
+        /* focus visible — high contrast, keyboard-first */
+        :focus-visible {
+            outline: 3px solid var(--secondary);
+            outline-offset: 2px;
+        }
+
+        /* selection */
+        ::selection {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* utilities for expressive color blocks */
+        .bg-primary { background-color: var(--primary); }
+        .bg-secondary { background-color: var(--secondary); }
+        .bg-success { background-color: var(--success); }
+        .bg-warning { background-color: var(--warning); }
+        .bg-danger { background-color: var(--danger); }
+        .bg-surface { background-color: var(--surface); }
+        .bg-neutral { background-color: #f3f4f6; }
+        .text-primary { color: var(--primary); }
+        .text-secondary { color: var(--secondary); }
+        .text-success { color: var(--success); }
+        .text-warning { color: var(--warning); }
+        .text-danger { color: var(--danger); }
+        .border-primary { border-color: var(--primary); }
+        .border-secondary { border-color: var(--secondary); }
+
+        /* expressive shapes — no photos, pure css */
+        .shape-dot {
+            width: 16px;
+            height: 16px;
+            background: var(--primary);
+            display: inline-block;
+        }
+        .shape-bar {
+            width: 48px;
+            height: 8px;
+            background: var(--secondary);
+            display: inline-block;
+        }
+        .shape-triangle {
+            width: 0;
+            height: 0;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-bottom: 20px solid var(--warning);
+            display: inline-block;
+        }
+        .shape-ring {
+            width: 32px;
+            height: 32px;
+            border: 4px solid var(--primary);
+            display: inline-block;
+        }
+
+        /* expressive hover states */
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+            padding: 12px 24px;
+            transition: transform 0.1s ease, background 0.1s ease;
+            display: inline-block;
+            text-align: center;
+        }
+        .btn-primary:hover {
+            background: #be185d; /* darker pink */
+            transform: translateY(-2px);
+        }
+        .btn-primary:active {
+            transform: translateY(0px);
+            background: #9d174d;
+        }
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+            font-weight: 600;
+            padding: 12px 24px;
+            transition: background 0.1s ease;
+            display: inline-block;
+            text-align: center;
+        }
+        .btn-secondary:hover {
+            background: #1d4ed8;
+        }
+        .btn-outline {
+            border: 2px solid var(--text);
+            color: var(--text);
+            font-weight: 600;
+            padding: 10px 22px;
+            transition: background 0.1s ease;
+            display: inline-block;
+            text-align: center;
+        }
+        .btn-outline:hover {
+            background: var(--text);
+            color: white;
+        }
+
+        /* card style — expressive, sharp, with strong border */
+        .expressive-card {
+            border: 2px solid var(--text);
+            background: var(--surface);
+            padding: 24px;
+            transition: box-shadow 0.1s ease, transform 0.1s ease;
+        }
+        .expressive-card:hover {
+            box-shadow: 8px 8px 0 var(--primary);
+            transform: translate(-4px, -4px);
+        }
+
+        /* nav link */
+        .nav-link {
+            font-weight: 500;
+            padding: 8px 12px;
+            transition: background 0.1s ease;
+        }
+        .nav-link:hover {
+            background: #f3f4f6;
+        }
+
+        /* table-like pricing */
+        .pricing-feature {
+            border-bottom: 1px dashed #d1d5db;
+            padding: 8px 0;
+        }
+
+        /* FAQ item */
+        .faq-item {
+            border-bottom: 2px solid var(--text);
+            padding: 16px 0;
+        }
+        .faq-question {
+            font-weight: 600;
+            font-size: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        /* testimonial block */
+        .testimonial-quote {
+            font-size: 18px;
+            font-weight: 300;
+            line-height: 1.6;
+        }
+
+        /* responsive adjustments */
+        @media (max-width: 640px) {
+            .hero-title {
+                font-size: 32px !important;
+            }
+            .section-padding {
+                padding: 40px 16px !important;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- ========== NAVIGATION ========== -->
+    <header class="border-b-2 border-black bg-surface sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="shape-dot"></div>
+                <span class="text-xl font-bold tracking-tight">expressive</span>
+            </div>
+            <nav class="hidden md:flex items-center gap-6 text-sm font-medium">
+                <a href="#stats" class="nav-link">stats</a>
+                <a href="#features" class="nav-link">features</a>
+                <a href="#process" class="nav-link">process</a>
+                <a href="#benefits" class="nav-link">benefits</a>
+                <a href="#testimonials" class="nav-link">stories</a>
+                <a href="#pricing" class="nav-link">pricing</a>
+                <a href="#faq" class="nav-link">faq</a>
+            </nav>
+            <div class="flex items-center gap-3">
+                <a href="#" class="btn-outline text-sm hidden sm:inline-block">log in</a>
+                <a href="#" class="btn-primary text-sm">get started</a>
+            </div>
+        </div>
+        <!-- mobile nav -->
+        <div class="md:hidden border-t border-gray-200 px-4 py-2 flex gap-4 overflow-x-auto text-sm">
+            <a href="#stats" class="nav-link">stats</a>
+            <a href="#features" class="nav-link">features</a>
+            <a href="#process" class="nav-link">process</a>
+            <a href="#benefits" class="nav-link">benefits</a>
+            <a href="#pricing" class="nav-link">pricing</a>
+            <a href="#faq" class="nav-link">faq</a>
+        </div>
+    </header>
+
+    <!-- ========== HERO ========== -->
+    <section class="bg-neutral border-b-2 border-black">
+        <div class="max-w-7xl mx-auto px-4 py-16 md:py-24 grid md:grid-cols-2 gap-12 items-center">
+            <div>
+                <div class="flex items-center gap-2 mb-6">
+                    <span class="shape-triangle"></span>
+                    <span class="shape-bar"></span>
+                    <span class="shape-ring"></span>
+                </div>
+                <h1 class="text-4xl md:text-5xl font-bold leading-tight tracking-tight">
+                    Design with<br>
+                    <span class="text-primary">bold</span> & <span class="text-secondary">expressive</span> systems
+                </h1>
+                <p class="mt-6 text-lg font-light max-w-md">
+                    A vibrant, personality-driven design language. Sharp corners, monospace rhythm, and color that pops — without breaking accessibility.
+                </p>
+                <div class="mt-8 flex flex-wrap gap-4">
+                    <a href="#pricing" class="btn-primary">see pricing</a>
+                    <a href="#features" class="btn-outline">explore features</a>
+                </div>
+                <div class="mt-10 flex items-center gap-6 text-sm">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="check-circle" class="w-5 h-5 text-success"></i>
+                        <span>WCAG 2.2 AA</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="zap" class="w-5 h-5 text-warning"></i>
+                        <span>Fast by default</span>
+                    </div>
+                </div>
+            </div>
+            <!-- pure CSS illustration -->
+            <div class="relative h-64 md:h-80 bg-surface border-2 border-black p-6 flex items-center justify-center">
+                <div class="absolute top-4 left-4 shape-dot"></div>
+                <div class="absolute bottom-4 right-4 shape-ring"></div>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-3">
+                    <div class="w-16 h-16 bg-primary"></div>
+                    <div class="w-16 h-16 bg-secondary"></div>
+                    <div class="w-16 h-16 bg-warning"></div>
+                </div>
+                <div class="absolute bottom-4 left-4 shape-bar"></div>
+                <div class="absolute top-4 right-4 shape-triangle"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== STATS ========== -->
+    <section id="stats" class="border-b-2 border-black bg-surface">
+        <div class="max-w-7xl mx-auto px-4 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div class="text-center">
+                <p class="text-4xl font-bold text-primary">240+</p>
+                <p class="mt-1 text-sm font-medium">components</p>
+            </div>
+            <div class="text-center">
+                <p class="text-4xl font-bold text-secondary">99.9%</p>
+                <p class="mt-1 text-sm font-medium">uptime</p>
+            </div>
+            <div class="text-center">
+                <p class="text-4xl font-bold text-success">12k</p>
+                <p class="mt-1 text-sm font-medium">designers</p>
+            </div>
+            <div class="text-center">
+                <p class="text-4xl font-bold text-warning">4.9</p>
+                <p class="mt-1 text-sm font-medium">rating</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== FEATURES ========== -->
+    <section id="features" class="bg-neutral border-b-2 border-black">
+        <div class="max-w-7xl mx-auto px-4 py-16">
+            <h2 class="text-3xl font-bold mb-2">Features</h2>
+            <p class="text-lg font-light mb-10">Everything you need to build expressive interfaces.</p>
+            <div class="grid md:grid-cols-3 gap-6">
+                <!-- feature 1 -->
+                <div class="expressive-card">
+                    <i data-lucide="palette" class="w-8 h-8 text-primary mb-4"></i>
+                    <h3 class="text-xl font-bold">Vibrant tokens</h3>
+                    <p class="mt-2 font-light">Primary, secondary, success, warning, danger — all AA compliant, all expressive.</p>
+                </div>
+                <!-- feature 2 -->
+                <div class="expressive-card">
+                    <i data-lucide="type" class="w-8 h-8 text-secondary mb-4"></i>
+                    <h3 class="text-xl font-bold">Mono rhythm</h3>
+                    <p class="mt-2 font-light">IBM Plex Mono at every weight. Consistent, technical, and full of character.</p>
+                </div>
+                <!-- feature 3 -->
+                <div class="expressive-card">
+                    <i data-lucide="move" class="w-8 h-8 text-success mb-4"></i>
+                    <h3 class="text-xl font-bold">Sharp geometry</h3>
+                    <p class="mt-2 font-light">No rounded corners. Ever. Crisp edges that feel intentional and bold.</p>
+                </div>
+                <!-- feature 4 -->
+                <div class="expressive-card">
+                    <i data-lucide="keyboard" class="w-8 h-8 text-warning mb-4"></i>
+                    <h3 class="text-xl font-bold">Keyboard-first</h3>
+                    <p class="mt-2 font-light">Focus states are visible, consistent, and never an afterthought.</p>
+                </div>
+                <!-- feature 5 -->
+                <div class="expressive-card">
+                    <i data-lucide="blocks" class="w-8 h-8 text-danger mb-4"></i>
+                    <h3 class="text-xl font-bold">Modular</h3>
+                    <p class="mt-2 font-light">Spacing scale 4/8/12/16/24/32 — every gap, every padding, in rhythm.</p>
+                </div>
+                <!-- feature 6 -->
+                <div class="expressive-card">
+                    <i data-lucide="contrast" class="w-8 h-8 text-primary mb-4"></i>
+                    <h3 class="text-xl font-bold">AA contrast</h3>
+                    <p class="mt-2 font-light">Text and background pairs tested to WCAG 2.2 AA. No exceptions.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== PROCESS ========== -->
+    <section id="process" class="bg-surface border-b-2 border-black">
+        <div class="max-w-7xl mx-auto px-4 py-16">
+            <h2 class="text-3xl font-bold mb-2">Process</h2>
+            <p class="text-lg font-light mb-10">From token to component in four steps.</p>
+            <div class="grid md:grid-cols-4 gap-6">
+                <div class="border-2 border-black p-6 bg-white">
+                    <span class="text-5xl font-bold text-primary">01</span>
+                    <h3 class="mt-4 font-bold text-lg">Define</h3>
+                    <p class="mt-2 font-light">Set tokens, spacing, and type scale. No ambiguity.</p>
+                </div>
+                <div class="border-2 border-black p-6 bg-white">
+                    <span class="text-5xl font-bold text-secondary">02</span>
+                    <h3 class="mt-4 font-bold text-lg">Design</h3>
+                    <p class="mt-2 font-light">Build components with anatomy, states, and variants.</p>
+                </div>
+                <div class="border-2 border-black p-6 bg-white">
+                    <span class="text-5xl font-bold text-success">03</span>
+                    <h3 class="mt-4 font-bold text-lg">Test</h3>
+                    <p class="mt-2 font-light">Keyboard, screen reader, contrast — automated checks.</p>
+                </div>
+                <div class="border-2 border-black p-6 bg-white">
+                    <span class="text-5xl font-bold text-warning">04</span>
+                    <h3 class="mt-4 font-bold text-lg">Ship</h3>
+                    <p class="mt-2 font-light">Consistent, documented, and ready for production.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== BENEFITS ========== -->
+    <section id="benefits" class="bg-primary border-b-2 border-black text-white">
+        <div class="max-w-7xl mx-auto px-4 py-16">
+            <h2 class="text-3xl font-bold mb-2">Benefits</h2>
+            <p class="text-lg font-light mb-10 opacity-90">Why teams switch to expressive.</p>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="flex gap-4">
+                    <i data-lucide="shield-check" class="w-8 h-8 shrink-0"></i>
+                    <div>
+                        <h3 class="font-bold text-xl">Accessible by default</h3>
+                        <p class="mt-2 font-light">Every component ships with AA contrast and keyboard support.</p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <i data-lucide="rocket" class="w-8 h-8 shrink-0"></i>
+                    <div>
+                        <h3 class="font-bold text-xl">Faster delivery</h3>
+                        <p class="mt-2 font-light">Predefined tokens and components reduce decision fatigue.</p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <i data-lucide="heart" class="w-8 h-8 shrink-0"></i>
+                    <div>
+                        <h3 class="font-bold text-xl">Loved by users</h3>
+                        <p class="mt-2 font-light">Bold, clear interfaces that feel alive and memorable.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== TESTIMONIALS ========== -->
+    <section id="testimonials" class="bg-neutral border-b-2 border-black">
+        <div class="max-w-7xl mx-auto px-4 py-16">
+            <h2 class="text-3xl font-bold mb-2">Stories</h2>
+            <p class="text-lg font-light mb-10">Loved by design teams.</p>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="expressive-card">
+                    <div class="flex gap-1 text-warning mb-4">
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                    </div>
+                    <p class="testimonial-quote">“Expressive gave our product a personality we didn’t know it was missing. The sharp corners and mono font are a hit.”</p>
+                    <div class="mt-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-secondary"></div>
+                        <div>
+                            <p class="font-bold">Maya Chen</p>
+                            <p class="text-sm">Design Lead, Northwind</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="expressive-card">
+                    <div class="flex gap-1 text-warning mb-4">
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                    </div>
+                    <p class="testimonial-quote">“Finally a system that’s bold but still accessible. Our audit passed with zero issues.”</p>
+                    <div class="mt-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-primary"></div>
+                        <div>
+                            <p class="font-bold">Jon Bell</p>
+                            <p class="text-sm">Frontend Engineer, Acme</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="expressive-card">
+                    <div class="flex gap-1 text-warning mb-4">
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                    </div>
+                    <p class="testimonial-quote">“The spacing scale is so consistent that our UI finally feels cohesive. Highly recommend.”</p>
+                    <div class="mt-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-success"></div>
+                        <div>
+                            <p class="font-bold">Priya Patel</p>
+                            <p class="text-sm">Product Designer, Globex</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== PRICING ========== -->
+    <section id="pricing" class="bg-surface border-b-2 border-black">
+        <div class="max-w-7xl mx-auto px-4 py-16">
+            <h2 class="text-3xl font-bold mb-2">Pricing</h2>
+            <p class="text-lg font-light mb-10">Simple, transparent plans.</p>
+            <div class="grid md:grid-cols-3 gap-6">
+                <!-- starter -->
+                <div class="border-2 border-black p-6 bg-white flex flex-col">
+                    <h3 class="text-xl font-bold">Starter</h3>
+                    <p class="mt-2 text-4xl font-bold">$0</p>
+                    <p class="text-sm font-light">for individuals</p>
+                    <div class="mt-6 space-y-2 flex-1">
+                        <div class="pricing-feature">✓ 3 projects</div>
+                        <div class="pricing-feature">✓ Core components</div>
+                        <div class="pricing-feature">✓ Community support</div>
+                        <div class="pricing-feature">✗ Advanced tokens</div>
+                    </div>
+                    <a href="#" class="btn-outline mt-8 w-full">start free</a>
+                </div>
+                <!-- pro -->
+                <div class="border-2 border-black p-6 bg-primary text-white flex flex-col">
+                    <h3 class="text-xl font-bold">Pro</h3>
+                    <p class="mt-2 text-4xl font-bold">$24</p>
+                    <p class="text-sm font-light opacity-80">per designer / month</p>
+                    <div class="mt-6 space-y-2 flex-1">
+                        <div class="pricing-feature border-white/30">✓ Unlimited projects</div>
+                        <div class="pricing-feature border-white/30">✓ All components</div>
+                        <div class="pricing-feature border-white/30">✓ Priority support</div>
+                        <div class="pricing-feature border-white/30">✓ Custom tokens</div>
+                    </div>
+                    <a href="#" class="btn-primary mt-8 w-full bg-white text-primary hover:bg-gray-100">choose pro</a>
+                </div>
+                <!-- enterprise -->
+                <div class="border-2 border-black p-6 bg-white flex flex-col">
+                    <h3 class="text-xl font-bold">Enterprise</h3>
+                    <p class="mt-2 text-4xl font-bold">$99</p>
+                    <p class="text-sm font-light">per team / month</p>
+                    <div class="mt-6 space-y-2 flex-1">
+                        <div class="pricing-feature">✓ SSO/SAML</div>
+                        <div class="pricing-feature">✓ Audit logs</div>
+                        <div class="pricing-feature">✓ Dedicated manager</div>
+                        <div class="pricing-feature">✓ Custom SLAs</div>
+                    </div>
+                    <a href="#" class="btn-primary mt-8 w-full">contact sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== FAQ ========== -->
+    <section id="faq" class="bg-neutral border-b-2 border-black">
+        <div class="max-w-4xl mx-auto px-4 py-16">
+            <h2 class="text-3xl font-bold mb-2">FAQ</h2>
+            <p class="text-lg font-light mb-8">Common questions.</p>
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>Can I use expressive with my existing design system?</span>
+                    <i data-lucide="chevron-down" class="w-5 h-5"></i>
+                </div>
+                <p class="mt-3 font-light">Yes, expressive is modular. You can adopt tokens and components incrementally.</p>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>Is it really WCAG 2.2 AA compliant?</span>
+                    <i data-lucide="chevron-down" class="w-5 h-5"></i>
+                </div>
+                <p class="mt-3 font-light">Every component is tested against AA contrast and keyboard accessibility. We provide test results.</p>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>Do you offer custom themes?</span>
+                    <i data-lucide="chevron-down" class="w-5 h-5"></i>
+                </div>
+                <p class="mt-3 font-light">Yes, enterprise plans include custom token sets and brand alignment.</p>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>What about support for dark mode?</span>
+                    <i data-lucide="chevron-down" class="w-5 h-5"></i>
+                </div>
+                <p class="mt-3 font-light">Dark mode is on the roadmap. Currently we support high-contrast light themes.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== FOOTER ========== -->
+    <footer class="bg-surface border-t-2 border-black">
+        <div class="max-w-7xl mx-auto px-4 py-12 grid md:grid-cols-4 gap-8">
+            <div>
+                <div class="flex items-center gap-2">
+                    <div class="shape-dot"></div>
+                    <span class="text-xl font-bold">expressive</span>
+                </div>
+                <p class="mt-4 font-light text-sm">Design system for bold teams.</p>
+                <div class="mt-4 flex gap-3">
+                    <i data-lucide="twitter" class="w-5 h-5"></i>
+                    <i data-lucide="github" class="w-5 h-5"></i>
+                    <i data-lucide="linkedin" class="w-5 h-5"></i>
+                </div>
+            </div>
+            <div>
+                <h4 class="font-bold mb-4">Product</h4>
+                <ul class="space-y-2 font-light text-sm">
+                    <li><a href="#" class="hover:underline">Features</a></li>
+                    <li><a href="#" class="hover:underline">Pricing</a></li>
+                    <li><a href="#" class="hover:underline">Changelog</a></li>
+                    <li><a href="#" class="hover:underline">Roadmap</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold mb-4">Resources</h4>
+                <ul class="space-y-2 font-light text-sm">
+                    <li><a href="#" class="hover:underline">Documentation</a></li>
+                    <li><a href="#" class="hover:underline">Accessibility</a></li>
+                    <li><a href="#" class="hover:underline">Community</a></li>
+                    <li><a href="#" class="hover:underline">Support</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold mb-4">Company</h4>
+                <ul class="space-y-2 font-light text-sm">
+                    <li><a href="#" class="hover:underline">About</a></li>
+                    <li><a href="#" class="hover:underline">Blog</a></li>
+                    <li><a href="#" class="hover:underline">Careers</a></li>
+                    <li><a href="#" class="hover:underline">Contact</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="border-t border-gray-200 py-6 text-center text-sm font-light">
+            © 2025 Expressive Systems. All rights reserved.
+        </div>
+    </footer>
+
+    <!-- lucide icons init -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

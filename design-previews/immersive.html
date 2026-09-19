@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verdant — Interactive Design Exhibit</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Oswald & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@200;300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Design System Tokens */
+        :root {
+            --color-primary: #00592B;
+            --color-secondary: #0023D1;
+            --color-tertiary: #0023D1; /* Cobalt Blue */
+            --color-quaternary: #FF69B4; /* Hot Pink */
+            --color-surface: #FFFFFF;
+            --color-text: #111827;
+            --color-success: #16A34A;
+            --color-warning: #D97706;
+            --color-danger: #DC2626;
+            --font-display: 'Oswald', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --shadow-hard: 8px 8px 0 0 #111827;
+            --shadow-hard-lg: 12px 12px 0 0 #111827;
+            --shadow-hard-sm: 4px 4px 0 0 #111827;
+        }
+
+        body {
+            font-family: var(--font-display);
+            background-color: var(--color-primary);
+            color: var(--color-text);
+            font-weight: 400;
+        }
+
+        /* Utility Classes */
+        .font-mono { font-family: var(--font-mono); }
+        .text-shadow-hard { text-shadow: 4px 4px 0 rgba(0,0,0,0.3); }
+        .shadow-hard { box-shadow: var(--shadow-hard); }
+        .shadow-hard-lg { box-shadow: var(--shadow-hard-lg); }
+        .shadow-hard-sm { box-shadow: var(--shadow-hard-sm); }
+        .border-black { border-color: #111827; }
+
+        /* Skewed Button Style */
+        .btn-skew {
+            transform: skewX(-12deg);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: var(--shadow-hard);
+            border: 3px solid #111827;
+            background: var(--color-surface);
+            color: #111827;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+        }
+        .btn-skew:hover {
+            transform: skewX(-12deg) scale(1.05);
+            box-shadow: var(--shadow-hard-lg);
+        }
+        .btn-skew:active {
+            transform: skewX(-12deg) scale(0.95);
+            box-shadow: var(--shadow-hard-sm);
+        }
+        .btn-skew:focus-visible {
+            outline: 3px solid var(--color-quaternary);
+            outline-offset: 4px;
+        }
+        .btn-skew span {
+            display: inline-block;
+            transform: skewX(12deg);
+        }
+
+        /* Card Style */
+        .card {
+            background: var(--color-surface);
+            border: 3px solid #111827;
+            box-shadow: var(--shadow-hard);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card:hover {
+            transform: translate(-4px, -4px);
+            box-shadow: var(--shadow-hard-lg);
+        }
+
+        /* Decorative Block */
+        .deco-block {
+            position: absolute;
+            border: 3px solid #111827;
+            pointer-events: none;
+        }
+
+        /* Focus Visible for all interactive elements */
+        a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-visible {
+            outline: 3px solid var(--color-quaternary);
+            outline-offset: 4px;
+        }
+
+        /* Selection */
+        ::selection {
+            background: var(--color-quaternary);
+            color: #111827;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 12px; }
+        ::-webkit-scrollbar-track { background: var(--color-primary); }
+        ::-webkit-scrollbar-thumb { background: #111827; border: 3px solid var(--color-primary); }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- ==================== NAVIGATION ==================== -->
+    <nav class="sticky top-0 z-50 bg-primary border-b-4 border-black">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+            <!-- Logo -->
+            <a href="#" class="flex items-center gap-2 group" aria-label="Verdant Home">
+                <div class="w-10 h-10 bg-white border-3 border-black shadow-hard-sm flex items-center justify-center transform group-hover:rotate-12 transition-transform">
+                    <i data-lucide="leaf" class="w-6 h-6 text-primary"></i>
+                </div>
+                <span class="text-2xl font-bold text-white uppercase tracking-wider">Verdant</span>
+            </a>
+
+            <!-- Desktop Menu -->
+            <div class="hidden lg:flex items-center gap-8">
+                <a href="#features" class="text-white font-medium uppercase tracking-wider hover:text-quaternary transition-colors">Features</a>
+                <a href="#process" class="text-white font-medium uppercase tracking-wider hover:text-quaternary transition-colors">Process</a>
+                <a href="#benefits" class="text-white font-medium uppercase tracking-wider hover:text-quaternary transition-colors">Benefits</a>
+                <a href="#testimonials" class="text-white font-medium uppercase tracking-wider hover:text-quaternary transition-colors">Stories</a>
+                <a href="#pricing" class="text-white font-medium uppercase tracking-wider hover:text-quaternary transition-colors">Pricing</a>
+                <a href="#faq" class="text-white font-medium uppercase tracking-wider hover:text-quaternary transition-colors">FAQ</a>
+            </div>
+
+            <!-- CTA Button -->
+            <div class="hidden lg:block">
+                <a href="#pricing" class="btn-skew">
+                    <span>Get Started</span>
+                </a>
+            </div>
+
+            <!-- Mobile Menu Button -->
+            <button class="lg:hidden text-white p-2" aria-label="Open Menu" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                <i data-lucide="menu" class="w-8 h-8"></i>
+            </button>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden lg:hidden bg-primary border-t-4 border-black">
+            <div class="px-4 py-4 space-y-3">
+                <a href="#features" class="block text-white font-medium uppercase tracking-wider py-2">Features</a>
+                <a href="#process" class="block text-white font-medium uppercase tracking-wider py-2">Process</a>
+                <a href="#benefits" class="block text-white font-medium uppercase tracking-wider py-2">Benefits</a>
+                <a href="#testimonials" class="block text-white font-medium uppercase tracking-wider py-2">Stories</a>
+                <a href="#pricing" class="block text-white font-medium uppercase tracking-wider py-2">Pricing</a>
+                <a href="#faq" class="block text-white font-medium uppercase tracking-wider py-2">FAQ</a>
+                <a href="#pricing" class="btn-skew w-full text-center mt-4">
+                    <span>Get Started</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ==================== HERO ==================== -->
+    <header class="relative overflow-hidden py-20 lg:py-32">
+        <!-- Decorative Blocks -->
+        <div class="deco-block w-24 h-24 bg-tertiary top-10 left-10 hidden lg:block"></div>
+        <div class="deco-block w-16 h-16 bg-quaternary bottom-20 right-10 hidden lg:block"></div>
+        <div class="deco-block w-12 h-12 bg-white top-40 right-1/4 hidden lg:block"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <!-- Left Content -->
+                <div>
+                    <div class="inline-block bg-white border-3 border-black shadow-hard-sm px-4 py-2 mb-6">
+                        <span class="font-mono text-sm text-primary font-bold">✦ Interactive Design Exhibit</span>
+                    </div>
+                    <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold text-white uppercase leading-tight text-shadow-hard">
+                        Explore the<br>
+                        <span class="text-quaternary">Living</span> Web
+                    </h1>
+                    <p class="mt-6 text-xl text-white/90 max-w-lg">
+                        A playful, immersive journey through design. Every scroll is a step deeper into a curated digital gallery.
+                    </p>
+                    <div class="mt-8 flex flex-wrap gap-4">
+                        <a href="#features" class="btn-skew">
+                            <span>Start Exploring</span>
+                        </a>
+                        <a href="#process" class="btn-skew bg-tertiary text-white">
+                            <span>See How It Works</span>
+                        </a>
+                    </div>
+                    <div class="mt-12 flex items-center gap-6">
+                        <div class="flex -space-x-3">
+                            <div class="w-12 h-12 bg-white border-3 border-black rounded-full flex items-center justify-center font-bold text-primary">A</div>
+                            <div class="w-12 h-12 bg-quaternary border-3 border-black rounded-full flex items-center justify-center font-bold text-white">B</div>
+                            <div class="w-12 h-12 bg-tertiary border-3 border-black rounded-full flex items-center justify-center font-bold text-white">C</div>
+                        </div>
+                        <p class="text-white font-medium">Trusted by 2,000+ explorers</p>
+                    </div>
+                </div>
+
+                <!-- Right Visual (CSS Shapes) -->
+                <div class="relative h-80 lg:h-96">
+                    <!-- Main Card -->
+                    <div class="card absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-80 p-6 rotate-3">
+                        <div class="w-full h-full bg-primary/10 border-2 border-dashed border-primary flex flex-col items-center justify-center gap-4">
+                            <i data-lucide="sparkles" class="w-16 h-16 text-primary"></i>
+                            <span class="font-mono text-sm text-primary font-bold">INTERACTIVE</span>
+                            <div class="w-16 h-2 bg-quaternary"></div>
+                        </div>
+                    </div>
+                    <!-- Floating Elements -->
+                    <div class="card absolute top-0 right-0 w-20 h-20 p-2 -rotate-12">
+                        <div class="w-full h-full bg-tertiary flex items-center justify-center">
+                            <i data-lucide="zap" class="w-8 h-8 text-white"></i>
+                        </div>
+                    </div>
+                    <div class="card absolute bottom-0 left-0 w-16 h-16 p-2 rotate-12">
+                        <div class="w-full h-full bg-quaternary flex items-center justify-center">
+                            <i data-lucide="heart" class="w-6 h-6 text-white"></i>
+                        </div>
+                    </div>
+                    <!-- Decorative Circle -->
+                    <div class="absolute top-1/4 right-1/4 w-8 h-8 bg-white border-3 border-black rounded-full"></div>
+                    <div class="absolute bottom-1/4 left-1/4 w-6 h-6 bg-tertiary border-3 border-black"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ==================== STATS ==================== -->
+    <section class="py-16 border-t-4 border-black bg-primary">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Stat Card -->
+                <div class="card p-6 text-center">
+                    <div class="text-4xl font-bold text-primary">250+</div>
+                    <div class="mt-2 font-mono text-sm text-gray-600 uppercase">Interactive Elements</div>
+                </div>
+                <div class="card p-6 text-center">
+                    <div class="text-4xl font-bold text-tertiary">40K</div>
+                    <div class="mt-2 font-mono text-sm text-gray-600 uppercase">Happy Explorers</div>
+                </div>
+                <div class="card p-6 text-center">
+                    <div class="text-4xl font-bold text-quaternary">99.9%</div>
+                    <div class="mt-2 font-mono text-sm text-gray-600 uppercase">Uptime</div>
+                </div>
+                <div class="card p-6 text-center">
+                    <div class="text-4xl font-bold text-primary">12</div>
+                    <div class="mt-2 font-mono text-sm text-gray-600 uppercase">Design Awards</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FEATURES ==================== -->
+    <section id="features" class="py-20 relative">
+        <div class="deco-block w-20 h-20 bg-quaternary top-10 right-10 hidden lg:block"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <div class="inline-block bg-white border-3 border-black shadow-hard-sm px-4 py-2 mb-4">
+                    <span class="font-mono text-sm text-primary font-bold">✦ FEATURES</span>
+                </div>
+                <h2 class="text-4xl lg:text-5xl font-bold text-white uppercase">Crafted for Exploration</h2>
+                <p class="mt-4 text-xl text-white/80 max-w-2xl mx-auto">Every feature is a doorway to a new experience.</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature Card -->
+                <div class="card p-8">
+                    <div class="w-16 h-16 bg-tertiary border-3 border-black flex items-center justify-center mb-6">
+                        <i data-lucide="mouse-pointer-click" class="w-8 h-8 text-white"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold uppercase mb-3">Playful Interactions</h3>
+                    <p class="text-gray-700">Every click, hover, and scroll is a moment of delight. Buttons grow, shadows deepen, and the interface responds like a living thing.</p>
+                </div>
+
+                <div class="card p-8">
+                    <div class="w-16 h-16 bg-quaternary border-3 border-black flex items-center justify-center mb-6">
+                        <i data-lucide="palette" class="w-8 h-8 text-white"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold uppercase mb-3">Bold Visual Language</h3>
+                    <p class="text-gray-700">Oswald's condensed power, hard shadows, and a deep green canvas. A design that demands attention and rewards curiosity.</p>
+                </div>
+
+                <div class="card p-8">
+                    <div class="w-16 h-16 bg-primary border-3 border-black flex items-center justify-center mb-6">
+                        <i data-lucide="gamepad-2" class="w-8 h-8 text-white"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold uppercase mb-3">Gamified Journey</h3>
+                    <p class="text-gray-700">Progress bars, achievement badges, and hidden easter eggs. Exploring Verdant feels like playing a beautifully designed game.</p>
+                </div>
+
+                <div class="card p-8">
+                    <div class="w-16 h-16 bg-tertiary border-3 border-black flex items-center justify-center mb-6">
+                        <i data-lucide="accessibility" class="w-8 h-8 text-white"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold uppercase mb-3">Accessible by Design</h3>
+                    <p class="text-gray-700">WCAG 2.2 AA compliant. Keyboard-first, high contrast, and screen-reader friendly. Beauty that everyone can experience.</p>
+                </div>
+
+                <div class="card p-8">
+                    <div class="w-16 h-16 bg-quaternary border-3 border-black flex items-center justify-center mb-6">
+                        <i data-lucide="layers" class="w-8 h-8 text-white"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold uppercase mb-3">Modular Components</h3>
+                    <p class="text-gray-700">A consistent system of cards, buttons, and blocks. Reusable, scalable, and endlessly combinable.</p>
+                </div>
+
+                <div class="card p-8">
+                    <div class="w-16 h-16 bg-primary border-3 border-black flex items-center justify-center mb-6">
+                        <i data-lucide="sparkles" class="w-8 h-8 text-white"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold uppercase mb-3">Living Exhibit</h3>
+                    <p class="text-gray-700">The site evolves. New exhibits, new interactions, and new stories are added regularly. There's always something new to discover.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== PROCESS ==================== -->
+    <section id="process" class="py-20 border-t-4 border-black bg-primary">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <div class="inline-block bg-white border-3 border-black shadow-hard-sm px-4 py-2 mb-4">
+                    <span class="font-mono text-sm text-primary font-bold">✦ PROCESS</span>
+                </div>
+                <h2 class="text-4xl lg:text-5xl font-bold text-white uppercase">How We Build</h2>
+            </div>
+
+            <div class="grid md:grid-cols-4 gap-8">
+                <!-- Step 1 -->
+                <div class="card p-6 relative">
+                    <div class="absolute -top-4 -left-4 w-10 h-10 bg-quaternary border-3 border-black flex items-center justify-center font-bold text-white text-xl">1</div>
+                    <div class="w-12 h-12 bg-tertiary border-3 border-black flex items-center justify-center mb-4">
+                        <i data-lucide="search" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold uppercase mb-2">Discover</h3>
+                    <p class="text-gray-700">We dive deep into your brand, audience, and goals. Every project starts with a story to tell.</p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="card p-6 relative">
+                    <div class="absolute -top-4 -left-4 w-10 h-10 bg-quaternary border-3 border-black flex items-center justify-center font-bold text-white text-xl">2</div>
+                    <div class="w-12 h-12 bg-tertiary border-3 border-black flex items-center justify-center mb-4">
+                        <i data-lucide="pencil-ruler" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold uppercase mb-2">Design</h3>
+                    <p class="text-gray-700">Wireframes become interactive prototypes. We iterate rapidly, testing every interaction.</p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="card p-6 relative">
+                    <div class="absolute -top-4 -left-4 w-10 h-10 bg-quaternary border-3 border-black flex items-center justify-center font-bold text-white text-xl">3</div>
+                    <div class="w-12 h-12 bg-tertiary border-3 border-black flex items-center justify-center mb-4">
+                        <i data-lucide="code-2" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold uppercase mb-2">Build</h3>
+                    <p class="text-gray-700">Clean, semantic code. Accessible, performant, and pixel-perfect. We bring the design to life.</p>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="card p-6 relative">
+                    <div class="absolute -top-4 -left-4 w-10 h-10 bg-quaternary border-3 border-black flex items-center justify-center font-bold text-white text-xl">4</div>
+                    <div class="w-12 h-12 bg-tertiary border-3 border-black flex items-center justify-center mb-4">
+                        <i data-lucide="rocket" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold uppercase mb-2">Launch</h3>
+                    <p class="text-gray-700">We deploy, monitor, and refine. The exhibit is open, and the journey continues.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== BENEFITS ==================== -->
+    <section id="benefits" class="py-20 relative">
+        <div class="deco-block w-16 h-16 bg-tertiary bottom-10 left-10 hidden lg:block"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <!-- Left: Visual -->
+                <div class="relative h-96">
+                    <div class="card absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-72 h-80 p-6 -rotate-3">
+                        <div class="w-full h-full bg-primary/10 border-2 border-dashed border-primary flex flex-col items-center justify-center gap-4">
+                            <i data-lucide="trophy" class="w-16 h-16 text-primary"></i>
+                            <span class="font-mono text-sm text-primary font-bold">BENEFITS</span>
+                            <div class="w-16 h-2 bg-quaternary"></div>
+                        </div>
+                    </div>
+                    <div class="card absolute top-0 right-0 w-20 h-20 p-2 rotate-12">
+                        <div class="w-full h-full bg-tertiary flex items-center justify-center">
+                            <i data-lucide="trending-up" class="w-8 h-8 text-white"></i>
+                        </div>
+                    </div>
+                    <div class="card absolute bottom-0 left-0 w-16 h-16 p-2 -rotate-12">
+                        <div class="w-full h-full bg-quaternary flex items-center justify-center">
+                            <i data-lucide="star" class="w-6 h-6 text-white"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Content -->
+                <div>
+                    <div class="inline-block bg-white border-3 border-black shadow-hard-sm px-4 py-2 mb-4">
+                        <span class="font-mono text-sm text-primary font-bold">✦ BENEFITS</span>
+                    </div>
+                    <h2 class="text-4xl lg:text-5xl font-bold text-white uppercase mb-8">Why Choose Verdant</h2>
+
+                    <div class="space-y-6">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 bg-white border-3 border-black shadow-hard-sm flex items-center justify-center shrink-0">
+                                <i data-lucide="check" class="w-6 h-6 text-primary"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-white uppercase">Memorable Brand Experience</h3>
+                                <p class="text-white/80 mt-1">Visitors remember how your site made them feel. Verdant creates a lasting impression.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 bg-white border-3 border-black shadow-hard-sm flex items-center justify-center shrink-0">
+                                <i data-lucide="check" class="w-6 h-6 text-primary"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-white uppercase">Increased Engagement</h3>
+                                <p class="text-white/80 mt-1">Interactive elements keep visitors exploring longer. More time means more connection.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 bg-white border-3 border-black shadow-hard-sm flex items-center justify-center shrink-0">
+                                <i data-lucide="check" class="w-6 h-6 text-primary"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-white uppercase">Accessible to Everyone</h3>
+                                <p class="text-white/80 mt-1">Our commitment to accessibility means your message reaches the widest possible audience.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 bg-white border-3 border-black shadow-hard-sm flex items-center justify-center shrink-0">
+                                <i data-lucide="check" class="w-6 h-6 text-primary"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-white uppercase">Future-Ready Design</h3>
+                                <p class="text-white/80 mt-1">A modular system that evolves with your needs. Built to last, designed to adapt.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== TESTIMONIALS ==================== -->
+    <section id="testimonials" class="py-20 border-t-4 border-black bg-primary">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <div class="inline-block bg-white border-3 border-black shadow-hard-sm px-4 py-2 mb-4">
+                    <span class="font-mono text-sm text-primary font-bold">✦ STORIES</span>
+                </div>
+                <h2 class="text-4xl lg:text-5xl font-bold text-white uppercase">Explorer Testimonials</h2>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Testimonial 1 -->
+                <div class="card p-8">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-5 h-5 fill-quaternary text-quaternary"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-quaternary text-quaternary"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-quaternary text-quaternary"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-quaternary text-quaternary"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-quaternary text-quaternary"></i>
+                    </div>
+                    <p class="text-gray-700 mb-6">"Verdant completely transformed our online presence. The interactive elements are stunning, and our engagement metrics have never been better. It's like our website is alive!"</p>
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-tertiary border-3 border-black rounded-full flex items-center justify-center font-bold text-white">S</div>
+                        <div>
+                            <div class="font-bold uppercase">Sarah Chen</div>
+                            <div class="font-mono text-sm text-gray-600">Marketing Director</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Testimonial 2 -->
+                <div class="card p-8">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-5 h-5 fill-quaternary text-quaternary"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-quaternary text-quaternary"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-quaternary text-quaternary"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-quaternary text-quaternary"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-quaternary text-quaternary"></i>
+                    </div>
+                    <p class="text-gray-700 mb-6">"The attention to detail is incredible. Every interaction feels intentional and delightful. Our users love exploring the site — it's become a talking point in itself."</p>
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-quaternary border-3 border-black rounded-full flex items-center justify-center font-bold text-white">M</div>
+                        <div>
+                            <div class="font-bold uppercase">Marcus Rodriguez</div>
+                            <div class="font-mono text-sm text-gray-600">Product Lead</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Testimonial 3 -->
+                <div class="card p-8">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-5 h-5 fill-quaternary text-quaternary"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-quaternary text-quaternary"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-quaternary text-quaternary"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-quaternary text-quaternary"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-quaternary text-quaternary"></i>
+                    </div>
+                    <p class="text-gray-700 mb-6">"As someone with a visual impairment, I was blown away by how accessible Verdant is. It's beautiful AND usable. This is how every website should be built."</p>
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-primary border-3 border-black rounded-full flex items-center justify-center font-bold text-white">E</div>
+                        <div>
+                            <div class="font-bold uppercase">Emily Watson</div>
+                            <div class="font-mono text-sm text-gray-600">Accessibility Advocate</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== PRICING ==================== -->
+    <section id="pricing" class="py-20 relative">
+        <div class="deco-block w-20 h-20 bg-quaternary top-20 right-10 hidden lg:block"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <div class="inline-block bg-white border-3 border-black shadow-hard-sm px-4 py-2 mb-4">
+                    <span class="font-mono text-sm text-primary font-bold">✦ PRICING</span>
+                </div>
+                <h2 class="text-4xl lg:text-5xl font-bold text-white uppercase">Choose Your Exhibit</h2>
+                <p class="mt-4 text-xl text-white/80">Simple, transparent pricing. No hidden fees.</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <!-- Basic Plan -->
+                <div class="card p-8">
+                    <h3 class="text-2xl font-bold uppercase mb-2">Explorer</h3>
+                    <div class="font-mono text-sm text-gray-600 mb-6">For personal projects</div>
+                    <div class="text-5xl font-bold text-primary mb-6">$19<span class="text-xl text-gray-600">/mo</span></div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-primary"></i>
+                            <span>1 Interactive Exhibit</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-primary"></i>
+                            <span>Basic Analytics</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-primary"></i>
+                            <span>Community Support</span>
+                        </li>
+                    </ul>
+                    <a href="#" class="btn-skew w-full text-center">
+                        <span>Start Free Trial</span>
+                    </a>
+                </div>
+
+                <!-- Pro Plan (Featured) -->
+                <div class="card p-8 relative bg-white transform lg:-translate-y-4">
+                    <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-quaternary border-3 border-black px-4 py-1 font-mono text-sm text-white font-bold uppercase">Popular</div>
+                    <h3 class="text-2xl font-bold uppercase mb-2">Curator</h3>
+                    <div class="font-mono text-sm text-gray-600 mb-6">For growing teams</div>
+                    <div class="text-5xl font-bold text-tertiary mb-6">$49<span class="text-xl text-gray-600">/mo</span></div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-tertiary"></i>
+                            <span>Unlimited Exhibits</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-tertiary"></i>
+                            <span>Advanced Analytics</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-tertiary"></i>
+                            <span>Priority Support</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-tertiary"></i>
+                            <span>Custom Interactions</span>
+                        </li>
+                    </ul>
+                    <a href="#" class="btn-skew w-full text-center bg-tertiary text-white">
+                        <span>Start Free Trial</span>
+                    </a>
+                </div>
+
+                <!-- Enterprise Plan -->
+                <div class="card p-8">
+                    <h3 class="text-2xl font-bold uppercase mb-2">Director</h3>
+                    <div class="font-mono text-sm text-gray-600 mb-6">For large organizations</div>
+                    <div class="text-5xl font-bold text-quaternary mb-6">Custom</div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-quaternary"></i>
+                            <span>Everything in Curator</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-quaternary"></i>
+                            <span>Dedicated Support</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i data-lucide="check" class="w-5 h-5 text-quaternary"></i>
+                            <span>SLA &amp; Security Review</span>
+                        </li>
+                    </ul>
+                    <a href="#" class="btn-skew w-full text-center">
+                        <span>Contact Sales</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FAQ ==================== -->
+    <section id="faq" class="py-20 border-t-4 border-black bg-primary">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <div class="inline-block bg-white border-3 border-black shadow-hard-sm px-4 py-2 mb-4">
+                    <span class="font-mono text-sm text-primary font-bold">✦ FAQ</span>
+                </div>
+                <h2 class="text-4xl lg:text-5xl font-bold text-white uppercase">Questions, Answered</h2>
+            </div>
+
+            <div class="space-y-4">
+                <!-- FAQ Item 1 -->
+                <div class="card p-6">
+                    <button class="w-full flex items-center justify-between gap-4 text-left" onclick="this.parentElement.querySelector('.faq-answer').classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-180')">
+                        <span class="text-xl font-bold uppercase">What is Verdant?</span>
+                        <i data-lucide="chevron-down" class="w-6 h-6 shrink-0 transition-transform"></i>
+                    </button>
+                    <div class="faq-answer hidden mt-4 text-gray-700">
+                        Verdant is an interactive design platform that helps you create immersive, exhibit-style websites. Think of it as a digital gallery where your brand comes to life through playful interactions and bold visual design.
+                    </div>
+                </div>
+
+                <!-- FAQ Item 2 -->
+                <div class="card p-6">
+                    <button class="w-full flex items-center justify-between gap-4 text-left" onclick="this.parentElement.querySelector('.faq-answer').classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-180')">
+                        <span class="text-xl font-bold uppercase">How is this different from a regular website builder?</span>
+                        <i data-lucide="chevron-down" class="w-6 h-6 shrink-0 transition-transform"></i>
+                    </button>
+                    <div class="faq-answer hidden mt-4 text-gray-700">
+                        Traditional builders focus on templates and structure. Verdant focuses on experience. Every element is designed to be interactive and engaging, turning your website into a journey rather than just a destination.
+                    </div>
+                </div>
+
+                <!-- FAQ Item 3 -->
+                <div class="card p-6">
+                    <button class="w-full flex items-center justify-between gap-4 text-left" onclick="this.parentElement.querySelector('.faq-answer').classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-180')">
+                        <span class="text-xl font-bold uppercase">Is Verdant accessible?</span>
+                        <i data-lucide="chevron-down" class="w-6 h-6 shrink-0 transition-transform"></i>
+                    </button>
+                    <div class="faq-answer hidden mt-4 text-gray-700">
+                        Absolutely. Accessibility is at the core of our design system. We follow WCAG 2.2 AA guidelines, support keyboard navigation, and ensure high contrast for all text. Beauty shouldn't come at the cost of usability.
+                    </div>
+                </div>
+
+                <!-- FAQ Item 4 -->
+                <div class="card p-6">
+                    <button class="w-full flex items-center justify-between gap-4 text-left" onclick="this.parentElement.querySelector('.faq-answer').classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-180')">
+                        <span class="text-xl font-bold uppercase">Can I migrate my existing site?</span>
+                        <i data-lucide="chevron-down" class="w-6 h-6 shrink-0 transition-transform"></i>
+                    </button>
+                    <div class="faq-answer hidden mt-4 text-gray-700">
+                        Yes! Our migration team will work with you to transition your existing content into the Verdant system. We'll preserve your brand identity while elevating the experience.
+                    </div>
+                </div>
+
+                <!-- FAQ Item 5 -->
+                <div class="card p-6">
+                    <button class="w-full flex items-center justify-between gap-4 text-left" onclick="this.parentElement.querySelector('.faq-answer').classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-180')">
+                        <span class="text-xl font-bold uppercase">What kind of support do you offer?</span>
+                        <i data-lucide="chevron-down" class="w-6 h-6 shrink-0 transition-transform"></i>
+                    </button>
+                    <div class="faq-answer hidden mt-4 text-gray-700">
+                        We offer community support for all plans, priority support for Curator, and dedicated support with SLA for Director plans. Our team is always here to help you create the best possible experience.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="py-12 border-t-4 border-black bg-primary">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8 mb-8">
+                <!-- Brand -->
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-10 h-10 bg-white border-3 border-black shadow-hard-sm flex items-center justify-center">
+                            <i data-lucide="leaf" class="w-6 h-6 text-primary"></i>
+                        </div>
+                        <span class="text-2xl font-bold text-white uppercase">Verdant</span>
+                    </div>
+                    <p class="text-white/70">An interactive design exhibit. Explore, engage, and be inspired.</p>
+                </div>
+
+                <!-- Links -->
+                <div>
+                    <h3 class="text-white font-bold uppercase mb-4">Explore</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#features" class="text-white/70 hover:text-white transition-colors">Features</a></li>
+                        <li><a href="#process" class="text-white/70 hover:text-white transition-colors">Process</a></li>
+                        <li><a href="#benefits" class="text-white/70 hover:text-white transition-colors">Benefits</a></li>
+                        <li><a href="#pricing" class="text-white/70 hover:text-white transition-colors">Pricing</a></li>
+                    </ul>
+                </div>
+
+                <!-- Resources -->
+                <div>
+                    <h3 class="text-white font-bold uppercase mb-4">Resources</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-white/70 hover:text-white transition-colors">Documentation</a></li>
+                        <li><a href="#" class="text-white/70 hover:text-white transition-colors">API Reference</a></li>
+                        <li><a href="#" class="text-white/70 hover:text-white transition-colors">Design System</a></li>
+                        <li><a href="#" class="text-white/70 hover:text-white transition-colors">Changelog</a></li>
+                    </ul>
+                </div>
+
+                <!-- Connect -->
+                <div>
+                    <h3 class="text-white font-bold uppercase mb-4">Connect</h3>
+                    <div class="flex gap-3">
+                        <a href="#" class="w-10 h-10 bg-white border-3 border-black shadow-hard-sm flex items-center justify-center hover:bg-quaternary transition-colors" aria-label="Twitter">
+                            <i data-lucide="twitter" class="w-5 h-5 text-primary"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-white border-3 border-black shadow-hard-sm flex items-center justify-center hover:bg-quaternary transition-colors" aria-label="GitHub">
+                            <i data-lucide="github" class="w-5 h-5 text-primary"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-white border-3 border-black shadow-hard-sm flex items-center justify-center hover:bg-quaternary transition-colors" aria-label="LinkedIn">
+                            <i data-lucide="linkedin" class="w-5 h-5 text-primary"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t-2 border-white/20 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+                <p class="text-white/60 font-mono text-sm">© 2024 Verdant Interactive. All rights reserved.</p>
+                <div class="flex gap-6">
+                    <a href="#" class="text-white/60 hover:text-white font-mono text-sm transition-colors">Privacy Policy</a>
+                    <a href="#" class="text-white/60 hover:text-white font-mono text-sm transition-colors">Terms of Service</a>
+                    <a href="#" class="text-white/60 hover:text-white font-mono text-sm transition-colors">Cookies</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Initialize Lucide Icons -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

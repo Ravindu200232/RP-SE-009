@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Check, ExternalLink, Loader2, X } from 'lucide-react'
 import { api } from '@/lib/api'
 import { Button, Input, SectionLabel } from '../ui'
@@ -55,10 +55,17 @@ export default function DeployAccounts({ deploy, onSaved }) {
               {note}
             </p>
           )}
-          <Github probe={probe} onRecheck={() => setProbe(null)} />
+          <Github deploy={deploy} onSave={save} probe={probe}
+                  onRecheck={() => setProbe(null)} />
           <Aws deploy={deploy} onSave={save} probe={probe}
                onRecheck={() => setProbe(null)} />
           <Vercel deploy={deploy} onSave={save} />
+          <HostedCredential title="Netlify" provider="netlify" setting="netlify_token" saved={deploy?.netlify_token_set} onSave={save}
+            label="Personal access token" href="https://app.netlify.com/user/applications#personal-access-tokens"
+            hint="Create a token in your Netlify account. The deployment uses it to provision your site and as an encrypted GitHub Actions secret." />
+          <HostedCredential title="Azure" provider="azure" setting="azure_credentials" saved={deploy?.azure_credentials_set} onSave={save}
+            label="Service principal credentials (JSON)" href="https://learn.microsoft.com/en-us/azure/app-service/deploy-github-actions"
+            hint="Enter JSON containing clientId, clientSecret, tenantId and subscriptionId for your deployment service principal. Give it access to the selected resource group." />
           <Mongo deploy={deploy} onSave={save} />
         </div>
       )}
@@ -67,43 +74,145 @@ export default function DeployAccounts({ deploy, onSaved }) {
 }
 
 function summarise(d) {
-  if (!d) return 'AWS, Vercel and the production database.'
+  if (!d) return 'GitHub, AWS, Vercel, Netlify, Azure and the production database.'
   const bits = []
+  bits.push(d.github_token_set
+    ? `GitHub ${d.github_login || 'connected'}` : 'GitHub not connected')
   bits.push(d.aws_profile ? `AWS ${d.aws_profile}` : 'AWS not connected')
-
-  bits.push(d.vercel_token_set || d.vercel_cli_signed_in
-    ? 'Vercel connected' : 'Vercel not connected')
+  bits.push(d.vercel_token_set ? 'Vercel connected' : 'Vercel not connected')
+  bits.push(d.netlify_token_set ? 'Netlify connected' : 'Netlify not connected')
+  bits.push(d.azure_credentials_set ? 'Azure connected' : 'Azure not connected')
   bits.push(d.mongodb_uri_set ? 'database set' : 'no database')
   return bits.join(' · ')
 }
 
 
-function Github({ probe, onRecheck }) {
+function Github({ deploy, onSave, probe, onRecheck }) {
+  const [token, setToken] = useState('')
   const [busy, setBusy] = useState(false)
-  const ok = Boolean(probe?.github_authenticated)
+  const [err, setErr] = useState('')
+  const ok = Boolean(deploy?.github_token_set)
+  const login = deploy?.github_login || probe?.github_account || ''
+
+  // Sign in to GitHub via OAuth device flow directly to user settings.
+  const [clientId, setClientId] = useState(deploy?.github_client_id || '')
+  const [flow, setFlow] = useState(null)
+  const [signing, setSigning] = useState(false)
+  const stop = useRef(false)
+
+  useEffect(() => () => { stop.current = true }, [])
 
   async function signIn() {
-    setBusy(true)
+    setSigning(true); setErr(''); setFlow(null)
     try {
+      if (clientId.trim() && clientId.trim() !== (deploy?.github_client_id || '')) {
+        await onSave({ github_client_id: clientId.trim() })
+      }
+      const started = await api.githubDeviceStart(clientId.trim())
+      setFlow(started)
+      window.open(started.verification_uri, '_blank', 'noopener')
+      stop.current = false
+      const deadline = Date.now() + (started.expires_in || 900) * 1000
+      let wait = (started.interval || 5) * 1000
+      while (!stop.current && Date.now() < deadline) {
+        await new Promise(r => setTimeout(r, wait))
+        const answer = await api.githubDevicePoll(started.flow_id)
+        if (answer.status === 'ready') {
+          setFlow(null)
+          onRecheck?.()
+          return
+        }
+        wait = (answer.interval || 5) * 1000
+      }
+      setErr('That sign-in expired before it was approved.')
+      setFlow(null)
+    } catch (e) {
+      setErr(e.message); setFlow(null)
+    } finally {
+      setSigning(false)
+    }
+  }
 
-      await api.deploy('/onboarding/login', { tool: 'github' })
-    } catch { }
+  async function save() {
+    setBusy(true)
+    setErr('')
+    try {
+      await onSave({ github_token: token.trim() })
+      setToken('')
+      onRecheck?.()
+    } catch (e) { setErr(e.message) }
     setBusy(false)
   }
 
   return (
-    <Row title="GitHub" ok={ok} unknown={!probe}
-         detail={ok ? `signed in as ${probe.github_account || 'your account'}`
-                    : 'the deployment creates a private repository and pushes'
-                      + 'the workflows that build it'}
-         actions={<>
-           {!ok && (
-             <Button size="sm" variant="outline" disabled={busy} onClick={signIn}>
-               {busy && <Loader2 className="size-3 animate-spin" />} Sign in
-             </Button>
-           )}
-           <Button size="sm" onClick={onRecheck}>Recheck</Button>
-         </>} />
+    <Row title="GitHub" ok={ok} unknown={false}
+         detail={ok ? `connected as ${login || 'your account'}`
+                    : 'the deployment creates a private repository under your '
+                      + 'account and pushes the workflows that build it'}>
+      <div className="mt-2 w-full space-y-3">
+        <Field label="Sign in with GitHub"
+               hint={<>Approved in your browser, the way the AWS console sign-in
+                       is. Needs the <b>Client ID</b> of an OAuth app with
+                       Device Flow enabled — make one at{' '}
+                       <a className="text-accent hover:underline" target="_blank"
+                          rel="noreferrer" href="https://github.com/settings/developers">
+                         github.com/settings/developers
+                       </a>. The Client ID is public; there is no secret to keep.</>}>
+          <Input value={clientId} onChange={e => setClientId(e.target.value)}
+                 placeholder="Iv1.0123456789abcdef" />
+        </Field>
+        {flow ? (
+          <div className="rounded-lg border border-line bg-panel2 p-3">
+            <p className="text-[11px] text-muted">
+              Enter this code on GitHub, then leave this open — it finishes on its own.
+            </p>
+            <p className="my-2 font-mono text-[18px] font-bold tracking-[0.3em] text-ink">
+              {flow.user_code}
+            </p>
+            <a className="text-[11px] text-accent hover:underline" target="_blank"
+               rel="noreferrer" href={flow.verification_uri}>
+              {flow.verification_uri}
+            </a>
+            <p className="mt-2 text-[10.5px] text-muted2">
+              Granting: {flow.scopes}
+            </p>
+          </div>
+        ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" disabled={signing} onClick={signIn}>
+            {signing && <Loader2 className="size-3 animate-spin" />}
+            {ok ? 'Sign in again' : 'Sign in with GitHub'}
+          </Button>
+          {signing && (
+            <Button size="sm" variant="outline"
+                    onClick={() => { stop.current = true; setSigning(false); setFlow(null) }}>
+              Cancel
+            </Button>
+          )}
+        </div>
+
+        <Field label="Or paste a personal access token"
+               hint={<>Your own GitHub account, not this machine's — deployments
+                       push as you. Create a token with the <b>repo</b> and{' '}
+                       <b>workflow</b> scopes at{' '}
+                       <a className="text-accent hover:underline" target="_blank"
+                          rel="noreferrer"
+                          href="https://github.com/settings/tokens/new?scopes=repo,workflow&description=AgentForge">
+                         github.com/settings/tokens
+                       </a>. Type a single - to clear it.</>}>
+          <Input type="password" value={token} onChange={e => setToken(e.target.value)}
+                 placeholder={ok ? `connected as ${login}` : 'ghp_…'} />
+        </Field>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="outline" disabled={!token.trim() || busy}
+                  onClick={save}>
+            {busy && <Loader2 className="size-3 animate-spin" />} Save token
+          </Button>
+          <Button size="sm" onClick={onRecheck}>Recheck</Button>
+        </div>
+        {err && <p className="text-[10.5px] text-deep">{err}</p>}
+      </div>
+    </Row>
   )
 }
 
@@ -371,6 +480,90 @@ function Aws({ deploy, onSave, probe, onRecheck }) {
 }
 
 
+/* Handles interactive sign-in workflows through provider CLI tools. */
+function CliSignIn({ provider, onDone }) {
+  const [state, setState] = useState(null)   // { flow_id, shows_code }
+  const [code, setCode] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const [tool, setTool] = useState(null)
+  const stop = useRef(false)
+
+  useEffect(() => {
+    let live = true
+    api.cliSigninAvailable()
+      .then(d => { if (live) setTool(d?.providers?.[provider] || null) })
+      .catch(() => {})
+    return () => { live = false; stop.current = true }
+  }, [provider])
+
+  async function signIn() {
+    setBusy(true); setErr(''); setCode(null); stop.current = false
+    try {
+      const started = await api.cliSigninStart(provider)
+      setState(started)
+      const deadline = Date.now() + 10 * 60 * 1000
+      while (!stop.current && Date.now() < deadline) {
+        await new Promise(r => setTimeout(r, 2000))
+        const answer = await api.cliSigninPoll(started.flow_id)
+        if (answer.status === 'ready') { setState(null); onDone?.(); return }
+        if (answer.user_code) {
+          setCode({ code: answer.user_code, uri: answer.verification_uri })
+        }
+      }
+      setErr('That sign-in did not finish in time.')
+    } catch (e) {
+      setErr(e.message)
+    } finally {
+      setBusy(false); setState(null)
+    }
+  }
+
+  async function cancel() {
+    stop.current = true
+    if (state?.flow_id) { try { await api.cliSigninCancel(state.flow_id) } catch {} }
+    setBusy(false); setState(null); setCode(null)
+  }
+
+  if (tool && !tool.installed) {
+    return (
+      <p className="text-[10.5px] text-muted2">
+        To sign in through the browser, install the {tool.title} tool:{' '}
+        <code className="font-mono text-ink">{tool.install}</code>. Until then, use a token.
+      </p>
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      {code ? (
+        <div className="rounded-lg border border-line bg-panel2 p-3">
+          <p className="text-[11px] text-muted">Enter this code in the browser:</p>
+          <p className="my-1.5 font-mono text-[18px] font-bold tracking-[0.3em] text-ink">
+            {code.code}
+          </p>
+          {code.uri && (
+            <a className="text-[11px] text-accent hover:underline" target="_blank"
+               rel="noreferrer" href={code.uri}>{code.uri}</a>
+          )}
+        </div>
+      ) : busy ? (
+        <p className="text-[10.5px] text-muted2">
+          A browser tab should have opened — finish the sign-in there.
+        </p>
+      ) : null}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button size="sm" disabled={busy} onClick={signIn}>
+          {busy && <Loader2 className="size-3 animate-spin" />} Sign in with browser
+        </Button>
+        {busy && <Button size="sm" variant="outline" onClick={cancel}>Cancel</Button>}
+      </div>
+      {err && <p className="text-[10.5px] text-deep">{err}</p>}
+    </div>
+  )
+}
+
+
 function Vercel({ deploy, onSave }) {
   const [token, setToken] = useState('')
   const [busy, setBusy] = useState('')
@@ -394,12 +587,6 @@ function Vercel({ deploy, onSave }) {
     setBusy('')
   }
 
-  async function cli() {
-    setBusy('cli')
-    try { await api.deploy('/onboarding/login', { tool: 'vercel' }) } catch { }
-    setBusy('')
-  }
-
   async function saveToken() {
     setBusy('save')
     setErr('')
@@ -412,21 +599,22 @@ function Vercel({ deploy, onSave }) {
 
   const who = status?.username || status?.email || status?.name || ''
   const connected = Boolean(status?.connected) || Boolean(deploy?.vercel_token_set)
-    || Boolean(deploy?.vercel_cli_signed_in)
   const detail = status?.connected
-    ? `connected as ${who}${status.source ? ` (${status.source})` : ''}`
+    ? `connected as ${who}`
     : deploy?.vercel_token_set
       ? `token saved (${deploy.vercel_token_hint})`
-      : 'sign in with the CLI, or paste a token'
+      : 'paste a token from your own Vercel account'
 
   return (
     <Row title="Vercel" ok={connected}
-         unknown={!status && !deploy?.vercel_token_set && !deploy?.vercel_cli_signed_in}
+         unknown={!status && !deploy?.vercel_token_set}
          detail={detail}>
-      <div className="mt-2 w-full space-y-2">
-        <Field label="Access token"
-               hint="Stored here and set as a GitHub Actions secret on the repository
-                     the deployment creates — Vercel has no OIDC equivalent. Type a
+      <div className="mt-2 w-full space-y-3">
+        <CliSignIn provider="vercel" onDone={() => onSave({})} />
+        <Field label="Or paste an access token"
+               hint="Your own Vercel account. Kept with your account here, encrypted,
+                     and set as a GitHub Actions secret on the repository the
+                     deployment creates — Vercel has no OIDC equivalent. Type a
                      single - to clear it.">
           <Input type="password" value={token} onChange={e => setToken(e.target.value)}
                  placeholder={deploy?.vercel_token_set
@@ -437,10 +625,6 @@ function Vercel({ deploy, onSave }) {
           <Button size="sm" variant="outline" disabled={!token.trim() || Boolean(busy)}
                   onClick={saveToken}>
             {busy === 'save' && <Loader2 className="size-3 animate-spin" />} Save token
-          </Button>
-          <Button size="sm" disabled={Boolean(busy)} onClick={cli}>
-            {busy === 'cli' && <Loader2 className="size-3 animate-spin" />}
-            Sign in with the CLI
           </Button>
           <Button size="sm" disabled={Boolean(busy)} onClick={check}>
             {busy === 'check' && <Loader2 className="size-3 animate-spin" />} Check
@@ -457,6 +641,78 @@ function Vercel({ deploy, onSave }) {
   )
 }
 
+
+/** Validates and saves API credentials directly against hosted deployment providers. */
+function HostedCredential({ title, provider, setting, saved, label, hint, href, onSave }) {
+  const [value, setValue] = useState('')
+  const [busy, setBusy] = useState('')
+  const [status, setStatus] = useState(null)
+  const [error, setError] = useState('')
+
+  // What is already saved, checked once, so the row opens telling the truth.
+  useEffect(() => {
+    let live = true
+    if (!saved) { setStatus(null); return undefined }
+    api.deploy(`/aws/${provider}/status`, { token: '' })
+      .then(answer => { if (live) setStatus(answer) })
+      .catch(() => {})
+    return () => { live = false }
+  }, [provider, saved])
+
+  async function check(token) {
+    setBusy('check'); setError(''); setStatus(null)
+    try { setStatus(await api.deploy(`/aws/${provider}/status`, { token })) }
+    catch (failure) { setError(failure.message) }
+    finally { setBusy('') }
+  }
+
+  async function save() {
+    setBusy('save'); setError('')
+    try {
+      await onSave({ [setting]: value.trim() })
+      const token = value.trim()
+      setValue('')
+      if (token !== '-') await check(token)
+    } catch (failure) { setError(failure.message) } finally { setBusy('') }
+  }
+
+  const connected = Boolean(status?.connected)
+  const detail = status
+    ? (connected
+        ? `${status.account || 'connected'}${status.verified === false ? ' · signs in on the runner' : ''}`
+        : status.message || status.error || 'credentials rejected')
+    : saved ? 'credentials saved' : 'connect your account'
+
+  return <Row title={title} ok={saved ? connected : false} unknown={Boolean(saved) && !status}
+              detail={detail}>
+    {(provider === 'netlify' || provider === 'azure') && (
+      <div className="mt-2 w-full">
+        <CliSignIn provider={provider} onDone={() => onSave({})} />
+      </div>
+    )}
+    <div className="mt-2 w-full space-y-2">
+      <Field label={label} hint={<>{hint} Stored encrypted with your account. Type a single - to clear it. <a href={href} target="_blank" rel="noreferrer" className="text-accent hover:underline">Setup guide</a></>}>
+        <Input type="password" autoComplete="off" value={value} onChange={e => setValue(e.target.value)} placeholder={saved ? 'saved — enter a replacement' : label} />
+      </Field>
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant="outline" disabled={Boolean(busy) || !value.trim()} onClick={save}>
+          {busy === 'save' && <Loader2 className="size-3 animate-spin" />}Save and sign in
+        </Button>
+        <Button size="sm" variant="ghost" disabled={Boolean(busy) || (!saved && !value.trim())}
+                onClick={() => check(value.trim())}>
+          {busy === 'check' && <Loader2 className="size-3 animate-spin" />}Test connection
+        </Button>
+      </div>
+      {status && !connected && (
+        <p className="text-[10.5px] text-bad">{status.message || status.error}</p>
+      )}
+      {status?.connected && status.verified === false && (
+        <p className="text-[10.5px] text-muted">{status.message}</p>
+      )}
+      {error && <p className="text-[10.5px] text-bad">{error}</p>}
+    </div>
+  </Row>
+}
 
 function Mongo({ deploy, onSave }) {
   const [uri, setUri] = useState('')
@@ -523,16 +779,16 @@ function Mongo({ deploy, onSave }) {
 
 function Row({ title, ok, unknown, detail, actions, children }) {
   return (
-    <div className={cn('border border-line2 border-l-[3px] bg-panel2 p-2.5',
-      unknown ? 'border-l-transparent' : ok ? 'border-l-ok' : 'border-l-bad')}>
+    <div className={cn('rounded-xl border border-[rgba(145,158,171,0.16)] border-l-[3px] bg-[#1C252E] p-3 shadow-sm transition-all',
+      unknown ? 'border-l-white/20' : ok ? 'border-l-[#22C55E]' : 'border-l-[#FF5630]')}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="grid size-3.5 shrink-0 place-items-center">
-          {unknown ? <Loader2 className="size-3 animate-spin text-muted2" />
-                   : ok ? <Check className="size-3.5 text-ok" />
-                        : <X className="size-3.5 text-bad" />}
+          {unknown ? <Loader2 className="size-3 animate-spin text-[#919EAB]" />
+                   : ok ? <Check className="size-3.5 text-[#22C55E]" />
+                        : <X className="size-3.5 text-[#FF5630]" />}
         </span>
-        <span className="text-[12px] font-extrabold text-ink">{title}</span>
-        <span className="min-w-0 flex-1 truncate text-[10.5px] text-muted">{detail}</span>
+        <span className="text-[12.5px] font-bold text-white">{title}</span>
+        <span className="min-w-0 flex-1 truncate text-[11px] text-[#919EAB]">{detail}</span>
         {actions}
       </div>
       {children}
@@ -542,9 +798,9 @@ function Row({ title, ok, unknown, detail, actions, children }) {
 
 const Field = ({ label, hint, children }) => (
   <label className="block">
-    <span className="label-2xs mb-1 block text-label">{label}</span>
+    <span className="label-2xs mb-1 block text-white/50 font-bold uppercase tracking-wider">{label}</span>
     {children}
-    {hint && <span className="mt-1 block text-[9.5px] leading-snug text-muted2">
+    {hint && <span className="mt-1 block text-[10px] leading-snug text-white/40">
                {hint}
              </span>}
   </label>
@@ -552,13 +808,13 @@ const Field = ({ label, hint, children }) => (
 
 const Select = ({ value, onChange, options, placeholder }) => (
   <select value={value} onChange={e => onChange(e.target.value)}
-          className="h-[30px] w-full border border-line2 bg-panel2 px-2
-                     text-[12px] text-ink outline-none focus:border-accent">
-    {placeholder && <option value="">{placeholder}</option>}
+          className="h-[32px] w-full rounded-xl border border-[rgba(145,158,171,0.2)] bg-[#141A21] px-2.5
+                     text-[12px] text-white outline-none focus:border-[#1877F2]/60 transition-colors">
+    {placeholder && <option value="" className="bg-[#1C252E] text-white">{placeholder}</option>}
     {options.map(o => {
       const v = typeof o === 'string' ? o : o.value
       const l = typeof o === 'string' ? o : o.label
-      return <option key={v} value={v}>{l}</option>
+      return <option key={v} value={v} className="bg-[#1C252E] text-white">{l}</option>
     })}
   </select>
 )

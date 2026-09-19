@@ -3,7 +3,7 @@ DEPLOY_RUNS: dict = {}
 DEPLOY_LOCK = threading.Lock()
 
 
-DEPLOY_DONE = {"LIVE", "FAILED", "ROLLED_BACK", "DESTROYED"}
+DEPLOY_DONE = {"LIVE", "FAILED", "ROLLED_BACK", "DESTROYED", "CANCELLED"}
 
 
 def _deploy_call(method: str, path: str, body=None, timeout=(2, None)):
@@ -41,35 +41,8 @@ def _deploy_mongo_uri(settings: dict) -> str:
 
 
 def deploy_settings_summary() -> dict:
-    """
-    What is configured for deploying, and nothing that could be replayed.
-
-    Same rule as /api/settings: a secret is reported as set, with the last four
-    characters, and never echoed. The Deploy tab uses this to say which of the
-    three accounts still needs connecting.
-    """
-    s = load_settings()
-    token = str(s.get("vercel_token", "")).strip()
-    mongo = _deploy_mongo_uri(s)
-
-    cli_token = False
-    try:
-        from deployment_agent.vercel_auth import _candidate_auth_files
-        cli_token = any(p.is_file() for p in _candidate_auth_files())
-    except Exception:                                           # noqa: BLE001
-        pass
-    return {
-        "vercel_cli_signed_in": cli_token,
-        "aws_profile": str(s.get("aws_profile", "")).strip(),
-        "aws_region": str(s.get("aws_region", "")).strip(),
-        "aws_start_url": str(s.get("aws_start_url", "")).strip(),
-        "aws_sso_region": str(s.get("aws_sso_region", "")).strip(),
-        "vercel_token_set": bool(token),
-        "vercel_token_hint": (f"…{token[-4:]}" if token else ""),
-        "mongodb_uri_set": bool(mongo),
-        "mongodb_uri_hint": _redact_uri(mongo),
-        "deploy_model": str(s.get("deploy_model", "")).strip(),
-    }
+    """Use the same signed-in person's account summary as the Settings view."""
+    return deploy_summary_for(acting())
 
 
 def start_deployment(project: str, target: str, opts: dict) -> dict:
@@ -79,15 +52,36 @@ def start_deployment(project: str, target: str, opts: dict) -> dict:
     proj_dir = PROD_DIR / project
     if not proj_dir.is_dir():
         raise ValueError(f"no such project: {project}")
-    if target not in ("vercel", "aws_ec2", "aws_ecs"):
+    if target not in ("vercel", "aws_ec2", "aws_ecs", "netlify", "azure"):
         raise ValueError(f"unsupported target: {target}")
     if DEPLOY_API["state"] in ("off", "import-failed"):
         raise ValueError("the deployment agent is not running")
 
-    settings = load_settings()
+    # The accounts of the person deploying, never this machine's (deploy_tenancy.py).
+    owner = acting() or {}
+    settings = deploy_settings_for(owner)
     mongo = str(opts.get("mongodb_uri", "")).strip() or _deploy_mongo_uri(settings)
-    if not mongo:
-        raise ValueError("no production MongoDB URI — set one in Settings")
+    if mongo:
+        from urllib.parse import urlsplit, urlunsplit
+        from server_modules.services.mongo_common import db_name_for
+        parsed = urlsplit(mongo)
+        # An omitted Atlas database otherwise silently selects the shared
+        # `test` database. Explicit database choices remain authoritative.
+        if not parsed.path.strip("/"):
+            mongo = urlunsplit(parsed._replace(path="/" + db_name_for(project)))
+    from deployment_agent.customization import validate_answers
+    customization = validate_answers(opts.get("customization"))
+    options_path = proj_dir / ".agentforge" / "deployment-options.json"
+    options_path.parent.mkdir(parents=True, exist_ok=True)
+    options_path.write_text(json.dumps(customization, indent=2), encoding="utf-8")
+    try:
+        previous = json.loads((proj_dir / ".agentforge" / "deploy" / "run.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        previous = {}
+    opts = {**opts, "customization": customization, "previous_run_id": previous.get("id", "")}
+    credential_key = {"vercel": "vercel_token", "netlify": "netlify_token", "azure": "azure_credentials"}.get(target)
+    if credential_key and not settings.get(credential_key):
+        raise ValueError(f"Connect your {target.title()} credentials in Deployment accounts")
 
     if target.startswith("aws_"):
         aws_profile = str(settings.get("aws_profile", "")).strip()
@@ -117,7 +111,7 @@ def start_deployment(project: str, target: str, opts: dict) -> dict:
         }
 
     threading.Thread(target=_deploy_autopilot,
-                     args=(project, target, dict(opts), mongo, settings),
+                     args=(project, target, dict(opts), mongo, settings, owner.get("id", "")),
                      daemon=True).start()
     return dict(DEPLOY_RUNS[project])
 
@@ -148,8 +142,6 @@ def _deploy_drain_events(project: str, run_id: str, after: int) -> int:
         if not msg:
             continue
         kind = str(ev.get("type") or "")
-        level = {"error": "ERROR", "warning": "WARN"}.get(kind, "INFO")
-        elog(level, f"   🚀 {msg}")
         if run is not None:
             run["events"] = (run["events"] + [{
                 "id": int(ev.get("event_id") or 0),
@@ -164,45 +156,8 @@ def _deploy_drain_events(project: str, run_id: str, after: int) -> int:
     return after
 
 
-def _deploy_serving(run: dict) -> bool:
-    """Is the thing actually answering? Measured, not inferred from a score."""
-    url = str((run.get("repo") or {}).get("application_url") or "").strip()
-    if not url:
-        return False
-    for path in ("/api/health", "/"):
-        try:
-            r = requests.get(url.rstrip("/") + path, timeout=(5, 20),
-                             allow_redirects=False)
-            if r.status_code < 400:
-                return True
-        except requests.RequestException:
-            continue
-    return False
-
-
-def _deploy_wait(project: str, run_id: str, until: set, deadline: float,
-                 settle_from: set = frozenset(), settle_after: float = 240.0) -> dict:
-    """
-    Poll the run until it reaches one of `until`, draining events as it goes.
-
-    The cursor lives on the run, not in this function. It is called twice —
-    once to wait for the review and once for the deployment — and a local
-    cursor starting at 0 the second time replayed every analysis event into
-    the log and into the stepper a second time.
-
-    `settle_from` exists because the agent's own path to LIVE is not reachable
-    in every configuration. Its monitor promotes VALIDATING to LIVE only when a
-    readiness score clears 90, and that score's ceiling is exactly 100 with no
-    headroom: skipping the production build alone zeroes a 15-point category,
-    so the ceiling becomes 85 and the run can never be promoted no matter how
-    healthy the deployment is. This function used to wait the full 5400s for a
-    state that would never arrive and then report a live, serving site as
-    "the deployment agent stopped responding".
-
-    So after `settle_after` seconds parked in one of those states, the site
-    itself is asked. A URL that answers is the answer.
-    """
-    parked_since = None
+def _deploy_wait(project: str, run_id: str, until: set, deadline: float) -> dict:
+    """Wait for the authoritative run state; the monitor checks this release's commit."""
     while time.time() < deadline:
         run_state = DEPLOY_RUNS.get(project) or {}
         cursor = _deploy_drain_events(project, run_id,
@@ -211,7 +166,7 @@ def _deploy_wait(project: str, run_id: str, until: set, deadline: float,
         try:
             run = _deploy_call("GET", f"/api/runs/{run_id}", timeout=(2, 30))
         except Exception as e:
-            elog("WARN", f"   ⚠️  could not read the deployment: {e}")
+            log.warning(f"Could not read deployment {project}: {e}")
             time.sleep(4)
             continue
         state = str(run.get("state") or "")
@@ -220,43 +175,41 @@ def _deploy_wait(project: str, run_id: str, until: set, deadline: float,
             _deploy_set(project,
                         cursor=_deploy_drain_events(project, run_id, cursor))
             return run
-        if state in settle_from:
-            parked_since = parked_since or time.time()
-            if time.time() - parked_since > settle_after and _deploy_serving(run):
-                elog("INFO", "   🚀 the site is answering; not waiting for the "
-                             "agent's readiness score")
-                _deploy_set(project, cursor=_deploy_drain_events(project, run_id, cursor))
-                return {**run, "state": "LIVE"}
-        else:
-            parked_since = None
         time.sleep(2.5)
 
     try:
         run = _deploy_call("GET", f"/api/runs/{run_id}", timeout=(2, 30))
-        if _deploy_serving(run):
-            return {**run, "state": "LIVE"}
+        if run.get("state") in until:
+            return run
     except Exception:                                           # noqa: BLE001
         pass
-    raise TimeoutError("the deployment agent stopped responding")
+    raise TimeoutError("Deployment did not finish before its time limit; inspect its recorded activity")
 
 
 def _deploy_autopilot(project: str, target: str, opts: dict,
-                      mongo: str, settings: dict):
+                      mongo: str, settings: dict, owner: str = ""):
     """analyze → wait for review → deploy → wait for terminal → adopt."""
     proj_dir = PROD_DIR / project
     try:
-        elog("INFO", f"🚀 Deploying {project} to "
-                     f"{'Vercel' if target == 'vercel' else 'AWS EC2'}")
+        where = {"vercel": "Vercel", "aws_ecs": "AWS ECS", "netlify": "Netlify", "azure": "Azure"}.get(target, "AWS EC2")
+        log.info(f"Deploying {project} to {where}")
         started = _deploy_call("POST", "/api/runs/analyze", {
             "cloud_consent": True,
             "path": str(proj_dir),
             "target": target,
             "validate_container": bool(opts.get("validate_container", True)),
+            "customization": opts.get("customization") or {},
+            "previous_run_id": opts.get("previous_run_id") or "",
+            "owner": owner,
         })
         run_id = str(started.get("run_id") or "")
         _deploy_set(project, run_id=run_id, state="ANALYZING",
                     message="Reading the project…")
-        elog("INFO", f"   🚀 run {run_id[:8]} — analysing")
+        dest = proj_dir / ".agentforge" / "deploy"
+        dest.mkdir(parents=True, exist_ok=True)
+        (dest / "run.json").write_text(json.dumps({"id": run_id, "state": "ANALYZING", "project_path": str(proj_dir),
+                                                   "plan": {"target": target}}, indent=2), encoding="utf-8")
+        log.info(f"Deployment {project}: run {run_id[:8]} analysing")
 
         run = _deploy_wait(project, run_id, {"REVIEW_READY", "FAILED"},
                            time.time() + 3600)
@@ -270,38 +223,41 @@ def _deploy_autopilot(project: str, target: str, opts: dict,
                 "the deployment plan was written without a model, and the agent "
                 "will not deploy one — check the deploy model in Settings")
 
-        body = {"approved": True, "mongodb_uri": mongo}
+        # The run signs in to GitHub and Vercel as its owner, looked up by the
+        # agent for this run and never taken from the machine.
+        body = {"approved": True, "mongodb_uri": mongo, "owner": owner}
         if target == "vercel":
             token = str(settings.get("vercel_token", "")).strip()
             if token:
                 body["vercel_token"] = token
-        else:
+        elif target.startswith("aws_"):
 
             body["aws_profile"] = str(settings.get("aws_profile", "")).strip()
             body["region"] = (str(settings.get("aws_region", "")).strip()
                               or "ap-south-1")
 
         _deploy_set(project, state="DEPLOYING", message="Deploying…")
-        elog("INFO", "   🚀 review passed — deploying")
+        log.info(f"Deployment {project}: review passed")
         _deploy_call("POST", f"/api/runs/{run_id}/deploy", body)
 
-        run = _deploy_wait(project, run_id, DEPLOY_DONE, time.time() + 5400,
-                           settle_from={"VALIDATING"}, settle_after=240)
+        run = _deploy_wait(project, run_id, DEPLOY_DONE, time.time() + 5400)
 
         url = str((run.get("repo") or {}).get("application_url") or "")
         _deploy_set(project, url=url, finished=time.time())
         if run.get("state") == "LIVE":
-            elog("SUCCESS", f"   🚀 live{f' at {url}' if url else ''}")
+            log.info(f"Deployment {project} live at {url}")
         else:
             _deploy_set(project, error=str(run.get("error") or "")
                         or f"deployment ended {run.get('state')}")
-            elog("ERROR", f"   🚀 deployment ended {run.get('state')}"
+            log.error(f"Deployment {project} ended {run.get('state')}"
                           f" — {run.get('error') or 'no reason given'}")
         adopt_deploy(run_id, proj_dir)
     except Exception as e:
         _deploy_set(project, error=f"{type(e).__name__}: {e}",
                     state="FAILED", finished=time.time())
-        elog("ERROR", f"   🚀 deployment failed — {type(e).__name__}: {e}")
+        log.error(f"Deployment {project} failed — {type(e).__name__}: {e}")
+        if DEPLOY_RUNS.get(project, {}).get("run_id"):
+            adopt_deploy(DEPLOY_RUNS[project]["run_id"], proj_dir)
 
 
 def adopt_deploy(run_id: str, proj_dir: Path) -> bool:
@@ -342,10 +298,10 @@ def adopt_deploy(run_id: str, proj_dir: Path) -> bool:
             "target": (run.get("plan") or {}).get("target", ""),
         }, indent=2), encoding="utf-8")
 
-        elog("INFO", f"   🚀 deployment record saved ({run.get('state')})")
+        log.info(f"Deployment record saved for {proj_dir.name} ({run.get('state')})")
         return True
     except Exception as e:
-        elog("WARN", f"   ⚠️  Could not save the deployment record: "
+        log.warning(f"Could not save deployment record for {proj_dir.name}: "
                      f"{type(e).__name__}: {e}")
         return False
 
@@ -431,12 +387,17 @@ def read_deploy_results(proj_name: str) -> dict:
 
     d_dir = proj_dir / ".agentforge" / "deploy"
     live = DEPLOY_RUNS.get(proj_name)
+    from builder_agent.config import stack_of
+
     out = {
         "project": proj_name,
+        # Which targets fit: Vercel runs a Next.js app, not a workspace of services.
+        "stack": stack_of(proj_dir),
         "agent": deploy_status(),
         "live": dict(live) if live else None,
         "have": {"last": False},
         "settings": deploy_settings_summary(),
+        "customization": load(proj_dir / ".agentforge" / "deployment-options.json", {}) or {},
     }
     if d_dir.is_dir():
         run = load(d_dir / "run.json", {}) or {}
@@ -446,6 +407,16 @@ def read_deploy_results(proj_name: str) -> dict:
             retire_deploy(proj_dir, run.get("id", ""))
             run = {}
         if run:
+            try:
+                fresh = _deploy_call("GET", f"/api/runs/{run.get('id', '')}", timeout=(2, 5))
+                if Path(fresh["project_path"]).resolve() == proj_dir.resolve():
+                    run = fresh
+            except Exception:
+                pass
+            out["database_required"] = any(service.get("has_mongodb") for service in (run.get("spec") or {}).get("services", []))
+            if not live and run.get("state") not in DEPLOY_DONE:
+                out["live"] = {"project": proj_name, "run_id": run["id"], "state": run["state"],
+                               "target": (run.get("plan") or {}).get("target", ""), "message": "Resuming deployment status", "events": []}
             out["have"]["last"] = True
             out["last"] = {
                 "run_id": run.get("id", ""),

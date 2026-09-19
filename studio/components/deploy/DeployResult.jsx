@@ -1,7 +1,7 @@
 'use client'
 
 import { ExternalLink, GitBranch, Rocket } from 'lucide-react'
-import { STATE_TEXT } from '@/lib/deploy-constants'
+import { STATE_TEXT, TARGETS } from '@/lib/deploy-constants'
 import { SectionLabel, Tag } from '../ui'
 
 export default function DeployResult({ data }) {
@@ -16,7 +16,7 @@ export default function DeployResult({ data }) {
   const score = last.readiness?.score
 
   return (
-    <div className="border border-line2 p-4">
+    <div className="rounded-2xl border border-[rgba(145,158,171,0.16)] bg-[#1C252E] p-5 shadow-[0_0_2px_0_rgba(145,158,171,0.2),0_12px_24px_-4px_rgba(0,0,0,0.16)]">
       <SectionLabel className="border-b-2 border-line2 pb-1.5"
                     right={<Tag tone={{ pass: 'ok', fail: 'bad',
                                         run: 'accent' }[tone] || 'mute'}>
@@ -27,7 +27,7 @@ export default function DeployResult({ data }) {
 
       <dl className="mt-1 text-[11.5px]">
         <Row label="Target">
-          {last.target === 'vercel' ? 'Vercel' : 'AWS EC2'}
+          {TARGETS.find(target => target.id === last.target)?.label || last.target}
         </Row>
         {url && (
           <Row label="Live at">

@@ -24,6 +24,8 @@ export function StatusBar({ snap, state }) {
   if (aws.ecs_cluster) bits.push(['Cluster', aws.ecs_cluster, 'mute'])
   else if ((aws.instances || []).length) bits.push(['Instances', String(aws.instances.length), 'mute'])
   if (vercel.project_name) bits.push(['Project', vercel.project_name, 'mute'])
+  if (snap.netlify?.name) bits.push(['Netlify', snap.netlify.name, 'mute'])
+  if (snap.azure?.name) bits.push(['Azure', snap.azure.name, 'mute'])
 
   const live = String(state || '').toUpperCase() === 'LIVE'
   return (
@@ -185,6 +187,13 @@ export function Infrastructure({ snap }) {
   const vercel = snap?.vercel || {}
   if (Object.keys(aws).length) return <Aws aws={aws} />
   if (Object.keys(vercel).length) return <Vercel vercel={vercel} />
+  const hosted = snap.netlify?.site_id ? snap.netlify : snap.azure?.name ? snap.azure : null
+  if (hosted) return <Panel className="p-4"><SectionLabel>{snap.netlify?.site_id ? 'Netlify site' : 'Azure App Service'}</SectionLabel>
+    <p className="mt-3 text-[13px] font-semibold text-ink">{hosted.name}</p>
+    <p className="mt-1 text-[11px] text-muted">{hosted.resource_group || hosted.site_id} · {hosted.ready ? 'Running' : 'Preparing'}</p>
+    <p className="mt-2 font-mono text-[10px] text-muted">Commit: {hosted.commit_sha || 'pending'}</p>
+    <a href={hosted.application_url} target="_blank" rel="noreferrer" className="mt-3 inline-block text-[11px] text-accent">Open application</a>
+  </Panel>
   return <Empty>No provider information in this snapshot.</Empty>
 }
 

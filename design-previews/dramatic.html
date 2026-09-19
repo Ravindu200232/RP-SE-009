@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOIR · dramatic design system</title>
+    <!-- Tailwind via CDN, Outfit + JetBrains Mono, Lucide icons -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;900&family=JetBrains+Mono:wght@400;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Dramatic design tokens: sharp corners, high contrast, bold scale -->
+    <style>
+        /* design system core — sharp edges, no rounded corners anywhere */
+        * {
+            border-radius: 0 !important;
+            box-shadow: none !important;
+        }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #09090B;
+            color: #FAFAFA;
+            font-weight: 400;
+            letter-spacing: 0.01em;
+        }
+        .font-display {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* dramatic high-contrast surfaces */
+        .surface-card {
+            background: #101014;
+            border: 1px solid #1F1F23;
+        }
+        .surface-elevated {
+            background: #16161B;
+            border: 1px solid #2A2A30;
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, #8B5CF6 0%, #F43F5E 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: inline-block;
+        }
+        .bg-grid {
+            background-image: 
+                linear-gradient(rgba(139, 92, 246, 0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(139, 92, 246, 0.08) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        /* focus visible — high contrast outline */
+        :focus-visible {
+            outline: 2px solid #8B5CF6;
+            outline-offset: 2px;
+        }
+        /* selection */
+        ::selection {
+            background: #8B5CF6;
+            color: #09090B;
+        }
+        /* sharp, dramatic scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #09090B;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2A2A30;
+            border: 2px solid #09090B;
+        }
+    </style>
+</head>
+<body class="antialiased bg-[#09090B] text-[#FAFAFA] selection:bg-violet-600">
+
+    <!-- ========== NAVIGATION (sharp, high contrast) ========== -->
+    <header class="sticky top-0 z-50 border-b border-[#1F1F23] bg-[#09090B]/95 backdrop-blur-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- logo -->
+                <a href="#" class="flex items-center gap-2 group">
+                    <span class="w-8 h-8 bg-[#8B5CF6] flex items-center justify-center">
+                        <i data-lucide="zap" class="w-4 h-4 text-black"></i>
+                    </span>
+                    <span class="font-display text-lg tracking-tight">NOIR<span class="text-[#F43F5E]">/</span>STUDIO</span>
+                </a>
+                <!-- desktop menu -->
+                <nav class="hidden md:flex items-center gap-8 font-mono text-xs uppercase tracking-widest">
+                    <a href="#work" class="hover:text-[#8B5CF6] transition-colors">Work</a>
+                    <a href="#process" class="hover:text-[#8B5CF6] transition-colors">Process</a>
+                    <a href="#pricing" class="hover:text-[#8B5CF6] transition-colors">Pricing</a>
+                    <a href="#faq" class="hover:text-[#8B5CF6] transition-colors">FAQ</a>
+                </nav>
+                <a href="#contact" class="hidden md:inline-flex items-center gap-2 bg-[#FAFAFA] text-black px-5 py-2 font-mono text-xs font-bold uppercase tracking-widest hover:bg-[#8B5CF6] hover:text-black transition-colors">
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i> Start project
+                </a>
+                <!-- mobile menu icon (simple toggle) -->
+                <button class="md:hidden p-2 border border-[#2A2A30]" aria-label="menu">
+                    <i data-lucide="menu" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- ========== HERO (dramatic gradient + grid) ========== -->
+        <section class="relative overflow-hidden bg-grid">
+            <div class="absolute inset-0 bg-gradient-to-br from-[#8B5CF6]/20 via-transparent to-[#F43F5E]/20 pointer-events-none"></div>
+            <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-36">
+                <div class="max-w-4xl">
+                    <div class="flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-[#8B5CF6] mb-6">
+                        <span class="w-2 h-2 bg-[#F43F5E]"></span>
+                        <span>Dramatic design system · v2.0</span>
+                    </div>
+                    <h1 class="font-display text-5xl sm:text-6xl md:text-7xl leading-[0.95] tracking-tight">
+                        WE BUILD<br>
+                        <span class="text-gradient">UNFORGETTABLE</span><br>
+                        DIGITAL STAGES
+                    </h1>
+                    <p class="mt-8 text-lg md:text-xl text-[#A1A1AA] max-w-2xl leading-relaxed">
+                        High-contrast, theatrical interfaces that command attention. 
+                        Sharp edges, bold typography, and immersive motion — no compromise.
+                    </p>
+                    <div class="mt-10 flex flex-col sm:flex-row gap-4">
+                        <a href="#work" class="inline-flex items-center justify-center gap-2 bg-[#8B5CF6] px-8 py-4 font-mono text-sm font-bold uppercase tracking-widest hover:bg-[#F43F5E] transition-colors">
+                            <i data-lucide="sparkles" class="w-5 h-5"></i> See the work
+                        </a>
+                        <a href="#pricing" class="inline-flex items-center justify-center gap-2 border-2 border-[#2A2A30] px-8 py-4 font-mono text-sm font-bold uppercase tracking-widest hover:border-[#FAFAFA] transition-colors">
+                            <i data-lucide="arrow-down" class="w-5 h-5"></i> Pricing
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <!-- dramatic diagonal shape -->
+            <div class="absolute -bottom-10 -right-10 w-72 h-72 bg-[#F43F5E]/10 rotate-12 border border-[#F43F5E]/30"></div>
+        </section>
+
+        <!-- ========== STATS (high contrast band) ========== -->
+        <section class="border-y border-[#1F1F23] bg-[#101014]">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div class="flex flex-col">
+                    <span class="font-display text-4xl md:text-5xl text-[#8B5CF6]">120+</span>
+                    <span class="font-mono text-xs uppercase tracking-widest text-[#A1A1AA] mt-2">Projects shipped</span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-display text-4xl md:text-5xl text-[#F43F5E]">18</span>
+                    <span class="font-mono text-xs uppercase tracking-widest text-[#A1A1AA] mt-2">Design awards</span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-display text-4xl md:text-5xl text-[#8B5CF6]">99%</span>
+                    <span class="font-mono text-xs uppercase tracking-widest text-[#A1A1AA] mt-2">Client retention</span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-display text-4xl md:text-5xl text-[#F43F5E]">24/7</span>
+                    <span class="font-mono text-xs uppercase tracking-widest text-[#A1A1AA] mt-2">Creative support</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== FEATURES (sharp cards, no rounding) ========== -->
+        <section id="work" class="py-24 bg-[#09090B]">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-end justify-between mb-16">
+                    <div>
+                        <span class="font-mono text-xs uppercase tracking-widest text-[#8B5CF6]">// capabilities</span>
+                        <h2 class="font-display text-4xl md:text-5xl mt-3">BUILT FOR IMPACT</h2>
+                    </div>
+                    <div class="hidden md:block w-24 h-1 bg-[#F43F5E]"></div>
+                </div>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <!-- feature 1 -->
+                    <div class="surface-card p-8 group hover:border-[#8B5CF6] transition-colors">
+                        <div class="w-12 h-12 bg-[#8B5CF6]/20 flex items-center justify-center mb-6">
+                            <i data-lucide="layers" class="w-6 h-6 text-[#8B5CF6]"></i>
+                        </div>
+                        <h3 class="font-display text-xl mb-3">THEATRICAL LAYOUTS</h3>
+                        <p class="text-[#A1A1AA] leading-relaxed">Bold asymmetry, oversized type, and dramatic whitespace that guide the eye.</p>
+                    </div>
+                    <!-- feature 2 -->
+                    <div class="surface-card p-8 group hover:border-[#F43F5E] transition-colors">
+                        <div class="w-12 h-12 bg-[#F43F5E]/20 flex items-center justify-center mb-6">
+                            <i data-lucide="contrast" class="w-6 h-6 text-[#F43F5E]"></i>
+                        </div>
+                        <h3 class="font-display text-xl mb-3">HIGH CONTRAST</h3>
+                        <p class="text-[#A1A1AA] leading-relaxed">Pure blacks, vivid accents, and sharp edges — accessibility meets drama.</p>
+                    </div>
+                    <!-- feature 3 -->
+                    <div class="surface-card p-8 group hover:border-[#8B5CF6] transition-colors">
+                        <div class="w-12 h-12 bg-[#8B5CF6]/20 flex items-center justify-center mb-6">
+                            <i data-lucide="zap" class="w-6 h-6 text-[#8B5CF6]"></i>
+                        </div>
+                        <h3 class="font-display text-xl mb-3">IMMERSIVE MOTION</h3>
+                        <p class="text-[#A1A1AA] leading-relaxed">Micro-interactions and transitions that feel like scene changes.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== PROCESS (numbered, mono) ========== -->
+        <section id="process" class="py-24 bg-[#101014] border-y border-[#1F1F23]">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <span class="font-mono text-xs uppercase tracking-widest text-[#F43F5E]">// methodology</span>
+                <h2 class="font-display text-4xl md:text-5xl mt-3 mb-16">FROM SPARK TO SPOTLIGHT</h2>
+                <div class="grid md:grid-cols-4 gap-6">
+                    <div class="border-l-2 border-[#8B5CF6] pl-6">
+                        <span class="font-display text-5xl text-[#8B5CF6]">01</span>
+                        <h3 class="font-mono text-sm uppercase tracking-widest mt-4 mb-2">Discover</h3>
+                        <p class="text-[#A1A1AA] text-sm leading-relaxed">Deep immersion into your brand's dramatic core.</p>
+                    </div>
+                    <div class="border-l-2 border-[#F43F5E] pl-6">
+                        <span class="font-display text-5xl text-[#F43F5E]">02</span>
+                        <h3 class="font-mono text-sm uppercase tracking-widest mt-4 mb-2">Direct</h3>
+                        <p class="text-[#A1A1AA] text-sm leading-relaxed">Bold direction, sharp concepts, no dilution.</p>
+                    </div>
+                    <div class="border-l-2 border-[#8B5CF6] pl-6">
+                        <span class="font-display text-5xl text-[#8B5CF6]">03</span>
+                        <h3 class="font-mono text-sm uppercase tracking-widest mt-4 mb-2">Design</h3>
+                        <p class="text-[#A1A1AA] text-sm leading-relaxed">High-contrast systems, pixel-perfect execution.</p>
+                    </div>
+                    <div class="border-l-2 border-[#F43F5E] pl-6">
+                        <span class="font-display text-5xl text-[#F43F5E]">04</span>
+                        <h3 class="font-mono text-sm uppercase tracking-widest mt-4 mb-2">Deliver</h3>
+                        <p class="text-[#A1A1AA] text-sm leading-relaxed">Launch with theatrical impact, measure everything.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== BENEFITS (colour-blocked, dramatic) ========== -->
+        <section class="py-24 bg-[#09090B]">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid lg:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <span class="font-mono text-xs uppercase tracking-widest text-[#8B5CF6]">// why noir</span>
+                        <h2 class="font-display text-4xl md:text-5xl mt-3 leading-tight">DESIGN THAT<br><span class="text-gradient">DEMANDS ATTENTION</span></h2>
+                        <div class="mt-8 space-y-4">
+                            <div class="flex gap-4 items-start">
+                                <i data-lucide="check-circle" class="w-6 h-6 text-[#8B5CF6] mt-1"></i>
+                                <p class="text-[#A1A1AA]"><span class="text-white font-bold">Conversion-focused:</span> every element engineered for action.</p>
+                            </div>
+                            <div class="flex gap-4 items-start">
+                                <i data-lucide="check-circle" class="w-6 h-6 text-[#F43F5E] mt-1"></i>
+                                <p class="text-[#A1A1AA]"><span class="text-white font-bold">Accessible drama:</span> WCAG 2.2 AA with high-impact visuals.</p>
+                            </div>
+                            <div class="flex gap-4 items-start">
+                                <i data-lucide="check-circle" class="w-6 h-6 text-[#8B5CF6] mt-1"></i>
+                                <p class="text-[#A1A1AA]"><span class="text-white font-bold">Future-proof:</span> token-based, scalable, consistent.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- dramatic colour block graphic -->
+                    <div class="relative h-80 bg-[#101014] border border-[#2A2A30] overflow-hidden">
+                        <div class="absolute top-0 left-0 w-2/3 h-2/3 bg-[#8B5CF6]/30"></div>
+                        <div class="absolute bottom-0 right-0 w-1/2 h-1/2 bg-[#F43F5E]/30"></div>
+                        <div class="absolute top-1/3 left-1/3 w-24 h-24 bg-[#FAFAFA] rotate-12"></div>
+                        <div class="absolute bottom-8 left-8 font-display text-6xl text-[#09090B]">DR</div>
+                        <div class="absolute top-6 right-6 font-mono text-xs text-[#FAFAFA]">SHARP</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== TESTIMONIALS (sharp cards) ========== -->
+        <section class="py-24 bg-[#101014] border-y border-[#1F1F23]">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <span class="font-mono text-xs uppercase tracking-widest text-[#8B5CF6]">// testimonials</span>
+                <h2 class="font-display text-4xl md:text-5xl mt-3 mb-16">TRUSTED BY VISIONARIES</h2>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="surface-elevated p-8">
+                        <div class="flex gap-1 text-[#8B5CF6] mb-4"><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i></div>
+                        <p class="text-[#A1A1AA] leading-relaxed mb-6">"Noir Studio didn't just redesign our site — they gave us a brand presence that dominates the market."</p>
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-[#8B5CF6] flex items-center justify-center font-display">AK</div>
+                            <div><p class="font-bold">A. Kessler</p><p class="font-mono text-xs text-[#A1A1AA]">CEO, Fintech</p></div>
+                        </div>
+                    </div>
+                    <div class="surface-elevated p-8">
+                        <div class="flex gap-1 text-[#F43F5E] mb-4"><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i></div>
+                        <p class="text-[#A1A1AA] leading-relaxed mb-6">"The contrast and sharpness perfectly communicate our brand. Conversion rates up 40%."</p>
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-[#F43F5E] flex items-center justify-center font-display">JM</div>
+                            <div><p class="font-bold">J. Moreau</p><p class="font-mono text-xs text-[#A1A1AA]">Creative Director</p></div>
+                        </div>
+                    </div>
+                    <div class="surface-elevated p-8">
+                        <div class="flex gap-1 text-[#8B5CF6] mb-4"><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i></div>
+                        <p class="text-[#A1A1AA] leading-relaxed mb-6">"They understand drama. Every interaction feels intentional and bold."</p>
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-[#8B5CF6] flex items-center justify-center font-display">SL</div>
+                            <div><p class="font-bold">S. Lindqvist</p><p class="font-mono text-xs text-[#A1A1AA]">Founder, Studio</p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== PRICING (sharp, high contrast) ========== -->
+        <section id="pricing" class="py-24 bg-[#09090B]">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <span class="font-mono text-xs uppercase tracking-widest text-[#F43F5E]">// pricing</span>
+                <h2 class="font-display text-4xl md:text-5xl mt-3 mb-16">INVEST IN IMPACT</h2>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <!-- basic -->
+                    <div class="surface-card p-8 flex flex-col">
+                        <h3 class="font-display text-xl">STUDIO</h3>
+                        <p class="font-display text-5xl mt-4">$4.9k</p>
+                        <p class="font-mono text-xs text-[#A1A1AA] mt-1">/ project</p>
+                        <ul class="mt-8 space-y-3 text-sm text-[#A1A1AA] flex-1">
+                            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-[#8B5CF6]"></i> Landing page</li>
+                            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-[#8B5CF6]"></i> Design system</li>
+                            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-[#8B5CF6]"></i> 2 revisions</li>
+                        </ul>
+                        <a href="#" class="mt-8 border-2 border-[#2A2A30] text-center py-3 font-mono text-xs font-bold uppercase tracking-widest hover:border-[#8B5CF6] transition-colors">Start</a>
+                    </div>
+                    <!-- featured -->
+                    <div class="bg-[#8B5CF6] text-black p-8 flex flex-col relative">
+                        <span class="absolute top-4 right-4 bg-black text-white font-mono text-[10px] px-2 py-1">MOST DRAMATIC</span>
+                        <h3 class="font-display text-xl">SPOTLIGHT</h3>
+                        <p class="font-display text-5xl mt-4">$9.9k</p>
+                        <p class="font-mono text-xs mt-1">/ project</p>
+                        <ul class="mt-8 space-y-3 text-sm font-medium flex-1">
+                            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4"></i> Everything in Studio</li>
+                            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4"></i> Custom motion</li>
+                            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4"></i> Priority support</li>
+                            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4"></i> 6 revisions</li>
+                        </ul>
+                        <a href="#" class="mt-8 bg-black text-white text-center py-3 font-mono text-xs font-bold uppercase tracking-widest hover:bg-[#F43F5E] transition-colors">Go Spotlight</a>
+                    </div>
+                    <!-- enterprise -->
+                    <div class="surface-card p-8 flex flex-col">
+                        <h3 class="font-display text-xl">LEGEND</h3>
+                        <p class="font-display text-5xl mt-4">Custom</p>
+                        <p class="font-mono text-xs text-[#A1A1AA] mt-1">/ annual</p>
+                        <ul class="mt-8 space-y-3 text-sm text-[#A1A1AA] flex-1">
+                            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-[#F43F5E]"></i> Dedicated team</li>
+                            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-[#F43F5E]"></i> Full creative control</li>
+                            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-[#F43F5E]"></i> 24/7 support</li>
+                        </ul>
+                        <a href="#" class="mt-8 border-2 border-[#2A2A30] text-center py-3 font-mono text-xs font-bold uppercase tracking-widest hover:border-[#F43F5E] transition-colors">Contact</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== FAQ (sharp, minimal) ========== -->
+        <section id="faq" class="py-24 bg-[#101014] border-t border-[#1F1F23]">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                <span class="font-mono text-xs uppercase tracking-widest text-[#8B5CF6]">// faq</span>
+                <h2 class="font-display text-4xl md:text-5xl mt-3 mb-12">SHARP ANSWERS</h2>
+                <div class="space-y-4">
+                    <details class="surface-card group">
+                        <summary class="flex justify-between items-center p-6 cursor-pointer font-display text-lg hover:text-[#8B5CF6] transition-colors">Do you work with startups? <i data-lucide="plus" class="w-5 h-5 group-open:rotate-45 transition-transform"></i></summary>
+                        <p class="px-6 pb-6 text-[#A1A1AA]">Yes — we love bold startups. We offer flexible engagements from single pages to full platforms.</p>
+                    </details>
+                    <details class="surface-card group">
+                        <summary class="flex justify-between items-center p-6 cursor-pointer font-display text-lg hover:text-[#F43F5E] transition-colors">What makes your design "dramatic"? <i data-lucide="plus" class="w-5 h-5 group-open:rotate-45 transition-transform"></i></summary>
+                        <p class="px-6 pb-6 text-[#A1A1AA]">High contrast, sharp geometry, oversized typography, and theatrical spacing. Every pixel has intent.</p>
+                    </details>
+                    <details class="surface-card group">
+                        <summary class="flex justify-between items-center p-6 cursor-pointer font-display text-lg hover:text-[#8B5CF6] transition-colors">Is accessibility included? <i data-lucide="plus" class="w-5 h-5 group-open:rotate-45 transition-transform"></i></summary>
+                        <p class="px-6 pb-6 text-[#A1A1AA]">Absolutely. WCAG 2.2 AA is our baseline — drama never compromises usability.</p>
+                    </details>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== FOOTER (bold, colour block) ========== -->
+        <footer class="bg-[#8B5CF6] text-black">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+                <div class="grid md:grid-cols-3 gap-10 items-center">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-8 h-8 bg-black flex items-center justify-center"><i data-lucide="zap" class="w-4 h-4 text-[#8B5CF6]"></i></span>
+                            <span class="font-display text-xl">NOIR/STUDIO</span>
+                        </div>
+                        <p class="mt-4 text-sm font-medium max-w-xs">Dramatic design for brands that refuse to be ignored.</p>
+                    </div>
+                    <div class="flex gap-8 font-mono text-xs uppercase tracking-widest">
+                        <a href="#" class="hover:underline underline-offset-4">Instagram</a>
+                        <a href="#" class="hover:underline underline-offset-4">LinkedIn</a>
+                        <a href="#" class="hover:underline underline-offset-4">Behance</a>
+                    </div>
+                    <div class="md:text-right">
+                        <p class="font-mono text-xs">© 2025 NOIR STUDIO</p>
+                        <p class="font-mono text-xs mt-1">ALL RIGHTS RESERVED</p>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <!-- lucide icons init -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

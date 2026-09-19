@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sketch — Design that feels hand-drawn</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Delicious+Handrawn&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest">
+    </script>
+    <script>
+        tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            primary: '#1DAD97',
+                            'primary-dark': '#0a6b5a',
+                            secondary: '#F4EDE0',
+                            success: '#16A34A',
+                            warning: '#D97706',
+                            danger: '#DC2626',
+                            surface: '#FFFFFF',
+                            text: '#111827',
+                        },
+                        fontFamily: {
+                            display: ['"Delicious Handrawn"', 'cursive'],
+                            body: ['"JetBrains Mono"', 'monospace'],
+                        },
+                        boxShadow: {
+                            'sketch': '4px 4px 0px 0px rgba(0,0,0,0.12)',
+                            'sketch-lg': '6px 6px 0px 0px rgba(0,0,0,0.12)',
+                            'sketch-primary': '4px 4px 0px 0px rgba(29,173,151,0.35)',
+                        },
+                    }
+                }
+            }
+    </script>
+    <style>
+        summary::-webkit-details-marker {
+            display: none;
+        }
+        summary {
+            list-style: none;
+        }
+        details[open] .faq-chevron {
+            transform: rotate(180deg);
+        }
+        .faq-chevron {
+            transition: transform 0.3s ease;
+        }
+        .hero-squiggle {
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 100%;
+            height: 12px;
+        }
+    </style>
+</head>
+<body class="bg-secondary font-body text-text antialiased overflow-x-hidden">
+
+    <!-- ===== NAVIGATION ===== -->
+    <nav class="sticky top-0 z-50 bg-secondary/95 backdrop-blur border-b-2 border-dashed border-text/10">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="#" class="flex items-center gap-2 group">
+                    <span class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                        <i data-lucide="pencil" class="w-4 h-4 text-primary"></i>
+                    </span>
+                    <span class="font-display text-2xl leading-none">Sketch</span>
+                </a>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="text-sm font-medium hover:text-primary transition-colors">Features</a>
+                    <a href="#process" class="text-sm font-medium hover:text-primary transition-colors">Process</a>
+                    <a href="#pricing" class="text-sm font-medium hover:text-primary transition-colors">Pricing</a>
+                    <a href="#faq" class="text-sm font-medium hover:text-primary transition-colors">FAQ</a>
+                </div>
+                <a href="#" class="inline-flex items-center gap-2 rounded-full bg-primary text-white px-5 py-2.5 text-sm font-semibold hover:bg-primary-dark transition-colors shadow-sketch">
+                    Get Started
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== HERO ===== -->
+    <section class="relative overflow-hidden">
+        <!-- Decorative background dots -->
+        <div class="absolute top-20 left-10 w-2 h-2 rounded-full bg-primary/30"></div>
+        <div class="absolute top-40 right-20 w-3 h-3 rounded-full bg-warning/30"></div>
+        <div class="absolute bottom-20 left-1/4 w-1.5 h-1.5 rounded-full bg-danger/30"></div>
+        <div class="absolute top-32 left-1/2 w-2 h-2 rounded-full bg-primary/20"></div>
+
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+            <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                <div>
+                    <p class="inline-flex items-center gap-2 text-sm font-semibold text-primary mb-4 bg-primary/5 border border-dashed border-primary/30 rounded-full px-4 py-1.5">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                        A friendly design system
+                    </p>
+                    <h1 class="font-display text-4xl sm:text-5xl lg:text-[56px] leading-[1.1] mb-6 relative inline-block">
+                        Design that feels <span class="text-primary">hand-drawn</span>, built to ship.
+                        <svg class="hero-squiggle" viewBox="0 0 300 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M2 8 C 40 2, 80 12, 120 6 S 200 2, 298 6" stroke="#1DAD97" stroke-width="3" stroke-linecap="round" stroke-dasharray="6 3"/>
+                        </svg>
+                    </h1>
+                    <p class="text-base text-text/70 mb-8 max-w-md leading-relaxed">
+                        Sketch brings warmth to your UI with hand-drawn aesthetics, accessible components, and token-based theming — all in one cohesive system.
+                    </p>
+                    <div class="flex flex-wrap gap-4">
+                        <a href="#" class="inline-flex items-center gap-2 rounded-full bg-primary text-white px-6 py-3 text-sm font-semibold hover:bg-primary-dark transition-colors shadow-sketch">
+                            Start Sketching
+                            <i data-lucide="pencil" class="w-4 h-4"></i>
+                        </a>
+                        <a href="#process" class="inline-flex items-center gap-2 rounded-full bg-surface text-text px-6 py-3 text-sm font-semibold border-2 border-dashed border-text/20 hover:border-primary hover:text-primary transition-colors">
+                            See the Process
+                            <i data-lucide="arrow-down" class="w-4 h-4"></i>
+                        </a>
+                    </div>
+                    <div class="mt-8 flex items-center gap-4">
+                        <div class="flex -space-x-2">
+                            <div class="w-8 h-8 rounded-full bg-primary border-2 border-secondary flex items-center justify-center text-white text-[10px] font-bold">A</div>
+                            <div class="w-8 h-8 rounded-full bg-warning border-2 border-secondary flex items-center justify-center text-white text-[10px] font-bold">S</div>
+                            <div class="w-8 h-8 rounded-full bg-danger border-2 border-secondary flex items-center justify-center text-white text-[10px] font-bold">M</div>
+                            <div class="w-8 h-8 rounded-full bg-success border-2 border-secondary flex items-center justify-center text-white text-[10px] font-bold">+</div>
+                        </div>
+                        <p class="text-xs text-text/60">Trusted by 15,000+ designers</p>
+                    </div>
+                </div>
+                <div class="relative">
+                    <svg viewBox="0 0 420 340" class="w-full h-auto" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Large hand-drawn circle -->
+                        <circle cx="210" cy="170" r="130" stroke="#1DAD97" stroke-width="3" stroke-dasharray="12 6"/>
+                        <!-- Inner sketch UI mockup -->
+                        <rect x="150" y="110" width="120" height="90" rx="8" fill="#FFFFFF" stroke="#111827" stroke-width="2" stroke-dasharray="6 3"/>
+                        <line x1="170" y1="140" x2="250" y2="140" stroke="#1DAD97" stroke-width="3" stroke-linecap="round"/>
+                        <line x1="170" y1="160" x2="230" y2="160" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 2"/>
+                        <circle cx="170" cy="180" r="5" fill="#D97706"/>
+                        <circle cx="190" cy="180" r="5" fill="#DC2626"/>
+                        <circle cx="210" cy="180" r="5" fill="#16A34A"/>
+                        <!-- Pencil -->
+                        <g transform="rotate(-25 210 170)">
+                            <rect x="170" y="160" width="80" height="20" fill="#F4EDE0" stroke="#111827" stroke-width="2"/>
+                            <polygon points="250,160 270,170 250,180" fill="#1DAD97" stroke="#111827" stroke-width="2"/>
+                            <rect x="170" y="160" width="80" height="5" fill="#111827" opacity="0.08"/>
+                        </g>
+                        <!-- Color dots -->
+                        <circle cx="90" cy="90" r="14" fill="#1DAD97"/>
+                        <circle cx="330" cy="90" r="9" fill="#D97706"/>
+                        <circle cx="330" cy="250" r="11" fill="#DC2626"/>
+                        <circle cx="90" cy="250" r="7" fill="#16A34A"/>
+                        <!-- Hand-drawn star -->
+                        <path d="M310 130 L315 140 L325 142 L318 150 L320 160 L310 155 L300 160 L302 150 L295 142 L305 140 Z" fill="#D97706" stroke="#111827" stroke-width="1"/>
+                        <!-- Squiggle line -->
+                        <path d="M60 210 Q 80 200 100 210 T 140 210 T 180 210" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 2"/>
+                        <!-- Small hand-drawn arrow -->
+                        <path d="M280 70 Q 300 50 320 70" stroke="#111827" stroke-width="2" stroke-linecap="round"/>
+                        <polygon points="320,70 310,65 315,75" fill="#111827"/>
+                    </svg>
+                    <!-- Floating card -->
+                    <div class="absolute bottom-6 left-2 sm:left-6 bg-surface border-2 border-dashed border-primary rounded-2xl p-4 shadow-sketch rotate-[-2deg]">
+                        <div class="flex items-center gap-2 mb-1">
+                            <i data-lucide="check-circle" class="w-4 h-4 text-success"></i>
+                            <p class="font-display text-lg text-primary leading-none">100% Accessible</p>
+                        </div>
+                        <p class="text-xs text-text/60">WCAG 2.2 AA compliant</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== STATS ===== -->
+    <section class="py-16 bg-surface border-y-2 border-dashed border-text/10">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-secondary border-2 border-dashed border-text/10 rounded-2xl p-6 text-center shadow-sketch hover:shadow-sketch-lg transition-shadow">
+                    <p class="font-display text-4xl text-primary leading-none">120+</p>
+                    <p class="text-xs text-text/60 mt-2 font-medium">Components</p>
+                </div>
+                <div class="bg-secondary border-2 border-dashed border-text/10 rounded-2xl p-6 text-center shadow-sketch hover:shadow-sketch-lg transition-shadow rotate-1">
+                    <p class="font-display text-4xl text-primary leading-none">99.9%</p>
+                    <p class="text-xs text-text/60 mt-2 font-medium">Uptime</p>
+                </div>
+                <div class="bg-secondary border-2 border-dashed border-text/10 rounded-2xl p-6 text-center shadow-sketch hover:shadow-sketch-lg transition-shadow">
+                    <p class="font-display text-4xl text-primary leading-none">15k+</p>
+                    <p class="text-xs text-text/60 mt-2 font-medium">Users</p>
+                </div>
+                <div class="bg-secondary border-2 border-dashed border-text/10 rounded-2xl p-6 text-center shadow-sketch hover:shadow-sketch-lg transition-shadow rotate-[-1deg]">
+                    <p class="font-display text-4xl text-primary leading-none">4.9/5</p>
+                    <p class="text-xs text-text/60 mt-2 font-medium">Rating</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FEATURES ===== -->
+    <section id="features" class="py-16 lg:py-24 scroll-mt-20">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <p class="inline-flex items-center gap-2 text-sm font-semibold text-primary mb-3 bg-primary/5 border border-dashed border-primary/30 rounded-full px-4 py-1.5">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i>
+                    Features
+                </p>
+                <h2 class="font-display text-3xl lg:text-4xl">Everything you need to sketch</h2>
+                <p class="text-sm text-text/60 mt-4 max-w-md mx-auto leading-relaxed">Thoughtfully crafted components that feel hand-drawn but behave like professional-grade UI.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-surface border-2 border-dashed border-text/10 rounded-2xl p-6 shadow-sketch hover:shadow-sketch-lg transition-shadow group">
+                    <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                        <i data-lucide="palette" class="w-6 h-6 text-primary"></i>
+                    </div>
+                    <h3 class="font-display text-xl mb-2">Hand-drawn aesthetics</h3>
+                    <p class="text-sm text-text/60 leading-relaxed">Every component features organic, sketch-like details that bring warmth to your product.</p>
+                </div>
+                <div class="bg-surface border-2 border-dashed border-text/10 rounded-2xl p-6 shadow-sketch hover:shadow-sketch-lg transition-shadow rotate-1 group">
+                    <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                        <i data-lucide="accessibility" class="w-6 h-6 text-primary"></i>
+                    </div>
+                    <h3 class="font-display text-xl mb-2">Accessible by default</h3>
+                    <p class="text-sm text-text/60 leading-relaxed">WCAG 2.2 AA compliant with keyboard-first interactions and visible focus states.</p>
+                </div>
+                <div class="bg-surface border-2 border-dashed border-text/10 rounded-2xl p-6 shadow-sketch hover:shadow-sketch-lg transition-shadow group">
+                    <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                        <i data-lucide="token" class="w-6 h-6 text-primary"></i>
+                    </div>
+                    <h3 class="font-display text-xl mb-2">Token-based theming</h3>
+                    <p class="text-sm text-text/60 leading-relaxed">Semantic design tokens make it easy to theme your product consistently.</p>
+                </div>
+                <div class="bg-surface border-2 border-dashed border-text/10 rounded-2xl p-6 shadow-sketch hover:shadow-sketch-lg transition-shadow group">
+                    <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                        <i data-lucide="smartphone" class="w-6 h-6 text-primary"></i>
+                    </div>
+                    <h3 class="font-display text-xl mb-2">Responsive layouts</h3>
+                    <p class="text-sm text-text/60 leading-relaxed">Components adapt seamlessly from 400px to 4K with consistent spacing.</p>
+                </div>
+                <div class="bg-surface border-2 border-dashed border-text/10 rounded-2xl p-6 shadow-sketch hover:shadow-sketch-lg transition-shadow rotate-[-1deg] group">
+                    <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                        <i data-lucide="keyboard" class="w-6 h-6 text-primary"></i>
+                    </div>
+                    <h3 class="font-display text-xl mb-2">Keyboard-first</h3>
+                    <p class="text-sm text-text/60 leading-relaxed">Full keyboard navigation support with logical tab order and focus traps.</p>
+                </div>
+                <div class="bg-surface border-2 border-dashed border-text/10 rounded-2xl p-6 shadow-sketch hover:shadow-sketch-lg transition-shadow group">
+                    <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                        <i data-lucide="book-open" class="w-6 h-6 text-primary"></i>
+                    </div>
+                    <h3 class="font-display text-xl mb-2">Documentation</h3>
+                    <p class="text-sm text-text/60 leading-relaxed">Comprehensive docs with examples, migration guides, and best practices.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PROCESS ===== -->
+    <section id="process" class="py-16 lg:py-24 bg-surface border-y-2 border-dashed border-text/10 scroll-mt-20">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <p class="inline-flex items-center gap-2 text-sm font-semibold text-primary mb-3 bg-primary/5 border border-dashed border-primary/30 rounded-full px-4 py-1.5">
+                    <i data-lucide="route" class="w-4 h-4"></i>
+                    Process
+                </p>
+                <h2 class="font-display text-3xl lg:text-4xl">From sketch to ship</h2>
+                <p class="text-sm text-text/60 mt-4 max-w-md mx-auto leading-relaxed">A simple, proven workflow that keeps your team moving.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="relative bg-secondary border-2 border-dashed border-text/10 rounded-2xl p-6 shadow-sketch hover:shadow-sketch-lg transition-shadow">
+                    <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-display text-lg mb-4 shadow-sketch">1</div>
+                    <h3 class="font-display text-xl mb-2">Sketch</h3>
+                    <p class="text-sm text-text/60 leading-relaxed">Start with hand-drawn wireframes and explore ideas freely.</p>
+                    <div class="absolute -right-3 top-1/2 hidden lg:block">
+                        <i data-lucide="arrow-right" class="w-5 h-5 text-primary"></i>
+                    </div>
+                </div>
+                <div class="relative bg-secondary border-2 border-dashed border-text/10 rounded-2xl p-6 shadow-sketch hover:shadow-sketch-lg transition-shadow rotate-1">
+                    <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-display text-lg mb-4 shadow-sketch">2</div>
+                    <h3 class="font-display text-xl mb-2">Prototype</h3>
+                    <p class="text-sm text-text/60 leading-relaxed">Turn sketches into interactive prototypes with real components.</p>
+                    <div class="absolute -right-3 top-1/2 hidden lg:block">
+                        <i data-lucide="arrow-right" class="w-5 h-5 text-primary"></i>
+                    </div>
+                </div>
+                <div class="relative bg-secondary border-2 border-dashed border-text/10 rounded-2xl p-6 shadow-sketch hover:shadow-sketch-lg transition-shadow">
+                    <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-display text-lg mb-4 shadow-sketch">3</div>
+                    <h3 class="font-display text-xl mb-2">Test</h3>
+                    <p class="text-sm text-text/60 leading-relaxed">Validate with users and refine based on real feedback.</p>
+                    <div class="absolute -right-3 top-1/2 hidden lg:block">
+                        <i data-lucide="arrow-right" class="w-5 h-5 text-primary"></i>
+                    </div>
+                </div>
+                <div class="relative bg-secondary border-2 border-dashed border-text/10 rounded-2xl p-6 shadow-sketch hover:shadow-sketch-lg transition-shadow rotate-[-1deg]">
+                    <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-display text-lg mb-4 shadow-sketch">4</div>
+                    <h3 class="font-display text-xl mb-2">Ship</h3>
+                    <p class="text-sm text-text/60 leading-relaxed">Deploy with confidence, knowing your UI is accessible and consistent.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== BENEFITS ===== -->
+    <section class="py-16 lg:py-24">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                <div>
+                    <p class="inline-flex items-center gap-2 text-sm font-semibold text-primary mb-3 bg-primary/5 border border-dashed border-primary/30 rounded-full px-4 py-1.5">
+                        <i data-lucide="heart" class="w-4 h-4"></i>
+                        Benefits
+                    </p>
+                    <h2 class="font-display text-3xl lg:text-4xl mb-6">Why teams choose Sketch</h2>
+                    <p class="text-sm text-text/60 mb-8 leading-relaxed max-w-md">Sketch isn't just another design system. It's a complete workflow that helps teams ship better products, faster.</p>
+                    <div class="space-y-5">
+                        <div class="flex items-start gap-3 bg-surface border-2 border-dashed border-text/10 rounded-2xl p-4 shadow-sketch">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-success mt-0.5 shrink-0"></i>
+                            <div>
+                                <h4 class="font-display text-lg">Faster shipping</h4>
+                                <p class="text-sm text-text/60 leading-relaxed">Pre-built components cut development time by 40%.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3 bg-surface border-2 border-dashed border-text/10 rounded-2xl p-4 shadow-sketch rotate-1">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-success mt-0.5 shrink-0"></i>
+                            <div>
+                                <h4 class="font-display text-lg">Consistent quality</h4>
+                                <p class="text-sm text-text/60 leading-relaxed">Every component follows the same accessibility and design standards.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3 bg-surface border-2 border-dashed border-text/10 rounded-2xl p-4 shadow-sketch">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-success mt-0.5 shrink-0"></i>
+                            <div>
+                                <h4 class="font-display text-lg">Happy users</h4>
+                                <p class="text-sm text-text/60 leading-relaxed">Warm, approachable interfaces that users love to interact with.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative">
+                    <svg viewBox="0 0 420 320" class="w-full h-auto" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Large hand-drawn circle -->
+                        <circle cx="210" cy="160" r="140" stroke="#1DAD97" stroke-width="3" stroke-dasharray="14 7"/>
+                        <!-- Inner UI card -->
+                        <rect x="140" y="100" width="140" height="100" rx="12" fill="#FFFFFF" stroke="#111827" stroke-width="2" stroke-dasharray="6 3"/>
+                        <line x1="160" y1="130" x2="260" y2="130" stroke="#1DAD97" stroke-width="4" stroke-linecap="round"/>
+                        <line x1="160" y1="150" x2="240" y2="150" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 2"/>
+                        <line x1="160" y1="170" x2="220" y2="170" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 2"/>
+                        <circle cx="160" cy="190" r="6" fill="#D97706"/>
+                        <circle cx="180" cy="190" r="6" fill="#DC2626"/>
+                        <circle cx="200" cy="190" r="6" fill="#16A34A"/>
+                        <!-- Hand-drawn arrow -->
+                        <path d="M300 80 Q 320 60 340 80" stroke="#111827" stroke-width="2" stroke-linecap="round"/>
+                        <polygon points="340,80 330,75 335,85" fill="#111827"/>
+                        <!-- Squiggle -->
+                        <path d="M70 220 Q 90 210 110 220 T 150 220" stroke="#D97706" stroke-width="2" stroke-linecap="round"/>
+                        <!-- Small stars -->
+                        <path d="M80 80 L83 88 L91 90 L85 96 L86 104 L80 100 L74 104 L75 96 L69 90 L77 88 Z" fill="#D97706"/>
+                        <path d="M340 240 L342 246 L348 248 L344 253 L345 259 L340 256 L335 259 L336 253 L332 248 L338 246 Z" fill="#1DAD97"/>
+                    </svg>
+                    <div class="absolute top-8 right-4 bg-surface border-2 border-dashed border-warning rounded-2xl p-3 shadow-sketch rotate-2">
+                        <p class="font-display text-base text-warning leading-none">40% faster</p>
+                        <p class="text-[10px] text-text/60">time to ship</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== TESTIMONIALS ===== -->
+    <section class="py-16 lg:py-24 bg-surface border-y-2 border-dashed border-text/10">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <p class="inline-flex items-center gap-2 text-sm font-semibold text-primary mb-3 bg-primary/5 border border-dashed border-primary/30 rounded-full px-4 py-1.5">
+                    <i data-lucide="message-circle" class="w-4 h-4"></i>
+                    Testimonials
+                </p>
+                <h2 class="font-display text-3xl lg:text-4xl">Loved by teams everywhere</h2>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-secondary border-2 border-dashed border-text/10 rounded-2xl p-6 shadow-sketch hover:shadow-sketch-lg transition-shadow">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                    </div>
+                    <p class="text-sm text-text/70 mb-4 leading-relaxed">"Sketch transformed our design workflow. The hand-drawn aesthetic is a hit with our users, and the accessibility features are top-notch."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-display text-sm">A</div>
+                        <div>
+                            <p class="font-display text-lg leading-none">Alex Rivera</p>
+                            <p class="text-xs text-text/60 mt-1">Product Designer, Acme</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-secondary border-2 border-dashed border-text/10 rounded-2xl p-6 shadow-sketch hover:shadow-sketch-lg transition-shadow rotate-1">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                    </div>
+                    <p class="text-sm text-text/70 mb-4 leading-relaxed">"The token-based theming is brilliant. We rebranded our entire product in a day. The documentation is incredibly thorough."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-warning flex items-center justify-center text-white font-display text-sm">S</div>
+                        <div>
+                            <p class="font-display text-lg leading-none">Sarah Chen</p>
+                            <p class="text-xs text-text/60 mt-1">Engineering Lead, TechFlow</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-secondary border-2 border-dashed border-text/10 rounded-2xl p-6 shadow-sketch hover:shadow-sketch-lg transition-shadow">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-warning text-warning"></i>
+                    </div>
+                    <p class="text-sm text-text/70 mb-4 leading-relaxed">"As someone with a visual impairment, I appreciate the WCAG 2.2 AA compliance. Sketch is the first design system that truly gets accessibility right."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-danger flex items-center justify-center text-white font-display text-sm">M</div>
+                        <div>
+                            <p class="font-display text-lg leading-none">Marcus Johnson</p>
+                            <p class="text-xs text-text/60 mt-1">Accessibility Advocate</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PRICING ===== -->
+    <section id="pricing" class="py-16 lg:py-24 scroll-mt-20">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <p class="inline-flex items-center gap-2 text-sm font-semibold text-primary mb-3 bg-primary/5 border border-dashed border-primary/30 rounded-full px-4 py-1.5">
+                    <i data-lucide="tag" class="w-4 h-4"></i>
+                    Pricing
+                </p>
+                <h2 class="font-display text-3xl lg:text-4xl">Simple, transparent pricing</h2>
+                <p class="text-sm text-text/60 mt-4 max-w-md mx-auto leading-relaxed">Start free. Upgrade when you're ready. No hidden fees.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                <!-- Hobby -->
+                <div class="bg-surface border-2 border-dashed border-text/10 rounded-2xl p-6 shadow-sketch hover:shadow-sketch-lg transition-shadow flex flex-col">
+                    <h3 class="font-display text-xl mb-1">Hobby</h3>
+                    <p class="text-sm text-text/60 mb-4">For personal projects</p>
+                    <p class="font-display text-4xl text-primary mb-6">$12<span class="text-sm text-text/60 font-body">/mo</span></p>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            Up to 3 projects
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            All components
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            Community support
+                        </li>
+                    </ul>
+                    <a href="#" class="block text-center rounded-full border-2 border-dashed border-text/20 px-4 py-2.5 text-sm font-semibold hover:border-primary hover:text-primary transition-colors">
+                        Get Started
+                    </a>
+                </div>
+                <!-- Pro -->
+                <div class="bg-surface border-2 border-primary rounded-2xl p-6 shadow-sketch-primary relative flex flex-col">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-semibold px-3 py-1 rounded-full shadow-sketch whitespace-nowrap">
+                        Most Popular
+                    </div>
+                    <h3 class="font-display text-xl mb-1">Pro</h3>
+                    <p class="text-sm text-text/60 mb-4">For growing teams</p>
+                    <p class="font-display text-4xl text-primary mb-6">$24<span class="text-sm text-text/60 font-body">/mo</span></p>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            Unlimited projects
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            Advanced theming
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            Priority support
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            Team collaboration
+                        </li>
+                    </ul>
+                    <a href="#" class="block text-center rounded-full bg-primary text-white px-4 py-2.5 text-sm font-semibold hover:bg-primary-dark transition-colors shadow-sketch">
+                        Start Free Trial
+                    </a>
+                </div>
+                <!-- Enterprise -->
+                <div class="bg-surface border-2 border-dashed border-text/10 rounded-2xl p-6 shadow-sketch hover:shadow-sketch-lg transition-shadow flex flex-col">
+                    <h3 class="font-display text-xl mb-1">Enterprise</h3>
+                    <p class="text-sm text-text/60 mb-4">For large organizations</p>
+                    <p class="font-display text-4xl text-primary mb-6">Custom</p>
+                    <ul class="space-y-3 mb-8 flex-grow">
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            SSO & SAML
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            Custom contracts
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+                            Dedicated support
+                        </li>
+                    </ul>
+                    <a href="#" class="block text-center rounded-full border-2 border-dashed border-text/20 px-4 py-2.5 text-sm font-semibold hover:border-primary hover:text-primary transition-colors">
+                        Contact Sales
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section id="faq" class="py-16 lg:py-24 bg-surface border-y-2 border-dashed border-text/10 scroll-mt-20">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <p class="inline-flex items-center gap-2 text-sm font-semibold text-primary mb-3 bg-primary/5 border border-dashed border-primary/30 rounded-full px-4 py-1.5">
+                    <i data-lucide="help-circle" class="w-4 h-4"></i>
+                    FAQ
+                </p>
+                <h2 class="font-display text-3xl lg:text-4xl">Frequently asked questions</h2>
+            </div>
+            <div class="space-y-4">
+                <details class="group bg-secondary border-2 border-dashed border-text/10 rounded-2xl p-6 shadow-sketch open:border-primary/40 transition-colors">
+                    <summary class="font-display text-lg cursor-pointer flex items-center justify-between select-none">
+                        Is Sketch free to use?
+                        <i data-lucide="chevron-down" class="faq-chevron w-5 h-5 text-primary shrink-0 ml-4"></i>
+                    </summary>
+                    <p class="text-sm text-text/60 mt-4 leading-relaxed">Yes! The Hobby plan is free forever. You get access to all components with up to 3 projects. Upgrade to Pro for unlimited projects and advanced features.</p>
+                </details>
+                <details class="group bg-secondary border-2 border-dashed border-text/10 rounded-2xl p-6 shadow-sketch open:border-primary/40 transition-colors">
+                    <summary class="font-display text-lg cursor-pointer flex items-center justify-between select-none">
+                        Can I customize the design tokens?
+                        <i data-lucide="chevron-down" class="faq-chevron w-5 h-5 text-primary shrink-0 ml-4"></i>
+                    </summary>
+                    <p class="text-sm text-text/60 mt-4 leading-relaxed">Absolutely. Every color, spacing value, and font weight is exposed as a semantic token. You can override them in your Tailwind config or CSS variables.</p>
+                </details>
+                <details class="group bg-secondary border-2 border-dashed border-text/10 rounded-2xl p-6 shadow-sketch open:border-primary/40 transition-colors">
+                    <summary class="font-display text-lg cursor-pointer flex items-center justify-between select-none">
+                        Is Sketch accessible?
+                        <i data-lucide="chevron-down" class="faq-chevron w-5 h-5 text-primary shrink-0 ml-4"></i>
+                    </summary>
+                    <p class="text-sm text-text/60 mt-4 leading-relaxed">Yes, every component is built to WCAG 2.2 AA standards. We test with screen readers, keyboard navigation, and color contrast tools.</p>
+                </details>
+                <details class="group bg-secondary border-2 border-dashed border-text/10 rounded-2xl p-6 shadow-sketch open:border-primary/40 transition-colors">
+                    <summary class="font-display text-lg cursor-pointer flex items-center justify-between select-none">
+                        What frameworks do you support?
+                        <i data-lucide="chevron-down" class="faq-chevron w-5 h-5 text-primary shrink-0 ml-4"></i>
+                    </summary>
+                    <p class="text-sm text-text/60 mt-4 leading-relaxed">Sketch works with any framework that supports CSS and HTML. We provide official integrations for React, Vue, and Svelte, plus vanilla HTML/CSS.</p>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="py-16 bg-secondary">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+                <div>
+                    <a href="#" class="flex items-center gap-2 mb-4">
+                        <span class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                            <i data-lucide="pencil" class="w-4 h-4 text-primary"></i>
+                        </span>
+                        <span class="font-display text-2xl">Sketch</span>
+                    </a>
+                    <p class="text-sm text-text/60 leading-relaxed">A friendly design system for teams who want warmth without sacrificing clarity.</p>
+                    <div class="flex gap-3 mt-4">
+                        <a href="#" class="w-8 h-8 rounded-full bg-surface border-2 border-dashed border-text/20 flex items-center justify-center hover:border-primary hover:text-primary transition-colors" aria-label="Twitter">
+                            <i data-lucide="twitter" class="w-4 h-4"></i>
+                        </a>
+                        <a href="#" class="w-8 h-8 rounded-full bg-surface border-2 border-dashed border-text/20 flex items-center justify-center hover:border-primary hover:text-primary transition-colors" aria-label="GitHub">
+                            <i data-lucide="github" class="w-4 h-4"></i>
+                        </a>
+                        <a href="#" class="w-8 h-8 rounded-full bg-surface border-2 border-dashed border-text/20 flex items-center justify-center hover:border-primary hover:text-primary transition-colors" aria-label="LinkedIn">
+                            <i data-lucide="linkedin" class="w-4 h-4"></i>
+                        </a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="font-display text-lg mb-4">Product</h4>
+                    <ul class="space-y-2 text-sm text-text/60">
+                        <li><a href="#" class="hover:text-primary transition-colors">Features</a></li>
+                        <li><a href="#" class="hover:text-primary transition-colors">Pricing</a></li>
+                        <li><a href="#" class="hover:text-primary transition-colors">Changelog</a></li>
+                        <li><a href="#" class="hover:text-primary transition-colors">Roadmap</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-display text-lg mb-4">Company</h4>
+                    <ul class="space-y-2 text-sm text-text/60">
+                        <li><a href="#" class="hover:text-primary transition-colors">About</a></li>
+                        <li><a href="#" class="hover:text-primary transition-colors">Blog</a></li>
+                        <li><a href="#" class="hover:text-primary transition-colors">Careers</a></li>
+                        <li><a href="#" class="hover:text-primary transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-display text-lg mb-4">Resources</h4>
+                    <ul class="space-y-2 text-sm text-text/60">
+                        <li><a href="#" class="hover:text-primary transition-colors">Documentation</a></li>
+                        <li><a href="#" class="hover:text-primary transition-colors">API Reference</a></li>
+                        <li><a href="#" class="hover:text-primary transition-colors">Community</a></li>
+                        <li><a href="#" class="hover:text-primary transition-colors">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t-2 border-dashed border-text/10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="text-xs text-text/60">© 2024 Sketch Design System. All rights reserved.</p>
+                <div class="flex gap-6">
+                    <a href="#" class="text-xs text-text/60 hover:text-primary transition-colors">Privacy</a>
+                    <a href="#" class="text-xs text-text/60 hover:text-primary transition-colors">Terms</a>
+                    <a href="#" class="text-xs text-text/60 hover:text-primary transition-colors">Cookies</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Initialize Lucide Icons -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

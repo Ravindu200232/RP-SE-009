@@ -1,0 +1,29 @@
+# The Ollama models AgentForge expects to find.
+#
+# Cloud models are served by ollama.com, so pulling one registers it locally
+# rather than downloading weights: it is quick, it costs no disk, and without
+# it `ollama list` on a fresh machine is empty and the model picker in Settings
+# has nothing to offer. That is the whole reason this file exists - the list
+# lived only in one person's `ollama list`, so a second machine started blank.
+#
+# setup.bat and setup.sh both read this file. One name per line; blank lines
+# and lines starting with # are ignored.
+#
+# Pulling a cloud model needs an Ollama account on this machine
+# (`ollama signin`). Setup reports the ones it could not pull and carries on -
+# a missing model is a smaller problem than a setup that refuses to finish.
+
+deepseek-v4-flash:cloud
+deepseek-v4-pro:cloud
+glm-5.3-flash:cloud
+glm-5.3:cloud
+gemma4:31b-cloud
+gpt-oss:20b-cloud
+gpt-oss:120b-cloud
+minimax-m2.7:cloud
+minimax-m3:cloud
+mistral-large-3:675b-cloud
+nemotron-3-nano:30b-cloud
+nemotron-3-super:cloud
+nemotron-3-ultra:cloud
+qwen3.5:397b-cloud

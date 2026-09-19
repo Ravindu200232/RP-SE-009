@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shadcn — Minimal Design System</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Geist (primary), Fira Code (mono) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Design System Tokens */
+        :root {
+            --font-sans: 'Geist', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+            --color-primary: #000000;
+            --color-secondary: #111111;
+            --color-surface: #FFFFFF;
+            --color-text: #111827;
+            --color-success: #16A34A;
+            --color-warning: #D97706;
+            --color-danger: #DC2626;
+            --spacing-1: 4px;
+            --spacing-2: 8px;
+            --spacing-3: 12px;
+            --spacing-4: 16px;
+            --spacing-5: 24px;
+            --spacing-6: 32px;
+        }
+        body {
+            font-family: var(--font-sans);
+            color: var(--color-text);
+            background-color: var(--color-surface);
+        }
+        .font-mono {
+            font-family: var(--font-mono);
+        }
+        /* Sharp corners everywhere */
+        * {
+            border-radius: 0 !important;
+        }
+        /* Focus visible state */
+        :focus-visible {
+            outline: 2px solid var(--color-primary);
+            outline-offset: 2px;
+        }
+        /* Utility for color-blocked sections */
+        .bg-primary {
+            background-color: var(--color-primary);
+        }
+        .bg-secondary {
+            background-color: var(--color-secondary);
+        }
+        .bg-surface {
+            background-color: var(--color-surface);
+        }
+        .text-primary {
+            color: var(--color-primary);
+        }
+        .text-secondary {
+            color: var(--color-secondary);
+        }
+        .text-surface {
+            color: var(--color-surface);
+        }
+        .text-success {
+            color: var(--color-success);
+        }
+        .text-warning {
+            color: var(--color-warning);
+        }
+        .text-danger {
+            color: var(--color-danger);
+        }
+        .border-primary {
+            border-color: var(--color-primary);
+        }
+        .border-secondary {
+            border-color: var(--color-secondary);
+        }
+        .border-surface {
+            border-color: var(--color-surface);
+        }
+        /* Hover states */
+        .hover\:bg-secondary:hover {
+            background-color: var(--color-secondary);
+        }
+        .hover\:text-surface:hover {
+            color: var(--color-surface);
+        }
+        .hover\:bg-surface:hover {
+            background-color: var(--color-surface);
+        }
+        .hover\:text-primary:hover {
+            color: var(--color-primary);
+        }
+        /* Active states */
+        .active\:scale-95:active {
+            transform: scale(0.95);
+        }
+        /* Disabled state */
+        .disabled\:opacity-50:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        /* Loading state */
+        .loading {
+            position: relative;
+            color: transparent !important;
+        }
+        .loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 2px solid var(--color-surface);
+            border-top-color: transparent;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--color-surface);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--color-primary);
+        }
+        /* Smooth scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+        /* Grid pattern for hero */
+        .grid-pattern {
+            background-image: 
+                linear-gradient(var(--color-primary) 1px, transparent 1px),
+                linear-gradient(90deg, var(--color-primary) 1px, transparent 1px);
+            background-size: 24px 24px;
+            opacity: 0.05;
+        }
+        /* Gradient text for hero */
+        .gradient-text {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body class="bg-surface text-text antialiased">
+    <!-- Navigation -->
+    <nav class="bg-surface border-b border-primary sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo -->
+                <a href="#" class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-primary flex items-center justify-center">
+                        <svg class="w-4 h-4 text-surface" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <span class="font-bold text-lg tracking-tight">shadcn</span>
+                </a>
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="text-sm font-medium hover:text-primary transition-colors">Features</a>
+                    <a href="#process" class="text-sm font-medium hover:text-primary transition-colors">Process</a>
+                    <a href="#benefits" class="text-sm font-medium hover:text-primary transition-colors">Benefits</a>
+                    <a href="#testimonials" class="text-sm font-medium hover:text-primary transition-colors">Testimonials</a>
+                    <a href="#pricing" class="text-sm font-medium hover:text-primary transition-colors">Pricing</a>
+                    <a href="#faq" class="text-sm font-medium hover:text-primary transition-colors">FAQ</a>
+                </div>
+                <!-- CTA Button -->
+                <div class="flex items-center gap-4">
+                    <a href="#pricing" class="hidden sm:inline-flex items-center px-4 py-2 bg-primary text-surface text-sm font-medium hover:bg-secondary transition-colors active:scale-95">
+                        Get Started
+                    </a>
+                    <!-- Mobile Menu Button -->
+                    <button class="md:hidden p-2 hover:bg-secondary hover:text-surface transition-colors" aria-label="Open menu">
+                        <i data-lucide="menu" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile Menu (hidden by default) -->
+        <div class="md:hidden hidden border-t border-primary">
+            <div class="px-4 py-4 space-y-4">
+                <a href="#features" class="block text-sm font-medium hover:text-primary transition-colors">Features</a>
+                <a href="#process" class="block text-sm font-medium hover:text-primary transition-colors">Process</a>
+                <a href="#benefits" class="block text-sm font-medium hover:text-primary transition-colors">Benefits</a>
+                <a href="#testimonials" class="block text-sm font-medium hover:text-primary transition-colors">Testimonials</a>
+                <a href="#pricing" class="block text-sm font-medium hover:text-primary transition-colors">Pricing</a>
+                <a href="#faq" class="block text-sm font-medium hover:text-primary transition-colors">FAQ</a>
+                <a href="#pricing" class="block px-4 py-2 bg-primary text-surface text-sm font-medium hover:bg-secondary transition-colors active:scale-95 text-center">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative bg-surface overflow-hidden">
+        <!-- Grid pattern background -->
+        <div class="absolute inset-0 grid-pattern"></div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
+            <div class="text-center max-w-3xl mx-auto">
+                <p class="font-mono text-sm text-primary mb-4">// Design System v2.0</p>
+                <h1 class="text-4xl md:text-6xl font-bold tracking-tight mb-6">
+                    Build beautiful interfaces<br>
+                    <span class="gradient-text">with shadcn</span>
+                </h1>
+                <p class="text-lg md:text-xl text-gray-600 mb-8">
+                    A minimal, accessible, and utility-first design system that helps you ship faster.
+                    Every component is built with care and tested against WCAG 2.2 AA standards.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="#pricing" class="inline-flex items-center justify-center px-6 py-3 bg-primary text-surface text-base font-medium hover:bg-secondary transition-colors active:scale-95">
+                        Start Building
+                        <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+                    </a>
+                    <a href="#features" class="inline-flex items-center justify-center px-6 py-3 border-2 border-primary text-primary text-base font-medium hover:bg-primary hover:text-surface transition-colors active:scale-95">
+                        View Features
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="bg-primary text-surface py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <p class="text-4xl md:text-5xl font-bold mb-2">50+</p>
+                    <p class="text-sm text-gray-300">Components</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-4xl md:text-5xl font-bold mb-2">100%</p>
+                    <p class="text-sm text-gray-300">Accessible</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-4xl md:text-5xl font-bold mb-2">10k+</p>
+                    <p class="text-sm text-gray-300">Users</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-4xl md:text-5xl font-bold mb-2">4.9</p>
+                    <p class="text-sm text-gray-300">Rating</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="bg-surface py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Everything you need</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">A complete set of tools to build consistent, accessible interfaces.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="p-6 border border-primary hover:bg-secondary hover:text-surface transition-colors group">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-4 group-hover:bg-surface">
+                        <i data-lucide="layout" class="w-6 h-6 text-surface group-hover:text-primary"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Layout Components</h3>
+                    <p class="text-sm opacity-80">Grid systems, containers, and spacing utilities that keep your design consistent.</p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="p-6 border border-primary hover:bg-secondary hover:text-surface transition-colors group">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-4 group-hover:bg-surface">
+                        <i data-lucide="type" class="w-6 h-6 text-surface group-hover:text-primary"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Typography</h3>
+                    <p class="text-sm opacity-80">Geist font family with a complete scale from 12px to 32px for all use cases.</p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="p-6 border border-primary hover:bg-secondary hover:text-surface transition-colors group">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-4 group-hover:bg-surface">
+                        <i data-lucide="palette" class="w-6 h-6 text-surface group-hover:text-primary"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Color System</h3>
+                    <p class="text-sm opacity-80">Semantic tokens for primary, secondary, success, warning, and danger states.</p>
+                </div>
+                <!-- Feature 4 -->
+                <div class="p-6 border border-primary hover:bg-secondary hover:text-surface transition-colors group">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-4 group-hover:bg-surface">
+                        <i data-lucide="accessibility" class="w-6 h-6 text-surface group-hover:text-primary"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Accessibility</h3>
+                    <p class="text-sm opacity-80">WCAG 2.2 AA compliant with keyboard-first interactions and visible focus states.</p>
+                </div>
+                <!-- Feature 5 -->
+                <div class="p-6 border border-primary hover:bg-secondary hover:text-surface transition-colors group">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-4 group-hover:bg-surface">
+                        <i data-lucide="zap" class="w-6 h-6 text-surface group-hover:text-primary"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Fast Performance</h3>
+                    <p class="text-sm opacity-80">Utility-first CSS with minimal footprint. No runtime overhead.</p>
+                </div>
+                <!-- Feature 6 -->
+                <div class="p-6 border border-primary hover:bg-secondary hover:text-surface transition-colors group">
+                    <div class="w-12 h-12 bg-primary flex items-center justify-center mb-4 group-hover:bg-surface">
+                        <i data-lucide="code" class="w-6 h-6 text-surface group-hover:text-primary"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Developer Friendly</h3>
+                    <p class="text-sm opacity-80">Clean, readable code with TypeScript support and comprehensive documentation.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Process Section -->
+    <section id="process" class="bg-secondary text-surface py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">How it works</h2>
+                <p class="text-lg text-gray-300 max-w-2xl mx-auto">A simple, repeatable process from design to production.</p>
+            </div>
+            <div class="grid md:grid-cols-4 gap-8">
+                <!-- Step 1 -->
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-surface text-primary flex items-center justify-center mx-auto mb-4 font-mono text-2xl font-bold">01</div>
+                    <h3 class="text-lg font-semibold mb-2">Design</h3>
+                    <p class="text-sm text-gray-300">Start with our tokens and components to create your interface.</p>
+                </div>
+                <!-- Step 2 -->
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-surface text-primary flex items-center justify-center mx-auto mb-4 font-mono text-2xl font-bold">02</div>
+                    <h3 class="text-lg font-semibold mb-2">Develop</h3>
+                    <p class="text-sm text-gray-300">Copy-paste components and customize with utility classes.</p>
+                </div>
+                <!-- Step 3 -->
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-surface text-primary flex items-center justify-center mx-auto mb-4 font-mono text-2xl font-bold">03</div>
+                    <h3 class="text-lg font-semibold mb-2">Test</h3>
+                    <p class="text-sm text-gray-300">Run accessibility checks and verify all interaction states.</p>
+                </div>
+                <!-- Step 4 -->
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-surface text-primary flex items-center justify-center mx-auto mb-4 font-mono text-2xl font-bold">04</div>
+                    <h3 class="text-lg font-semibold mb-2">Ship</h3>
+                    <p class="text-sm text-gray-300">Deploy with confidence knowing your UI is consistent and accessible.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section id="benefits" class="bg-surface py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-16 items-center">
+                <!-- Left content -->
+                <div>
+                    <h2 class="text-3xl md:text-4xl font-bold mb-6">Why choose shadcn?</h2>
+                    <p class="text-lg text-gray-600 mb-8">We've thought through every detail so you don't have to. Focus on building, not on design decisions.</p>
+                    <div class="space-y-6">
+                        <div class="flex gap-4">
+                            <div class="flex-shrink-0 w-8 h-8 bg-primary flex items-center justify-center">
+                                <i data-lucide="check" class="w-4 h-4 text-surface"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold mb-1">Consistent by default</h3>
+                                <p class="text-sm text-gray-600">Every component follows the same design tokens and spacing rules.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="flex-shrink-0 w-8 h-8 bg-primary flex items-center justify-center">
+                                <i data-lucide="check" class="w-4 h-4 text-surface"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold mb-1">Accessibility first</h3>
+                                <p class="text-sm text-gray-600">Keyboard navigation, screen reader support, and visible focus states built in.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="flex-shrink-0 w-8 h-8 bg-primary flex items-center justify-center">
+                                <i data-lucide="check" class="w-4 h-4 text-surface"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold mb-1">No design debt</h3>
+                                <p class="text-sm text-gray-600">Semantic tokens mean your design system scales without breaking.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="flex-shrink-0 w-8 h-8 bg-primary flex items-center justify-center">
+                                <i data-lucide="check" class="w-4 h-4 text-surface"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold mb-1">Community driven</h3>
+                                <p class="text-sm text-gray-600">Backed by a large community of developers and designers.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Right visual (CSS shapes) -->
+                <div class="relative h-96 bg-secondary overflow-hidden">
+                    <!-- Abstract shapes -->
+                    <div class="absolute top-8 left-8 w-32 h-32 bg-surface opacity-20"></div>
+                    <div class="absolute bottom-8 right-8 w-48 h-48 bg-surface opacity-10"></div>
+                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary"></div>
+                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-surface opacity-20"></div>
+                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-secondary"></div>
+                    <!-- Animated pulse -->
+                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-surface animate-pulse"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section id="testimonials" class="bg-surface py-20 border-t border-primary">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Loved by developers</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">Join thousands of teams shipping better interfaces faster.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Testimonial 1 -->
+                <div class="p-6 border border-primary">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current text-warning"></i>
+                    </div>
+                    <p class="text-sm mb-4">"The most consistent design system I've ever used. Every component just works and looks beautiful."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-primary flex items-center justify-center text-surface font-bold">JD</div>
+                        <div>
+                            <p class="font-semibold text-sm">Jane Doe</p>
+                            <p class="text-xs text-gray-500">Frontend Lead, TechCorp</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 2 -->
+                <div class="p-6 border border-primary">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current text-warning"></i>
+                    </div>
+                    <p class="text-sm mb-4">"Accessibility was a huge concern for us. shadcn made it easy to build an inclusive product."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-primary flex items-center justify-center text-surface font-bold">MS</div>
+                        <div>
+                            <p class="font-semibold text-sm">Mike Smith</p>
+                            <p class="text-xs text-gray-500">Product Designer, DesignLab</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 3 -->
+                <div class="p-6 border border-primary">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 fill-current text-warning"></i>
+                    </div>
+                    <p class="text-sm mb-4">"We cut our UI development time by 60%. The utility-first approach is a game changer."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-primary flex items-center justify-center text-surface font-bold">AR</div>
+                        <div>
+                            <p class="font-semibold text-sm">Alex Rivera</p>
+                            <p class="text-xs text-gray-500">CTO, StartupHub</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="bg-primary text-surface py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Simple pricing</h2>
+                <p class="text-lg text-gray-300 max-w-2xl mx-auto">Start free and scale as you grow. No hidden fees.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Free Plan -->
+                <div class="bg-surface text-primary p-8">
+                    <h3 class="text-xl font-bold mb-2">Free</h3>
+                    <p class="text-4xl font-bold mb-4">$0<span class="text-base font-normal text-gray-500">/mo</span></p>
+                    <p class="text-sm mb-6">For personal projects</p>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            All core components
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Community support
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Basic tokens
+                        </li>
+                    </ul>
+                    <a href="#" class="block text-center px-4 py-2 border-2 border-primary text-primary font-medium hover:bg-primary hover:text-surface transition-colors active:scale-95">
+                        Get Started
+                    </a>
+                </div>
+                <!-- Pro Plan (Featured) -->
+                <div class="bg-surface text-primary p-8 relative">
+                    <div class="absolute top-0 left-0 right-0 bg-secondary text-surface text-center py-1 text-xs font-mono uppercase tracking-wider">
+                        Most Popular
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 mt-4">Pro</h3>
+                    <p class="text-4xl font-bold mb-4">$19<span class="text-base font-normal text-gray-500">/mo</span></p>
+                    <p class="text-sm mb-6">For professional teams</p>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            All Pro components
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Priority support
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Advanced tokens
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Team collaboration
+                        </li>
+                    </ul>
+                    <a href="#" class="block text-center px-4 py-2 bg-primary text-surface font-medium hover:bg-secondary transition-colors active:scale-95">
+                        Start Pro Trial
+                    </a>
+                </div>
+                <!-- Enterprise Plan -->
+                <div class="bg-surface text-primary p-8">
+                    <h3 class="text-xl font-bold mb-2">Enterprise</h3>
+                    <p class="text-4xl font-bold mb-4">Custom</p>
+                    <p class="text-sm mb-6">For large organizations</p>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Everything in Pro
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Dedicated support
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Custom tokens
+                        </li>
+                        <li class="flex items-center gap-2 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            SLA & security
+                        </li>
+                    </ul>
+                    <a href="#" class="block text-center px-4 py-2 border-2 border-primary text-primary font-medium hover:bg-primary hover:text-surface transition-colors active:scale-95">
+                        Contact Sales
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="bg-surface py-20">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Frequently asked questions</h2>
+                <p class="text-lg text-gray-600">Everything you need to know about shadcn.</p>
+            </div>
+            <div class="space-y-4">
+                <!-- FAQ Item 1 -->
+                <details class="border border-primary group">
+                    <summary class="flex justify-between items-center p-4 cursor-pointer hover:bg-secondary hover:text-surface transition-colors">
+                        <span class="font-medium">Is shadcn free to use?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <div class="p-4 border-t border-primary">
+                        <p class="text-sm text-gray-600">Yes, the core components are completely free and open source. We offer paid plans for advanced features and support.</p>
+                    </div>
+                </details>
+                <!-- FAQ Item 2 -->
+                <details class="border border-primary group">
+                    <summary class="flex justify-between items-center p-4 cursor-pointer hover:bg-secondary hover:text-surface transition-colors">
+                        <span class="font-medium">Can I customize the design tokens?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <div class="p-4 border-t border-primary">
+                        <p class="text-sm text-gray-600">Absolutely! All tokens are CSS variables that you can override. This makes it easy to match your brand while keeping consistency.</p>
+                    </div>
+                </details>
+                <!-- FAQ Item 3 -->
+                <details class="border border-primary group">
+                    <summary class="flex justify-between items-center p-4 cursor-pointer hover:bg-secondary hover:text-surface transition-colors">
+                        <span class="font-medium">Is it accessible out of the box?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <div class="p-4 border-t border-primary">
+                        <p class="text-sm text-gray-600">Yes, every component is built with accessibility in mind. We follow WCAG 2.2 AA standards and test with screen readers.</p>
+                    </div>
+                </details>
+                <!-- FAQ Item 4 -->
+                <details class="border border-primary group">
+                    <summary class="flex justify-between items-center p-4 cursor-pointer hover:bg-secondary hover:text-surface transition-colors">
+                        <span class="font-medium">What about browser support?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <div class="p-4 border-t border-primary">
+                        <p class="text-sm text-gray-600">We support all modern browsers including Chrome, Firefox, Safari, and Edge. No IE support.</p>
+                    </div>
+                </details>
+                <!-- FAQ Item 5 -->
+                <details class="border border-primary group">
+                    <summary class="flex justify-between items-center p-4 cursor-pointer hover:bg-secondary hover:text-surface transition-colors">
+                        <span class="font-medium">Can I use it with my framework?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 group-open:rotate-180 transition-transform"></i>
+                    </summary>
+                    <div class="p-4 border-t border-primary">
+                        <p class="text-sm text-gray-600">Yes! We have adapters for React, Vue, Svelte, and vanilla HTML/CSS. The core design tokens work everywhere.</p>
+                    </div>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="bg-secondary text-surface py-20">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl md:text-4xl font-bold mb-4">Ready to build something amazing?</h2>
+            <p class="text-lg text-gray-300 mb-8">Join thousands of developers who trust shadcn for their design systems.</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#" class="inline-flex items-center justify-center px-6 py-3 bg-surface text-primary text-base font-medium hover:bg-primary hover:text-surface transition-colors active:scale-95">
+                    Start Building Free
+                    <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+                </a>
+                <a href="#" class="inline-flex items-center justify-center px-6 py-3 border-2 border-surface text-surface text-base font-medium hover:bg-surface hover:text-primary transition-colors active:scale-95">
+                    View Documentation
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-primary text-surface py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8 mb-12">
+                <!-- Brand -->
+                <div class="col-span-2">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-surface flex items-center justify-center">
+                            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                        <span class="font-bold text-lg">shadcn</span>
+                    </div>
+                    <p class="text-sm text-gray-400 max-w-sm">A minimal, accessible, and utility-first design system for building beautiful interfaces.</p>
+                </div>
+                <!-- Product Links -->
+                <div>
+                    <h3 class="font-semibold mb-4 text-sm uppercase tracking-wider">Product</h3>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#features" class="hover:text-surface transition-colors">Features</a></li>
+                        <li><a href="#pricing" class="hover:text-surface transition-colors">Pricing</a></li>
+                        <li><a href="#testimonials" class="hover:text-surface transition-colors">Testimonials</a></li>
+                        <li><a href="#faq" class="hover:text-surface transition-colors">FAQ</a></li>
+                    </ul>
+                </div>
+                <!-- Resources -->
+                <div>
+                    <h3 class="font-semibold mb-4 text-sm uppercase tracking-wider">Resources</h3>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-surface transition-colors">Documentation</a></li>
+                        <li><a href="#" class="hover:text-surface transition-colors">Components</a></li>
+                        <li><a href="#" class="hover:text-surface transition-colors">Tokens</a></li>
+                        <li><a href="#" class="hover:text-surface transition-colors">GitHub</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="text-sm text-gray-400">© 2024 shadcn. All rights reserved.</p>
+                <div class="flex gap-4">
+                    <a href="#" class="text-gray-400 hover:text-surface transition-colors" aria-label="Twitter">
+                        <i data-lucide="twitter" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-surface transition-colors" aria-label="GitHub">
+                        <i data-lucide="github" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-surface transition-colors" aria-label="LinkedIn">
+                        <i data-lucide="linkedin" class="w-5 h-5"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Initialize Lucide Icons -->
+    <script>
+        lucide.createIcons();
+        
+        // Mobile menu toggle
+        document.querySelector('[aria-label="Open menu"]').addEventListener('click', function() {
+            const menu = document.querySelector('.md\\:hidden.hidden');
+            menu.classList.toggle('hidden');
+        });
+    </script>
+</body>
+</html>

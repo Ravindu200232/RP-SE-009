@@ -18,6 +18,9 @@ from .diagram_sources_arch import (
 )
 from .diagram_sources_core import _plan, _san
 from .standards import DIAGRAM_GUIDANCE, DIAGRAM_NOTATION
+from .diagram_narratives import (
+    generate_business_summary, generate_flow_explanation, generate_key_takeaways,
+)
 
 STANDARD_DIAGRAM_KINDS = {"use_case", "sequence", "erd", "activity", "class_object",
                           "state_machine", "dfd", "bpmn"}
@@ -193,7 +196,10 @@ def build_diagrams(srs: dict, on_error: Callable[[str], None] | None = None) -> 
                     "drawing_rules": list(guide.get("drawing_rules", [])),
                     "notation": list(DIAGRAM_NOTATION.get(kind, [])),
                     "applicable": applicable, "applicability_note": reason,
-                    "canonical_rendering": "native_svg"})
+                    "canonical_rendering": "native_svg",
+                    "business_summary": generate_business_summary(kind, doc),
+                    "flow_explanation": generate_flow_explanation(kind, doc),
+                    "key_takeaways": generate_key_takeaways(kind, doc)})
     return out
 
 

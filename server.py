@@ -13,11 +13,7 @@ if __name__ == "__main__":
         asyncio.run(_runtime.main())
     except KeyboardInterrupt:
         print("\n⛔ Stopped.")
-        if _runtime.active_vite.get("proc"):
-            try:
-                _runtime.active_vite["proc"].terminate()
-            except Exception:
-                pass
+        _runtime.RUNTIMES.close()
 else:
     # Keep legacy imports pointed at the shared runtime.
     sys.modules[__name__] = _runtime

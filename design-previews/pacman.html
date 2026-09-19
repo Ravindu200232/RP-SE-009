@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pac-Man Design System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        * {
+            font-family: 'Press Start 2P', monospace;
+            image-rendering: pixelated;
+        }
+        body {
+            background-color: #000;
+            color: #fff;
+        }
+        .font-mono {
+            font-family: 'Space Mono', monospace;
+        }
+        .pixel-border {
+            border-style: solid;
+            border-width: 4px;
+            border-image: repeating-linear-gradient(45deg, #2A3FE5, #2A3FE5 8px, #F4B9B0 8px, #F4B9B0 16px) 4;
+        }
+        .dotted-border {
+            border: 4px dotted #2A3FE5;
+        }
+        .dotted-border-light {
+            border: 4px dotted #F4B9B0;
+        }
+        .pacman-dot {
+            width: 12px;
+            height: 12px;
+            background: #F4B9B0;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .pacman-dot-blue {
+            width: 12px;
+            height: 12px;
+            background: #2A3FE5;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .pixel-shadow {
+            box-shadow: 4px 4px 0 #2A3FE5;
+        }
+        .pixel-shadow-pink {
+            box-shadow: 4px 4px 0 #F4B9B0;
+        }
+        .ghost {
+            width: 40px;
+            height: 40px;
+            background: #F4B9B0;
+            clip-path: polygon(0% 0%, 100% 0%, 100% 75%, 75% 75%, 75% 100%, 60% 75%, 40% 75%, 40% 100%, 25% 75%, 0% 75%);
+            position: relative;
+        }
+        .ghost::after {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 8px;
+            height: 8px;
+            background: #000;
+            border-radius: 50%;
+            box-shadow: 12px 0 0 #000;
+        }
+        .ghost-blue {
+            background: #2A3FE5;
+        }
+        .ghost-blue::after {
+            background: #fff;
+            box-shadow: 12px 0 0 #fff;
+        }
+        .pacman {
+            width: 40px;
+            height: 40px;
+            background: #F4B9B0;
+            border-radius: 50%;
+            position: relative;
+            clip-path: polygon(0% 0%, 100% 0%, 100% 50%, 0% 100%);
+        }
+        .pacman::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 40px;
+            height: 40px;
+            background: #F4B9B0;
+            border-radius: 50%;
+            clip-path: polygon(0% 0%, 100% 0%, 100% 50%, 0% 100%);
+            transform: rotate(180deg);
+        }
+        .grid-bg {
+            background-image: 
+                linear-gradient(rgba(42, 63, 229, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(42, 63, 229, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        .btn-primary {
+            background: #2A3FE5;
+            color: #fff;
+            border: 4px solid #2A3FE5;
+            padding: 12px 24px;
+            transition: all 0.2s;
+        }
+        .btn-primary:hover {
+            background: #F4B9B0;
+            border-color: #F4B9B0;
+            color: #000;
+            transform: translate(-2px, -2px);
+            box-shadow: 4px 4px 0 #fff;
+        }
+        .btn-secondary {
+            background: transparent;
+            color: #F4B9B0;
+            border: 4px solid #F4B9B0;
+            padding: 12px 24px;
+            transition: all 0.2s;
+        }
+        .btn-secondary:hover {
+            background: #F4B9B0;
+            color: #000;
+            transform: translate(-2px, -2px);
+            box-shadow: 4px 4px 0 #fff;
+        }
+        .card {
+            background: #111;
+            border: 4px solid #2A3FE5;
+            padding: 24px;
+            transition: all 0.2s;
+        }
+        .card:hover {
+            transform: translate(-4px, -4px);
+            box-shadow: 8px 8px 0 #F4B9B0;
+        }
+        .nav-link {
+            color: #fff;
+            text-decoration: none;
+            padding: 8px 12px;
+            transition: all 0.2s;
+        }
+        .nav-link:hover {
+            color: #F4B9B0;
+            background: #2A3FE5;
+        }
+        .nav-link:focus-visible {
+            outline: 4px solid #F4B9B0;
+            outline-offset: 2px;
+        }
+        .btn-primary:focus-visible, .btn-secondary:focus-visible {
+            outline: 4px solid #F4B9B0;
+            outline-offset: 4px;
+        }
+        .card:focus-visible {
+            outline: 4px solid #F4B9B0;
+            outline-offset: 4px;
+        }
+        .accordion-item {
+            border: 4px solid #2A3FE5;
+            margin-bottom: 16px;
+        }
+        .accordion-item summary {
+            cursor: pointer;
+            padding: 16px;
+            background: #111;
+            transition: all 0.2s;
+        }
+        .accordion-item summary:hover {
+            background: #2A3FE5;
+            color: #fff;
+        }
+        .accordion-item summary:focus-visible {
+            outline: 4px solid #F4B9B0;
+            outline-offset: 2px;
+        }
+        .accordion-item[open] summary {
+            background: #2A3FE5;
+            color: #fff;
+        }
+        .accordion-item .content {
+            padding: 16px;
+            background: #000;
+        }
+        .testimonial-card {
+            background: #111;
+            border: 4px solid #F4B9B0;
+            padding: 24px;
+            transition: all 0.2s;
+        }
+        .testimonial-card:hover {
+            transform: translate(-4px, -4px);
+            box-shadow: 8px 8px 0 #2A3FE5;
+        }
+        .pricing-card {
+            background: #111;
+            border: 4px solid #2A3FE5;
+            padding: 24px;
+            transition: all 0.2s;
+        }
+        .pricing-card:hover {
+            transform: translate(-4px, -4px);
+            box-shadow: 8px 8px 0 #F4B9B0;
+        }
+        .pricing-card.featured {
+            background: #2A3FE5;
+            border-color: #F4B9B0;
+        }
+        .pricing-card.featured:hover {
+            box-shadow: 8px 8px 0 #fff;
+        }
+        .footer-link {
+            color: #fff;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .footer-link:hover {
+            color: #F4B9B0;
+        }
+        .footer-link:focus-visible {
+            outline: 4px solid #F4B9B0;
+            outline-offset: 2px;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                transition: none !important;
+                animation: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="grid-bg min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-black border-b-4 border-[#2A3FE5] sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="pacman w-10 h-10"></div>
+                <span class="text-xl font-bold text-white">PAC-MAN</span>
+            </div>
+            <div class="hidden md:flex items-center gap-6">
+                <a href="#features" class="nav-link text-sm">Features</a>
+                <a href="#process" class="nav-link text-sm">Process</a>
+                <a href="#benefits" class="nav-link text-sm">Benefits</a>
+                <a href="#testimonials" class="nav-link text-sm">Testimonials</a>
+                <a href="#pricing" class="nav-link text-sm">Pricing</a>
+                <a href="#faq" class="nav-link text-sm">FAQ</a>
+                <a href="#contact" class="btn-primary text-sm">Get Started</a>
+            </div>
+            <button class="md:hidden btn-secondary text-sm" aria-label="Menu" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                <i data-lucide="menu" class="w-6 h-6"></i>
+            </button>
+        </div>
+        <div id="mobile-menu" class="hidden md:hidden bg-black border-t-4 border-[#2A3FE5] px-4 py-4">
+            <div class="flex flex-col gap-4">
+                <a href="#features" class="nav-link text-sm">Features</a>
+                <a href="#process" class="nav-link text-sm">Process</a>
+                <a href="#benefits" class="nav-link text-sm">Benefits</a>
+                <a href="#testimonials" class="nav-link text-sm">Testimonials</a>
+                <a href="#pricing" class="nav-link text-sm">Pricing</a>
+                <a href="#faq" class="nav-link text-sm">FAQ</a>
+                <a href="#contact" class="btn-primary text-sm">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="relative py-20 md:py-32">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center">
+                <div class="flex justify-center gap-4 mb-8">
+                    <div class="pacman w-16 h-16 md:w-24 md:h-24"></div>
+                    <div class="ghost w-16 h-16 md:w-24 md:h-24"></div>
+                    <div class="ghost ghost-blue w-16 h-16 md:w-24 md:h-24"></div>
+                </div>
+                <h1 class="text-3xl md:text-5xl font-bold text-white mb-6">
+                    Level Up Your<br>
+                    <span class="text-[#F4B9B0]">Digital Experience</span>
+                </h1>
+                <p class="font-mono text-sm md:text-base text-gray-300 max-w-2xl mx-auto mb-8">
+                    Navigate through the maze of modern web design with precision and speed. Our design system helps you clear every obstacle with pixel-perfect accuracy.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="#pricing" class="btn-primary text-sm">Start Playing</a>
+                    <a href="#features" class="btn-secondary text-sm">See Features</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="py-16 border-y-4 border-[#2A3FE5] bg-[#111]">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="text-3xl md:text-4xl font-bold text-[#F4B9B0] mb-2">256</div>
+                    <div class="font-mono text-xs text-gray-400">Levels Designed</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl md:text-4xl font-bold text-[#F4B9B0] mb-2">99.9%</div>
+                    <div class="font-mono text-xs text-gray-400">Uptime</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl md:text-4xl font-bold text-[#F4B9B0] mb-2">10K+</div>
+                    <div class="font-mono text-xs text-gray-400">Happy Players</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl md:text-4xl font-bold text-[#F4B9B0] mb-2">4.9</div>
+                    <div class="font-mono text-xs text-gray-400">Average Rating</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="py-20">
+        <div class="max-w-7xl mx-auto px-4">
+            <h2 class="text-2xl md:text-4xl font-bold text-center mb-4">Game Features</h2>
+            <p class="font-mono text-sm text-gray-400 text-center mb-12">Everything you need to win</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="card" tabindex="0">
+                    <div class="flex items-center gap-4 mb-4">
+                        <i data-lucide="zap" class="w-8 h-8 text-[#F4B9B0]"></i>
+                        <h3 class="text-sm font-bold">Lightning Fast</h3>
+                    </div>
+                    <p class="font-mono text-xs text-gray-400">Optimized for speed with instant response times and smooth animations.</p>
+                </div>
+                <div class="card" tabindex="0">
+                    <div class="flex items-center gap-4 mb-4">
+                        <i data-lucide="shield" class="w-8 h-8 text-[#F4B9B0]"></i>
+                        <h3 class="text-sm font-bold">Secure by Design</h3>
+                    </div>
+                    <p class="font-mono text-xs text-gray-400">Built with security at every level. Your data stays protected.</p>
+                </div>
+                <div class="card" tabindex="0">
+                    <div class="flex items-center gap-4 mb-4">
+                        <i data-lucide="puzzle" class="w-8 h-8 text-[#F4B9B0]"></i>
+                        <h3 class="text-sm font-bold">Smart Solutions</h3>
+                    </div>
+                    <p class="font-mono text-xs text-gray-400">Intelligent features that adapt to your needs and evolve with you.</p>
+                </div>
+                <div class="card" tabindex="0">
+                    <div class="flex items-center gap-4 mb-4">
+                        <i data-lucide="users" class="w-8 h-8 text-[#F4B9B0]"></i>
+                        <h3 class="text-sm font-bold">Team Ready</h3>
+                    </div>
+                    <p class="font-mono text-xs text-gray-400">Collaborate seamlessly with built-in tools for your entire team.</p>
+                </div>
+                <div class="card" tabindex="0">
+                    <div class="flex items-center gap-4 mb-4">
+                        <i data-lucide="trending-up" class="w-8 h-8 text-[#F4B9B0]"></i>
+                        <h3 class="text-sm font-bold">Growth Focused</h3>
+                    </div>
+                    <p class="font-mono text-xs text-gray-400">Tools designed to help you scale and grow your digital presence.</p>
+                </div>
+                <div class="card" tabindex="0">
+                    <div class="flex items-center gap-4 mb-4">
+                        <i data-lucide="award" class="w-8 h-8 text-[#F4B9B0]"></i>
+                        <h3 class="text-sm font-bold">Award Winning</h3>
+                    </div>
+                    <p class="font-mono text-xs text-gray-400">Recognized for excellence in design and user experience.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Process -->
+    <section id="process" class="py-20 bg-[#111] border-y-4 border-[#2A3FE5]">
+        <div class="max-w-7xl mx-auto px-4">
+            <h2 class="text-2xl md:text-4xl font-bold text-center mb-4">How It Works</h2>
+            <p class="font-mono text-sm text-gray-400 text-center mb-12">Simple steps to success</p>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="w-16 h-16 mx-auto mb-4 flex items-center justify-center bg-[#2A3FE5] text-white text-xl font-bold">1</div>
+                    <h3 class="text-sm font-bold mb-2">Discover</h3>
+                    <p class="font-mono text-xs text-gray-400">Explore the maze and find your path</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 mx-auto mb-4 flex items-center justify-center bg-[#2A3FE5] text-white text-xl font-bold">2</div>
+                    <h3 class="text-sm font-bold mb-2">Plan</h3>
+                    <p class="font-mono text-xs text-gray-400">Map out your strategy for success</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 mx-auto mb-4 flex items-center justify-center bg-[#2A3FE5] text-white text-xl font-bold">3</div>
+                    <h3 class="text-sm font-bold mb-2">Execute</h3>
+                    <p class="font-mono text-xs text-gray-400">Power through with precision and speed</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 mx-auto mb-4 flex items-center justify-center bg-[#F4B9B0] text-black text-xl font-bold">4</div>
+                    <h3 class="text-sm font-bold mb-2">Win</h3>
+                    <p class="font-mono text-xs text-gray-400">Celebrate your victory and level up</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits -->
+    <section id="benefits" class="py-20">
+        <div class="max-w-7xl mx-auto px-4">
+            <h2 class="text-2xl md:text-4xl font-bold text-center mb-4">Why Choose Us</h2>
+            <p class="font-mono text-sm text-gray-400 text-center mb-12">The winning advantage</p>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="dotted-border p-8">
+                    <div class="flex items-start gap-4">
+                        <div class="pacman-dot mt-2"></div>
+                        <div>
+                            <h3 class="text-sm font-bold mb-2">Unmatched Performance</h3>
+                            <p class="font-mono text-xs text-gray-400">Experience blazing-fast load times and seamless interactions that keep players engaged.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="dotted-border p-8">
+                    <div class="flex items-start gap-4">
+                        <div class="pacman-dot mt-2"></div>
+                        <div>
+                            <h3 class="text-sm font-bold mb-2">Pixel-Perfect Design</h3>
+                            <p class="font-mono text-xs text-gray-400">Every element is crafted with precision, ensuring a visually stunning experience.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="dotted-border p-8">
+                    <div class="flex items-start gap-4">
+                        <div class="pacman-dot mt-2"></div>
+                        <div>
+                            <h3 class="text-sm font-bold mb-2">Continuous Innovation</h3>
+                            <p class="font-mono text-xs text-gray-400">We're always updating and improving to stay ahead of the game.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="dotted-border p-8">
+                    <div class="flex items-start gap-4">
+                        <div class="pacman-dot mt-2"></div>
+                        <div>
+                            <h3 class="text-sm font-bold mb-2">Dedicated Support</h3>
+                            <p class="font-mono text-xs text-gray-400">Our team is always ready to help you navigate any challenges.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section id="testimonials" class="py-20 bg-[#111] border-y-4 border-[#2A3FE5]">
+        <div class="max-w-7xl mx-auto px-4">
+            <h2 class="text-2xl md:text-4xl font-bold text-center mb-4">Player Reviews</h2>
+            <p class="font-mono text-sm text-gray-400 text-center mb-12">What our players say</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="testimonial-card">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-[#F4B9B0] fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-[#F4B9B0] fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-[#F4B9B0] fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-[#F4B9B0] fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-[#F4B9B0] fill-current"></i>
+                    </div>
+                    <p class="font-mono text-xs text-gray-300 mb-4">"Absolutely incredible! This design system transformed our entire digital presence. The pixel-perfect attention to detail is unmatched."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-[#2A3FE5] flex items-center justify-center text-white text-xs font-bold">JD</div>
+                        <div>
+                            <div class="text-xs font-bold">John Doe</div>
+                            <div class="font-mono text-xs text-gray-400">Game Developer</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-[#F4B9B0] fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-[#F4B9B0] fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-[#F4B9B0] fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-[#F4B9B0] fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-[#F4B9B0] fill-current"></i>
+                    </div>
+                    <p class="font-mono text-xs text-gray-300 mb-4">"The speed and performance are incredible. Our load times dropped by 60% and user engagement has never been higher."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-[#F4B9B0] flex items-center justify-center text-black text-xs font-bold">JS</div>
+                        <div>
+                            <div class="text-xs font-bold">Jane Smith</div>
+                            <div class="font-mono text-xs text-gray-400">UX Designer</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-[#F4B9B0] fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-[#F4B9B0] fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-[#F4B9B0] fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-[#F4B9B0] fill-current"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-[#F4B9B0] fill-current"></i>
+                    </div>
+                    <p class="font-mono text-xs text-gray-300 mb-4">"Finally a design system that's both beautiful and practical. The accessibility features are top-notch and the support is amazing."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-[#16A34A] flex items-center justify-center text-white text-xs font-bold">MC</div>
+                        <div>
+                            <div class="text-xs font-bold">Mike Chen</div>
+                            <div class="font-mono text-xs text-gray-400">Product Manager</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section id="pricing" class="py-20">
+        <div class="max-w-7xl mx-auto px-4">
+            <h2 class="text-2xl md:text-4xl font-bold text-center mb-4">Pricing Plans</h2>
+            <p class="font-mono text-sm text-gray-400 text-center mb-12">Choose your level</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="pricing-card">
+                    <h3 class="text-sm font-bold mb-2">Starter</h3>
+                    <div class="text-3xl font-bold mb-4">$9<span class="text-sm text-gray-400">/mo</span></div>
+                    <ul class="font-mono text-xs text-gray-400 space-y-2 mb-6">
+                        <li>• Basic features</li>
+                        <li>• 1 project</li>
+                        <li>• Community support</li>
+                        <li>• Standard updates</li>
+                    </ul>
+                    <a href="#contact" class="btn-secondary text-xs w-full text-center block">Get Started</a>
+                </div>
+                <div class="pricing-card featured">
+                    <h3 class="text-sm font-bold mb-2">Pro</h3>
+                    <div class="text-3xl font-bold mb-4">$29<span class="text-sm text-gray-400">/mo</span></div>
+                    <ul class="font-mono text-xs text-gray-300 space-y-2 mb-6">
+                        <li>• All features</li>
+                        <li>• Unlimited projects</li>
+                        <li>• Priority support</li>
+                        <li>• Advanced analytics</li>
+                    </ul>
+                    <a href="#contact" class="btn-primary text-xs w-full text-center block">Get Started</a>
+                </div>
+                <div class="pricing-card">
+                    <h3 class="text-sm font-bold mb-2">Enterprise</h3>
+                    <div class="text-3xl font-bold mb-4">$99<span class="text-sm text-gray-400">/mo</span></div>
+                    <ul class="font-mono text-xs text-gray-400 space-y-2 mb-6">
+                        <li>• Everything in Pro</li>
+                        <li>• Custom solutions</li>
+                        <li>• Dedicated support</li>
+                        <li>• SLA guarantee</li>
+                    </ul>
+                    <a href="#contact" class="btn-secondary text-xs w-full text-center block">Get Started</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="py-20 bg-[#111] border-y-4 border-[#2A3FE5]">
+        <div class="max-w-3xl mx-auto px-4">
+            <h2 class="text-2xl md:text-4xl font-bold text-center mb-4">Frequently Asked Questions</h2>
+            <p class="font-mono text-sm text-gray-400 text-center mb-12">Quick answers to common questions</p>
+            <div class="space-y-4">
+                <details class="accordion-item">
+                    <summary class="text-sm font-bold">What is the design system?</summary>
+                    <div class="content font-mono text-xs text-gray-400">
+                        Our design system is a comprehensive collection of guidelines, components, and tools that help you create consistent, high-quality digital experiences.
+                    </div>
+                </details>
+                <details class="accordion-item">
+                    <summary class="text-sm font-bold">How do I get started?</summary>
+                    <div class="content font-mono text-xs text-gray-400">
+                        Simply choose a plan that fits your needs and start exploring. Our documentation and support team will guide you through every step.
+                    </div>
+                </details>
+                <details class="accordion-item">
+                    <summary class="text-sm font-bold">Can I cancel anytime?</summary>
+                    <div class="content font-mono text-xs text-gray-400">
+                        Yes, you can cancel your subscription at any time. No questions asked, no hidden fees.
+                    </div>
+                </details>
+                <details class="accordion-item">
+                    <summary class="text-sm font-bold">Is there a free trial?</summary>
+                    <div class="content font-mono text-xs text-gray-400">
+                        We offer a 14-day free trial on all plans. Explore all features and see if it's the right fit for you.
+                    </div>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact" class="py-16 bg-black">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+                <div>
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="pacman w-10 h-10"></div>
+                        <span class="text-lg font-bold">PAC-MAN</span>
+                    </div>
+                    <p class="font-mono text-xs text-gray-400">Level up your digital experience with our pixel-perfect design system.</p>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold mb-4">Product</h3>
+                    <div class="flex flex-col gap-2">
+                        <a href="#features" class="footer-link font-mono text-xs">Features</a>
+                        <a href="#pricing" class="footer-link font-mono text-xs">Pricing</a>
+                        <a href="#faq" class="footer-link font-mono text-xs">FAQ</a>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold mb-4">Company</h3>
+                    <div class="flex flex-col gap-2">
+                        <a href="#" class="footer-link font-mono text-xs">About</a>
+                        <a href="#" class="footer-link font-mono text-xs">Blog</a>
+                        <a href="#" class="footer-link font-mono text-xs">Careers</a>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold mb-4">Contact</h3>
+                    <div class="flex flex-col gap-2">
+                        <a href="mailto:hello@pacman.design" class="footer-link font-mono text-xs">hello@pacman.design</a>
+                        <a href="tel:+1234567890" class="footer-link font-mono text-xs">+1 (234) 567-890</a>
+                        <div class="flex gap-4 mt-4">
+                            <a href="#" class="footer-link" aria-label="Twitter"><i data-lucide="twitter" class="w-5 h-5"></i></a>
+                            <a href="#" class="footer-link" aria-label="GitHub"><i data-lucide="github" class="w-5 h-5"></i></a>
+                            <a href="#" class="footer-link" aria-label="LinkedIn"><i data-lucide="linkedin" class="w-5 h-5"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t-4 border-[#2A3FE5] pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="font-mono text-xs text-gray-400">© 2024 Pac-Man Design System. All rights reserved.</p>
+                <div class="flex gap-6">
+                    <a href="#" class="footer-link font-mono text-xs">Privacy Policy</a>
+                    <a href="#" class="footer-link font-mono text-xs">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

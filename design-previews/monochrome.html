@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOIR — Design Studio</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest">
+    </script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        display: ['"Playfair Display"', 'Georgia', 'serif'],
+                        body: ['"Source Serif 4"', 'Georgia', 'serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        background: '#FFFFFF',
+                        foreground: '#000000',
+                        muted: '#F5F5F5',
+                        'muted-foreground': '#525252',
+                        'border-light': '#E5E5E5',
+                    },
+                    borderRadius: {
+                        DEFAULT: '0',
+                        none: '0',
+                    },
+                    boxShadow: {
+                        none: 'none',
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        * {
+            border-radius: 0 !important;
+            box-shadow: none !important;
+        }
+        body {
+            background-color: #FFFFFF;
+            color: #000000;
+            font-family: 'Source Serif 4', Georgia, serif;
+        }
+
+        /* === TEXTURES === */
+        .texture-noise {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            opacity: 0.02;
+        }
+        .texture-horizontal-lines {
+            background-image: repeating-linear-gradient(0deg, transparent, transparent 1px, #000 1px, #000 2px);
+            background-size: 100% 4px;
+            opacity: 0.015;
+        }
+        .texture-grid {
+            background-image: linear-gradient(#00000008 1px, transparent 1px),
+                linear-gradient(90deg, #00000008 1px, transparent 1px);
+            background-size: 40px 40px;
+            opacity: 0.015;
+        }
+        .texture-diagonal {
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 40px, #00000008 40px,
+                #00000008 42px);
+            opacity: 0.01;
+        }
+        .texture-vertical-lines-white {
+            background-image: repeating-linear-gradient(90deg, transparent, transparent 1px, #fff 1px, #fff 2px);
+            background-size: 4px 100%;
+            opacity: 0.03;
+        }
+        .texture-radial-white {
+            background-image: radial-gradient(circle at top center, #ffffff, transparent 70%);
+            opacity: 0.05;
+        }
+
+        /* === FOCUS STATES === */
+        a:focus-visible,
+        button:focus-visible,
+        [tabindex]:focus-visible {
+            outline: 3px solid #000;
+            outline-offset: 3px;
+        }
+        input:focus-visible,
+        textarea:focus-visible {
+            outline: none;
+            border-bottom-width: 4px;
+        }
+
+        /* === DROP CAP === */
+        .drop-cap {
+            float: left;
+            margin-right: 1rem;
+            border: 2px solid #000;
+            padding: 0.5rem 1rem;
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 3.5rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        /* === DETAILS/SUMMARY === */
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+        details[open] .faq-icon {
+            transform: rotate(45deg);
+        }
+        .faq-icon {
+            transition: transform 100ms;
+        }
+    </style>
+</head>
+
+<body class="bg-background text-foreground font-body antialiased">
+
+    <!-- Skip Link -->
+    <a href="#main"
+        class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[200] focus:bg-black focus:text-white focus:px-6 focus:py-3 focus:font-mono focus:text-xs focus:tracking-widest focus:uppercase">
+        Skip to main content
+    </a>
+
+    <!-- Global Texture Overlays -->
+    <div class="pointer-events-none fixed inset-0 z-[100] texture-noise"></div>
+    <div class="pointer-events-none fixed inset-0 z-[99] texture-horizontal-lines"></div>
+
+    <!-- ==================== NAVIGATION ==================== -->
+    <header class="sticky top-0 z-50 bg-white border-b border-black">
+        <div class="max-w-6xl mx-auto px-6 md:px-8 lg:px-12">
+            <div class="flex items-center justify-between h-20">
+                <a href="#" class="font-display text-2xl font-bold tracking-tighter">
+                    NOIR<span class="text-muted-foreground">®</span>
+                </a>
+                <nav class="hidden lg:flex items-center gap-8" aria-label="Main navigation">
+                    <a href="#work"
+                        class="font-mono text-xs tracking-widest uppercase hover:underline underline-offset-4">Work</a>
+                    <a href="#studio"
+                        class="font-mono text-xs tracking-widest uppercase hover:underline underline-offset-4">Studio</a>
+                    <a href="#services"
+                        class="font-mono text-xs tracking-widest uppercase hover:underline underline-offset-4">Services</a>
+                    <a href="#journal"
+                        class="font-mono text-xs tracking-widest uppercase hover:underline underline-offset-4">Journal</a>
+                </nav>
+                <a href="#contact"
+                    class="hidden lg:inline-block bg-black text-white px-6 py-3 font-mono text-xs tracking-widest uppercase transition-colors duration-100 hover:bg-white hover:text-black hover:border-2 hover:border-black">
+                    Start a Project
+                </a>
+                <button class="lg:hidden" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')"
+                    aria-label="Toggle menu">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden lg:hidden border-t border-black bg-white">
+            <div class="max-w-6xl mx-auto px-6 py-4">
+                <a href="#work"
+                    class="block py-3 font-mono text-xs tracking-widest uppercase border-b border-border-light">Work</a>
+                <a href="#studio"
+                    class="block py-3 font-mono text-xs tracking-widest uppercase border-b border-border-light">Studio</a>
+                <a href="#services"
+                    class="block py-3 font-mono text-xs tracking-widest uppercase border-b border-border-light">Services</a>
+                <a href="#journal"
+                    class="block py-3 font-mono text-xs tracking-widest uppercase border-b border-border-light">Journal</a>
+                <a href="#contact"
+                    class="block py-3 font-mono text-xs tracking-widest uppercase">Start a Project</a>
+            </div>
+        </div>
+    </header>
+
+    <main id="main">
+
+        <!-- ==================== HERO ==================== -->
+        <section class="relative overflow-hidden bg-white">
+            <div class="max-w-6xl mx-auto px-6 md:px-8 lg:px-12 pt-24 pb-20 md:pt-32 md:pb-28 lg:pt-40 lg:pb-36">
+                <div class="relative">
+                    <!-- Decorative geometric element -->
+                    <div class="absolute right-0 top-0 hidden lg:block" aria-hidden="true">
+                        <div class="w-80 h-80 border-2 border-black/10 relative">
+                            <div class="absolute inset-10 border-2 border-black/5"></div>
+                            <div class="absolute inset-20 border-2 border-black/5"></div>
+                        </div>
+                    </div>
+
+                    <!-- Mono label -->
+                    <p class="font-mono text-xs tracking-widest uppercase text-muted-foreground">
+                        Design Studio — Est. 2010
+                    </p>
+
+                    <!-- Oversized headline -->
+                    <h1 class="font-display font-bold leading-none tracking-tighter mt-8">
+                        <span class="block text-6xl md:text-7xl lg:text-8xl">Black. White.</span>
+                        <span class="block text-6xl md:text-7xl lg:text-8xl">Everything else</span>
+                        <span class="block text-7xl md:text-8xl lg:text-9xl italic">is noise.</span>
+                    </h1>
+
+                    <!-- Subtext -->
+                    <p class="font-body text-lg md:text-xl leading-relaxed text-muted-foreground max-w-xl mt-10">
+                        We are a multidisciplinary design studio practicing the art of restraint.
+                        We believe the most powerful designs are the ones that say the most with the least.
+                    </p>
+
+                    <!-- CTAs -->
+                    <div class="flex flex-col sm:flex-row gap-4 mt-12">
+                        <a href="#contact"
+                            class="inline-block bg-black text-white px-8 py-4 font-mono text-sm tracking-widest uppercase transition-colors duration-100 hover:bg-white hover:text-black hover:border-2 hover:border-black text-center">
+                            Start a Project
+                        </a>
+                        <a href="#work"
+                            class="inline-block border-2 border-black text-black px-8 py-4 font-mono text-sm tracking-widest uppercase transition-colors duration-100 hover:bg-black hover:text-white text-center">
+                            View Our Work
+                        </a>
+                    </div>
+
+                    <!-- Decorative: thick rule + bordered square -->
+                    <div class="flex items-center gap-4 mt-20" aria-hidden="true">
+                        <div class="h-1 w-32 bg-black"></div>
+                        <div class="h-4 w-4 border-2 border-black"></div>
+                    </div>
+
+                    <!-- Metadata -->
+                    <div class="flex flex-col sm:flex-row gap-4 sm:gap-12 mt-12 font-mono text-xs tracking-widest uppercase text-muted-foreground">
+                        <span>Based in New York</span>
+                        <span class="hidden sm:block text-black">|</span>
+                        <span>Available Worldwide</span>
+                        <span class="hidden sm:block text-black">|</span>
+                        <span>Currently Accepting Projects</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Divider -->
+        <div class="h-1 bg-black"></div>
+
+        <!-- ==================== STATS ==================== -->
+        <section class="bg-black text-white relative overflow-hidden">
+            <div class="absolute inset-0 texture-vertical-lines-white" aria-hidden="true"></div>
+            <div class="relative max-w-6xl mx-auto px-6 md:px-8 lg:px-12 py-20 md:py-28 lg:py-32">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
+                    <div class="text-center lg:text-left">
+                        <div class="font-display text-6xl lg:text-7xl font-bold text-white">15+</div>
+                        <div class="font-mono text-xs tracking-widest uppercase text-white/60 mt-2">Years of Practice</div>
+                    </div>
+                    <div class="text-center lg:text-left">
+                        <div class="font-display text-6xl lg:text-7xl font-bold text-white">120+</div>
+                        <div class="font-mono text-xs tracking-widest uppercase text-white/60 mt-2">Projects Delivered</div>
+                    </div>
+                    <div class="text-center lg:text-left">
+                        <div class="font-display text-6xl lg:text-7xl font-bold text-white">98%</div>
+                        <div class="font-mono text-xs tracking-widest uppercase text-white/60 mt-2">Client Retention</div>
+                    </div>
+                    <div class="text-center lg:text-left">
+                        <div class="font-display text-6xl lg:text-7xl font-bold text-white">12</div>
+                        <div class="font-mono text-xs tracking-widest uppercase text-white/60 mt-2">Design Awards</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Divider -->
+        <div class="h-1 bg-black"></div>
+
+        <!-- ==================== FEATURES ==================== -->
+        <section id="services" class="bg-white py-24 md:py-32 lg:py-40">
+            <div class="max-w-6xl mx-auto px-6 md:px-8 lg:px-12">
+                <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-16 lg:mb-24">
+                    <div>
+                        <p class="font-mono text-xs tracking-widest uppercase text-muted-foreground">Services</p>
+                        <h2 class="font-display text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter mt-4">
+                            What we do.
+                        </h2>
+                    </div>
+                    <p class="font-body text-lg leading-relaxed text-muted-foreground max-w-md">
+                        Every service is delivered with the same discipline: reduce, refine, repeat.
+                    </p>
+                </div>
+
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Feature 1 -->
+                    <div
+                        class="group border-2 border-black p-8 transition-colors duration-100 hover:bg-black hover:text-white">
+                        <i data-lucide="type" class="w-6 h-6 transition-colors duration-100 group-hover:text-white"></i>
+                        <h3 class="font-display text-2xl font-bold mt-6">Editorial Typography</h3>
+                        <p class="mt-3 text-sm leading-relaxed text-muted-foreground group-hover:text-white/70 transition-colors duration-100">
+                            We set type with the precision of a master printer. Every letterform is chosen with intention.
+                        </p>
+                    </div>
+                    <!-- Feature 2 -->
+                    <div
+                        class="group border-2 border-black p-8 transition-colors duration-100 hover:bg-black hover:text-white">
+                        <i data-lucide="grid" class="w-6 h-6 transition-colors duration-100 group-hover:text-white"></i>
+                        <h3 class="font-display text-2xl font-bold mt-6">Architectural Grid</h3>
+                        <p class="mt-3 text-sm leading-relaxed text-muted-foreground group-hover:text-white/70 transition-colors duration-100">
+                            Every layout is built on a rigorous grid system. Structure creates freedom.
+                        </p>
+                    </div>
+                    <!-- Feature 3 -->
+                    <div
+                        class="group border-2 border-black p-8 transition-colors duration-100 hover:bg-black hover:text-white">
+                        <i data-lucide="monochrome" class="w-6 h-6 transition-colors duration-100 group-hover:text-white"></i>
+                        <h3 class="font-display text-2xl font-bold mt-6">Monochrome Palette</h3>
+                        <p class="mt-3 text-sm leading-relaxed text-muted-foreground group-hover:text-white/70 transition-colors duration-100">
+                            No colors to hide behind. Just pure black, pure white, and the infinite space between.
+                        </p>
+                    </div>
+                    <!-- Feature 4 -->
+                    <div
+                        class="group border-2 border-black p-8 transition-colors duration-100 hover:bg-black hover:text-white">
+                        <i data-lucide="zap" class="w-6 h-6 transition-colors duration-100 group-hover:text-white"></i>
+                        <h3 class="font-display text-2xl font-bold mt-6">Instant Interactions</h3>
+                        <p class="mt-3 text-sm leading-relaxed text-muted-foreground group-hover:text-white/70 transition-colors duration-100">
+                            No bouncy animations. No slow easing. Just sharp, immediate responses to every action.
+                        </p>
+                    </div>
+                    <!-- Feature 5 -->
+                    <div
+                        class="group border-2 border-black p-8 transition-colors duration-100 hover:bg-black hover:text-white">
+                        <i data-lucide="shield" class="w-6 h-6 transition-colors duration-100 group-hover:text-white"></i>
+                        <h3 class="font-display text-2xl font-bold mt-6">Zero Compromise</h3>
+                        <p class="mt-3 text-sm leading-relaxed text-muted-foreground group-hover:text-white/70 transition-colors duration-100">
+                            We don't cut corners. We don't take shortcuts. Every pixel earns its place.
+                        </p>
+                    </div>
+                    <!-- Feature 6 -->
+                    <div
+                        class="group border-2 border-black p-8 transition-colors duration-100 hover:bg-black hover:text-white">
+                        <i data-lucide="clock" class="w-6 h-6 transition-colors duration-100 group-hover:text-white"></i>
+                        <h3 class="font-display text-2xl font-bold mt-6">Timeless Aesthetics</h3>
+                        <p class="mt-3 text-sm leading-relaxed text-muted-foreground group-hover:text-white/70 transition-colors duration-100">
+                            We design for decades, not seasons. Your brand will look as good in 2030 as it does today.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Divider -->
+        <div class="h-1 bg-black"></div>
+
+        <!-- ==================== PROCESS ==================== -->
+        <section id="studio" class="bg-white py-24 md:py-32 lg:py-40 relative overflow-hidden">
+            <div class="absolute inset-0 texture-diagonal" aria-hidden="true"></div>
+            <div class="relative max-w-6xl mx-auto px-6 md:px-8 lg:px-12">
+                <div class="mb-16 lg:mb-24">
+                    <p class="font-mono text-xs tracking-widest uppercase text-muted-foreground">Process</p>
+                    <h2 class="font-display text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter mt-4">
+                        How we work.
+                    </h2>
+                </div>
+
+                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
+                    <!-- Step 1 -->
+                    <div class="border-t-2 border-black pt-8">
+                        <span class="font-mono text-xs tracking-widest text-muted-foreground">01</span>
+                        <h3 class="font-display text-3xl font-bold mt-4">Discover</h3>
+                        <p class="mt-4 text-sm leading-relaxed text-muted-foreground">
+                            We immerse ourselves in your world. Your goals, your audience, your constraints.
+                        </p>
+                    </div>
+                    <!-- Step 2 -->
+                    <div class="border-t-2 border-black pt-8">
+                        <span class="font-mono text-xs tracking-widest text-muted-foreground">02</span>
+                        <h3 class="font-display text-3xl font-bold mt-4">Define</h3>
+                        <p class="mt-4 text-sm leading-relaxed text-muted-foreground">
+                            We distill everything down to its essence. What truly matters? What can be removed?
+                        </p>
+                    </div>
+                    <!-- Step 3 -->
+                    <div class="border-t-2 border-black pt-8">
+                        <span class="font-mono text-xs tracking-widest text-muted-foreground">03</span>
+                        <h3 class="font-display text-3xl font-bold mt-4">Design</h3>
+                        <p class="mt-4 text-sm leading-relaxed text-muted-foreground">
+                            We craft with precision. Every line, every letter, every space is intentional.
+                        </p>
+                    </div>
+                    <!-- Step 4 -->
+                    <div class="border-t-2 border-black pt-8">
+                        <span class="font-mono text-xs tracking-widest text-muted-foreground">04</span>
+                        <h3 class="font-display text-3xl font-bold mt-4">Deliver</h3>
+                        <p class="mt-4 text-sm leading-relaxed text-muted-foreground">
+                            We ship with confidence. Clean files, clear documentation, zero surprises.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Divider -->
+        <div class="h-1 bg-black"></div>
+
+        <!-- ==================== BENEFITS ==================== -->
+        <section id="work" class="bg-white py-24 md:py-32 lg:py-40 relative overflow-hidden">
+            <div class="absolute inset-0 texture-grid" aria-hidden="true"></div>
+            <div class="relative max-w-6xl mx-auto px-6 md:px-8 lg:px-12">
+                <div class="grid gap-16 lg:grid-cols-2">
+                    <div>
+                        <p class="font-mono text-xs tracking-widest uppercase text-muted-foreground">Benefits</p>
+                        <h2 class="font-display text-4xl md:text-5xl font-bold tracking-tighter mt-4">
+                            The value of<br>restraint.
+                        </h2>
+                        <div class="flex items-center gap-4 mt-8" aria-hidden="true">
+                            <div class="h-1 w-16 bg-black"></div>
+                            <div class="h-3 w-3 border-2 border-black"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="font-body text-lg leading-relaxed">
+                            <span class="drop-cap" aria-hidden="true">T</span>
+                            he benefits of working with us extend far beyond aesthetics. Our clients report clearer
+                            brand messaging, higher engagement, and a newfound confidence in their visual identity.
+                            We don't just design websites — we design the way your brand thinks, speaks, and
+                            presents itself to the world.
+                        </p>
+                        <p class="font-body text-lg leading-relaxed mt-6">
+                            In a world saturated with noise, the brands that stand out are the ones that say less.
+                            They speak with clarity, confidence, and conviction. That's what we help you achieve.
+                        </p>
+                        <ul class="mt-10 space-y-4">
+                            <li class="flex items-center gap-4 border-b border-border-light pb-4">
+                                <i data-lucide="check" class="w-5 h-5 flex-shrink-0"></i>
+                                <span class="font-body">Clearer brand messaging</span>
+                            </li>
+                            <li class="flex items-center gap-4 border-b border-border-light pb-4">
+                                <i data-lucide="check" class="w-5 h-5 flex-shrink-0"></i>
+                                <span class="font-body">Higher engagement metrics</span>
+                            </li>
+                            <li class="flex items-center gap-4 border-b border-border-light pb-4">
+                                <i data-lucide="check" class="w-5 h-5 flex-shrink-0"></i>
+                                <span class="font-body">Confident visual identity</span>
+                            </li>
+                            <li class="flex items-center gap-4 border-b border-border-light pb-4">
+                                <i data-lucide="check" class="w-5 h-5 flex-shrink-0"></i>
+                                <span class="font-body">Timeless, future-proof design</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Divider -->
+        <div class="h-1 bg-black"></div>
+
+        <!-- ==================== TESTIMONIALS ==================== -->
+        <section class="bg-white py-24 md:py-32 lg:py-40">
+            <div class="max-w-6xl mx-auto px-6 md:px-8 lg:px-12">
+                <div class="mb-16 lg:mb-24">
+                    <p class="font-mono text-xs tracking-widest uppercase text-muted-foreground">Testimonials</p>
+                    <h2 class="font-display text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter mt-4">
+                        What they say.
+                    </h2>
+                </div>
+
+                <div class="grid gap-8 lg:grid-cols-3">
+                    <!-- Testimonial 1 -->
+                    <figure
+                        class="group relative border-2 border-black p-10 lg:p-12 transition-colors duration-100 hover:bg-black hover:text-white">
+                        <span class="font-display text-8xl leading-none opacity-40 select-none transition-opacity duration-100 group-hover:opacity-20"
+                            aria-hidden="true">"</span>
+                        <blockquote class="font-display text-xl lg:text-2xl italic leading-tight mt-4">
+                            Working with NOIR was transformative. They stripped away years of visual noise and
+                            revealed the true essence of our brand.
+                        </blockquote>
+                        <figcaption class="mt-8 font-mono text-xs tracking-widest uppercase text-muted-foreground group-hover:text-white/60 transition-colors duration-100">
+                            Sarah Chen — CEO, Meridian Group
+                        </figcaption>
+                    </figure>
+                    <!-- Testimonial 2 -->
+                    <figure
+                        class="group relative border-2 border-black p-10 lg:p-12 transition-colors duration-100 hover:bg-black hover:text-white">
+                        <span class="font-display text-8xl leading-none opacity-40 select-none transition-opacity duration-100 group-hover:opacity-20"
+                            aria-hidden="true">"</span>
+                        <blockquote class="font-display text-xl lg:text-2xl italic leading-tight mt-4">
+                            The most disciplined design team we've ever worked with. Every decision is intentional,
+                            every detail is considered.
+                        </blockquote>
+                        <figcaption class="mt-8 font-mono text-xs tracking-widest uppercase text-muted-foreground group-hover:text-white/60 transition-colors duration-100">
+                            James Park — Founder, Atelier Park
+                        </figcaption>
+                    </figure>
+                    <!-- Testimonial 3 -->
+                    <figure
+                        class="group relative border-2 border-black p-10 lg:p-12 transition-colors duration-100 hover:bg-black hover:text-white">
+                        <span class="font-display text-8xl leading-none opacity-40 select-none transition-opacity duration-100 group-hover:opacity-20"
+                            aria-hidden="true">"</span>
+                        <blockquote class="font-display text-xl lg:text-2xl italic leading-tight mt-4">
+                            They didn't just redesign our website — they redesigned how we think about design itself.
+                        </blockquote>
+                        <figcaption class="mt-8 font-mono text-xs tracking-widest uppercase text-muted-foreground group-hover:text-white/60 transition-colors duration-100">
+                            Elena Rodriguez — CMO, Vantage
+                        </figcaption>
+                    </figure>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Divider -->
+        <div class="h-1 bg-black"></div>
+
+        <!-- ==================== PRICING ==================== -->
+        <section class="bg-white py-24 md:py-32 lg:py-40">
+            <div class="max-w-6xl mx-auto px-6 md:px-8 lg:px-12">
+                <div class="mb-16 lg:mb-24 text-center">
+                    <p class="font-mono text-xs tracking-widest uppercase text-muted-foreground">Pricing</p>
+                    <h2 class="font-display text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter mt-4">
+                        Choose your plan.
+                    </h2>
+                </div>
+
+                <div class="grid gap-8 lg:grid-cols-3 lg:items-start">
+                    <!-- Essential -->
+                    <div class="border-2 border-black p-8 flex flex-col">
+                        <h3 class="font-display text-2xl font-bold">Essential</h3>
+                        <p class="font-mono text-xs tracking-widest uppercase text-muted-foreground mt-2">For startups</p>
+                        <div class="font-display text-5xl font-bold mt-8">$5k<span class="text-2xl text-muted-foreground">/mo</span></div>
+                        <ul class="mt-8 space-y-4 flex-grow">
+                            <li class="flex items-center gap-3 text-sm"><i data-lucide="check" class="w-4 h-4 flex-shrink-0"></i>Brand audit</li>
+                            <li class="flex items-center gap-3 text-sm"><i data-lucide="check" class="w-4 h-4 flex-shrink-0"></i>Monthly design requests</li>
+                            <li class="flex items-center gap-3 text-sm"><i data-lucide="check" class="w-4 h-4 flex-shrink-0"></i>48-hour turnaround</li>
+                            <li class="flex items-center gap-3 text-sm"><i data-lucide="check" class="w-4 h-4 flex-shrink-0"></i>Email support</li>
+                        </ul>
+                        <a href="#contact"
+                            class="mt-10 block text-center border-2 border-black px-6 py-3 font-mono text-xs tracking-widest uppercase transition-colors duration-100 hover:bg-black hover:text-white">
+                            Get Started
+                        </a>
+                    </div>
+
+                    <!-- Premium (Elevated) -->
+                    <div
+                        class="bg-black text-white border-2 border-black p-8 flex flex-col lg:-mt-8 lg:pb-16 lg:pt-12 relative">
+                        <span
+                            class="absolute top-0 right-0 bg-white text-black font-mono text-[10px] tracking-widest uppercase px-3 py-1">Popular</span>
+                        <h3 class="font-display text-2xl font-bold">Premium</h3>
+                        <p class="font-mono text-xs tracking-widest uppercase text-white/60 mt-2">For growing companies</p>
+                        <div class="font-display text-5xl font-bold mt-8">$12k<span class="text-2xl text-white/60">/mo</span></div>
+                        <ul class="mt-8 space-y-4 flex-grow">
+                            <li class="flex items-center gap-3 text-sm"><i data-lucide="check" class="w-4 h-4 flex-shrink-0"></i>Everything in Essential</li>
+                            <li class="flex items-center gap-3 text-sm"><i data-lucide="check" class="w-4 h-4 flex-shrink-0"></i>Dedicated design team</li>
+                            <li class="flex items-center gap-3 text-sm"><i data-lucide="check" class="w-4 h-4 flex-shrink-0"></i>Weekly strategy calls</li>
+                            <li class="flex items-center gap-3 text-sm"><i data-lucide="check" class="w-4 h-4 flex-shrink-0"></i>24-hour turnaround</li>
+                            <li class="flex items-center gap-3 text-sm"><i data-lucide="check" class="w-4 h-4 flex-shrink-0"></i>Priority support</li>
+                        </ul>
+                        <a href="#contact"
+                            class="mt-10 block text-center bg-white text-black px-6 py-3 font-mono text-xs tracking-widest uppercase transition-colors duration-100 hover:bg-transparent hover:text-white hover:border-2 hover:border-white">
+                            Get Started
+                        </a>
+                    </div>
+
+                    <!-- Enterprise -->
+                    <div class="border-2 border-black p-8 flex flex-col">
+                        <h3 class="font-display text-2xl font-bold">Enterprise</h3>
+                        <p class="font-mono text-xs tracking-widest uppercase text-muted-foreground mt-2">For large orgs</p>
+                        <div class="font-display text-5xl font-bold mt-8">Custom</div>
+                        <ul class="mt-8 space-y-4 flex-grow">
+                            <li class="flex items-center gap-3 text-sm"><i data-lucide="check" class="w-4 h-4 flex-shrink-0"></i>Everything in Premium</li>
+                            <li class="flex items-center gap-3 text-sm"><i data-lucide="check" class="w-4 h-4 flex-shrink-0"></i>Multi-brand support</li>
+                            <li class="flex items-center gap-3 text-sm"><i data-lucide="check" class="w-4 h-4 flex-shrink-0"></i>On-site workshops</li>
+                            <li class="flex items-center gap-3 text-sm"><i data-lucide="check" class="w-4 h-4 flex-shrink-0"></i>SLA agreement</li>
+                            <li class="flex items-center gap-3 text-sm"><i data-lucide="check" class="w-4 h-4 flex-shrink-0"></i>Custom integrations</li>
+                        </ul>
+                        <a href="#contact"
+                            class="mt-10 block text-center border-2 border-black px-6 py-3 font-mono text-xs tracking-widest uppercase transition-colors duration-100 hover:bg-black hover:text-white">
+                            Contact Us
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Divider -->
+        <div class="h-1 bg-black"></div>
+
+        <!-- ==================== FAQ ==================== -->
+        <section class="bg-white py-24 md:py-32 lg:py-40">
+            <div class="max-w-4xl mx-auto px-6 md:px-8 lg:px-12">
+                <div class="mb-16 text-center">
+                    <p class="font-mono text-xs tracking-widest uppercase text-muted-foreground">FAQ</p>
+                    <h2 class="font-display text-4xl md:text-5xl font-bold tracking-tighter mt-4">
+                        Questions.
+                    </h2>
+                </div>
+
+                <div class="divide-y divide-black border-y border-black">
+                    <!-- FAQ 1 -->
+                    <details class="group py-6">
+                        <summary class="flex items-center justify-between cursor-pointer list-none">
+                            <span class="font-display text-xl font-bold pr-8">What makes NOIR different from other design studios?</span>
+                            <span class="faq-icon flex-shrink-0"><i data-lucide="plus" class="w-5 h-5"></i></span>
+                        </summary>
+                        <p class="mt-4 font-body text-muted-foreground leading-relaxed pr-12">
+                            We practice radical restraint. No colors to hide behind, no trends to chase.
+                            Every design decision is intentional and defensible.
+                        </p>
+                    </details>
+                    <!-- FAQ 2 -->
+                    <details class="group py-6">
+                        <summary class="flex items-center justify-between cursor-pointer list-none">
+                            <span class="font-display text-xl font-bold pr-8">How long does a typical project take?</span>
+                            <span class="faq-icon flex-shrink-0"><i data-lucide="plus" class="w-5 h-5"></i></span>
+                        </summary>
+                        <p class="mt-4 font-body text-muted-foreground leading-relaxed pr-12">
+                            Most projects take 4-8 weeks from kickoff to launch. We move fast because we make
+                            decisions quickly and commit to them.
+                        </p>
+                    </details>
+                    <!-- FAQ 3 -->
+                    <details class="group py-6">
+                        <summary class="flex items-center justify-between cursor-pointer list-none">
+                            <span class="font-display text-xl font-bold pr-8">Do you work with clients outside the US?</span>
+                            <span class="faq-icon flex-shrink-0"><i data-lucide="plus" class="w-5 h-5"></i></span>
+                        </summary>
+                        <p class="mt-4 font-body text-muted-foreground leading-relaxed pr-12">
+                            Absolutely. We work with clients across 12 countries and 4 continents.
+                            Time zone differences are never a barrier.
+                        </p>
+                    </details>
+                    <!-- FAQ 4 -->
+                    <details class="group py-6">
+                        <summary class="flex items-center justify-between cursor-pointer list-none">
+                            <span class="font-display text-xl font-bold pr-8">What if I need a design that uses color?</span>
+                            <span class="faq-icon flex-shrink-0"><i data-lucide="plus" class="w-5 h-5"></i></span>
+                        </summary>
+                        <p class="mt-4 font-body text-muted-foreground leading-relaxed pr-12">
+                            We'll tell you if you don't need it. But if color is truly essential to your brand,
+                            we'll integrate it with the same discipline we apply to black and white.
+                        </p>
+                    </details>
+                    <!-- FAQ 5 -->
+                    <details class="group py-6">
+                        <summary class="flex items-center justify-between cursor-pointer list-none">
+                            <span class="font-display text-xl font-bold pr-8">Can you work with our existing brand guidelines?</span>
+                            <span class="faq-icon flex-shrink-0"><i data-lucide="plus" class="w-5 h-5"></i></span>
+                        </summary>
+                        <p class="mt-4 font-body text-muted-foreground leading-relaxed pr-12">
+                            Yes. We'll audit your existing guidelines and either refine them or rebuild them
+                            from the ground up, depending on your needs.
+                        </p>
+                    </details>
+                    <!-- FAQ 6 -->
+                    <details class="group py-6">
+                        <summary class="flex items-center justify-between cursor-pointer list-none">
+                            <span class="font-display text-xl font-bold pr-8">What does the onboarding process look like?</span>
+                            <span class="faq-icon flex-shrink-0"><i data-lucide="plus" class="w-5 h-5"></i></span>
+                        </summary>
+                        <p class="mt-4 font-body text-muted-foreground leading-relaxed pr-12">
+                            We start with a deep-dive discovery session, followed by a brand audit,
+                            and then a clear roadmap with milestones and deliverables.
+                        </p>
+                    </details>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Divider -->
+        <div class="h-1 bg-black"></div>
+
+        <!-- ==================== FINAL CTA ==================== -->
+        <section id="contact" class="bg-black text-white relative overflow-hidden">
+            <div class="absolute inset-0 texture-radial-white" aria-hidden="true"></div>
+            <div class="relative max-w-6xl mx-auto px-6 md:px-8 lg:px-12 py-24 md:py-32 lg:py-40 text-center">
+                <h2 class="font-display text-5xl md:text-6xl lg:text-7xl font-bold tracking-tighter">
+                    Let's create something<br>timeless.
+                </h2>
+                <p class="font-body text-lg md:text-xl text-white/60 leading-relaxed max-w-xl mx-auto mt-8">
+                    We're currently accepting new projects for the upcoming quarter.
+                    Let's talk about what we can build together.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center mt-12">
+                    <a href="#"
+                        class="inline-block bg-white text-black px-8 py-4 font-mono text-sm tracking-widest uppercase transition-colors duration-100 hover:bg-transparent hover:text-white hover:border-2 hover:border-white">
+                        Start a Project
+                    </a>
+                    <a href="#"
+                        class="inline-block border-2 border-white text-white px-8 py-4 font-mono text-sm tracking-widest uppercase transition-colors duration-100 hover:bg-white hover:text-black">
+                        hello@noir.studio
+                    </a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="bg-white border-t border-black">
+        <div class="max-w-6xl mx-auto px-6 md:px-8 lg:px-12 py-16">
+            <div class="grid gap-12 lg:grid-cols-4">
+                <div>
+                    <a href="#" class="font-display text-2xl font-bold tracking-tighter">
+                        NOIR<span class="text-muted-foreground">®</span>
+                    </a>
+                    <p class="mt-4 text-sm text-muted-foreground leading-relaxed">
+                        Design studio practicing the art of restraint. Based in New York, working worldwide.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="font-mono text-xs tracking-widest uppercase text-muted-foreground">Sitemap</h4>
+                    <ul class="mt-4 space-y-2">
+                        <li><a href="#work" class="text-sm hover:underline underline-offset-4">Work</a></li>
+                        <li><a href="#studio" class="text-sm hover:underline underline-offset-4">Studio</a></li>
+                        <li><a href="#services" class="text-sm hover:underline underline-offset-4">Services</a></li>
+                        <li><a href="#journal" class="text-sm hover:underline underline-offset-4">Journal</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-mono text-xs tracking-widest uppercase text-muted-foreground">Social</h4>
+                    <ul class="mt-4 space-y-2">
+                        <li><a href="#" class="text-sm hover:underline underline-offset-4">Instagram</a></li>
+                        <li><a href="#" class="text-sm hover:underline underline-offset-4">Twitter / X</a></li>
+                        <li><a href="#" class="text-sm hover:underline underline-offset-4">LinkedIn</a></li>
+                        <li><a href="#" class="text-sm hover:underline underline-offset-4">Dribbble</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-mono text-xs tracking-widest uppercase text-muted-foreground">Contact</h4>
+                    <ul class="mt-4 space-y-2">
+                        <li><a href="mailto:hello@noir.studio" class="text-sm hover:underline underline-offset-4">hello@noir.studio</a></li>
+                        <li><a href="tel:+12125550123" class="text-sm hover:underline underline-offset-4">+1 (212) 555-0123</a></li>
+                        <li class="text-sm text-muted-foreground">New York, NY</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-16 pt-8 border-t border-black flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="text-sm text-muted-foreground">© 2024 NOIR Design Studio. All rights reserved.</p>
+                <p class="text-sm text-muted-foreground font-mono text-xs tracking-widest uppercase">Designed in black &amp; white.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Initialize Lucide Icons -->
+    <script>
+        lucide.createIcons();
+    </script>
+
+</body>
+</html>

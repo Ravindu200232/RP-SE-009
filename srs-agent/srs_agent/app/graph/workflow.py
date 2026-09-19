@@ -10,6 +10,7 @@ from ..agents.domain_classifier import classify_node
 from ..agents.english_plan import english_plan_node
 from ..agents.intake import intake_node
 from ..agents.pdf_generator import generate_pdf
+from ..agents.reviewer import review_srs_node
 from ..agents.srs_generator import generate_srs_node
 from ..agents.state import AgentState
 from ..services.events import bus
@@ -41,33 +42,7 @@ def _build_analysis():
     return g.compile()
 
 
-def _build_generation():
-    g = StateGraph(AgentState)
-    g.add_node("audit", audit_node)
-    g.add_node("english_plan", english_plan_node)
-    g.add_node("generate", generate_srs_node)
-    g.add_node("render_diagrams", diagram_node)
-    g.add_edge(START, "audit")
-    g.add_edge("audit", "english_plan")
-    g.add_edge("english_plan", "generate")
-    g.add_edge("generate", "render_diagrams")
-    g.add_edge("render_diagrams", END)
-    return g.compile()
-
-
-def _build_customization():
-    g = StateGraph(AgentState)
-    g.add_node("customize", customize_node)
-    g.add_node("render_diagrams", diagram_node)
-    g.add_edge(START, "customize")
-    g.add_edge("customize", "render_diagrams")
-    g.add_edge("render_diagrams", END)
-    return g.compile()
-
-
 _analysis = None
-_generation = None
-_customization = None
 
 
 async def run_analysis(state: AgentState) -> AgentState:
@@ -78,14 +53,32 @@ async def run_analysis(state: AgentState) -> AgentState:
 
 
 async def run_generation(state: AgentState) -> AgentState:
-    global _generation
-    if _generation is None:
-        _generation = _build_generation()
-    return await _generation.ainvoke(state)
+    return await _checkpointed(
+        "generation", state,
+        [audit_node, english_plan_node, generate_srs_node, review_srs_node, diagram_node])
 
 
 async def run_customization(state: AgentState) -> AgentState:
-    global _customization
-    if _customization is None:
-        _customization = _build_customization()
-    return await _customization.ainvoke(state)
+    return await _checkpointed("customization", state, [customize_node, diagram_node])
+
+
+async def _checkpointed(kind: str, state: AgentState, steps) -> AgentState:
+    import hashlib
+    import json
+    from ..services import storage
+    from ...jobs import CURRENT_JOB
+    fingerprint = CURRENT_JOB.get() or hashlib.sha256(json.dumps(state, sort_keys=True, default=str).encode()).hexdigest()
+    path = storage.project_dir(state["project_id"]) / f"{kind}-checkpoint.json"
+    saved = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+    index = 0
+    if saved.get("input") == fingerprint:
+        state = saved["state"]
+        index = saved["next"]
+    # Step-index execution loop supporting backwards jumps via _goto for reviewer refinement cycles.
+    names = [getattr(step, "__name__", str(position)) for position, step in enumerate(steps)]
+    while index < len(steps):
+        state = {**state, **await steps[index](state)}
+        target = state.pop("_goto", None)
+        index = names.index(target) if target in names else index + 1
+        storage.write_json(path, {"input": fingerprint, "next": index, "state": state})
+    return state

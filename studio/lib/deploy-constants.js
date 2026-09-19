@@ -18,6 +18,17 @@ const SHARED_TAIL = [
 ]
 
 export const PIPELINE = {
+  netlify: [...SHARED_HEAD, ...SHARED_TAIL,
+    { id: 'env', title: 'Netlify environment', detail: 'Site environment and team settings.' },
+    { id: 'github', title: 'GitHub delivery', detail: 'Commit the project update.' },
+    { id: 'deploy', title: 'Netlify release', detail: 'Build and deploy with the Netlify CLI.' },
+    { id: 'validation', title: 'Live validation', detail: 'Check the deployed homepage and health route.' }],
+  azure: [...SHARED_HEAD, ...SHARED_TAIL,
+    { id: 'bootstrap', title: 'Azure App Service', detail: 'Selected resource group, plan and app.' },
+    { id: 'env', title: 'Azure environment', detail: 'Runtime variables and startup command.' },
+    { id: 'github', title: 'GitHub delivery', detail: 'Commit the project update.' },
+    { id: 'deploy', title: 'Azure release', detail: 'Build and deploy the compiled application.' },
+    { id: 'validation', title: 'Live validation', detail: 'Check the deployed homepage and health route.' }],
   vercel: [
     ...SHARED_HEAD,
     { id: 'provider', title: 'Vercel artifacts',
@@ -70,6 +81,8 @@ export const PIPELINE = {
 }
 
 export const TARGETS = [
+  { id: 'netlify', label: 'Netlify', blurb: 'Managed Next.js hosting, deployed through the Netlify CLI.' },
+  { id: 'azure', label: 'Azure App Service', blurb: 'A Linux App Service running the compiled Node application in your selected plan.' },
   { id: 'vercel', label: 'Vercel',
     blurb: 'A Vercel project, deployed from GitHub. Nothing to run, nothing '
          + 'to pay for while it is idle.' },
@@ -93,6 +106,7 @@ export const STATE_TEXT = {
   CI_RUNNING:   ['GitHub Actions is building', 'run'],
   DEPLOYING:    ['Deploying', 'run'],
   VALIDATING:   ['Checking it answers', 'run'],
+  REPAIRING:    ['Repairing deployment errors', 'run'],
   LIVE:         ['Live', 'pass'],
   FAILED:       ['Failed', 'fail'],
   ROLLED_BACK:  ['Rolled back', 'fail'],

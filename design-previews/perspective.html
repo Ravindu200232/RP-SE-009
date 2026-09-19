@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Perspective — spatial design system</title>
+  <!-- Google fonts: Poppins, Oswald, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Poppins:wght@100;200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* design system tokens — perspective */
+    :root {
+      --primary: #00BD7D;
+      --secondary: #00BD7D;
+      --success: #16A34A;
+      --warning: #D97706;
+      --danger: #DC2626;
+      --surface: #FFFFFF;
+      --text: #111827;
+      --spacing-1: 4px; --spacing-2: 8px; --spacing-3: 12px; --spacing-4: 16px;
+      --spacing-5: 24px; --spacing-6: 32px;
+      --font-primary: 'Poppins', sans-serif;
+      --font-display: 'Oswald', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    body {
+      font-family: var(--font-primary);
+      background: #f9fafb;
+      color: var(--text);
+      font-weight: 400;
+    }
+    .font-display { font-family: var(--font-display); }
+    .font-mono { font-family: var(--font-mono); }
+    /* sharp corners everywhere — no rounded corners */
+    * { border-radius: 0 !important; }
+    /* perspective helpers */
+    .persp-rotate { transform: perspective(800px) rotateX(8deg) rotateY(-4deg); }
+    .persp-card { transform: perspective(600px) rotateX(4deg) rotateY(0deg); transition: transform 0.2s; }
+    .persp-card:hover { transform: perspective(600px) rotateX(2deg) rotateY(2deg) translateY(-2px); }
+    .bg-grid {
+      background-image: linear-gradient(to right, rgba(0,0,0,0.04) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(0,0,0,0.04) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+    .isometric-box {
+      transform: rotateX(55deg) rotateZ(45deg);
+      transform-style: preserve-3d;
+    }
+    .shadow-depth { box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); }
+  </style>
+</head>
+<body class="antialiased bg-gray-50 text-gray-900 overflow-x-hidden">
+
+  <!-- ========== NAVIGATION ========== -->
+  <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-primary flex items-center justify-center shadow-depth">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        <span class="font-display text-2xl font-semibold tracking-tight">perspective</span>
+      </div>
+      <nav class="hidden md:flex items-center gap-8 text-sm font-medium">
+        <a href="#" class="hover:text-primary transition">Features</a>
+        <a href="#" class="hover:text-primary transition">Process</a>
+        <a href="#" class="hover:text-primary transition">Pricing</a>
+        <a href="#" class="hover:text-primary transition">FAQ</a>
+      </nav>
+      <div class="flex items-center gap-3">
+        <a href="#" class="hidden sm:block text-sm font-medium hover:text-primary">Sign in</a>
+        <a href="#" class="bg-primary text-white px-4 py-2 text-sm font-semibold shadow-depth hover:bg-emerald-600 transition">Get started</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========== HERO ========== -->
+  <section class="relative bg-grid">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28 grid lg:grid-cols-2 gap-16 items-center">
+      <div>
+        <p class="font-mono text-sm text-primary mb-4 tracking-widest uppercase">◆ spatial depth · isometric</p>
+        <h1 class="font-display text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tight">
+          Design with<br><span class="text-primary">real depth</span>
+        </h1>
+        <p class="mt-6 text-lg text-gray-600 max-w-xl leading-relaxed">
+          A perspective-driven design system with isometric views, layered elements, and vanishing points that guide attention through 3D-like realism.
+        </p>
+        <div class="mt-8 flex flex-wrap gap-4">
+          <a href="#" class="bg-primary text-white px-6 py-3 font-semibold shadow-depth hover:bg-emerald-600 transition flex items-center gap-2">
+            Explore the system <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </a>
+          <a href="#" class="border-2 border-gray-300 px-6 py-3 font-semibold hover:border-primary hover:text-primary transition flex items-center gap-2">
+            <i data-lucide="layers" class="w-4 h-4"></i> View components
+          </a>
+        </div>
+        <div class="mt-10 flex items-center gap-6 font-mono text-xs text-gray-500">
+          <span class="flex items-center gap-1"><i data-lucide="check" class="w-3 h-3 text-primary"></i> WCAG 2.2 AA</span>
+          <span class="flex items-center gap-1"><i data-lucide="check" class="w-3 h-3 text-primary"></i> 400px+ responsive</span>
+          <span class="flex items-center gap-1"><i data-lucide="check" class="w-3 h-3 text-primary"></i> sharp corners</span>
+        </div>
+      </div>
+      <!-- hero visual: isometric CSS shapes -->
+      <div class="relative h-80 sm:h-96 lg:h-[420px] persp-rotate">
+        <div class="absolute inset-0 flex items-center justify-center">
+          <div class="relative w-64 h-64 sm:w-80 sm:h-80">
+            <!-- base layer -->
+            <div class="absolute inset-0 bg-primary/20 border-2 border-primary shadow-depth"></div>
+            <!-- mid layer -->
+            <div class="absolute inset-4 bg-primary/30 border-2 border-primary shadow-depth"></div>
+            <!-- top layer -->
+            <div class="absolute inset-8 bg-primary border-2 border-emerald-700 shadow-depth flex items-center justify-center">
+              <i data-lucide="box" class="w-12 h-12 text-white"></i>
+            </div>
+            <!-- floating elements -->
+            <div class="absolute -top-6 -right-6 w-20 h-20 bg-white border-2 border-gray-200 shadow-depth flex items-center justify-center">
+              <i data-lucide="hexagon" class="w-8 h-8 text-primary"></i>
+            </div>
+            <div class="absolute -bottom-4 -left-8 w-16 h-16 bg-white border-2 border-gray-200 shadow-depth flex items-center justify-center">
+              <i data-lucide="cube" class="w-6 h-6 text-gray-500"></i>
+            </div>
+            <!-- vanishing point lines -->
+            <div class="absolute top-1/2 left-1/2 w-40 h-40 border-t-2 border-dashed border-primary/40 rotate-45"></div>
+            <div class="absolute top-1/2 left-1/2 w-40 h-40 border-b-2 border-dashed border-primary/40 rotate-45"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== STATS ========== -->
+  <section class="bg-white border-y border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
+      <div class="text-center">
+        <p class="font-display text-4xl font-bold text-primary">120+</p>
+        <p class="mt-2 text-sm text-gray-600 font-medium">Components</p>
+      </div>
+      <div class="text-center">
+        <p class="font-display text-4xl font-bold text-primary">4.9</p>
+        <p class="mt-2 text-sm text-gray-600 font-medium">User rating</p>
+      </div>
+      <div class="text-center">
+        <p class="font-display text-4xl font-bold text-primary">99.9%</p>
+        <p class="mt-2 text-sm text-gray-600 font-medium">Uptime</p>
+      </div>
+      <div class="text-center">
+        <p class="font-display text-4xl font-bold text-primary">12k</p>
+        <p class="mt-2 text-sm text-gray-600 font-medium">Teams</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FEATURES ========== -->
+  <section class="py-20 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-2xl mx-auto">
+        <p class="font-mono text-sm text-primary uppercase tracking-widest">Features</p>
+        <h2 class="font-display text-4xl sm:text-5xl font-bold mt-2">Built on spatial layers</h2>
+        <p class="mt-4 text-gray-600 text-lg">Every component uses depth cues to create hierarchy and guide focus.</p>
+      </div>
+      <div class="mt-16 grid md:grid-cols-3 gap-8">
+        <!-- feature 1 -->
+        <div class="bg-white p-6 border border-gray-200 shadow-depth persp-card">
+          <div class="w-12 h-12 bg-primary/10 border-2 border-primary flex items-center justify-center mb-5">
+            <i data-lucide="box" class="w-6 h-6 text-primary"></i>
+          </div>
+          <h3 class="font-display text-xl font-semibold">Isometric grids</h3>
+          <p class="mt-2 text-gray-600">Align elements on 30° axes for consistent depth perception.</p>
+        </div>
+        <!-- feature 2 -->
+        <div class="bg-white p-6 border border-gray-200 shadow-depth persp-card">
+          <div class="w-12 h-12 bg-primary/10 border-2 border-primary flex items-center justify-center mb-5">
+            <i data-lucide="scan" class="w-6 h-6 text-primary"></i>
+          </div>
+          <h3 class="font-display text-xl font-semibold">Vanishing points</h3>
+          <p class="mt-2 text-gray-600">Dynamic focal points that pull attention to key actions.</p>
+        </div>
+        <!-- feature 3 -->
+        <div class="bg-white p-6 border border-gray-200 shadow-depth persp-card">
+          <div class="w-12 h-12 bg-primary/10 border-2 border-primary flex items-center justify-center mb-5">
+            <i data-lucide="layers" class="w-6 h-6 text-primary"></i>
+          </div>
+          <h3 class="font-display text-xl font-semibold">Layered elevation</h3>
+          <p class="mt-2 text-gray-600">Stacked surfaces with distinct shadows for real depth.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PROCESS ========== -->
+  <section class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-2xl mx-auto">
+        <p class="font-mono text-sm text-primary uppercase tracking-widest">Process</p>
+        <h2 class="font-display text-4xl sm:text-5xl font-bold mt-2">From flat to spatial</h2>
+      </div>
+      <div class="mt-16 grid md:grid-cols-4 gap-8">
+        <div class="relative">
+          <div class="font-display text-6xl font-bold text-gray-200">01</div>
+          <div class="mt-2 h-1 w-12 bg-primary"></div>
+          <h3 class="mt-4 font-semibold text-lg">Define depth</h3>
+          <p class="mt-2 text-gray-600 text-sm">Set the vanishing point and elevation levels.</p>
+        </div>
+        <div class="relative">
+          <div class="font-display text-6xl font-bold text-gray-200">02</div>
+          <div class="mt-2 h-1 w-12 bg-primary"></div>
+          <h3 class="mt-4 font-semibold text-lg">Layer elements</h3>
+          <p class="mt-2 text-gray-600 text-sm">Stack components with consistent spacing.</p>
+        </div>
+        <div class="relative">
+          <div class="font-display text-6xl font-bold text-gray-200">03</div>
+          <div class="mt-2 h-1 w-12 bg-primary"></div>
+          <h3 class="mt-4 font-semibold text-lg">Add motion</h3>
+          <p class="mt-2 text-gray-600 text-sm">Subtle perspective shifts on hover.</p>
+        </div>
+        <div class="relative">
+          <div class="font-display text-6xl font-bold text-gray-200">04</div>
+          <div class="mt-2 h-1 w-12 bg-primary"></div>
+          <h3 class="mt-4 font-semibold text-lg">Test & refine</h3>
+          <p class="mt-2 text-gray-600 text-sm">Validate accessibility and visual hierarchy.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== BENEFITS ========== -->
+  <section class="py-20 bg-gray-900 text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-16 items-center">
+      <div>
+        <p class="font-mono text-sm text-primary uppercase tracking-widest">Benefits</p>
+        <h2 class="font-display text-4xl sm:text-5xl font-bold mt-2">Why perspective works</h2>
+        <p class="mt-6 text-gray-300 text-lg leading-relaxed">
+          Depth-based design reduces cognitive load by creating natural focal points. Users understand hierarchy instantly without visual clutter.
+        </p>
+        <div class="mt-8 space-y-4">
+          <div class="flex items-start gap-3">
+            <i data-lucide="check-circle" class="w-6 h-6 text-primary mt-0.5"></i>
+            <div><span class="font-semibold">Faster scanning</span> — 40% quicker navigation</div>
+          </div>
+          <div class="flex items-start gap-3">
+            <i data-lucide="check-circle" class="w-6 h-6 text-primary mt-0.5"></i>
+            <div><span class="font-semibold">Higher engagement</span> — 3.2x more interaction</div>
+          </div>
+          <div class="flex items-start gap-3">
+            <i data-lucide="check-circle" class="w-6 h-6 text-primary mt-0.5"></i>
+            <div><span class="font-semibold">Accessible</span> — meets WCAG 2.2 AA standards</div>
+          </div>
+        </div>
+      </div>
+      <!-- visual: stacked cubes -->
+      <div class="relative h-72 sm:h-80">
+        <div class="absolute inset-0 flex items-center justify-center">
+          <div class="isometric-box w-40 h-40 bg-primary/30 border-2 border-primary/60"></div>
+          <div class="isometric-box w-28 h-28 bg-primary/50 border-2 border-primary absolute translate-x-8 translate-y-4"></div>
+          <div class="isometric-box w-16 h-16 bg-primary border-2 border-emerald-500 absolute translate-x-16 translate-y-8"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== TESTIMONIALS ========== -->
+  <section class="py-20 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-2xl mx-auto">
+        <p class="font-mono text-sm text-primary uppercase tracking-widest">Testimonials</p>
+        <h2 class="font-display text-4xl sm:text-5xl font-bold mt-2">Loved by design teams</h2>
+      </div>
+      <div class="mt-16 grid md:grid-cols-3 gap-8">
+        <div class="bg-white p-6 border border-gray-200 shadow-depth">
+          <div class="flex gap-1 text-warning mb-4">
+            <i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i>
+          </div>
+          <p class="text-gray-700">"The depth cues transformed our dashboard. Users now navigate without thinking."</p>
+          <div class="mt-6 flex items-center gap-3">
+            <div class="w-10 h-10 bg-primary/20 border-2 border-primary flex items-center justify-center font-display font-bold">AK</div>
+            <div><div class="font-semibold text-sm">Ava Kim</div><div class="text-xs text-gray-500">Design Lead, Northwind</div></div>
+          </div>
+        </div>
+        <div class="bg-white p-6 border border-gray-200 shadow-depth">
+          <div class="flex gap-1 text-warning mb-4">
+            <i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i>
+          </div>
+          <p class="text-gray-700">"Finally a system that feels both modern and accessible. The isometric components are gorgeous."</p>
+          <div class="mt-6 flex items-center gap-3">
+            <div class="w-10 h-10 bg-primary/20 border-2 border-primary flex items-center justify-center font-display font-bold">MR</div>
+            <div><div class="font-semibold text-sm">Marcus Reid</div><div class="text-xs text-gray-500">Frontend Engineer, Vertex</div></div>
+          </div>
+        </div>
+        <div class="bg-white p-6 border border-gray-200 shadow-depth">
+          <div class="flex gap-1 text-warning mb-4">
+            <i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i>
+          </div>
+          <p class="text-gray-700">"The vanishing point system is genius. Our conversion rate jumped 28% after redesign."</p>
+          <div class="mt-6 flex items-center gap-3">
+            <div class="w-10 h-10 bg-primary/20 border-2 border-primary flex items-center justify-center font-display font-bold">SL</div>
+            <div><div class="font-semibold text-sm">Sofia Lopez</div><div class="text-xs text-gray-500">Product Manager, Orbit</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PRICING ========== -->
+  <section class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-2xl mx-auto">
+        <p class="font-mono text-sm text-primary uppercase tracking-widest">Pricing</p>
+        <h2 class="font-display text-4xl sm:text-5xl font-bold mt-2">Simple, transparent plans</h2>
+      </div>
+      <div class="mt-16 grid md:grid-cols-3 gap-8">
+        <!-- basic -->
+        <div class="border-2 border-gray-200 p-8 bg-gray-50">
+          <h3 class="font-display text-2xl font-semibold">Starter</h3>
+          <p class="mt-4 font-display text-5xl font-bold">$0</p>
+          <p class="text-gray-500 mt-1">/month</p>
+          <ul class="mt-8 space-y-3 text-sm">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-primary"></i> 3 projects</li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-primary"></i> Basic components</li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-primary"></i> Community support</li>
+          </ul>
+          <a href="#" class="mt-8 block text-center border-2 border-gray-300 py-3 font-semibold hover:border-primary hover:text-primary transition">Start free</a>
+        </div>
+        <!-- pro -->
+        <div class="border-2 border-primary p-8 bg-white shadow-depth relative">
+          <span class="absolute -top-3 left-6 bg-primary text-white px-3 py-1 text-xs font-mono uppercase">Popular</span>
+          <h3 class="font-display text-2xl font-semibold">Pro</h3>
+          <p class="mt-4 font-display text-5xl font-bold">$24</p>
+          <p class="text-gray-500 mt-1">/month</p>
+          <ul class="mt-8 space-y-3 text-sm">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-primary"></i> Unlimited projects</li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-primary"></i> All depth components</li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-primary"></i> Priority support</li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-primary"></i> Vanishing point engine</li>
+          </ul>
+          <a href="#" class="mt-8 block text-center bg-primary text-white py-3 font-semibold hover:bg-emerald-600 transition">Get Pro</a>
+        </div>
+        <!-- enterprise -->
+        <div class="border-2 border-gray-200 p-8 bg-gray-50">
+          <h3 class="font-display text-2xl font-semibold">Enterprise</h3>
+          <p class="mt-4 font-display text-5xl font-bold">Custom</p>
+          <p class="text-gray-500 mt-1">/contact</p>
+          <ul class="mt-8 space-y-3 text-sm">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-primary"></i> SSO & SAML</li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-primary"></i> Dedicated manager</li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-primary"></i> Custom depth models</li>
+          </ul>
+          <a href="#" class="mt-8 block text-center border-2 border-gray-300 py-3 font-semibold hover:border-primary hover:text-primary transition">Contact sales</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FAQ ========== -->
+  <section class="py-20 bg-gray-50">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center">
+        <p class="font-mono text-sm text-primary uppercase tracking-widest">FAQ</p>
+        <h2 class="font-display text-4xl sm:text-5xl font-bold mt-2">Questions, answered</h2>
+      </div>
+      <div class="mt-12 space-y-4">
+        <details class="bg-white border border-gray-200 p-6 shadow-depth">
+          <summary class="font-semibold cursor-pointer flex justify-between items-center">What exactly is perspective design? <i data-lucide="chevron-down" class="w-4 h-4"></i></summary>
+          <p class="mt-3 text-gray-600">It's a spatial design approach using isometric grids, vanishing points, and layered elements to create depth and guide attention.</p>
+        </details>
+        <details class="bg-white border border-gray-200 p-6 shadow-depth">
+          <summary class="font-semibold cursor-pointer flex justify-between items-center">Is it accessible? <i data-lucide="chevron-down" class="w-4 h-4"></i></summary>
+          <p class="mt-3 text-gray-600">Yes, we follow WCAG 2.2 AA guidelines with keyboard-first interactions and visible focus states.</p>
+        </details>
+        <details class="bg-white border border-gray-200 p-6 shadow-depth">
+          <summary class="font-semibold cursor-pointer flex justify-between items-center">Can I use it with my existing design system? <i data-lucide="chevron-down" class="w-4 h-4"></i></summary>
+          <p class="mt-3 text-gray-600">Absolutely. Our tokens and components are designed to be layered onto existing systems.</p>
+        </details>
+        <details class="bg-white border border-gray-200 p-6 shadow-depth">
+          <summary class="font-semibold cursor-pointer flex justify-between items-center">Do you offer migration support? <i data-lucide="chevron-down" class="w-4 h-4"></i></summary>
+          <p class="mt-3 text-gray-600">Yes, our enterprise plan includes dedicated migration assistance from our team.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="bg-gray-900 text-white py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid md:grid-cols-4 gap-10">
+        <div class="md:col-span-1">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-primary flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            </div>
+            <span class="font-display text-2xl font-semibold">perspective</span>
+          </div>
+          <p class="mt-4 text-gray-400 text-sm">Spatial design system for modern interfaces.</p>
+        </div>
+        <div>
+          <h4 class="font-display text-lg font-semibold mb-4">Product</h4>
+          <ul class="space-y-2 text-sm text-gray-400">
+            <li><a href="#" class="hover:text-white">Features</a></li>
+            <li><a href="#" class="hover:text-white">Pricing</a></li>
+            <li><a href="#" class="hover:text-white">Changelog</a></li>
+            <li><a href="#" class="hover:text-white">Roadmap</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-display text-lg font-semibold mb-4">Resources</h4>
+          <ul class="space-y-2 text-sm text-gray-400">
+            <li><a href="#" class="hover:text-white">Documentation</a></li>
+            <li><a href="#" class="hover:text-white">Tutorials</a></li>
+            <li><a href="#" class="hover:text-white">Blog</a></li>
+            <li><a href="#" class="hover:text-white">Community</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-display text-lg font-semibold mb-4">Legal</h4>
+          <ul class="space-y-2 text-sm text-gray-400">
+            <li><a href="#" class="hover:text-white">Privacy</a></li>
+            <li><a href="#" class="hover:text-white">Terms</a></li>
+            <li><a href="#" class="hover:text-white">Security</a></li>
+            <li><a href="#" class="hover:text-white">Status</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="mt-12 pt-8 border-t border-gray-800 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <p class="text-sm text-gray-500">© 2025 Perspective Systems. All rights reserved.</p>
+        <div class="flex gap-4">
+          <a href="#" aria-label="Twitter" class="text-gray-400 hover:text-white"><i data-lucide="twitter" class="w-5 h-5"></i></a>
+          <a href="#" aria-label="GitHub" class="text-gray-400 hover:text-white"><i data-lucide="github" class="w-5 h-5"></i></a>
+          <a href="#" aria-label="LinkedIn" class="text-gray-400 hover:text-white"><i data-lucide="linkedin" class="w-5 h-5"></i></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- lucide icons init -->
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

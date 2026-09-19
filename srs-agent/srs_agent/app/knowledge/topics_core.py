@@ -139,7 +139,7 @@ def _sections_options(s: dict, item: dict | None = None) -> list:
             if name not in sections:
                 sections.append(name)
     if not sections:
-        sections = ["Hero", "Services", "About", "Testimonials", "Contact"]
+        sections = ["Overview", "Workspace", "Records", "Activity", "Actions"]
     return [{"label": name, "value": _snake_value(name)} for name in sections]
 
 

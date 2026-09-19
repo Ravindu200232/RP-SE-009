@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus — Futuristic Design System</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Audiowide (display), Roboto (primary), Anonymous Pro (mono) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Roboto:wght@100;200;300;400;500;600;700;800;900&family=Anonymous+Pro:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#8B5CF6',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                        surface: '#FFFFFF',
+                        text: '#111827',
+                    },
+                    fontFamily: {
+                        display: ['Audiowide', 'sans-serif'],
+                        sans: ['Roboto', 'sans-serif'],
+                        mono: ['Anonymous Pro', 'monospace'],
+                    },
+                    boxShadow: {
+                        'neon': '0 0 10px rgba(59, 130, 246, 0.5), 0 0 20px rgba(139, 92, 246, 0.3)',
+                        'neon-sm': '0 0 5px rgba(59, 130, 246, 0.5)',
+                    },
+                    backgroundImage: {
+                        'grid-pattern': 'linear-gradient(to right, #e5e7eb 1px, transparent 1px), linear-gradient(to bottom, #e5e7eb 1px, transparent 1px)',
+                        'grid-pattern-dark': 'linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)',
+                    },
+                    backgroundSize: {
+                        'grid': '40px 40px',
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom styles for sharp corners, focus states, and animations */
+        * {
+            border-radius: 0 !important;
+        }
+        .focus-visible\:ring-2:focus-visible {
+            box-shadow: 0 0 0 2px #3B82F6, 0 0 0 4px rgba(59, 130, 246, 0.3);
+        }
+        .clip-slant {
+            clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
+        }
+        .clip-slant-reverse {
+            clip-path: polygon(0 15%, 100% 0, 100% 100%, 0 100%);
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-float {
+            animation: float 4s ease-in-out infinite;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+        .animate-pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f3f4f6;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3B82F6;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #8B5CF6;
+        }
+        /* Smooth scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+        /* Selection color */
+        ::selection {
+            background: #3B82F6;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-surface text-text font-sans antialiased">
+
+    <!-- ==================== NAVIGATION ==================== -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-surface/95 backdrop-blur-sm border-b-2 border-primary/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <a href="#" class="flex items-center gap-2 group">
+                    <div class="w-8 h-8 bg-primary flex items-center justify-center shadow-neon-sm group-hover:shadow-neon transition-shadow">
+                        <i data-lucide="hexagon" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <span class="font-display text-xl text-primary tracking-wider">NEXUS</span>
+                </a>
+
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="text-sm font-medium text-text/80 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Features</a>
+                    <a href="#process" class="text-sm font-medium text-text/80 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Process</a>
+                    <a href="#benefits" class="text-sm font-medium text-text/80 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Benefits</a>
+                    <a href="#pricing" class="text-sm font-medium text-text/80 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Pricing</a>
+                    <a href="#faq" class="text-sm font-medium text-text/80 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">FAQ</a>
+                </div>
+
+                <!-- CTA Button -->
+                <div class="flex items-center gap-4">
+                    <a href="#pricing" class="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+                        <i data-lucide="zap" class="w-4 h-4"></i>
+                        Get Started
+                    </a>
+                    <!-- Mobile Menu Button -->
+                    <button class="md:hidden p-2 text-text hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden border-t-2 border-primary/20 bg-surface">
+            <div class="px-4 py-4 space-y-3">
+                <a href="#features" class="block text-sm font-medium text-text/80 hover:text-primary py-2">Features</a>
+                <a href="#process" class="block text-sm font-medium text-text/80 hover:text-primary py-2">Process</a>
+                <a href="#benefits" class="block text-sm font-medium text-text/80 hover:text-primary py-2">Benefits</a>
+                <a href="#pricing" class="block text-sm font-medium text-text/80 hover:text-primary py-2">Pricing</a>
+                <a href="#faq" class="block text-sm font-medium text-text/80 hover:text-primary py-2">FAQ</a>
+                <a href="#pricing" class="block px-4 py-2 bg-primary text-white text-sm font-medium text-center">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ==================== HERO ==================== -->
+    <section class="relative pt-24 pb-20 overflow-hidden bg-grid-pattern bg-grid">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <!-- Hero Content -->
+                <div>
+                    <div class="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 border border-primary/30 mb-6">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-primary"></i>
+                        <span class="text-xs font-mono text-primary uppercase tracking-widest">Next-Gen Platform</span>
+                    </div>
+                    <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl text-text leading-tight mb-6">
+                        BUILD THE<br>
+                        <span class="text-primary">FUTURE</span> TODAY
+                    </h1>
+                    <p class="text-lg text-text/70 mb-8 max-w-lg">
+                        Nexus is a revolutionary platform that combines cutting-edge AI with seamless automation to transform your workflow. Experience the power of tomorrow's technology.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 mb-8">
+                        <a href="#pricing" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white font-medium hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+                            <i data-lucide="rocket" class="w-5 h-5"></i>
+                            Launch Now
+                        </a>
+                        <a href="#features" class="inline-flex items-center justify-center gap-2 px-6 py-3 border-2 border-primary text-primary font-medium hover:bg-primary/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+                            <i data-lucide="play-circle" class="w-5 h-5"></i>
+                            Watch Demo
+                        </a>
+                    </div>
+                    <div class="flex items-center gap-6">
+                        <div class="flex -space-x-2">
+                            <div class="w-10 h-10 bg-primary flex items-center justify-center border-2 border-surface"><span class="text-white text-xs font-bold">JD</span></div>
+                            <div class="w-10 h-10 bg-secondary flex items-center justify-center border-2 border-surface"><span class="text-white text-xs font-bold">AK</span></div>
+                            <div class="w-10 h-10 bg-success flex items-center justify-center border-2 border-surface"><span class="text-white text-xs font-bold">MS</span></div>
+                            <div class="w-10 h-10 bg-warning flex items-center justify-center border-2 border-surface"><span class="text-white text-xs font-bold">RT</span></div>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-1">
+                                <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                                <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                                <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                                <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                                <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            </div>
+                            <p class="text-sm text-text/70 mt-1">Trusted by 10,000+ teams</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hero Visual -->
+                <div class="relative hidden lg:block">
+                    <div class="relative w-full h-[500px] bg-gradient-to-br from-primary/20 via-secondary/20 to-transparent border-2 border-primary/30 p-8">
+                        <!-- Animated elements -->
+                        <div class="absolute top-8 left-8 w-24 h-24 bg-primary/20 border-2 border-primary animate-float"></div>
+                        <div class="absolute top-16 right-16 w-16 h-16 bg-secondary/20 border-2 border-secondary animate-float" style="animation-delay: 0.5s"></div>
+                        <div class="absolute bottom-16 left-16 w-20 h-20 bg-success/20 border-2 border-success animate-float" style="animation-delay: 1s"></div>
+                        <div class="absolute bottom-8 right-8 w-32 h-32 bg-warning/20 border-2 border-warning animate-float" style="animation-delay: 1.5s"></div>
+                        
+                        <!-- Central hexagon -->
+                        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                            <div class="relative w-48 h-48 animate-pulse-glow">
+                                <svg viewBox="0 0 100 100" class="w-full h-full">
+                                    <polygon points="50,5 93,27.5 93,72.5 50,95 7,72.5 7,27.5" fill="none" stroke="#3B82F6" stroke-width="2"/>
+                                    <polygon points="50,15 85,33 85,67 50,85 15,67 15,33" fill="rgba(59,130,246,0.1)" stroke="#8B5CF6" stroke-width="1.5"/>
+                                    <polygon points="50,25 77,38.5 77,61.5 50,75 23,61.5 23,38.5" fill="rgba(139,92,246,0.1)" stroke="#16A34A" stroke-width="1"/>
+                                </svg>
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <i data-lucide="cpu" class="w-16 h-16 text-primary"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Floating data cards -->
+                        <div class="absolute top-1/4 -left-4 bg-surface border-2 border-primary p-4 shadow-neon-sm">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="trending-up" class="w-4 h-4 text-success"></i>
+                                <span class="text-xs font-mono text-text/70">PRODUCTIVITY</span>
+                            </div>
+                            <p class="font-display text-2xl text-primary mt-1">+247%</p>
+                        </div>
+                        <div class="absolute bottom-1/4 -right-4 bg-surface border-2 border-secondary p-4 shadow-neon-sm">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="users" class="w-4 h-4 text-secondary"></i>
+                                <span class="text-xs font-mono text-text/70">TEAM SIZE</span>
+                            </div>
+                            <p class="font-display text-2xl text-secondary mt-1">10K+</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== STATS ==================== -->
+    <section class="py-16 bg-text text-surface">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-primary/20 flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="users" class="w-6 h-6 text-primary"></i>
+                    </div>
+                    <p class="font-display text-3xl sm:text-4xl text-primary">10K+</p>
+                    <p class="text-sm text-surface/70 mt-2 font-mono">ACTIVE USERS</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-secondary/20 flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="zap" class="w-6 h-6 text-secondary"></i>
+                    </div>
+                    <p class="font-display text-3xl sm:text-4xl text-secondary">99.9%</p>
+                    <p class="text-sm text-surface/70 mt-2 font-mono">UPTIME</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-success/20 flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="shield-check" class="w-6 h-6 text-success"></i>
+                    </div>
+                    <p class="font-display text-3xl sm:text-4xl text-success">100%</p>
+                    <p class="text-sm text-surface/70 mt-2 font-mono">SECURE</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-warning/20 flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="clock" class="w-6 h-6 text-warning"></i>
+                    </div>
+                    <p class="font-display text-3xl sm:text-4xl text-warning">24/7</p>
+                    <p class="text-sm text-surface/70 mt-2 font-mono">SUPPORT</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FEATURES ==================== -->
+    <section id="features" class="py-20 bg-surface">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <div class="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 border border-primary/30 mb-4">
+                    <i data-lucide="grid" class="w-4 h-4 text-primary"></i>
+                    <span class="text-xs font-mono text-primary uppercase tracking-widest">Features</span>
+                </div>
+                <h2 class="font-display text-3xl sm:text-4xl text-text mb-4">POWERFUL CAPABILITIES</h2>
+                <p class="text-lg text-text/70 max-w-2xl mx-auto">Everything you need to accelerate your digital transformation and stay ahead of the curve.</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="group border-2 border-text/10 hover:border-primary transition-colors p-8 bg-white">
+                    <div class="w-12 h-12 bg-primary/10 flex items-center justify-center mb-6 group-hover:bg-primary/20 transition-colors">
+                        <i data-lucide="brain" class="w-6 h-6 text-primary"></i>
+                    </div>
+                    <h3 class="font-display text-xl text-text mb-3">AI-POWERED</h3>
+                    <p class="text-text/70">Advanced machine learning algorithms that adapt to your workflow and provide intelligent recommendations in real-time.</p>
+                    <a href="#" class="inline-flex items-center gap-2 text-primary text-sm font-medium mt-4 hover:gap-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                        Learn more <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="group border-2 border-text/10 hover:border-secondary transition-colors p-8 bg-white">
+                    <div class="w-12 h-12 bg-secondary/10 flex items-center justify-center mb-6 group-hover:bg-secondary/20 transition-colors">
+                        <i data-lucide="workflow" class="w-6 h-6 text-secondary"></i>
+                    </div>
+                    <h3 class="font-display text-xl text-text mb-3">SEAMLESS WORKFLOW</h3>
+                    <p class="text-text/70">Automate complex processes with intuitive visual builders. Connect your favorite tools and services effortlessly.</p>
+                    <a href="#" class="inline-flex items-center gap-2 text-secondary text-sm font-medium mt-4 hover:gap-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary">
+                        Learn more <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="group border-2 border-text/10 hover:border-success transition-colors p-8 bg-white">
+                    <div class="w-12 h-12 bg-success/10 flex items-center justify-center mb-6 group-hover:bg-success/20 transition-colors">
+                        <i data-lucide="shield" class="w-6 h-6 text-success"></i>
+                    </div>
+                    <h3 class="font-display text-xl text-text mb-3">ENTERPRISE SECURITY</h3>
+                    <p class="text-text/70">Bank-grade encryption, SOC 2 compliance, and granular access controls to keep your data safe and secure.</p>
+                    <a href="#" class="inline-flex items-center gap-2 text-success text-sm font-medium mt-4 hover:gap-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success">
+                        Learn more <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="group border-2 border-text/10 hover:border-warning transition-colors p-8 bg-white">
+                    <div class="w-12 h-12 bg-warning/10 flex items-center justify-center mb-6 group-hover:bg-warning/20 transition-colors">
+                        <i data-lucide="bar-chart" class="w-6 h-6 text-warning"></i>
+                    </div>
+                    <h3 class="font-display text-xl text-text mb-3">REAL-TIME ANALYTICS</h3>
+                    <p class="text-text/70">Get instant insights with beautiful dashboards and customizable reports. Make data-driven decisions faster.</p>
+                    <a href="#" class="inline-flex items-center gap-2 text-warning text-sm font-medium mt-4 hover:gap-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning">
+                        Learn more <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="group border-2 border-text/10 hover:border-primary transition-colors p-8 bg-white">
+                    <div class="w-12 h-12 bg-primary/10 flex items-center justify-center mb-6 group-hover:bg-primary/20 transition-colors">
+                        <i data-lucide="globe" class="w-6 h-6 text-primary"></i>
+                    </div>
+                    <h3 class="font-display text-xl text-text mb-3">GLOBAL SCALE</h3>
+                    <p class="text-text/70">Deploy across multiple regions with automatic scaling. Handle millions of requests with zero downtime.</p>
+                    <a href="#" class="inline-flex items-center gap-2 text-primary text-sm font-medium mt-4 hover:gap-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                        Learn more <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="group border-2 border-text/10 hover:border-secondary transition-colors p-8 bg-white">
+                    <div class="w-12 h-12 bg-secondary/10 flex items-center justify-center mb-6 group-hover:bg-secondary/20 transition-colors">
+                        <i data-lucide="code" class="w-6 h-6 text-secondary"></i>
+                    </div>
+                    <h3 class="font-display text-xl text-text mb-3">DEVELOPER-FIRST</h3>
+                    <p class="text-text/70">Comprehensive API, SDKs for all major languages, and extensive documentation to accelerate development.</p>
+                    <a href="#" class="inline-flex items-center gap-2 text-secondary text-sm font-medium mt-4 hover:gap-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary">
+                        Learn more <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== PROCESS ==================== -->
+    <section id="process" class="py-20 bg-text text-surface">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <div class="inline-flex items-center gap-2 px-3 py-1 bg-primary/20 border border-primary/50 mb-4">
+                    <i data-lucide="git-branch" class="w-4 h-4 text-primary"></i>
+                    <span class="text-xs font-mono text-primary uppercase tracking-widest">Process</span>
+                </div>
+                <h2 class="font-display text-3xl sm:text-4xl text-surface mb-4">HOW IT WORKS</h2>
+                <p class="text-lg text-surface/70 max-w-2xl mx-auto">Get up and running in minutes with our streamlined process.</p>
+            </div>
+
+            <div class="grid md:grid-cols-4 gap-8">
+                <!-- Step 1 -->
+                <div class="relative text-center group">
+                    <div class="w-20 h-20 mx-auto bg-primary/20 border-2 border-primary flex items-center justify-center mb-6 group-hover:shadow-neon transition-shadow">
+                        <span class="font-display text-3xl text-primary">01</span>
+                    </div>
+                    <h3 class="font-display text-lg text-surface mb-3">CONNECT</h3>
+                    <p class="text-sm text-surface/70">Link your accounts and import your existing data in seconds.</p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="relative text-center group">
+                    <div class="w-20 h-20 mx-auto bg-secondary/20 border-2 border-secondary flex items-center justify-center mb-6 group-hover:shadow-neon transition-shadow">
+                        <span class="font-display text-3xl text-secondary">02</span>
+                    </div>
+                    <h3 class="font-display text-lg text-surface mb-3">CONFIGURE</h3>
+                    <p class="text-sm text-surface/70">Set up your workflows and customize the platform to your needs.</p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="relative text-center group">
+                    <div class="w-20 h-20 mx-auto bg-success/20 border-2 border-success flex items-center justify-center mb-6 group-hover:shadow-neon transition-shadow">
+                        <span class="font-display text-3xl text-success">03</span>
+                    </div>
+                    <h3 class="font-display text-lg text-surface mb-3">AUTOMATE</h3>
+                    <p class="text-sm text-surface/70">Let Nexus handle repetitive tasks and focus on what matters.</p>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="relative text-center group">
+                    <div class="w-20 h-20 mx-auto bg-warning/20 border-2 border-warning flex items-center justify-center mb-6 group-hover:shadow-neon transition-shadow">
+                        <span class="font-display text-3xl text-warning">04</span>
+                    </div>
+                    <h3 class="font-display text-lg text-surface mb-3">SCALE</h3>
+                    <p class="text-sm text-surface/70">Grow your operations with confidence as Nexus scales with you.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== BENEFITS ==================== -->
+    <section id="benefits" class="py-20 bg-surface">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <!-- Benefits Content -->
+                <div>
+                    <div class="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 border border-primary/30 mb-4">
+                        <i data-lucide="award" class="w-4 h-4 text-primary"></i>
+                        <span class="text-xs font-mono text-primary uppercase tracking-widest">Benefits</span>
+                    </div>
+                    <h2 class="font-display text-3xl sm:text-4xl text-text mb-6">WHY CHOOSE NEXUS?</h2>
+                    <p class="text-lg text-text/70 mb-8">Join thousands of forward-thinking companies that have revolutionized their operations with Nexus.</p>
+
+                    <div class="space-y-6">
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 bg-success/10 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="trending-up" class="w-6 h-6 text-success"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-display text-lg text-text mb-2">INCREASE PRODUCTIVITY</h3>
+                                <p class="text-text/70">Teams report an average of 247% increase in productivity within the first month of adoption.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="piggy-bank" class="w-6 h-6 text-primary"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-display text-lg text-text mb-2">REDUCE COSTS</h3>
+                                <p class="text-text/70">Cut operational costs by up to 60% through automation and streamlined processes.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 bg-secondary/10 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="users" class="w-6 h-6 text-secondary"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-display text-lg text-text mb-2">ENHANCE COLLABORATION</h3>
+                                <p class="text-text/70">Break down silos and enable seamless collaboration across teams, departments, and locations.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 bg-warning/10 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="gauge" class="w-6 h-6 text-warning"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-display text-lg text-text mb-2">FASTER TIME-TO-MARKET</h3>
+                                <p class="text-text/70">Launch products and features 3x faster with our rapid deployment and iteration capabilities.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Benefits Visual -->
+                <div class="relative">
+                    <div class="bg-grid-pattern bg-grid border-2 border-primary/30 p-8 relative overflow-hidden">
+                        <!-- Animated bars -->
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-4">
+                                <span class="font-mono text-xs text-text/70 w-20">BEFORE</span>
+                                <div class="flex-1 h-8 bg-text/10 relative overflow-hidden">
+                                    <div class="absolute inset-y-0 left-0 bg-text/30 w-1/4"></div>
+                                </div>
+                                <span class="font-mono text-xs text-text/70">25%</span>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <span class="font-mono text-xs text-primary w-20">AFTER</span>
+                                <div class="flex-1 h-8 bg-text/10 relative overflow-hidden">
+                                    <div class="absolute inset-y-0 left-0 bg-primary w-full animate-pulse-glow"></div>
+                                </div>
+                                <span class="font-mono text-xs text-primary">100%</span>
+                            </div>
+                        </div>
+
+                        <!-- Floating elements -->
+                        <div class="absolute top-4 right-4 w-16 h-16 bg-success/20 border-2 border-success animate-float"></div>
+                        <div class="absolute bottom-4 left-4 w-12 h-12 bg-secondary/20 border-2 border-secondary animate-float" style="animation-delay: 0.7s"></div>
+                        
+                        <!-- Center icon -->
+                        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                            <div class="w-24 h-24 bg-primary/20 border-2 border-primary flex items-center justify-center animate-pulse-glow">
+                                <i data-lucide="rocket" class="w-12 h-12 text-primary"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== TESTIMONIALS ==================== -->
+    <section class="py-20 bg-text text-surface">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <div class="inline-flex items-center gap-2 px-3 py-1 bg-primary/20 border border-primary/50 mb-4">
+                    <i data-lucide="message-square" class="w-4 h-4 text-primary"></i>
+                    <span class="text-xs font-mono text-primary uppercase tracking-widest">Testimonials</span>
+                </div>
+                <h2 class="font-display text-3xl sm:text-4xl text-surface mb-4">WHAT OUR USERS SAY</h2>
+                <p class="text-lg text-surface/70 max-w-2xl mx-auto">Don't just take our word for it. Here's what industry leaders think about Nexus.</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Testimonial 1 -->
+                <div class="border-2 border-primary/30 p-8 bg-primary/5 hover:bg-primary/10 transition-colors">
+                    <div class="flex items-center gap-1 mb-4">
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-surface/90 mb-6">"Nexus transformed our entire operation. The AI-powered insights alone saved us months of manual analysis. It's like having a superpower."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-primary flex items-center justify-center">
+                            <span class="text-white font-display text-lg">JD</span>
+                        </div>
+                        <div>
+                            <p class="font-display text-surface">JOHN DOE</p>
+                            <p class="text-sm text-surface/60 font-mono">CTO, TechCorp</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Testimonial 2 -->
+                <div class="border-2 border-secondary/30 p-8 bg-secondary/5 hover:bg-secondary/10 transition-colors">
+                    <div class="flex items-center gap-1 mb-4">
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-surface/90 mb-6">"The automation capabilities are incredible. We've reduced our manual workload by 80%. Nexus is a game-changer for our industry."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-secondary flex items-center justify-center">
+                            <span class="text-white font-display text-lg">AK</span>
+                        </div>
+                        <div>
+                            <p class="font-display text-surface">ALICE KIM</p>
+                            <p class="text-sm text-surface/60 font-mono">COO, FutureLabs</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Testimonial 3 -->
+                <div class="border-2 border-success/30 p-8 bg-success/5 hover:bg-success/10 transition-colors">
+                    <div class="flex items-center gap-1 mb-4">
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-surface/90 mb-6">"From day one, Nexus felt different. The attention to detail and the seamless experience is unmatched. Our team loves it."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-success flex items-center justify-center">
+                            <span class="text-white font-display text-lg">MS</span>
+                        </div>
+                        <div>
+                            <p class="font-display text-surface">MARK SMITH</p>
+                            <p class="text-sm text-surface/60 font-mono">VP Engineering, DataFlow</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== PRICING ==================== -->
+    <section id="pricing" class="py-20 bg-surface">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <div class="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 border border-primary/30 mb-4">
+                    <i data-lucide="credit-card" class="w-4 h-4 text-primary"></i>
+                    <span class="text-xs font-mono text-primary uppercase tracking-widest">Pricing</span>
+                </div>
+                <h2 class="font-display text-3xl sm:text-4xl text-text mb-4">SIMPLE, TRANSPARENT PRICING</h2>
+                <p class="text-lg text-text/70 max-w-2xl mx-auto">Choose the plan that fits your needs. No hidden fees, cancel anytime.</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Starter Plan -->
+                <div class="border-2 border-text/10 p-8 hover:border-primary transition-colors bg-white">
+                    <div class="text-center mb-8">
+                        <h3 class="font-display text-xl text-text mb-2">STARTER</h3>
+                        <p class="text-text/70 mb-4">For small teams getting started</p>
+                        <div class="flex items-center justify-center gap-2">
+                            <span class="font-display text-5xl text-text">$29</span>
+                            <span class="text-text/60 font-mono">/month</span>
+                        </div>
+                    </div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center gap-2 text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Up to 5 team members
+                        </li>
+                        <li class="flex items-center gap-2 text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            10GB storage
+                        </li>
+                        <li class="flex items-center gap-2 text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Basic analytics
+                        </li>
+                        <li class="flex items-center gap-2 text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Email support
+                        </li>
+                        <li class="flex items-center gap-2 text-text/40">
+                            <i data-lucide="x" class="w-4 h-4 text-danger"></i>
+                            AI-powered insights
+                        </li>
+                    </ul>
+                    <a href="#" class="block text-center px-6 py-3 border-2 border-primary text-primary font-medium hover:bg-primary/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                        Get Started
+                    </a>
+                </div>
+
+                <!-- Pro Plan (Featured) -->
+                <div class="border-2 border-primary p-8 bg-primary/5 relative shadow-neon-sm">
+                    <div class="absolute top-0 right-0 bg-primary text-white px-4 py-1 font-mono text-xs uppercase tracking-widest">
+                        Popular
+                    </div>
+                    <div class="text-center mb-8">
+                        <h3 class="font-display text-xl text-primary mb-2">PRO</h3>
+                        <p class="text-text/70 mb-4">For growing businesses</p>
+                        <div class="flex items-center justify-center gap-2">
+                            <span class="font-display text-5xl text-primary">$79</span>
+                            <span class="text-text/60 font-mono">/month</span>
+                        </div>
+                    </div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center gap-2 text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Up to 20 team members
+                        </li>
+                        <li class="flex items-center gap-2 text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            100GB storage
+                        </li>
+                        <li class="flex items-center gap-2 text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Advanced analytics
+                        </li>
+                        <li class="flex items-center gap-2 text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            AI-powered insights
+                        </li>
+                        <li class="flex items-center gap-2 text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Priority support
+                        </li>
+                    </ul>
+                    <a href="#" class="block text-center px-6 py-3 bg-primary text-white font-medium hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                        Get Started
+                    </a>
+                </div>
+
+                <!-- Enterprise Plan -->
+                <div class="border-2 border-text/10 p-8 hover:border-secondary transition-colors bg-white">
+                    <div class="text-center mb-8">
+                        <h3 class="font-display text-xl text-text mb-2">ENTERPRISE</h3>
+                        <p class="text-text/70 mb-4">For large organizations</p>
+                        <div class="flex items-center justify-center gap-2">
+                            <span class="font-display text-5xl text-text">$199</span>
+                            <span class="text-text/60 font-mono">/month</span>
+                        </div>
+                    </div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center gap-2 text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Unlimited team members
+                        </li>
+                        <li class="flex items-center gap-2 text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Unlimited storage
+                        </li>
+                        <li class="flex items-center gap-2 text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Custom integrations
+                        </li>
+                        <li class="flex items-center gap-2 text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Dedicated support
+                        </li>
+                        <li class="flex items-center gap-2 text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            SLA guarantee
+                        </li>
+                    </ul>
+                    <a href="#" class="block text-center px-6 py-3 border-2 border-secondary text-secondary font-medium hover:bg-secondary/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary">
+                        Contact Sales
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FAQ ==================== -->
+    <section id="faq" class="py-20 bg-text text-surface">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <div class="inline-flex items-center gap-2 px-3 py-1 bg-primary/20 border border-primary/50 mb-4">
+                    <i data-lucide="help-circle" class="w-4 h-4 text-primary"></i>
+                    <span class="text-xs font-mono text-primary uppercase tracking-widest">FAQ</span>
+                </div>
+                <h2 class="font-display text-3xl sm:text-4xl text-surface mb-4">FREQUENTLY ASKED QUESTIONS</h2>
+                <p class="text-lg text-surface/70 max-w-2xl mx-auto">Can't find what you're looking for? Contact our support team.</p>
+            </div>
+
+            <div class="space-y-4">
+                <!-- FAQ Item 1 -->
+                <div class="border-2 border-primary/30 bg-primary/5">
+                    <button class="w-full flex items-center justify-between p-6 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" onclick="this.parentElement.querySelector('.faq-answer').classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-45')">
+                        <span class="font-display text-lg text-surface">What is Nexus and how does it work?</span>
+                        <i data-lucide="plus" class="w-5 h-5 text-primary transition-transform"></i>
+                    </button>
+                    <div class="faq-answer hidden px-6 pb-6">
+                        <p class="text-surface/70">Nexus is a comprehensive digital transformation platform that combines AI, automation, and analytics. It connects to your existing tools, automates workflows, and provides intelligent insights to help you make better decisions faster.</p>
+                    </div>
+                </div>
+
+                <!-- FAQ Item 2 -->
+                <div class="border-2 border-primary/30 bg-primary/5">
+                    <button class="w-full flex items-center justify-between p-6 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" onclick="this.parentElement.querySelector('.faq-answer').classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-45')">
+                        <span class="font-display text-lg text-surface">How long does it take to get started?</span>
+                        <i data-lucide="plus" class="w-5 h-5 text-primary transition-transform"></i>
+                    </button>
+                    <div class="faq-answer hidden px-6 pb-6">
+                        <p class="text-surface/70">Most teams are up and running within 15 minutes. Our intuitive setup wizard guides you through the process, and our documentation provides step-by-step instructions for common use cases.</p>
+                    </div>
+                </div>
+
+                <!-- FAQ Item 3 -->
+                <div class="border-2 border-primary/30 bg-primary/5">
+                    <button class="w-full flex items-center justify-between p-6 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" onclick="this.parentElement.querySelector('.faq-answer').classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-45')">
+                        <span class="font-display text-lg text-surface">Is my data secure with Nexus?</span>
+                        <i data-lucide="plus" class="w-5 h-5 text-primary transition-transform"></i>
+                    </button>
+                    <div class="faq-answer hidden px-6 pb-6">
+                        <p class="text-surface/70">Absolutely. We use bank-grade encryption (AES-256), are SOC 2 Type II compliant, and offer SSO/SAML integration. Your data is encrypted in transit and at rest, and we never sell your data to third parties.</p>
+                    </div>
+                </div>
+
+                <!-- FAQ Item 4 -->
+                <div class="border-2 border-primary/30 bg-primary/5">
+                    <button class="w-full flex items-center justify-between p-6 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" onclick="this.parentElement.querySelector('.faq-answer').classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-45')">
+                        <span class="font-display text-lg text-surface">Can I cancel my subscription anytime?</span>
+                        <i data-lucide="plus" class="w-5 h-5 text-primary transition-transform"></i>
+                    </button>
+                    <div class="faq-answer hidden px-6 pb-6">
+                        <p class="text-surface/70">Yes, you can cancel your subscription at any time from your account settings. We'll prorate any unused time and you'll have access until the end of your billing period.</p>
+                    </div>
+                </div>
+
+                <!-- FAQ Item 5 -->
+                <div class="border-2 border-primary/30 bg-primary/5">
+                    <button class="w-full flex items-center justify-between p-6 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" onclick="this.parentElement.querySelector('.faq-answer').classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-45')">
+                        <span class="font-display text-lg text-surface">Do you offer a free trial?</span>
+                        <i data-lucide="plus" class="w-5 h-5 text-primary transition-transform"></i>
+                    </button>
+                    <div class="faq-answer hidden px-6 pb-6">
+                        <p class="text-surface/70">Yes! We offer a 14-day free trial on all plans. No credit card required. You'll have full access to all features to see if Nexus is the right fit for your team.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="bg-text text-surface border-t-4 border-primary">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="grid md:grid-cols-4 gap-12">
+                <!-- Company Info -->
+                <div class="md:col-span-2">
+                    <a href="#" class="flex items-center gap-2 mb-6">
+                        <div class="w-8 h-8 bg-primary flex items-center justify-center">
+                            <i data-lucide="hexagon" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <span class="font-display text-xl text-primary tracking-wider">NEXUS</span>
+                    </a>
+                    <p class="text-surface/70 mb-6 max-w-sm">Building the future of work with cutting-edge AI and automation technology. Transform your business today.</p>
+                    <div class="flex items-center gap-4">
+                        <a href="#" class="w-10 h-10 border-2 border-primary/30 flex items-center justify-center hover:bg-primary/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label="Twitter">
+                            <i data-lucide="twitter" class="w-5 h-5 text-primary"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 border-2 border-primary/30 flex items-center justify-center hover:bg-primary/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label="LinkedIn">
+                            <i data-lucide="linkedin" class="w-5 h-5 text-primary"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 border-2 border-primary/30 flex items-center justify-center hover:bg-primary/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label="GitHub">
+                            <i data-lucide="github" class="w-5 h-5 text-primary"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Product Links -->
+                <div>
+                    <h3 class="font-display text-lg text-primary mb-6">PRODUCT</h3>
+                    <ul class="space-y-3">
+                        <li><a href="#features" class="text-surface/70 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Features</a></li>
+                        <li><a href="#pricing" class="text-surface/70 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Pricing</a></li>
+                        <li><a href="#" class="text-surface/70 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Changelog</a></li>
+                        <li><a href="#" class="text-surface/70 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Roadmap</a></li>
+                    </ul>
+                </div>
+
+                <!-- Company Links -->
+                <div>
+                    <h3 class="font-display text-lg text-primary mb-6">COMPANY</h3>
+                    <ul class="space-y-3">
+                        <li><a href="#" class="text-surface/70 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">About Us</a></li>
+                        <li><a href="#" class="text-surface/70 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Careers</a></li>
+                        <li><a href="#" class="text-surface/70 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Blog</a></li>
+                        <li><a href="#" class="text-surface/70 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t-2 border-primary/20 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+                <p class="text-sm text-surface/60 font-mono">© 2024 Nexus Technologies. All rights reserved.</p>
+                <div class="flex items-center gap-6">
+                    <a href="#" class="text-sm text-surface/60 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Privacy Policy</a>
+                    <a href="#" class="text-sm text-surface/60 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Terms of Service</a>
+                    <a href="#" class="text-sm text-surface/60 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Cookie Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Initialize Lucide Icons -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

@@ -16,7 +16,7 @@ def _deploy_reap():
             _DEPLOY_JOBS.pop(jid, None)
 
 
-def _deploy_job_run(job_id: str, method: str, path: str, body):
+def _deploy_job_run(job_id: str, method: str, path: str, body, transform=None):
     job = _DEPLOY_JOBS[job_id]
     try:
         r = requests.request(method, f"http://127.0.0.1:{DEPLOY_PORT}{path}",
@@ -25,7 +25,10 @@ def _deploy_job_run(job_id: str, method: str, path: str, body):
                              timeout=(2, None))
         job["http_status"] = r.status_code
         try:
-            job["result"] = r.json()
+            result = r.json()
+            # What the agent says about the whole machine is cut down to the
+            # person who asked before it is kept (deploy_tenancy.py).
+            job["result"] = transform(result) if transform and r.status_code < 400 else result
         except Exception:
             job["result"] = {"text": r.text}
 
@@ -37,7 +40,18 @@ def _deploy_job_run(job_id: str, method: str, path: str, body):
         job["finished"] = time.time()
 
 
-def deploy_job_start(method: str, path: str, body) -> dict:
+def deploy_job_done(result: dict) -> dict:
+    """A job that needed no request to the agent: already finished, with this answer."""
+    with _DEPLOY_JOBS_LOCK:
+        _deploy_reap()
+        job_id = "djob_" + uuid.uuid4().hex[:20]
+        now = time.time()
+        _DEPLOY_JOBS[job_id] = {"status": "done", "path": "", "started": now, "finished": now,
+                                "http_status": 200, "result": result, "error": ""}
+    return {"job_id": job_id, "status": "done", "path": ""}
+
+
+def deploy_job_start(method: str, path: str, body, transform=None) -> dict:
     """Begin the work and answer immediately."""
     if not path.startswith("/"):
         raise ValueError("path must be absolute")
@@ -51,7 +65,7 @@ def deploy_job_start(method: str, path: str, body) -> dict:
                                 "started": time.time(), "finished": None,
                                 "http_status": None, "result": None, "error": ""}
     threading.Thread(target=_deploy_job_run,
-                     args=(job_id, method, path, body), daemon=True).start()
+                     args=(job_id, method, path, body, transform), daemon=True).start()
     return {"job_id": job_id, "status": "running", "path": path}
 
 

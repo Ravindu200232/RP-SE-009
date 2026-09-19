@@ -73,9 +73,8 @@ export default function SitePictures({ pictures, onChange }) {
       <p className="mt-1.5 text-[11px] leading-relaxed text-muted">
         Optional. Anything you add here is used as-is and will not be drawn.
         Everything else the app needs is still generated for you. The name is
-        what the page asks for, so <code className="font-mono">hero</code> is
-        the banner and <code className="font-mono">room-deluxe</code> is that
-        room&rsquo;s photo.
+        what the page references, such as <code className="font-mono">logo</code> or
+        <code className="font-mono">item-photo</code>.
       </p>
 
       {rows.length > 0 && (

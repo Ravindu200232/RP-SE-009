@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina — Design Analytics Platform</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Roboto:wght@100..900&family=Fira+Code:wght@300..700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js">
+    </script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6442D6',
+                        secondary: '#C8B3FD',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                        surface: '#FFFFFF',
+                        text: '#111827',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Roboto', 'sans-serif'],
+                        display: ['Roboto', 'Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        *:focus-visible {
+            outline: 2px solid #6442D6;
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease-out both;
+        }
+        .animate-fade-in-up-delay-1 {
+            animation: fadeInUp 0.6s ease-out 0.1s both;
+        }
+        .animate-fade-in-up-delay-2 {
+            animation: fadeInUp 0.6s ease-out 0.2s both;
+        }
+        .animate-fade-in-up-delay-3 {
+            animation: fadeInUp 0.6s ease-out 0.3s both;
+        }
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+        details[open] summary .faq-chevron {
+            transform: rotate(180deg);
+        }
+        .faq-chevron {
+            transition: transform 0.3s ease;
+        }
+        .hero-grid-bg {
+            background-image:
+                linear-gradient(rgba(100, 66, 214, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(100, 66, 214, 0.04) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+        .card-hover {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(17, 24, 39, 0.08);
+        }
+    </style>
+</head>
+<body class="font-sans text-text bg-surface antialiased">
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-surface/95 backdrop-blur border-b border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
+                    </div>
+                    <span class="font-display font-bold text-xl text-text">Lumina</span>
+                </div>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="text-sm font-medium text-text/70 hover:text-text transition-colors">Features</a>
+                    <a href="#process" class="text-sm font-medium text-text/70 hover:text-text transition-colors">Process</a>
+                    <a href="#pricing" class="text-sm font-medium text-text/70 hover:text-text transition-colors">Pricing</a>
+                    <a href="#faq" class="text-sm font-medium text-text/70 hover:text-text transition-colors">FAQ</a>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="#" class="hidden sm:inline-flex text-sm font-medium text-text/70 hover:text-text transition-colors">Sign in</a>
+                    <a href="#" class="inline-flex items-center px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors">
+                        Get Started
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="relative pt-24 pb-16 overflow-hidden bg-gradient-to-b from-secondary/20 via-surface to-surface">
+        <div class="absolute inset-0 hero-grid-bg"></div>
+        <div class="absolute top-20 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 left-0 w-80 h-80 bg-secondary/30 rounded-full blur-3xl"></div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="inline-flex items-center gap-2 px-3 py-1 bg-secondary/30 rounded-full text-sm font-medium text-primary mb-6 animate-fade-in-up">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                        New: Design Token Insights
+                    </div>
+                    <h1 class="font-display font-extrabold text-3xl md:text-4xl text-text leading-tight mb-4 animate-fade-in-up-delay-1">
+                        Design with clarity. Ship with confidence.
+                    </h1>
+                    <p class="text-base text-text/70 mb-8 max-w-lg animate-fade-in-up-delay-2">
+                        Lumina is the analytics platform for design systems. Track component usage, token adoption, and team collaboration in real time.
+                    </p>
+                    <div class="flex flex-wrap gap-4 animate-fade-in-up-delay-3">
+                        <a href="#" class="inline-flex items-center px-6 py-3 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors">
+                            Start free
+                            <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+                        </a>
+                        <a href="#" class="inline-flex items-center px-6 py-3 bg-surface text-text text-sm font-medium rounded-lg border border-gray-200 hover:border-primary/30 hover:bg-secondary/10 transition-colors">
+                            <i data-lucide="play" class="w-4 h-4 mr-2"></i>
+                            View demo
+                        </a>
+                    </div>
+                </div>
+                <div class="relative animate-fade-in-up-delay-2">
+                    <!-- Dashboard Mockup -->
+                    <div class="bg-surface rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                        <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50">
+                            <div class="w-2 h-2 rounded-full bg-danger"></div>
+                            <div class="w-2 h-2 rounded-full bg-warning"></div>
+                            <div class="w-2 h-2 rounded-full bg-success"></div>
+                            <div class="ml-4 flex-1 max-w-xs">
+                                <div class="h-2 bg-gray-200 rounded-full"></div>
+                            </div>
+                        </div>
+                        <div class="flex">
+                            <div class="w-16 md:w-40 p-4 border-r border-gray-100 bg-gray-50/50">
+                                <div class="space-y-3">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-6 h-6 rounded bg-primary/20 flex items-center justify-center">
+                                            <i data-lucide="layout-dashboard" class="w-3 h-3 text-primary"></i>
+                                        </div>
+                                        <div class="h-2 bg-gray-200 rounded-full flex-1 hidden md:block"></div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-6 h-6 rounded bg-gray-100 flex items-center justify-center">
+                                            <i data-lucide="box" class="w-3 h-3 text-gray-400"></i>
+                                        </div>
+                                        <div class="h-2 bg-gray-200 rounded-full w-3/4 hidden md:block"></div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-6 h-6 rounded bg-gray-100 flex items-center justify-center">
+                                            <i data-lucide="users" class="w-3 h-3 text-gray-400"></i>
+                                        </div>
+                                        <div class="h-2 bg-gray-200 rounded-full w-1/2 hidden md:block"></div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-6 h-6 rounded bg-gray-100 flex items-center justify-center">
+                                            <i data-lucide="settings" class="w-3 h-3 text-gray-400"></i>
+                                        </div>
+                                        <div class="h-2 bg-gray-200 rounded-full w-2/3 hidden md:block"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex-1 p-4">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="h-3 bg-gray-200 rounded-full w-24"></div>
+                                    <div class="h-2 bg-gray-200 rounded-full w-16"></div>
+                                </div>
+                                <div class="flex items-end gap-2 h-32 mb-4">
+                                    <div class="flex-1 bg-primary/20 rounded-t-lg" style="height:40%"></div>
+                                    <div class="flex-1 bg-primary/40 rounded-t-lg" style="height:60%"></div>
+                                    <div class="flex-1 bg-primary/60 rounded-t-lg" style="height:75%"></div>
+                                    <div class="flex-1 bg-primary rounded-t-lg" style="height:90%"></div>
+                                    <div class="flex-1 bg-primary/80 rounded-t-lg" style="height:70%"></div>
+                                    <div class="flex-1 bg-primary/50 rounded-t-lg" style="height:50%"></div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <div class="p-3 bg-gray-50 rounded-lg">
+                                        <div class="h-2 bg-gray-200 rounded-full mb-2"></div>
+                                        <div class="h-4 bg-primary/20 rounded-full w-1/2"></div>
+                                    </div>
+                                    <div class="p-3 bg-gray-50 rounded-lg">
+                                        <div class="h-2 bg-gray-200 rounded-full mb-2"></div>
+                                        <div class="h-4 bg-success/20 rounded-full w-1/2"></div>
+                                    </div>
+                                    <div class="p-3 bg-gray-50 rounded-lg">
+                                        <div class="h-2 bg-gray-200 rounded-full mb-2"></div>
+                                        <div class="h-4 bg-warning/20 rounded-full w-1/2"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Floating badge -->
+                    <div class="absolute -bottom-4 -left-4 bg-surface rounded-xl shadow-lg border border-gray-100 px-4 py-3 flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-success/10 flex items-center justify-center">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-semibold text-text">Token health</div>
+                            <div class="text-xs text-text/60">98.2% passing</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="py-16 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="font-display font-extrabold text-3xl text-text">99.99%</div>
+                    <div class="text-sm text-text/60 mt-1">Uptime</div>
+                </div>
+                <div class="text-center">
+                    <div class="font-display font-extrabold text-3xl text-text">10K+</div>
+                    <div class="text-sm text-text/60 mt-1">Teams</div>
+                </div>
+                <div class="text-center">
+                    <div class="font-display font-extrabold text-3xl text-text">120+</div>
+                    <div class="text-sm text-text/60 mt-1">Integrations</div>
+                </div>
+                <div class="text-center">
+                    <div class="font-display font-extrabold text-3xl text-text">4.9/5</div>
+                    <div class="text-sm text-text/60 mt-1">Rating</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="py-16 bg-surface">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="font-display font-bold text-2xl text-text mb-2">Everything you need</h2>
+                <p class="text-base text-text/60 max-w-2xl mx-auto">Powerful features to understand and improve your design system.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="p-6 bg-surface rounded-xl border border-gray-100 shadow-sm card-hover">
+                    <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                        <i data-lucide="palette" class="w-5 h-5 text-primary"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-xl text-text mb-2">Design Token Insights</h3>
+                    <p class="text-sm text-text/60">Track token usage across all your products. Identify unused tokens and inconsistencies.</p>
+                </div>
+                <div class="p-6 bg-surface rounded-xl border border-gray-100 shadow-sm card-hover">
+                    <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                        <i data-lucide="box" class="w-5 h-5 text-primary"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-xl text-text mb-2">Component Adoption</h3>
+                    <p class="text-sm text-text/60">See which components are used and where. Find orphaned components quickly.</p>
+                </div>
+                <div class="p-6 bg-surface rounded-xl border border-gray-100 shadow-sm card-hover">
+                    <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                        <i data-lucide="users" class="w-5 h-5 text-primary"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-xl text-text mb-2">Team Collaboration</h3>
+                    <p class="text-sm text-text/60">Share insights, comment on components, and align your team around data.</p>
+                </div>
+                <div class="p-6 bg-surface rounded-xl border border-gray-100 shadow-sm card-hover">
+                    <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                        <i data-lucide="activity" class="w-5 h-5 text-primary"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-xl text-text mb-2">Real-time Analytics</h3>
+                    <p class="text-sm text-text/60">Live data on design system health. Monitor adoption trends as they happen.</p>
+                </div>
+                <div class="p-6 bg-surface rounded-xl border border-gray-100 shadow-sm card-hover">
+                    <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                        <i data-lucide="accessibility" class="w-5 h-5 text-primary"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-xl text-text mb-2">Accessibility Checks</h3>
+                    <p class="text-sm text-text/60">Automated WCAG compliance monitoring for all your components and tokens.</p>
+                </div>
+                <div class="p-6 bg-surface rounded-xl border border-gray-100 shadow-sm card-hover">
+                    <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                        <i data-lucide="git-compare" class="w-5 h-5 text-primary"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-xl text-text mb-2">Version Comparison</h3>
+                    <p class="text-sm text-text/60">Compare design system versions and understand the impact of changes.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Process -->
+    <section id="process" class="py-16 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="font-display font-bold text-2xl text-text mb-2">How it works</h2>
+                <p class="text-base text-text/60 max-w-2xl mx-auto">Get up and running in minutes.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="plug" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg text-text mb-2">Connect</h3>
+                    <p class="text-sm text-text/60">Connect your design system repository in one click.</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="scan" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg text-text mb-2">Analyze</h3>
+                    <p class="text-sm text-text/60">We analyze your components, tokens, and usage patterns.</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="bar-chart" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg text-text mb-2">Visualize</h3>
+                    <p class="text-sm text-text/60">Get real-time dashboards and actionable insights.</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="sliders" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg text-text mb-2">Optimize</h3>
+                    <p class="text-sm text-text/60">Make data-driven design decisions with confidence.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits -->
+    <section class="py-16 bg-surface">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="font-display font-bold text-2xl text-text mb-2">Why teams choose Lumina</h2>
+                <p class="text-base text-text/60 max-w-2xl mx-auto">Real benefits for real design teams.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="p-8 bg-gray-50 rounded-xl card-hover">
+                    <div class="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center mb-4">
+                        <i data-lucide="zap" class="w-5 h-5 text-success"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-xl text-text mb-2">Faster design-to-code handoff</h3>
+                    <p class="text-sm text-text/60">Reduce handoff time by up to 60% with clear token and component documentation that keeps everyone in sync.</p>
+                </div>
+                <div class="p-8 bg-gray-50 rounded-xl card-hover">
+                    <div class="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center mb-4">
+                        <i data-lucide="check-circle" class="w-5 h-5 text-success"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-xl text-text mb-2">Consistent component usage</h3>
+                    <p class="text-sm text-text/60">Eliminate drift and ensure every team uses the latest components with automated adoption tracking.</p>
+                </div>
+                <div class="p-8 bg-gray-50 rounded-xl card-hover">
+                    <div class="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center mb-4">
+                        <i data-lucide="trending-up" class="w-5 h-5 text-success"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-xl text-text mb-2">Data-driven design decisions</h3>
+                    <p class="text-sm text-text/60">Stop guessing. Know exactly which components matter and where to invest your design resources.</p>
+                </div>
+                <div class="p-8 bg-gray-50 rounded-xl card-hover">
+                    <div class="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center mb-4">
+                        <i data-lucide="target" class="w-5 h-5 text-success"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-xl text-text mb-2">Team alignment</h3>
+                    <p class="text-sm text-text/60">Get everyone on the same page with shared dashboards, reports, and a single source of truth.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="py-16 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="font-display font-bold text-2xl text-text mb-2">Loved by teams</h2>
+                <p class="text-base text-text/60 max-w-2xl mx-auto">See what our customers say.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="p-6 bg-surface rounded-xl border border-gray-100 shadow-sm card-hover">
+                    <div class="flex items-center gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-sm text-text/80 mb-6">"Lumina transformed how we track our design system. We went from guessing to knowing in a week."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center font-display font-bold text-primary text-sm">SC</div>
+                        <div>
+                            <div class="text-sm font-semibold text-text">Sarah Chen</div>
+                            <div class="text-xs text-text/60">Design Ops Lead, Acme</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6 bg-surface rounded-xl border border-gray-100 shadow-sm card-hover">
+                    <div class="flex items-center gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-sm text-text/80 mb-6">"The token insights alone are worth it. We found 200+ unused tokens in our first week."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center font-display font-bold text-primary text-sm">MJ</div>
+                        <div>
+                            <div class="text-sm font-semibold text-text">Marcus Johnson</div>
+                            <div class="text-xs text-text/60">Senior Designer, Globex</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6 bg-surface rounded-xl border border-gray-100 shadow-sm card-hover">
+                    <div class="flex items-center gap-1 mb-4">
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                    </div>
+                    <p class="text-sm text-text/80 mb-6">"We caught 40% unused components in a week. Lumina paid for itself immediately."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center font-display font-bold text-primary text-sm">PP</div>
+                        <div>
+                            <div class="text-sm font-semibold text-text">Priya Patel</div>
+                            <div class="text-xs text-text/60">Frontend Engineer, Initech</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section id="pricing" class="py-16 bg-surface">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="font-display font-bold text-2xl text-text mb-2">Simple pricing</h2>
+                <p class="text-base text-text/60 max-w-2xl mx-auto">Start free. Scale as you grow.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Starter -->
+                <div class="p-8 bg-surface rounded-xl border border-gray-200 shadow-sm">
+                    <h3 class="font-display font-semibold text-xl text-text mb-2">Starter</h3>
+                    <div class="font-display font-extrabold text-3xl text-text mb-1">$0</div>
+                    <div class="text-sm text-text/60 mb-6">Free forever</div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center gap-2 text-sm text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Up to 3 projects
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Basic token insights
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Community support
+                        </li>
+                    </ul>
+                    <a href="#" class="block text-center px-4 py-2 bg-surface text-text text-sm font-medium rounded-lg border border-gray-200 hover:border-primary/30 hover:bg-secondary/10 transition-colors">
+                        Start free
+                    </a>
+                </div>
+                <!-- Pro -->
+                <div class="p-8 bg-primary rounded-xl shadow-lg relative">
+                    <div class="absolute top-4 right-4 px-2 py-1 bg-white/20 rounded-full text-xs font-semibold text-white">Most Popular</div>
+                    <h3 class="font-display font-semibold text-xl text-white mb-2">Pro</h3>
+                    <div class="font-display font-extrabold text-3xl text-white mb-1">$49</div>
+                    <div class="text-sm text-white/70 mb-6">per month</div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center gap-2 text-sm text-white/90">
+                            <i data-lucide="check" class="w-4 h-4 text-white"></i>
+                            Unlimited projects
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-white/90">
+                            <i data-lucide="check" class="w-4 h-4 text-white"></i>
+                            Advanced token insights
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-white/90">
+                            <i data-lucide="check" class="w-4 h-4 text-white"></i>
+                            Accessibility checks
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-white/90">
+                            <i data-lucide="check" class="w-4 h-4 text-white"></i>
+                            Priority support
+                        </li>
+                    </ul>
+                    <a href="#" class="block text-center px-4 py-2 bg-white text-primary text-sm font-medium rounded-lg hover:bg-white/90 transition-colors">
+                        Get started
+                    </a>
+                </div>
+                <!-- Enterprise -->
+                <div class="p-8 bg-surface rounded-xl border border-gray-200 shadow-sm">
+                    <h3 class="font-display font-semibold text-xl text-text mb-2">Enterprise</h3>
+                    <div class="font-display font-extrabold text-3xl text-text mb-1">Custom</div>
+                    <div class="text-sm text-text/60 mb-6">Tailored to you</div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center gap-2 text-sm text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            SSO &amp; SAML
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Custom integrations
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-text/80">
+                            <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                            Dedicated support
+                        </li>
+                    </ul>
+                    <a href="#" class="block text-center px-4 py-2 bg-surface text-text text-sm font-medium rounded-lg border border-gray-200 hover:border-primary/30 hover:bg-secondary/10 transition-colors">
+                        Contact sales
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="py-16 bg-gray-50">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="font-display font-bold text-2xl text-text mb-2">Frequently asked questions</h2>
+                <p class="text-base text-text/60">Everything you need to know.</p>
+            </div>
+            <div class="space-y-4">
+                <details class="bg-surface rounded-xl border border-gray-100 shadow-sm">
+                    <summary class="flex items-center justify-between px-6 py-4 cursor-pointer list-none">
+                        <span class="text-sm font-semibold text-text">What is Lumina?</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-text/40 faq-chevron"></i>
+                    </summary>
+                    <div class="px-6 pb-4">
+                        <p class="text-sm text-text/60">Lumina is a design analytics platform that helps teams track component usage, token adoption, and design system health in real time.</p>
+                    </div>
+                </details>
+                <details class="bg-surface rounded-xl border border-gray-100 shadow-sm">
+                    <summary class="flex items-center justify-between px-6 py-4 cursor-pointer list-none">
+                        <span class="text-sm font-semibold text-text">How does pricing work?</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-text/40 faq-chevron"></i>
+                    </summary>
+                    <div class="px-6 pb-4">
+                        <p class="text-sm text-text/60">We offer a free Starter plan for small teams, a Pro plan at $49/month for growing teams, and custom Enterprise pricing for large organizations.</p>
+                    </div>
+                </details>
+                <details class="bg-surface rounded-xl border border-gray-100 shadow-sm">
+                    <summary class="flex items-center justify-between px-6 py-4 cursor-pointer list-none">
+                        <span class="text-sm font-semibold text-text">Can I migrate from other tools?</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-text/40 faq-chevron"></i>
+                    </summary>
+                    <div class="px-6 pb-4">
+                        <p class="text-sm text-text/60">Yes! We provide migration guides and import tools for popular design system platforms. Most teams migrate in under a day.</p>
+                    </div>
+                </details>
+                <details class="bg-surface rounded-xl border border-gray-100 shadow-sm">
+                    <summary class="flex items-center justify-between px-6 py-4 cursor-pointer list-none">
+                        <span class="text-sm font-semibold text-text">Is my data secure?</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-text/40 faq-chevron"></i>
+                    </summary>
+                    <div class="px-6 pb-4">
+                        <p class="text-sm text-text/60">Absolutely. We use SOC 2 Type II compliant infrastructure, encrypt data in transit and at rest, and never sell your data.</p>
+                    </div>
+                </details>
+                <details class="bg-surface rounded-xl border border-gray-100 shadow-sm">
+                    <summary class="flex items-center justify-between px-6 py-4 cursor-pointer list-none">
+                        <span class="text-sm font-semibold text-text">Do you offer support?</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-text/40 faq-chevron"></i>
+                    </summary>
+                    <div class="px-6 pb-4">
+                        <p class="text-sm text-text/60">Yes. Starter plans get community support, Pro plans get priority email support, and Enterprise plans get dedicated support with SLAs.</p>
+                    </div>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-16 bg-text text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                            <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <span class="font-display font-bold text-xl">Lumina</span>
+                    </div>
+                    <p class="text-sm text-white/60">Design analytics platform for modern teams.</p>
+                </div>
+                <div>
+                    <h4 class="font-display font-semibold text-sm text-white mb-4">Product</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-white/60 hover:text-white transition-colors">Features</a></li>
+                        <li><a href="#" class="text-sm text-white/60 hover:text-white transition-colors">Pricing</a></li>
+                        <li><a href="#" class="text-sm text-white/60 hover:text-white transition-colors">Integrations</a></li>
+                        <li><a href="#" class="text-sm text-white/60 hover:text-white transition-colors">Changelog</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-display font-semibold text-sm text-white mb-4">Company</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-white/60 hover:text-white transition-colors">About</a></li>
+                        <li><a href="#" class="text-sm text-white/60 hover:text-white transition-colors">Blog</a></li>
+                        <li><a href="#" class="text-sm text-white/60 hover:text-white transition-colors">Careers</a></li>
+                        <li><a href="#" class="text-sm text-white/60 hover:text-white transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-display font-semibold text-sm text-white mb-4">Legal</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-white/60 hover:text-white transition-colors">Privacy</a></li>
+                        <li><a href="#" class="text-sm text-white/60 hover:text-white transition-colors">Terms</a></li>
+                        <li><a href="#" class="text-sm text-white/60 hover:text-white transition-colors">Security</a></li>
+                        <li><a href="#" class="text-sm text-white/60 hover:text-white transition-colors">GDPR</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="flex flex-col md:flex-row items-center justify-between pt-8 border-t border-white/10">
+                <p class="text-xs text-white/40 mb-4 md:mb-0">© 2024 Lumina. All rights reserved.</p>
+                <div class="flex items-center gap-4">
+                    <a href="#" class="text-white/40 hover:text-white transition-colors" aria-label="Twitter">
+                        <i data-lucide="twitter" class="w-4 h-4"></i>
+                    </a>
+                    <a href="#" class="text-white/40 hover:text-white transition-colors" aria-label="GitHub">
+                        <i data-lucide="github" class="w-4 h-4"></i>
+                    </a>
+                    <a href="#" class="text-white/40 hover:text-white transition-colors" aria-label="LinkedIn">
+                        <i data-lucide="linkedin" class="w-4 h-4"></i>
+                    </a>
+                    <a href="#" class="text-white/40 hover:text-white transition-colors" aria-label="YouTube">
+                        <i data-lucide="youtube" class="w-4 h-4"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

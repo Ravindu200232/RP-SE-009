@@ -41,6 +41,8 @@ out/
 # Local archives / backups
 *.rar
 /backups/
+_skills-backup/
+tmp-ab-compare/
 
 # Editor, agent and OS-local state
 .claude/
@@ -56,3 +58,6 @@ test_*.py
 # Without this the rule above silently swallows every new test file.
 !/test/**/test_*.py
 /locode.iconset/
+
+# A local scratch test, not part of the suite.
+test/unit/services/test_run_recovery.py

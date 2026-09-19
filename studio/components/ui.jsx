@@ -11,17 +11,17 @@ export function Button({ variant = 'ghost', size = 'md', className, ...rest }) {
     <button
       className={cn(
         'inline-flex shrink-0 items-center gap-1.5 rounded-xl font-display font-semibold',
-        'transition-all duration-200 disabled:pointer-events-none disabled:opacity-45',
+        'transition-all duration-200 disabled:pointer-events-none disabled:opacity-45 cursor-pointer',
         iconOnly ? 'justify-center' : 'justify-start text-left',
-        { sm: 'h-[26px] px-2 text-[10.5px]', md: 'h-[30px] px-3 text-[12px]',
-          lg: 'h-[34px] px-4 text-[13px]', icon: 'size-[30px] p-0',
-          'icon-sm': 'size-[26px] p-0' }[size],
-        { solid: 'border border-accent bg-accent text-bg '
-               + 'hover:border-press hover:bg-press',
-          outline: 'border border-line2 text-ink hover:bg-ink/[.07]',
-          ghost: 'border border-transparent text-muted hover:bg-ink/[.07] hover:text-ink',
-          accent: 'border border-transparent text-accent hover:bg-accent/10',
-          subtle: 'border border-transparent bg-panel2 text-ink hover:bg-ink/[.07]',
+        { sm: 'h-[28px] px-2.5 text-[11px]', md: 'h-[34px] px-3.5 text-[12.5px]',
+          lg: 'h-[40px] px-4 text-[13.5px]', icon: 'size-[34px] p-0',
+          'icon-sm': 'size-[28px] p-0' }[size],
+        { solid: 'border border-accent bg-accent text-white shadow-[0_8px_16px_0_rgba(24,119,242,0.24)] '
+               + 'hover:bg-press hover:border-press active:bg-deep',
+          outline: 'border border-line2 text-ink hover:bg-ink/[.06]',
+          ghost: 'border border-transparent text-muted hover:bg-ink/[.06] hover:text-ink',
+          accent: 'border border-transparent bg-accent/10 text-accent hover:bg-accent/20',
+          subtle: 'border border-line bg-panel text-ink hover:bg-raised shadow-sm',
         }[variant],
         className)}
       {...rest} />
@@ -32,12 +32,12 @@ export function Button({ variant = 'ghost', size = 'md', className, ...rest }) {
 export function Tag({ tone = 'mute', className, children }) {
   return (
     <span className={cn(
-      'inline-flex items-center rounded-full px-2 py-[2px]',
-      'text-[10px] font-semibold uppercase tracking-[.08em]',
-      { mute: 'bg-panel2 text-label', ok: 'bg-ok-tint text-ok',
-        bad: 'bg-tint text-deep', warn: 'bg-warn-tint text-warn',
-        accent: 'border border-accent text-accent',
-        solid: 'bg-accent text-bg' }[tone],
+      'inline-flex items-center rounded-full px-2.5 py-[2px]',
+      'text-[10.5px] font-bold uppercase tracking-[.06em]',
+      { mute: 'bg-panel2 text-muted', ok: 'bg-emerald-500/15 text-emerald-400',
+        bad: 'bg-rose-500/15 text-rose-400', warn: 'bg-amber-500/15 text-amber-400',
+        accent: 'bg-accent/15 text-accent',
+        solid: 'bg-accent text-white shadow-sm' }[tone],
       className)}>
       {children}
     </span>
@@ -48,10 +48,10 @@ export function Tag({ tone = 'mute', className, children }) {
 export function Badge({ tone = 'mute', className, children }) {
   return (
     <span className={cn(
-      'inline-flex items-center rounded-full font-mono text-[10px] px-1.5 py-px',
-      { mute: 'bg-panel2 text-muted2', ok: 'bg-ok-tint text-ok',
-        bad: 'bg-tint text-deep', warn: 'bg-warn-tint text-warn',
-        accent: 'bg-accent text-bg' }[tone],
+      'inline-flex items-center rounded-full font-mono text-[10.5px] px-2 py-0.5 font-semibold',
+      { mute: 'bg-panel2 text-muted2', ok: 'bg-emerald-500/15 text-emerald-400',
+        bad: 'bg-rose-500/15 text-rose-400', warn: 'bg-amber-500/15 text-amber-400',
+        accent: 'bg-accent text-white shadow-sm' }[tone],
       className)}>
       {children}
     </span>
@@ -120,32 +120,34 @@ export function SubTab({ on, className, children, ...rest }) {
 }
 
 export const Panel = ({ className, children }) => (
-  <div className={cn('rounded-[20px] border border-line bg-panel shadow-sm', className)}>
+  <div className={cn('rounded-2xl border border-line bg-panel shadow-[0_0_2px_0_rgba(145,158,171,0.2),0_12px_24px_-4px_rgba(145,158,171,0.12)]', className)}>
     {children}
   </div>
 )
 
 export const Empty = ({ children, bad }) => (
-  <p className={cn('px-1 py-7 text-[12px]', bad ? 'text-deep' : 'text-muted')}>
+  <p className={cn('px-1 py-7 text-[12px]', bad ? 'text-bad' : 'text-muted')}>
     {children}
   </p>
 )
 
-export function Modal({ onClose, children, className }) {
+export function Modal({ onClose, children, className, style, overlayClassName }) {
   useEffect(() => {
     const key = (e) => { if (e.key === 'Escape') onClose?.() }
     document.addEventListener('keydown', key)
     return () => document.removeEventListener('keydown', key)
   }, [onClose])
   return (
-  // Keep tall dialogs reachable within the viewport.
+  // Keep tall dialogs bounded within viewport dimensions.
     <div onClick={onClose}
-         className="fixed inset-0 z-[600] flex items-center justify-center
-                    overscroll-contain bg-slate-950/35 p-4 backdrop-blur-md">
-      <div onClick={e => e.stopPropagation()}
+         className={cn(`fixed inset-0 z-[600] flex items-center justify-center
+                    overscroll-contain bg-black/75 backdrop-blur-sm p-4`, overlayClassName)}>
+      {/* `style` wins over the size classes, which is the only reliable way for
+          a caller to ask for a dialog that fills the window. */}
+      <div onClick={e => e.stopPropagation()} style={style}
            className={cn('w-full max-w-[520px] max-h-[90vh] overflow-y-auto',
-             'rounded-[24px] border border-white/60',
-             'bg-panel/95 p-5 shadow-[0_28px_80px_rgba(15,23,42,.25)] backdrop-blur-2xl dark:border-white/10', className)}>
+             'rounded-[24px] border border-line2',
+             'bg-panel p-6 shadow-[-40px_40px_80px_-8px_rgba(0,0,0,0.6)] text-ink', className)}>
         {children}
       </div>
     </div>
@@ -170,8 +172,8 @@ export function Dropdown({ open, onClose, children, className }) {
   if (!open) return null
   return (
     <div ref={ref}
-         className={cn('absolute z-[500] overflow-hidden rounded-[18px] border border-line',
-           'bg-panel/95 shadow-[0_18px_45px_rgba(15,23,42,.18)] backdrop-blur-xl', className)}>
+         className={cn('absolute z-[500] overflow-hidden rounded-[16px] border border-line',
+           'bg-panel/95 shadow-[0_0_2px_0_rgba(145,158,171,0.24),-20px_20px_40px_-4px_rgba(145,158,171,0.24)] backdrop-blur-xl', className)}>
       {children}
     </div>
   )
@@ -196,9 +198,9 @@ export const plainField = {
 }
 
 export const Input = ({ className, ...rest }) => (
-  <input className={cn('h-9 w-full rounded-xl border border-line bg-white/65 px-3 shadow-sm dark:bg-white/5',
-    'text-[12.5px] text-ink caret-accent transition-colors',
-    'placeholder:text-muted2 focus:border-accent focus-visible:outline-none',
+  <input className={cn('h-10 w-full rounded-xl border border-line bg-panel/60 px-3.5 shadow-sm',
+    'text-[13px] text-ink caret-accent transition-all',
+    'placeholder:text-muted2 focus:border-accent focus:ring-1 focus:ring-accent focus-visible:outline-none',
     'disabled:opacity-45', className)}
     {...plainField} {...rest} />
 )
@@ -210,22 +212,26 @@ export const TextArea = forwardRef(function TextArea({ className, ...rest }, ref
 
 export const Table = ({ className, children }) => (
   <div className="w-full overflow-x-auto">
-    <table className={cn('w-full border-collapse text-[12px]', className)}>
+    <table className={cn('w-full border-collapse text-[12.5px]', className)}>
       {children}
     </table>
   </div>
 )
 export const TR = ({ className, children, ...rest }) => (
-  <tr className={cn('border-b border-line last:border-0', className)} {...rest}>
+  <tr className={cn('border-b border-line last:border-0 hover:bg-ink/[.02] transition-colors', className)} {...rest}>
     {children}
   </tr>
 )
 /* The column head is the one rule in a table that is drawn strong. */
 export const TH = ({ className, children }) => (
-  <th className={cn('border-b-2 border-line2 px-2.5 py-2 text-left',
-    'text-[10px] font-semibold uppercase tracking-[.08em] text-label',
+  <th className={cn('border-b border-line bg-panel2/50 px-3 py-2.5 text-left',
+    'text-[11px] font-semibold uppercase tracking-[.08em] text-muted',
     className)}>{children}</th>
 )
 export const TD = ({ className, children }) => (
-  <td className={cn('px-2.5 py-2 align-top', className)}>{children}</td>
+  <td className={cn('px-3 py-2.5 align-middle', className)}>{children}</td>
 )
+
+export function ThemeToggle() {
+  return null
+}

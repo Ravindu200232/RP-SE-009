@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoltEdge — Premium Electronics</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest">
+    </script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#FECE14',
+                        secondary: '#000000',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                        surface: '#FFFFFF',
+                        text: '#111827',
+                    },
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                        mono: ['IBM Plex Mono', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            border-radius: 0 !important;
+        }
+        summary::-webkit-details-marker {
+            display: none;
+        }
+        summary {
+            list-style: none;
+        }
+        details[open] summary .chevron {
+            transform: rotate(180deg);
+        }
+        .chevron {
+            transition: transform 0.2s ease;
+        }
+    </style>
+</head>
+<body class="font-sans text-text bg-surface antialiased">
+    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-primary focus:text-secondary focus:px-4 focus:py-2 focus:font-semibold focus:text-sm">
+        Skip to main content
+    </a>
+
+    <!-- Navigation -->
+    <header class="bg-surface border-b border-gray-200 sticky top-0 z-50">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16" aria-label="Main navigation">
+            <a href="#" class="flex items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                <div class="w-8 h-8 bg-primary flex items-center justify-center">
+                    <i data-lucide="zap" class="w-5 h-5 text-secondary"></i>
+                </div>
+                <span class="font-bold text-lg text-secondary tracking-tight">VoltEdge</span>
+            </a>
+            <div class="hidden md:flex items-center gap-8">
+                <a href="#features" class="text-sm font-medium text-text hover:text-secondary transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Features</a>
+                <a href="#process" class="text-sm font-medium text-text hover:text-secondary transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Process</a>
+                <a href="#pricing" class="text-sm font-medium text-text hover:text-secondary transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Pricing</a>
+                <a href="#faq" class="text-sm font-medium text-text hover:text-secondary transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">FAQ</a>
+            </div>
+            <a href="#pricing" class="bg-primary text-secondary font-semibold px-4 py-2 text-sm hover:bg-primary/90 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                Shop Now
+            </a>
+        </nav>
+    </header>
+
+    <main id="main">
+        <!-- Hero -->
+        <section class="bg-secondary text-white py-16 lg:py-24">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                <div>
+                    <p class="font-mono text-primary text-sm mb-4 tracking-wider">// NEW ARRIVALS 2025</p>
+                    <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight">
+                        Next-Gen Electronics for Modern Living
+                    </h1>
+                    <p class="mt-4 text-base sm:text-lg text-gray-300 leading-relaxed">
+                        Discover cutting-edge devices engineered for performance, built to last. From smart home to personal tech — we've got you covered.
+                    </p>
+                    <div class="mt-8 flex flex-wrap gap-4">
+                        <a href="#pricing" class="bg-primary text-secondary font-semibold px-6 py-3 text-sm hover:bg-primary/90 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                            Shop Now
+                        </a>
+                        <a href="#features" class="border border-white text-white font-semibold px-6 py-3 text-sm hover:bg-white hover:text-secondary transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                            Explore Features
+                        </a>
+                    </div>
+                </div>
+                <div class="relative mt-8 lg:mt-0">
+                    <div class="bg-gray-900 border border-gray-800 p-6 shadow-2xl">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex gap-2">
+                                <div class="w-3 h-3 bg-danger"></div>
+                                <div class="w-3 h-3 bg-warning"></div>
+                                <div class="w-3 h-3 bg-success"></div>
+                            </div>
+                            <span class="font-mono text-xs text-gray-500">VoltEdge OS v2.0</span>
+                        </div>
+                        <div class="bg-gradient-to-br from-primary via-yellow-400 to-primary h-48 sm:h-56 flex items-center justify-center">
+                            <div class="text-center">
+                                <i data-lucide="zap" class="w-16 h-16 sm:w-20 sm:h-20 text-secondary mx-auto"></i>
+                                <p class="font-mono text-secondary text-xs mt-2 font-semibold">PRO X1</p>
+                            </div>
+                        </div>
+                        <div class="mt-4 space-y-2">
+                            <div class="h-2 bg-gray-700 w-3/4"></div>
+                            <div class="h-2 bg-gray-700 w-1/2"></div>
+                        </div>
+                    </div>
+                    <div class="absolute -top-4 -right-4 w-14 h-14 sm:w-16 sm:h-16 bg-primary border-4 border-secondary"></div>
+                    <div class="absolute -bottom-4 -left-4 w-8 h-8 sm:w-10 sm:h-10 bg-gray-700"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats -->
+        <section class="bg-primary py-12" aria-label="Key statistics">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <p class="text-3xl sm:text-4xl font-bold text-secondary">50K+</p>
+                    <p class="font-mono text-xs sm:text-sm text-secondary/80 mt-1">Happy Customers</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-3xl sm:text-4xl font-bold text-secondary">200+</p>
+                    <p class="font-mono text-xs sm:text-sm text-secondary/80 mt-1">Products</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-3xl sm:text-4xl font-bold text-secondary">99.9%</p>
+                    <p class="font-mono text-xs sm:text-sm text-secondary/80 mt-1">Satisfaction</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-3xl sm:text-4xl font-bold text-secondary">24/7</p>
+                    <p class="font-mono text-xs sm:text-sm text-secondary/80 mt-1">Support</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features -->
+        <section id="features" class="py-16 lg:py-24 scroll-mt-16">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-2xl mx-auto mb-12">
+                    <p class="font-mono text-primary text-sm mb-2 tracking-wider">// WHY CHOOSE US</p>
+                    <h2 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-secondary">Everything You Need, Nothing You Don't</h2>
+                    <p class="mt-4 text-sm sm:text-base text-gray-600">We've built the most comprehensive electronics experience — from ordering to after-sales support.</p>
+                </div>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-gray-50 p-6 border border-gray-200 hover:border-primary transition-colors">
+                        <div class="w-10 h-10 bg-primary flex items-center justify-center mb-4">
+                            <i data-lucide="truck" class="w-5 h-5 text-secondary"></i>
+                        </div>
+                        <h3 class="font-semibold text-secondary text-base">Fast Shipping</h3>
+                        <p class="mt-2 text-sm text-gray-600 leading-relaxed">Free express delivery on all orders over $50. Get your devices in 1–2 business days.</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 border border-gray-200 hover:border-primary transition-colors">
+                        <div class="w-10 h-10 bg-primary flex items-center justify-center mb-4">
+                            <i data-lucide="shield" class="w-5 h-5 text-secondary"></i>
+                        </div>
+                        <h3 class="font-semibold text-secondary text-base">Extended Warranty</h3>
+                        <p class="mt-2 text-sm text-gray-600 leading-relaxed">Every product comes with a minimum 1-year warranty. Extend up to 5 years for peace of mind.</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 border border-gray-200 hover:border-primary transition-colors">
+                        <div class="w-10 h-10 bg-primary flex items-center justify-center mb-4">
+                            <i data-lucide="headset" class="w-5 h-5 text-secondary"></i>
+                        </div>
+                        <h3 class="font-semibold text-secondary text-base">Expert Support</h3>
+                        <p class="mt-2 text-sm text-gray-600 leading-relaxed">Our team of certified technicians is available 24/7 to help you with any issue.</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 border border-gray-200 hover:border-primary transition-colors">
+                        <div class="w-10 h-10 bg-primary flex items-center justify-center mb-4">
+                            <i data-lucide="refresh-ccw" class="w-5 h-5 text-secondary"></i>
+                        </div>
+                        <h3 class="font-semibold text-secondary text-base">Easy Returns</h3>
+                        <p class="mt-2 text-sm text-gray-600 leading-relaxed">30-day money-back guarantee. No questions asked, full refund processed within 48 hours.</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 border border-gray-200 hover:border-primary transition-colors">
+                        <div class="w-10 h-10 bg-primary flex items-center justify-center mb-4">
+                            <i data-lucide="lock" class="w-5 h-5 text-secondary"></i>
+                        </div>
+                        <h3 class="font-semibold text-secondary text-base">Secure Payment</h3>
+                        <p class="mt-2 text-sm text-gray-600 leading-relaxed">256-bit SSL encryption and PCI-DSS compliant payment processing. Your data stays safe.</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 border border-gray-200 hover:border-primary transition-colors">
+                        <div class="w-10 h-10 bg-primary flex items-center justify-center mb-4">
+                            <i data-lucide="cpu" class="w-5 h-5 text-secondary"></i>
+                        </div>
+                        <h3 class="font-semibold text-secondary text-base">Smart Technology</h3>
+                        <p class="mt-2 text-sm text-gray-600 leading-relaxed">AI-powered recommendations and smart device integration for a seamless experience.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Process -->
+        <section id="process" class="bg-gray-50 py-16 lg:py-24 scroll-mt-16">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-2xl mx-auto mb-12">
+                    <p class="font-mono text-primary text-sm mb-2 tracking-wider">// HOW IT WORKS</p>
+                    <h2 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-secondary">From Browse to Enjoy in 4 Steps</h2>
+                    <p class="mt-4 text-sm sm:text-base text-gray-600">A simple, transparent process designed around you.</p>
+                </div>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-surface p-6 border border-gray-200 relative">
+                        <span class="font-mono text-4xl font-bold text-primary">01</span>
+                        <h3 class="font-semibold text-secondary text-base mt-4">Browse</h3>
+                        <p class="mt-2 text-sm text-gray-600 leading-relaxed">Explore our curated catalog of premium electronics with detailed specs and reviews.</p>
+                    </div>
+                    <div class="bg-surface p-6 border border-gray-200 relative">
+                        <span class="font-mono text-4xl font-bold text-primary">02</span>
+                        <h3 class="font-semibold text-secondary text-base mt-4">Order</h3>
+                        <p class="mt-2 text-sm text-gray-600 leading-relaxed">Checkout in under 60 seconds with secure payment options and flexible financing.</p>
+                    </div>
+                    <div class="bg-surface p-6 border border-gray-200 relative">
+                        <span class="font-mono text-4xl font-bold text-primary">03</span>
+                        <h3 class="font-semibold text-secondary text-base mt-4">Ship</h3>
+                        <p class="mt-2 text-sm text-gray-600 leading-relaxed">Track your order in real-time with proactive delivery updates via SMS and email.</p>
+                    </div>
+                    <div class="bg-surface p-6 border border-gray-200 relative">
+                        <span class="font-mono text-4xl font-bold text-primary">04</span>
+                        <h3 class="font-semibold text-secondary text-base mt-4">Enjoy</h3>
+                        <p class="mt-2 text-sm text-gray-600 leading-relaxed">Unbox, set up, and enjoy. Our support team is always a message away.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Benefits -->
+        <section class="py-16 lg:py-24">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-2xl mx-auto mb-12">
+                    <p class="font-mono text-primary text-sm mb-2 tracking-wider">// THE VOLTEDGE ADVANTAGE</p>
+                    <h2 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-secondary">Built Around You</h2>
+                    <p class="mt-4 text-sm sm:text-base text-gray-600">Three core promises that define every interaction with us.</p>
+                </div>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-secondary text-white p-8">
+                        <div class="w-12 h-12 bg-primary flex items-center justify-center mb-6">
+                            <i data-lucide="award" class="w-6 h-6 text-secondary"></i>
+                        </div>
+                        <h3 class="font-semibold text-lg">Premium Quality</h3>
+                        <p class="mt-3 text-sm text-gray-300 leading-relaxed">Every product is tested and certified to meet the highest standards of performance, durability, and safety.</p>
+                    </div>
+                    <div class="bg-gray-50 p-8 border border-gray-200">
+                        <div class="w-12 h-12 bg-primary flex items-center justify-center mb-6">
+                            <i data-lucide="dollar-sign" class="w-6 h-6 text-secondary"></i>
+                        </div>
+                        <h3 class="font-semibold text-lg text-secondary">Competitive Pricing</h3>
+                        <p class="mt-3 text-sm text-gray-600 leading-relaxed">Get the best value with transparent pricing, no hidden fees, and price-match guarantees.</p>
+                    </div>
+                    <div class="bg-gray-50 p-8 border border-gray-200">
+                        <div class="w-12 h-12 bg-primary flex items-center justify-center mb-6">
+                            <i data-lucide="users" class="w-6 h-6 text-secondary"></i>
+                        </div>
+                        <h3 class="font-semibold text-lg text-secondary">Expert Guidance</h3>
+                        <p class="mt-3 text-sm text-gray-600 leading-relaxed">Our team of product specialists helps you find the perfect device for your needs and budget.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials -->
+        <section class="bg-secondary text-white py-16 lg:py-24">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-2xl mx-auto mb-12">
+                    <p class="font-mono text-primary text-sm mb-2 tracking-wider">// CUSTOMER STORIES</p>
+                    <h2 class="text-2xl sm:text-3xl lg:text-4xl font-bold">Trusted by Thousands</h2>
+                    <p class="mt-4 text-sm sm:text-base text-gray-400">Real stories from real customers.</p>
+                </div>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-gray-900 p-8 border border-gray-800">
+                        <div class="flex gap-1 mb-4">
+                            <i data-lucide="star" class="w-4 h-4 text-primary fill-primary"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-primary fill-primary"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-primary fill-primary"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-primary fill-primary"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-primary fill-primary"></i>
+                        </div>
+                        <p class="text-sm text-gray-300 leading-relaxed">"The best electronics store I've ever used. Fast shipping, great products, and their support team is incredibly helpful."</p>
+                        <div class="mt-6 flex items-center gap-3">
+                            <div class="w-10 h-10 bg-primary flex items-center justify-center font-bold text-secondary text-sm">SK</div>
+                            <div>
+                                <p class="font-semibold text-sm">Sarah K.</p>
+                                <p class="font-mono text-xs text-gray-500">Product Designer</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-900 p-8 border border-gray-800">
+                        <div class="flex gap-1 mb-4">
+                            <i data-lucide="star" class="w-4 h-4 text-primary fill-primary"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-primary fill-primary"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-primary fill-primary"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-primary fill-primary"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-primary fill-primary"></i>
+                        </div>
+                        <p class="text-sm text-gray-300 leading-relaxed">"Their support team went above and beyond to help me choose the right laptop for my workflow. Highly recommend."</p>
+                        <div class="mt-6 flex items-center gap-3">
+                            <div class="w-10 h-10 bg-primary flex items-center justify-center font-bold text-secondary text-sm">JR</div>
+                            <div>
+                                <p class="font-semibold text-sm">James R.</p>
+                                <p class="font-mono text-xs text-gray-500">Software Engineer</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-900 p-8 border border-gray-800">
+                        <div class="flex gap-1 mb-4">
+                            <i data-lucide="star" class="w-4 h-4 text-primary fill-primary"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-primary fill-primary"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-primary fill-primary"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-primary fill-primary"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-primary fill-primary"></i>
+                        </div>
+                        <p class="text-sm text-gray-300 leading-relaxed">"I've been a customer for 3 years. Always top quality products and their warranty process is seamless."</p>
+                        <div class="mt-6 flex items-center gap-3">
+                            <div class="w-10 h-10 bg-primary flex items-center justify-center font-bold text-secondary text-sm">MT</div>
+                            <div>
+                                <p class="font-semibold text-sm">Michael T.</p>
+                                <p class="font-mono text-xs text-gray-500">Business Owner</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing -->
+        <section id="pricing" class="py-16 lg:py-24 scroll-mt-16">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-2xl mx-auto mb-12">
+                    <p class="font-mono text-primary text-sm mb-2 tracking-wider">// PRICING</p>
+                    <h2 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-secondary">Simple, Transparent Plans</h2>
+                    <p class="mt-4 text-sm sm:text-base text-gray-600">Choose the plan that fits your needs. Upgrade or cancel anytime.</p>
+                </div>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+                    <div class="bg-gray-50 p-8 border border-gray-200 flex flex-col">
+                        <h3 class="font-semibold text-secondary text-lg">Starter</h3>
+                        <p class="font-mono text-xs text-gray-500 mt-1">For individuals</p>
+                        <p class="mt-6 text-4xl font-bold text-secondary">$29<span class="text-sm font-normal text-gray-500">/mo</span></p>
+                        <ul class="mt-6 space-y-3 text-sm text-gray-600 flex-grow">
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i>1 device covered</li>
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i>Basic support</li>
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i>1-year warranty</li>
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i>Standard shipping</li>
+                        </ul>
+                        <a href="#" class="mt-8 border border-secondary text-secondary font-semibold px-6 py-3 text-sm text-center hover:bg-secondary hover:text-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                            Get Started
+                        </a>
+                    </div>
+                    <div class="bg-secondary text-white p-8 border-4 border-primary flex flex-col relative">
+                        <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-secondary font-mono text-xs font-semibold px-3 py-1">MOST POPULAR</span>
+                        <h3 class="font-semibold text-lg">Pro</h3>
+                        <p class="font-mono text-xs text-gray-400 mt-1">For power users</p>
+                        <p class="mt-6 text-4xl font-bold">$79<span class="text-sm font-normal text-gray-400">/mo</span></p>
+                        <ul class="mt-6 space-y-3 text-sm text-gray-300 flex-grow">
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-primary"></i>3 devices covered</li>
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-primary"></i>Priority support</li>
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-primary"></i>3-year warranty</li>
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-primary"></i>Free express shipping</li>
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-primary"></i>Extended returns</li>
+                        </ul>
+                        <a href="#" class="mt-8 bg-primary text-secondary font-semibold px-6 py-3 text-sm text-center hover:bg-primary/90 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                            Choose Pro
+                        </a>
+                    </div>
+                    <div class="bg-gray-50 p-8 border border-gray-200 flex flex-col">
+                        <h3 class="font-semibold text-secondary text-lg">Enterprise</h3>
+                        <p class="font-mono text-xs text-gray-500 mt-1">For businesses</p>
+                        <p class="mt-6 text-4xl font-bold text-secondary">$199<span class="text-sm font-normal text-gray-500">/mo</span></p>
+                        <ul class="mt-6 space-y-3 text-sm text-gray-600 flex-grow">
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i>Unlimited devices</li>
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i>Dedicated support</li>
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i>Lifetime warranty</li>
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i>Custom solutions</li>
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-success"></i>On-site service</li>
+                        </ul>
+                        <a href="#" class="mt-8 border border-secondary text-secondary font-semibold px-6 py-3 text-sm text-center hover:bg-secondary hover:text-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                            Contact Sales
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section id="faq" class="bg-gray-50 py-16 lg:py-24 scroll-mt-16">
+            <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <p class="font-mono text-primary text-sm mb-2 tracking-wider">// FAQ</p>
+                    <h2 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-secondary">Frequently Asked Questions</h2>
+                    <p class="mt-4 text-sm sm:text-base text-gray-600">Everything you need to know before you buy.</p>
+                </div>
+                <div class="space-y-4">
+                    <details class="bg-surface border border-gray-200 p-6 group">
+                        <summary class="flex items-center justify-between cursor-pointer font-semibold text-secondary text-sm sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                            What is your return policy?
+                            <i data-lucide="chevron-down" class="w-5 h-5 text-primary chevron"></i>
+                        </summary>
+                        <div class="mt-4 text-sm text-gray-600 leading-relaxed">
+                            We offer a 30-day money-back guarantee on all products. If you're not completely satisfied, return it for a full refund — no questions asked.
+                        </div>
+                    </details>
+                    <details class="bg-surface border border-gray-200 p-6 group">
+                        <summary class="flex items-center justify-between cursor-pointer font-semibold text-secondary text-sm sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                            How long does shipping take?
+                            <i data-lucide="chevron-down" class="w-5 h-5 text-primary chevron"></i>
+                        </summary>
+                        <div class="mt-4 text-sm text-gray-600 leading-relaxed">
+                            Standard shipping takes 3–5 business days. Express shipping takes 1–2 business days. You'll receive a tracking number as soon as your order ships.
+                        </div>
+                    </details>
+                    <details class="bg-surface border border-gray-200 p-6 group">
+                        <summary class="flex items-center justify-between cursor-pointer font-semibold text-secondary text-sm sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                            Do you offer warranties?
+                            <i data-lucide="chevron-down" class="w-5 h-5 text-primary chevron"></i>
+                        </summary>
+                        <div class="mt-4 text-sm text-gray-600 leading-relaxed">
+                            Yes, all products come with a minimum 1-year warranty. You can extend your warranty up to 5 years at checkout for complete peace of mind.
+                        </div>
+                    </details>
+                    <details class="bg-surface border border-gray-200 p-6 group">
+                        <summary class="flex items-center justify-between cursor-pointer font-semibold text-secondary text-sm sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                            Can I upgrade my plan?
+                            <i data-lucide="chevron-down" class="w-5 h-5 text-primary chevron"></i>
+                        </summary>
+                        <div class="mt-4 text-sm text-gray-600 leading-relaxed">
+                            Absolutely. You can upgrade your plan at any time from your dashboard. The price difference will be prorated for the remainder of your billing cycle.
+                        </div>
+                    </details>
+                    <details class="bg-surface border border-gray-200 p-6 group">
+                        <summary class="flex items-center justify-between cursor-pointer font-semibold text-secondary text-sm sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                            Do you offer student discounts?
+                            <i data-lucide="chevron-down" class="w-5 h-5 text-primary chevron"></i>
+                        </summary>
+                        <div class="mt-4 text-sm text-gray-600 leading-relaxed">
+                            Yes, we offer 10% off for students with a valid student ID. Contact our support team to verify your status and receive your discount code.
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-secondary text-white py-12 lg:py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div>
+                    <a href="#" class="flex items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                        <div class="w-8 h-8 bg-primary flex items-center justify-center">
+                            <i data-lucide="zap" class="w-5 h-5 text-secondary"></i>
+                        </div>
+                        <span class="font-bold text-lg">VoltEdge</span>
+                    </a>
+                    <p class="mt-4 text-sm text-gray-400 leading-relaxed">Premium electronics for modern living. Engineered for performance, built to last.</p>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-sm text-primary font-mono tracking-wider">SHOP</h3>
+                    <ul class="mt-4 space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Laptops</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Smartphones</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Audio</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Smart Home</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-sm text-primary font-mono tracking-wider">SUPPORT</h3>
+                    <ul class="mt-4 space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Help Center</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Warranty</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Returns</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Contact Us</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-sm text-primary font-mono tracking-wider">COMPANY</h3>
+                    <ul class="mt-4 space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">About Us</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Careers</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Blog</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Press</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-12 pt-8 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="font-mono text-xs text-gray-500">© 2025 VoltEdge. All rights reserved.</p>
+                <div class="flex gap-6">
+                    <a href="#" class="text-gray-400 hover:text-primary transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label="Twitter">
+                        <i data-lucide="twitter" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-primary transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label="Instagram">
+                        <i data-lucide="instagram" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-primary transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label="LinkedIn">
+                        <i data-lucide="linkedin" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-primary transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label="YouTube">
+                        <i data-lucide="youtube" class="w-5 h-5"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

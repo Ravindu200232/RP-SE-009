@@ -508,38 +508,52 @@ TOPICS: list[Topic] = [
         coverage=("data_entities",),
     ),
 
+    # Whether the product takes money and whether it sends mail - never which
+    # company does either. A gateway and a mail provider are build-time
+    # settings: the user picks the plugin, its credentials go to .env.local,
+    # and the specification only has to say that the capability is required.
+    # Asking "Stripe or PayHere?" here produced an answer the document could
+    # not act on and the build asked again anyway.
+    Topic(
+        key="payments", kind="yes_no", label="Payments",
+        intent="Whether the product itself has to take money from anyone.",
+        # Only where nothing else already asks. The till and the shop ask which
+        # payment methods they accept and the SaaS asks about its plans, so all
+        # three answer this on the way past; asking again would spend one of
+        # the twenty-five for nothing.
+        profiles=("dashboard", "landing", "other", "portfolio", "utility"),
+        fallback_options=_yes_no(),
+        srs_fields=("integration_requirements", "functional_requirements"),
+        coverage=("payments_billing",),
+    ),
+    Topic(
+        key="notifications", kind="yes_no", label="Email and messages",
+        intent="Whether the product has to send anyone an email or a text "
+               "message - a confirmation, a receipt, a reminder, an alert.",
+        fallback_options=_yes_no(),
+        srs_fields=("integration_requirements", "notification_rules"),
+        coverage=("notifications",),
+    ),
+
+    # Inquire whether images are needed and their source, rather than promising artwork generation.
     Topic(
         key="images", kind="yes_no", label="Images",
-        intent="Whether the app needs generated artwork.",
+        intent="Whether the product's pages need real photographs or pictures.",
         fallback_options=_yes_no(),
         srs_fields=("ui_ux_requirements",),
         coverage=("file_uploads",),
     ),
     Topic(
-        key="image_kinds", kind="multi", label="Artwork",
-        intent="Which images are needed.",
+        key="image_source", kind="single", label="Where pictures come from",
+        intent="Where those pictures are to come from, since none are drawn here.",
         applies_to=wants_images,
         fallback_options=[
-            {"label": "Hero banner", "value": "banner"},
-            {"label": "Logo mark", "value": "logo"},
-            {"label": "Avatar placeholders", "value": "avatar"},
-            {"label": "Empty-state art", "value": "empty"},
-            {"label": "Social share card", "value": "og"},
+            {"label": "Find them on the web (Google, stock photo sites)", "value": "web"},
+            {"label": "I will upload my own on the design screen", "value": "upload"},
+            {"label": "No real photos — use colour, icons and illustration", "value": "none"},
         ],
         srs_fields=("ui_ux_requirements",),
         coverage=("file_uploads",),
-    ),
-
-    Topic(
-        key="responsive_pwa", kind="multi", label="Devices",
-        intent="Which devices matter and whether it should install as an app.",
-        fallback_options=[
-            {"label": "Works on mobile", "value": "responsive"},
-            {"label": "Installable (PWA)", "value": "pwa"},
-            {"label": "Desktop only", "value": "desktop"},
-        ],
-        srs_fields=("ui_ux_requirements",),
-        coverage=("devices_mobile",),
     ),
 
     Topic(

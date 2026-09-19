@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MATRIX — terminal-grade design system</title>
+  <!-- Tailwind via CDN (v3) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Font: Space Mono (all weights used in system) -->
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* design system core tokens */
+    :root {
+      --primary: #2DB58A;
+      --secondary: #0B0C14;
+      --success: #16A34A;
+      --warning: #D97706;
+      --danger: #DC2626;
+      --surface: #FFFFFF;
+      --text: #111827;
+      --spacing-1: 4px;
+      --spacing-2: 8px;
+      --spacing-3: 12px;
+      --spacing-4: 16px;
+      --spacing-5: 24px;
+      --spacing-6: 32px;
+    }
+    body {
+      font-family: 'Space Mono', monospace;
+      background-color: var(--secondary);
+      color: #e5e7eb;
+      font-weight: 400;
+      font-size: 16px;
+      letter-spacing: -0.01em;
+    }
+    /* sharp corners everywhere — no rounding */
+    * {
+      border-radius: 0 !important;
+    }
+    /* hairline borders, monochrome + green accent */
+    .border-hairline {
+      border: 1px solid rgba(45, 181, 138, 0.25);
+    }
+    .border-grid {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    /* custom focus-visible: green outline, keyboard-first */
+    :focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+      background-color: rgba(45, 181, 138, 0.05);
+    }
+    /* selection */
+    ::selection {
+      background: var(--primary);
+      color: #0B0C14;
+    }
+    /* scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0B0C14;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--primary);
+    }
+    /* utility for mono numerics */
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+    /* subtle grid background */
+    .bg-matrix-grid {
+      background-image: linear-gradient(rgba(45, 181, 138, 0.03) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(45, 181, 138, 0.03) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+    /* green glow for interactive elements */
+    .glow-primary {
+      box-shadow: 0 0 0 1px rgba(45, 181, 138, 0.3), 0 0 20px rgba(45, 181, 138, 0.1);
+    }
+  </style>
+</head>
+<body class="bg-matrix-grid min-h-screen antialiased">
+
+  <!-- ========== NAVIGATION ========== -->
+  <header class="sticky top-0 z-50 bg-[#0B0C14]/95 backdrop-blur-sm border-b border-hairline">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+      <!-- logo / wordmark -->
+      <div class="flex items-center gap-2">
+        <div class="w-6 h-6 bg-[var(--primary)] flex items-center justify-center">
+          <span class="text-[#0B0C14] font-bold text-sm">M</span>
+        </div>
+        <span class="text-white font-bold text-lg tracking-tight">MATRIX</span>
+        <span class="text-[var(--primary)] text-xs mt-1 hidden sm:inline">v2.0</span>
+      </div>
+      <!-- desktop nav -->
+      <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-300">
+        <a href="#features" class="hover:text-[var(--primary)] transition-colors">features</a>
+        <a href="#process" class="hover:text-[var(--primary)] transition-colors">process</a>
+        <a href="#pricing" class="hover:text-[var(--primary)] transition-colors">pricing</a>
+        <a href="#faq" class="hover:text-[var(--primary)] transition-colors">faq</a>
+      </nav>
+      <div class="flex items-center gap-3">
+        <a href="#" class="text-sm text-gray-300 hover:text-white hidden sm:inline">sign in</a>
+        <a href="#" class="bg-[var(--primary)] text-[#0B0C14] px-4 py-2 text-sm font-bold hover:bg-[#2DB58A]/80 transition-colors">
+          get access
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========== HERO ========== -->
+  <section class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 md:pt-28 md:pb-24">
+    <div class="grid lg:grid-cols-2 gap-12 items-center">
+      <!-- left copy -->
+      <div>
+        <div class="inline-flex items-center gap-2 border border-hairline px-3 py-1 text-xs text-[var(--primary)] mb-6">
+          <span class="w-1.5 h-1.5 bg-[var(--primary)] inline-block"></span>
+          terminal-native · zero latency
+        </div>
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.1] tracking-tight text-white">
+          INFRASTRUCTURE<br class="hidden sm:block">
+          <span class="text-[var(--primary)]">FOR THE</span> NEXT<br>
+          BILLION QUERIES
+        </h1>
+        <p class="mt-6 text-lg text-gray-400 max-w-xl leading-relaxed">
+          Matrix is the real‑time data fabric for mission‑critical systems. 
+          Built for engineers who demand sub‑millisecond response and zero compromise.
+        </p>
+        <!-- CTA row -->
+        <div class="mt-8 flex flex-col sm:flex-row gap-4">
+          <a href="#" class="bg-[var(--primary)] text-[#0B0C14] px-8 py-3 text-center font-bold text-sm hover:bg-[#2DB58A]/80 transition-colors">
+            START FREE → 
+          </a>
+          <a href="#" class="border border-hairline px-8 py-3 text-center font-bold text-sm text-gray-200 hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors">
+            VIEW DOCS
+          </a>
+        </div>
+        <!-- mini stats row -->
+        <div class="mt-10 grid grid-cols-3 gap-4 max-w-md">
+          <div>
+            <p class="text-2xl font-bold text-white tabular-nums">99.99<span class="text-[var(--primary)]">%</span></p>
+            <p class="text-xs text-gray-500 mt-1">uptime SLA</p>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-white tabular-nums">0.4<span class="text-[var(--primary)]">ms</span></p>
+            <p class="text-xs text-gray-500 mt-1">p99 latency</p>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-white tabular-nums">12<span class="text-[var(--primary)]">+</span></p>
+            <p class="text-xs text-gray-500 mt-1">edge regions</p>
+          </div>
+        </div>
+      </div>
+      <!-- right visual: pure CSS/SVG terminal card -->
+      <div class="relative">
+        <div class="bg-[#0B0C14] border border-hairline p-0 shadow-2xl glow-primary">
+          <!-- terminal header -->
+          <div class="flex items-center justify-between px-4 py-2 border-b border-hairline bg-[#0B0C14]">
+            <div class="flex gap-1.5">
+              <span class="w-2.5 h-2.5 bg-[var(--danger)] inline-block"></span>
+              <span class="w-2.5 h-2.5 bg-[var(--warning)] inline-block"></span>
+              <span class="w-2.5 h-2.5 bg-[var(--success)] inline-block"></span>
+            </div>
+            <span class="text-xs text-gray-500">matrix://query</span>
+            <span class="text-[var(--primary)] text-xs">● live</span>
+          </div>
+          <!-- terminal body -->
+          <div class="p-5 font-mono text-sm space-y-2">
+            <p class="text-gray-500"><span class="text-[var(--primary)]">➜</span> ~ matrix query --select * from orders</p>
+            <p class="text-gray-300">✓ 2,483,912 rows in <span class="text-[var(--primary)]">0.38ms</span></p>
+            <div class="grid grid-cols-3 gap-2 mt-4 text-xs">
+              <div class="border border-hairline p-2 bg-[#0B0C14]">
+                <p class="text-gray-500">region</p>
+                <p class="text-white font-bold">us-east-1</p>
+              </div>
+              <div class="border border-hairline p-2 bg-[#0B0C14]">
+                <p class="text-gray-500">status</p>
+                <p class="text-[var(--success)] font-bold">healthy</p>
+              </div>
+              <div class="border border-hairline p-2 bg-[#0B0C14]">
+                <p class="text-gray-500">shards</p>
+                <p class="text-white font-bold">24/24</p>
+              </div>
+            </div>
+            <!-- sparkline (inline SVG) -->
+            <svg viewBox="0 0 200 40" class="w-full mt-4 h-10" preserveAspectRatio="none">
+              <polyline points="0,30 20,25 40,28 60,15 80,20 100,10 120,18 140,8 160,12 180,5 200,2" fill="none" stroke="#2DB58A" stroke-width="2"/>
+            </svg>
+          </div>
+        </div>
+        <!-- floating badge -->
+        <div class="absolute -top-3 -right-3 bg-[var(--primary)] text-[#0B0C14] px-3 py-1 text-xs font-bold">
+          LOW LATENCY
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== STATS (colour-blocked) ========== -->
+  <section class="border-y border-hairline bg-[#0B0C14]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div class="border-l-2 border-[var(--primary)] pl-4">
+        <p class="text-3xl font-bold text-white tabular-nums">1.2B</p>
+        <p class="text-sm text-gray-400 mt-1">events/day</p>
+      </div>
+      <div class="border-l-2 border-[var(--primary)] pl-4">
+        <p class="text-3xl font-bold text-white tabular-nums">99.99%</p>
+        <p class="text-sm text-gray-400 mt-1">uptime</p>
+      </div>
+      <div class="border-l-2 border-[var(--primary)] pl-4">
+        <p class="text-3xl font-bold text-white tabular-nums">0.4ms</p>
+        <p class="text-sm text-gray-400 mt-1">p99 latency</p>
+      </div>
+      <div class="border-l-2 border-[var(--primary)] pl-4">
+        <p class="text-3xl font-bold text-white tabular-nums">12</p>
+        <p class="text-sm text-gray-400 mt-1">regions</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FEATURES ========== -->
+  <section id="features" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+    <div class="text-center mb-16">
+      <h2 class="text-3xl md:text-4xl font-bold text-white">ENGINEERED FOR <span class="text-[var(--primary)]">SPEED</span></h2>
+      <p class="text-gray-400 mt-3 max-w-2xl mx-auto">Every component is optimized for real‑time data. No bloat, no legacy.</p>
+    </div>
+    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- feature 1 -->
+      <div class="border border-hairline p-6 bg-[#0B0C14] hover:border-[var(--primary)] transition-colors">
+        <div class="w-10 h-10 bg-[var(--primary)]/10 flex items-center justify-center mb-4">
+          <i data-lucide="zap" class="w-5 h-5 text-[var(--primary)]"></i>
+        </div>
+        <h3 class="font-bold text-white text-lg">SUB‑MS QUERIES</h3>
+        <p class="text-sm text-gray-400 mt-2">Columnar storage & vectorized execution. p99 under 0.4ms.</p>
+      </div>
+      <!-- feature 2 -->
+      <div class="border border-hairline p-6 bg-[#0B0C14] hover:border-[var(--primary)] transition-colors">
+        <div class="w-10 h-10 bg-[var(--primary)]/10 flex items-center justify-center mb-4">
+          <i data-lucide="globe" class="w-5 h-5 text-[var(--primary)]"></i>
+        </div>
+        <h3 class="font-bold text-white text-lg">EDGE MESH</h3>
+        <p class="text-sm text-gray-400 mt-2">12 global regions. Automatic failover. Data always local.</p>
+      </div>
+      <!-- feature 3 -->
+      <div class="border border-hairline p-6 bg-[#0B0C14] hover:border-[var(--primary)] transition-colors">
+        <div class="w-10 h-10 bg-[var(--primary)]/10 flex items-center justify-center mb-4">
+          <i data-lucide="shield" class="w-5 h-5 text-[var(--primary)]"></i>
+        </div>
+        <h3 class="font-bold text-white text-lg">ZERO TRUST</h3>
+        <p class="text-sm text-gray-400 mt-2">SOC2 Type II, end‑to‑end encryption, fine‑grained ACLs.</p>
+      </div>
+      <!-- feature 4 -->
+      <div class="border border-hairline p-6 bg-[#0B0C14] hover:border-[var(--primary)] transition-colors">
+        <div class="w-10 h-10 bg-[var(--primary)]/10 flex items-center justify-center mb-4">
+          <i data-lucide="terminal" class="w-5 h-5 text-[var(--primary)]"></i>
+        </div>
+        <h3 class="font-bold text-white text-lg">SQL NATIVE</h3>
+        <p class="text-sm text-gray-400 mt-2">Full SQL:2023 support. Streams, windows, and joins.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PROCESS (colour-blocked) ========== -->
+  <section id="process" class="bg-[#0B0C14] border-y border-hairline py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 class="text-3xl md:text-4xl font-bold text-white text-center mb-16">FROM <span class="text-[var(--primary)]">ZERO</span> TO PRODUCTION</h2>
+      <div class="grid md:grid-cols-4 gap-8">
+        <!-- step 1 -->
+        <div class="relative">
+          <div class="text-5xl font-bold text-[var(--primary)]/20">01</div>
+          <h3 class="font-bold text-white mt-2 text-lg">CONNECT</h3>
+          <p class="text-sm text-gray-400 mt-2">Deploy agent in your VPC. 5‑min setup.</p>
+        </div>
+        <!-- step 2 -->
+        <div class="relative">
+          <div class="text-5xl font-bold text-[var(--primary)]/20">02</div>
+          <h3 class="font-bold text-white mt-2 text-lg">STREAM</h3>
+          <p class="text-sm text-gray-400 mt-2">Real‑time CDC from any Postgres/MySQL.</p>
+        </div>
+        <!-- step 3 -->
+        <div class="relative">
+          <div class="text-5xl font-bold text-[var(--primary)]/20">03</div>
+          <h3 class="font-bold text-white mt-2 text-lg">QUERY</h3>
+          <p class="text-sm text-gray-400 mt-2">Sub‑millisecond reads at global scale.</p>
+        </div>
+        <!-- step 4 -->
+        <div class="relative">
+          <div class="text-5xl font-bold text-[var(--primary)]/20">04</div>
+          <h3 class="font-bold text-white mt-2 text-lg">SCALE</h3>
+          <p class="text-sm text-gray-400 mt-2">Auto‑sharding. No ops. No limits.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== BENEFITS ========== -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+    <div class="grid lg:grid-cols-2 gap-12 items-center">
+      <div>
+        <h2 class="text-3xl md:text-4xl font-bold text-white">WHY TEAMS <span class="text-[var(--primary)]">SWITCH</span></h2>
+        <p class="text-gray-400 mt-4 text-lg">Stop fighting your database. Start shipping.</p>
+        <ul class="mt-8 space-y-4">
+          <li class="flex gap-3"><span class="text-[var(--primary)]">▸</span><span class="text-gray-300">10x faster than traditional caching</span></li>
+          <li class="flex gap-3"><span class="text-[var(--primary)]">▸</span><span class="text-gray-300">70% lower infra cost</span></li>
+          <li class="flex gap-3"><span class="text-[var(--primary)]">▸</span><span class="text-gray-300">Zero maintenance overhead</span></li>
+          <li class="flex gap-3"><span class="text-[var(--primary)]">▸</span><span class="text-gray-300">Instant scale to billions of rows</span></li>
+        </ul>
+      </div>
+      <!-- metric card -->
+      <div class="border border-hairline bg-[#0B0C14] p-8">
+        <p class="text-sm text-gray-500">COST REDUCTION</p>
+        <p class="text-6xl font-bold text-[var(--primary)] mt-2 tabular-nums">70%</p>
+        <div class="mt-6 h-2 bg-gray-800 w-full">
+          <div class="h-2 bg-[var(--primary)] w-[70%]"></div>
+        </div>
+        <p class="text-xs text-gray-500 mt-2">vs. traditional cloud databases</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== TESTIMONIALS ========== -->
+  <section class="bg-[#0B0C14] border-y border-hairline py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 class="text-3xl md:text-4xl font-bold text-white text-center mb-16">TRUSTED BY <span class="text-[var(--primary)]">PLATFORM</span> TEAMS</h2>
+      <div class="grid md:grid-cols-3 gap-6">
+        <!-- testimonial 1 -->
+        <div class="border border-hairline p-6 bg-[#0B0C14]">
+          <div class="flex text-[var(--primary)] mb-4">★★★★★</div>
+          <p class="text-gray-300 text-sm leading-relaxed">"We cut our query latency from 80ms to 0.4ms. Matrix is absurdly fast."</p>
+          <p class="mt-4 font-bold text-white text-sm">— Sarah Chen, CTO @ Vercel</p>
+        </div>
+        <!-- testimonial 2 -->
+        <div class="border border-hairline p-6 bg-[#0B0C14]">
+          <div class="flex text-[var(--primary)] mb-4">★★★★★</div>
+          <p class="text-gray-300 text-sm leading-relaxed">"The edge mesh is flawless. Our users feel it everywhere."</p>
+          <p class="mt-4 font-bold text-white text-sm">— Marcus Lee, Infra @ Stripe</p>
+        </div>
+        <!-- testimonial 3 -->
+        <div class="border border-hairline p-6 bg-[#0B0C14]">
+          <div class="flex text-[var(--primary)] mb-4">★★★★★</div>
+          <p class="text-gray-300 text-sm leading-relaxed">"Finally a database that feels like a compiler. Zero friction."</p>
+          <p class="mt-4 font-bold text-white text-sm">— Priya Patel, Eng @ Linear</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PRICING ========== -->
+  <section id="pricing" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+    <h2 class="text-3xl md:text-4xl font-bold text-white text-center mb-16">PRICING <span class="text-[var(--primary)]">PLANS</span></h2>
+    <div class="grid md:grid-cols-3 gap-6">
+      <!-- basic -->
+      <div class="border border-hairline p-8 bg-[#0B0C14]">
+        <h3 class="font-bold text-white text-lg">DEVELOPER</h3>
+        <p class="text-4xl font-bold text-white mt-4">$0<span class="text-sm text-gray-500">/mo</span></p>
+        <ul class="mt-6 space-y-3 text-sm text-gray-400">
+          <li>✓ 1M rows</li>
+          <li>✓ 1 region</li>
+          <li>✓ Community support</li>
+        </ul>
+        <a href="#" class="mt-8 block text-center border border-hairline py-2 text-sm font-bold text-gray-200 hover:border-[var(--primary)] hover:text-[var(--primary)]">START FREE</a>
+      </div>
+      <!-- pro (highlighted) -->
+      <div class="border-2 border-[var(--primary)] p-8 bg-[#0B0C14] relative">
+        <span class="absolute -top-3 left-4 bg-[var(--primary)] text-[#0B0C14] px-3 py-0.5 text-xs font-bold">POPULAR</span>
+        <h3 class="font-bold text-white text-lg">PRO</h3>
+        <p class="text-4xl font-bold text-[var(--primary)] mt-4">$99<span class="text-sm text-gray-500">/mo</span></p>
+        <ul class="mt-6 space-y-3 text-sm text-gray-400">
+          <li>✓ 100M rows</li>
+          <li>✓ 3 regions</li>
+          <li>✓ Priority support</li>
+          <li>✓ SOC2 reports</li>
+        </ul>
+        <a href="#" class="mt-8 block text-center bg-[var(--primary)] text-[#0B0C14] py-2 text-sm font-bold hover:bg-[#2DB58A]/80">GET PRO</a>
+      </div>
+      <!-- enterprise -->
+      <div class="border border-hairline p-8 bg-[#0B0C14]">
+        <h3 class="font-bold text-white text-lg">ENTERPRISE</h3>
+        <p class="text-4xl font-bold text-white mt-4">CUSTOM</p>
+        <ul class="mt-6 space-y-3 text-sm text-gray-400">
+          <li>✓ Unlimited rows</li>
+          <li>✓ 12+ regions</li>
+          <li>✓ Dedicated TAM</li>
+        </ul>
+        <a href="#" class="mt-8 block text-center border border-hairline py-2 text-sm font-bold text-gray-200 hover:border-[var(--primary)] hover:text-[var(--primary)]">CONTACT US</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FAQ ========== -->
+  <section id="faq" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+    <h2 class="text-3xl md:text-4xl font-bold text-white text-center mb-12">FAQ</h2>
+    <div class="space-y-4">
+      <details class="border border-hairline bg-[#0B0C14] p-5 group">
+        <summary class="flex justify-between items-center cursor-pointer text-white font-bold">How fast is Matrix really? <span class="text-[var(--primary)]">+</span></summary>
+        <p class="mt-3 text-gray-400 text-sm">p99 under 0.4ms for point lookups. 10x faster than Redis.</p>
+      </details>
+      <details class="border border-hairline bg-[#0B0C14] p-5">
+        <summary class="flex justify-between items-center cursor-pointer text-white font-bold">Can I self-host? <span class="text-[var(--primary)]">+</span></summary>
+        <p class="mt-3 text-gray-400 text-sm">Yes, enterprise plan includes on‑prem deployment.</p>
+      </details>
+      <details class="border border-hairline bg-[#0B0C14] p-5">
+        <summary class="flex justify-between items-center cursor-pointer text-white font-bold">What about data residency? <span class="text-[var(--primary)]">+</span></summary>
+        <p class="mt-3 text-gray-400 text-sm">Full control over region placement. EU, US, APAC.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="border-t border-hairline bg-[#0B0C14] py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
+      <div class="flex items-center gap-2">
+        <div class="w-5 h-5 bg-[var(--primary)]"></div>
+        <span class="text-white font-bold">MATRIX</span>
+        <span class="text-xs text-gray-500">© 2025</span>
+      </div>
+      <div class="flex gap-6 text-sm text-gray-400">
+        <a href="#" class="hover:text-[var(--primary)]">docs</a>
+        <a href="#" class="hover:text-[var(--primary)]">status</a>
+        <a href="#" class="hover:text-[var(--primary)]">github</a>
+        <a href="#" class="hover:text-[var(--primary)]">contact</a>
+      </div>
+      <div class="text-xs text-gray-500">ALL SYSTEMS OPERATIONAL</div>
+    </div>
+  </footer>
+
+  <!-- lucide icons init -->
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

@@ -1,11 +1,12 @@
 
 const API_HOST = process.env.STUDIO_API || 'http://127.0.0.1:7824'
-const APP_HOST = process.env.STUDIO_APP || 'http://127.0.0.1:5173'
+const WS_HOST = process.env.STUDIO_WS || 'http://127.0.0.1:7825'
 const EXTRA_DEV_ORIGINS = String(process.env.STUDIO_DEV_ORIGINS || '')
   .split(',').map(value => value.trim()).filter(Boolean)
 
 module.exports = {
   basePath: '/__agentforge',
+  distDir: process.env.STUDIO_DIST_DIR || '.next',
 
   turbopack: { root: __dirname },
 
@@ -21,9 +22,10 @@ module.exports = {
           basePath: false,
         },
         {
-
-          source: '/:path((?!__agentforge).*)',
-          destination: `${APP_HOST}/:path*`,
+          // The live build feed, through the studio's own address: one port to
+          // publish, and a wss:// feed when the studio is served over HTTPS.
+          source: '/__agentforge/ws',
+          destination: WS_HOST,
           basePath: false,
         },
       ],

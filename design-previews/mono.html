@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>mono design · AI product club</title>
+  <!-- Space Mono & JetBrains Mono – exact fonts from mono design -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Tailwind via CDN + lucide icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* mono design tokens – sharp corners, matrix palette */
+    :root {
+      --primary: #37F712;
+      --secondary: #00A6F4;
+      --success: #00A63D;
+      --warning: #FE9900;
+      --danger: #FF2157;
+      --surface: #E7E5E4;
+      --text: #78716B;
+      --bg-dark: #0c0c0c;
+      --bg-panel: #111111;
+      --bg-elevated: #181818;
+      --border-matrix: #2a2a2a;
+      --space-mono: 'Space Mono', monospace;
+      --jetbrains: 'JetBrains Mono', monospace;
+    }
+    * {
+      border-radius: 0 !important; /* sharp corners – mandatory */
+      font-family: var(--space-mono);
+    }
+    body {
+      background: var(--bg-dark);
+      color: #e5e5e5;
+      font-family: var(--space-mono);
+      letter-spacing: -0.01em;
+    }
+    .font-mono-jet {
+      font-family: var(--jetbrains);
+    }
+    .bg-primary { background-color: var(--primary); }
+    .bg-secondary { background-color: var(--secondary); }
+    .bg-success { background-color: var(--success); }
+    .bg-warning { background-color: var(--warning); }
+    .bg-danger { background-color: var(--danger); }
+    .text-primary { color: var(--primary); }
+    .text-secondary { color: var(--secondary); }
+    .text-warning { color: var(--warning); }
+    .text-danger { color: var(--danger); }
+    .text-success { color: var(--success); }
+    .border-matrix { border-color: var(--border-matrix); }
+    .bg-panel { background-color: var(--bg-panel); }
+    .bg-elevated { background-color: var(--bg-elevated); }
+    .text-muted { color: #a8a29e; }
+    .border-hard { border: 1px solid var(--border-matrix); }
+    .shadow-mono { box-shadow: 6px 6px 0 rgba(0,0,0,0.5); }
+    .hover-lift:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0 rgba(0,0,0,0.6); transition: all 0.1s ease; }
+    .grid-bg {
+      background-image: linear-gradient(rgba(55,247,18,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(55,247,18,0.05) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+    .glow-primary { box-shadow: 0 0 20px rgba(55,247,18,0.3); }
+    .clip-notch { clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px)); }
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); }
+    @media (max-width: 768px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 480px) { .stat-grid { grid-template-columns: 1fr; } }
+    .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); }
+    @media (max-width: 768px) { .pricing-grid { grid-template-columns: 1fr; } }
+    .faq-border { border-bottom: 1px solid var(--border-matrix); }
+    .btn-primary { background: var(--primary); color: #000; font-weight: 700; border: 2px solid #000; box-shadow: 4px 4px 0 #000; }
+    .btn-primary:hover { background: #5cff3a; box-shadow: 2px 2px 0 #000; transform: translate(2px,2px); }
+    .btn-outline { border: 2px solid var(--primary); color: var(--primary); background: transparent; }
+    .btn-outline:hover { background: rgba(55,247,18,0.1); }
+    .card { background: var(--bg-panel); border: 1px solid var(--border-matrix); }
+    .feature-icon { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-matrix); }
+    .mono-tag { font-family: var(--jetbrains); font-size: 0.7rem; letter-spacing: 0.05em; }
+  </style>
+</head>
+<body class="grid-bg min-h-screen antialiased">
+
+  <!-- NAVIGATION -->
+  <nav class="border-b border-matrix bg-panel/95 sticky top-0 z-50 backdrop-blur-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-primary flex items-center justify-center text-black font-bold">m</div>
+        <span class="font-bold text-lg tracking-tight">mono<span class="text-primary">_</span></span>
+      </div>
+      <div class="hidden md:flex items-center gap-8 text-sm">
+        <a href="#" class="hover:text-primary transition-colors">features</a>
+        <a href="#" class="hover:text-primary transition-colors">process</a>
+        <a href="#" class="hover:text-primary transition-colors">pricing</a>
+        <a href="#" class="hover:text-primary transition-colors">faq</a>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="#" class="text-sm hover:text-primary hidden sm:block">log in</a>
+        <a href="#" class="btn-primary px-4 py-2 text-sm font-bold">join club</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <header class="relative border-b border-matrix">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+        <div>
+          <div class="inline-flex items-center gap-2 bg-elevated border border-matrix px-3 py-1 mb-6">
+            <i data-lucide="terminal" class="w-4 h-4 text-primary"></i>
+            <span class="text-xs mono-tag text-primary">v2.4.0 — now with agent toolkit</span>
+          </div>
+          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.1] tracking-tight">
+            build & scale<br>
+            <span class="text-primary">AI products</span><br>
+            with a club
+          </h1>
+          <p class="mt-6 text-lg text-muted max-w-md font-mono-jet">
+            Private community for builders, monetizers, and marketers shipping AI tools. Weekly builds, real feedback, direct revenue playbooks.
+          </p>
+          <div class="mt-8 flex flex-wrap gap-4">
+            <a href="#" class="btn-primary px-6 py-3 font-bold text-sm">apply for access</a>
+            <a href="#" class="btn-outline px-6 py-3 font-bold text-sm">see the stack</a>
+          </div>
+          <div class="mt-8 flex items-center gap-4 text-xs text-muted">
+            <div class="flex -space-x-2">
+              <div class="w-8 h-8 bg-secondary border-2 border-black"></div>
+              <div class="w-8 h-8 bg-warning border-2 border-black"></div>
+              <div class="w-8 h-8 bg-success border-2 border-black"></div>
+              <div class="w-8 h-8 bg-danger border-2 border-black"></div>
+            </div>
+            <span>trusted by 300+ indie hackers</span>
+          </div>
+        </div>
+        <!-- CSS shape hero visual -->
+        <div class="hidden lg:block relative h-80">
+          <div class="absolute top-0 right-0 w-64 h-64 bg-primary/20 border border-primary/40 clip-notch"></div>
+          <div class="absolute top-8 right-8 w-48 h-48 bg-secondary/20 border border-secondary/40 clip-notch"></div>
+          <div class="absolute bottom-0 left-10 w-56 h-40 bg-elevated border border-matrix p-4 shadow-mono">
+            <div class="flex items-center gap-2 mb-3">
+              <div class="w-2 h-2 bg-danger"></div>
+              <div class="w-2 h-2 bg-warning"></div>
+              <div class="w-2 h-2 bg-success"></div>
+            </div>
+            <div class="space-y-2">
+              <div class="h-2 bg-primary/60 w-3/4"></div>
+              <div class="h-2 bg-muted/20 w-full"></div>
+              <div class="h-2 bg-muted/20 w-5/6"></div>
+              <div class="h-2 bg-secondary/40 w-2/3"></div>
+            </div>
+          </div>
+          <div class="absolute bottom-4 right-4 w-32 h-32 bg-warning/20 border border-warning/40 clip-notch"></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- STATS -->
+  <section class="border-b border-matrix bg-panel">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div class="stat-grid gap-6">
+        <div class="card p-5 hover-lift">
+          <p class="text-3xl font-bold text-primary">$2.4M</p>
+          <p class="text-sm text-muted mt-1 mono-tag">revenue generated by members</p>
+        </div>
+        <div class="card p-5 hover-lift">
+          <p class="text-3xl font-bold text-secondary">1,200+</p>
+          <p class="text-sm text-muted mt-1 mono-tag">AI products launched</p>
+        </div>
+        <div class="card p-5 hover-lift">
+          <p class="text-3xl font-bold text-warning">48</p>
+          <p class="text-sm text-muted mt-1 mono-tag">countries represented</p>
+        </div>
+        <div class="card p-5 hover-lift">
+          <p class="text-3xl font-bold text-success">92%</p>
+          <p class="text-sm text-muted mt-1 mono-tag">members stay after first month</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="border-b border-matrix py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="mb-12">
+        <p class="text-primary mono-tag mb-2">// features</p>
+        <h2 class="text-3xl sm:text-4xl font-bold">everything you need to ship</h2>
+      </div>
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="card p-6 hover-lift">
+          <div class="feature-icon bg-primary/10 mb-4"><i data-lucide="cpu" class="w-5 h-5 text-primary"></i></div>
+          <h3 class="font-bold text-lg mb-2">agent templates</h3>
+          <p class="text-sm text-muted font-mono-jet">Production-ready agent scaffolds for customer support, research, and lead gen.</p>
+        </div>
+        <div class="card p-6 hover-lift">
+          <div class="feature-icon bg-secondary/10 mb-4"><i data-lucide="line-chart" class="w-5 h-5 text-secondary"></i></div>
+          <h3 class="font-bold text-lg mb-2">monetization playbooks</h3>
+          <p class="text-sm text-muted font-mono-jet">Step-by-step pricing, packaging, and upsell strategies from real launches.</p>
+        </div>
+        <div class="card p-6 hover-lift">
+          <div class="feature-icon bg-warning/10 mb-4"><i data-lucide="users" class="w-5 h-5 text-warning"></i></div>
+          <h3 class="font-bold text-lg mb-2">build sprints</h3>
+          <p class="text-sm text-muted font-mono-jet">Weekly 48h sprints with a dedicated pod of engineers and designers.</p>
+        </div>
+        <div class="card p-6 hover-lift">
+          <div class="feature-icon bg-success/10 mb-4"><i data-lucide="shield-check" class="w-5 h-5 text-success"></i></div>
+          <h3 class="font-bold text-lg mb-2">compliance kit</h3>
+          <p class="text-sm text-muted font-mono-jet">GDPR, SOC2, and AI safety checklists pre-built for your stack.</p>
+        </div>
+        <div class="card p-6 hover-lift">
+          <div class="feature-icon bg-danger/10 mb-4"><i data-lucide="radar" class="w-5 h-5 text-danger"></i></div>
+          <h3 class="font-bold text-lg mb-2">market signals</h3>
+          <p class="text-sm text-muted font-mono-jet">Daily digest of trending AI tools, gaps, and acquisition opportunities.</p>
+        </div>
+        <div class="card p-6 hover-lift">
+          <div class="feature-icon bg-primary/10 mb-4"><i data-lucide="workflow" class="w-5 h-5 text-primary"></i></div>
+          <h3 class="font-bold text-lg mb-2">automation hub</h3>
+          <p class="text-sm text-muted font-mono-jet">Connect your stack with 200+ integrations. No-code or API.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROCESS -->
+  <section class="border-b border-matrix bg-panel py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="mb-12">
+        <p class="text-secondary mono-tag mb-2">// process</p>
+        <h2 class="text-3xl sm:text-4xl font-bold">from idea to revenue in 6 weeks</h2>
+      </div>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="card p-6 border-l-4 border-l-primary">
+          <span class="text-4xl font-bold text-primary">01</span>
+          <h3 class="font-bold text-lg mt-3 mb-2">validate</h3>
+          <p class="text-sm text-muted font-mono-jet">Run your concept through our member feedback loop and market signal database.</p>
+        </div>
+        <div class="card p-6 border-l-4 border-l-secondary">
+          <span class="text-4xl font-bold text-secondary">02</span>
+          <h3 class="font-bold text-lg mt-3 mb-2">build</h3>
+          <p class="text-sm text-muted font-mono-jet">Ship with weekly sprints, pair with a technical co-founder from the club.</p>
+        </div>
+        <div class="card p-6 border-l-4 border-l-warning">
+          <span class="text-4xl font-bold text-warning">03</span>
+          <h3 class="font-bold text-lg mt-3 mb-2">launch & scale</h3>
+          <p class="text-sm text-muted font-mono-jet">Use our distribution network and monetization playbooks to hit first revenue.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BENEFITS -->
+  <section class="border-b border-matrix py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+        <div>
+          <p class="text-success mono-tag mb-2">// benefits</p>
+          <h2 class="text-3xl sm:text-4xl font-bold mb-6">why builders stay</h2>
+          <ul class="space-y-4">
+            <li class="flex gap-3"><i data-lucide="check-circle" class="w-5 h-5 text-success shrink-0"></i><span>Direct access to 300+ AI operators and engineers</span></li>
+            <li class="flex gap-3"><i data-lucide="check-circle" class="w-5 h-5 text-success shrink-0"></i><span>Weekly live sessions with founders who exited</span></li>
+            <li class="flex gap-3"><i data-lucide="check-circle" class="w-5 h-5 text-success shrink-0"></i><span>Shared deal flow: co-invest in AI startups</span></li>
+            <li class="flex gap-3"><i data-lucide="check-circle" class="w-5 h-5 text-success shrink-0"></i><span>Private job board for AI roles (no spam)</span></li>
+          </ul>
+        </div>
+        <!-- CSS shape visual -->
+        <div class="relative h-64 bg-elevated border border-matrix p-6 clip-notch">
+          <div class="absolute top-6 left-6 w-24 h-24 bg-primary/30 border border-primary/50"></div>
+          <div class="absolute top-16 left-16 w-24 h-24 bg-secondary/30 border border-secondary/50"></div>
+          <div class="absolute bottom-6 right-6 w-32 h-24 bg-warning/20 border border-warning/50"></div>
+          <div class="absolute bottom-10 right-16 w-16 h-16 bg-danger/20 border border-danger/50"></div>
+          <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-success/40 border border-success/60 rotate-45"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section class="border-b border-matrix bg-panel py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <p class="text-primary mono-tag mb-2">// testimonials</p>
+      <h2 class="text-3xl sm:text-4xl font-bold mb-12">members in production</h2>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="card p-6">
+          <div class="flex gap-1 text-warning mb-4">★★★★★</div>
+          <p class="text-sm font-mono-jet mb-6">"Went from zero to $8k MRR in 5 weeks. The monetization playbooks alone are worth 10x the membership."</p>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-secondary flex items-center justify-center font-bold text-black">AK</div>
+            <div><p class="font-bold text-sm">Aiko K.</p><p class="text-xs text-muted">founder, support agent AI</p></div>
+          </div>
+        </div>
+        <div class="card p-6">
+          <div class="flex gap-1 text-warning mb-4">★★★★★</div>
+          <p class="text-sm font-mono-jet mb-6">"The build sprints are intense but effective. Launched my product in 6 days, not 6 months."</p>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-warning flex items-center justify-center font-bold text-black">MR</div>
+            <div><p class="font-bold text-sm">Marcus R.</p><p class="text-xs text-muted">indie hacker, AI tools</p></div>
+          </div>
+        </div>
+        <div class="card p-6">
+          <div class="flex gap-1 text-warning mb-4">★★★★★</div>
+          <p class="text-sm font-mono-jet mb-6">"Finally a community that focuses on revenue, not just hype. My SaaS hit $20k ARR in 3 months."</p>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-success flex items-center justify-center font-bold text-black">SL</div>
+            <div><p class="font-bold text-sm">Sofia L.</p><p class="text-xs text-muted">CTO, devtool startup</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="border-b border-matrix py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <p class="text-warning mono-tag mb-2">// pricing</p>
+      <h2 class="text-3xl sm:text-4xl font-bold mb-12">choose your tier</h2>
+      <div class="pricing-grid gap-6">
+        <div class="card p-6 flex flex-col">
+          <h3 class="font-bold text-lg">builder</h3>
+          <p class="text-3xl font-bold mt-2">$49<span class="text-sm text-muted">/mo</span></p>
+          <ul class="mt-4 space-y-2 text-sm font-mono-jet flex-1">
+            <li>✓ community access</li>
+            <li>✓ weekly digest</li>
+            <li>✓ 2 build sprints</li>
+          </ul>
+          <a href="#" class="btn-outline mt-6 py-2 text-center font-bold text-sm">start here</a>
+        </div>
+        <div class="card p-6 flex flex-col border-2 border-primary shadow-mono">
+          <h3 class="font-bold text-lg text-primary">founder</h3>
+          <p class="text-3xl font-bold mt-2">$149<span class="text-sm text-muted">/mo</span></p>
+          <ul class="mt-4 space-y-2 text-sm font-mono-jet flex-1">
+            <li>✓ everything in builder</li>
+            <li>✓ unlimited sprints</li>
+            <li>✓ 1:1 founder coaching</li>
+            <li>✓ deal flow access</li>
+          </ul>
+          <a href="#" class="btn-primary mt-6 py-2 text-center font-bold text-sm">most popular</a>
+        </div>
+        <div class="card p-6 flex flex-col">
+          <h3 class="font-bold text-lg">studio</h3>
+          <p class="text-3xl font-bold mt-2">$499<span class="text-sm text-muted">/mo</span></p>
+          <ul class="mt-4 space-y-2 text-sm font-mono-jet flex-1">
+            <li>✓ everything in founder</li>
+            <li>✓ team seats (5)</li>
+            <li>✓ custom AI stack setup</li>
+            <li>✓ priority support</li>
+          </ul>
+          <a href="#" class="btn-outline mt-6 py-2 text-center font-bold text-sm">contact us</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="border-b border-matrix bg-panel py-20">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <p class="text-secondary mono-tag mb-2">// faq</p>
+      <h2 class="text-3xl sm:text-4xl font-bold mb-10">questions, answered</h2>
+      <div class="faq-border py-5">
+        <button class="flex justify-between items-center w-full text-left font-bold">What exactly is the mono club? <i data-lucide="chevron-down" class="w-5 h-5 text-primary"></i></button>
+        <p class="text-sm text-muted mt-2 font-mono-jet">A private membership for AI builders, marketers, and operators. We provide tools, community, and playbooks to ship and monetize AI products.</p>
+      </div>
+      <div class="faq-border py-5">
+        <button class="flex justify-between items-center w-full text-left font-bold">Do I need technical skills? <i data-lucide="chevron-down" class="w-5 h-5 text-primary"></i></button>
+        <p class="text-sm text-muted mt-2 font-mono-jet">No. Many members are non-technical. We have templates, no-code tools, and pair you with technical co-founders during sprints.</p>
+      </div>
+      <div class="faq-border py-5">
+        <button class="flex justify-between items-center w-full text-left font-bold">How fast will I see results? <i data-lucide="chevron-down" class="w-5 h-5 text-primary"></i></button>
+        <p class="text-sm text-muted mt-2 font-mono-jet">Most members launch within 2–4 weeks. Revenue timelines vary, but 70% see first paying customers within 60 days.</p>
+      </div>
+      <div class="faq-border py-5">
+        <button class="flex justify-between items-center w-full text-left font-bold">Can I cancel anytime? <i data-lucide="chevron-down" class="w-5 h-5 text-primary"></i></button>
+        <p class="text-sm text-muted mt-2 font-mono-jet">Yes, cancel in two clicks. No lock-in, no hard feelings. We're confident you'll stay once you see the value.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="bg-black border-t border-matrix">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div class="grid md:grid-cols-4 gap-8">
+        <div>
+          <div class="flex items-center gap-2 mb-4">
+            <div class="w-6 h-6 bg-primary flex items-center justify-center text-black font-bold text-xs">m</div>
+            <span class="font-bold">mono_design</span>
+          </div>
+          <p class="text-xs text-muted font-mono-jet">Private club for AI builders. © 2025</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-sm mb-3 text-primary">product</h4>
+          <ul class="space-y-2 text-sm text-muted">
+            <li><a href="#" class="hover:text-primary">features</a></li>
+            <li><a href="#" class="hover:text-primary">pricing</a></li>
+            <li><a href="#" class="hover:text-primary">changelog</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-bold text-sm mb-3 text-secondary">community</h4>
+          <ul class="space-y-2 text-sm text-muted">
+            <li><a href="#" class="hover:text-secondary">discord</a></li>
+            <li><a href="#" class="hover:text-secondary">twitter</a></li>
+            <li><a href="#" class="hover:text-secondary">github</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-bold text-sm mb-3 text-warning">legal</h4>
+          <ul class="space-y-2 text-sm text-muted">
+            <li><a href="#" class="hover:text-warning">privacy</a></li>
+            <li><a href="#" class="hover:text-warning">terms</a></li>
+            <li><a href="#" class="hover:text-warning">security</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="border-t border-matrix mt-10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <p class="text-xs text-muted font-mono-jet">© 2025 mono design. all systems operational</p>
+        <div class="flex gap-4">
+          <i data-lucide="github" class="w-4 h-4 text-muted hover:text-primary"></i>
+          <i data-lucide="twitter" class="w-4 h-4 text-muted hover:text-primary"></i>
+          <i data-lucide="linkedin" class="w-4 h-4 text-muted hover:text-primary"></i>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- lucide init -->
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

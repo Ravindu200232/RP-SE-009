@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sleek — Design System</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest">
+    </script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#8B5CF6',
+                        success: '#16A34A',
+                        warning: '#D97706',
+                        danger: '#DC2626',
+                        surface: '#FFFFFF',
+                        text: '#111827',
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            border-radius: 0 !important;
+        }
+        .grid-pattern {
+            background-image: linear-gradient(to right, rgba(17, 24, 39, 0.04) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(17, 24, 39, 0.04) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+        details[open] summary .faq-chevron {
+            transform: rotate(180deg);
+        }
+        .faq-chevron {
+            transition: transform 0.2s ease;
+        }
+        .focus-ring {
+            @apply focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2;
+        }
+        .btn-primary {
+            @apply inline-flex items-center justify-center gap-2 bg-primary text-white px-6 py-3 font-medium text-sm transition-colors duration-200 hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2;
+        }
+        .btn-secondary {
+            @apply inline-flex items-center justify-center gap-2 border border-gray-300 text-text px-6 py-3 font-medium text-sm transition-colors duration-200 hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2;
+        }
+        .nav-link {
+            @apply text-sm font-medium text-gray-600 hover:text-text transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-offset-2 px-3 py-2;
+        }
+    </style>
+</head>
+<body class="font-sans bg-white text-text antialiased">
+
+    <!-- ===== NAVIGATION ===== -->
+    <header class="sticky top-0 z-50 bg-white border-b border-gray-200">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+            <a href="#" class="flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
+                <div class="w-8 h-8 bg-primary flex items-center justify-center">
+                    <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <span class="text-lg font-bold tracking-tight">Sleek</span>
+            </a>
+            <div class="hidden md:flex items-center gap-1">
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#process" class="nav-link">Process</a>
+                <a href="#pricing" class="nav-link">Pricing</a>
+                <a href="#faq" class="nav-link">FAQ</a>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="#" class="hidden sm:inline-flex text-sm font-medium text-gray-600 hover:text-text transition-colors duration-200 px-3 py-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Sign in</a>
+                <a href="#" class="btn-primary">Get Started</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+
+        <!-- ===== HERO ===== -->
+        <section class="relative bg-gradient-to-br from-gray-50 via-white to-blue-50 py-20 md:py-32 overflow-hidden">
+            <div class="absolute inset-0 grid-pattern"></div>
+            <div class="absolute top-20 right-0 w-72 h-72 bg-primary/5"></div>
+            <div class="absolute bottom-0 left-1/3 w-96 h-96 bg-secondary/5"></div>
+            <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                    <div>
+                        <div class="inline-flex items-center gap-2 bg-primary/10 px-3 py-1 mb-6">
+                            <span class="w-2 h-2 bg-primary"></span>
+                            <span class="font-mono text-xs font-medium text-primary">v2.0 Released</span>
+                        </div>
+                        <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight mb-6">
+                            Design that<br>
+                            <span class="text-primary">speaks volumes.</span>
+                        </h1>
+                        <p class="text-lg text-gray-600 leading-relaxed mb-8 max-w-md">
+                            A minimalist design system for modern products. Clean lines, intentional color, and effortless clarity — built for teams that value precision.
+                        </p>
+                        <div class="flex flex-wrap gap-4">
+                            <a href="#" class="btn-primary">
+                                Get Started
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+                                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                                </svg>
+                            </a>
+                            <a href="#" class="btn-secondary">
+                                View Documentation
+                            </a>
+                        </div>
+                        <div class="flex items-center gap-4 mt-8">
+                            <div class="flex -space-x-2">
+                                <div class="w-8 h-8 bg-primary/20 border-2 border-white"></div>
+                                <div class="w-8 h-8 bg-secondary/20 border-2 border-white"></div>
+                                <div class="w-8 h-8 bg-success/20 border-2 border-white"></div>
+                                <div class="w-8 h-8 bg-warning/20 border-2 border-white"></div>
+                            </div>
+                            <span class="text-sm text-gray-500 font-mono">Trusted by 10k+ teams</span>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <div class="absolute -top-4 -right-4 w-24 h-24 bg-secondary/10"></div>
+                        <div class="absolute -bottom-4 -left-4 w-16 h-16 bg-primary/10"></div>
+                        <div class="relative bg-white shadow-xl border border-gray-200">
+                            <!-- Browser top bar -->
+                            <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-200">
+                                <div class="w-3 h-3 bg-gray-200"></div>
+                                <div class="w-3 h-3 bg-gray-200"></div>
+                                <div class="w-3 h-3 bg-gray-200"></div>
+                                <div class="ml-4 flex-1 h-5 bg-gray-100 flex items-center px-2">
+                                    <span class="font-mono text-[10px] text-gray-400">app.sleek.design</span>
+                                </div>
+                            </div>
+                            <div class="flex">
+                                <!-- Sidebar -->
+                                <div class="w-40 border-r border-gray-200 p-4 hidden sm:block">
+                                    <div class="w-8 h-8 bg-primary mb-6"></div>
+                                    <div class="space-y-3">
+                                        <div class="h-2 bg-gray-200 w-full"></div>
+                                        <div class="h-2 bg-gray-200 w-3/4"></div>
+                                        <div class="h-2 bg-gray-200 w-5/6"></div>
+                                        <div class="h-2 bg-gray-200 w-full"></div>
+                                        <div class="h-2 bg-gray-200 w-2/3"></div>
+                                    </div>
+                                    <div class="mt-8 pt-4 border-t border-gray-100">
+                                        <div class="h-2 bg-primary/30 w-4/5"></div>
+                                    </div>
+                                </div>
+                                <!-- Main content -->
+                                <div class="flex-1 p-6">
+                                    <div class="flex justify-between items-center mb-6">
+                                        <div class="w-24 h-3 bg-gray-800"></div>
+                                        <div class="w-14 h-6 bg-primary flex items-center justify-center">
+                                            <span class="text-white text-[8px] font-mono">New</span>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-3 mb-6">
+                                        <div class="h-14 bg-gray-100 border border-gray-200 p-2">
+                                            <div class="w-6 h-2 bg-primary/40 mb-1"></div>
+                                            <div class="w-8 h-3 bg-gray-800"></div>
+                                        </div>
+                                        <div class="h-14 bg-gray-100 border border-gray-200 p-2">
+                                            <div class="w-6 h-2 bg-success/40 mb-1"></div>
+                                            <div class="w-8 h-3 bg-gray-800"></div>
+                                        </div>
+                                        <div class="h-14 bg-gray-100 border border-gray-200 p-2">
+                                            <div class="w-6 h-2 bg-secondary/40 mb-1"></div>
+                                            <div class="w-8 h-3 bg-gray-800"></div>
+                                        </div>
+                                    </div>
+                                    <div class="h-24 bg-gray-50 border border-gray-200 p-4">
+                                        <div class="w-16 h-2 bg-gray-300 mb-2"></div>
+                                        <div class="w-full h-1.5 bg-gray-200 mb-1"></div>
+                                        <div class="w-5/6 h-1.5 bg-gray-200 mb-1"></div>
+                                        <div class="w-4/6 h-1.5 bg-gray-200"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== STATS ===== -->
+        <section class="bg-white border-b border-gray-200 py-16">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="text-center">
+                        <p class="text-4xl md:text-5xl font-bold tracking-tight text-text">99.9%</p>
+                        <p class="mt-2 font-mono text-xs text-gray-500 uppercase tracking-wider">Uptime</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-4xl md:text-5xl font-bold tracking-tight text-text">10K+</p>
+                        <p class="mt-2 font-mono text-xs text-gray-500 uppercase tracking-wider">Active Users</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-4xl md:text-5xl font-bold tracking-tight text-text">4.9/5</p>
+                        <p class="mt-2 font-mono text-xs text-gray-500 uppercase tracking-wider">Avg. Rating</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-4xl md:text-5xl font-bold tracking-tight text-text">50+</p>
+                        <p class="mt-2 font-mono text-xs text-gray-500 uppercase tracking-wider">Countries</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== FEATURES ===== -->
+        <section id="features" class="bg-white py-20 md:py-28">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="max-w-2xl mb-16">
+                    <div class="inline-flex items-center gap-2 bg-primary/10 px-3 py-1 mb-4">
+                        <span class="font-mono text-xs font-medium text-primary">Features</span>
+                    </div>
+                    <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-4">Everything you need, nothing you don't.</h2>
+                    <p class="text-gray-600 text-lg">Carefully crafted components and tokens that work together seamlessly.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Feature 1 -->
+                    <div class="border border-gray-200 p-8 hover:border-primary/50 hover:shadow-sm transition-all duration-200">
+                        <div class="w-10 h-10 bg-primary/10 flex items-center justify-center mb-6">
+                            <i data-lucide="palette" class="w-5 h-5 text-primary"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold mb-2">Semantic Tokens</h3>
+                        <p class="text-gray-600 text-sm leading-relaxed">Consistent color, spacing, and typography tokens that scale across every product.</p>
+                    </div>
+                    <!-- Feature 2 -->
+                    <div class="border border-gray-200 p-8 hover:border-primary/50 hover:shadow-sm transition-all duration-200">
+                        <div class="w-10 h-10 bg-success/10 flex items-center justify-center mb-6">
+                            <i data-lucide="accessibility" class="w-5 h-5 text-success"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold mb-2">Accessible Components</h3>
+                        <p class="text-gray-600 text-sm leading-relaxed">WCAG 2.2 AA compliant components with tested screen reader support.</p>
+                    </div>
+                    <!-- Feature 3 -->
+                    <div class="border border-gray-200 p-8 hover:border-primary/50 hover:shadow-sm transition-all duration-200">
+                        <div class="w-10 h-10 bg-secondary/10 flex items-center justify-center mb-6">
+                            <i data-lucide="keyboard" class="w-5 h-5 text-secondary"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold mb-2">Keyboard First</h3>
+                        <p class="text-gray-600 text-sm leading-relaxed">Full keyboard navigation with visible focus states for every interaction.</p>
+                    </div>
+                    <!-- Feature 4 -->
+                    <div class="border border-gray-200 p-8 hover:border-primary/50 hover:shadow-sm transition-all duration-200">
+                        <div class="w-10 h-10 bg-warning/10 flex items-center justify-center mb-6">
+                            <i data-lucide="layout" class="w-5 h-5 text-warning"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold mb-2">Responsive Grid</h3>
+                        <p class="text-gray-600 text-sm leading-relaxed">Fluid layouts that adapt from 400px mobile to 4K displays without breaking.</p>
+                    </div>
+                    <!-- Feature 5 -->
+                    <div class="border border-gray-200 p-8 hover:border-primary/50 hover:shadow-sm transition-all duration-200">
+                        <div class="w-10 h-10 bg-primary/10 flex items-center justify-center mb-6">
+                            <i data-lucide="moon" class="w-5 h-5 text-primary"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold mb-2">Dark Mode</h3>
+                        <p class="text-gray-600 text-sm leading-relaxed">Automatic dark mode support with carefully tuned contrast ratios.</p>
+                    </div>
+                    <!-- Feature 6 -->
+                    <div class="border border-gray-200 p-8 hover:border-primary/50 hover:shadow-sm transition-all duration-200">
+                        <div class="w-10 h-10 bg-secondary/10 flex items-center justify-center mb-6">
+                            <i data-lucide="code" class="w-5 h-5 text-secondary"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold mb-2">Developer Experience</h3>
+                        <p class="text-gray-600 text-sm leading-relaxed">TypeScript, Tailwind, and framework-agnostic components built for DX.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== PROCESS ===== -->
+        <section id="process" class="bg-gray-50 py-20 md:py-28">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="max-w-2xl mb-16">
+                    <div class="inline-flex items-center gap-2 bg-secondary/10 px-3 py-1 mb-4">
+                        <span class="font-mono text-xs font-medium text-secondary">Process</span>
+                    </div>
+                    <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-4">A proven workflow.</h2>
+                    <p class="text-gray-600 text-lg">Four steps from idea to production.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    <!-- Step 1 -->
+                    <div class="relative">
+                        <div class="w-12 h-12 bg-primary text-white flex items-center justify-center text-lg font-bold mb-6">
+                            01
+                        </div>
+                        <h3 class="text-lg font-semibold mb-2">Discover</h3>
+                        <p class="text-gray-600 text-sm leading-relaxed">Understand your users, goals, and constraints through research.</p>
+                    </div>
+                    <!-- Step 2 -->
+                    <div class="relative">
+                        <div class="w-12 h-12 bg-secondary text-white flex items-center justify-center text-lg font-bold mb-6">
+                            02
+                        </div>
+                        <h3 class="text-lg font-semibold mb-2">Design</h3>
+                        <p class="text-gray-600 text-sm leading-relaxed">Create wireframes and high-fidelity prototypes with Sleek tokens.</p>
+                    </div>
+                    <!-- Step 3 -->
+                    <div class="relative">
+                        <div class="w-12 h-12 bg-success text-white flex items-center justify-center text-lg font-bold mb-6">
+                            03
+                        </div>
+                        <h3 class="text-lg font-semibold mb-2">Develop</h3>
+                        <p class="text-gray-600 text-sm leading-relaxed">Build with reusable, accessible components and consistent code.</p>
+                    </div>
+                    <!-- Step 4 -->
+                    <div class="relative">
+                        <div class="w-12 h-12 bg-warning text-white flex items-center justify-center text-lg font-bold mb-6">
+                            04
+                        </div>
+                        <h3 class="text-lg font-semibold mb-2">Deploy</h3>
+                        <p class="text-gray-600 text-sm leading-relaxed">Ship, measure, and iterate with confidence and speed.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== BENEFITS ===== -->
+        <section class="bg-white py-20 md:py-28">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="max-w-2xl mb-16">
+                    <div class="inline-flex items-center gap-2 bg-success/10 px-3 py-1 mb-4">
+                        <span class="font-mono text-xs font-medium text-success">Benefits</span>
+                    </div>
+                    <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-4">Why teams choose Sleek.</h2>
+                </div>
+                <div class="space-y-16">
+                    <!-- Benefit 1 -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                        <div>
+                            <div class="w-12 h-12 bg-primary/10 flex items-center justify-center mb-6">
+                                <i data-lucide="zap" class="w-6 h-6 text-primary"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold mb-3">Faster Development</h3>
+                            <p class="text-gray-600 leading-relaxed">Teams using Sleek report shipping products 2x faster. Reusable components and consistent tokens eliminate design debt and reduce review cycles.</p>
+                        </div>
+                        <div class="border border-gray-200 p-8 bg-gray-50">
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="w-10 h-10 bg-primary/10 flex items-center justify-center">
+                                    <i data-lucide="trending-up" class="w-5 h-5 text-primary"></i>
+                                </div>
+                                <span class="font-mono text-sm text-gray-500">Before vs After</span>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-3">
+                                    <span class="font-mono text-xs text-gray-400 w-16">Before</span>
+                                    <div class="flex-1 h-4 bg-gray-200"></div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="font-mono text-xs text-gray-400 w-16">After</span>
+                                    <div class="flex-1 h-4 bg-primary/60"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Benefit 2 -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                        <div class="order-2 lg:order-1 border border-gray-200 p-8 bg-gray-50">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="w-3 h-3 bg-success"></div>
+                                <div class="w-3 h-3 bg-primary"></div>
+                                <div class="w-3 h-3 bg-secondary"></div>
+                                <div class="w-3 h-3 bg-warning"></div>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="h-2 bg-gray-200 w-full"></div>
+                                <div class="h-2 bg-gray-200 w-5/6"></div>
+                                <div class="h-2 bg-gray-200 w-4/6"></div>
+                            </div>
+                        </div>
+                        <div class="order-1 lg:order-2">
+                            <div class="w-12 h-12 bg-secondary/10 flex items-center justify-center mb-6">
+                                <i data-lucide="check-circle" class="w-6 h-6 text-secondary"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold mb-3">Consistent UX</h3>
+                            <p class="text-gray-600 leading-relaxed">One system, every screen. Sleek ensures your product looks and behaves identically across all touchpoints, eliminating fragmentation.</p>
+                        </div>
+                    </div>
+                    <!-- Benefit 3 -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                        <div>
+                            <div class="w-12 h-12 bg-success/10 flex items-center justify-center mb-6">
+                                <i data-lucide="shield" class="w-6 h-6 text-success"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold mb-3">Better Accessibility</h3>
+                            <p class="text-gray-600 leading-relaxed">Inclusive by default. Every component meets WCAG 2.2 AA standards, so your product works for everyone, regardless of ability.</p>
+                        </div>
+                        <div class="border border-gray-200 p-8 bg-gray-50">
+                            <div class="flex items-center gap-3 mb-4">
+                                <span class="font-mono text-xs text-gray-500">WCAG 2.2 AA</span>
+                                <div class="flex-1 h-2 bg-gray-200">
+                                    <div class="h-2 bg-success" style="width: 100%"></div>
+                                </div>
+                                <span class="font-mono text-xs font-bold text-success">100%</span>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                                    <span class="text-sm text-gray-600">Contrast ratios ≥ 4.5:1</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                                    <span class="text-sm text-gray-600">Keyboard navigable</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                                    <span class="text-sm text-gray-600">Screen reader tested</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== TESTIMONIALS ===== -->
+        <section class="bg-gray-50 py-20 md:py-28">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="max-w-2xl mb-16">
+                    <div class="inline-flex items-center gap-2 bg-primary/10 px-3 py-1 mb-4">
+                        <span class="font-mono text-xs font-medium text-primary">Testimonials</span>
+                    </div>
+                    <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-4">Loved by teams worldwide.</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Testimonial 1 -->
+                    <div class="bg-white border border-gray-200 p-8 flex flex-col">
+                        <div class="flex items-center gap-1 mb-6">
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        </div>
+                        <p class="text-gray-700 leading-relaxed flex-1">"Sleek transformed our design process. The semantic tokens and accessible components saved us months of work."</p>
+                        <div class="flex items-center gap-3 mt-6 pt-6 border-t border-gray-100">
+                            <div class="w-10 h-10 bg-primary/20 flex items-center justify-center">
+                                <span class="font-bold text-primary text-sm">SC</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold">Sarah Chen</p>
+                                <p class="text-xs text-gray-500 font-mono">Product Designer</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Testimonial 2 -->
+                    <div class="bg-white border border-gray-200 p-8 flex flex-col">
+                        <div class="flex items-center gap-1 mb-6">
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        </div>
+                        <p class="text-gray-700 leading-relaxed flex-1">"The cleanest design system we've used. The 8pt grid and sharp corners give our product a distinctive, modern feel."</p>
+                        <div class="flex items-center gap-3 mt-6 pt-6 border-t border-gray-100">
+                            <div class="w-10 h-10 bg-secondary/20 flex items-center justify-center">
+                                <span class="font-bold text-secondary text-sm">MJ</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold">Marcus Johnson</p>
+                                <p class="text-xs text-gray-500 font-mono">Frontend Engineer</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Testimonial 3 -->
+                    <div class="bg-white border border-gray-200 p-8 flex flex-col">
+                        <div class="flex items-center gap-1 mb-6">
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                        </div>
+                        <p class="text-gray-700 leading-relaxed flex-1">"Accessibility first, always. Sleek is the only system that passed our internal audit on the first try."</p>
+                        <div class="flex items-center gap-3 mt-6 pt-6 border-t border-gray-100">
+                            <div class="w-10 h-10 bg-success/20 flex items-center justify-center">
+                                <span class="font-bold text-success text-sm">ER</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold">Elena Rodriguez</p>
+                                <p class="text-xs text-gray-500 font-mono">UX Lead</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== PRICING ===== -->
+        <section id="pricing" class="bg-white py-20 md:py-28">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="max-w-2xl mb-16 text-center mx-auto">
+                    <div class="inline-flex items-center gap-2 bg-primary/10 px-3 py-1 mb-4">
+                        <span class="font-mono text-xs font-medium text-primary">Pricing</span>
+                    </div>
+                    <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-4">Simple, transparent pricing.</h2>
+                    <p class="text-gray-600 text-lg">Start free. Scale when you're ready.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                    <!-- Starter -->
+                    <div class="border border-gray-200 p-8 flex flex-col">
+                        <h3 class="text-lg font-semibold mb-1">Starter</h3>
+                        <p class="text-sm text-gray-500 mb-6">For individuals</p>
+                        <p class="text-4xl font-bold mb-6">$0<span class="text-base font-normal text-gray-400">/mo</span></p>
+                        <ul class="space-y-3 mb-8 flex-1">
+                            <li class="flex items-center gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                                <span class="text-sm text-gray-600">Up to 3 projects</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                                <span class="text-sm text-gray-600">Core components</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                                <span class="text-sm text-gray-600">Community support</span>
+                            </li>
+                        </ul>
+                        <a href="#" class="btn-secondary w-full justify-center">Start Free</a>
+                    </div>
+                    <!-- Pro -->
+                    <div class="bg-text text-white p-8 flex flex-col relative">
+                        <div class="absolute top-0 right-0 bg-primary text-white font-mono text-xs px-3 py-1">
+                            Popular
+                        </div>
+                        <h3 class="text-lg font-semibold mb-1">Pro</h3>
+                        <p class="text-sm text-gray-400 mb-6">For growing teams</p>
+                        <p class="text-4xl font-bold mb-6">$49<span class="text-base font-normal text-gray-400">/mo</span></p>
+                        <ul class="space-y-3 mb-8 flex-1">
+                            <li class="flex items-center gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                                <span class="text-sm text-gray-300">Unlimited projects</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                                <span class="text-sm text-gray-300">All components</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                                <span class="text-sm text-gray-300">Priority support</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                                <span class="text-sm text-gray-300">Design tokens export</span>
+                            </li>
+                        </ul>
+                        <a href="#" class="bg-primary text-white px-6 py-3 font-medium text-sm text-center hover:bg-blue-700 transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-text">
+                            Get Started
+                        </a>
+                    </div>
+                    <!-- Enterprise -->
+                    <div class="border border-gray-200 p-8 flex flex-col">
+                        <h3 class="text-lg font-semibold mb-1">Enterprise</h3>
+                        <p class="text-sm text-gray-500 mb-6">For large orgs</p>
+                        <p class="text-4xl font-bold mb-6">Custom</p>
+                        <ul class="space-y-3 mb-8 flex-1">
+                            <li class="flex items-center gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                                <span class="text-sm text-gray-600">Everything in Pro</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                                <span class="text-sm text-gray-600">SSO / SAML</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                                <span class="text-sm text-gray-600">Dedicated support</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <i data-lucide="check" class="w-4 h-4 text-success"></i>
+                                <span class="text-sm text-gray-600">Custom SLAs</span>
+                            </li>
+                        </ul>
+                        <a href="#" class="btn-secondary w-full justify-center">Contact Sales</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== FAQ ===== -->
+        <section id="faq" class="bg-gray-50 py-20 md:py-28">
+            <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <div class="inline-flex items-center gap-2 bg-primary/10 px-3 py-1 mb-4">
+                        <span class="font-mono text-xs font-medium text-primary">FAQ</span>
+                    </div>
+                    <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-4">Frequently asked questions.</h2>
+                </div>
+                <div class="space-y-4">
+                    <!-- FAQ 1 -->
+                    <details class="bg-white border border-gray-200">
+                        <summary class="flex items-center justify-between px-6 py-5 cursor-pointer list-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
+                            <span class="font-medium">What is Sleek?</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 faq-chevron"></i>
+                        </summary>
+                        <div class="px-6 pb-5">
+                            <p class="text-gray-600 text-sm leading-relaxed">Sleek is a minimalist design system for modern products. It provides semantic tokens, accessible components, and consistent patterns to help teams build better products faster.</p>
+                        </div>
+                    </details>
+                    <!-- FAQ 2 -->
+                    <details class="bg-white border border-gray-200">
+                        <summary class="flex items-center justify-between px-6 py-5 cursor-pointer list-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
+                            <span class="font-medium">How do I get started?</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 faq-chevron"></i>
+                        </summary>
+                        <div class="px-6 pb-5">
+                            <p class="text-gray-600 text-sm leading-relaxed">Install the package via npm, import the tokens and components, and you're ready to go. Check our documentation for detailed guides and examples.</p>
+                        </div>
+                    </details>
+                    <!-- FAQ 3 -->
+                    <details class="bg-white border border-gray-200">
+                        <summary class="flex items-center justify-between px-6 py-5 cursor-pointer list-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
+                            <span class="font-medium">Is Sleek accessible?</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 faq-chevron"></i>
+                        </summary>
+                        <div class="px-6 pb-5">
+                            <p class="text-gray-600 text-sm leading-relaxed">Yes. Every component is built to meet WCAG 2.2 AA standards, with keyboard-first interactions, visible focus states, and tested screen reader support.</p>
+                        </div>
+                    </details>
+                    <!-- FAQ 4 -->
+                    <details class="bg-white border border-gray-200">
+                        <summary class="flex items-center justify-between px-6 py-5 cursor-pointer list-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
+                            <span class="font-medium">Can I customize the tokens?</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 faq-chevron"></i>
+                        </summary>
+                        <div class="px-6 pb-5">
+                            <p class="text-gray-600 text-sm leading-relaxed">Absolutely. All tokens are exposed as CSS variables and can be overridden to match your brand. The 8pt spacing grid and semantic color tokens are designed to be extensible.</p>
+                        </div>
+                    </details>
+                    <!-- FAQ 5 -->
+                    <details class="bg-white border border-gray-200">
+                        <summary class="flex items-center justify-between px-6 py-5 cursor-pointer list-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
+                            <span class="font-medium">What support do you offer?</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 faq-chevron"></i>
+                        </summary>
+                        <div class="px-6 pb-5">
+                            <p class="text-gray-600 text-sm leading-relaxed">Starter plans include community support. Pro and Enterprise plans include priority support with guaranteed response times and dedicated Slack channels.</p>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="bg-text text-white py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-primary flex items-center justify-center">
+                            <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                                <path d="M2 17l10 5 10-5"/>
+                                <path d="M2 12l10 5 10-5"/>
+                            </svg>
+                        </div>
+                        <span class="text-lg font-bold">Sleek</span>
+                    </div>
+                    <p class="text-sm text-gray-400 leading-relaxed">A minimalist design system for modern products.</p>
+                </div>
+                <div>
+                    <h4 class="font-mono text-xs text-gray-400 uppercase tracking-wider mb-4">Product</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-gray-300 hover:text-white transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Features</a></li>
+                        <li><a href="#" class="text-sm text-gray-300 hover:text-white transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Pricing</a></li>
+                        <li><a href="#" class="text-sm text-gray-300 hover:text-white transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Changelog</a></li>
+                        <li><a href="#" class="text-sm text-gray-300 hover:text-white transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Documentation</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-mono text-xs text-gray-400 uppercase tracking-wider mb-4">Company</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-gray-300 hover:text-white transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">About</a></li>
+                        <li><a href="#" class="text-sm text-gray-300 hover:text-white transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Blog</a></li>
+                        <li><a href="#" class="text-sm text-gray-300 hover:text-white transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Careers</a></li>
+                        <li><a href="#" class="text-sm text-gray-300 hover:text-white transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-mono text-xs text-gray-400 uppercase tracking-wider mb-4">Resources</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-sm text-gray-300 hover:text-white transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Community</a></li>
+                        <li><a href="#" class="text-sm text-gray-300 hover:text-white transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Support</a></li>
+                        <li><a href="#" class="text-sm text-gray-300 hover:text-white transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Status</a></li>
+                        <li><a href="#" class="text-sm text-gray-300 hover:text-white transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">Terms</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="flex flex-col sm:flex-row items-center justify-between pt-8 border-t border-gray-800">
+                <p class="text-sm text-gray-400 font-mono">© 2024 Sleek Design System. All rights reserved.</p>
+                <div class="flex items-center gap-4 mt-4 sm:mt-0">
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none" aria-label="GitHub">
+                        <i data-lucide="github" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none" aria-label="Twitter">
+                        <i data-lucide="twitter" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none" aria-label="LinkedIn">
+                        <i data-lucide="linkedin" class="w-5 h-5"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

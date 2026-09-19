@@ -93,11 +93,8 @@ def is_self_explanatory(text: str, options=None) -> bool:
     if raw.casefold().strip(" .!?,") in _FILLER:
         return True
 
-    words = _WORD.findall(raw)
-    if not words:
-        return False
-
-    return len(words) >= 3
+    # Accept concise entity responses without forcing multi-word confirmation loops.
+    return any(ch.isalnum() for ch in raw)
 
 
 def needs_clarification(text: str, options=None) -> bool:

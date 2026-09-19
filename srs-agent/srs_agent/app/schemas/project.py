@@ -58,6 +58,7 @@ class Project(BaseModel):
 class CreateProjectRequest(BaseModel):
     idea: str = Field(..., min_length=1)
     language: Optional[str] = None
+    stack: str = "nextjs-mongo"
 
 
 class AddInputRequest(BaseModel):

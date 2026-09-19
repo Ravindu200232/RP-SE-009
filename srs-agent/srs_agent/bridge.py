@@ -37,7 +37,7 @@ DEFAULT_SRS_MODEL = "gemma4:31b-cloud"
 def agentforge_settings() -> dict:
     """Read ~/.agentforge/settings.json."""
     try:
-        from agents.core.ollama_client import load_settings
+        from builder_agent.llm import load_settings
         return load_settings()
     except Exception:
         try:
@@ -48,19 +48,20 @@ def agentforge_settings() -> dict:
 
 
 def srs_model() -> str:
-    """The model the SRS should use when the caller did not name one."""
+    """The model that writes the specification.
+
+    Uses the model selected in settings (agent_model), falling back to
+    DEFAULT_SRS_MODEL. SRS calls never think (the Ollama adapter sends think: False).
+    """
     settings = agentforge_settings()
-    for key in ("srs_model", "agent_model"):
-        value = str(settings.get(key, "")).strip()
-        if value:
-            return value
-    return DEFAULT_SRS_MODEL
+    model = str(settings.get("agent_model") or "").strip()
+    return model or DEFAULT_SRS_MODEL
 
 
 def route(model: str) -> tuple[str, dict]:
     """(base_url, headers) for this model, using AgentForge's routing."""
     try:
-        from agents.core.ollama_client import _default_client
+        from builder_agent.llm import _default_client
         return _default_client().route(model)
     except Exception:
         return "http://localhost:11434", {"Content-Type": "application/json"}
@@ -69,7 +70,7 @@ def route(model: str) -> tuple[str, dict]:
 def num_ctx(model: str) -> int:
     """Context window to request — measured per model, not a fixed 8192."""
     try:
-        from agents.core.ollama_client import max_context
+        from builder_agent.llm import max_context
         return int(max_context(model))
     except Exception:
         return 8192
@@ -81,8 +82,8 @@ SRS_DB = "agentforge_srs"
 def mongo_uri() -> str:
     """AgentForge's mongod, on whatever port it settled on."""
     try:
-        from agents.data.mongo_lifecycle import MONGO
-        from agents.data.mongo_common import get_uri_override
+        from server_modules.services.mongo import MONGO
+        from server_modules.services.mongo_common import get_uri_override
         override = get_uri_override()
         if override:
             return override

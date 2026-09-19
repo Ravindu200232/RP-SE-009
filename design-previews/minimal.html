@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal — Design System Landing Page</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Open+Sans:wght@300;400;500;600;700;800&family=Inconsolata:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Design System Tokens */
+        :root {
+            --color-primary: #0C0C09;
+            --color-secondary: #312C85;
+            --color-success: #16A34A;
+            --color-warning: #D97706;
+            --color-danger: #DC2626;
+            --color-surface: #F4F4F1;
+            --color-text: #0C0C09;
+            --font-primary: 'Open Sans', sans-serif;
+            --font-display: 'Inter', sans-serif;
+            --font-mono: 'Inconsolata', monospace;
+        }
+
+        body {
+            font-family: var(--font-primary);
+            color: var(--color-text);
+            background-color: var(--color-surface);
+        }
+
+        .font-display {
+            font-family: var(--font-display);
+        }
+
+        .font-mono {
+            font-family: var(--font-mono);
+        }
+
+        /* Sharp corners everywhere */
+        * {
+            border-radius: 0 !important;
+        }
+
+        /* Focus states */
+        a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible {
+            outline: 2px solid var(--color-secondary);
+            outline-offset: 2px;
+        }
+
+        /* Smooth scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Custom utilities */
+        .bg-surface { background-color: var(--color-surface); }
+        .bg-primary { background-color: var(--color-primary); }
+        .bg-secondary { background-color: var(--color-secondary); }
+        .text-primary { color: var(--color-primary); }
+        .text-secondary { color: var(--color-secondary); }
+        .text-on-dark { color: var(--color-surface); }
+        .border-primary { border-color: var(--color-primary); }
+        .border-secondary { border-color: var(--color-secondary); }
+    </style>
+</head>
+<body class="bg-surface text-primary antialiased">
+
+    <!-- Navigation -->
+    <nav class="bg-primary text-on-dark sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <a href="#" class="flex items-center gap-2 font-display font-bold text-xl">
+                    <i data-lucide="hexagon" class="w-6 h-6 text-on-dark"></i>
+                    <span>MINIMAL</span>
+                </a>
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex items-center gap-8 font-display text-sm font-medium">
+                    <a href="#features" class="hover:opacity-80 transition-opacity">Features</a>
+                    <a href="#process" class="hover:opacity-80 transition-opacity">Process</a>
+                    <a href="#testimonials" class="hover:opacity-80 transition-opacity">Testimonials</a>
+                    <a href="#pricing" class="hover:opacity-80 transition-opacity">Pricing</a>
+                    <a href="#faq" class="hover:opacity-80 transition-opacity">FAQ</a>
+                </div>
+                <!-- CTA Button -->
+                <a href="#pricing" class="bg-surface text-primary px-4 py-2 font-display text-sm font-semibold hover:bg-opacity-90 transition-colors">
+                    Get Started
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="bg-primary text-on-dark">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <p class="font-mono text-sm text-on-dark opacity-70 mb-4">// DESIGN SYSTEM IN ACTION</p>
+                    <h1 class="font-display font-extrabold text-4xl sm:text-5xl lg:text-6xl leading-tight mb-6">
+                        Clean. Bold.<br>Uncompromising.
+                    </h1>
+                    <p class="text-lg sm:text-xl opacity-90 mb-8 max-w-lg">
+                        A design system built on whitespace, clarity, and precision. Every element serves a purpose. Nothing more, nothing less.
+                    </p>
+                    <div class="flex flex-wrap gap-4">
+                        <a href="#pricing" class="bg-surface text-primary px-6 py-3 font-display font-semibold text-sm hover:bg-opacity-90 transition-colors">
+                            Start Building
+                        </a>
+                        <a href="#features" class="border border-on-dark px-6 py-3 font-display font-semibold text-sm hover:bg-on-dark hover:bg-opacity-10 transition-colors">
+                            Explore Features
+                        </a>
+                    </div>
+                </div>
+                <!-- Abstract SVG Shape -->
+                <div class="hidden lg:block">
+                    <svg viewBox="0 0 400 400" class="w-full h-auto" aria-hidden="true">
+                        <rect x="50" y="50" width="300" height="300" fill="none" stroke="var(--color-surface)" stroke-width="2" opacity="0.3"/>
+                        <rect x="100" y="100" width="200" height="200" fill="var(--color-secondary)" opacity="0.8"/>
+                        <rect x="150" y="150" width="100" height="100" fill="var(--color-surface)"/>
+                        <circle cx="200" cy="200" r="25" fill="var(--color-primary)"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="bg-surface">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <p class="font-display font-extrabold text-4xl sm:text-5xl text-secondary">99.9%</p>
+                    <p class="font-mono text-sm mt-2 opacity-70">Uptime</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-display font-extrabold text-4xl sm:text-5xl text-secondary">50K+</p>
+                    <p class="font-mono text-sm mt-2 opacity-70">Users</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-display font-extrabold text-4xl sm:text-5xl text-secondary">120+</p>
+                    <p class="font-mono text-sm mt-2 opacity-70">Countries</p>
+                </div>
+                <div class="text-center">
+                    <p class="font-display font-extrabold text-4xl sm:text-5xl text-secondary">4.9/5</p>
+                    <p class="font-mono text-sm mt-2 opacity-70">Rating</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="bg-primary text-on-dark">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            <div class="text-center mb-16">
+                <p class="font-mono text-sm opacity-70 mb-2">// FEATURES</p>
+                <h2 class="font-display font-bold text-3xl sm:text-4xl">Everything you need. Nothing you don't.</h2>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="border border-on-dark p-6 hover:bg-on-dark hover:bg-opacity-10 transition-colors">
+                    <i data-lucide="zap" class="w-8 h-8 mb-4 text-on-dark"></i>
+                    <h3 class="font-display font-semibold text-xl mb-2">Lightning Fast</h3>
+                    <p class="opacity-80">Optimized for speed. Load times under 100ms, every time.</p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="border border-on-dark p-6 hover:bg-on-dark hover:bg-opacity-10 transition-colors">
+                    <i data-lucide="shield" class="w-8 h-8 mb-4 text-on-dark"></i>
+                    <h3 class="font-display font-semibold text-xl mb-2">Secure by Default</h3>
+                    <p class="opacity-80">Enterprise-grade security built into every layer.</p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="border border-on-dark p-6 hover:bg-on-dark hover:bg-opacity-10 transition-colors">
+                    <i data-lucide="layout" class="w-8 h-8 mb-4 text-on-dark"></i>
+                    <h3 class="font-display font-semibold text-xl mb-2">Flexible Layouts</h3>
+                    <p class="opacity-80">Adapts to any screen size without breaking a sweat.</p>
+                </div>
+                <!-- Feature 4 -->
+                <div class="border border-on-dark p-6 hover:bg-on-dark hover:bg-opacity-10 transition-colors">
+                    <i data-lucide="code" class="w-8 h-8 mb-4 text-on-dark"></i>
+                    <h3 class="font-display font-semibold text-xl mb-2">Clean Code</h3>
+                    <p class="opacity-80">Well-documented, maintainable, and easy to extend.</p>
+                </div>
+                <!-- Feature 5 -->
+                <div class="border border-on-dark p-6 hover:bg-on-dark hover:bg-opacity-10 transition-colors">
+                    <i data-lucide="users" class="w-8 h-8 mb-4 text-on-dark"></i>
+                    <h3 class="font-display font-semibold text-xl mb-2">Team Ready</h3>
+                    <p class="opacity-80">Collaboration tools that keep your team in sync.</p>
+                </div>
+                <!-- Feature 6 -->
+                <div class="border border-on-dark p-6 hover:bg-on-dark hover:bg-opacity-10 transition-colors">
+                    <i data-lucide="trending-up" class="w-8 h-8 mb-4 text-on-dark"></i>
+                    <h3 class="font-display font-semibold text-xl mb-2">Analytics</h3>
+                    <p class="opacity-80">Real-time insights to drive better decisions.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Process Section -->
+    <section id="process" class="bg-surface">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            <div class="text-center mb-16">
+                <p class="font-mono text-sm opacity-70 mb-2">// PROCESS</p>
+                <h2 class="font-display font-bold text-3xl sm:text-4xl">How it works</h2>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Step 1 -->
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-secondary text-on-dark flex items-center justify-center mx-auto mb-4 font-display font-bold text-2xl">1</div>
+                    <h3 class="font-display font-semibold text-xl mb-2">Discover</h3>
+                    <p class="opacity-70">We understand your goals and requirements.</p>
+                </div>
+                <!-- Step 2 -->
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-secondary text-on-dark flex items-center justify-center mx-auto mb-4 font-display font-bold text-2xl">2</div>
+                    <h3 class="font-display font-semibold text-xl mb-2">Design</h3>
+                    <p class="opacity-70">We craft solutions with precision and clarity.</p>
+                </div>
+                <!-- Step 3 -->
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-secondary text-on-dark flex items-center justify-center mx-auto mb-4 font-display font-bold text-2xl">3</div>
+                    <h3 class="font-display font-semibold text-xl mb-2">Deliver</h3>
+                    <p class="opacity-70">We launch and support your success.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section class="bg-secondary text-on-dark">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <p class="font-mono text-sm opacity-70 mb-2">// BENEFITS</p>
+                    <h2 class="font-display font-bold text-3xl sm:text-4xl mb-6">Why choose Minimal?</h2>
+                    <p class="text-lg opacity-90 mb-8">We strip away the noise and focus on what matters: your results.</p>
+                    <ul class="space-y-4">
+                        <li class="flex items-start gap-3">
+                            <i data-lucide="check-circle" class="w-6 h-6 mt-1 flex-shrink-0"></i>
+                            <span>Reduce complexity by 60%</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i data-lucide="check-circle" class="w-6 h-6 mt-1 flex-shrink-0"></i>
+                            <span>Increase conversion rates by 2x</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i data-lucide="check-circle" class="w-6 h-6 mt-1 flex-shrink-0"></i>
+                            <span>Faster time-to-market</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i data-lucide="check-circle" class="w-6 h-6 mt-1 flex-shrink-0"></i>
+                            <span>Better user satisfaction scores</span>
+                        </li>
+                    </ul>
+                </div>
+                <!-- Abstract SVG -->
+                <div class="hidden lg:block">
+                    <svg viewBox="0 0 400 300" class="w-full h-auto" aria-hidden="true">
+                        <rect x="0" y="0" width="400" height="300" fill="var(--color-surface)" opacity="0.1"/>
+                        <path d="M50 250 L150 150 L250 200 L350 100" fill="none" stroke="var(--color-surface)" stroke-width="3"/>
+                        <circle cx="50" cy="250" r="8" fill="var(--color-surface)"/>
+                        <circle cx="150" cy="150" r="8" fill="var(--color-surface)"/>
+                        <circle cx="250" cy="200" r="8" fill="var(--color-surface)"/>
+                        <circle cx="350" cy="100" r="8" fill="var(--color-surface)"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section id="testimonials" class="bg-surface">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            <div class="text-center mb-16">
+                <p class="font-mono text-sm opacity-70 mb-2">// TESTIMONIALS</p>
+                <h2 class="font-display font-bold text-3xl sm:text-4xl">Loved by teams worldwide</h2>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Testimonial 1 -->
+                <div class="border border-primary p-6">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-5 h-5 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current text-warning"></i>
+                    </div>
+                    <p class="mb-4">"The cleanest design system we've ever used. It just works."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-secondary text-on-dark flex items-center justify-center font-display font-bold">JD</div>
+                        <div>
+                            <p class="font-display font-semibold">Jane Doe</p>
+                            <p class="font-mono text-sm opacity-70">CTO, TechCorp</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 2 -->
+                <div class="border border-primary p-6">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-5 h-5 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current text-warning"></i>
+                    </div>
+                    <p class="mb-4">"Incredible attention to detail. Our users noticed immediately."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-secondary text-on-dark flex items-center justify-center font-display font-bold">JS</div>
+                        <div>
+                            <p class="font-display font-semibold">John Smith</p>
+                            <p class="font-mono text-sm opacity-70">Product Lead, StartupX</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 3 -->
+                <div class="border border-primary p-6">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-5 h-5 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current text-warning"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current text-warning"></i>
+                    </div>
+                    <p class="mb-4">"We doubled our conversion rate within a month of switching."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-secondary text-on-dark flex items-center justify-center font-display font-bold">AR</div>
+                        <div>
+                            <p class="font-display font-semibold">Alice Rodriguez</p>
+                            <p class="font-mono text-sm opacity-70">Marketing Director, GrowthCo</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="bg-primary text-on-dark">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            <div class="text-center mb-16">
+                <p class="font-mono text-sm opacity-70 mb-2">// PRICING</p>
+                <h2 class="font-display font-bold text-3xl sm:text-4xl">Simple, transparent pricing</h2>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Basic Plan -->
+                <div class="border border-on-dark p-8 text-center">
+                    <h3 class="font-display font-semibold text-xl mb-2">Basic</h3>
+                    <p class="font-display font-extrabold text-4xl mb-4">$0<span class="text-lg font-normal opacity-70">/mo</span></p>
+                    <ul class="space-y-2 mb-8 opacity-80">
+                        <li>Up to 3 projects</li>
+                        <li>Basic analytics</li>
+                        <li>Community support</li>
+                    </ul>
+                    <a href="#" class="block bg-surface text-primary px-6 py-3 font-display font-semibold text-sm hover:bg-opacity-90 transition-colors">Get Started</a>
+                </div>
+                <!-- Pro Plan (Highlighted) -->
+                <div class="bg-secondary p-8 text-center relative">
+                    <p class="font-mono text-sm mb-2 text-on-dark opacity-80">// MOST POPULAR</p>
+                    <h3 class="font-display font-semibold text-xl mb-2">Pro</h3>
+                    <p class="font-display font-extrabold text-4xl mb-4">$29<span class="text-lg font-normal opacity-70">/mo</span></p>
+                    <ul class="space-y-2 mb-8 opacity-90">
+                        <li>Unlimited projects</li>
+                        <li>Advanced analytics</li>
+                        <li>Priority support</li>
+                        <li>Custom integrations</li>
+                    </ul>
+                    <a href="#" class="block bg-surface text-primary px-6 py-3 font-display font-semibold text-sm hover:bg-opacity-90 transition-colors">Start Pro</a>
+                </div>
+                <!-- Enterprise Plan -->
+                <div class="border border-on-dark p-8 text-center">
+                    <h3 class="font-display font-semibold text-xl mb-2">Enterprise</h3>
+                    <p class="font-display font-extrabold text-4xl mb-4">Custom</p>
+                    <ul class="space-y-2 mb-8 opacity-80">
+                        <li>Dedicated support</li>
+                        <li>SLA guarantees</li>
+                        <li>Custom deployment</li>
+                        <li>Security review</li>
+                    </ul>
+                    <a href="#" class="block bg-surface text-primary px-6 py-3 font-display font-semibold text-sm hover:bg-opacity-90 transition-colors">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="bg-surface">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            <div class="text-center mb-16">
+                <p class="font-mono text-sm opacity-70 mb-2">// FAQ</p>
+                <h2 class="font-display font-bold text-3xl sm:text-4xl">Frequently asked questions</h2>
+            </div>
+            <div class="space-y-4">
+                <!-- FAQ Item 1 -->
+                <details class="border border-primary">
+                    <summary class="font-display font-semibold p-4 cursor-pointer hover:bg-primary hover:text-on-dark transition-colors">What is Minimal?</summary>
+                    <p class="p-4 border-t border-primary">Minimal is a design system that focuses on clarity, simplicity, and performance. It provides everything you need to build beautiful, functional interfaces.</p>
+                </details>
+                <!-- FAQ Item 2 -->
+                <details class="border border-primary">
+                    <summary class="font-display font-semibold p-4 cursor-pointer hover:bg-primary hover:text-on-dark transition-colors">How do I get started?</summary>
+                    <p class="p-4 border-t border-primary">Simply sign up for a free account and start building. No credit card required. Our documentation will guide you through the process.</p>
+                </details>
+                <!-- FAQ Item 3 -->
+                <details class="border border-primary">
+                    <summary class="font-display font-semibold p-4 cursor-pointer hover:bg-primary hover:text-on-dark transition-colors">Can I upgrade my plan later?</summary>
+                    <p class="p-4 border-t border-primary">Absolutely! You can upgrade or downgrade your plan at any time. Changes take effect immediately.</p>
+                </details>
+                <!-- FAQ Item 4 -->
+                <details class="border border-primary">
+                    <summary class="font-display font-semibold p-4 cursor-pointer hover:bg-primary hover:text-on-dark transition-colors">Do you offer discounts for non-profits?</summary>
+                    <p class="p-4 border-t border-primary">Yes, we offer a 50% discount for registered non-profit organizations. Contact our support team to apply.</p>
+                </details>
+                <!-- FAQ Item 5 -->
+                <details class="border border-primary">
+                    <summary class="font-display font-semibold p-4 cursor-pointer hover:bg-primary hover:text-on-dark transition-colors">What kind of support do you provide?</summary>
+                    <p class="p-4 border-t border-primary">All plans include access to our documentation and community forum. Pro and Enterprise plans include priority email support.</p>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-primary text-on-dark">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid md:grid-cols-4 gap-8">
+                <!-- Brand -->
+                <div>
+                    <div class="flex items-center gap-2 font-display font-bold text-xl mb-4">
+                        <i data-lucide="hexagon" class="w-6 h-6"></i>
+                        <span>MINIMAL</span>
+                    </div>
+                    <p class="opacity-70 text-sm">Clean design. Clear thinking. Better results.</p>
+                </div>
+                <!-- Product Links -->
+                <div>
+                    <h4 class="font-display font-semibold mb-4">Product</h4>
+                    <ul class="space-y-2 opacity-70 text-sm">
+                        <li><a href="#features" class="hover:opacity-80 transition-opacity">Features</a></li>
+                        <li><a href="#pricing" class="hover:opacity-80 transition-opacity">Pricing</a></li>
+                        <li><a href="#" class="hover:opacity-80 transition-opacity">Changelog</a></li>
+                        <li><a href="#" class="hover:opacity-80 transition-opacity">Roadmap</a></li>
+                    </ul>
+                </div>
+                <!-- Company Links -->
+                <div>
+                    <h4 class="font-display font-semibold mb-4">Company</h4>
+                    <ul class="space-y-2 opacity-70 text-sm">
+                        <li><a href="#" class="hover:opacity-80 transition-opacity">About</a></li>
+                        <li><a href="#" class="hover:opacity-80 transition-opacity">Blog</a></li>
+                        <li><a href="#" class="hover:opacity-80 transition-opacity">Careers</a></li>
+                        <li><a href="#" class="hover:opacity-80 transition-opacity">Contact</a></li>
+                    </ul>
+                </div>
+                <!-- Legal Links -->
+                <div>
+                    <h4 class="font-display font-semibold mb-4">Legal</h4>
+                    <ul class="space-y-2 opacity-70 text-sm">
+                        <li><a href="#" class="hover:opacity-80 transition-opacity">Privacy</a></li>
+                        <li><a href="#" class="hover:opacity-80 transition-opacity">Terms</a></li>
+                        <li><a href="#" class="hover:opacity-80 transition-opacity">Security</a></li>
+                        <li><a href="#" class="hover:opacity-80 transition-opacity">Cookies</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-on-dark border-opacity-20 mt-8 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <p class="font-mono text-sm opacity-70">© 2024 Minimal Design System. All rights reserved.</p>
+                <div class="flex gap-4">
+                    <a href="#" aria-label="Twitter" class="hover:opacity-80 transition-opacity"><i data-lucide="twitter" class="w-5 h-5"></i></a>
+                    <a href="#" aria-label="GitHub" class="hover:opacity-80 transition-opacity"><i data-lucide="github" class="w-5 h-5"></i></a>
+                    <a href="#" aria-label="LinkedIn" class="hover:opacity-80 transition-opacity"><i data-lucide="linkedin" class="w-5 h-5"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Initialize Lucide Icons -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

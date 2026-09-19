@@ -1,27 +1,22 @@
 'use client'
 
+/** Live application preview pane with element picking and pencil annotation tools. */
+
+import { useAgentPreview } from '@/lib/agent-preview'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Monitor, Tablet, Smartphone, MousePointerClick, Pencil, Undo2, RotateCw,
-  Image as ImageIcon, ChevronLeft, ChevronRight, Upload, Loader2, Globe,
+  ChevronLeft, ChevronRight, Globe, Eraser, Rocket, Layers, Loader2,
 } from 'lucide-react'
 import { useStore } from '@/lib/store'
-import { send } from '@/lib/ws'
-import { api } from '@/lib/api'
-import {
-  attachPicker, frameDoc, elementInfo, pickedFrom, pickLabel,
-} from '@/lib/picker'
-import { consoleReport, forgetConsole, watchFrame } from '@/lib/console-log'
-import { Button, Input, Tip } from './ui'
-import { useEditAttachments } from '@/lib/use-edit-attachments'
-import EditAttach from './EditAttach'
-import BuildOverlay from './BuildOverlay'
-import TunePrompt from './TunePrompt'
+import { api, API } from '@/lib/api'
+import { attachPicker, pickedFrom, pickLabel } from '@/lib/picker'
+import { previewHref, needsAddress } from '@/lib/preview'
+import { watchFrame, recordConsole } from '@/lib/console-log'
+import { Tip } from './ui'
+import AgentBrowser from './AgentBrowser'
 import LiveE2EOverlay from './LiveE2EOverlay'
-import PreviewConsoleDrawer from './PreviewConsoleDrawer'
 import { cn } from '@/lib/utils'
-
-const ACCEPT_PICTURE = '.png,.jpg,.jpeg,.webp,.gif,.bmp,image/*'
 
 const VIEWPORTS = [
   { id: 'desktop', label: 'Desktop', w: null, Icon: Monitor },
@@ -29,52 +24,128 @@ const VIEWPORTS = [
   { id: 'mobile', label: 'Mobile', w: 390, Icon: Smartphone },
 ]
 
+// Fewer points than this is a stray click, not a drawing.
+const MIN_INK = 3
+
+let seq = 0
+
 function currentPath(frame) {
+  if (frame?.dataset?.remote === 'true') return frame.dataset.route || '/'
   try {
     const loc = frame?.contentWindow?.location
-    if (!loc) return '/'
+    if (!loc || !loc.pathname?.startsWith('/') || !/^https?:$/.test(loc.protocol)) return '/'
     return `${loc.pathname || '/'}${loc.search || ''}${loc.hash || ''}`
   } catch {
     return '/'
   }
 }
 
-export default function PreviewPane({ hidden }) {
+export default function PreviewPane({ hidden, onBuild }) {
   const frameRef = useRef(null)
   const canvasRef = useRef(null)
   const detachRef = useRef(null)
   const strokesRef = useRef([])
   const drawingRef = useRef(false)
-  const swapRef = useRef(null)
   const lastPathRef = useRef('/')
-  const files = useEditAttachments()
-  const [reading, setReading] = useState(false)
 
   const project = useStore(s => s.project)
-  const busy = useStore(s => s.busy)
-  const addLog = useStore(s => s.addLog)
-  const setBusy = useStore(s => s.setBusy)
-  const setPreviewRoute = useStore(s => s.setPreviewRoute)
-  const models = useStore(s => s.models)
-  const think = useStore(s => s.think)
-  const undo = useStore(s => s.undo)
-  const setUndo = useStore(s => s.setUndo)
-  const tests = useStore(s => s.tests)
-  const e2eLive = useStore(s => s.e2eLive)
+  const browserFrame = useStore(s => s.browserFrame)
+  const { files, busy, addLog, setPreviewRoute, undo, setUndo, tests, e2eLive,
+    drawing, setDrawing, selection, addSelection, patchSelection, clearSelection } = useAgentPreview(project, 'developer')
+  const isE2EActive = Boolean(tests?.running || e2eLive || browserFrame?.frame)
+  const runtime = useStore(s => s.runtimes[project])
+  const hasBuiltApp = Object.keys(files || {}).some(f =>
+    f.startsWith('app/') || f.startsWith('src/') || f.startsWith('pages/') || f.startsWith('packages/') || f.startsWith('client/') || f === 'package.json'
+  )
+  const isAppBuilt = hasBuiltApp || runtime?.status === 'running' || runtime?.status === 'starting'
 
   const [vp, setVp] = useState('desktop')
   const [pickOn, setPickOn] = useState(false)
   const [pencilOn, setPencilOn] = useState(false)
-  const [imageOn, setImageOn] = useState(false)
-  const [picked, setPicked] = useState(null)
-  const [prompt, setPrompt] = useState('')
-  const [tuning, setTuning] = useState(false)
-  const [ask, setAsk] = useState(null)
   const [path, setPath] = useState('/')
+  const [iframeLoading, setIframeLoading] = useState(true)
   const trail = useRef(['/'])
   const at = useRef(0)
   const jumping = useRef(false)
   const [nav, setNav] = useState({ back: false, forward: false })
+
+  // The app's own address as seen from this browser: its local one here, the
+  // published one from a phone or another computer (lib/preview.js).
+  const previewUrl = previewHref(runtime)
+  const [publishing, setPublishing] = useState('')
+  const asked = useRef('')
+
+  const bridgeSend = useCallback((kind, data = {}) => {
+    if (!previewUrl || !runtime?.runtimeId) return
+    frameRef.current?.contentWindow?.postMessage({ type: 'agentforge:command', kind,
+      project, runtimeId: runtime.runtimeId, ...data }, new URL(previewUrl).origin)
+  }, [project, runtime?.runtimeId, previewUrl])
+
+  const markActivity = useCallback(() => {
+    if (runtime?.runtimeId) api.previewActivity(project, runtime.runtimeId).catch(() => {})
+  }, [project, runtime?.runtimeId])
+
+  const navigate = useCallback((route = '/') => {
+    const f = frameRef.current
+    if (!f || !previewUrl) return
+    f.dataset.remote = 'true'
+    f.dataset.route = route
+    f.dataset.scrollX = '0'; f.dataset.scrollY = '0'
+    const targetUrl = new URL(route, previewUrl).href
+    if (f.src !== targetUrl) {
+      setIframeLoading(true)
+      f.src = targetUrl
+    }
+  }, [previewUrl])
+
+  // Resolve network-accessible preview URL for cross-device testing.
+  useEffect(() => {
+    if (!project || !needsAddress(runtime) || asked.current === project) return
+    asked.current = project
+    setPublishing('working')
+    api.previewLink(project)
+      .then(state => { useStore.getState().setRuntime(state); setPublishing('') })
+      .catch(error => {
+        setPublishing(error.message)
+        addLog('WARN', `This app has no public address — ${error.message}`)
+      })
+  }, [project, runtime?.previewUrl, runtime?.publicUrl, addLog])
+
+  // Reset loading state and auto-start project if stopped
+  useEffect(() => {
+    setIframeLoading(true)
+    if (hidden || !project || busy || drawing || !hasBuiltApp) return
+    if (!runtime || runtime?.status === 'stopped') {
+      api.open(project).then(res => {
+        useStore.getState().setRuntime(res)
+      }).catch(() => {})
+    }
+  }, [project, hidden, hasBuiltApp])
+
+  // Safety fallback for iframe loading state once status is running
+  useEffect(() => {
+    if (runtime?.status === 'running' && iframeLoading) {
+      const timer = setTimeout(() => setIframeLoading(false), 3500)
+      return () => clearTimeout(timer)
+    }
+  }, [runtime?.status, iframeLoading])
+
+  // Observing status never keeps an idle app alive. This also recovers missed
+  // socket events after a Studio reload or a backend reconnect.
+  useEffect(() => {
+    if (!project) return
+    let active = true
+    const read = () => api.runtime(project).then(result => {
+      if (active) useStore.getState().setRuntime(result)
+    }).catch(() => {})
+    read()
+    const timer = setInterval(read, 2000)
+    return () => { active = false; clearInterval(timer) }
+  }, [project])
+
+  useEffect(() => {
+    if (!drawing && runtime?.status === 'running') navigate(lastPathRef.current)
+  }, [runtime?.runtimeId, runtime?.status, drawing, navigate])
 
   const syncPath = useCallback((reason = 'navigation') => {
     const here = currentPath(frameRef.current)
@@ -93,47 +164,105 @@ export default function PreviewPane({ hidden }) {
     setNav({ back: at.current > 0, forward: at.current < trail.current.length - 1 })
   }, [setPreviewRoute])
 
+  /** The viewport a shot has to be taken at, or the box lands on the wrong thing. */
+  const viewportOf = useCallback(() => {
+    const f = frameRef.current
+    return { w: f?.clientWidth || 1280, h: f?.clientHeight || 800, mode: vp }
+  }, [vp])
+
+  /** Attach a picked element or canvas drawing and capture its screenshot. */
+  const attachShot = useCallback(async (item, body) => {
+    addSelection(item)
+    try {
+      const r = await api.shot({ ...body, project, runtimeId: runtime?.runtimeId })
+      patchSelection(item.key, r?.image
+        ? { shot: r.image, state: 'ready' }
+        : { state: 'blank' })
+    } catch (e) {
+      patchSelection(item.key, { state: 'blank' })
+      addLog('WARN', `could not photograph that — ${e.message}`)
+    }
+  }, [addSelection, patchSelection, addLog, project, runtime?.runtimeId])
+
   const attach = useCallback(() => {
     detachRef.current?.()
+    if (frameRef.current?.dataset.remote === 'true') {
+      bridgeSend('pick', { enabled: true, mode: vp })
+      detachRef.current = () => bridgeSend('pick', { enabled: false })
+      return
+    }
     detachRef.current = attachPicker(frameRef.current, (el) => {
-      setPicked(pickedFrom(frameRef.current, el, vp))
-      setPrompt('')
+      const info = pickedFrom(frameRef.current, el, vp)
+      attachShot(
+        { key: `sel-${++seq}`, kind: 'element', info, state: 'shooting',
+          label: pickLabel(info), route: info.route || currentPath(frameRef.current) },
+        { route: info.route, viewport: info.viewport || viewportOf(),
+          scroll: info.scroll, rect: info.rect })
     })
     if (!detachRef.current) addLog('WARN', 'The preview is not loaded yet')
-  }, [vp, addLog])
+  }, [vp, addLog, attachShot, viewportOf, bridgeSend])
 
   useEffect(() => {
-    if (pickOn || imageOn) attach()
+    const receive = event => {
+      const message = event.data
+      if (!previewUrl || event.source !== frameRef.current?.contentWindow ||
+          event.origin !== new URL(previewUrl).origin ||
+          message?.type !== 'agentforge:preview' || message.project !== project ||
+          message.runtimeId !== runtime.runtimeId) return
+      if (message.kind === 'route' && typeof message.route === 'string' && message.route.startsWith('/')) {
+        const f = frameRef.current
+        f.dataset.route = message.route
+        f.dataset.scrollX = String(message.scroll?.x || 0)
+        f.dataset.scrollY = String(message.scroll?.y || 0)
+        syncPath()
+      }
+      if (message.kind === 'ready' && pickOn) bridgeSend('pick', { enabled: true, mode: vp })
+      if (message.kind === 'console') recordConsole(message.level, message.text, project, 'developer')
+      if (message.kind === 'picked' && pickOn && message.info) {
+        const info = message.info
+        attachShot({ key: `sel-${++seq}`, kind: 'element', info, state: 'shooting',
+          label: pickLabel(info), route: info.route },
+          { route: info.route, viewport: info.viewport || viewportOf(), scroll: info.scroll, rect: info.rect })
+      }
+    }
+    window.addEventListener('message', receive)
+    return () => window.removeEventListener('message', receive)
+  }, [project, runtime?.previewUrl, runtime?.runtimeId, syncPath, pickOn, bridgeSend, vp, attachShot, viewportOf])
+
+  useEffect(() => {
+    if (pickOn) attach()
     else { detachRef.current?.(); detachRef.current = null }
     return () => { detachRef.current?.(); detachRef.current = null }
-  }, [pickOn, imageOn, attach])
+  }, [pickOn, attach])
 
   useEffect(() => {
     const f = frameRef.current
     if (!f) return
     const onLoad = () => {
-      watchFrame(f)
+      setIframeLoading(false)
+      bridgeSend('init')
+      watchFrame(f, project, 'developer')
       syncPath('load')
-      if (pickOn || imageOn) attach()
+      if (pickOn) attach()
     }
     f.addEventListener('load', onLoad)
     return () => f.removeEventListener('load', onLoad)
-  }, [pickOn, imageOn, attach, syncPath])
+  }, [pickOn, attach, syncPath, bridgeSend])
 
   useEffect(() => {
     const id = setInterval(() => syncPath('poll'), 250)
     return () => clearInterval(id)
   }, [syncPath])
 
-    // Mirror the Playwright route in the visible preview.
+  // Mirror the route the agent's journey is on in the visible preview.
   useEffect(() => {
     const route = String(e2eLive?.route || '')
     if (!tests.running || !route.startsWith('/')) return
     const f = frameRef.current
     if (!f || currentPath(f) === route) return
     jumping.current = true
-    f.src = route
-  }, [e2eLive?.route, tests.running])
+    if (runtime?.status === 'running') navigate(route)
+  }, [e2eLive?.route, tests.running, runtime?.status, navigate])
 
   const syncCanvas = useCallback(() => {
     const f = frameRef.current, c = canvasRef.current
@@ -149,7 +278,7 @@ export default function PreviewPane({ hidden }) {
       c.height = Math.round(f.clientHeight * dpr)
       const ctx = c.getContext('2d')
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      ctx.strokeStyle = '#0f6fff'
+      ctx.strokeStyle = '#ff2d55'
       ctx.lineWidth = 3
       ctx.lineCap = 'round'
       ctx.lineJoin = 'round'
@@ -169,6 +298,10 @@ export default function PreviewPane({ hidden }) {
     const c = canvasRef.current
     const r = c.getBoundingClientRect()
     let sx = 0, sy = 0
+    if (frameRef.current?.dataset.remote === 'true') {
+      sx = Number(frameRef.current.dataset.scrollX || 0)
+      sy = Number(frameRef.current.dataset.scrollY || 0)
+    }
     try {
       const w = frameRef.current.contentWindow
       sx = w.scrollX; sy = w.scrollY
@@ -186,16 +319,12 @@ export default function PreviewPane({ hidden }) {
     syncCanvas()
 
     const down = (e) => {
+      markActivity()
       drawingRef.current = true
       const pt = point(e)
       strokesRef.current.push([{ x: pt.x, y: pt.y }])
       const ctx = c.getContext('2d')
       ctx.beginPath(); ctx.moveTo(pt.cx, pt.cy)
-      try {
-        const d = frameDoc(frameRef.current)
-        const el = d && d.elementFromPoint(pt.cx, pt.cy)
-        if (el) setPicked(elementInfo(frameRef.current, el, vp))
-      } catch { }
     }
     const move = (e) => {
       if (!drawingRef.current) return
@@ -204,12 +333,19 @@ export default function PreviewPane({ hidden }) {
       const ctx = c.getContext('2d')
       ctx.lineTo(pt.cx, pt.cy); ctx.stroke()
     }
+    // Lifting the pen finishes one annotation: it is photographed as it stands
+    // and attached, and the canvas is wiped so the next ring is its own note.
     const up = () => {
       if (!drawingRef.current) return
       drawingRef.current = false
-      if (strokesRef.current.reduce((a, s) => a + s.length, 0) < 3) return
-      setPrompt('')
-      setPicked(p => p || { tag: '', route: path })
+      const strokes = strokesRef.current
+      if (strokes.reduce((a, s) => a + s.length, 0) < MIN_INK) return clearStrokes()
+      const route = currentPath(frameRef.current)
+      attachShot(
+        { key: `sel-${++seq}`, kind: 'drawing', strokes, route, state: 'shooting',
+          label: `Drawing on ${route}` },
+        { route, viewport: viewportOf(), strokes })
+      clearStrokes()
     }
 
     c.addEventListener('pointerdown', down)
@@ -223,27 +359,18 @@ export default function PreviewPane({ hidden }) {
       window.removeEventListener('pointerup', up)
       window.removeEventListener('resize', onResize)
     }
-  }, [pencilOn, point, syncCanvas, vp, path])
+  }, [pencilOn, point, syncCanvas, clearStrokes, attachShot, viewportOf, markActivity])
 
   function togglePick() {
     if (!project) return addLog('WARN', 'Open a project first')
-    if (!pickOn) { setPencilOn(false); setImageOn(false) }
+    if (!pickOn) setPencilOn(false)
     setPickOn(v => !v)
-    setPicked(null)
   }
 
   function togglePencil() {
     if (!project) return addLog('WARN', 'Open a project first')
-    if (!pencilOn) { setPickOn(false); setImageOn(false) }
+    if (!pencilOn) setPickOn(false)
     setPencilOn(v => { if (v) clearStrokes(); return !v })
-    setPicked(null)
-  }
-
-  function toggleImage() {
-    if (!project) return addLog('WARN', 'Open a project first')
-    if (!imageOn) { setPickOn(false); setPencilOn(false); clearStrokes() }
-    setImageOn(v => !v)
-    setPicked(null)
   }
 
   async function undoLast() {
@@ -253,7 +380,7 @@ export default function PreviewPane({ hidden }) {
       addLog('SUCCESS', 'Restored ' + (r.restored || []).join(', '))
       setUndo(null)
       const f = frameRef.current
-      if (f) f.src = currentPath(f)
+      if (f) navigate(currentPath(f))
     } catch (e) {
       addLog('WARN', 'Undo failed: ' + e.message)
     }
@@ -265,246 +392,240 @@ export default function PreviewPane({ hidden }) {
     if (!f || next < 0 || next >= trail.current.length) return
     at.current = next
     jumping.current = true
-    f.src = trail.current[next]
+    markActivity()
+    navigate(trail.current[next])
     setNav({ back: next > 0, forward: next < trail.current.length - 1 })
   }
 
-  function reloadPreview() {
+  async function reloadPreview(fromRoot = false) {
     const f = frameRef.current
     if (!f) return
+    setIframeLoading(true)
+    // An iframe mounted before startup may still be about:blank or a browser
+    // error document. Reloading that document never reaches the ready app.
+    if (drawing) { f.src = currentPath(f); return }
     try {
-      f.contentWindow.location.reload()
-    } catch {
-      f.src = currentPath(f)
+      const result = await api.open(project)
+      useStore.getState().setRuntime(result)
+      if (result.status === 'running') navigate(fromRoot === true ? '/' : currentPath(f))
+    } catch (error) { 
+      addLog('WARN', `Could not reopen app: ${error.message}`)
+      setIframeLoading(false)
+    }
+  }
+
+  /** Navigates preview to home when runtime is active; prototypes are served under /prototype/. */
+  useEffect(() => {
+    const f = frameRef.current
+    if (!f) return
+    if (!drawing && runtime?.status === 'running') {
+      navigate('/')
+    }
+  }, [drawing, project, runtime?.status, navigate])
+
+  async function approveDrawing() {
+    const id = drawing?.id
+    if (!id) return
+    setDrawing(null)
+    try {
+      await api.decide({ id, decision: 'approve' })
+    } catch (e) {
+      addLog('WARN', `Could not accept the drawing — ${e.message}`)
     }
   }
 
   const wasBusy = useRef(false)
+  const hasReadyPreview = useRef(!busy)
   useEffect(() => {
-    if (wasBusy.current && !busy) reloadPreview()
+    if (wasBusy.current && !busy) {
+      // The shared public origin may still display the previous project's
+      // route while this one starts. Its first ready navigation begins at /.
+      reloadPreview(!hasReadyPreview.current)
+      hasReadyPreview.current = true
+    }
     wasBusy.current = busy
   }, [busy])
-
-  async function submit() {
-    const v = prompt.trim()
-    if (!v || !picked) return
-
-    const kind = pencilOn ? 'pencil_edit'
-      : (imageOn || picked.isImage) ? 'image_edit' : 'element_edit'
-
-    let full = v
-    if (files.items.length) {
-      setReading(true)
-      try {
-        full = v + await files.collect(project)
-      } catch (e) {
-        addLog('WARN', `${e.message}`)
-      }
-      setReading(false)
-    }
-
-    const payload = {
-      type: kind, project, element: picked,
-      model: models.builder || models.agent, think,
-      route: picked.route || path, scroll: picked.scroll, viewport: picked.viewport,
-      strokes: pencilOn ? strokesRef.current : undefined,
-      console: consoleReport(),
-    }
-
-    setTuning(true)
-    let said = full
-    try {
-      const r = await api.tune({ prompt: full, element: picked, project,
-                                 route: payload.route, model: payload.model })
-      said = (r?.prompt || '').trim() || full
-    } catch (e) {
-      addLog('WARN', `Could not reword the request (${e.message}) — sending it as typed`)
-    }
-    setTuning(false)
-
-    if (said.trim() === full.trim()) return fire(payload, full, kind, v)
-    setAsk({ payload, kind, typed: full, shown: v, tuned: said })
-  }
-
-  function fire(payload, text, kind, shown) {
-    send({ ...payload, prompt: text })
-    forgetConsole()
-    files.reset()
-    addLog('INFO', (pencilOn ? 'Redesign: '
-      : kind === 'image_edit' ? 'New picture: ' : 'Edit: ') + shown)
-    setBusy(true)
-    setPicked(null)
-    setPrompt('')
-    setAsk(null)
-    if (pencilOn) clearStrokes(); else if (!imageOn) setPickOn(false)
-  }
-
-  async function swapPicture(file) {
-    if (!file || !picked) return
-    const target = picked
-    setBusy(true)
-    setPicked(null)
-    setPrompt('')
-    addLog('INFO', `Your picture: ${file.name}`)
-    try {
-      await api.imageSwap(file, { project, element: target })
-    } catch (e) {
-      setBusy(false)
-      addLog('WARN', `${e.message}`)
-    }
-  }
 
   const width = VIEWPORTS.find(x => x.id === vp)?.w
   const shownPath = tests.running && e2eLive?.route ? e2eLive.route : path
 
   return (
-    <div className={cn('flex min-h-0 flex-1 flex-col bg-transparent', hidden && 'hidden')}>
-      <div className="flex h-[54px] shrink-0 items-center gap-3 border-b border-line/70 bg-white/72 px-4 backdrop-blur-2xl dark:bg-white/[.03]">
-        <div className="flex items-center gap-1 rounded-full border border-line/80 bg-panel/90 p-1 shadow-sm">
+    <div className={cn('flex min-h-0 flex-1 flex-col bg-[#0c0f17]', hidden && 'hidden')}>
+      <div className="flex h-[54px] shrink-0 items-center gap-3 border-b border-white/10 bg-[#0c0f17] px-4 backdrop-blur-2xl">
+        <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-white/[.03] p-1 shadow-sm">
           <Cell tip={nav.back ? 'Back' : 'Nothing to go back to'}
-                disabled={!nav.back} onClick={() => step(-1)} className="rounded-full px-3">
+                disabled={!nav.back} onClick={() => step(-1)} className="rounded-lg px-2.5 text-white">
             <ChevronLeft className="size-3.5" />
           </Cell>
           <Cell tip={nav.forward ? 'Forward' : 'Nothing to go forward to'}
-                disabled={!nav.forward} onClick={() => step(1)} className="rounded-full px-3">
+                disabled={!nav.forward} onClick={() => step(1)} className="rounded-lg px-2.5 text-white">
             <ChevronRight className="size-3.5" />
           </Cell>
-          <Cell tip="Reload the preview" onClick={reloadPreview} className="rounded-full px-3">
-            <RotateCw className="size-3.5" />
+          <Cell tip="Reload the preview" onClick={reloadPreview} className="rounded-lg px-2.5 text-white">
+            <RotateCw className={cn("size-3.5", iframeLoading && "animate-spin text-blue-400")} />
           </Cell>
         </div>
 
-        <div className="flex min-w-0 flex-1 items-center gap-2 rounded-[14px] bg-black/[.035] px-4 py-2 text-[12px] text-muted ring-1 ring-black/[.045] dark:bg-white/[.045] dark:ring-white/[.06]">
-          <Globe className="size-3.5 shrink-0 text-accent" />
-          <span className="truncate font-medium text-ink">localhost:5173{shownPath === '/' ? '' : shownPath}</span>
+        <div className="flex min-w-0 flex-1 items-center gap-2.5 rounded-xl border border-white/10 bg-white/[.04] px-4 py-2 text-[12px] text-slate-300 shadow-inner">
+          <Globe className="size-3.5 shrink-0 text-blue-400" />
+          <span className="truncate font-mono text-[11.5px] font-medium text-slate-200">
+            {drawing ? `the drawing — ${shownPath.split('/').pop() || 'index.html'}`
+                     : previewUrl ? `${new URL(previewUrl).host}${shownPath === '/' ? '' : shownPath}`
+                     : publishing === 'working' ? 'publishing an address for this app…'
+                     : publishing ? publishing
+                     : 'App preview'}
+          </span>
         </div>
 
-        <div className="hidden items-center gap-1 rounded-full border border-line/80 bg-panel/80 p-1 shadow-sm md:flex">
+        {!drawing && (runtime?.status === 'running' && !iframeLoading ? (
+          <div className="flex items-center gap-1.5 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/10 px-3 py-1 text-[11px] font-semibold text-[#22C55E] shadow-[0_0_12px_rgba(34,197,94,0.15)]">
+            <span className="size-1.5 rounded-full bg-[#22C55E]" />
+            <span>Running</span>
+          </div>
+        ) : (runtime?.status === 'starting' || iframeLoading) ? (
+          <div className="flex items-center gap-1.5 rounded-full border border-[#1877F2]/30 bg-[#1877F2]/10 px-3 py-1 text-[11px] font-semibold text-[#1877F2]">
+            <Loader2 className="size-3 animate-spin" />
+            <span>Starting</span>
+          </div>
+        ) : null)}
+
+        {/* The drawing is judged here, in the preview, so this is where it is
+            accepted. Sending it back is typed in the chat like anything else. */}
+        {drawing && (
+          <button onClick={approveDrawing}
+                  className="shrink-0 rounded-xl bg-[#1877F2] px-4 py-2 text-[12px] font-semibold text-white shadow-[0_8px_16px_0_rgba(24,119,242,0.24)] transition-all hover:bg-[#0C44AE] active:scale-95">
+            Build this
+          </button>
+        )}
+
+        <div className="hidden items-center gap-1 rounded-xl border border-white/10 bg-white/[.03] p-1 shadow-sm md:flex">
           {VIEWPORTS.map(({ id, label, Icon }) => (
             <Cell key={id} tip={label} side="left" on={vp === id}
-                  onClick={() => setVp(id)} className="rounded-full px-3">
+                  onClick={() => setVp(id)} className="rounded-lg px-2.5 text-white">
               <Icon className="size-3.5" />
             </Cell>
           ))}
         </div>
 
-        <div className="flex items-center gap-1 rounded-full border border-line/80 bg-panel/80 p-1 shadow-sm">
-          <Cell tip="Click an element in the preview to edit it" side="left"
-                on={pickOn} onClick={togglePick} className="rounded-full">
+        <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-white/[.03] p-1 shadow-sm">
+          <Cell tip="Click elements in the preview to attach them to your message"
+                side="left" on={pickOn} onClick={togglePick} className="rounded-lg text-white">
             <MousePointerClick className="size-3.5" />
           </Cell>
-          <Cell tip="Draw over a region and describe the redesign" side="left"
-                on={pencilOn} onClick={togglePencil} className="rounded-full">
+          <Cell tip="Draw on the preview to attach a marked-up screenshot"
+                side="left" on={pencilOn} onClick={togglePencil} className="rounded-lg text-white">
             <Pencil className="size-3.5" />
           </Cell>
-          <Cell tip="Click a picture and describe the one you want instead"
-                side="left" on={imageOn} onClick={toggleImage} className="rounded-full">
-            <ImageIcon className="size-3.5" />
+          <Cell tip={selection.length
+                       ? `Clear ${selection.length} attachment${selection.length === 1 ? '' : 's'}`
+                       : 'Nothing attached yet'}
+                side="left" disabled={!selection.length}
+                onClick={() => { clearSelection(); clearStrokes() }} className="rounded-lg text-white">
+            <Eraser className="size-3.5" />
           </Cell>
           <Cell tip={undo ? `Undo the last edit (${undo.files.join(', ')})`
                           : 'Nothing to undo yet'}
-                side="left" disabled={!undo} onClick={undoLast} className="rounded-full">
+                side="left" disabled={!undo} onClick={undoLast} className="rounded-lg text-white">
             <Undo2 className="size-3.5" />
           </Cell>
         </div>
       </div>
 
-      <div className="relative min-h-0 flex-1 overflow-hidden bg-[radial-gradient(circle_at_top,#f8fbff_0%,#edf2fb_45%,#dfe7f5_100%)] p-4 dark:bg-[radial-gradient(circle_at_top,#1d2333_0%,#151a26_45%,#0f141d_100%)]">
-        <BuildOverlay />
-
-        {ask && (
-          <TunePrompt
-            typed={ask.shown}
-            tuned={ask.tuned}
-            onSend={(text) => fire(ask.payload, text, ask.kind, ask.shown)}
-            onSendTyped={() => fire(ask.payload, ask.typed, ask.kind, ask.shown)}
-            onCancel={() => setAsk(null)}
-            onRetune={async (text) => {
-              try {
-                const r = await api.tune({
-                  prompt: text, element: ask.payload.element, project,
-                  route: ask.payload.route, model: ask.payload.model })
-                return (r?.prompt || '').trim()
-              } catch (e) {
-                addLog('WARN', `Could not reword it (${e.message})`)
-                return ''
-              }
-            }} />
-        )}
-
+      <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[#0c0f17] p-3">
         <canvas ref={canvasRef}
-                className={cn('absolute z-[5]', pencilOn ? 'block' : 'hidden')}
-                style={{ pointerEvents: pencilOn ? 'auto' : 'none' }} />
+                className={cn('absolute z-[8]', pencilOn ? 'block' : 'hidden')}
+                style={{ pointerEvents: pencilOn ? 'auto' : 'none',
+                         cursor: pencilOn ? 'crosshair' : 'default' }} />
 
-        {picked && (
-          <div className="absolute inset-x-4 bottom-16 z-[46] rounded-[24px] border border-line/80 bg-panel/95 px-4 py-3 shadow-[0_18px_36px_rgba(15,23,42,.12)] backdrop-blur-xl dark:shadow-[0_18px_36px_rgba(0,0,0,.35)]">
-            <div className="mb-2.5 flex items-center gap-2">
-              <span className="rounded-full bg-accent/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
-                {pencilOn ? 'Redesign region' : imageOn ? 'Replace image' : 'Edit selection'}
-              </span>
-              <span className="truncate text-[12px] text-muted">
-                {pencilOn
-                  ? `Selected region · ${picked.tag ? '<' + picked.tag + '>' : ''} · ${path}`
-                  : imageOn && !picked.isImage
-                  ? `That is not a picture · ${picked.tag ? '<' + picked.tag + '>' : ''} · click an image`
-                  : pickLabel(picked)}
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Input autoFocus value={prompt}
-                     placeholder={pencilOn ? 'Describe how this area should look'
-                       : (imageOn || picked.isImage)
-                         ? 'Describe the picture you want instead — or upload one'
-                       : 'Describe the change you want'}
-                     onChange={e => setPrompt(e.target.value)}
-                     onKeyDown={e => {
-                       if (e.key === 'Enter') submit()
-                       if (e.key === 'Escape') setPicked(null)
-                     }} />
-
-              {picked.isImage && (
-                <>
-                  <input ref={swapRef} type="file" hidden accept={ACCEPT_PICTURE}
-                         onChange={e => {
-                           const chosen = e.target.files?.[0]
-                           e.target.value = ''
-                           swapPicture(chosen)
-                         }} />
-                  <Tip text="Use your own picture instead of generating a new one">
-                    <Button variant="outline" onClick={() => swapRef.current?.click()}>
-                      <Upload className="size-3" /> Upload
-                    </Button>
-                  </Tip>
-                </>
-              )}
-
-              <Button variant="solid" onClick={submit} disabled={reading || tuning}>
-                {reading || tuning ? <Loader2 className="size-3 animate-spin" /> : 'Review request'}
-              </Button>
-              <Button variant="outline" onClick={() => { files.reset(); setPicked(null) }}>
-                Cancel
-              </Button>
-            </div>
-
-            <EditAttach attach={files} disabled={reading || tuning} className="mt-2" />
-          </div>
+        {(pickOn || pencilOn) && (
+          <p className="pointer-events-none absolute inset-x-0 bottom-7 z-[9] mx-auto w-fit rounded-full border border-white/15 bg-[#121622]/95 px-4 py-2 text-[11px] font-medium text-white shadow-2xl backdrop-blur-xl">
+            {pencilOn ? 'Draw around what you mean — it attaches to the chat'
+                      : 'Click anything — it attaches to the chat'}
+          </p>
         )}
 
         {tests.running && e2eLive && <LiveE2EOverlay event={e2eLive} />}
 
-        <div className="relative mx-auto flex h-full max-w-full items-start justify-center overflow-auto rounded-[28px] bg-white/28 p-2 ring-1 ring-white/55 dark:bg-white/[.02] dark:ring-white/[.06]">
-          <div className="relative h-full w-full max-w-full overflow-hidden rounded-[22px] bg-white shadow-[0_24px_70px_rgba(15,23,42,.14)] ring-1 ring-black/[.06] dark:bg-[#0f1720] dark:shadow-[0_24px_70px_rgba(0,0,0,.45)] dark:ring-white/[.06]"
+        <div className="relative flex h-full min-h-0 flex-1 w-full items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[#0c0f17] shadow-2xl">
+          <div className={cn("relative h-full w-full max-w-full overflow-hidden bg-[#0c0f17]", width && "border-x border-white/10 shadow-2xl")}
                style={{ width: width ? width + 'px' : '100%' }}>
-            <iframe ref={frameRef} id="frame" title="preview" src="/"
-                    className="absolute inset-0 block h-full w-full border-0 bg-white" />
-            {tests.running && e2eLive?.frame && (
-              <img src={e2eLive.frame} alt="Live Playwright browser"
-                   className="pointer-events-none absolute inset-0 z-[4] h-full w-full object-cover object-top transition-opacity duration-200" />
+            <iframe ref={frameRef} id="frame" title="preview" src="about:blank"
+                    className={cn("absolute inset-0 block h-full w-full border-0 bg-[#0c0f17] transition-opacity duration-300",
+                      ((iframeLoading || runtime?.status === 'starting') && !isE2EActive) ? "opacity-0 pointer-events-none" : "opacity-100")} />
+
+            {/* Smooth Bolt.new loading animation */}
+            {((iframeLoading || runtime?.status === 'starting') && !isE2EActive) && (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#0c0f17] p-6 text-center">
+                <div className="absolute inset-x-0 top-0 h-[2px] overflow-hidden bg-white/5">
+                  <div className="h-full w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400 animate-pulse" />
+                </div>
+
+                <div className="relative mb-4 grid size-16 place-items-center rounded-2xl border border-blue-500/20 bg-blue-500/10 shadow-[0_0_35px_rgba(59,130,246,0.18)]">
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-blue-600/20 to-indigo-600/20 animate-pulse" />
+                  <Loader2 className="size-7 animate-spin text-blue-400" />
+                </div>
+
+                <h3 className="text-[15px] font-bold tracking-wide text-white">
+                  {runtime?.status === 'starting' ? 'Starting development server…' : 'Loading project preview…'}
+                </h3>
+                <p className="mt-1.5 max-w-xs text-center text-xs text-slate-400 leading-relaxed">
+                  {runtime?.status === 'starting'
+                    ? 'Starting the project runtime and loading its pages.'
+                    : 'Rendering live application components and compiling assets.'}
+                </p>
+
+                {project && (
+                  <div className="mt-4 flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1 font-mono text-[11px] text-slate-300 shadow-sm">
+                    <span className="size-1.5 rounded-full bg-blue-400 animate-ping" />
+                    <span className="truncate max-w-[200px]">{project}</span>
+                  </div>
+                )}
+              </div>
             )}
+
+            {!isAppBuilt && !runtime?.working && runtime?.status !== 'starting' && runtime?.status !== 'running' ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#0c0f17] p-8 text-center" role="status">
+                <div className="grid size-16 place-items-center rounded-2xl border border-blue-500/20 bg-blue-500/10 text-blue-400 shadow-xl">
+                  <Rocket className="size-8 text-blue-400" />
+                </div>
+                <div className="max-w-md">
+                  <h3 className="text-base font-bold text-white">This app has not been built yet</h3>
+                  <p className="mt-1 text-sm text-slate-400 leading-relaxed">
+                    Only the specification or HTML prototype exists so far. Build the full application to preview and interact with it live here.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 mt-2">
+                  <button
+                    onClick={() => useStore.getState().setView('prototype')}
+                    className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-white/[0.1]"
+                  >
+                    <Layers className="size-3.5 text-purple-400" /> View Prototype
+                  </button>
+                  {onBuild && (
+                    <button
+                      onClick={onBuild}
+                      className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2 text-xs font-semibold text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-500"
+                    >
+                      <Rocket className="size-3.5" /> Build App Now
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : runtime?.status === 'failed' ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#0c0f17] p-8 text-center" role="status">
+                <p className="font-semibold text-rose-400">App could not start</p>
+                <p className="max-w-lg text-sm text-slate-400">{runtime?.error || 'Failed to start runtime.'}</p>
+                <button onClick={() => reloadPreview()} className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-500">
+                  Retry
+                </button>
+              </div>
+            ) : null}
+            {/* While the agent is driving its own browser, that is the more
+                interesting of the two — it is the one being tested. */}
+            <AgentBrowser />
           </div>
         </div>
 
-        <PreviewConsoleDrawer />
       </div>
     </div>
   )
@@ -514,6 +635,7 @@ function Cell({ tip, on, className, children, ...rest }) {
   return (
     <Tip text={tip}>
       <button {...rest}
+              aria-label={tip} aria-pressed={typeof on === 'boolean' ? on : undefined}
               className={cn('grid h-9 place-items-center px-2 text-ink transition-colors',
                 on ? 'bg-accent text-white shadow-sm'
                    : 'hover:bg-ink/[.06] dark:hover:bg-white/[.06]',

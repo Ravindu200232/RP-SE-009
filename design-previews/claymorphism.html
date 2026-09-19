@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claymorphic — Soft UI Design System</title>
+    <!-- Google Fonts: Montserrat (primary), Poppins (display), JetBrains Mono (mono) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100..900&family=Poppins:wght@100..900&family=JetBrains+Mono:wght@100..900&display=swap" rel="stylesheet">
+    <!-- Tailwind via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Claymorphism design system tokens */
+        :root {
+            --primary: #3B82F6;
+            --secondary: #FFFFFF;
+            --success: #16A34A;
+            --warning: #D97706;
+            --danger: #DC2626;
+            --surface: #FFFFFF;
+            --text: #1C398E;
+            --spacing-1: 4px;
+            --spacing-2: 8px;
+            --spacing-3: 12px;
+            --spacing-4: 16px;
+            --spacing-5: 24px;
+            --spacing-6: 32px;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            color: var(--text);
+            background: #f0f4ff;
+        }
+
+        .font-display {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Claymorphism core: soft, rounded, puffy 3D-like shapes */
+        .clay {
+            background: var(--surface);
+            border-radius: 24px;
+            box-shadow: 
+                8px 8px 16px rgba(28, 57, 142, 0.12),
+                -8px -8px 16px rgba(255, 255, 255, 0.9),
+                inset 2px 2px 4px rgba(255, 255, 255, 0.8),
+                inset -2px -2px 4px rgba(28, 57, 142, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .clay:hover {
+            transform: translateY(-4px);
+            box-shadow: 
+                12px 12px 24px rgba(28, 57, 142, 0.16),
+                -12px -12px 24px rgba(255, 255, 255, 0.95),
+                inset 2px 2px 4px rgba(255, 255, 255, 0.9),
+                inset -2px -2px 4px rgba(28, 57, 142, 0.06);
+        }
+
+        .clay-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 
+                8px 8px 16px rgba(59, 130, 246, 0.3),
+                -8px -8px 16px rgba(255, 255, 255, 0.9),
+                inset 2px 2px 4px rgba(255, 255, 255, 0.3),
+                inset -2px -2px 4px rgba(28, 57, 142, 0.2);
+        }
+
+        .clay-primary:hover {
+            box-shadow: 
+                12px 12px 24px rgba(59, 130, 246, 0.4),
+                -12px -12px 24px rgba(255, 255, 255, 0.95),
+                inset 2px 2px 4px rgba(255, 255, 255, 0.4),
+                inset -2px -2px 4px rgba(28, 57, 142, 0.15);
+        }
+
+        .clay-soft {
+            background: #e8f0fe;
+            box-shadow: 
+                6px 6px 12px rgba(28, 57, 142, 0.08),
+                -6px -6px 12px rgba(255, 255, 255, 0.9),
+                inset 2px 2px 4px rgba(255, 255, 255, 0.8),
+                inset -2px -2px 4px rgba(28, 57, 142, 0.04);
+        }
+
+        .clay-soft:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Focus states */
+        a:focus-visible, button:focus-visible, input:focus-visible {
+            outline: 3px solid var(--primary);
+            outline-offset: 2px;
+            border-radius: 8px;
+        }
+
+        /* Navigation link styles */
+        .nav-link {
+            position: relative;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--primary);
+        }
+
+        /* Custom blob shapes for imagery */
+        .blob {
+            border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+            animation: blobFloat 6s ease-in-out infinite;
+        }
+
+        @keyframes blobFloat {
+            0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+            50% { border-radius: 30% 60% 70% 30% / 50% 60% 30% 60%; }
+        }
+
+        /* Accordion for FAQ */
+        .faq-item {
+            transition: all 0.3s;
+        }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .faq-item.open .faq-answer {
+            max-height: 300px;
+        }
+
+        .faq-item.open .faq-icon {
+            transform: rotate(180deg);
+        }
+
+        .faq-icon {
+            transition: transform 0.3s;
+        }
+
+        /* Responsive tweaks */
+        @media (max-width: 640px) {
+            .clay {
+                border-radius: 16px;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen antialiased">
+
+    <!-- ==================== NAVIGATION ==================== -->
+    <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-blue-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <div class="flex items-center gap-3">
+                    <div class="clay w-10 h-10 flex items-center justify-center bg-gradient-to-br from-blue-400 to-blue-600">
+                        <i data-lucide="layers" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <span class="font-display font-bold text-xl text-[#1C398E]">Claymorphic</span>
+                </div>
+
+                <!-- Desktop Nav -->
+                <div class="hidden md:flex items-center gap-2">
+                    <a href="#features" class="nav-link text-sm">Features</a>
+                    <a href="#process" class="nav-link text-sm">Process</a>
+                    <a href="#benefits" class="nav-link text-sm">Benefits</a>
+                    <a href="#testimonials" class="nav-link text-sm">Testimonials</a>
+                    <a href="#pricing" class="nav-link text-sm">Pricing</a>
+                    <a href="#faq" class="nav-link text-sm">FAQ</a>
+                </div>
+
+                <!-- CTA + Mobile Menu -->
+                <div class="flex items-center gap-3">
+                    <a href="#pricing" class="clay clay-primary px-4 py-2 text-sm font-semibold hidden sm:inline-block">
+                        Get Started
+                    </a>
+                    <button class="md:hidden clay w-10 h-10 flex items-center justify-center" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                        <i data-lucide="menu" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-blue-100 px-4 py-4">
+            <div class="flex flex-col gap-2">
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#process" class="nav-link">Process</a>
+                <a href="#benefits" class="nav-link">Benefits</a>
+                <a href="#testimonials" class="nav-link">Testimonials</a>
+                <a href="#pricing" class="nav-link">Pricing</a>
+                <a href="#faq" class="nav-link">FAQ</a>
+                <a href="#pricing" class="clay clay-primary px-4 py-2 text-center text-sm font-semibold mt-2">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ==================== HERO ==================== -->
+    <section class="relative overflow-hidden py-20 lg:py-32">
+        <!-- Background blobs -->
+        <div class="absolute top-20 left-10 w-64 h-64 blob bg-blue-200 opacity-30"></div>
+        <div class="absolute bottom-20 right-10 w-80 h-80 blob bg-purple-200 opacity-20"></div>
+        <div class="absolute top-40 right-40 w-40 h-40 blob bg-yellow-200 opacity-20"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="clay-soft inline-flex items-center gap-2 px-4 py-2 mb-6">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-[#3B82F6]"></i>
+                        <span class="text-sm font-semibold text-[#1C398E]">The Soft UI Design System</span>
+                    </div>
+                    <h1 class="font-display font-bold text-4xl sm:text-5xl lg:text-6xl leading-tight text-[#1C398E] mb-6">
+                        Build interfaces that feel like<br class="hidden sm:block">
+                        <span class="text-[#3B82F6]">malleable clay</span>
+                    </h1>
+                    <p class="text-lg text-[#1C398E]/80 mb-8 max-w-lg">
+                        A modern UI trend with soft, rounded, 3D-like shapes. Create playful, puffy elements with colorful surfaces that invite interaction.
+                    </p>
+                    <div class="flex flex-wrap gap-4">
+                        <a href="#pricing" class="clay clay-primary px-8 py-4 font-semibold text-lg inline-flex items-center gap-2">
+                            <i data-lucide="rocket" class="w-5 h-5"></i>
+                            Start Building
+                        </a>
+                        <a href="#features" class="clay px-8 py-4 font-semibold text-lg inline-flex items-center gap-2">
+                            <i data-lucide="play" class="w-5 h-5"></i>
+                            See Features
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Hero visual: CSS shapes -->
+                <div class="relative hidden lg:block">
+                    <div class="clay p-8 max-w-md mx-auto">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="clay w-14 h-14 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                                <i data-lucide="figma" class="w-7 h-7 text-white"></i>
+                            </div>
+                            <div>
+                                <p class="font-display font-semibold text-lg">Design System</p>
+                                <p class="text-sm text-[#1C398E]/60">v2.0 · 120+ components</p>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="clay-soft p-4 flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-500"></div>
+                                <div class="flex-1">
+                                    <div class="h-3 bg-[#1C398E]/20 rounded-full w-3/4 mb-2"></div>
+                                    <div class="h-3 bg-[#1C398E]/10 rounded-full w-1/2"></div>
+                                </div>
+                            </div>
+                            <div class="clay-soft p-4 flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-teal-500"></div>
+                                <div class="flex-1">
+                                    <div class="h-3 bg-[#1C398E]/20 rounded-full w-2/3 mb-2"></div>
+                                    <div class="h-3 bg-[#1C398E]/10 rounded-full w-1/3"></div>
+                                </div>
+                            </div>
+                            <div class="clay-soft p-4 flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500"></div>
+                                <div class="flex-1">
+                                    <div class="h-3 bg-[#1C398E]/20 rounded-full w-1/2 mb-2"></div>
+                                    <div class="h-3 bg-[#1C398E]/10 rounded-full w-2/3"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-6 flex justify-between items-center">
+                            <div class="flex -space-x-2">
+                                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 border-2 border-white"></div>
+                                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 border-2 border-white"></div>
+                                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-teal-500 border-2 border-white"></div>
+                            </div>
+                            <span class="text-sm font-semibold text-[#1C398E]/60">2.4k+ designers</span>
+                        </div>
+                    </div>
+                    <!-- Floating decorative elements -->
+                    <div class="absolute -top-6 -right-4 clay w-20 h-20 bg-gradient-to-br from-yellow-300 to-orange-400 flex items-center justify-center">
+                        <i data-lucide="star" class="w-8 h-8 text-white"></i>
+                    </div>
+                    <div class="absolute -bottom-8 -left-4 clay w-16 h-16 bg-gradient-to-br from-green-300 to-teal-400 flex items-center justify-center">
+                        <i data-lucide="heart" class="w-7 h-7 text-white"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== STATS ==================== -->
+    <section class="py-12 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="clay p-6 text-center">
+                    <p class="font-display font-bold text-3xl text-[#3B82F6]">120+</p>
+                    <p class="text-sm font-semibold text-[#1C398E]/70 mt-2">Components</p>
+                </div>
+                <div class="clay p-6 text-center">
+                    <p class="font-display font-bold text-3xl text-[#16A34A]">2.4k+</p>
+                    <p class="text-sm font-semibold text-[#1C398E]/70 mt-2">Designers</p>
+                </div>
+                <div class="clay p-6 text-center">
+                    <p class="font-display font-bold text-3xl text-[#D97706]">98%</p>
+                    <p class="text-sm font-semibold text-[#1C398E]/70 mt-2">Satisfaction</p>
+                </div>
+                <div class="clay p-6 text-center">
+                    <p class="font-display font-bold text-3xl text-[#DC2626]">4.9★</p>
+                    <p class="text-sm font-semibold text-[#1C398E]/70 mt-2">Rating</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FEATURES ==================== -->
+    <section id="features" class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="font-display font-bold text-3xl sm:text-4xl text-[#1C398E] mb-4">Features that feel like play</h2>
+                <p class="text-lg text-[#1C398E]/70 max-w-2xl mx-auto">Every element is designed to be soft, tactile, and inviting — just like clay.</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="clay p-8">
+                    <div class="clay w-14 h-14 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center mb-6">
+                        <i data-lucide="palette" class="w-7 h-7 text-white"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-xl mb-3">Soft Color Palette</h3>
+                    <p class="text-[#1C398E]/70">Thoughtfully curated colors that feel warm and approachable. Primary blue, success green, warning amber, and danger red.</p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="clay p-8">
+                    <div class="clay w-14 h-14 bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center mb-6">
+                        <i data-lucide="layers" class="w-7 h-7 text-white"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-xl mb-3">Puffy 3D Shapes</h3>
+                    <p class="text-[#1C398E]/70">Rounded, extruded forms with soft shadows that mimic the tactile quality of molded clay.</p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="clay p-8">
+                    <div class="clay w-14 h-14 bg-gradient-to-br from-green-400 to-teal-500 flex items-center justify-center mb-6">
+                        <i data-lucide="type" class="w-7 h-7 text-white"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-xl mb-3">Expressive Typography</h3>
+                    <p class="text-[#1C398E]/70">Montserrat for body, Poppins for display, and JetBrains Mono for code. A complete type system.</p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="clay p-8">
+                    <div class="clay w-14 h-14 bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center mb-6">
+                        <i data-lucide="mouse-pointer-click" class="w-7 h-7 text-white"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-xl mb-3">Interactive States</h3>
+                    <p class="text-[#1C398E]/70">Hover lifts elements with deeper shadows. Focus rings are visible and keyboard-friendly.</p>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="clay p-8">
+                    <div class="clay w-14 h-14 bg-gradient-to-br from-red-400 to-pink-500 flex items-center justify-center mb-6">
+                        <i data-lucide="accessibility" class="w-7 h-7 text-white"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-xl mb-3">WCAG 2.2 AA</h3>
+                    <p class="text-[#1C398E]/70">Accessibility is baked in. Contrast ratios, focus states, and keyboard navigation all pass AA.</p>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="clay p-8">
+                    <div class="clay w-14 h-14 bg-gradient-to-br from-indigo-400 to-blue-500 flex items-center justify-center mb-6">
+                        <i data-lucide="zap" class="w-7 h-7 text-white"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-xl mb-3">Responsive Grid</h3>
+                    <p class="text-[#1C398E]/70">Built mobile-first with a 4/8/12/16/24/32 spacing scale. Works from 400px and up.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== PROCESS ==================== -->
+    <section id="process" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="font-display font-bold text-3xl sm:text-4xl text-[#1C398E] mb-4">How it works</h2>
+                <p class="text-lg text-[#1C398E]/70">Four simple steps to claymorphic perfection.</p>
+            </div>
+
+            <div class="grid md:grid-cols-4 gap-8">
+                <!-- Step 1 -->
+                <div class="text-center">
+                    <div class="clay w-20 h-20 mx-auto bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center mb-6">
+                        <span class="font-display font-bold text-2xl text-white">1</span>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg mb-2">Design</h3>
+                    <p class="text-sm text-[#1C398E]/70">Sketch your interface with soft, rounded shapes in mind.</p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="text-center">
+                    <div class="clay w-20 h-20 mx-auto bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center mb-6">
+                        <span class="font-display font-bold text-2xl text-white">2</span>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg mb-2">Prototype</h3>
+                    <p class="text-sm text-[#1C398E]/70">Build interactive prototypes with puffy 3D effects.</p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="text-center">
+                    <div class="clay w-20 h-20 mx-auto bg-gradient-to-br from-green-400 to-teal-500 flex items-center justify-center mb-6">
+                        <span class="font-display font-bold text-2xl text-white">3</span>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg mb-2">Develop</h3>
+                    <p class="text-sm text-[#1C398E]/70">Implement with semantic tokens and consistent spacing.</p>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="text-center">
+                    <div class="clay w-20 h-20 mx-auto bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center mb-6">
+                        <span class="font-display font-bold text-2xl text-white">4</span>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg mb-2">Launch</h3>
+                    <p class="text-sm text-[#1C398E]/70">Deploy with confidence, knowing accessibility is covered.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== BENEFITS ==================== -->
+    <section id="benefits" class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h2 class="font-display font-bold text-3xl sm:text-4xl text-[#1C398E] mb-6">Why teams choose Claymorphic</h2>
+                    <div class="space-y-6">
+                        <div class="flex gap-4">
+                            <div class="clay w-12 h-12 flex-shrink-0 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                                <i data-lucide="trending-up" class="w-6 h-6 text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-lg mb-1">40% faster design</h3>
+                                <p class="text-[#1C398E]/70">Pre-built components and tokens mean less time reinventing the wheel.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="clay w-12 h-12 flex-shrink-0 bg-gradient-to-br from-green-400 to-teal-500 flex items-center justify-center">
+                                <i data-lucide="shield-check" class="w-6 h-6 text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-lg mb-1">Accessible by default</h3>
+                                <p class="text-[#1C398E]/70">WCAG 2.2 AA compliance built into every component. No retrofits needed.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="clay w-12 h-12 flex-shrink-0 bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center">
+                                <i data-lucide="users" class="w-6 h-6 text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-lg mb-1">Team friendly</h3>
+                                <p class="text-[#1C398E]/70">Clear tokens and rules mean designers and developers speak the same language.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visual representation -->
+                <div class="relative">
+                    <div class="clay p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="font-display font-semibold text-lg">Before / After</h3>
+                            <div class="flex gap-2">
+                                <span class="clay-soft px-3 py-1 text-xs font-semibold">Before</span>
+                                <span class="clay-primary px-3 py-1 text-xs font-semibold">After</span>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-md bg-gray-200"></div>
+                                <div class="flex-1">
+                                    <div class="h-3 bg-gray-200 rounded mb-2 w-3/4"></div>
+                                    <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="clay w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600"></div>
+                                <div class="flex-1">
+                                    <div class="h-3 bg-[#3B82F6]/30 rounded-full mb-2 w-3/4"></div>
+                                    <div class="h-3 bg-[#3B82F6]/20 rounded-full w-1/2"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="absolute -bottom-4 -right-4 clay px-6 py-3 bg-gradient-to-br from-yellow-300 to-orange-400">
+                        <p class="font-display font-bold text-white">+40%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== TESTIMONIALS ==================== -->
+    <section id="testimonials" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="font-display font-bold text-3xl sm:text-4xl text-[#1C398E] mb-4">Loved by designers</h2>
+                <p class="text-lg text-[#1C398E]/70">See what teams say about building with Claymorphic.</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Testimonial 1 -->
+                <div class="clay p-8">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-5 h-5 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-yellow-400 text-yellow-400"></i>
+                    </div>
+                    <p class="text-[#1C398E]/80 mb-6">"Claymorphic transformed our product. The soft, puffy UI makes our app feel friendly and approachable. Users love it!"</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+                            <span class="font-display font-bold text-white">SR</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold">Sarah Johnson</p>
+                            <p class="text-sm text-[#1C398E]/60">Product Designer, Acme</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Testimonial 2 -->
+                <div class="clay p-8">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-5 h-5 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-yellow-400 text-yellow-400"></i>
+                    </div>
+                    <p class="text-[#1C398E]/80 mb-6">"The accessibility features are outstanding. We passed our audit with zero issues. The tokens make consistency effortless."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-teal-500 flex items-center justify-center">
+                            <span class="font-display font-bold text-white">MK</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold">Michael Chen</p>
+                            <p class="text-sm text-[#1C398E]/60">Frontend Lead, TechCorp</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Testimonial 3 -->
+                <div class="clay p-8">
+                    <div class="flex gap-1 mb-4">
+                        <i data-lucide="star" class="w-5 h-5 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-yellow-400 text-yellow-400"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-yellow-400 text-yellow-400"></i>
+                    </div>
+                    <p class="text-[#1C398E]/80 mb-6">"Our conversion rate jumped 25% after switching to Claymorphic. The playful design builds trust with our users."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-orange-500 flex items-center justify-center">
+                            <span class="font-display font-bold text-white">EL</span>
+                        </div>
+                        <div>
+                            <p class="font-semibold">Emily Rodriguez</p>
+                            <p class="text-sm text-[#1C398E]/60">Growth Manager, StartupHub</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== PRICING ==================== -->
+    <section id="pricing" class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="font-display font-bold text-3xl sm:text-4xl text-[#1C398E] mb-4">Simple pricing</h2>
+                <p class="text-lg text-[#1C398E]/70">Start free, upgrade when you're ready.</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <!-- Free Plan -->
+                <div class="clay p-8 flex flex-col">
+                    <h3 class="font-display font-semibold text-xl mb-2">Starter</h3>
+                    <p class="text-[#1C398E]/60 mb-6">For personal projects</p>
+                    <p class="font-display font-bold text-4xl mb-6">$0<span class="text-lg text-[#1C398E]/60">/mo</span></p>
+                    <ul class="space-y-3 mb-8 flex-1">
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-[#16A34A]"></i> 50 components</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-[#16A34A]"></i> Basic tokens</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-[#16A34A]"></i> Community support</li>
+                        <li class="flex items-center gap-2 opacity-50"><i data-lucide="x" class="w-4 h-4 text-[#DC2626]"></i> Advanced animations</li>
+                        <li class="flex items-center gap-2 opacity-50"><i data-lucide="x" class="w-4 h-4 text-[#DC2626]"></i> Priority support</li>
+                    </ul>
+                    <a href="#" class="clay text-center py-3 font-semibold">Get Started</a>
+                </div>
+
+                <!-- Pro Plan (Featured) -->
+                <div class="clay clay-primary p-8 flex flex-col relative">
+                    <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 clay px-4 py-1 bg-gradient-to-br from-yellow-300 to-orange-400">
+                        <span class="text-xs font-bold text-white uppercase tracking-wide">Popular</span>
+                    </div>
+                    <h3 class="font-display font-semibold text-xl mb-2">Pro</h3>
+                    <p class="text-white/80 mb-6">For growing teams</p>
+                    <p class="font-display font-bold text-4xl mb-6">$29<span class="text-lg text-white/60">/mo</span></p>
+                    <ul class="space-y-3 mb-8 flex-1">
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> All 120+ components</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> Full token library</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> Advanced animations</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> Priority support</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> Figma plugin</li>
+                    </ul>
+                    <a href="#" class="clay bg-white text-[#1C398E] text-center py-3 font-semibold">Start Free Trial</a>
+                </div>
+
+                <!-- Enterprise Plan -->
+                <div class="clay p-8 flex flex-col">
+                    <h3 class="font-display font-semibold text-xl mb-2">Enterprise</h3>
+                    <p class="text-[#1C398E]/60 mb-6">For large organizations</p>
+                    <p class="font-display font-bold text-4xl mb-6">Custom</p>
+                    <ul class="space-y-3 mb-8 flex-1">
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-[#16A34A]"></i> Everything in Pro</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-[#16A34A]"></i> Custom tokens</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-[#16A34A]"></i> Dedicated support</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-[#16A34A]"></i> SSO/SAML</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-[#16A34A]"></i> SLA guarantee</li>
+                    </ul>
+                    <a href="#" class="clay text-center py-3 font-semibold">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FAQ ==================== -->
+    <section id="faq" class="py-20 bg-white">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="font-display font-bold text-3xl sm:text-4xl text-[#1C398E] mb-4">Frequently asked questions</h2>
+                <p class="text-lg text-[#1C398E]/70">Everything you need to know about Claymorphic.</p>
+            </div>
+
+            <div class="space-y-4">
+                <!-- FAQ Item 1 -->
+                <div class="clay p-6 faq-item" onclick="this.classList.toggle('open')">
+                    <div class="flex items-center justify-between cursor-pointer">
+                        <h3 class="font-semibold text-lg">What exactly is claymorphism?</h3>
+                        <i data-lucide="chevron-down" class="w-5 h-5 faq-icon"></i>
+                    </div>
+                    <div class="faq-answer mt-4">
+                        <p class="text-[#1C398E]/70">Claymorphism is a UI design trend characterized by soft, rounded, 3D-like shapes that mimic malleable clay. It uses puffy elements, soft shadows, and colorful surfaces to create playful, tactile interfaces.</p>
+                    </div>
+                </div>
+
+                <!-- FAQ Item 2 -->
+                <div class="clay p-6 faq-item" onclick="this.classList.toggle('open')">
+                    <div class="flex items-center justify-between cursor-pointer">
+                        <h3 class="font-semibold text-lg">Is Claymorphic accessible?</h3>
+                        <i data-lucide="chevron-down" class="w-5 h-5 faq-icon"></i>
+                    </div>
+                    <div class="faq-answer mt-4">
+                        <p class="text-[#1C398E]/70">Yes! Every component meets WCAG 2.2 AA standards. We test contrast ratios, keyboard navigation, focus states, and screen reader compatibility on every release.</p>
+                    </div>
+                </div>
+
+                <!-- FAQ Item 3 -->
+                <div class="clay p-6 faq-item" onclick="this.classList.toggle('open')">
+                    <div class="flex items-center justify-between cursor-pointer">
+                        <h3 class="font-semibold text-lg">Can I customize the tokens?</h3>
+                        <i data-lucide="chevron-down" class="w-5 h-5 faq-icon"></i>
+                    </div>
+                    <div class="faq-answer mt-4">
+                        <p class="text-[#1C398E]/70">Absolutely. All colors, spacing, typography, and shadows are exposed as CSS custom properties. You can override them to match your brand while maintaining the claymorphic aesthetic.</p>
+                    </div>
+                </div>
+
+                <!-- FAQ Item 4 -->
+                <div class="clay p-6 faq-item" onclick="this.classList.toggle('open')">
+                    <div class="flex items-center justify-between cursor-pointer">
+                        <h3 class="font-semibold text-lg">What frameworks are supported?</h3>
+                        <i data-lucide="chevron-down" class="w-5 h-5 faq-icon"></i>
+                    </div>
+                    <div class="faq-answer mt-4">
+                        <p class="text-[#1C398E]/70">Claymorphic is framework-agnostic. We provide vanilla CSS, plus official packages for React, Vue, and Svelte. Tailwind CSS integration is also available.</p>
+                    </div>
+                </div>
+
+                <!-- FAQ Item 5 -->
+                <div class="clay p-6 faq-item" onclick="this.classList.toggle('open')">
+                    <div class="flex items-center justify-between cursor-pointer">
+                        <h3 class="font-semibold text-lg">How do I migrate from another design system?</h3>
+                        <i data-lucide="chevron-down" class="w-5 h-5 faq-icon"></i>
+                    </div>
+                    <div class="faq-answer mt-4">
+                        <p class="text-[#1C398E]/70">We provide a migration guide and codemods for common patterns. Start by replacing your color tokens, then spacing, then components. Our CLI can automate most of the process.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="py-12 bg-[#1C398E] text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8 mb-8">
+                <!-- Brand -->
+                <div>
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="clay w-10 h-10 flex items-center justify-center bg-gradient-to-br from-blue-400 to-blue-600">
+                            <i data-lucide="layers" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <span class="font-display font-bold text-xl">Claymorphic</span>
+                    </div>
+                    <p class="text-white/70 text-sm">The soft UI design system that makes interfaces feel like play.</p>
+                </div>
+
+                <!-- Product -->
+                <div>
+                    <h4 class="font-semibold mb-4">Product</h4>
+                    <ul class="space-y-2 text-white/70 text-sm">
+                        <li><a href="#features" class="hover:text-white transition">Features</a></li>
+                        <li><a href="#pricing" class="hover:text-white transition">Pricing</a></li>
+                        <li><a href="#" class="hover:text-white transition">Changelog</a></li>
+                        <li><a href="#" class="hover:text-white transition">Roadmap</a></li>
+                    </ul>
+                </div>
+
+                <!-- Resources -->
+                <div>
+                    <h4 class="font-semibold mb-4">Resources</h4>
+                    <ul class="space-y-2 text-white/70 text-sm">
+                        <li><a href="#" class="hover:text-white transition">Documentation</a></li>
+                        <li><a href="#" class="hover:text-white transition">Components</a></li>
+                        <li><a href="#" class="hover:text-white transition">Tokens</a></li>
+                        <li><a href="#" class="hover:text-white transition">Figma plugin</a></li>
+                    </ul>
+                </div>
+
+                <!-- Company -->
+                <div>
+                    <h4 class="font-semibold mb-4">Company</h4>
+                    <ul class="space-y-2 text-white/70 text-sm">
+                        <li><a href="#" class="hover:text-white transition">About</a></li>
+                        <li><a href="#" class="hover:text-white transition">Blog</a></li>
+                        <li><a href="#" class="hover:text-white transition">Careers</a></li>
+                        <li><a href="#" class="hover:text-white transition">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Social + Copyright -->
+            <div class="border-t border-white/20 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="text-white/60 text-sm">© 2025 Claymorphic. All rights reserved.</p>
+                <div class="flex gap-4">
+                    <a href="#" class="clay w-10 h-10 flex items-center justify-center bg-white/10 hover:bg-white/20 transition" aria-label="Twitter">
+                        <i data-lucide="twitter" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="clay w-10 h-10 flex items-center justify-center bg-white/10 hover:bg-white/20 transition" aria-label="GitHub">
+                        <i data-lucide="github" class="w-5 h-5"></i>
+                    </a>
+                    <a href="#" class="clay w-10 h-10 flex items-center justify-center bg-white/10 hover:bg-white/20 transition" aria-label="LinkedIn">
+                        <i data-lucide="linkedin" class="w-5 h-5"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Initialize Lucide icons -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

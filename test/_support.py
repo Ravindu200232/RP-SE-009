@@ -7,19 +7,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-for source_root in (ROOT, ROOT / "srs-agent", ROOT / "deployment-agent"):
+for source_root in (ROOT, ROOT / "srs-agent", ROOT / "deployment-agent",
+                    ROOT / "builder-agent", ROOT / "qa-agent"):
     value = str(source_root)
     if value not in sys.path:
         sys.path.insert(0, value)
 
 
-# --------------------------------------------------------------------------
-# Ollama test double
-#
-# The suite must not need a running daemon, and `is_cloud_model()` reaches the
-# module-level default client, so a test that forgets to replace it would make
-# a real HTTP call. `fake_ollama` swaps both the transport and that default.
-# --------------------------------------------------------------------------
+# Mock Ollama transport and default client for running tests without an Ollama daemon.
 import contextlib
 import json as _json
 import os
@@ -130,7 +125,7 @@ def fake_ollama(daemon, api_key="", host="http://localhost:11434"):
     so a context-window assertion measures the code under test rather than
     whatever the developer happens to have configured.
     """
-    from agents.core import ollama_client as oc
+    from builder_agent import llm as oc
 
     previous = oc._CLIENT
     missing = ROOT / "test" / "results" / "__no_such_settings__.json"

@@ -1,17 +1,20 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FileDown, RefreshCw } from 'lucide-react'
+import { FileDown, Hammer, RefreshCw } from 'lucide-react'
 import { api } from '@/lib/api'
+import { diagramRows } from '@/lib/srs-view'
 import { useStore } from '@/lib/store'
 import { Badge, Button, Empty, SubTab, SubTabs } from '../ui'
 import { VIEWS, badgeFor } from './views'
 
 
-export default function SrsResult() {
+export default function SrsResult({ specOnly = false, onBuild }) {
   const project = useStore(s => s.project)
+  const busy = useStore(s => s.busy)
+  const srsStamp = useStore(s => s.srsStamp[s.project])
   const [srs, setSrs] = useState(null)
-  const [sub, setSub] = useState('document')
+  const [sub, setSub] = useState('overview')
   const [state, setState] = useState('idle')
   const [error, setError] = useState('')
 
@@ -21,7 +24,9 @@ export default function SrsResult() {
     let last
     for (let i = 0; i < 4; i++) {
       try {
-        setSrs(await api.srsResults(project))
+        const loaded = await api.srsResults(project)
+        // Same normaliser the review screen uses, so both render identical rows.
+        setSrs({ ...loaded, diagrams: diagramRows(loaded?.diagrams) })
         setState('ready')
         return
       } catch (e) {
@@ -33,7 +38,9 @@ export default function SrsResult() {
     setState('error')
   }
 
-  useEffect(() => { load()  }, [project])
+  useEffect(() => {
+    if (!busy) load()
+  }, [project, busy, srsStamp])
 
   if (!project) return <Empty>Open a project to see the SRS it was built from.</Empty>
 
@@ -67,6 +74,14 @@ export default function SrsResult() {
           <Button variant="outline" onClick={load}>
             <RefreshCw className="size-3" /> Refresh
           </Button>
+          {/* Said no to building it at the time. This is where "whenever you
+              like" has to actually be somewhere. */}
+          {specOnly && (
+            <Button variant="solid" disabled={busy} onClick={onBuild}
+                    title="Build the application this specification describes">
+              <Hammer className="size-3" /> Build this app
+            </Button>
+          )}
         </span>
       </SubTabs>
 
@@ -79,7 +94,7 @@ export default function SrsResult() {
             start one with “Plan it first” on the home screen.
           </Empty>
         )}
-        {state === 'ready' && anything && <View srs={srs} />}
+        {state === 'ready' && anything && <View srs={srs} onSelectView={setSub} />}
       </div>
     </div>
   )

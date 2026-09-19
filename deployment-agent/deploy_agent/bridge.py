@@ -39,7 +39,7 @@ DEFAULT_DEPLOY_MODEL = "gemma4:31b-cloud"
 def agentforge_settings() -> dict:
     """Read ~/.agentforge/settings.json."""
     try:
-        from agents.core.ollama_client import load_settings
+        from builder_agent.llm import load_settings
         return load_settings()
     except Exception:
         try:
@@ -50,31 +50,40 @@ def agentforge_settings() -> dict:
 
 
 def deploy_model() -> str:
-    """The model that writes the deployment plan."""
+    """The model that writes the deployment plan.
+
+    Uses the model selected in settings (agent_model), falling back to
+    DEFAULT_DEPLOY_MODEL.
+    """
     settings = agentforge_settings()
-    for key in ("deploy_model", "agent_model"):
-        value = str(settings.get(key, "")).strip()
-        if value:
-            return value
-    return DEFAULT_DEPLOY_MODEL
+    model = str(settings.get("agent_model") or "").strip()
+    return model or DEFAULT_DEPLOY_MODEL
+
+
+def deploy_think() -> bool:
+    """Whether deployment planning should enable thinking, from agent_think in settings."""
+    settings = agentforge_settings()
+    return bool(settings.get("agent_think", True))
 
 
 def route(model: str) -> tuple[str, dict]:
     """(base_url, headers) for this model, using AgentForge's routing."""
     try:
-        from agents.core.ollama_client import _default_client
+        from builder_agent.llm import _default_client
         return _default_client().route(model)
     except Exception:
         return "http://localhost:11434", {"Content-Type": "application/json"}
 
 
-def ollama_client(model: str = ""):
+def ollama_client(model: str = "", think: bool | None = None):
     """A planner client pointed at whichever Ollama can serve the chosen model."""
     from dfagents.planner import OllamaClient
 
     tag = model or deploy_model()
     base, headers = route(tag)
-    return OllamaClient(base_url=base.rstrip("/"), model=tag, headers=headers)
+    if think is None:
+        think = deploy_think()
+    return OllamaClient(base_url=base.rstrip("/"), model=tag, headers=headers, think=think)
 
 
 def ollama_probe() -> dict:

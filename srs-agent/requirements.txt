@@ -19,8 +19,17 @@ pymongo
 
 # Documents and media
 reportlab
+# The first engine `extract_pdf_text` tries, and the one that reads a text PDF
+# properly. Left out of this list it was never installed, so every PDF fell
+# through to the next engine on a fresh machine and nobody saw why.
+pdfplumber
 pypdf
 pillow
 pytesseract
 faster-whisper
 pymupdf
+
+# Not installed by default: easyocr is the fallback for a scanned image that
+# pytesseract cannot read, and it pulls torch - gigabytes, for a path most
+# projects never take. `extraction/ocr.py` degrades without it and says so.
+#   pip install easyocr

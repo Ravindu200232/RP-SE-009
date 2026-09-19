@@ -17,6 +17,12 @@ export function deriveVitestCounts(v) {
  */
 export function unitTestStatus(v) {
   if (!v) return null
+  if (Array.isArray(v.fileResults)) {
+    const passed = v.fileResults.filter(r => r.status === 'passed').length
+    const failed = v.fileResults.filter(r => r.status === 'failed').length
+    return { passed, failed, skipped: 0, total: v.fileResults.length,
+             executed: passed + failed, files: v.fileResults.length, tested: true, unit: 'files' }
+  }
   if (Array.isArray(v.testResults)) {
     return { ...deriveVitestCounts(v), tested: true }
   }

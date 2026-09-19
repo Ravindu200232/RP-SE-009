@@ -15,7 +15,7 @@ GENERIC_DOMAIN: dict[str, Any] = {
               {"role_key": "staff", "role_name": "Staff", "description": "Performs day-to-day operations on records."},
               {"role_key": "member", "role_name": "Member", "description": "Self-service access to their own data."},
               GUEST_ROLE],
-    "modules": ["Public Website", "Authentication", "User Management", "Core Records",
+    "modules": ["Core Application", "Authentication", "User Management", "Core Records",
                 "Dashboard & Reports", "Notifications", "Settings"],
     "tables": [
         {"table_name": "records", "description": "Primary domain records managed by the app.",
@@ -31,8 +31,8 @@ GENERIC_DOMAIN: dict[str, Any] = {
         {"from": "records.id", "to": "comments.record_id", "type": "one_to_many", "description": "A record has many comments."},
     ],
     "public_pages": [
-        {"page_name": "Home", "route": "/", "sections": ["Hero", "Features", "How it works", "Pricing", "Footer"]},
-        {"page_name": "Contact", "route": "/contact", "sections": ["Form", "Details"]},
+        {"page_name": "Home", "route": "/", "sections": ["Workspace overview", "Active records", "Recent activity", "Quick actions"]},
+        {"page_name": "Documentation", "route": "/docs", "sections": ["Guide", "API", "Reference"]},
     ],
     "protected_pages": [
         {"page_name": "Member Dashboard", "route": "/app", "page_type": "portal", "allowed_roles": ["member"], "functions": ["View/manage own records", "Profile"]},
@@ -52,7 +52,7 @@ GENERIC_DOMAIN: dict[str, Any] = {
         {"name": "Email Provider", "type": "messaging", "description": "Transactional email.", "required": False},
     ],
     "feature_options": ["User accounts & roles", "Core record management", "Dashboard & reports",
-                        "Notifications", "File uploads", "Public landing site", "Online payments"],
+                        "Notifications", "File uploads", "Activity tracking", "Online payments"],
     "nfr_focus": ["Role-based access control on all protected endpoints"],
     "risks": [
         {"area": "Scope", "risk": "Under-specified domain", "severity": "Medium", "reason": "Idea is generic, so the model is a sensible default.", "mitigation": "Refine via the requirement questions and prompt customization."},

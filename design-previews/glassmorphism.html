@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GlassUI — Crystal-clear interfaces for the modern web</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100;200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1856FF',
+            secondary: '#3A344E',
+            success: '#07CA6B',
+            warning: '#E89558',
+            danger: '#EA2143',
+            surface: '#FFFFFF',
+            text: '#141414',
+          },
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    .glass {
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    .glass-hover:hover {
+      background: rgba(255, 255, 255, 0.10);
+      border-color: rgba(255, 255, 255, 0.20);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    }
+    .glass-nav {
+      background: rgba(11, 13, 26, 0.7);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-btn {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      transition: all 0.3s ease;
+    }
+    .glass-btn:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+    .luminous-border {
+      box-shadow: 0 0 20px rgba(24, 86, 255, 0.3), 0 0 60px rgba(24, 86, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    .luminous-border-success {
+      box-shadow: 0 0 20px rgba(7, 202, 107, 0.3), 0 0 60px rgba(7, 202, 107, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      pointer-events: none;
+    }
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(30px, -20px) scale(1.05); }
+    }
+    @keyframes float2 {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(-20px, 30px) scale(1.08); }
+    }
+    .animate-float { animation: float 8s ease-in-out infinite; }
+    .animate-float2 { animation: float2 10s ease-in-out infinite; }
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease, padding 0.4s ease;
+    }
+    .faq-answer.open {
+      max-height: 300px;
+      padding-bottom: 1.5rem;
+    }
+    .faq-icon {
+      transition: transform 0.3s ease;
+    }
+    .faq-item.open .faq-icon {
+      transform: rotate(180deg);
+    }
+    .focus-ring:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px #1856FF, 0 0 0 4px rgba(24, 86, 255, 0.3);
+    }
+    .card-glow {
+      position: relative;
+    }
+    .card-glow::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    }
+    .text-gradient {
+      background: linear-gradient(135deg, #FFFFFF 0%, #A8B8E8 50%, #1856FF 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    html {
+      scroll-behavior: smooth;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+  </style>
+</head>
+<body class="bg-[#0B0D1A] text-white antialiased overflow-x-hidden">
+
+  <!-- Background blobs -->
+  <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+    <div class="blob w-[500px] h-[500px] bg-primary/20 top-[-10%] left-[-5%] animate-float"></div>
+    <div class="blob w-[400px] h-[400px] bg-secondary/40 top-[20%] right-[-10%] animate-float2"></div>
+    <div class="blob w-[350px] h-[350px] bg-success/10 bottom-[10%] left-[10%] animate-float"></div>
+    <div class="blob w-[300px] h-[300px] bg-warning/10 bottom-[30%] right-[20%] animate-float2"></div>
+    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0B0D1A]"></div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="fixed top-0 w-full z-50 glass-nav">
+    <div class="max-w-7xl mx-auto px-6 py-4">
+      <div class="flex items-center justify-between">
+        <a href="#" class="flex items-center gap-3 focus-ring rounded-lg" aria-label="GlassUI Home">
+          <div class="w-10 h-10 rounded-xl glass flex items-center justify-center">
+            <i data-lucide="layers" class="w-5 h-5 text-primary"></i>
+          </div>
+          <span class="text-xl font-bold tracking-tight">Glass<span class="text-primary">UI</span></span>
+        </a>
+        <div class="hidden lg:flex items-center gap-8">
+          <a href="#features" class="text-sm text-white/70 hover:text-white transition-colors focus-ring rounded-lg px-2 py-1">Features</a>
+          <a href="#process" class="text-sm text-white/70 hover:text-white transition-colors focus-ring rounded-lg px-2 py-1">Process</a>
+          <a href="#pricing" class="text-sm text-white/70 hover:text-white transition-colors focus-ring rounded-lg px-2 py-1">Pricing</a>
+          <a href="#faq" class="text-sm text-white/70 hover:text-white transition-colors focus-ring rounded-lg px-2 py-1">FAQ</a>
+        </div>
+        <div class="flex items-center gap-3">
+          <a href="#" class="hidden sm:inline-flex text-sm text-white/70 hover:text-white transition-colors focus-ring rounded-lg px-3 py-2">Sign in</a>
+          <a href="#" class="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all focus-ring">
+            Get Started
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </a>
+          <button id="mobile-menu-btn" class="lg:hidden glass-btn rounded-xl p-2 focus-ring" aria-label="Toggle menu">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+      <!-- Mobile menu -->
+      <div id="mobile-menu" class="hidden lg:hidden mt-4 pb-4">
+        <div class="glass rounded-2xl p-4 flex flex-col gap-2">
+          <a href="#features" class="text-sm text-white/80 hover:text-white px-3 py-2 rounded-lg hover:bg-white/5 transition-colors">Features</a>
+          <a href="#process" class="text-sm text-white/80 hover:text-white px-3 py-2 rounded-lg hover:bg-white/5 transition-colors">Process</a>
+          <a href="#pricing" class="text-sm text-white/80 hover:text-white px-3 py-2 rounded-lg hover:bg-white/5 transition-colors">Pricing</a>
+          <a href="#faq" class="text-sm text-white/80 hover:text-white px-3 py-2 rounded-lg hover:bg-white/5 transition-colors">FAQ</a>
+          <a href="#" class="text-sm text-white/80 hover:text-white px-3 py-2 rounded-lg hover:bg-white/5 transition-colors">Sign in</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="relative z-10 pt-32 lg:pt-40 pb-20 lg:pb-28">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="grid lg:grid-cols-2 gap-16 items-center">
+        <div>
+          <div class="inline-flex items-center gap-2 glass rounded-full px-4 py-1.5 mb-6">
+            <span class="w-2 h-2 rounded-full bg-success"></span>
+            <span class="font-mono text-xs text-white/70">v2.0 — now with bento grids</span>
+          </div>
+          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.1] tracking-tight mb-6">
+            Crystal-clear interfaces for the <span class="text-gradient">modern web</span>
+          </h1>
+          <p class="text-lg text-white/60 leading-relaxed mb-8 max-w-lg">
+            A glassmorphism design system that brings depth, clarity, and elegance to your digital products. Built for teams who refuse to compromise.
+          </p>
+          <div class="flex flex-wrap gap-4 mb-12">
+            <a href="#" class="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-white font-semibold px-7 py-3.5 rounded-xl transition-all focus-ring">
+              Get Started
+              <i data-lucide="arrow-right" class="w-5 h-5"></i>
+            </a>
+            <a href="#" class="inline-flex items-center gap-2 glass-btn text-white font-semibold px-7 py-3.5 rounded-xl focus-ring">
+              <i data-lucide="play" class="w-4 h-4"></i>
+              View Demo
+            </a>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="flex -space-x-3">
+              <div class="w-10 h-10 rounded-full bg-primary/30 border-2 border-white/20 flex items-center justify-center text-xs font-bold">SC</div>
+              <div class="w-10 h-10 rounded-full bg-success/30 border-2 border-white/20 flex items-center justify-center text-xs font-bold">MJ</div>
+              <div class="w-10 h-10 rounded-full bg-warning/30 border-2 border-white/20 flex items-center justify-center text-xs font-bold">ER</div>
+              <div class="w-10 h-10 rounded-full bg-secondary/50 border-2 border-white/20 flex items-center justify-center text-xs font-bold">+9</div>
+            </div>
+            <div>
+              <div class="flex items-center gap-1">
+                <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+                <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+              </div>
+              <p class="text-xs text-white/60 mt-1">4.9/5 from 2,000+ teams</p>
+            </div>
+          </div>
+        </div>
+        <div class="relative">
+          <!-- Main dashboard card -->
+          <div class="glass rounded-3xl p-6 card-glow">
+            <div class="flex gap-2 mb-6">
+              <div class="w-3 h-3 rounded-full bg-danger"></div>
+              <div class="w-3 h-3 rounded-full bg-warning"></div>
+              <div class="w-3 h-3 rounded-full bg-success"></div>
+            </div>
+            <div class="flex items-center justify-between mb-6">
+              <div>
+                <p class="text-xs text-white/50 font-mono">Monthly revenue</p>
+                <p class="text-3xl font-bold mt-1">$48,290</p>
+              </div>
+              <div class="flex items-center gap-1 bg-success/10 rounded-full px-3 py-1">
+                <i data-lucide="trending-up" class="w-4 h-4 text-success"></i>
+                <span class="text-xs font-semibold text-success">+12.5%</span>
+              </div>
+            </div>
+            <div class="flex items-end gap-2 sm:gap-3 h-44">
+              <div class="flex-1 bg-primary/40 rounded-t-lg" style="height: 35%"></div>
+              <div class="flex-1 bg-primary/60 rounded-t-lg" style="height: 55%"></div>
+              <div class="flex-1 bg-primary/50 rounded-t-lg" style="height: 45%"></div>
+              <div class="flex-1 bg-primary/80 rounded-t-lg" style="height: 75%"></div>
+              <div class="flex-1 bg-primary/70 rounded-t-lg" style="height: 60%"></div>
+              <div class="flex-1 bg-primary/90 rounded-t-lg" style="height: 85%"></div>
+              <div class="flex-1 bg-primary/55 rounded-t-lg" style="height: 50%"></div>
+            </div>
+            <div class="flex justify-between mt-3">
+              <span class="font-mono text-[10px] text-white/40">Mon</span>
+              <span class="font-mono text-[10px] text-white/40">Wed</span>
+              <span class="font-mono text-[10px] text-white/40">Fri</span>
+              <span class="font-mono text-[10px] text-white/40">Sun</span>
+            </div>
+          </div>
+          <!-- Floating notification -->
+          <div class="glass rounded-2xl p-4 absolute -top-4 -right-2 sm:-right-4 shadow-xl animate-float">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center">
+                <i data-lucide="check" class="w-5 h-5 text-success"></i>
+              </div>
+              <div>
+                <p class="text-sm font-semibold">Deploy successful</p>
+                <p class="text-xs text-white/50">2 minutes ago</p>
+              </div>
+            </div>
+          </div>
+          <!-- Floating card -->
+          <div class="glass rounded-2xl p-4 absolute -bottom-4 -left-2 sm:-left-4 shadow-xl animate-float2">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                <i data-lucide="users" class="w-5 h-5 text-primary"></i>
+              </div>
+              <div>
+                <p class="text-sm font-semibold">+2,847 users</p>
+                <p class="text-xs text-white/50">This week</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <section class="relative z-10 py-16 lg:py-20">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+        <div class="glass glass-hover rounded-2xl p-6 text-center transition-all">
+          <p class="text-3xl lg:text-4xl font-extrabold text-white">99.9%</p>
+          <p class="text-sm text-white/50 mt-1">Uptime</p>
+        </div>
+        <div class="glass glass-hover rounded-2xl p-6 text-center transition-all">
+          <p class="text-3xl lg:text-4xl font-extrabold text-white">10K+</p>
+          <p class="text-sm text-white/50 mt-1">Active users</p>
+        </div>
+        <div class="glass glass-hover rounded-2xl p-6 text-center transition-all">
+          <p class="text-3xl lg:text-4xl font-extrabold text-white">50+</p>
+          <p class="text-sm text-white/50 mt-1">Components</p>
+        </div>
+        <div class="glass glass-hover rounded-2xl p-6 text-center transition-all">
+          <p class="text-3xl lg:text-4xl font-extrabold text-white">4.9/5</p>
+          <p class="text-sm text-white/50 mt-1">Rating</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features (Bento Grid) -->
+  <section id="features" class="relative z-10 py-16 lg:py-24">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <p class="font-mono text-sm text-primary mb-3">// Features</p>
+        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4">Everything you need</h2>
+        <p class="text-white/60 max-w-2xl mx-auto text-lg">A complete set of glassmorphism components designed to work together seamlessly.</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 auto-rows-[minmax(180px,auto)]">
+        <!-- Large card -->
+        <div class="glass glass-hover rounded-3xl p-8 md:col-span-2 md:row-span-2 transition-all card-glow">
+          <div class="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center mb-6">
+            <i data-lucide="layers" class="w-6 h-6 text-primary"></i>
+          </div>
+          <h3 class="text-xl lg:text-2xl font-bold mb-3">Frosted Glass Components</h3>
+          <p class="text-white/60 leading-relaxed mb-6">Pre-built glass components with the perfect balance of transparency, blur, and luminosity. Drop them in and they just work.</p>
+          <div class="flex items-end gap-2 h-24">
+            <div class="flex-1 bg-white/10 rounded-t-lg" style="height: 30%"></div>
+            <div class="flex-1 bg-primary/40 rounded-t-lg" style="height: 50%"></div>
+            <div class="flex-1 bg-white/10 rounded-t-lg" style="height: 40%"></div>
+            <div class="flex-1 bg-primary/60 rounded-t-lg" style="height: 70%"></div>
+            <div class="flex-1 bg-white/10 rounded-t-lg" style="height: 55%"></div>
+            <div class="flex-1 bg-primary/80 rounded-t-lg" style="height: 90%"></div>
+          </div>
+        </div>
+        <!-- Small card -->
+        <div class="glass glass-hover rounded-3xl p-6 transition-all">
+          <div class="w-10 h-10 rounded-xl bg-warning/20 flex items-center justify-center mb-4">
+            <i data-lucide="sparkles" class="w-5 h-5 text-warning"></i>
+          </div>
+          <h3 class="text-lg font-bold mb-2">Luminous Borders</h3>
+          <p class="text-white/50 text-sm leading-relaxed">Subtle glowing edges that define depth and hierarchy.</p>
+        </div>
+        <!-- Small card -->
+        <div class="glass glass-hover rounded-3xl p-6 transition-all">
+          <div class="w-10 h-10 rounded-xl bg-success/20 flex items-center justify-center mb-4">
+            <i data-lucide="blur" class="w-5 h-5 text-success"></i>
+          </div>
+          <h3 class="text-lg font-bold mb-2">Blur Effects</h3>
+          <p class="text-white/50 text-sm leading-relaxed">Advanced backdrop blur for layered, immersive interfaces.</p>
+        </div>
+        <!-- Small card -->
+        <div class="glass glass-hover rounded-3xl p-6 transition-all">
+          <div class="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center mb-4">
+            <i data-lucide="grid" class="w-5 h-5 text-primary"></i>
+          </div>
+          <h3 class="text-lg font-bold mb-2">Responsive Grid</h3>
+          <p class="text-white/50 text-sm leading-relaxed">Adaptive layouts that look perfect on every screen.</p>
+        </div>
+        <!-- Small card -->
+        <div class="glass glass-hover rounded-3xl p-6 transition-all">
+          <div class="w-10 h-10 rounded-xl bg-secondary/40 flex items-center justify-center mb-4">
+            <i data-lucide="moon" class="w-5 h-5 text-white"></i>
+          </div>
+          <h3 class="text-lg font-bold mb-2">Dark Mode</h3>
+          <p class="text-white/50 text-sm leading-relaxed">Built-in dark theme support with zero configuration.</p>
+        </div>
+        <!-- Wide card -->
+        <div class="glass glass-hover rounded-3xl p-6 md:col-span-2 transition-all">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div class="w-10 h-10 rounded-xl bg-danger/20 flex items-center justify-center shrink-0">
+              <i data-lucide="accessibility" class="w-5 h-5 text-danger"></i>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold mb-1">Accessible by Design</h3>
+              <p class="text-white/50 text-sm leading-relaxed">Every component meets WCAG 2.2 AA standards, with keyboard-first navigation and visible focus states.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Process -->
+  <section id="process" class="relative z-10 py-16 lg:py-24">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <p class="font-mono text-sm text-primary mb-3">// Process</p>
+        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4">From idea to launch</h2>
+        <p class="text-white/60 max-w-2xl mx-auto text-lg">A streamlined workflow that keeps your team moving fast.</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+        <div class="glass glass-hover rounded-3xl p-6 transition-all relative">
+          <div class="font-mono text-4xl font-bold text-white/10 absolute top-4 right-6">01</div>
+          <div class="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center mb-4">
+            <i data-lucide="pen-tool" class="w-5 h-5 text-primary"></i>
+          </div>
+          <h3 class="text-lg font-bold mb-2">Design</h3>
+          <p class="text-white/50 text-sm leading-relaxed">Sketch your vision using our glass component library and Figma kit.</p>
+        </div>
+        <div class="glass glass-hover rounded-3xl p-6 transition-all relative">
+          <div class="font-mono text-4xl font-bold text-white/10 absolute top-4 right-6">02</div>
+          <div class="w-10 h-10 rounded-xl bg-success/20 flex items-center justify-center mb-4">
+            <i data-lucide="rocket" class="w-5 h-5 text-success"></i>
+          </div>
+          <h3 class="text-lg font-bold mb-2">Prototype</h3>
+          <p class="text-white/50 text-sm leading-relaxed">Build interactive prototypes with real glass effects and motion.</p>
+        </div>
+        <div class="glass glass-hover rounded-3xl p-6 transition-all relative">
+          <div class="font-mono text-4xl font-bold text-white/10 absolute top-4 right-6">03</div>
+          <div class="w-10 h-10 rounded-xl bg-warning/20 flex items-center justify-center mb-4">
+            <i data-lucide="code" class="w-5 h-5 text-warning"></i>
+          </div>
+          <h3 class="text-lg font-bold mb-2">Develop</h3>
+          <p class="text-white/50 text-sm leading-relaxed">Ship production-ready code with our React and Vue components.</p>
+        </div>
+        <div class="glass glass-hover rounded-3xl p-6 transition-all relative">
+          <div class="font-mono text-4xl font-bold text-white/10 absolute top-4 right-6">04</div>
+          <div class="w-10 h-10 rounded-xl bg-secondary/40 flex items-center justify-center mb-4">
+            <i data-lucide="refresh-cw" class="w-5 h-5 text-white"></i>
+          </div>
+          <h3 class="text-lg font-bold mb-2">Iterate</h3>
+          <p class="text-white/50 text-sm leading-relaxed">Continuously refine and improve with our analytics and feedback tools.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Benefits -->
+  <section id="benefits" class="relative z-10 py-16 lg:py-24">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+        <div>
+          <p class="font-mono text-sm text-primary mb-3">// Benefits</p>
+          <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-6">Why teams choose GlassUI</h2>
+          <p class="text-white/60 text-lg leading-relaxed mb-8">We've built GlassUI to solve the real problems teams face when designing modern interfaces.</p>
+          <div class="space-y-4">
+            <div class="flex items-start gap-4">
+              <div class="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center shrink-0 mt-0.5">
+                <i data-lucide="check" class="w-4 h-4 text-success"></i>
+              </div>
+              <div>
+                <p class="font-semibold">Faster development</p>
+                <p class="text-white/50 text-sm">Pre-built components cut development time by up to 60%.</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-4">
+              <div class="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center shrink-0 mt-0.5">
+                <i data-lucide="check" class="w-4 h-4 text-success"></i>
+              </div>
+              <div>
+                <p class="font-semibold">Consistent design</p>
+                <p class="text-white/50 text-sm">One design language across every screen and platform.</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-4">
+              <div class="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center shrink-0 mt-0.5">
+                <i data-lucide="check" class="w-4 h-4 text-success"></i>
+              </div>
+              <div>
+                <p class="font-semibold">Better engagement</p>
+                <p class="text-white/50 text-sm">Modern glass aesthetics that users love and remember.</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-4">
+              <div class="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center shrink-0 mt-0.5">
+                <i data-lucide="check" class="w-4 h-4 text-success"></i>
+              </div>
+              <div>
+                <p class="font-semibold">Reduced design debt</p>
+                <p class="text-white/50 text-sm">No more one-off styles. Everything is tokenized and reusable.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="relative">
+          <div class="glass rounded-3xl p-8 card-glow">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center">
+                <i data-lucide="bar-chart-3" class="w-6 h-6 text-primary"></i>
+              </div>
+              <div>
+                <p class="font-semibold">Team performance</p>
+                <p class="text-xs text-white/50">Last 30 days</p>
+              </div>
+            </div>
+            <div class="space-y-4">
+              <div>
+                <div class="flex justify-between text-xs text-white/50 mb-1">
+                  <span>Design</span>
+                  <span>92%</span>
+                </div>
+                <div class="h-2 bg-white/5 rounded-full overflow-hidden">
+                  <div class="h-full bg-primary rounded-full" style="width: 92%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between text-xs text-white/50 mb-1">
+                  <span>Development</span>
+                  <span>78%</span>
+                </div>
+                <div class="h-2 bg-white/5 rounded-full overflow-hidden">
+                  <div class="h-full bg-success rounded-full" style="width: 78%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between text-xs text-white/50 mb-1">
+                  <span>Testing</span>
+                  <span>85%</span>
+                </div>
+                <div class="h-2 bg-white/5 rounded-full overflow-hidden">
+                  <div class="h-full bg-warning rounded-full" style="width: 85%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between text-xs text-white/50 mb-1">
+                  <span>Deployment</span>
+                  <span>96%</span>
+                </div>
+                <div class="h-2 bg-white/5 rounded-full overflow-hidden">
+                  <div class="h-full bg-secondary rounded-full" style="width: 96%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="glass rounded-2xl p-4 absolute -bottom-4 -right-2 sm:-right-4 shadow-xl animate-float">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center">
+                <i data-lucide="award" class="w-4 h-4 text-success"></i>
+              </div>
+              <div>
+                <p class="text-sm font-semibold">#1 Design System</p>
+                <p class="text-xs text-white/50">Product Hunt 2024</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section id="testimonials" class="relative z-10 py-16 lg:py-24">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <p class="font-mono text-sm text-primary mb-3">// Testimonials</p>
+        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4">Loved by teams worldwide</h2>
+        <p class="text-white/60 max-w-2xl mx-auto text-lg">Don't take our word for it — hear from the people who use GlassUI every day.</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
+        <div class="glass glass-hover rounded-3xl p-8 transition-all">
+          <div class="flex items-center gap-1 mb-6">
+            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+          </div>
+          <p class="text-white/70 leading-relaxed mb-8">"The glass design system transformed our product. Our users immediately noticed the difference — everything feels more polished and modern."</p>
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-full bg-primary/30 border-2 border-white/20 flex items-center justify-center text-sm font-bold">SC</div>
+            <div>
+              <p class="font-semibold text-sm">Sarah Chen</p>
+              <p class="text-xs text-white/50">Product Designer</p>
+            </div>
+          </div>
+        </div>
+        <div class="glass glass-hover rounded-3xl p-8 transition-all">
+          <div class="flex items-center gap-1 mb-6">
+            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+          </div>
+          <p class="text-white/70 leading-relaxed mb-8">"Beautiful and accessible. A rare combination in the design system space. The WCAG 2.2 AA compliance out of the box is a game-changer."</p>
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-full bg-success/30 border-2 border-white/20 flex items-center justify-center text-sm font-bold">MJ</div>
+            <div>
+              <p class="font-semibold text-sm">Marcus Johnson</p>
+              <p class="text-xs text-white/50">Frontend Engineer</p>
+            </div>
+          </div>
+        </div>
+        <div class="glass glass-hover rounded-3xl p-8 transition-all">
+          <div class="flex items-center gap-1 mb-6">
+            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+            <i data-lucide="star" class="w-4 h-4 text-warning fill-warning"></i>
+          </div>
+          <p class="text-white/70 leading-relaxed mb-8">"Our users love the new interface. Engagement is up 40% since we switched to GlassUI. The bento grid layouts are stunning."</p>
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-full bg-warning/30 border-2 border-white/20 flex items-center justify-center text-sm font-bold">ER</div>
+            <div>
+              <p class="font-semibold text-sm">Elena Rodriguez</p>
+              <p class="text-xs text-white/50">UX Lead</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section id="pricing" class="relative z-10 py-16 lg:py-24">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <p class="font-mono text-sm text-primary mb-3">// Pricing</p>
+        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4">Simple, transparent pricing</h2>
+        <p class="text-white/60 max-w-2xl mx-auto text-lg">Start free. Scale as you grow. No hidden fees.</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 items-stretch">
+        <!-- Starter -->
+        <div class="glass glass-hover rounded-3xl p-8 flex flex-col transition-all">
+          <h3 class="text-lg font-bold mb-2">Starter</h3>
+          <p class="text-white/50 text-sm mb-6">For personal projects</p>
+          <div class="mb-6">
+            <span class="text-4xl font-extrabold">$0</span>
+            <span class="text-white/50 text-sm">/mo</span>
+          </div>
+          <ul class="space-y-3 mb-8 flex-grow">
+            <li class="flex items-center gap-3 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+              <span class="text-white/70">50 components</span>
+            </li>
+            <li class="flex items-center gap-3 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+              <span class="text-white/70">Community support</span>
+            </li>
+            <li class="flex items-center gap-3 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+              <span class="text-white/70">1 project</span>
+            </li>
+            <li class="flex items-center gap-3 text-sm">
+              <i data-lucide="x" class="w-4 h-4 text-white/30 shrink-0"></i>
+              <span class="text-white/40">Advanced theming</span>
+            </li>
+          </ul>
+          <a href="#" class="glass-btn text-center text-white font-semibold px-6 py-3 rounded-xl transition-all focus-ring">Start Free</a>
+        </div>
+        <!-- Pro (Highlighted) -->
+        <div class="glass rounded-3xl p-8 flex flex-col transition-all luminous-border relative md:-mt-4 md:mb-4">
+          <div class="absolute top-4 right-4 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full">Popular</div>
+          <h3 class="text-lg font-bold mb-2">Pro</h3>
+          <p class="text-white/50 text-sm mb-6">For growing teams</p>
+          <div class="mb-6">
+            <span class="text-4xl font-extrabold">$19</span>
+            <span class="text-white/50 text-sm">/mo</span>
+          </div>
+          <ul class="space-y-3 mb-8 flex-grow">
+            <li class="flex items-center gap-3 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+              <span class="text-white/70">All 50+ components</span>
+            </li>
+            <li class="flex items-center gap-3 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+              <span class="text-white/70">Priority support</span>
+            </li>
+            <li class="flex items-center gap-3 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+              <span class="text-white/70">Unlimited projects</span>
+            </li>
+            <li class="flex items-center gap-3 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+              <span class="text-white/70">Advanced theming</span>
+            </li>
+          </ul>
+          <a href="#" class="bg-primary hover:bg-primary/90 text-white text-center font-semibold px-6 py-3 rounded-xl transition-all focus-ring">Get Started</a>
+        </div>
+        <!-- Enterprise -->
+        <div class="glass glass-hover rounded-3xl p-8 flex flex-col transition-all">
+          <h3 class="text-lg font-bold mb-2">Enterprise</h3>
+          <p class="text-white/50 text-sm mb-6">For large organizations</p>
+          <div class="mb-6">
+            <span class="text-4xl font-extrabold">Custom</span>
+          </div>
+          <ul class="space-y-3 mb-8 flex-grow">
+            <li class="flex items-center gap-3 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+              <span class="text-white/70">Everything in Pro</span>
+            </li>
+            <li class="flex items-center gap-3 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+              <span class="text-white/70">SSO / SAML</span>
+            </li>
+            <li class="flex items-center gap-3 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+              <span class="text-white/70">Custom SLAs</span>
+            </li>
+            <li class="flex items-center gap-3 text-sm">
+              <i data-lucide="check" class="w-4 h-4 text-success shrink-0"></i>
+              <span class="text-white/70">Dedicated support</span>
+            </li>
+          </ul>
+          <a href="#" class="glass-btn text-center text-white font-semibold px-6 py-3 rounded-xl transition-all focus-ring">Contact Sales</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="relative z-10 py-16 lg:py-24">
+    <div class="max-w-4xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <p class="font-mono text-sm text-primary mb-3">// FAQ</p>
+        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4">Frequently asked questions</h2>
+        <p class="text-white/60 max-w-2xl mx-auto text-lg">Everything you need to know about GlassUI.</p>
+      </div>
+      <div class="space-y-4">
+        <div class="glass rounded-2xl overflow-hidden faq-item">
+          <button class="faq-question w-full flex items-center justify-between p-6 text-left focus-ring" aria-expanded="false">
+            <span class="font-semibold">What is GlassUI?</span>
+            <i data-lucide="chevron-down" class="w-5 h-5 text-white/50 faq-icon shrink-0"></i>
+          </button>
+          <div class="faq-answer px-6">
+            <p class="text-white/60 text-sm leading-relaxed">GlassUI is a comprehensive glassmorphism design system that includes pre-built components, design tokens, and guidelines for building modern, accessible interfaces. It's built on open web standards and works with any framework.</p>
+          </div>
+        </div>
+        <div class="glass rounded-2xl overflow-hidden faq-item">
+          <button class="faq-question w-full flex items-center justify-between p-6 text-left focus-ring" aria-expanded="false">
+            <span class="font-semibold">How do I get started?</span>
+            <i data-lucide="chevron-down" class="w-5 h-5 text-white/50 faq-icon shrink-0"></i>
+          </button>
+          <div class="faq-answer px-6">
+            <p class="text-white/60 text-sm leading-relaxed">Getting started is easy. Sign up for a free account, install the GlassUI package via npm or yarn, and import the components you need. Our documentation has step-by-step guides for every framework.</p>
+          </div>
+        </div>
+        <div class="glass rounded-2xl overflow-hidden faq-item">
+          <button class="faq-question w-full flex items-center justify-between p-6 text-left focus-ring" aria-expanded="false">
+            <span class="font-semibold">Is GlassUI accessible?</span>
+            <i data-lucide="chevron-down" class="w-5 h-5 text-white/50 faq-icon shrink-0"></i>
+          </button>
+          <div class="faq-answer px-6">
+            <p class="text-white/60 text-sm leading-relaxed">Yes. Every component in GlassUI meets WCAG 2.2 AA standards. We test with screen readers, keyboard navigation, and color contrast tools. Accessibility is not an afterthought — it's built into every component.</p>
+          </div>
+        </div>
+        <div class="glass rounded-2xl overflow-hidden faq-item">
+          <button class="faq-question w-full flex items-center justify-between p-6 text-left focus-ring" aria-expanded="false">
+            <span class="font-semibold">Can I customize the design tokens?</span>
+            <i data-lucide="chevron-down" class="w-5 h-5 text-white/50 faq-icon shrink-0"></i>
+          </button>
+          <div class="faq-answer px-6">
+            <p class="text-white/60 text-sm leading-relaxed">Absolutely. All design tokens — colors, typography, spacing, radii, and shadows — are exposed as CSS variables. You can override them in your own stylesheet to match your brand perfectly.</p>
+          </div>
+        </div>
+        <div class="glass rounded-2xl overflow-hidden faq-item">
+          <button class="faq-question w-full flex items-center justify-between p-6 text-left focus-ring" aria-expanded="false">
+            <span class="font-semibold">What's the license?</span>
+            <i data-lucide="chevron-down" class="w-5 h-5 text-white/50 faq-icon shrink-0"></i>
+          </button>
+          <div class="faq-answer px-6">
+            <p class="text-white/60 text-sm leading-relaxed">GlassUI is MIT licensed for the open-source components. Pro and Enterprise plans include additional proprietary components and features. You can use GlassUI in commercial projects without attribution.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Banner -->
+  <section class="relative z-10 py-16 lg:py-20">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="glass rounded-3xl p-10 lg:p-16 text-center card-glow relative overflow-hidden">
+        <div class="absolute top-[-50%] left-[-10%] w-64 h-64 bg-primary/20 rounded-full blur-[80px]"></div>
+        <div class="absolute bottom-[-50%] right-[-10%] w-64 h-64 bg-secondary/30 rounded-full blur-[80px]"></div>
+        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4 relative">Ready to build something beautiful?</h2>
+        <p class="text-white/60 max-w-xl mx-auto text-lg mb-8 relative">Join 10,000+ teams already building with GlassUI. Start free, upgrade when you're ready.</p>
+        <div class="flex flex-wrap justify-center gap-4 relative">
+          <a href="#" class="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-white font-semibold px-8 py-4 rounded-xl transition-all focus-ring">
+            Get Started Free
+            <i data-lucide="arrow-right" class="w-5 h-5"></i>
+          </a>
+          <a href="#" class="inline-flex items-center gap-2 glass-btn text-white font-semibold px-8 py-4 rounded-xl transition-all focus-ring">
+            <i data-lucide="github" class="w-5 h-5"></i>
+            Star on GitHub
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="relative z-10 py-16 lg:py-20 border-t border-white/5">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 mb-12">
+        <div class="col-span-2">
+          <a href="#" class="flex items-center gap-3 mb-4 focus-ring rounded-lg">
+            <div class="w-10 h-10 rounded-xl glass flex items-center justify-center">
+              <i data-lucide="layers" class="w-5 h-5 text-primary"></i>
+            </div>
+            <span class="text-xl font-bold">Glass<span class="text-primary">UI</span></span>
+          </a>
+          <p class="text-white/50 text-sm leading-relaxed mb-4">Crystal-clear interfaces for the modern web. Built with love and glass.</p>
+          <div class="flex gap-3">
+            <a href="#" class="glass-btn rounded-xl p-2 focus-ring" aria-label="Twitter">
+              <i data-lucide="twitter" class="w-4 h-4"></i>
+            </a>
+            <a href="#" class="glass-btn rounded-xl p-2 focus-ring" aria-label="GitHub">
+              <i data-lucide="github" class="w-4 h-4"></i>
+            </a>
+            <a href="#" class="glass-btn rounded-xl p-2 focus-ring" aria-label="LinkedIn">
+              <i data-lucide="linkedin" class="w-4 h-4"></i>
+            </a>
+            <a href="#" class="glass-btn rounded-xl p-2 focus-ring" aria-label="Discord">
+              <i data-lucide="message-circle" class="w-4 h-4"></i>
+            </a>
+          </div>
+        </div>
+        <div>
+          <h4 class="font-semibold text-sm mb-4">Product</h4>
+          <ul class="space-y-2">
+            <li><a href="#" class="text-white/50 hover:text-white text-sm transition-colors focus-ring rounded px-1 py-0.5">Features</a></li>
+            <li><a href="#" class="text-white/50 hover:text-white text-sm transition-colors focus-ring rounded px-1 py-0.5">Pricing</a></li>
+            <li><a href="#" class="text-white/50 hover:text-white text-sm transition-colors focus-ring rounded px-1 py-0.5">Changelog</a></li>
+            <li><a href="#" class="text-white/50 hover:text-white text-sm transition-colors focus-ring rounded px-1 py-0.5">Roadmap</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold text-sm mb-4">Company</h4>
+          <ul class="space-y-2">
+            <li><a href="#" class="text-white/50 hover:text-white text-sm transition-colors focus-ring rounded px-1 py-0.5">About</a></li>
+            <li><a href="#" class="text-white/50 hover:text-white text-sm transition-colors focus-ring rounded px-1 py-0.5">Blog</a></li>
+            <li><a href="#" class="text-white/50 hover:text-white text-sm transition-colors focus-ring rounded px-1 py-0.5">Careers</a></li>
+            <li><a href="#" class="text-white/50 hover:text-white text-sm transition-colors focus-ring rounded px-1 py-0.5">Contact</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold text-sm mb-4">Resources</h4>
+          <ul class="space-y-2">
+            <li><a href="#" class="text-white/50 hover:text-white text-sm transition-colors focus-ring rounded px-1 py-0.5">Documentation</a></li>
+            <li><a href="#" class="text-white/50 hover:text-white text-sm transition-colors focus-ring rounded px-1 py-0.5">Community</a></li>
+            <li><a href="#" class="text-white/50 hover:text-white text-sm transition-colors focus-ring rounded px-1 py-0.5">Support</a></li>
+            <li><a href="#" class="text-white/50 hover:text-white text-sm transition-colors focus-ring rounded px-1 py-0.5">Status</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold text-sm mb-4">Legal</h4>
+          <ul class="space-y-2">
+            <li><a href="#" class="text-white/50 hover:text-white text-sm transition-colors focus-ring rounded px-1 py-0.5">Privacy</a></li>
+            <li><a href="#" class="text-white/50 hover:text-white text-sm transition-colors focus-ring rounded px-1 py-0.5">Terms</a></li>
+            <li><a href="#" class="text-white/50 hover:text-white text-sm transition-colors focus-ring rounded px-1 py-0.5">Security</a></li>
+            <li><a href="#" class="text-white/50 hover:text-white text-sm transition-colors focus-ring rounded px-1 py-0.5">Cookies</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="border-t border-white/5 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <p class="text-white/40 text-sm">© 2024 GlassUI. All rights reserved.</p>
+        <p class="font-mono text-xs text-white/30">Built with <span class="text-primary">GlassUI</span> v2.0</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // Mobile menu toggle
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    mobileMenuBtn.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+      const icon = mobileMenuBtn.querySelector('i');
+      if (mobileMenu.classList.contains('hidden')) {
+        icon.setAttribute('data-lucide', 'menu');
+      } else {
+        icon.setAttribute('data-lucide', 'x');
+      }
+      lucide.createIcons();
+    });
+
+    // FAQ accordion
+    document.querySelectorAll('.faq-question').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const item = btn.closest('.faq-item');
+        const answer = item.querySelector('.faq-answer');
+        const isOpen = item.classList.contains('open');
+
+        // Close all
+        document.querySelectorAll('.faq-item').forEach(i => {
+          i.classList.remove('open');
+          i.querySelector('.faq-answer').classList.remove('open');
+          i.querySelector('.faq-question').setAttribute('aria-expanded', 'false');
+        });
+
+        // Open clicked
+        if (!isOpen) {
+          item.classList.add('open');
+          answer.classList.add('open');
+          btn.setAttribute('aria-expanded', 'true');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

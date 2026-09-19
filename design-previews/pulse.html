@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pulse · bold systems</title>
+    <!-- Tailwind CDN + config with Pulse tokens -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Limelight (display/primary) + JetBrains Mono (mono) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Limelight&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Pulse design tokens & base styles -->
+    <style>
+        /* ----- Pulse design tokens (semantic) ----- */
+        :root {
+            --pulse-primary: #EA580B;
+            --pulse-secondary: #F59E0B;
+            --pulse-bg: #FFEDD5;
+            --pulse-surface: #FDBA74;
+            --pulse-text: #EA580C;
+            --pulse-border-w: 4px;
+            --pulse-radius: 0px;   /* sharp corners – no rounding */
+            --pulse-font-display: 'Limelight', cursive;
+            --pulse-font-mono: 'JetBrains Mono', monospace;
+            --pulse-space-1: 4px;
+            --pulse-space-2: 8px;
+            --pulse-space-3: 12px;
+            --pulse-space-4: 16px;
+            --pulse-space-5: 24px;
+            --pulse-space-6: 32px;
+            --pulse-space-7: 48px;
+            --pulse-space-8: 64px;
+        }
+
+        /* base */
+        body {
+            background-color: var(--pulse-bg);
+            color: var(--pulse-text);
+            font-family: var(--pulse-font-mono);
+            font-weight: 400;
+            letter-spacing: 0.01em;
+        }
+
+        /* display type – Limelight */
+        .font-display {
+            font-family: var(--pulse-font-display);
+            font-weight: 400;
+            letter-spacing: 0.02em;
+        }
+
+        /* thick borders everywhere */
+        .pulse-border {
+            border: var(--pulse-border-w) solid var(--pulse-text);
+            border-radius: var(--pulse-radius);
+        }
+
+        /* colour-blocked sections (alternating) */
+        .section-block {
+            background-color: var(--pulse-surface);
+            border-top: var(--pulse-border-w) solid var(--pulse-text);
+            border-bottom: var(--pulse-border-w) solid var(--pulse-text);
+        }
+
+        .section-block--alt {
+            background-color: var(--pulse-bg);
+            border-top: var(--pulse-border-w) solid var(--pulse-text);
+            border-bottom: var(--pulse-border-w) solid var(--pulse-text);
+        }
+
+        /* buttons & interactive */
+        .btn-pulse {
+            background-color: var(--pulse-primary);
+            color: #fff;
+            border: var(--pulse-border-w) solid var(--pulse-text);
+            border-radius: var(--pulse-radius);
+            font-family: var(--pulse-font-mono);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: var(--pulse-space-3) var(--pulse-space-5);
+            transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s;
+            box-shadow: 6px 6px 0 0 var(--pulse-text);
+            cursor: pointer;
+        }
+
+        .btn-pulse:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 10px 10px 0 0 var(--pulse-text);
+        }
+
+        .btn-pulse:focus-visible {
+            outline: 4px solid var(--pulse-secondary);
+            outline-offset: 2px;
+        }
+
+        .btn-pulse:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0 0 var(--pulse-text);
+        }
+
+        /* card / container */
+        .pulse-card {
+            background-color: var(--pulse-bg);
+            border: var(--pulse-border-w) solid var(--pulse-text);
+            border-radius: var(--pulse-radius);
+            padding: var(--pulse-space-5);
+            box-shadow: 8px 8px 0 0 var(--pulse-text);
+        }
+
+        /* focus visible for all interactive */
+        a:focus-visible, button:focus-visible, summary:focus-visible {
+            outline: 4px solid var(--pulse-secondary);
+            outline-offset: 2px;
+        }
+
+        /* geometric shape helpers */
+        .shape-diamond {
+            width: 24px;
+            height: 24px;
+            background: var(--pulse-primary);
+            transform: rotate(45deg);
+            border: 3px solid var(--pulse-text);
+        }
+
+        .shape-circle {
+            width: 32px;
+            height: 32px;
+            background: var(--pulse-secondary);
+            border: 3px solid var(--pulse-text);
+            border-radius: 50%;
+        }
+
+        .shape-square {
+            width: 28px;
+            height: 28px;
+            background: var(--pulse-primary);
+            border: 3px solid var(--pulse-text);
+        }
+
+        /* list reset */
+        ul, ol {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* FAQ details */
+        details > summary {
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        details > summary::-webkit-details-marker { display: none; }
+        details[open] .faq-icon {
+            transform: rotate(45deg);
+        }
+        .faq-icon {
+            transition: transform 0.2s;
+        }
+
+        /* responsive adjustments */
+        @media (max-width: 640px) {
+            .btn-pulse {
+                padding: var(--pulse-space-2) var(--pulse-space-4);
+                box-shadow: 4px 4px 0 0 var(--pulse-text);
+            }
+            .pulse-card {
+                padding: var(--pulse-space-4);
+                box-shadow: 5px 5px 0 0 var(--pulse-text);
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- ======= NAVIGATION ======= -->
+    <header class="sticky top-0 z-50 bg-[#FFEDD5] border-b-4 border-[#EA580C]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+            <!-- logo -->
+            <div class="flex items-center gap-3">
+                <div class="shape-diamond"></div>
+                <span class="font-display text-2xl sm:text-3xl tracking-wide">PULSE</span>
+            </div>
+            <!-- desktop nav -->
+            <nav class="hidden md:flex items-center gap-8 font-mono uppercase text-sm font-bold">
+                <a href="#features" class="hover:underline underline-offset-8 decoration-4">Features</a>
+                <a href="#process" class="hover:underline underline-offset-8 decoration-4">Process</a>
+                <a href="#pricing" class="hover:underline underline-offset-8 decoration-4">Pricing</a>
+                <a href="#faq" class="hover:underline underline-offset-8 decoration-4">FAQ</a>
+            </nav>
+            <a href="#pricing" class="btn-pulse hidden sm:inline-block text-sm">Get started</a>
+            <!-- mobile menu (simple) -->
+            <details class="md:hidden">
+                <summary class="list-none flex items-center">
+                    <i data-lucide="menu" class="w-8 h-8"></i>
+                </summary>
+                <div class="absolute right-4 top-20 bg-[#FDBA74] border-4 border-[#EA580C] p-4 w-56 flex flex-col gap-3 font-mono uppercase">
+                    <a href="#features" class="hover:underline">Features</a>
+                    <a href="#process" class="hover:underline">Process</a>
+                    <a href="#pricing" class="hover:underline">Pricing</a>
+                    <a href="#faq" class="hover:underline">FAQ</a>
+                    <a href="#pricing" class="btn-pulse text-center">Start</a>
+                </div>
+            </details>
+        </div>
+    </header>
+
+    <!-- ======= HERO ======= -->
+    <section class="relative overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 grid md:grid-cols-2 gap-12 items-center">
+            <div>
+                <h1 class="font-display text-5xl sm:text-6xl lg:text-7xl leading-[1.1] tracking-tight">
+                    BUILD WITH<br>PULSE &amp; POWER
+                </h1>
+                <p class="mt-6 text-lg sm:text-xl font-mono max-w-xl">
+                    Bold, geometric, vibrant. A design system that moves — thick borders, sharp corners, and high‑contrast energy.
+                </p>
+                <div class="mt-8 flex flex-wrap gap-4">
+                    <a href="#pricing" class="btn-pulse">Start free</a>
+                    <a href="#features" class="btn-pulse bg-[#F59E0B]">Explore</a>
+                </div>
+                <!-- geometric shapes -->
+                <div class="flex gap-4 mt-10">
+                    <div class="shape-circle"></div>
+                    <div class="shape-square"></div>
+                    <div class="shape-diamond"></div>
+                </div>
+            </div>
+            <!-- abstract hero graphic (pure CSS/SVG) -->
+            <div class="relative h-64 md:h-96">
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <!-- layered geometric composition -->
+                    <div class="relative w-64 h-64 md:w-80 md:h-80">
+                        <div class="absolute top-0 left-0 w-32 h-32 bg-[#EA580B] border-4 border-[#EA580C] rotate-12"></div>
+                        <div class="absolute bottom-0 right-0 w-40 h-40 bg-[#F59E0B] border-4 border-[#EA580C] -rotate-6"></div>
+                        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 bg-[#FDBA74] border-4 border-[#EA580C] rotate-45"></div>
+                        <div class="absolute top-2 right-4 w-12 h-12 bg-[#EA580B] border-4 border-[#EA580C] rounded-full"></div>
+                        <div class="absolute bottom-4 left-2 w-10 h-10 bg-[#EA580B] border-4 border-[#EA580C]"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= STATS ======= -->
+    <section class="section-block">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div class="text-center">
+                <div class="font-display text-5xl md:text-6xl">240+</div>
+                <div class="mt-2 font-mono uppercase text-sm">components</div>
+            </div>
+            <div class="text-center">
+                <div class="font-display text-5xl md:text-6xl">99%</div>
+                <div class="mt-2 font-mono uppercase text-sm">a11y pass</div>
+            </div>
+            <div class="text-center">
+                <div class="font-display text-5xl md:text-6xl">4px</div>
+                <div class="mt-2 font-mono uppercase text-sm">border core</div>
+            </div>
+            <div class="text-center">
+                <div class="font-display text-5xl md:text-6xl">0px</div>
+                <div class="mt-2 font-mono uppercase text-sm">border radius</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= FEATURES ======= -->
+    <section id="features" class="section-block--alt">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <h2 class="font-display text-4xl md:text-5xl mb-12">FEATURES / BOLD BY DEFAULT</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- feature 1 -->
+                <div class="pulse-card">
+                    <i data-lucide="zap" class="w-10 h-10 mb-4 text-[#EA580B]"></i>
+                    <h3 class="font-display text-2xl mb-2">Motion</h3>
+                    <p class="font-mono">Snappy spring transitions, scale on hover, and thick outlines that never fade.</p>
+                </div>
+                <!-- feature 2 -->
+                <div class="pulse-card">
+                    <i data-lucide="square-dashed" class="w-10 h-10 mb-4 text-[#EA580B]"></i>
+                    <h3 class="font-display text-2xl mb-2">Geometry</h3>
+                    <p class="font-mono">Sharp corners, diamond accents, and shapes that build visual rhythm.</p>
+                </div>
+                <!-- feature 3 -->
+                <div class="pulse-card">
+                    <i data-lucide="contrast" class="w-10 h-10 mb-4 text-[#EA580B]"></i>
+                    <h3 class="font-display text-2xl mb-2">Contrast</h3>
+                    <p class="font-mono">High‑contrast palette #EA580B / #F59E0B on warm neutrals — WCAG AA ready.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= PROCESS ======= -->
+    <section id="process" class="section-block">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <h2 class="font-display text-4xl md:text-5xl mb-12">PROCESS / 4 STEPS</h2>
+            <div class="grid md:grid-cols-4 gap-6">
+                <div class="pulse-card text-center">
+                    <div class="font-display text-6xl mb-4">01</div>
+                    <p class="font-mono uppercase font-bold">Discover</p>
+                    <p class="mt-2 text-sm">Audit &amp; define bold goals.</p>
+                </div>
+                <div class="pulse-card text-center">
+                    <div class="font-display text-6xl mb-4">02</div>
+                    <p class="font-mono uppercase font-bold">Design</p>
+                    <p class="mt-2 text-sm">Thick borders, sharp edges.</p>
+                </div>
+                <div class="pulse-card text-center">
+                    <div class="font-display text-6xl mb-4">03</div>
+                    <p class="font-mono uppercase font-bold">Build</p>
+                    <p class="mt-2 text-sm">Token‑driven components.</p>
+                </div>
+                <div class="pulse-card text-center">
+                    <div class="font-display text-6xl mb-4">04</div>
+                    <p class="font-mono uppercase font-bold">Ship</p>
+                    <p class="mt-2 text-sm">Accessible &amp; fast.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= BENEFITS ======= -->
+    <section class="section-block--alt">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 grid md:grid-cols-2 gap-12 items-center">
+            <div>
+                <h2 class="font-display text-4xl md:text-5xl mb-6">WHY PULSE?</h2>
+                <ul class="space-y-4 font-mono text-lg">
+                    <li class="flex gap-3"><i data-lucide="check-circle" class="w-6 h-6 text-[#EA580B]"></i> 4px borders = unmissable hierarchy</li>
+                    <li class="flex gap-3"><i data-lucide="check-circle" class="w-6 h-6 text-[#EA580B]"></i> Limelight display — expressive &amp; loud</li>
+                    <li class="flex gap-3"><i data-lucide="check-circle" class="w-6 h-6 text-[#EA580B]"></i> Zero radius — pure geometric attitude</li>
+                    <li class="flex gap-3"><i data-lucide="check-circle" class="w-6 h-6 text-[#EA580B]"></i> Spring motion that feels electric</li>
+                </ul>
+            </div>
+            <!-- abstract visual -->
+            <div class="flex justify-center">
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="w-16 h-16 bg-[#EA580B] border-4 border-[#EA580C] rotate-12"></div>
+                    <div class="w-16 h-16 bg-[#F59E0B] border-4 border-[#EA580C] -rotate-6"></div>
+                    <div class="w-16 h-16 bg-[#FDBA74] border-4 border-[#EA580C] rotate-45"></div>
+                    <div class="w-16 h-16 bg-[#EA580B] border-4 border-[#EA580C] rounded-full"></div>
+                    <div class="w-16 h-16 bg-[#F59E0B] border-4 border-[#EA580C]"></div>
+                    <div class="w-16 h-16 bg-[#FDBA74] border-4 border-[#EA580C] rotate-12"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= TESTIMONIALS ======= -->
+    <section class="section-block">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <h2 class="font-display text-4xl md:text-5xl mb-12">TESTIMONIALS</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="pulse-card">
+                    <p class="font-mono text-lg">“Pulse gave our product an identity — bold, sharp, impossible to ignore.”</p>
+                    <div class="mt-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-[#EA580B] border-4 border-[#EA580C] rounded-full"></div>
+                        <div>
+                            <div class="font-mono font-bold">Maya Chen</div>
+                            <div class="text-sm">Lead Designer</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="pulse-card">
+                    <p class="font-mono text-lg">“The thick borders and vibrant palette make every screen feel alive.”</p>
+                    <div class="mt-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-[#F59E0B] border-4 border-[#EA580C] rounded-full"></div>
+                        <div>
+                            <div class="font-mono font-bold">Diego Ortiz</div>
+                            <div class="text-sm">Frontend Engineer</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="pulse-card">
+                    <p class="font-mono text-lg">“Finally a system that matches our brand’s energy. Zero compromise.”</p>
+                    <div class="mt-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-[#EA580B] border-4 border-[#EA580C]"></div>
+                        <div>
+                            <div class="font-mono font-bold">Priya Patel</div>
+                            <div class="text-sm">Product Manager</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= PRICING ======= -->
+    <section id="pricing" class="section-block--alt">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <h2 class="font-display text-4xl md:text-5xl mb-12">PRICING / NO SURPRISES</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- basic -->
+                <div class="pulse-card flex flex-col">
+                    <h3 class="font-display text-3xl">STARTER</h3>
+                    <div class="font-display text-5xl my-4">$0</div>
+                    <ul class="font-mono space-y-2 flex-1">
+                        <li>✓ Core components</li>
+                        <li>✓ Community support</li>
+                        <li>✓ 1 project</li>
+                    </ul>
+                    <a href="#" class="btn-pulse mt-6 text-center">Start free</a>
+                </div>
+                <!-- pro -->
+                <div class="pulse-card flex flex-col bg-[#FDBA74]">
+                    <h3 class="font-display text-3xl">PRO</h3>
+                    <div class="font-display text-5xl my-4">$24</div>
+                    <ul class="font-mono space-y-2 flex-1">
+                        <li>✓ Everything in Starter</li>
+                        <li>✓ Advanced motion</li>
+                        <li>✓ Priority support</li>
+                        <li>✓ Unlimited projects</li>
+                    </ul>
+                    <a href="#" class="btn-pulse mt-6 text-center">Get Pro</a>
+                </div>
+                <!-- enterprise -->
+                <div class="pulse-card flex flex-col">
+                    <h3 class="font-display text-3xl">ORG</h3>
+                    <div class="font-display text-5xl my-4">$99</div>
+                    <ul class="font-mono space-y-2 flex-1">
+                        <li>✓ Everything in Pro</li>
+                        <li>✓ Design tokens sync</li>
+                        <li>✓ SSO &amp; audit</li>
+                    </ul>
+                    <a href="#" class="btn-pulse mt-6 text-center">Contact</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= FAQ ======= -->
+    <section id="faq" class="section-block">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <h2 class="font-display text-4xl md:text-5xl mb-10">FAQ</h2>
+            <div class="space-y-4">
+                <details class="pulse-card">
+                    <summary class="font-mono font-bold text-lg">
+                        Can I use Pulse with my existing stack?
+                        <i data-lucide="plus" class="faq-icon w-6 h-6"></i>
+                    </summary>
+                    <p class="mt-4 font-mono">Yes — it's token‑based and framework‑agnostic. Use the CSS variables anywhere.</p>
+                </details>
+                <details class="pulse-card">
+                    <summary class="font-mono font-bold text-lg">
+                        Are the borders always 4px?
+                        <i data-lucide="plus" class="faq-icon w-6 h-6"></i>
+                    </summary>
+                    <p class="mt-4 font-mono">Yes, that's the signature. Structural elements use 4px borders; interactive states keep the same weight.</p>
+                </details>
+                <details class="pulse-card">
+                    <summary class="font-mono font-bold text-lg">
+                        How do you handle accessibility with such bold colors?
+                        <i data-lucide="plus" class="faq-icon w-6 h-6"></i>
+                    </summary>
+                    <p class="mt-4 font-mono">We maintain a contrast‑safe palette: #EA580B on #FFEDD5 passes AA for normal text. Focus states use thick outlines.</p>
+                </details>
+                <details class="pulse-card">
+                    <summary class="font-mono font-bold text-lg">
+                        Can I customize the motion?
+                        <i data-lucide="plus" class="faq-icon w-6 h-6"></i>
+                    </summary>
+                    <p class="mt-4 font-mono">Yes, spring curves are exposed as tokens. But we recommend keeping them snappy — no slow fades.</p>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= FOOTER ======= -->
+    <footer class="bg-[#EA580B] border-t-4 border-[#EA580C]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-white">
+            <div class="grid md:grid-cols-3 gap-8">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <div class="shape-diamond !bg-white !border-white"></div>
+                        <span class="font-display text-2xl">PULSE</span>
+                    </div>
+                    <p class="mt-4 font-mono text-sm">Bold systems for bold teams.</p>
+                </div>
+                <div>
+                    <h4 class="font-display text-xl mb-4">SITEMAP</h4>
+                    <ul class="font-mono space-y-2">
+                        <li><a href="#features" class="hover:underline">Features</a></li>
+                        <li><a href="#process" class="hover:underline">Process</a></li>
+                        <li><a href="#pricing" class="hover:underline">Pricing</a></li>
+                        <li><a href="#faq" class="hover:underline">FAQ</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-display text-xl mb-4">SOCIAL</h4>
+                    <div class="flex gap-4">
+                        <i data-lucide="github" class="w-6 h-6"></i>
+                        <i data-lucide="twitter" class="w-6 h-6"></i>
+                        <i data-lucide="linkedin" class="w-6 h-6"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-10 pt-6 border-t-4 border-white/30 font-mono text-sm flex flex-col sm:flex-row justify-between">
+                <span>© 2025 Pulse Systems</span>
+                <span>Designed with 💥 &amp; 4px borders</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Lucide icons init -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
