@@ -294,6 +294,21 @@ def snapshot_project(proj_dir: Path, role: str = "developer") -> dict:
     return {"id": snap_id, "files": files}
 
 
+def _record_change(proj_dir: Path, snapshot_id: str, role: str) -> None:
+    """Leave what this run changed on disk for the transaction that follows it.
+
+    The snapshot taken before the edit is the only record of what the project
+    looked like beforehand, and it is deleted twelve edits later, so the
+    comparison is made here while both halves still exist.
+    """
+    try:
+        from server_modules.services import change_set
+        change_set.write(proj_dir, role,
+                         change_set.capture(proj_dir, snapshot_id, role))
+    except Exception as error:                                       # noqa: BLE001
+        log.debug(f"change set for {role}: {error}")
+
+
 def _trim_undo(proj_dir: Path) -> None:
     base = proj_dir / ".agentforge" / "undo"
     snaps = sorted((p for p in base.iterdir() if p.is_dir()),
@@ -1009,7 +1024,7 @@ def _edit_run(project: str, prompt: str, model, think, qa_model: str, console: s
             RUNTIMES.begin_work(runtime)
         if not is_html_mod:
             MONGO.ensure_running()
-        snapshot_project(proj_dir, RUN.agent)
+        snapshot = snapshot_project(proj_dir, RUN.agent)
 
         full = brief
         if is_html_mod:
@@ -1031,6 +1046,7 @@ def _edit_run(project: str, prompt: str, model, think, qa_model: str, console: s
             return ecancel({"project": proj_dir.name})
         if outcome.status != "completed":
             return eerr(outcome.result)
+        _record_change(proj_dir, snapshot.get("id", ""), RUN.agent)
 
         if is_html_mod:
             proto_root = proj_dir / ".agentforge" / "prototype"

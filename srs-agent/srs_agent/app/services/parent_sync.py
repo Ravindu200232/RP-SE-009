@@ -32,7 +32,23 @@ _SOURCE_RULES = {
 }
 
 
-async def synchronize(project_id: str, change_id: str, source: str, summary: str) -> dict:
+def _undrawn(project_id: str) -> bool:
+    """Is any specified page still without a drawing?
+
+    The blanket redraw used to run on every change, including one that revised
+    nothing - a QA report moves a verification status and not a single pixel,
+    and it was costing a model call per page of the specification to redraw
+    pages identical to the ones already on disk. It now runs when the document
+    actually moved, or when a page has no drawing at all, which is the case
+    that made an unconditional redraw look like it was earning its keep.
+    """
+    return any(not page.get("has_html")
+               for page in (storage.read_wireframes(project_id).get("pages") or [])
+               if isinstance(page, dict))
+
+
+async def synchronize(project_id: str, change_id: str, source: str, summary: str,
+                      pages=()) -> dict:
     project = await repo.get_project(project_id)
     latest = await repo.latest_version(project_id)
     if not project or not latest:
@@ -84,7 +100,8 @@ async def synchronize(project_id: str, change_id: str, source: str, summary: str
         storage.write_json(checkpoint, {"srs": srs, "diff": diff if changed else [],
                                         "headline": headline, "version": version})
 
-    if latest.get("operation_id") != change_id and version != latest["version"]:
+    revised = latest.get("operation_id") != change_id and version != latest["version"]
+    if revised:
         token = CURRENT_JOB.set(change_id)
         try:
             from ..graph.workflow import _checkpointed
@@ -110,9 +127,14 @@ async def synchronize(project_id: str, change_id: str, source: str, summary: str
 
     storage.save_srs_json(project_id, srs, version)
     # The drawn set follows the save on its own, so what someone opens is the
-    # good one rather than the projection with a button beside it.
-    from ..agents.wireframe_generator import draw_later
-    draw_later(project_id, srs["srs_document"])
+    # good one rather than the projection with a button beside it. A change that
+    # named the pages it rewrote is drawn from those pages, and drawn before this
+    # returns, because the project adopts the moment it does.
+    from ..agents.wireframe_generator import draw_later, redraw_pages
+    if pages:
+        await redraw_pages(project_id, srs["srs_document"], pages)
+    elif revised or _undrawn(project_id):
+        draw_later(project_id, srs["srs_document"])
     await repo.save_diagrams(project_id, srs["srs_document"].get("diagrams", []))
     write_handoff(storage.project_dir(project_id) / "handoff", srs, project.get("stack", ""))
     await generate_pdf(project_id, srs, status="Approved", version=version)

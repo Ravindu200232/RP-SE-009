@@ -14,16 +14,31 @@ router = APIRouter(prefix="/projects", tags=["srs"])
 from pydantic import BaseModel, Field
 
 
+class ChangedPage(BaseModel):
+    """One page of the prototype as it stands after the change, in outline.
+
+    The markup itself is ten kilobytes of presentation and would not fit beside
+    the specification in a model's context. The outline is its structure -
+    sections, headings, controls, text - which is the whole of what a wireframe
+    is drawn from.
+    """
+
+    route: str = Field(min_length=1, max_length=400)
+    outline: str = Field(min_length=1, max_length=20000)
+
+
 class ParentChange(BaseModel):
     change_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,100}$")
     source: str = Field(pattern=r"^(designer|developer|design-customizer|qa)$")
     summary: str = Field(min_length=1, max_length=12000)
+    pages: list[ChangedPage] = Field(default_factory=list, max_length=12)
 
 
 @router.post("/{project_id}/changes")
 async def parent_change(project_id: str, request: ParentChange):
     from ..services.parent_sync import synchronize
-    return await synchronize(project_id, request.change_id, request.source, request.summary)
+    return await synchronize(project_id, request.change_id, request.source, request.summary,
+                             [page.model_dump() for page in request.pages])
 
 
 async def _doc_or_404(project_id: str) -> dict:

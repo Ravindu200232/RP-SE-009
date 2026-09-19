@@ -306,19 +306,49 @@ def ui_quality_note(sample: dict | None) -> str:
     return "; ".join(said) or "clean"
 
 
-# Captures an asynchronous visual screenshot frame after each journey step without blocking execution.
-FRAME_QUALITY = 55
-FRAME_SCALE = 0.5
+READ_CONTROLS = """(() => {
+  const focused = document.activeElement;
+  return Array.from(document.querySelectorAll('input, select, textarea'))
+    .slice(0, 40)
+    .map(el => ({
+      tag: el.tagName.toLowerCase(),
+      type: (el.type || '').toLowerCase(),
+      label: el.id || el.name || el.getAttribute('placeholder') ||
+             el.getAttribute('aria-label') || '',
+      value: (el.type === 'checkbox' || el.type === 'radio')
+             ? String(el.checked) : String(el.value || ''),
+      focused: el === focused
+    }));
+})()"""
 
 
-def _frame(page, sandbox, suite: str, index: int, action: str) -> None:
-    """Photograph the page as the step left it. Never fails, never waits."""
+def form_state(page) -> str:
+    """What the page's controls hold where the journey stopped.
+
+    A failed journey used to report one line - the URL an assertion did not
+    like - and a picture of the page taken after every step. The picture is
+    the wrong medium: the model that has to repair the failure reads text, the
+    capture costs a round trip per step, and nothing in the report ever said
+    that the form behind that URL was empty.
+
+    This is the same evidence read out of the DOM instead. One evaluate, at
+    the moment of failure only, and the answer is in the failure message where
+    whoever reads it next cannot miss it.
+    """
     try:
-        name = re.sub(r"[^a-z0-9]+", "-", f"{suite}-{index:02d}-{action or 'assert'}".lower())
-        page.frame(Path(sandbox.state_dir("screenshots")) / f"{name}.jpg",
-                   quality=FRAME_QUALITY, scale=FRAME_SCALE)
-    except Exception:  # noqa: BLE001 - a missing frame is not a failed journey
-        pass
+        rows = page.evaluate(READ_CONTROLS)
+    except Exception:  # noqa: BLE001 - a page too broken to read is still a failure
+        return ""
+    if not isinstance(rows, list) or not rows:
+        return ""
+    said = []
+    for row in rows:
+        kind = f"[{row.get('type')}]" if row.get("type") else ""
+        held = str(row.get("value") or "")
+        said.append(f"- {row.get('tag')}{kind} {row.get('label') or '(unnamed)'}: "
+                    + (f"{held[:80]!r}" if held else "(empty)")
+                    + ("   <- has focus" if row.get("focused") else ""))
+    return "The page's controls where the journey stopped:\n" + "\n".join(said)
 
 
 def run_journey(browser, sandbox, evidence, *, suite: str, covers, steps,
@@ -404,15 +434,10 @@ def run_journey(browser, sandbox, evidence, *, suite: str, covers, steps,
                 trace.append(f"{label} {step.get('type')}: {detail}")
                 if not passed:
                     failed = f"Step {index} failed: {detail}"
-                    _frame(page, sandbox, suite, index, action)
                     break
-            _frame(page, sandbox, suite, index, action)
         except ToolError as error:
             failed = f"Step {index} failed: {error}"
             trace.append(f"{label} -> {error}")
-            # The picture of the step that broke is the most useful one in the
-            # whole run, so it is taken before the loop leaves.
-            _frame(page, sandbox, suite, index, action)
             break
 
     if not failed:
@@ -434,11 +459,13 @@ def run_journey(browser, sandbox, evidence, *, suite: str, covers, steps,
     if failed:
         # Persist browser diagnostics in durable test records across page reloads.
         diagnostics = diagnostics_report(page)
+        controls = form_state(page)
+        seen = f"{diagnostics}\n\n{controls}" if controls else diagnostics
         evidence.record_external(kind="e2e", suite=suite, source="direct-CDP journey", engine=True,
                                  covers=covered, status="failed",
-                                 output=f"{body}\n\n{diagnostics}", reason=failed)
+                                 output=f"{body}\n\n{seen}", reason=failed)
         raise ToolError(
-            f"{failed}\n\nURL: {page.url}\n{body}\n\n{diagnostics}\n"
+            f"{failed}\n\nURL: {page.url}\n{body}\n\n{seen}\n"
             f"Page text: {_clip(page.text(), 800)}\n\n"
             "Recorded as a failed E2E suite. Repair the owner named in the failure, "
             "then rerun only this suite. Do not take another snapshot of an unchanged page.")

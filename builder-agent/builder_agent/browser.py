@@ -44,6 +44,32 @@ CANCELLED_ERRORS = frozenset({
     "net::ERR_CACHE_MISS",
 })
 
+# Roles whose value is the point of them: a snapshot that omits it cannot say
+# whether a form was filled.
+VALUE_ROLES = frozenset({
+    "textbox", "combobox", "searchbox", "checkbox", "radio", "slider",
+    "spinbutton", "switch",
+})
+
+# Read back one control after typing into it. `this` is the element.
+READ_CONTROL = """function () {
+  const opaque = ['checkbox', 'radio', 'file', 'range', 'color', 'submit',
+                  'button', 'reset', 'image', 'hidden'];
+  const tag = this.tagName.toLowerCase();
+  const type = (this.type || '').toLowerCase();
+  const editable = this.isContentEditable === true;
+  return {
+    fillable: editable || tag === 'textarea' ||
+              (tag === 'input' && opaque.indexOf(type) === -1),
+    value: String((editable ? this.textContent : this.value) || ''),
+    focused: document.activeElement === this,
+    tag: tag,
+    type: type,
+    label: this.id || this.name || this.getAttribute('placeholder') ||
+           this.getAttribute('aria-label') || ''
+  };
+}"""
+
 
 def request_outcome(params: dict) -> str:
     """Was this request called off, or did it genuinely fail?
@@ -486,8 +512,23 @@ class Page:
         return out
 
     def snapshot(self, limit: int = 120) -> str:
-        rows = [f"{n['role']}: {n['name']}" for n in self.a11y()
-                if n["name"] or n["role"] in ("textbox", "combobox", "checkbox")]
+        """The page's controls, and what they are holding.
+
+        The value was always collected - `a11y` reads it off the same node -
+        and was dropped one line later, so this read the same whether a field
+        held an address or nothing at all. That is the one question worth
+        asking when a form did not submit, and it was the only question this
+        could not answer.
+        """
+        rows = []
+        for node in self.a11y():
+            if not (node["name"] or node["role"] in VALUE_ROLES):
+                continue
+            row = f"{node['role']}: {node['name']}"
+            if node["role"] in VALUE_ROLES:
+                held = str(node["value"] or "")
+                row += f" = {held[:80]!r}" if held else " = (empty)"
+            rows.append(row)
         seen, unique = set(), []
         for row in rows:
             if row in seen:
@@ -592,15 +633,79 @@ class Page:
         self.settle(cap=0.25)
 
     def fill(self, backend_id: int, text: str) -> None:
+        """Type into a control, and prove the text arrived.
+
+        `Input.insertText` goes to whatever holds focus. When the click before
+        it misses - something covering the control, an element still moving
+        under an animation, a control that cannot take focus - the text goes
+        nowhere, and every signal the journey has still says the step passed.
+        The failure surfaces several steps later as an assertion about a URL,
+        with an empty form behind it that nothing in the report mentions.
+
+        That is not hypothetical: four journeys failed on `urlIncludes` after a
+        login whose fields were never filled, and the run spent forty minutes
+        looking for the defect in the product, then edited the product to match
+        the broken test. So the control is read back here, and a `type` that
+        did not type fails at the step where it happened.
+        """
         self.click(backend_id)
         self.cdp.send("Input.dispatchKeyEvent",
                       {"type": "keyDown", "key": "a", "code": "KeyA",
+                       "windowsVirtualKeyCode": 65, "nativeVirtualKeyCode": 65,
                        "modifiers": 8 if os.sys.platform == "darwin" else 2}, self.session)
         self.cdp.send("Input.dispatchKeyEvent",
                       {"type": "keyUp", "key": "a", "code": "KeyA",
+                       "windowsVirtualKeyCode": 65, "nativeVirtualKeyCode": 65,
                        "modifiers": 8 if os.sys.platform == "darwin" else 2}, self.session)
         self.cdp.send("Input.insertText", {"text": str(text)}, self.session)
         self.settle(cap=0.1, frames=1)
+        self._verify_filled(backend_id, str(text))
+
+    def control(self, backend_id: int) -> dict | None:
+        """What one control holds and whether it has focus, read from the DOM.
+
+        `None` when the element is not something a person types into, since
+        there is then nothing to read back and nothing to verify.
+        """
+        try:
+            node = self.cdp.send("DOM.resolveNode", {"backendNodeId": backend_id},
+                                 self.session)
+            object_id = (node.get("object") or {}).get("objectId")
+            if not object_id:
+                return None
+            reply = self.cdp.send("Runtime.callFunctionOn",
+                                  {"objectId": object_id, "returnByValue": True,
+                                   "functionDeclaration": READ_CONTROL}, self.session)
+            state = (reply.get("result") or {}).get("value")
+        except ToolError:
+            return None                 # a read-back that cannot run proves nothing
+        return state if isinstance(state, dict) and state.get("fillable") else None
+
+    def _verify_filled(self, backend_id: int, text: str) -> None:
+        """Fail the step here if the text did not land in the control.
+
+        Deliberately conservative. An empty control after a non-empty fill, or
+        a control that never took focus, is a failure nobody can argue with. A
+        value that differs in some other way is not: a field that formats a
+        phone number or a date as it is typed has done its job, and failing
+        that would make every masked input untestable.
+        """
+        state = self.control(backend_id)
+        if state is None or not text:
+            return
+        held, focused = str(state.get("value") or ""), bool(state.get("focused"))
+        if held and focused:
+            return
+        where = state.get("label") or state.get("tag") or "that control"
+        why = ("The control never took focus, so the keystrokes went nowhere - "
+               "something is covering it, or it moved between the click and the text."
+               if not focused else
+               "The control has focus but kept nothing, which is what a controlled "
+               "input that rejects its own change event does.")
+        raise ToolError(
+            f"E2E_FILL_FAILED: typing into {where!r} left it holding {held[:80]!r}, "
+            f"not {text[:80]!r}. {why} Repair owner: the page or the journey's "
+            "locator - not the assertion that would have failed later.")
 
     def press(self, key: str) -> None:
         table = {"Enter": (13, "Enter"), "Tab": (9, "Tab"), "Escape": (27, "Escape"),

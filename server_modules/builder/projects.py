@@ -381,6 +381,12 @@ def save_project_file(proj_name: str, rel: str, content: str, *, change_summary:
         return {"error": f"{len(content):,} characters is past the "
                          f"{limit:,} limit"}
 
+    before = ""
+    if target.is_file():
+        try:
+            before = target.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            before = ""
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8", newline="")
@@ -393,9 +399,18 @@ def save_project_file(proj_name: str, rel: str, content: str, *, change_summary:
 
     emit({'type': 'file', 'project': proj_name, 'agent': 'designer' if prototype_edit else 'developer',
           'name': rel, 'size': size, 'content': content, 'note': 'written'})
-    if change_summary and rel.startswith('.agentforge/prototype/') and target.suffix == '.html':
+    if change_summary and prototype_edit:
         summary = re.sub(r"(?:mongodb(?:\+srv)?://|https?://[^/\s:@]+:[^/\s@]+@)[^\s'\"<>]+",
                          '[redacted connection]', str(change_summary))[:6000]
+        # The page the hand edit rewrote, so the sibling and the wireframe are
+        # shown the markup rather than only the sentence describing it.
+        try:
+            from server_modules.services import change_set
+            edited = change_set.from_edit(rel, before, content)
+            if edited:
+                change_set.write(proj_dir, 'designer', edited)
+        except Exception as error:                                   # noqa: BLE001
+            elog("WARN", f"   the edited page was not recorded: {error}")
         start_run(run_manual_prototype_change, (proj_name, summary), project=proj_name)
     return {"ok": True, "path": rel, "size": size}
 
