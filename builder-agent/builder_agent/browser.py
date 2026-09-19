@@ -51,6 +51,44 @@ VALUE_ROLES = frozenset({
     "spinbutton", "switch",
 })
 
+# Why the text did not land, asked of the page rather than guessed at. `this`
+# is the control the journey located; the arguments are the point that was
+# clicked, in the same coordinates the click was dispatched at.
+WHY_NOT_FILLED = """function (x, y) {
+  const name = el => !el ? 'nothing' : el.tagName.toLowerCase() +
+      (el.id ? '#' + el.id : '') +
+      (typeof el.className === 'string' && el.className ?
+       '.' + el.className.split(/\\s+/).filter(Boolean).slice(0, 2).join('.') : '');
+  const at = document.elementFromPoint(x, y);
+  const path = [];
+  for (let n = at; n && path.length < 4; n = n.parentElement) path.push(name(n));
+  const r = this.getBoundingClientRect();
+  const cs = getComputedStyle(this);
+  const vv = window.visualViewport;
+  return {
+    pointHits: name(at),
+    pointPath: path.join(' < '),
+    hitIsTarget: at === this,
+    hitInsideTarget: !!(at && this.contains(at)),
+    activeElement: name(document.activeElement),
+    stillInDocument: document.contains(this),
+    rect: 'x=' + Math.round(r.x) + ' y=' + Math.round(r.y) +
+          ' w=' + Math.round(r.width) + ' h=' + Math.round(r.height),
+    pointerEvents: cs.pointerEvents,
+    visibility: cs.visibility,
+    opacity: cs.opacity,
+    disabled: this.disabled === true,
+    readOnly: this.readOnly === true,
+    pageVisibility: document.visibilityState,
+    pageHasFocus: document.hasFocus(),
+    viewport: {w: window.innerWidth, h: window.innerHeight,
+               dpr: window.devicePixelRatio,
+               vv: vv ? {w: Math.round(vv.width), h: Math.round(vv.height),
+                         scale: vv.scale, ox: Math.round(vv.offsetLeft),
+                         oy: Math.round(vv.offsetTop)} : null}
+  };
+}"""
+
 # Read back one control after typing into it. `this` is the element.
 READ_CONTROL = """function () {
   const opaque = ['checkbox', 'radio', 'file', 'range', 'color', 'submit',
@@ -626,6 +664,8 @@ class Page:
     def click(self, backend_id: int) -> None:
         self.cdp.send("DOM.scrollIntoViewIfNeeded", {"backendNodeId": backend_id}, self.session)
         x, y = self._box(backend_id)
+        # Kept so a failure afterwards can ask the page what was at this point.
+        self.last_point = (x, y)
         for kind in ("mousePressed", "mouseReleased"):
             self.cdp.send("Input.dispatchMouseEvent",
                           {"type": kind, "x": x, "y": y, "button": "left", "clickCount": 1},
@@ -684,28 +724,103 @@ class Page:
     def _verify_filled(self, backend_id: int, text: str) -> None:
         """Fail the step here if the text did not land in the control.
 
-        Deliberately conservative. An empty control after a non-empty fill, or
-        a control that never took focus, is a failure nobody can argue with. A
-        value that differs in some other way is not: a field that formats a
-        phone number or a date as it is typed has done its job, and failing
-        that would make every masked input untestable.
+        Three things pass. The text arriving exactly. The text arriving
+        reformatted in a control that has focus - a field that masks a phone
+        number or a date as it is typed has done its job, and failing that
+        would make every masked input untestable.
+
+        What fails is an empty control, and a control left holding something
+        other than what was typed while focus is elsewhere. That second case is
+        the one worth stating: `fill` selects all and replaces, so a click that
+        missed leaves the field holding whatever it held before. Judging only
+        on "not empty" would pass that, and a stale value is exactly as wrong
+        as an empty one.
         """
         state = self.control(backend_id)
         if state is None or not text:
             return
         held, focused = str(state.get("value") or ""), bool(state.get("focused"))
-        if held and focused:
+        if held == text or (held and focused):
             return
         where = state.get("label") or state.get("tag") or "that control"
-        why = ("The control never took focus, so the keystrokes went nowhere - "
-               "something is covering it, or it moved between the click and the text."
-               if not focused else
-               "The control has focus but kept nothing, which is what a controlled "
-               "input that rejects its own change event does.")
         raise ToolError(
             f"E2E_FILL_FAILED: typing into {where!r} left it holding {held[:80]!r}, "
-            f"not {text[:80]!r}. {why} Repair owner: the page or the journey's "
-            "locator - not the assertion that would have failed later.")
+            f"not {text[:80]!r}. {self._why_not_filled(backend_id, focused)} "
+            "Repair what that reading names; the assertion that would have failed "
+            "several steps later is not the owner.")
+
+    def _why_not_filled(self, backend_id: int, focused: bool) -> str:
+        """Ask the page what went wrong, rather than assuming.
+
+        The first version of this message guessed: it said something was
+        covering the control, because that is the usual reason a click misses.
+        A guess in an error message is worse than no explanation, because the
+        next reader repairs the thing it names. This asks the page instead -
+        what is at the point that was clicked, where focus actually went,
+        whether the element is still in the document - and says only what came
+        back.
+        """
+        seen = self._inspect(backend_id)
+        if not seen:
+            return ("The page could not be read back, so why the text did not land is "
+                    "not known.")
+        if seen.get("disabled") or seen.get("readOnly"):
+            return f"The control is {'disabled' if seen.get('disabled') else 'read-only'}."
+        said = []
+        if not seen.get("stillInDocument"):
+            said.append("The control was taken out of the document between being located "
+                        "and being typed into, so the text went to a node no longer on "
+                        "the page - the page re-rendered underneath the step.")
+        elif seen.get("hitIsTarget") or seen.get("hitInsideTarget"):
+            said.append(f"The click did reach the control (the point {self._point()} is "
+                        f"over {seen.get('pointHits')}), so the click is not the problem; "
+                        f"focus ended up on {seen.get('activeElement')}.")
+        else:
+            said.append(f"The click at {self._point()} landed on {seen.get('pointHits')}, "
+                        f"not on the control, which is at {seen.get('rect')}. What is "
+                        f"there: {seen.get('pointPath')}.")
+        if seen.get("pointerEvents") == "none":
+            said.append("Its computed pointer-events is none, so it cannot be clicked at all.")
+        # A detached node has no computed style, so there is nothing to read here.
+        if seen.get("stillInDocument") and (seen.get("visibility") != "visible"
+                                            or seen.get("opacity") == "0"):
+            said.append(f"It is {seen.get('visibility')} at opacity {seen.get('opacity')}.")
+        if not seen.get("pageHasFocus"):
+            said.append("The page itself did not have focus.")
+        if seen.get("pageVisibility") != "visible":
+            said.append(f"The page was {seen.get('pageVisibility')}.")
+        view = seen.get("viewport") or {}
+        scale = ((view.get("vv") or {}).get("scale"))
+        if scale not in (None, 1):
+            said.append(f"The visual viewport is scaled {scale}, so the coordinates a "
+                        "click is dispatched at do not match the ones the layout reports.")
+        if focused and seen.get("hitIsTarget"):
+            said.append("It had focus and kept nothing, which is what a controlled input "
+                        "rejecting its own change event does.")
+        return " ".join(said)
+
+    def _point(self) -> str:
+        point = getattr(self, "last_point", None)
+        return f"({point[0]:.0f}, {point[1]:.0f})" if point else "the click point"
+
+    def _inspect(self, backend_id: int) -> dict | None:
+        """The page's own account of the control and the point that was clicked."""
+        point = getattr(self, "last_point", None) or (0, 0)
+        try:
+            node = self.cdp.send("DOM.resolveNode", {"backendNodeId": backend_id},
+                                 self.session)
+            object_id = (node.get("object") or {}).get("objectId")
+            if not object_id:
+                return None
+            reply = self.cdp.send("Runtime.callFunctionOn",
+                                  {"objectId": object_id, "returnByValue": True,
+                                   "functionDeclaration": WHY_NOT_FILLED,
+                                   "arguments": [{"value": point[0]}, {"value": point[1]}]},
+                                  self.session)
+            seen = (reply.get("result") or {}).get("value")
+        except ToolError:
+            return None
+        return seen if isinstance(seen, dict) else None
 
     def press(self, key: str) -> None:
         table = {"Enter": (13, "Enter"), "Tab": (9, "Tab"), "Escape": (27, "Escape"),

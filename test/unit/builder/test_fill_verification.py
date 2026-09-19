@@ -27,8 +27,10 @@ FILLED = {"fillable": True, "value": "admin@indoora.com", "focused": True,
 class FakeCdp:
     """Enough of the protocol for one control and one page."""
 
-    def __init__(self, control=None, tree=(), url="http://localhost:5173/login"):
+    def __init__(self, control=None, tree=(), url="http://localhost:5173/login",
+                 inspection=None):
         self.control, self.tree, self.page_url = control, list(tree), url
+        self.inspection = inspection
         self.sent = []
 
     def on(self, *args, **kwargs):
@@ -44,6 +46,9 @@ class FakeCdp:
         if method == "DOM.resolveNode":
             return {"object": {"objectId": "node-1"}}
         if method == "Runtime.callFunctionOn":
+            asked = (params or {}).get("functionDeclaration", "")
+            if "elementFromPoint" in asked:
+                return {"result": {"value": self.inspection}}
             return {"result": {"value": self.control}}
         if method == "Accessibility.getFullAXTree":
             return {"nodes": self.tree}
@@ -53,8 +58,23 @@ class FakeCdp:
         return {}
 
 
-def page_with(control=None, tree=(), url="http://localhost:5173/login"):
-    return browser.Page(FakeCdp(control, tree, url), "target-1", "session-1")
+def page_with(control=None, tree=(), url="http://localhost:5173/login", inspection=None):
+    return browser.Page(FakeCdp(control, tree, url, inspection), "target-1", "session-1")
+
+
+SEEN = {"pointHits": "input#email", "pointPath": "input#email < form", "hitIsTarget": True,
+        "hitInsideTarget": True, "activeElement": "input#email", "stillInDocument": True,
+        "rect": "x=462 y=336 w=324 h=23", "pointerEvents": "auto", "visibility": "visible",
+        "opacity": "1", "disabled": False, "readOnly": False, "pageVisibility": "visible",
+        "pageHasFocus": True,
+        "viewport": {"w": 1264, "h": 649, "dpr": 1,
+                     "vv": {"w": 1249, "h": 649, "scale": 1, "ox": 0, "oy": 0}}}
+
+
+def failing(**overrides):
+    """A page whose fill fails, with the page reporting `overrides`."""
+    return page_with({**FILLED, "value": "", "focused": False},
+                     inspection={**SEEN, **overrides})
 
 
 def ax(role, name="", value=None):
@@ -75,11 +95,20 @@ class FillReadBackTests(unittest.TestCase):
         self.assertIn("email", said)
         self.assertIn("admin@indoora.com", said)
 
-    def test_a_control_that_never_took_focus_fails_and_says_the_click_missed(self):
-        page = page_with({**FILLED, "focused": False})
+    def test_text_that_arrived_passes_even_if_focus_has_moved_on(self):
+        """Some pages blur a field as soon as it is filled. The text landed."""
+        page_with({**FILLED, "focused": False}).fill(1, "admin@indoora.com")
+
+    def test_a_stale_value_left_by_a_click_that_missed_is_a_failure(self):
+        """`fill` selects all and replaces, so the old text means it never ran."""
+        page = page_with({**FILLED, "value": "someone.else@example.com", "focused": False},
+                         inspection={**SEEN, "hitIsTarget": False, "hitInsideTarget": False,
+                                     "pointHits": "div.modal-overlay"})
         with self.assertRaises(ToolError) as raised:
             page.fill(1, "admin@indoora.com")
-        self.assertIn("never took focus", str(raised.exception))
+        said = str(raised.exception)
+        self.assertIn("someone.else@example.com", said)
+        self.assertIn("div.modal-overlay", said)
 
     def test_a_control_that_kept_the_text_passes(self):
         page_with(FILLED).fill(1, "admin@indoora.com")
@@ -105,6 +134,75 @@ class FillReadBackTests(unittest.TestCase):
         self.assertTrue(keys)
         for params in keys:
             self.assertEqual(params.get("windowsVirtualKeyCode"), 65)
+
+
+class WhyItFailedTests(unittest.TestCase):
+    """The message says what the page reported, and nothing it did not.
+
+    The first version of this error guessed - it told every reader that
+    something was covering the control, because that is the usual reason. A
+    guess in an error message is worse than silence: the next reader repairs
+    the thing it names.
+    """
+
+    def message(self, **overrides):
+        with self.assertRaises(ToolError) as raised:
+            failing(**overrides).fill(1, "guest@indoora.com")
+        return str(raised.exception)
+
+    def test_something_on_top_is_named(self):
+        said = self.message(pointHits="div#cookie-banner", hitIsTarget=False,
+                            hitInsideTarget=False,
+                            pointPath="div#cookie-banner < div.row < body")
+        self.assertIn("div#cookie-banner", said)
+        self.assertIn("not on the control", said)
+
+    def test_a_disabled_control_is_not_blamed_on_an_overlay(self):
+        said = self.message(disabled=True)
+        self.assertIn("disabled", said)
+        self.assertNotIn("landed on", said)
+
+    def test_a_read_only_control_says_so(self):
+        self.assertIn("read-only", self.message(readOnly=True))
+
+    def test_a_node_the_page_replaced_is_reported_as_that(self):
+        said = self.message(stillInDocument=False)
+        self.assertIn("taken out of the document", said)
+        self.assertIn("re-rendered", said)
+
+    def test_a_detached_node_is_not_described_by_its_computed_style(self):
+        """A node out of the document has none, so there is nothing to report."""
+        said = self.message(stillInDocument=False, visibility="", opacity="")
+        self.assertNotIn("opacity", said)
+
+    def test_pointer_events_none_is_called_out(self):
+        self.assertIn("pointer-events is none", self.message(pointerEvents="none"))
+
+    def test_a_click_that_did_reach_it_says_where_focus_went_instead(self):
+        said = self.message(hitIsTarget=True, activeElement="body")
+        self.assertIn("did reach the control", said)
+        self.assertIn("body", said)
+        self.assertNotIn("something is covering", said)
+
+    def test_a_scaled_visual_viewport_is_reported_as_a_coordinate_mismatch(self):
+        said = self.message(viewport={"w": 1264, "h": 649, "dpr": 1,
+                                      "vv": {"w": 900, "h": 675, "scale": 0.72,
+                                             "ox": 0, "oy": 0}})
+        self.assertIn("0.72", said)
+        self.assertIn("do not match", said)
+
+    def test_a_page_without_focus_says_so(self):
+        self.assertIn("did not have focus", self.message(pageHasFocus=False))
+
+    def test_a_page_that_cannot_be_read_admits_it_rather_than_guessing(self):
+        page = page_with({**FILLED, "value": "", "focused": False}, inspection=None)
+        with self.assertRaises(ToolError) as raised:
+            page.fill(1, "guest@indoora.com")
+        self.assertIn("is not known", str(raised.exception))
+
+    def test_the_click_point_is_the_one_the_click_used(self):
+        said = self.message(hitIsTarget=False, hitInsideTarget=False, pointHits="div")
+        self.assertIn("(5, 5)", said)      # the fake box model's centre
 
 
 class SnapshotValueTests(unittest.TestCase):
